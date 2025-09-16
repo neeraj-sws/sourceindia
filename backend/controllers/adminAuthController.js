@@ -12,12 +12,15 @@ const login = async (req, res) => {
     if (admin.role !== 1) {
       return res.status(403).json({ message: 'Access denied. Not authorized.' });
     }
-    const isMatch = await bcrypt.compare(password, admin.password);
+    const fixedHash = admin.password.replace(/^\$2y\$/, '$2a$');
+    const isMatch = await bcrypt.compare(password, fixedHash);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
     const token = jwt.sign(
-      { id: admin.id, email: admin.email, role: admin.role }, 'your_jwt_secret', { expiresIn: '1h' }
+      { id: admin.id, email: admin.email, role: admin.role },
+      'your_jwt_secret',
+      { expiresIn: '1h' }
     );
     return res.status(200).json({
       message: 'Login successful.',
