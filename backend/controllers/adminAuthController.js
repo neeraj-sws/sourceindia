@@ -9,9 +9,11 @@ const login = async (req, res) => {
     if (!admin) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
-    if (admin.role !== 1) {
-      return res.status(403).json({ message: 'Access denied. Not authorized.' });
-    }
+    
+    // return console.log(admin);
+    // if (admin.role !== 1) {
+    //   return res.status(403).json({ message: 'Access denied. Not authorized.' });
+    // }
     const fixedHash = admin.password.replace(/^\$2y\$/, '$2a$');
     const isMatch = await bcrypt.compare(password, fixedHash);
     if (!isMatch) {
