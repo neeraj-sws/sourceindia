@@ -95,7 +95,7 @@ const Dashboard = () => {
     <div className="page-wrapper">
       <div className="page-content">
         <div className="row row-cols-1 row-cols-md-2 row-cols-xl-4">
-          {stats.map((s, idx) => (
+          {stats?.map((s, idx) => (
             <CountData key={idx} label={s.label} value={s.value || 0} icon={s.icon} />
           ))}
         </div>

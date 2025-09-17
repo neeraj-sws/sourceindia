@@ -99,7 +99,7 @@ const SellerList = ({getInactive, getNotApproved, getDeleted}) => {
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
       await axios.patch(`${API_BASE_URL}/buyers/${id}/${field}`, { [valueKey]: newStatus });
-      setData(data.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
+      setData(data?.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
       if(field=="delete_status"){
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);

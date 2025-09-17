@@ -98,7 +98,7 @@ const ProductList = () => {
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
       await axios.patch(`${API_BASE_URL}/products/${id}/${field}`, { [valueKey]: newStatus });
-      setData(data.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
+      setData(data?.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
       showNotification("Status updated!", "success");
     } catch (error) {
       console.error("Error updating status:", error);

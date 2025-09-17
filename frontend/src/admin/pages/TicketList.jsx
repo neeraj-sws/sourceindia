@@ -130,7 +130,7 @@ const TicketList = () => {
         await axios.put(`${API_BASE_URL}/tickets/${formData.id}`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        setData((d) => d.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
+        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/tickets`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -230,7 +230,7 @@ const TicketList = () => {
                         <td>{row.category_name}</td>
                         <td>{formatDateTime(row.created_at)}</td>
                         <td>{formatDateTime(row.updated_at)}</td>
-                        <td>{listStatus.map((s,i) => (row.status == i ? s : ""))}</td>
+                        <td>{listStatus?.map((s,i) => (row.status == i ? s : ""))}</td>
                         <td>
                           <button className="btn btn-sm btn-primary me-2 mb-2 edit-btn" onClick={() => openModal(row)}>
                             <i className="bx bx-edit me-0" />

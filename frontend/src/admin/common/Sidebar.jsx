@@ -190,7 +190,7 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick }) => {
 
       {hasSubMenu && (
         <ul className={`mm-collapse ${shouldExpand ? 'mm-show' : ''}`}>
-          {item.subMenu.map((sub, idx) => (
+          {item.subMenu?.map((sub, idx) => (
             <li
               key={idx}
               className={sub.link === currentPath ? 'mm-active' : ''}
@@ -242,7 +242,7 @@ const Sidebar = () => {
                 </div>
                 {/*navigation*/}
                 <ul className="metismenu" id="menu">
-                  {menuData.map((item, idx) => (
+                  {menuData?.map((item, idx) => (
                     <SidebarItem
                       key={idx}
                       item={item}

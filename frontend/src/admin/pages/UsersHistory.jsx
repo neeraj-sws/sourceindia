@@ -74,7 +74,7 @@ const UsersHistory = () => {
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
       await axios.patch(`${API_BASE_URL}/seller_mail_histories/${id}/status`, { status: newStatus });
-      setData(data.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
+      setData(data?.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
       showNotification("Status updated", "success");
     } catch (error) {
       console.error("Error updating Status:", error);

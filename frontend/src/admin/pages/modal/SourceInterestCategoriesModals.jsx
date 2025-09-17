@@ -52,7 +52,7 @@ const SourceInterestCategoriesModals = ({
                     <label htmlFor="interest_category_id" className="form-label required">Interest Category</label>
                     <SearchDropdown
                       id="interest_category_id"
-                      options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+                      options={categories?.map(cat => ({ value: cat.id, label: cat.name }))}
                       value={formData.interest_category_id}
                       onChange={handleSelectChange("interest_category_id")}
                       placeholder="Select Category"                      
