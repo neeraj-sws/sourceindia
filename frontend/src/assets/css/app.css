@@ -2879,3 +2879,32 @@ input.search-control-2::placeholder {
 	font-weight: 500;
 	font-size: 13px;
 }
+
+.table thead th {
+	background: #F7F8F9 !important;
+}
+
+.table thead tr th {
+	font-weight: 600;
+	padding: 8px 10px 8px 10px;
+	color: var(--crms-heading-color);
+	font-size: 13px;
+}
+
+table.table.dataTable.table-striped>tbody>tr:nth-of-type(2n+1)>* {
+	box-shadow: inset 0 0 0 9999px rgb(255 255 255 / 5%);
+}
+
+.table tbody tr td {
+	padding: 5px 10px 5px 10px !important;
+	white-space: pre-line;
+	font-size: 12px;
+}
+
+table.dataTable thead>tr>th.dt-orderable-asc:hover,
+table.dataTable thead>tr>th.dt-orderable-desc:hover,
+table.dataTable thead>tr>td.dt-orderable-asc:hover,
+table.dataTable thead>tr>td.dt-orderable-desc:hover {
+	outline: none;
+	outline-offset: -2px;
+}

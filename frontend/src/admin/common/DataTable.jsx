@@ -64,73 +64,73 @@ const DataTable = ({
           />
         </div>
       </div>
-
-      <table className="table table-striped table-responsive dataTable mt-2">
-        <thead>
-        <tr>
-          {columns.map((col, colIndex) => {
-            const isSorted = sortBy === col.key;
-            const isAsc = isSorted && sortDirection === "ASC";
-            const isDesc = isSorted && sortDirection === "DESC";
-            const thClassList = col.sortable ? [
-              "dt-orderable-asc",
-              "dt-orderable-desc",
-              "dt-type-numeric",
-              isAsc ? "dt-ordering-asc" : "",
-              isDesc ? "dt-ordering-desc" : ""
-            ]
-              .filter(Boolean)
-              .join(" ") : "dt-orderable-none";
-            const ariaSort = isAsc ? "ascending" : isDesc ? "descending" : undefined;
-            return (
-              <th
-              key={col.key}
-              data-dt-column={colIndex}
-              rowSpan="1"
-              colSpan="1"
-              className={thClassList}
-              aria-sort={ariaSort}
-              onClick={col.sortable ? () => onSortChange(col.key) : undefined}
-              onKeyDown={col.sortable ? (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  onSortChange(col.key);
-                }
-              } : undefined}
-              tabIndex={col.sortable ? 0 : undefined}
-              role={col.sortable ? "button" : undefined}
-            >
-              <div className="dt-column-header">
-                <span className="dt-column-title">{col.label}</span>
-                {col.sortable && (
-                  <span
-                    className="dt-column-order"
-                    aria-label={`${col.label}: Activate to ${
-                      isSorted ? isAsc ? "invert sorting" : isDesc ? "remove sorting" : "sort" : "sort"
-                    }`}
-                  />
-                )}
-              </div>
-            </th>
-            );
-          })}
-        </tr>
-      </thead>
-        <tbody>
-          {loading ? (
+      <div className="table-responsive">
+        <table className="table table-striped dataTable mt-2">
+          <thead>
             <tr>
-              <td colSpan={columns.length} className="text-center"><img src="/loading.gif" className="img-fluid" alt="Loading" width={50} /></td>
+              {columns.map((col, colIndex) => {
+                const isSorted = sortBy === col.key;
+                const isAsc = isSorted && sortDirection === "ASC";
+                const isDesc = isSorted && sortDirection === "DESC";
+                const thClassList = col.sortable ? [
+                  "dt-orderable-asc",
+                  "dt-orderable-desc",
+                  "dt-type-numeric",
+                  isAsc ? "dt-ordering-asc" : "",
+                  isDesc ? "dt-ordering-desc" : ""
+                ]
+                  .filter(Boolean)
+                  .join(" ") : "dt-orderable-none";
+                const ariaSort = isAsc ? "ascending" : isDesc ? "descending" : undefined;
+                return (
+                  <th
+                    key={col.key}
+                    data-dt-column={colIndex}
+                    rowSpan="1"
+                    colSpan="1"
+                    className={`text-nowrap ${thClassList}`}
+                    aria-sort={ariaSort}
+                    onClick={col.sortable ? () => onSortChange(col.key) : undefined}
+                    onKeyDown={col.sortable ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        onSortChange(col.key);
+                      }
+                    } : undefined}
+                    tabIndex={col.sortable ? 0 : undefined}
+                    role={col.sortable ? "button" : undefined}
+                  >
+                    <div className="dt-column-header">
+                      <span className="dt-column-title">{col.label}</span>
+                      {col.sortable && (
+                        <span
+                          className="dt-column-order"
+                          aria-label={`${col.label}: Activate to ${isSorted ? isAsc ? "invert sorting" : isDesc ? "remove sorting" : "sort" : "sort"
+                            }`}
+                        />
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
-          ) : data.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length} className="text-center">
-                No records found.
-              </td>
-            </tr>
-          ) : (
-            data.map((item, index) => renderRow(item, index))
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={columns.length} className="text-center"><img src="/loading.gif" className="img-fluid" alt="Loading" width={50} /></td>
+              </tr>
+            ) : data.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="text-center">
+                  No records found.
+                </td>
+              </tr>
+            ) : (
+              data.map((item, index) => renderRow(item, index))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <div className="row mt-2 justify-content-between">
         <div className="col-md-auto me-auto">{getRangeText()}</div>
