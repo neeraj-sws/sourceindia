@@ -29,12 +29,12 @@ const Dashboard = () => {
     const fetchCounts = async () => {
       try {
         const [sellers, buyers, categories, subCats, products, enquiries] = await Promise.all([
-            axios.get(`${API_BASE_URL}/sellers/count`),
-            axios.get(`${API_BASE_URL}/buyers/count`),
-            axios.get(`${API_BASE_URL}/categories/count`),
-            axios.get(`${API_BASE_URL}/sub_categories/count`),
-            axios.get(`${API_BASE_URL}/products/count`),
-            axios.get(`${API_BASE_URL}/enquiries/count`),
+          axios.get(`${API_BASE_URL}/sellers/count`),
+          axios.get(`${API_BASE_URL}/buyers/count`),
+          axios.get(`${API_BASE_URL}/categories/count`),
+          axios.get(`${API_BASE_URL}/sub_categories/count`),
+          axios.get(`${API_BASE_URL}/products/count`),
+          axios.get(`${API_BASE_URL}/enquiries/count`),
         ]);
         setCounts({
           sellers: {
@@ -95,7 +95,7 @@ const Dashboard = () => {
     <div className="page-wrapper">
       <div className="page-content">
         <div className="row row-cols-1 row-cols-md-2 row-cols-xl-4">
-          {stats.map((s, idx) => (
+          {stats?.map((s, idx) => (
             <CountData key={idx} label={s.label} value={s.value || 0} icon={s.icon} />
           ))}
         </div>
