@@ -253,7 +253,7 @@ const AddBuyer = () => {
                     <select id="country" className={`form-control ${errors.country ? 'is-invalid' : ''}`} 
                     value={selectedCountry} onChange={handleCountryChange}>
                       <option value="">Select Country</option>
-                      {countries.map(country => ( <option key={country.id} value={country.id}>{country.name}</option> ))}
+                      {countries?.map(country => ( <option key={country.id} value={country.id}>{country.name}</option> ))}
                     </select>
                     {errors.country && <div className="invalid-feedback">{errors.country}</div>}
                   </div>
@@ -262,7 +262,7 @@ const AddBuyer = () => {
                     <select id="state" className={`form-control ${errors.state ? 'is-invalid' : ''}`} 
                     value={selectedState} onChange={handleStateChange} disabled={!selectedCountry}>
                       <option value="">Select State</option>
-                      {states.map(state => ( <option key={state.id} value={state.id}>{state.name}</option>))}
+                      {states?.map(state => ( <option key={state.id} value={state.id}>{state.name}</option>))}
                     </select>
                     {errors.state && <div className="invalid-feedback">{errors.state}</div>}
                   </div>
@@ -271,7 +271,7 @@ const AddBuyer = () => {
                     <select id="city" className={`form-control ${errors.city ? 'is-invalid' : ''}`} 
                     value={selectedCity} onChange={handleCityChange} disabled={!selectedState}>
                       <option value="">Select City</option>
-                      {cities.map(city => ( <option key={city.id} value={city.id}>{city.name}</option> ))}
+                      {cities?.map(city => ( <option key={city.id} value={city.id}>{city.name}</option> ))}
                     </select>
                     {errors.city && <div className="invalid-feedback">{errors.city}</div>}
                   </div>

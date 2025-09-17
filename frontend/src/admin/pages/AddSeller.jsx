@@ -368,7 +368,7 @@ const AddSeller = () => {
                     <label htmlFor="user_type" className="form-label required">User Type</label>
                     <SearchDropdown
                       id="user_type"
-                      options={roles.map((role) => ({ value: role.id, label: role.name, }))}
+                      options={roles?.map((role) => ({ value: role.id, label: role.name, }))}
                       value={formData.user_type}
                       onChange={handleSelectChange("user_type")}
                       placeholder="Select here"
@@ -383,7 +383,7 @@ const AddSeller = () => {
                       onChange={handleCoreActivityChange}
                     >
                       <option value="">Select Core Activity</option>
-                      {coreactivities.map((core_activity) => (
+                      {coreactivities?.map((core_activity) => (
                         <option key={core_activity.id} value={core_activity.id}>{core_activity.name}</option>
                       ))}
                     </select>
@@ -398,7 +398,7 @@ const AddSeller = () => {
                       disabled={!selectedCoreActivity}
                     >
                       <option value="">Select Activity</option>
-                      {activities.map((activity) => (
+                      {activities?.map((activity) => (
                         <option key={activity.id} value={activity.id}>{activity.name}</option>
                       ))}
                     </select>
@@ -412,7 +412,7 @@ const AddSeller = () => {
                       onChange={handleCategoryChange}
                     >
                       <option value="">Select Category</option>
-                      {categories.map((category) => (
+                      {categories?.map((category) => (
                         <option key={category.id} value={category.id}>{category.name}</option>
                       ))}
                     </select>
@@ -427,7 +427,7 @@ const AddSeller = () => {
                       disabled={!selectedCategory}
                     >
                       <option value="">Select Sub Category</option>
-                      {subCategories.map((sub_category) => (
+                      {subCategories?.map((sub_category) => (
                         <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
                       ))}
                     </select>
@@ -700,7 +700,7 @@ const AddSeller = () => {
                       onChange={handleCountryChange}
                     >
                       <option value="">Select Country</option>
-                      {countries.map((country) => (
+                      {countries?.map((country) => (
                         <option key={country.id} value={country.id}>{country.name}</option>
                       ))}
                     </select>
@@ -715,7 +715,7 @@ const AddSeller = () => {
                       disabled={!selectedCountry}
                     >
                       <option value="">Select State</option>
-                      {states.map((state) => (
+                      {states?.map((state) => (
                         <option key={state.id} value={state.id}>{state.name}</option>
                       ))}
                     </select>
@@ -730,7 +730,7 @@ const AddSeller = () => {
                       disabled={!selectedState}
                     >
                       <option value="">Select City</option>
-                      {cities.map((city) => (
+                      {cities?.map((city) => (
                         <option key={city.id} value={city.id}>{city.name}</option>
                       ))}
                     </select>

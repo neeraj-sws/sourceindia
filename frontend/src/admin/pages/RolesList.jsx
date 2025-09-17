@@ -121,7 +121,7 @@ const RolesList = () => {
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/roles/${formData.id}`, payload);
-        setData((d) => d.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
+        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/roles`, payload);
         const payload1 = { ...res.data.roles, category_name: selectedCategory?.name || "" };
@@ -158,7 +158,7 @@ const RolesList = () => {
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
       await axios.patch(`${API_BASE_URL}/roles/${id}/status`, { status: newStatus });
-      setData(data.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
+      setData(data?.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
       showNotification("Status updated!", "success");
     } catch (error) {
       console.error("Error updating status:", error);
@@ -207,7 +207,7 @@ const RolesList = () => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelectedRoles(data.map((item) => item.id));
+      setSelectedRoles(data?.map((item) => item.id));
     } else {
       setSelectedRoles([]);
     }

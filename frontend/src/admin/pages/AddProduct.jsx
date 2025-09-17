@@ -262,7 +262,7 @@ const handleAddImages = async () => {
                     <label htmlFor="user_id" className="form-label required">User</label>
                     <SearchDropdown
                       id="user_id"
-                      options={sellers.map((user) => ({ value: user.id, label: user.fname+" "+user.lname, }))}
+                      options={sellers?.map((user) => ({ value: user.id, label: user.fname+" "+user.lname, }))}
                       value={formData.user_id}
                       onChange={handleSelectChange("user_id")}
                       placeholder="Select here"
@@ -308,7 +308,7 @@ const handleAddImages = async () => {
                     onChange={handleCategoryChange}
                     >
                     <option value="">Select Category</option>
-                    {categories.map((category) => (
+                    {categories?.map((category) => (
                     <option key={category.id} value={category.id}>{category.name}</option>
                     ))}
                     </select>
@@ -323,7 +323,7 @@ const handleAddImages = async () => {
                       disabled={!selectedCategory}
                       >
                       <option value="">Select Sub Category</option>
-                      {subCategories.map((sub_category) => (
+                      {subCategories?.map((sub_category) => (
                       <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
                       ))}
                     </select>
@@ -387,7 +387,7 @@ const handleAddImages = async () => {
                     <label htmlFor="application" className="form-label required">Applications</label>
                     <SearchDropdown
                       id="application"
-                      options={applications.map((application) => ({ value: String(application.id), label: application.name, }))}
+                      options={applications?.map((application) => ({ value: String(application.id), label: application.name, }))}
                       value={formData.application}
                       onChange={handleSelectChange("application")}
                       placeholder="Select here"
@@ -432,7 +432,7 @@ const handleAddImages = async () => {
                     {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
                     <div className="col-md-12">
                       <div className="mt-3 d-flex flex-wrap">
-                        {formData.images && formData.images.length > 0 &&  formData.images.map((image, index) => (
+                        {formData.images && formData.images.length > 0 &&  formData.images?.map((image, index) => (
                         <div key={index} className="position-relative m-2">
                           <img
                           src={`${ROOT_URL}/${image.file}`}
@@ -451,7 +451,7 @@ const handleAddImages = async () => {
                           </button>
                         </div>
                         ))}
-                        {files.length > 0 && files.map((file, index) => (
+                        {files.length > 0 && files?.map((file, index) => (
                         <div key={index} className="position-relative m-2">
                           <img
                           src={URL.createObjectURL(file)}
