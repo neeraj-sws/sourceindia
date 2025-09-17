@@ -233,9 +233,7 @@ const Sidebar = () => {
                   <div>
                     <img src="/logo.png" className="logo-icon" alt="logo icon" />
                   </div>
-                  <div>
-                    <h4 className="logo-text">Rocker</h4>
-                  </div>
+                 
                   <div className="toggle-icon ms-auto">
                     <i className="bx bx-arrow-to-left" />
                   </div>

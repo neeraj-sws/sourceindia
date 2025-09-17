@@ -8,7 +8,7 @@ import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import BuyerModals from "./modal/BuyerModals";
 
-const BuyerList = ({getInactive, getNotApproved, getDeleted}) => {
+const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -29,7 +29,8 @@ const BuyerList = ({getInactive, getNotApproved, getDeleted}) => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/buyers/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, getInactive: getInactive ? 'true' : 'false',
+        params: {
+          page, limit, search, sortBy, sort: sortDirection, getInactive: getInactive ? 'true' : 'false',
           getNotApproved: getNotApproved ? 'true' : 'false', getDeleted: getDeleted ? 'true' : 'false'
         },
       });
@@ -89,8 +90,10 @@ const BuyerList = ({getInactive, getNotApproved, getDeleted}) => {
     }
   };
 
-  const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggleInfo({ id, currentStatus, field, valueKey }); 
-  setShowStatusModal(true); };
+  const openStatusModal = (id, currentStatus, field, valueKey) => {
+    setStatusToggleInfo({ id, currentStatus, field, valueKey });
+    setShowStatusModal(true);
+  };
 
   const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
 
@@ -100,16 +103,16 @@ const BuyerList = ({getInactive, getNotApproved, getDeleted}) => {
     try {
       await axios.patch(`${API_BASE_URL}/buyers/${id}/${field}`, { [valueKey]: newStatus });
       setData(data.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if(field=="seller_status" || field=="delete_status"){
+      if (field == "seller_status" || field == "delete_status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
         closeDeleteModal();
       }
-      if(field=="delete_status"){
-        showNotification(newStatus==1 ? "Removed from list" : "Restored from deleted", "success");
-      }else{
-        showNotification(field=="seller_status" ? "Added to Seller" : "Status updated!", "success");
+      if (field == "delete_status") {
+        showNotification(newStatus == 1 ? "Removed from list" : "Restored from deleted", "success");
+      } else {
+        showNotification(field == "seller_status" ? "Added to Seller" : "Status updated!", "success");
       }
     } catch (error) {
       console.error("Error updating status:", error);
@@ -124,12 +127,12 @@ const BuyerList = ({getInactive, getNotApproved, getDeleted}) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Users" 
-          title={ getInactive ? "Inactive Buyers" : getNotApproved ? "Not Approved Buyers" : getDeleted ? "Recently Deleted Buyers" : "Buyers" } 
-          add_button="Add Buyer" add_link="/admin/add_buyer" />
+          <Breadcrumb mainhead="Buyers" maincount={totalRecords} page=""
+            title={getInactive ? "Inactive Buyers" : getNotApproved ? "Not Approved Buyers" : getDeleted ? "Recently Deleted Buyers" : "Buyers"}
+            add_button="Add Buyer" add_link="/admin/add_buyer" />
           <div className="card">
             <div className="card-body">
-                <DataTable
+              <DataTable
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "full_name", label: "Name", sortable: true },
@@ -137,9 +140,9 @@ const BuyerList = ({getInactive, getNotApproved, getDeleted}) => {
                   { key: "address", label: "Location", sortable: true },
                   ...(!getDeleted ? [{ key: "status", label: "Status", sortable: false },
                   { key: "account_status", label: "Account Status", sortable: false },
-                  { key: "seller_status", label: "Manage Seller", sortable: false },] 
-                  : [{ key: "created_at", label: "Created", sortable: true },
-                  { key: "updated_at", label: "Last Update", sortable: true },]),
+                  { key: "seller_status", label: "Manage Seller", sortable: false },]
+                    : [{ key: "created_at", label: "Created", sortable: true },
+                    { key: "updated_at", label: "Last Update", sortable: true },]),
                   { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}
@@ -160,71 +163,71 @@ const BuyerList = ({getInactive, getNotApproved, getDeleted}) => {
                   <tr key={row.id}>
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td>{row.full_name}<br />{row.email}<br />{row.mobile}</td>
-                    <td>{row.user_company}<br />{row.walkin_buyer == 1 ? ( <span className="badge bg-primary">Walk-In Buyer</span> ) : ("")}</td>
+                    <td>{row.user_company}<br />{row.walkin_buyer == 1 ? (<span className="badge bg-primary">Walk-In Buyer</span>) : ("")}</td>
                     <td>{row.address}</td>
-                    { !getDeleted ? (
-                    <>
-                    <td>
-                      <div className="form-check form-switch">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={row.status == 1}
-                        onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
-                        readOnly
-                      />
-                      </div>
-                    </td>
-                    <td>
-                      <div className="form-check form-switch">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={row.is_approve == 1}
-                        onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_approve, "account_status", "is_approve"); }}
-                        readOnly
-                      />
-                      </div>
-                    </td>
-                    <td>
-                      <div className="form-check form-switch">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={row.is_seller == 1}
-                        onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_seller, "seller_status", "is_seller"); }}
-                        readOnly
-                      />
-                      </div>
-                    </td>
-                    </>
+                    {!getDeleted ? (
+                      <>
+                        <td>
+                          <div className="form-check form-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={row.status == 1}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
+                              readOnly
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <div className="form-check form-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={row.is_approve == 1}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_approve, "account_status", "is_approve"); }}
+                              readOnly
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <div className="form-check form-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={row.is_seller == 1}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_seller, "seller_status", "is_seller"); }}
+                              readOnly
+                            />
+                          </div>
+                        </td>
+                      </>
                     ) : (
                       <>
-                      <td>{formatDateTime(row.created_at)}</td>
-                      <td>{formatDateTime(row.updated_at)}</td>
+                        <td>{formatDateTime(row.created_at)}</td>
+                        <td>{formatDateTime(row.updated_at)}</td>
                       </>
                     )}
                     <td>
-                      { getDeleted ? (
+                      {getDeleted ? (
                         <>
-                      <button className="btn btn-sm btn-primary me-2 mb-2" title="Undo"
-                      onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete"); }}>
-                      <i className="bx bx-undo me-0" />
-                      </button>
-                      <button className="btn btn-sm btn-danger mb-2" title="Delete" onClick={() => openDeleteModal(row.id)}>
-                      <i className="bx bx-trash me-0" />
-                      </button>
-                      </>
+                          <button className="btn btn-sm btn-primary me-2 mb-2" title="Undo"
+                            onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete"); }}>
+                            <i className="bx bx-undo me-0" />
+                          </button>
+                          <button className="btn btn-sm btn-danger mb-2" title="Delete" onClick={() => openDeleteModal(row.id)}>
+                            <i className="bx bx-trash me-0" />
+                          </button>
+                        </>
                       ) : (
-                      <>
-                      <button className="btn btn-sm btn-primary me-2 mb-2 edit-btn"  title="Edit" onClick={(e) => navigate(`/admin/edit_buyer/${row.id}`)}>
-                      <i className="bx bx-edit me-0" />
-                      </button>
-                      <button className="btn btn-sm btn-danger mb-2" title="Remove"
-                      onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete"); }}>
-                      <i className="bx bx-x me-0" />
-                      </button>
-                      </>
+                        <>
+                          <button className="btn btn-sm btn-primary me-2 mb-2 edit-btn" title="Edit" onClick={(e) => navigate(`/admin/edit_buyer/${row.id}`)}>
+                            <i className="bx bx-edit me-0" />
+                          </button>
+                          <button className="btn btn-sm btn-danger mb-2" title="Remove"
+                            onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete"); }}>
+                            <i className="bx bx-x me-0" />
+                          </button>
+                        </>
                       )}
                     </td>
                   </tr>
