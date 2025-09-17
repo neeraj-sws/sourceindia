@@ -130,7 +130,7 @@ const TicketList = () => {
         await axios.put(`${API_BASE_URL}/tickets/${formData.id}`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        setData((d) => d.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
+        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/tickets`, payload, {
           headers: { "Content-Type": "multipart/form-data" },

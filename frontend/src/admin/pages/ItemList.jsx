@@ -127,7 +127,7 @@ const ItemList = () => {
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/sub_sub_categories/${formData.id}`, payload);
-        setData((d) => d.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
+        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/sub_sub_categories`, payload);
         const payload1 = { ...res.data.subSubCategories, category_name: sCategory?.name || "", sub_category_name: ssCategory?.name || "" };
@@ -198,7 +198,7 @@ const ItemList = () => {
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
       await axios.patch(`${API_BASE_URL}/sub_sub_categories/${id}/status`, { status: newStatus });
-      setData(data.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
+      setData(data?.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
       showNotification("Status updated!", "success");
     } catch (error) {
       console.error("Error updating status:", error);

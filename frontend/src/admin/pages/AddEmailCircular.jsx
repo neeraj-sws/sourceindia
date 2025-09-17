@@ -187,7 +187,7 @@ const AddEmailCircular = () => {
                     <label htmlFor="user_type" className="form-label required">User</label>
                     <SearchDropdown
                       id="user_type"
-                      options={userType.map((user) => ({ value: user.id, label: user.name.charAt(0).toUpperCase() + user.name.slice(1) }))}
+                      options={userType?.map((user) => ({ value: user.id, label: user.name.charAt(0).toUpperCase() + user.name.slice(1) }))}
                       value={formData.user_type}
                       onChange={handleSelectChange("user_type")}
                       placeholder="Select here"
@@ -260,7 +260,7 @@ const AddEmailCircular = () => {
                     {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
                     <div className="col-md-12">
                       <div className="mt-3 d-flex flex-wrap">
-                        {formData.images && formData.images.length > 0 &&  formData.images.map((image, index) => (
+                        {formData.images && formData.images.length > 0 &&  formData.images?.map((image, index) => (
                         <div key={index} className="position-relative m-2">
                           <img
                           src={`${ROOT_URL}/${image.file}`}
@@ -279,7 +279,7 @@ const AddEmailCircular = () => {
                           </button>
                         </div>
                         ))}
-                        {files.length > 0 && files.map((file, index) => (
+                        {files.length > 0 && files?.map((file, index) => (
                         <div key={index} className="position-relative m-2">
                           <img
                           src={URL.createObjectURL(file)}

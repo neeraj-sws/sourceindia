@@ -9,7 +9,7 @@ const ExcelExport = forwardRef(
     }));
     const exportToExcel = () => {
       if (!data.length || !columns.length) return;
-      const exportData = data.map((item) => {
+      const exportData = data?.map((item) => {
         const row = {};
         columns.forEach(({ label, key, format }) => {
           const value = item[key];
@@ -18,8 +18,8 @@ const ExcelExport = forwardRef(
         return row;
       });
       const worksheet = XLSX.utils.json_to_sheet(exportData);
-      worksheet["!cols"] = columns.map(() => ({ wch: columnWidth }));
-      const headerLabels = columns.map((col) => col.label);
+      worksheet["!cols"] = columns?.map(() => ({ wch: columnWidth }));
+      const headerLabels = columns?.map((col) => col.label);
       headerLabels.forEach((label, index) => {
         const cellAddress = XLSX.utils.encode_cell({ r: 0, c: index });
         if (worksheet[cellAddress]) {

@@ -109,7 +109,7 @@ const ActivityList = () => {
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/activities/${formData.id}`, payload);
-        setData((d) => d.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
+        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/activities`, payload);
         const payload1 = { ...res.data.activity, coreactivity_name: selectedCoreActivity?.name || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };

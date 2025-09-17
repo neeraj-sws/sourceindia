@@ -116,7 +116,7 @@ const ContactsList = ({getDeleted}) => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelectedContacts(data.map((item) => item.id));
+      setSelectedContacts(data?.map((item) => item.id));
     } else {
       setSelectedContacts([]);
     }

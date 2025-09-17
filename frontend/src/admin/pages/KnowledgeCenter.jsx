@@ -138,7 +138,7 @@ const KnowledgeCenter = () => {
         });
         const img = await axios.get(`${API_BASE_URL}/files/${formData.file_id}`);
         const updatedFileName = img.data.file;
-        setData((d) => d.map((item) => (item.id === formData.id ? { ...item, ...payload, file_name: updatedFileName, updated_at: new Date().toISOString() } : item)));
+        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, file_name: updatedFileName, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/knowledge_center`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -185,7 +185,7 @@ const KnowledgeCenter = () => {
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
       await axios.patch(`${API_BASE_URL}/knowledge_center/${id}/status`, { status: newStatus });
-      setData(data.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
+      setData(data?.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
       showNotification("Status updated!", "success");
     } catch (error) {
       console.error("Error updating status:", error);
