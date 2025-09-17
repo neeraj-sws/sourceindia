@@ -90,7 +90,7 @@ const SubAdminModals = ({
                     <label htmlFor="role" className="form-label required">Role</label>
                     <SearchDropdown
                       id="role"
-                      options={roles.map(role => ({ value: role.id, label: role.name }))}
+                      options={roles?.map(role => ({ value: role.id, label: role.name }))}
                       value={formData.role}
                       onChange={handleSelectChange("role")}
                       placeholder="Select role"                      

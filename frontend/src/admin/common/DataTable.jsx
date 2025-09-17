@@ -68,7 +68,7 @@ const DataTable = ({
       <table className="table table-striped table-responsive dataTable mt-2">
         <thead>
         <tr>
-          {columns.map((col, colIndex) => {
+          {columns?.map((col, colIndex) => {
             const isSorted = sortBy === col.key;
             const isAsc = isSorted && sortDirection === "ASC";
             const isDesc = isSorted && sortDirection === "DESC";
@@ -127,7 +127,7 @@ const DataTable = ({
               </td>
             </tr>
           ) : (
-            data.map((item, index) => renderRow(item, index))
+            data?.map((item, index) => renderRow(item, index))
           )}
         </tbody>
       </table>
@@ -154,7 +154,7 @@ const DataTable = ({
                 <i className="bx bx-chevron-left" />
               </button>
             </li>
-            {pageNumbers.map((p) => (
+            {pageNumbers?.map((p) => (
               <li key={p} className={`page-item ${p === page ? "active" : ""}`}>
                 <button className="page-link" onClick={() => onPageChange(p)} disabled={isPaginationDisabled}>
                   {p}

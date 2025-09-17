@@ -85,7 +85,7 @@ const SearchDropdown = ({ id = "", options, value, onChange, placeholder = "Sear
           {filteredOptions.length === 0 ? (
             <li className="dropdown-item disabled text-muted">No results found!</li>
           ) : (
-            filteredOptions.map((opt, idx) => (
+            filteredOptions?.map((opt, idx) => (
               <li
                 key={opt.value}
                 className={`dropdown-item ${idx === highlightedIndex ? "active" : ""}`}

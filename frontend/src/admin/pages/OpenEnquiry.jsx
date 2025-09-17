@@ -74,7 +74,7 @@ const OpenEnquiry = () => {
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
       await axios.patch(`${API_BASE_URL}/open_enquiries/${id}/home_status`, { is_home: newStatus });
-      setData(data.map((d) => (d.id === id ? { ...d, is_home: newStatus } : d)));
+      setData(data?.map((d) => (d.id === id ? { ...d, is_home: newStatus } : d)));
       showNotification("Home status updated", "success");
     } catch (error) {
       console.error("Error updating home status:", error);
