@@ -351,8 +351,8 @@ const AddEmailCircular = () => {
                           </button>
                         </div>
                       ))}
-                    </div >
-                  </div >
+                    </div>
+                  </div>
                   <div className="col-12 text-end">
                     <button type="submit" className="btn btn-primary btn-sm px-4">Save</button>
                   </div>
