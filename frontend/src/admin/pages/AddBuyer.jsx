@@ -252,7 +252,7 @@ const AddBuyer = () => {
         <div className="row">
           <div className="col-xl-12 mx-auto">
             <div className="card">
-              <div className="card-body p-5">
+              <div className="card-body p-4">
                 <form className="row g-3" onSubmit={handleSubmit}>
                   <div className="col-md-3">
                     <label htmlFor="fname" className="form-label required">First Name</label>

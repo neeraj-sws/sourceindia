@@ -284,7 +284,7 @@ const AddProduct = () => {
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <div className="card">
-                <div className="card-body p-5">
+                <div className="card-body p-4">
                   <form className="row g-3" onSubmit={handleSubmit}>
                     <div className="col-md-6">
                       <label htmlFor="user_id" className="form-label required">User</label>
