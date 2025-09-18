@@ -187,7 +187,7 @@ const AddEmailCircular = () => {
                     <label htmlFor="user_type" className="form-label required">User</label>
                     <SearchDropdown
                       id="user_type"
-                      options={userType?.map((user) => ({ value: user.id, label: user.name.charAt(0).toUpperCase() + user.name.slice(1) }))}
+                      options={userType?.map((user) => ({ value: user.id, label: user.name ? user.name.charAt(0).toUpperCase() + user.name.slice(1) : '' }))}
                       value={formData.user_type}
                       onChange={handleSelectChange("user_type")}
                       placeholder="Select here"

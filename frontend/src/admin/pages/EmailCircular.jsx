@@ -119,7 +119,7 @@ const EmailCircular = () => {
                   <tr key={row.id}>
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td><Link to={`/admin/email_circular_details/${row.id}`}>{row.title}</Link></td>
-                    <td>{row.user_type_name.charAt(0).toUpperCase() + row.user_type_name.slice(1)}</td>
+                    <td>{row.user_type_name ? row.user_type_name.charAt(0).toUpperCase() + row.user_type_name.slice(1) : ''}</td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>
