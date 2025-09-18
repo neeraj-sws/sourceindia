@@ -66,7 +66,7 @@ const FaqModals = ({
                     <label htmlFor="category" className="form-label required">Category</label>
                     <SearchDropdown
                       id="category"
-                      options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+                      options={categories?.map(cat => ({ value: cat.id, label: cat.name }))}
                       value={formData.category}
                       onChange={handleSelectChange("category")}
                       placeholder="Select Category"

@@ -57,7 +57,7 @@ const ProductSubCategoryModals = ({
                       onChange={handleChange}
                     >
                       <option value="">Select Category</option>
-                      {categories.map((category) => (
+                      {categories?.map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name}
                         </option>
@@ -65,7 +65,7 @@ const ProductSubCategoryModals = ({
                     </select> */}
                     <SearchDropdown
                       id="category"
-                      options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+                      options={categories?.map(cat => ({ value: cat.id, label: cat.name }))}
                       value={formData.category}
                       onChange={handleSelectChange("category")}
                       placeholder="Select Category"

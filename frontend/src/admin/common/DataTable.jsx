@@ -68,7 +68,7 @@ const DataTable = ({
         <table className="table table-striped dataTable">
           <thead>
             <tr>
-              {columns.map((col, colIndex) => {
+              {columns?.map((col, colIndex) => {
                 const isSorted = sortBy === col.key;
                 const isAsc = isSorted && sortDirection === "ASC";
                 const isDesc = isSorted && sortDirection === "DESC";
@@ -88,7 +88,7 @@ const DataTable = ({
                     data-dt-column={colIndex}
                     rowSpan="1"
                     colSpan="1"
-                    className={`text-nowrap ${thClassList}`}
+                    className={thClassList}
                     aria-sort={ariaSort}
                     onClick={col.sortable ? () => onSortChange(col.key) : undefined}
                     onKeyDown={col.sortable ? (e) => {
@@ -117,71 +117,113 @@ const DataTable = ({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length} className="text-center"><img src="/loading.gif" className="img-fluid" alt="Loading" width={50} /></td>
+                {columns.map((col, colIndex) => {
+                  const isSorted = sortBy === col.key;
+                  const isAsc = isSorted && sortDirection === "ASC";
+                  const isDesc = isSorted && sortDirection === "DESC";
+                  const thClassList = col.sortable ? [
+                    "dt-orderable-asc",
+                    "dt-orderable-desc",
+                    "dt-type-numeric",
+                    isAsc ? "dt-ordering-asc" : "",
+                    isDesc ? "dt-ordering-desc" : ""
+                  ]
+                    .filter(Boolean)
+                    .join(" ") : "dt-orderable-none";
+                  const ariaSort = isAsc ? "ascending" : isDesc ? "descending" : undefined;
+                  return (
+                    <th
+                      key={col.key}
+                      data-dt-column={colIndex}
+                      rowSpan="1"
+                      colSpan="1"
+                      className={`text-nowrap ${thClassList}`}
+                      aria-sort={ariaSort}
+                      onClick={col.sortable ? () => onSortChange(col.key) : undefined}
+                      onKeyDown={col.sortable ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          onSortChange(col.key);
+                        }
+                      } : undefined}
+                      tabIndex={col.sortable ? 0 : undefined}
+                      role={col.sortable ? "button" : undefined}
+                    >
+                      <div className="dt-column-header">
+                        <span className="dt-column-title">{col.label}</span>
+                        {col.sortable && (
+                          <span
+                            className="dt-column-order"
+                            aria-label={`${col.label}: Activate to ${isSorted ? isAsc ? "invert sorting" : isDesc ? "remove sorting" : "sort" : "sort"
+                              }`}
+                          />
+                        )}
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
-            ) : data.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="text-center">
-                  No records found.
-                </td>
-              </tr>
-            ) : (
-              data.map((item, index) => renderRow(item, index))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="row mt-2 justify-content-between">
-        <div className="col-md-auto me-auto">{getRangeText()}</div>
-        <div className="col-md-auto ms-auto">
-          <ul className="pagination">
-            <li className="page-item">
-              <button
-                className="page-link"
-                onClick={() => onPageChange(1)}
-                disabled={page === 1 || isPaginationDisabled}
-              >
-                <i className="bx bx-chevrons-left" />
-              </button>
-            </li>
-            <li className="page-item">
-              <button
-                className="page-link"
-                onClick={() => onPageChange(page - 1)}
-                disabled={page === 1 || isPaginationDisabled}
-              >
-                <i className="bx bx-chevron-left" />
-              </button>
-            </li>
-            {pageNumbers.map((p) => (
-              <li key={p} className={`page-item ${p === page ? "active" : ""}`}>
-                <button className="page-link" onClick={() => onPageChange(p)} disabled={isPaginationDisabled}>
-                  {p}
-                </button>
-              </li>
-            ))}
-            <li className="page-item">
-              <button
-                className="page-link"
-                onClick={() => onPageChange(page + 1)}
-                disabled={page === totalPages || isPaginationDisabled}
-              >
-                <i className="bx bx-chevron-right" />
-              </button>
-            </li>
-            <li className="page-item">
-              <button
-                className="page-link"
-                onClick={() => onPageChange(totalPages)}
-                disabled={page === totalPages || isPaginationDisabled}
-              >
-                <i className="bx bx-chevrons-right" />
-              </button>
-            </li>
-          </ul>
-        </div>
-      </div>
+          ) : data.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length} className="text-center">
+                No records found.
+              </td>
+            </tr>
+          ) : (
+            data?.map((item, index) => renderRow(item, index))
+          )}
+        </tbody>
+      </table>
+</div>
+  <div className="row mt-2 justify-content-between">
+    <div className="col-md-auto me-auto">{getRangeText()}</div>
+    <div className="col-md-auto ms-auto">
+      <ul className="pagination">
+        <li className="page-item">
+          <button
+            className="page-link"
+            onClick={() => onPageChange(1)}
+            disabled={page === 1 || isPaginationDisabled}
+          >
+            <i className="bx bx-chevrons-left" />
+          </button>
+        </li>
+        <li className="page-item">
+          <button
+            className="page-link"
+            onClick={() => onPageChange(page - 1)}
+            disabled={page === 1 || isPaginationDisabled}
+          >
+            <i className="bx bx-chevron-left" />
+          </button>
+        </li>
+        {pageNumbers?.map((p) => (
+          <li key={p} className={`page-item ${p === page ? "active" : ""}`}>
+            <button className="page-link" onClick={() => onPageChange(p)} disabled={isPaginationDisabled}>
+              {p}
+            </button>
+          </li>
+        ))}
+        <li className="page-item">
+          <button
+            className="page-link"
+            onClick={() => onPageChange(page + 1)}
+            disabled={page === totalPages || isPaginationDisabled}
+          >
+            <i className="bx bx-chevron-right" />
+          </button>
+        </li>
+        <li className="page-item">
+          <button
+            className="page-link"
+            onClick={() => onPageChange(totalPages)}
+            disabled={page === totalPages || isPaginationDisabled}
+          >
+            <i className="bx bx-chevrons-right" />
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
     </>
   );
 };

@@ -53,7 +53,7 @@ const RoleModals = ({
                     <label htmlFor="ticket_category" className="form-label">Ticket Category</label>
                     <SearchDropdown
                       id="ticket_category"
-                      options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+                      options={categories?.map(cat => ({ value: cat.id, label: cat.name }))}
                       value={formData.ticket_category}
                       onChange={handleSelectChange("ticket_category")}
                       placeholder="Select Ticket Category"

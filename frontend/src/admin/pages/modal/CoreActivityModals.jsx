@@ -58,7 +58,7 @@ const CoreActivityModals = ({
                       onChange={handleChange}
                     >
                       <option value="">Select Color</option>
-                      {colors.map((color) => (
+                      {colors?.map((color) => (
                         <option key={color.id} value={color.id}>
                           {color.title}
                         </option>

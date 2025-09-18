@@ -51,7 +51,7 @@ const ActivityModals = ({
                   <div className="form-group mb-3 col-md-6">
                     <label htmlFor="coreactivity" className="form-label required">Core Activity</label>
                     <SearchDropdown
-                      options={coreActivities.map(cat => ({ value: String(cat.id), label: cat.name }))}
+                      options={coreActivities?.map(cat => ({ value: String(cat.id), label: cat.name }))}
                       value={formData.coreactivity}
                       onChange={handleSelectChange("coreactivity")}
                       placeholder="Select Core Activity"

@@ -180,14 +180,14 @@ const AddEmailCircular = () => {
           <Breadcrumb page="Settings" title={isEditing ? "Edit Email Circular" : "Add Email Circular"} add_button="Back" add_link="/admin/email_circular" />
           <div className="row">
             <div className="col-xl-12 mx-auto">
-              <div className="card">
-                <div className="card-body p-4">
-                  <form className="row g-3" onSubmit={handleSubmit}>
+              <form className="row g-3" onSubmit={handleSubmit}>
+                <div className="card">
+                  <div className="card-body p-5">
                     <div className="col-md-6">
                       <label htmlFor="user_type" className="form-label required">User</label>
                       <SearchDropdown
                         id="user_type"
-                        options={userType?.map((user) => ({ value: user.id, label: user.name ? user.name.charAt(0).toUpperCase() + user.name.slice(1) : '' }))}
+                        options={userType?.map((user) => ({ value: user.id, label: user.name.charAt(0).toUpperCase() + user.name.slice(1) }))}
                         value={formData.user_type}
                         onChange={handleSelectChange("user_type")}
                         placeholder="Select here"
@@ -220,100 +220,148 @@ const AddEmailCircular = () => {
                       <div className="d-flex justify-content-between mb-2">
                         <label htmlFor="description" className="form-label my-auto required">Long Description</label>
                         {showButton && (
-                          <button type="button" className="btn btn-primary btn-sm mb-3 mb-lg-0">
+                          <button type="button" className="btn btn-primary mb-3 mb-lg-0">
                             <i className="bx bxs-plus-square mr-1" />
                             Test Mail
                           </button>
                         )}
                       </div>
-                      <JoditEditor
-                        value={formData.description}
-                        config={{
-                          readonly: false,
-                          height: 300,
-                          toolbarSticky: false,
-                          buttons: [
-                            'source', '|', 'bold', 'italic', 'underline', '|',
-                            'ul', 'ol', '|', 'outdent', 'indent', '|',
-                            'image', 'link', '|', 'undo', 'redo'
-                          ]
-                        }}
-                        onChange={newContent => {
-                          setFormData(prev => ({ ...prev, description: newContent }));
-                          setShowButton(newContent.replace(/<[^>]*>/g, "").trim() !== "");
-                        }}
-                      />
                     </div>
                     <div className="col-md-12">
-                      <label htmlFor="file" className="form-label required">Email Circular Images</label><br />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        style={{ display: "none" }}
-                        onChange={handleFileChange}
-                        multiple
-                        accept="image/png, image/jpeg"
-                      />
-                      <button type="button" className="btn btn-primary btn-sm" onClick={() => fileInputRef.current.click()}>
-                        <i className="bx bxs-plus-square" />Add Attachment
-                      </button>
-                      {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
-                      <div className="col-md-12">
-                        <div className="mt-3 d-flex flex-wrap">
-                          {formData.images && formData.images.length > 0 && formData.images.map((image, index) => (
-                            <div key={index} className="position-relative m-2">
-                              <img
-                                src={`${ROOT_URL}/${image.file}`}
-                                alt={`Preview ${index}`}
-                                className="object-fit-cover m-3"
-                                width={80}
-                                height={80}
-                              />
-                              <button
-                                type="button"
-                                className="btn btn-danger btn-remove-image"
-                                style={{ width: '1.5rem', height: '1.5rem' }}
-                                onClick={() => openDeleteModal(image.id)}
-                              >
-                                <i className="bx bx-x me-0" />
-                              </button>
-                            </div>
-                          ))}
-                          {files.length > 0 && files.map((file, index) => (
-                            <div key={index} className="position-relative m-2">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={`New Preview ${index}`}
-                                className="object-fit-cover m-3"
-                                width={80}
-                                height={80}
-                              />
-                              <button
-                                variant="danger"
-                                size="sm"
-                                className="btn btn-danger btn-remove-image"
-                                style={{ width: '1.5rem', height: '1.5rem' }}
-                                onClick={() => {
-                                  setFiles(prev => prev.filter((_, i) => i !== index));
-                                }}
-                              >
-                                <i className="bx bx-x me-0" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                      <div className="mt-3 d-flex flex-wrap">
+                        {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
+                          <div key={index} className="position-relative m-2">
+                            <img
+                              src={`${ROOT_URL}/${image.file}`}
+                              alt={`Preview ${index}`}
+                              className="object-fit-cover m-3"
+                              width={80}
+                              height={80}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-remove-image"
+                              style={{ width: '1.5rem', height: '1.5rem' }}
+                              onClick={() => openDeleteModal(image.id)}
+                            >
+                              <i className="bx bx-x me-0" />
+                            </button>
+                          </div>
+                        ))}
+
                       </div>
+
                     </div>
-                    <div className="col-12 text-end">
-                      <button type="submit" className="btn btn-primary btn-sm px-4">Save</button>
-                    </div>
-                  </form>
+                    <JoditEditor
+                      value={formData.description}
+                      config={{
+                        readonly: false,
+                        height: 300,
+                        toolbarSticky: false,
+                        buttons: [
+                          'source', '|', 'bold', 'italic', 'underline', '|',
+                          'ul', 'ol', '|', 'outdent', 'indent', '|',
+                          'image', 'link', '|', 'undo', 'redo'
+                        ]
+                      }}
+                      onChange={newContent => {
+                        setFormData(prev => ({ ...prev, description: newContent }));
+                        setShowButton(newContent.replace(/<[^>]*>/g, "").trim() !== "");
+                      }}
+                    />
+                  </div>
+                  <div className="col-md-12">
+                    <label htmlFor="file" className="form-label required">Email Circular Images</label><br />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      style={{ display: "none" }}
+                      onChange={handleFileChange}
+                      multiple
+                      accept="image/png, image/jpeg"
+                    />
+                    <button type="button" className="btn btn-primary btn-sm" onClick={() => fileInputRef.current.click()}>
+                      <i className="bx bxs-plus-square" />Add Attachment
+                    </button>
+                    {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
+                    <div className="col-md-12">
+                      <div className="mt-3 d-flex flex-wrap">
+                        {formData.images && formData.images.length > 0 && formData.images.map((image, index) => (
+                          <div key={index} className="position-relative m-2">
+                            <img
+                              src={`${ROOT_URL}/${image.file}`}
+                              alt={`Preview ${index}`}
+                              className="object-fit-cover m-3"
+                              width={80}
+                              height={80}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-remove-image"
+                              style={{ width: '1.5rem', height: '1.5rem' }}
+                              onClick={() => openDeleteModal(image.id)}
+                            >
+                              <i className="bx bx-x me-0" />
+                            </button>
+                          </div>
+                        ))}
+                        {files.length > 0 && files.map((file, index) => (
+                          <div key={index} className="position-relative m-2">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`New Preview ${index}`}
+                              className="object-fit-cover m-3"
+                              width={80}
+                              height={80}
+                            />
+                            <button
+                              variant="danger"
+                              size="sm"
+                              className="btn btn-danger btn-remove-image"
+                              style={{ width: '1.5rem', height: '1.5rem' }}
+                              onClick={() => {
+                                setFiles(prev => prev.filter((_, i) => i !== index));
+                              }}
+                            >
+                              <i className="bx bx-x me-0" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {files.length > 0 && files?.map((file, index) => (
+                        <div key={index} className="position-relative m-2">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`New Preview ${index}`}
+                            className="object-fit-cover m-3"
+                            width={80}
+                            height={80}
+                          />
+                          <button
+                            variant="danger"
+                            size="sm"
+                            className="btn btn-danger btn-remove-image"
+                            style={{ width: '1.5rem', height: '1.5rem' }}
+                            onClick={() => {
+                              setFiles(prev => prev.filter((_, i) => i !== index));
+                            }}
+                          >
+                            <i className="bx bx-x me-0" />
+                          </button>
+                        </div>
+                      ))}
+                    </div >
+                  </div >
+                  <div className="col-12 text-end">
+                    <button type="submit" className="btn btn-primary btn-sm px-4">Save</button>
+                  </div>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
-          {/*end row*/}
         </div>
+        {/*end row*/}
       </div>
       <EmailCircularModals
         showDeleteModal={showDeleteModal}

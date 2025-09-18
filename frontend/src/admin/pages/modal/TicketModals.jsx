@@ -36,7 +36,7 @@ const TicketModals = ({
                     <label htmlFor="user_id" className="form-label required">On Behalf Of</label>
                     <SearchDropdown
                       id="user_id"
-                      options={users.map(user => ({ value: user.id, label: user.fname + " " + user.lname }))}
+                      options={users?.map(user => ({ value: user.id, label: user.fname + " " + user.lname }))}
                       value={formData.user_id}
                       onChange={handleSelectChange("user_id")}
                       placeholder="Select here"
@@ -73,7 +73,7 @@ const TicketModals = ({
                     <label htmlFor="category" className="form-label required">Category</label>
                     <SearchDropdown
                       id="category"
-                      options={categories.map(cat => ({ value: String(cat.id), label: cat.name }))}
+                      options={categories?.map(cat => ({ value: String(cat.id), label: cat.name }))}
                       value={formData.category}
                       onChange={handleSelectChange("category")}
                       placeholder="Select category"
@@ -110,7 +110,7 @@ const TicketModals = ({
                       onChange={handleChange}
                     >
                       <option value="">Select here</option>
-                      {listStatus.map((status, key) => (<option key={key} value={key}>{status}</option>))}
+                      {listStatus?.map((status, key) => (<option key={key} value={key}>{status}</option>))}
                     </select>
                     {errors.status && <div className="invalid-feedback">{errors.status}</div>}
                   </div>

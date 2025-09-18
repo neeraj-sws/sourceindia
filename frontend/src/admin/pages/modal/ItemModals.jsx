@@ -60,7 +60,7 @@ const ItemModals = ({
                       onChange={handleCategoryChange}
                     >
                       <option value="">Select Category</option>
-                      {categories.map((category) => (
+                      {categories?.map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name}
                         </option>
@@ -79,7 +79,7 @@ const ItemModals = ({
                       disabled={!selectedCategory}
                     >
                       <option value="">Select Sub Category</option>
-                      {subcategories.map((sub_category) => (
+                      {subcategories?.map((sub_category) => (
                         <option key={sub_category.id} value={sub_category.id}>
                           {sub_category.name}
                         </option>

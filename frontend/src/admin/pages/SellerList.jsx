@@ -99,7 +99,7 @@ const SellerList = ({getInactive, getNotApproved, getDeleted}) => {
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
       await axios.patch(`${API_BASE_URL}/buyers/${id}/${field}`, { [valueKey]: newStatus });
-      setData(data.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
+      setData(data?.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
       if(field=="delete_status"){
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
@@ -181,27 +181,50 @@ const SellerList = ({getInactive, getNotApproved, getDeleted}) => {
                     </td>
                     )}
                     <td>
-                      { getDeleted ? (
-                      <>
-                      <button className="btn btn-sm btn-primary me-2 mb-2" title="Undo"
-                      onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete"); }}>
-                      <i className="bx bx-undo me-0" />
-                      </button>
-                      <button className="btn btn-sm btn-danger mb-2" title="Delete" onClick={() => openDeleteModal(row.id)}>
-                      <i className="bx bx-trash me-0" />
-                      </button>
-                      </>
-                      ) : (
-                      <>
-                      <button className="btn btn-sm btn-primary me-2 mb-2 edit-btn"  title="Edit" onClick={(e) => navigate(`/admin/edit_seller/${row.id}`)}>
-                      <i className="bx bx-edit me-0" />
-                      </button>
-                      <button className="btn btn-sm btn-danger mb-2" title="Remove"
-                      onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete"); }}>
-                      <i className="bx bx-x me-0" />
-                      </button>
-                      </>
-                      )}
+                      <div className="dropdown">
+                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          <i className="bx bx-dots-vertical-rounded"></i>
+                        </button>
+                        <ul className="dropdown-menu">
+                          {!getDeleted ? (
+                          <>
+                          <li>
+                            <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
+                              <i className="bx bx-edit me-2"></i> Edit
+                            </button>
+                          </li>
+                          <li>
+                            <button className="dropdown-item text-danger" 
+                              onClick={(e) => {
+                                e.preventDefault(); 
+                                openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                              }}
+                            >
+                              <i className="bx bx-trash me-2"></i> Delete
+                            </button>
+                          </li>
+                          </>                          
+                          ) : (
+                          <>
+                          <li>
+                            <button className="dropdown-item" 
+                              onClick={(e) => {
+                                e.preventDefault(); 
+                                openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                              }}
+                            >
+                              <i className="bx bx-windows me-2"></i> Restore
+                            </button>
+                          </li>
+                          <li>
+                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                              <i className="bx bx-trash me-2"></i> Delete
+                            </button>
+                          </li>
+                          </>
+                          )}
+                        </ul>
+                      </div>
                     </td>
                   </tr>
                 )}

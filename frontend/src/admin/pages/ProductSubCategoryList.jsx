@@ -116,7 +116,7 @@ const ProductSubCategoryList = () => {
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/sub_categories/${formData.id}`, payload);
-        setData((d) => d.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
+        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/sub_categories`, payload);
         const payload1 = { ...res.data.subCategories, category_name: selectedCategory?.name || "" };
@@ -171,7 +171,7 @@ const ProductSubCategoryList = () => {
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
       await axios.patch(`${API_BASE_URL}/sub_categories/${id}/status`, { status: newStatus });
-      setData(data.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
+      setData(data?.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
       showNotification("Status updated!", "success");
     } catch (error) {
       console.error("Error updating status:", error);
@@ -233,12 +233,23 @@ const ProductSubCategoryList = () => {
                       </div>
                     </td>
                     <td>
-                      <button className="btn btn-sm btn-primary me-2 mb-2 edit-btn" onClick={() => openModal(row)}>
-                        <i className="bx bx-edit me-0" />
-                      </button>
-                      <button className="btn btn-sm btn-danger mb-2" onClick={() => openDeleteModal(row.id)}>
-                        <i className="bx bx-trash me-0" />
-                      </button>
+                      <div className="dropdown">
+                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          <i className="bx bx-dots-vertical-rounded"></i>
+                        </button>
+                        <ul className="dropdown-menu">
+                          <li>
+                            <button className="dropdown-item" onClick={() => openModal(row)}>
+                              <i className="bx bx-edit me-2"></i> Edit
+                            </button>
+                          </li>
+                          <li>
+                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                              <i className="bx bx-trash me-2"></i> Delete
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
                     </td>
                   </tr>
                 )}

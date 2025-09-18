@@ -256,13 +256,13 @@ const AddProduct = () => {
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <div className="card">
-                <div className="card-body p-4">
+                <div className="card-body p-5">
                   <form className="row g-3" onSubmit={handleSubmit}>
                     <div className="col-md-6">
                       <label htmlFor="user_id" className="form-label required">User</label>
                       <SearchDropdown
                         id="user_id"
-                        options={sellers.map((user) => ({ value: user.id, label: user.fname + " " + user.lname, }))}
+                        options={sellers?.map((user) => ({ value: user.id, label: user.fname + " " + user.lname, }))}
                         value={formData.user_id}
                         onChange={handleSelectChange("user_id")}
                         placeholder="Select here"
@@ -308,7 +308,7 @@ const AddProduct = () => {
                         onChange={handleCategoryChange}
                       >
                         <option value="">Select Category</option>
-                        {categories.map((category) => (
+                        {categories?.map((category) => (
                           <option key={category.id} value={category.id}>{category.name}</option>
                         ))}
                       </select>
@@ -323,7 +323,7 @@ const AddProduct = () => {
                         disabled={!selectedCategory}
                       >
                         <option value="">Select Sub Category</option>
-                        {subCategories.map((sub_category) => (
+                        {subCategories?.map((sub_category) => (
                           <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
                         ))}
                       </select>
@@ -339,15 +339,19 @@ const AddProduct = () => {
                         />
                         <label className="form-check-label" htmlFor="is_gold">Gold</label>
                       </div>
-                      <div className="form-check form-check-inline">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id="is_featured"
-                          checked={formData.is_featured === 1}
-                          onChange={(e) => handleCheckboxChange('is_featured', e.target.checked)}
-                        />
-                        <label className="form-check-label" htmlFor="is_featured">Featured</label>
+                      <div className="col-md-6">
+                        <label htmlFor="sub_category" className="form-label">Sub Category</label>
+                        <select
+                          id="sub_category" className="form-control"
+                          value={selectedSubCategory}
+                          onChange={handleSubCategoryChange}
+                          disabled={!selectedCategory}
+                        >
+                          <option value="">Select Sub Category</option>
+                          {subCategories.map((sub_category) => (
+                            <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="form-check form-check-inline">
                         <input
@@ -368,6 +372,112 @@ const AddProduct = () => {
                           onChange={(e) => handleCheckboxChange('best_product', e.target.checked)}
                         />
                         <label className="form-check-label" htmlFor="best_product">Best Product</label>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="status" className="form-label required">Status</label>
+                      <select
+                        id="status" className={`form-control ${errors.status ? "is-invalid" : ""}`}
+                        value={formData.status}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select here</option>
+                        <option value="1">Public</option>
+                        <option value="0">Draft</option>
+                      </select>
+                      {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="application" className="form-label required">Applications</label>
+                      <SearchDropdown
+                        id="application"
+                        options={applications?.map((application) => ({ value: String(application.id), label: application.name, }))}
+                        value={formData.application}
+                        onChange={handleSelectChange("application")}
+                        placeholder="Select here"
+                      />
+                    </div>
+                    <div className="col-md-12">
+                      <label htmlFor="short_description" className="form-label required">Short Description</label>
+                      <textarea
+                        className={`form-control ${errors.brief_company ? "is-invalid" : ""}`}
+                        id="short_description"
+                        placeholder="Short Description"
+                        rows={3}
+                        value={formData.short_description}
+                        onChange={handleInputChange}
+                      />
+                      {errors.short_description && (<div className="invalid-feedback">{errors.short_description}</div>)}
+                    </div>
+                    <div className="col-md-12">
+                      <label htmlFor="description" className="form-label required">Long Description</label>
+                      <CKEditor
+                        editor={ClassicEditor}
+                        data={formData.description || ''}
+                        onChange={(event, editor) => {
+                          const data = editor.getData();
+                          setFormData(prev => ({ ...prev, description: data }));
+                        }}
+                      />
+                    </div>
+                    <div className="col-md-12">
+                      <label htmlFor="file" className="form-label required">Product Images</label><br />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        style={{ display: "none" }}
+                        onChange={handleFileChange}
+                        multiple
+                        accept="image/png, image/jpeg"
+                      />
+                      <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
+                        <i className="bx bxs-plus-square" />Add Image
+                      </button>
+                      {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
+                    </div>
+                    <div className="col-md-12">
+                      <div className="mt-3 d-flex flex-wrap">
+                        {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
+                          <div key={index} className="position-relative m-2">
+                            <img
+                              src={`${ROOT_URL}/${image.file}`}
+                              alt={`Preview ${index}`}
+                              className="object-fit-cover m-3"
+                              width={80}
+                              height={80}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-remove-image"
+                              style={{ width: '1.5rem', height: '1.5rem' }}
+                              onClick={() => openDeleteModal(image.id)}
+                            >
+                              <i className="bx bx-x me-0" />
+                            </button>
+                          </div>
+                        ))}
+                        {files.length > 0 && files?.map((file, index) => (
+                          <div key={index} className="position-relative m-2">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`New Preview ${index}`}
+                              className="object-fit-cover m-3"
+                              width={80}
+                              height={80}
+                            />
+                            <button
+                              variant="danger"
+                              size="sm"
+                              className="btn btn-danger btn-remove-image"
+                              style={{ width: '1.5rem', height: '1.5rem' }}
+                              onClick={() => {
+                                setFiles(prev => prev.filter((_, i) => i !== index));
+                              }}
+                            >
+                              <i className="bx bx-x me-0" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     </div>
                     <div className="col-md-6">

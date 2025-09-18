@@ -10,7 +10,7 @@ const States = require('../models/States');
 const Cities = require('../models/Cities');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 function createSlug(inputString) {
   return inputString.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
