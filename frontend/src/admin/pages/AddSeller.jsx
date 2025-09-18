@@ -392,7 +392,7 @@ const AddSeller = () => {
               <div className="card-body p-4">
                 <form className="row g-3" onSubmit={handleSubmit}>
                   <div className="col-md-4">
-                    <label htmlFor="user_company" className="form-label required">Organization Name</label>
+                    <label htmlFor="user_company" className="form-label required">Organization Name1</label>
                     <input
                       type="text" className={`form-control ${errors.user_company ? "is-invalid" : ""}`}
                       id="user_company"
