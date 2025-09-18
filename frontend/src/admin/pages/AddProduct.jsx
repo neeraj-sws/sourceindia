@@ -8,6 +8,9 @@ import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import SearchDropdown from "../common/SearchDropdown";
 import ProductModals from "./modal/ProductModals";
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const AddProduct = () => {
   const { showNotification } = useAlert();
@@ -81,6 +84,31 @@ const AddProduct = () => {
       };
     
       const handleSubCategoryChange = (event) => { setSelectedSubCategory(event.target.value); };
+
+      useEffect(() => {
+      $('#category').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select Category"
+      }).on("change", function () {
+        const categoryId = $(this).val();
+        handleCategoryChange({ target: { value: categoryId } });
+      });
+  
+      $('#sub_category').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select Sub Category"
+      }).on("change", function () {
+        const subCategoryId = $(this).val();
+        handleSubCategoryChange({ target: { value: subCategoryId } });
+      });
+  
+      return () => {
+        $('#category').off("change").select2('destroy');
+        $('#sub_category').off("change").select2('destroy');
+      };
+    }, [categories, subCategories]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
