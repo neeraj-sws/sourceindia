@@ -139,7 +139,7 @@ const Login = () => {
                       </div>
                       <div className="col-12">
                         <div className="d-grid">
-                          <button type="submit" className="btn btn-primary">
+                          <button type="submit" className="btn btn-primary btn-sm">
                             <i className="bx bxs-lock-open" /> Sign in
                           </button>
                         </div>

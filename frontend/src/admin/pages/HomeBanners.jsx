@@ -236,12 +236,12 @@ const HomeBanners = () => {
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td><ImageWithFallback
                       src={`${ROOT_URL}/${row.file_name}`}
-                      width={100}
-                      height={100}
+                      width={50}
+                      height={50}
                       showFallback={true}
                     /></td>
                     <td>{row.title}</td>
-                    <td>{row.button_text.length > 25 ? row.button_text.slice(0, 25) + '...' : row.button_text}</td>
+                    <td>{row.button_text}</td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>

@@ -35,7 +35,7 @@ const DataTable = ({
 
   return (
     <>
-      <div className="row mt-2 justify-content-between">
+      <div className="row mt-2 justify-content-between border-bottom pb-4">
         <div className="d-md-flex align-items-center col-md-auto me-auto">
           <select
             className="form-select form-select-sm me-2 w-auto"
@@ -64,8 +64,8 @@ const DataTable = ({
           />
         </div>
       </div>
-      <div className="table-responsive">
-        <table className="table table-striped dataTable mt-2">
+      <div className="table-responsive  border  rounded-2 mt-4">
+        <table className="table table-striped dataTable">
           <thead>
             <tr>
               {columns.map((col, colIndex) => {

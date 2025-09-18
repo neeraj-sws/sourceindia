@@ -5,21 +5,21 @@ import { useAlert } from "../../../context/AlertContext";
 
 const CompanySectionForm = () => {
   const { showNotification } = useAlert();
-    const [errors, setErrors] = useState({});
-    const [formData, setFormData] = useState({ companysub_heading: '', company_heading: '' });
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({ companysub_heading: '', company_heading: '' });
 
-    const handleInputChange = (e) => {
+  const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
-    
+
   useEffect(() => {
     const fetchData = async () => {
       const res = await axios.get(`${API_BASE_URL}/settings/home`);
       setFormData(res.data);
     }
     fetchData();
-  },[]);
+  }, []);
 
   const validateForm = () => {
     const errs = {};
@@ -48,25 +48,25 @@ const CompanySectionForm = () => {
 
   return (
     <>
-    <h6 className="mb-0 text-uppercase">Company Section</h6>
-        <hr />
-    <form className="row g-3" onSubmit={handleSubmit}>
-      <div className="col-md-6">
-        <label htmlFor="companysub_heading" className="form-label required">Sub Heading</label>
-            <input type="text" className={`form-control ${errors.companysub_heading ? 'is-invalid' : ''}`} id="companysub_heading" 
+      <h6 className="mb-0 fw-bold">Company Section</h6>
+      <hr />
+      <form className="row g-3" onSubmit={handleSubmit}>
+        <div className="col-md-6">
+          <label htmlFor="companysub_heading" className="form-label required">Sub Heading</label>
+          <input type="text" className={`form-control ${errors.companysub_heading ? 'is-invalid' : ''}`} id="companysub_heading"
             placeholder="Sub Heading" value={formData.companysub_heading} onChange={handleInputChange} />
-            {errors.companysub_heading && <div className="invalid-feedback">{errors.companysub_heading}</div>}
-      </div>
-      <div className="col-md-6">
-        <label htmlFor="company_heading" className="form-label required">Heading</label>
-        <input type="text" className={`form-control ${errors.company_heading ? 'is-invalid' : ''}`} id="company_heading" 
-        placeholder="Heading" value={formData.company_heading} onChange={handleInputChange} />
-        {errors.company_heading && <div className="invalid-feedback">{errors.company_heading}</div>}
-      </div>
-      <div className="col-12">
-        <button type="submit" className="btn btn-primary px-5">Update</button>
-      </div>
-    </form>
+          {errors.companysub_heading && <div className="invalid-feedback">{errors.companysub_heading}</div>}
+        </div>
+        <div className="col-md-6">
+          <label htmlFor="company_heading" className="form-label required">Heading</label>
+          <input type="text" className={`form-control ${errors.company_heading ? 'is-invalid' : ''}`} id="company_heading"
+            placeholder="Heading" value={formData.company_heading} onChange={handleInputChange} />
+          {errors.company_heading && <div className="invalid-feedback">{errors.company_heading}</div>}
+        </div>
+        <div className="col-12 text-end mt-4">
+          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+        </div>
+      </form>
     </>
   )
 }

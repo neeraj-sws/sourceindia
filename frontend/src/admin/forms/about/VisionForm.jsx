@@ -1,4 +1,4 @@
-import  React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from "axios";
 import ImageWithFallback from "../../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../../config";
@@ -15,14 +15,14 @@ const VisionForm = () => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
-    
+
   useEffect(() => {
     const fetchData = async () => {
       const res = await axios.get(`${API_BASE_URL}/settings/about`);
       setFormData(res.data);
     }
     fetchData();
-  },[]);
+  }, []);
 
   const handleVisionFileChange = (e) => { setVisionFile(e.target.files[0]) };
 
@@ -78,27 +78,16 @@ const VisionForm = () => {
 
   return (
     <>
-    <h6 className="mb-0 text-uppercase">Vision</h6>
-        <hr />
-    <form className="row g-3" onSubmit={handleSubmit}>
-      <div className="col-md-12">
-        <label htmlFor="vision_heading" className="form-label required">Heading</label>
-        <input type="text" className={`form-control ${errors.vision_heading ? 'is-invalid' : ''}`} id="vision_heading" placeholder="Heading" 
-        value={formData.vision_heading} onChange={handleInputChange} />
-        {errors.vision_heading && <div className="invalid-feedback">{errors.vision_heading}</div>}
-      </div>
-      <div className="col-md-12">
-        <label htmlFor="vision_description" className="form-label required">Description</label>
-        <textarea
-          className={`form-control ${errors.vision_description ? 'is-invalid' : ''}`}
-          id="vision_description"
-          placeholder="Description"
-          rows={3}
-          onChange={handleInputChange}
-          defaultValue={formData.vision_description}
-        />
-        {errors.vision_description && <div className="invalid-feedback">{errors.vision_description}</div>}
+      <h6 className="mb-0 fw-bold">Vision</h6>
+      <hr />
+      <form className="row g-3" onSubmit={handleSubmit}>
+        <div className="col-md-12">
+          <label htmlFor="vision_heading" className="form-label required">Heading</label>
+          <input type="text" className={`form-control ${errors.vision_heading ? 'is-invalid' : ''}`} id="vision_heading" placeholder="Heading"
+            value={formData.vision_heading} onChange={handleInputChange} />
+          {errors.vision_heading && <div className="invalid-feedback">{errors.vision_heading}</div>}
         </div>
+
         <div className="col-md-6">
           <label htmlFor="vision_file" className="form-label required">Logo</label>
           <input className={`form-control ${errors.vision_file ? 'is-invalid' : ''}`} type="file" id="vision_file" onChange={handleVisionFileChange} />
@@ -119,8 +108,8 @@ const VisionForm = () => {
               showFallback={false}
             />
           ) : null}
-      </div>
-      <div className="col-md-6">
+        </div>
+        <div className="col-md-6">
           <label htmlFor="vision_icon" className="form-label required">Icon</label>
           <input className={`form-control ${errors.vision_icon ? 'is-invalid' : ''}`} type="file" id="vision_icon" onChange={handleVisionIconChange} />
           {errors.vision_icon && <div className="invalid-feedback">{errors.vision_icon}</div>}
@@ -140,11 +129,23 @@ const VisionForm = () => {
               showFallback={false}
             />
           ) : null}
-      </div>
-      <div className="col-12">
-        <button type="submit" className="btn btn-primary px-5">Update</button>
-      </div>
-    </form>
+        </div>
+        <div className="col-md-12">
+          <label htmlFor="vision_description" className="form-label required">Description</label>
+          <textarea
+            className={`form-control ${errors.vision_description ? 'is-invalid' : ''}`}
+            id="vision_description"
+            placeholder="Description"
+            rows={3}
+            onChange={handleInputChange}
+            defaultValue={formData.vision_description}
+          />
+          {errors.vision_description && <div className="invalid-feedback">{errors.vision_description}</div>}
+        </div>
+        <div className="col-12 mt-4 text-end">
+          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+        </div>
+      </form>
     </>
   )
 }

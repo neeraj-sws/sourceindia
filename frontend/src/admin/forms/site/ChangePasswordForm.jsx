@@ -30,8 +30,8 @@ const ChangePasswordForm = () => {
     try {
       const res = await axios.post(
         `${API_BASE_URL}/admin/change-password`,
-        {oldPassword, newPassword, confirmPassword},
-        {headers: {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'}}
+        { oldPassword, newPassword, confirmPassword },
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
       );
       showNotification(res.data.message || 'Password changed successfully.', "success");
       setOldPassword('');
@@ -49,10 +49,10 @@ const ChangePasswordForm = () => {
 
   return (
     <>
-      <h6 className="mb-0 text-uppercase">Change Password</h6>
+      <h6 className="mb-0 fw-bold">Change Password</h6>
       <hr />
       <form className="row g-3" onSubmit={handleSubmit}>
-        <div className="col-md-12">
+        <div className="col-md-4">
           <label htmlFor="oldPassword" className="form-label required">Old Password</label>
           <input
             type="password"
@@ -64,7 +64,7 @@ const ChangePasswordForm = () => {
           />
           {errors.oldPassword && <div className="invalid-feedback">{errors.oldPassword}</div>}
         </div>
-        <div className="col-md-6">
+        <div className="col-md-4">
           <label htmlFor="newPassword" className="form-label required">New Password</label>
           <input
             type="password"
@@ -76,7 +76,7 @@ const ChangePasswordForm = () => {
           />
           {errors.newPassword && <div className="invalid-feedback">{errors.newPassword}</div>}
         </div>
-        <div className="col-md-6">
+        <div className="col-md-4">
           <label htmlFor="confirmPassword" className="form-label required">Confirm Password</label>
           <input
             type="password"
@@ -88,8 +88,8 @@ const ChangePasswordForm = () => {
           />
           {errors.confirmPassword && <div className="invalid-feedback">{errors.confirmPassword}</div>}
         </div>
-        <div className="col-12">
-          <button type="submit" className="btn btn-primary px-5">Update</button>
+        <div className="col-12 text-end mt-4">
+          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
         </div>
       </form>
     </>

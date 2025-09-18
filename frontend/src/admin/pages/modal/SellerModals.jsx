@@ -25,7 +25,7 @@ const SellerModals = ({
               </div>
               <div className="modal-body">Are you sure you want to delete this Seller?</div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeDeleteModal}>Cancel</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>Cancel</button>
                 <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>Delete</button>
               </div>
             </div>
@@ -45,11 +45,11 @@ const SellerModals = ({
               <div className="modal-body">
                 {
                   statusToggleInfo.field === "status" ? `Are you sure you want to ${statusToggleInfo.currentStatus === 1 ? "deactivate" : "activate"} this Seller Status` :
-                  statusToggleInfo.field === "delete_status" ? `Are you sure want to ${statusToggleInfo.currentStatus === 1 ? "restore deleted" : "remove from list"}` : "item"
+                    statusToggleInfo.field === "delete_status" ? `Are you sure want to ${statusToggleInfo.currentStatus === 1 ? "restore deleted" : "remove from list"}` : "item"
                 }?
               </div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeStatusModal}>Cancel</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeStatusModal}>Cancel</button>
                 <button type="button" className="btn btn-warning" onClick={handleStatusConfirm}>
                   {statusToggleInfo.field === "delete_status" ? statusToggleInfo.currentStatus === 1 ? "Restore" : "Remove" : "Yes, Change"}
                 </button>

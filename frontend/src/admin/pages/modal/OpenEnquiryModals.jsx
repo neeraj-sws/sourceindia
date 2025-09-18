@@ -21,7 +21,7 @@ const OpenEnquiryModals = ({
                 Are you sure you want to {statusToggleInfo.currentStatus === 1 ? "deactivate" : "activate"} this Open Enquiry?
               </div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeStatusModal}>Cancel</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeStatusModal}>Cancel</button>
                 <button type="button" className="btn btn-warning" onClick={handleStatusConfirm}>Yes, Change</button>
               </div>
             </div>
