@@ -10,7 +10,7 @@ import { formatDateTime } from '../../utils/formatDate';
 import ContactModals from "./modal/ContactModals";
 import ExcelExport from "../common/ExcelExport";
 
-const ContactsList = ({getDeleted}) => {
+const ContactsList = ({ getDeleted }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -130,8 +130,10 @@ const ContactsList = ({getDeleted}) => {
     );
   };
 
-  const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggleInfo({ id, currentStatus, field, valueKey }); 
-  setShowStatusModal(true); };
+  const openStatusModal = (id, currentStatus, field, valueKey) => {
+    setStatusToggleInfo({ id, currentStatus, field, valueKey });
+    setShowStatusModal(true);
+  };
 
   const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
 
@@ -143,7 +145,7 @@ const ContactsList = ({getDeleted}) => {
       setData((prevData) => prevData.filter((item) => item.id !== id));
       setTotalRecords((prev) => prev - 1);
       setFilteredRecords((prev) => prev - 1);
-      showNotification(newStatus==1 ? "Removed from list" : "Restored from deleted", "success");
+      showNotification(newStatus == 1 ? "Removed from list" : "Restored from deleted", "success");
     } catch (error) {
       console.error("Error updating status:", error);
       showNotification("Failed to update status.", "danger");
@@ -178,199 +180,199 @@ const ContactsList = ({getDeleted}) => {
 
   return (
     <>
-    <div className="page-wrapper">
-      <div className="page-content">
-        <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Contact Us" : "Contact Us"}
-        actions={
-        <>
-        <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
-        {!getDeleted ? (
-        <>        
-        <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedContacts.length === 0}>
-          Delete Selected
-        </button>
-        <Link className="btn btn-sm btn-primary mb-2" to="/admin/contact-remove-list">
-          Recently Deleted Contact
-        </Link>
-        </>
-        ) : (
-        <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
-          Back
-        </button>
-        )}
-        </>
-        }
-        />
-        <div className="card">
-          <div className="card-body">
-            {getDeleted && (
-              <div className="row mb-3">
-                <div className="col-md-8">
-                  <div className="d-flex align-items-center gap-2">
-                    <label className="form-label mb-0">Date Filter:</label>
-                    <select
-                      className="form-select"
-                      style={{ width: '200px' }}
-                      value={tempDateRange}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setTempDateRange(val);
-                        if (val !== 'customrange') {
-                          setTempStartDate(null);
-                          setTempEndDate(null);
-                        }
-                      }}
-                    >
-                      <option value="">All</option>
-                      <option value="today">Today</option>
-                      <option value="yesterday">Yesterday</option>
-                      <option value="last7days">Last 7 Days</option>
-                      <option value="last30days">Last 30 Days</option>
-                      <option value="thismonth">This Month</option>
-                      <option value="lastmonth">Last Month</option>
-                      <option value="customrange">Custom Range</option>
-                    </select>              
-                    {tempDateRange === 'customrange' && (
-                    <>
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={tempStartDate || ''}
-                        onChange={(e) => setTempStartDate(e.target.value)}
-                      />
-                      <input
-                        type="date"
-                        className="form-control"
-                        value={tempEndDate || ''}
-                        onChange={(e) => setTempEndDate(e.target.value)}
-                      />
-                    </>
-                  )}
+      <div className="page-wrapper">
+        <div className="page-content">
+          <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Contact Us" : "Contact Us"}
+            actions={
+              <>
+                <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+                {!getDeleted ? (
+                  <>
+                    <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedContacts.length === 0}>
+                      Delete Selected
+                    </button>
+                    <Link className="btn btn-sm btn-primary mb-2" to="/admin/contact-remove-list">
+                      Recently Deleted Contact
+                    </Link>
+                  </>
+                ) : (
+                  <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                    Back
+                  </button>
+                )}
+              </>
+            }
+          />
+          <div className="card">
+            <div className="card-body">
+              {getDeleted && (
+                <div className="row mb-3">
+                  <div className="col-md-8">
+                    <div className="d-flex align-items-center gap-2">
+                      <label className="form-label mb-0">Date Filter:</label>
+                      <select
+                        className="form-select"
+                        style={{ width: '200px' }}
+                        value={tempDateRange}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTempDateRange(val);
+                          if (val !== 'customrange') {
+                            setTempStartDate(null);
+                            setTempEndDate(null);
+                          }
+                        }}
+                      >
+                        <option value="">All</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="last7days">Last 7 Days</option>
+                        <option value="last30days">Last 30 Days</option>
+                        <option value="thismonth">This Month</option>
+                        <option value="lastmonth">Last Month</option>
+                        <option value="customrange">Custom Range</option>
+                      </select>
+                      {tempDateRange === 'customrange' && (
+                        <>
+                          <input
+                            type="date"
+                            className="form-control"
+                            value={tempStartDate || ''}
+                            onChange={(e) => setTempStartDate(e.target.value)}
+                          />
+                          <input
+                            type="date"
+                            className="form-control"
+                            value={tempEndDate || ''}
+                            onChange={(e) => setTempEndDate(e.target.value)}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-md-4 d-flex justify-content-end gap-2">
+                    <button className="btn btn-primary" onClick={() => {
+                      setDateRange(tempDateRange);
+                      setStartDate(tempStartDate);
+                      setEndDate(tempEndDate);
+                      setPage(1);
+                    }}>
+                      Apply
+                    </button>
+                    <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                   </div>
                 </div>
-                <div className="col-md-4 d-flex justify-content-end gap-2">              
-                  <button className="btn btn-primary" onClick={() => {
-                    setDateRange(tempDateRange);
-                    setStartDate(tempStartDate);
-                    setEndDate(tempEndDate);
-                    setPage(1);
-                  }}>
-                    Apply
-                  </button>
-                  <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
-                </div>
-              </div>
-            )}
-            <DataTable
-              columns={[
-                ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
-                { key: "id", label: "S.No.", sortable: true },
-                { key: "full_name", label: "User", sortable: true },
-                { key: "email", label: "Email", sortable: true },
-                { key: "subject", label: "Subject", sortable: true },
-                { key: "created_at", label: "Created At", sortable: true },
-                { key: "updated_at", label: "Updated At", sortable: true },
-                { key: "action", label: "Action", sortable: false },
-              ]}
-              data={data}
-              loading={loading}
-              page={page}
-              totalRecords={totalRecords}
-              filteredRecords={filteredRecords}
-              limit={limit}
-              sortBy={sortBy}
-              sortDirection={sortDirection}
-              onPageChange={(newPage) => setPage(newPage)}
-              onSortChange={handleSortChange}
-              onSearchChange={(val) => { setSearch(val); setPage(1); }}
-              search={search}
-              onLimitChange={(val) => { setLimit(val); setPage(1); }}
-              getRangeText={getRangeText}
-              renderRow={(row, index) => (
-                <tr key={row.id}>
-                  {!getDeleted && (
-                  <td>                    
-                    <input type="checkbox" checked={selectedContacts.includes(row.id)} onChange={() => handleSelectContact(row.id)} />
-                  </td>
-                  )}
-                  <td>{(page - 1) * limit + index + 1}</td>
-                  <td>{row.full_name}</td>
-                  <td>{row.email}</td>
-                  <td>{row.subject}</td>
-                  <td>{formatDateTime(row.created_at)}</td>
-                  <td>{formatDateTime(row.updated_at)}</td>
-                  <td>
-                    <div className="dropdown">
-                      <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i className="bx bx-dots-vertical-rounded"></i>
-                      </button>
-                      <ul className="dropdown-menu">
-                        {!getDeleted ? (
-                        <>
-                        <li>
-                          <button className="dropdown-item text-danger" 
-                            onClick={(e) => {
-                              e.preventDefault(); 
-                              openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                            }}
-                          >
-                            <i className="bx bx-trash me-2"></i> Delete
-                          </button>
-                        </li>
-                        </>                          
-                        ) : (
-                        <>
-                        <li>
-                          <button className="dropdown-item" 
-                            onClick={(e) => {
-                              e.preventDefault(); 
-                              openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                            }}
-                          >
-                            <i className="bx bx-windows me-2"></i> Restore
-                          </button>
-                        </li>
-                        <li>
-                          <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                            <i className="bx bx-trash me-2"></i> Delete
-                          </button>
-                        </li>
-                        </>
-                        )}
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
               )}
-            />
+              <DataTable
+                columns={[
+                  ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
+                  { key: "id", label: "S.No.", sortable: true },
+                  { key: "full_name", label: "User", sortable: true },
+                  { key: "email", label: "Email", sortable: true },
+                  { key: "subject", label: "Subject", sortable: true },
+                  { key: "created_at", label: "Created At", sortable: true },
+                  { key: "updated_at", label: "Updated At", sortable: true },
+                  { key: "action", label: "Action", sortable: false },
+                ]}
+                data={data}
+                loading={loading}
+                page={page}
+                totalRecords={totalRecords}
+                filteredRecords={filteredRecords}
+                limit={limit}
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                onPageChange={(newPage) => setPage(newPage)}
+                onSortChange={handleSortChange}
+                onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                search={search}
+                onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                getRangeText={getRangeText}
+                renderRow={(row, index) => (
+                  <tr key={row.id}>
+                    {!getDeleted && (
+                      <td>
+                        <input type="checkbox" checked={selectedContacts.includes(row.id)} onChange={() => handleSelectContact(row.id)} />
+                      </td>
+                    )}
+                    <td>{(page - 1) * limit + index + 1}</td>
+                    <td>{row.full_name}</td>
+                    <td>{row.email}</td>
+                    <td>{row.subject}</td>
+                    <td>{formatDateTime(row.created_at)}</td>
+                    <td>{formatDateTime(row.updated_at)}</td>
+                    <td>
+                      <div className="dropdown">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          <i className="bx bx-dots-vertical-rounded"></i>
+                        </button>
+                        <ul className="dropdown-menu">
+                          {!getDeleted ? (
+                            <>
+                              <li>
+                                <button className="dropdown-item text-danger"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </>
+                          ) : (
+                            <>
+                              <li>
+                                <button className="dropdown-item"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-windows me-2"></i> Restore
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    <ContactModals
-      showDeleteModal={showDeleteModal}
-      closeDeleteModal={closeDeleteModal}
-      handleDeleteConfirm={handleDeleteConfirm}
-      isBulkDelete={isBulkDelete}
-      showStatusModal={showStatusModal}
-      statusToggleInfo={statusToggleInfo}
-      closeStatusModal={closeStatusModal}
-      handleStatusConfirm={handleStatusConfirm}
-    />
-    <ExcelExport
-      ref={excelExportRef}
-      columnWidth={34.29}
-      fileName="Contacts Export.xlsx"
-      data={contactData}
-      columns={[
-        { label: "Fname", key: "fname" },
-        { label: "Lname", key: "lname" },
-        { label: "Email", key: "email" },
-        { label: "Subject", key: "subject" },
-        { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
-        { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
-      ]}
-    />
+      <ContactModals
+        showDeleteModal={showDeleteModal}
+        closeDeleteModal={closeDeleteModal}
+        handleDeleteConfirm={handleDeleteConfirm}
+        isBulkDelete={isBulkDelete}
+        showStatusModal={showStatusModal}
+        statusToggleInfo={statusToggleInfo}
+        closeStatusModal={closeStatusModal}
+        handleStatusConfirm={handleStatusConfirm}
+      />
+      <ExcelExport
+        ref={excelExportRef}
+        columnWidth={34.29}
+        fileName="Contacts Export.xlsx"
+        data={contactData}
+        columns={[
+          { label: "Fname", key: "fname" },
+          { label: "Lname", key: "lname" },
+          { label: "Email", key: "email" },
+          { label: "Subject", key: "subject" },
+          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+        ]}
+      />
     </>
   );
 };

@@ -88,8 +88,10 @@ const ProductList = () => {
     }
   };
 
-  const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggleInfo({ id, currentStatus, field, valueKey }); 
-  setShowStatusModal(true); };
+  const openStatusModal = (id, currentStatus, field, valueKey) => {
+    setStatusToggleInfo({ id, currentStatus, field, valueKey });
+    setShowStatusModal(true);
+  };
 
   const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
 
@@ -116,7 +118,7 @@ const ProductList = () => {
           <Breadcrumb page="Shop" title="Product" add_button="Add Product" add_link="/admin/add_product" />
           <div className="card">
             <div className="card-body">
-                <DataTable
+              <DataTable
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "image", label: "Image", sortable: false },
@@ -146,8 +148,8 @@ const ProductList = () => {
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td><ImageWithFallback
                       src={`${ROOT_URL}/${row.file_name}`}
-                      width={100}
-                      height={100}
+                      width={40}
+                      height={40}
                       showFallback={true}
                     /></td>
                     <td>{row.title}</td>
@@ -156,13 +158,13 @@ const ProductList = () => {
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>
                       <div className="form-check form-switch">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={row.status == 1}
-                        onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
-                        readOnly
-                      />
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={row.status == 1}
+                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
+                          readOnly
+                        />
                       </div>
                     </td>
                     <td>

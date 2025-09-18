@@ -119,7 +119,7 @@ const UsersHistory = () => {
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     <td>{(page - 1) * limit + index + 1}</td>
-                    <td>{row.user_company_name && (<h6>{row.user_company_name}</h6>)}
+                    <td>{row.user_company_name && (<h6 className="username">{row.user_company_name}</h6>)}
                     {row.user_elcina_member == 1 ? ( <><span className="badge bg-primary">Elcina Member</span><br /></> ) : ("")}
                     {row.user_name && (<><i className='bx bx-user' /> {row.user_name}<br /></>)}
                     {row.user_email && (<><i className='bx bx-envelope' /> {row.user_email}<br /></>)}
@@ -128,8 +128,8 @@ const UsersHistory = () => {
                     {row.state && (<><i className='bx bx-map' /> {row.state}<br /></>)}
                     {row.city && (<><i className='bx bx-map' /> {row.city}</>)}
                     </td>
-                    <td><h5><span className="badge bg-primary">{row.user_status==1 ? "Active Seller" : row.user_status==0 ? "Inactive Seller" : ""}</span></h5></td>
-                    <td><h5><span className="badge bg-primary">{row.user_is_seller==1 ? "Seller" : row.user_is_seller==0 ? "Buyer" : ""}</span></h5></td>
+                    <td><span className="badge bg-primary">{row.user_status==1 ? "Active Seller" : row.user_status==0 ? "Inactive Seller" : ""}</span></td>
+                    <td><span className="badge bg-primary">{row.user_is_seller==1 ? "Seller" : row.user_is_seller==0 ? "Buyer" : ""}</span></td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>

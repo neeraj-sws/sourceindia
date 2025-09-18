@@ -351,7 +351,7 @@ const AddSeller = () => {
         <div className="row">
           <div className="col-xl-12 mx-auto">
             <div className="card">
-              <div className="card-body p-5">
+              <div className="card-body p-4">
                 <form className="row g-3" onSubmit={handleSubmit}>
                   <div className="col-md-4">
                     <label htmlFor="user_company" className="form-label required">Organization Name</label>
@@ -800,8 +800,8 @@ const AddSeller = () => {
                     />
                     {errors.address && (<div className="invalid-feedback">{errors.address}</div>)}
                   </div>
-                  <div className="col-12">
-                    <button type="submit" className="btn btn-primary px-5">Save</button>
+                  <div className="col-12 text-end">
+                    <button type="submit" className="btn btn-sm btn-primary px-4 mt-3">Save</button>
                   </div>
                 </form>
               </div>

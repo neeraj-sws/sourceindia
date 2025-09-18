@@ -93,111 +93,111 @@ const AddEmail = () => {
   };
 
   return (
-  <>
-    <div className="page-wrapper">
-      <div className="page-content">
-        <Breadcrumb page="Shop" title={isEditing ? "Edit Email" : "Add Email"} add_button="Back" add_link="/admin/emails-list" />
-        <div className="row">
-          <div className="col-xl-12 mx-auto">
-            <div className="card">
-              <div className="card-body p-5">
-                <form className="row g-3" onSubmit={handleSubmit}>
-                  <div className="col-md-12">
-                    <label htmlFor="title" className="form-label required">Title</label>
-                    <input
-                    type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
-                    id="title"
-                    placeholder="Title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    disabled={isEditing ? "disabled" : ""}
-                    />
-                    {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="email_for" className="form-label required">Email for</label>
-                    <select
-                    id="email_for" className={`form-control ${errors.email_for ? "is-invalid" : ""}`}
-                    value={formData.email_for}
-                    onChange={handleInputChange}
-                    >
-                    <option value="User">User</option>
-                    </select>
-                    {errors.email_for && (<div className="invalid-feedback">{errors.email_for}</div>)}
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="subject" className="form-label required">Subject</label>
-                    <input
-                    type="text" className={`form-control ${errors.subject ? "is-invalid" : ""}`}
-                    id="subject"
-                    placeholder="Subject"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    />
-                    {errors.subject && (<div className="invalid-feedback">{errors.subject}</div>)}
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="status" className="form-label required">Status</label>
-                    <select
-                    id="status" className={`form-control ${errors.status ? "is-invalid" : ""}`}
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    >
-                    <option value="">Select here</option>
-                    <option value="1">Active</option>
-                    <option value="0">Inactive</option>
-                    </select>
-                    {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="is_seller_direct" className="form-label required">Is Seller Direct</label>
-                    <select
-                    id="is_seller_direct" className={`form-control ${errors.is_seller_direct ? "is-invalid" : ""}`}
-                    value={formData.is_seller_direct}
-                    onChange={handleInputChange}
-                    >
-                    <option value="">Select here</option>
-                    <option value="1">Active</option>
-                    <option value="0">Inactive</option>
-                    </select>
-                    {errors.is_seller_direct && (<div className="invalid-feedback">{errors.is_seller_direct}</div>)}
-                  </div>
-                  <div className="col-md-12">
-                    <label htmlFor="description" className="form-label required">Description</label>
-                    <textarea
-                    className={`form-control ${errors.description ? "is-invalid" : ""}`}
-                    id="description"
-                    placeholder="Description"
-                    rows={3}
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    />
-                    {errors.description && (<div className="invalid-feedback">{errors.description}</div>)}
-                  </div>
-                  <div className="col-md-12">
-                    <label htmlFor="message" className="form-label required">Message</label>
-                    <CKEditor
-                    editor={ClassicEditor}
-                    data={formData.message || ''}
-                    onChange={(event, editor) => {
-                    const data = editor.getData();
-                    setFormData(prev => ({ ...prev, message: data }));
-                    }}
-                    />
-                    {errors.message && <div className="text-danger mt-1">{errors.message}</div>}
-                  </div>
-                  <div className="col-12">
-                    <button type="submit" className="btn btn-primary px-5">{isEditing ? "Update" : "Save"} Email</button>
-                  </div>
-                </form>
+    <>
+      <div className="page-wrapper">
+        <div className="page-content">
+          <Breadcrumb page="Shop" title={isEditing ? "Edit Email" : "Add Email"} add_button="Back" add_link="/admin/emails-list" />
+          <div className="row">
+            <div className="col-xl-12 mx-auto">
+              <div className="card">
+                <div className="card-body p-4">
+                  <form className="row g-3" onSubmit={handleSubmit}>
+                    <div className="col-md-12">
+                      <label htmlFor="title" className="form-label required">Title</label>
+                      <input
+                        type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
+                        id="title"
+                        placeholder="Title"
+                        value={formData.title}
+                        onChange={handleInputChange}
+                        disabled={isEditing ? "disabled" : ""}
+                      />
+                      {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="email_for" className="form-label required">Email for</label>
+                      <select
+                        id="email_for" className={`form-control ${errors.email_for ? "is-invalid" : ""}`}
+                        value={formData.email_for}
+                        onChange={handleInputChange}
+                      >
+                        <option value="User">User</option>
+                      </select>
+                      {errors.email_for && (<div className="invalid-feedback">{errors.email_for}</div>)}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="subject" className="form-label required">Subject</label>
+                      <input
+                        type="text" className={`form-control ${errors.subject ? "is-invalid" : ""}`}
+                        id="subject"
+                        placeholder="Subject"
+                        value={formData.subject}
+                        onChange={handleInputChange}
+                      />
+                      {errors.subject && (<div className="invalid-feedback">{errors.subject}</div>)}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="status" className="form-label required">Status</label>
+                      <select
+                        id="status" className={`form-control ${errors.status ? "is-invalid" : ""}`}
+                        value={formData.status}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select here</option>
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                      </select>
+                      {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="is_seller_direct" className="form-label required">Is Seller Direct</label>
+                      <select
+                        id="is_seller_direct" className={`form-control ${errors.is_seller_direct ? "is-invalid" : ""}`}
+                        value={formData.is_seller_direct}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select here</option>
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                      </select>
+                      {errors.is_seller_direct && (<div className="invalid-feedback">{errors.is_seller_direct}</div>)}
+                    </div>
+                    <div className="col-md-12">
+                      <label htmlFor="description" className="form-label required">Description</label>
+                      <textarea
+                        className={`form-control ${errors.description ? "is-invalid" : ""}`}
+                        id="description"
+                        placeholder="Description"
+                        rows={3}
+                        value={formData.description}
+                        onChange={handleInputChange}
+                      />
+                      {errors.description && (<div className="invalid-feedback">{errors.description}</div>)}
+                    </div>
+                    <div className="col-md-12">
+                      <label htmlFor="message" className="form-label required">Message</label>
+                      <CKEditor
+                        editor={ClassicEditor}
+                        data={formData.message || ''}
+                        onChange={(event, editor) => {
+                          const data = editor.getData();
+                          setFormData(prev => ({ ...prev, message: data }));
+                        }}
+                      />
+                      {errors.message && <div className="text-danger mt-1">{errors.message}</div>}
+                    </div>
+                    <div className="col-12">
+                      <button type="submit" className="btn btn-primary btn-sm px-5">{isEditing ? "Update" : "Save"} Email</button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
+          {/*end row*/}
         </div>
-        {/*end row*/}
       </div>
-    </div>
-  </>
+    </>
   )
 }
 

@@ -26,7 +26,7 @@ const EmailModals = ({
                 Are you sure you want to delete this email?
               </div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeDeleteModal}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>
                   Cancel
                 </button>
                 <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>
