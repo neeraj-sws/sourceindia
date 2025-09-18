@@ -5,6 +5,9 @@ import Breadcrumb from '../common/Breadcrumb';
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const AddBuyer = () => {
   const { showNotification } = useAlert();
@@ -65,7 +68,7 @@ const AddBuyer = () => {
 
   const handleCityChange = (event) => {
     setSelectedCity(event.target.value);
-  };
+  };  
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -250,28 +253,28 @@ const AddBuyer = () => {
                   </div>
                   <div className="col-md-3">
                     <label htmlFor="country" className="form-label required">Country</label>
-                    <select id="country" className={`form-control ${errors.country ? 'is-invalid' : ''}`}
-                      value={selectedCountry} onChange={handleCountryChange}>
+                    <select id="country" className={`form-control ${errors.country ? 'is-invalid' : ''}`} 
+                    value={selectedCountry} onChange={handleCountryChange}>
                       <option value="">Select Country</option>
-                      {countries?.map(country => (<option key={country.id} value={country.id}>{country.name}</option>))}
+                      {countries?.map(country => ( <option key={country.id} value={country.id}>{country.name}</option> ))}
                     </select>
                     {errors.country && <div className="invalid-feedback">{errors.country}</div>}
                   </div>
                   <div className="col-md-3">
                     <label htmlFor="state" className="form-label required">State</label>
-                    <select id="state" className={`form-control ${errors.state ? 'is-invalid' : ''}`}
-                      value={selectedState} onChange={handleStateChange} disabled={!selectedCountry}>
+                    <select id="state" className={`form-control ${errors.state ? 'is-invalid' : ''}`} 
+                    value={selectedState} onChange={handleStateChange} disabled={!selectedCountry}>
                       <option value="">Select State</option>
-                      {states?.map(state => (<option key={state.id} value={state.id}>{state.name}</option>))}
+                      {states?.map(state => ( <option key={state.id} value={state.id}>{state.name}</option>))}
                     </select>
                     {errors.state && <div className="invalid-feedback">{errors.state}</div>}
                   </div>
                   <div className="col-md-3">
                     <label htmlFor="city" className="form-label required">City</label>
-                    <select id="city" className={`form-control ${errors.city ? 'is-invalid' : ''}`}
-                      value={selectedCity} onChange={handleCityChange} disabled={!selectedState}>
+                    <select id="city" className={`form-control ${errors.city ? 'is-invalid' : ''}`} 
+                    value={selectedCity} onChange={handleCityChange} disabled={!selectedState}>
                       <option value="">Select City</option>
-                      {cities?.map(city => (<option key={city.id} value={city.id}>{city.name}</option>))}
+                      {cities?.map(city => ( <option key={city.id} value={city.id}>{city.name}</option> ))}
                     </select>
                     {errors.city && <div className="invalid-feedback">{errors.city}</div>}
                   </div>

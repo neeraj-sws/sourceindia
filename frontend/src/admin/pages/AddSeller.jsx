@@ -6,6 +6,9 @@ import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import SearchDropdown from "../common/SearchDropdown";
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const AddSeller = () => {
   const { showNotification } = useAlert();
@@ -77,6 +80,41 @@ const AddSeller = () => {
   };
 
   const handleCityChange = (event) => { setSelectedCity(event.target.value); };
+
+  useEffect(() => {
+      $('#country').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select Country"
+      }).on("change", function () {
+        const countryId = $(this).val();
+        handleCountryChange({ target: { value: countryId } });
+      });
+  
+      $('#state').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select State"
+      }).on("change", function () {
+        const stateId = $(this).val();
+        handleStateChange({ target: { value: stateId } });
+      });
+  
+      $('#city').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select City"
+      }).on("change", function () {
+        const cityId = $(this).val();
+        handleCityChange({ target: { value: cityId } });
+      });
+  
+      return () => {
+        $('#country').off("change").select2('destroy');
+        $('#state').off("change").select2('destroy');
+        $('#city').off("change").select2('destroy');
+      };
+    }, [countries, states, cities]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -695,48 +733,47 @@ const AddSeller = () => {
                   <div className="col-md-3">
                     <label htmlFor="country" className="form-label required">Country</label>
                     <select
-                      id="country" className={`form-control ${errors.country ? "is-invalid" : ""}`}
+                      id="country"
+                      className={`form-control select2 ${errors.country ? 'is-invalid' : ''}`}
                       value={selectedCountry}
                       onChange={handleCountryChange}
                     >
                       <option value="">Select Country</option>
-                      {countries?.map((country) => (
+                      {countries.map(country => (
                         <option key={country.id} value={country.id}>{country.name}</option>
                       ))}
                     </select>
-                    {errors.country && (<div className="invalid-feedback">{errors.country}</div>)}
+                    {errors.country && <div className="invalid-feedback">{errors.country}</div>}
                   </div>
                   <div className="col-md-3">
                     <label htmlFor="state" className="form-label required">State</label>
                     <select
-                      id="state" className={`form-control ${errors.state ? "is-invalid" : ""}`}
+                      id="state"
+                      className={`form-control select2 ${errors.state ? "is-invalid" : ""}`}
                       value={selectedState}
                       onChange={handleStateChange}
-                      disabled={!selectedCountry}
                     >
                       <option value="">Select State</option>
-                      {states?.map((state) => (
-                        <option key={state.id} value={state.id}>{state.name}</option>
+                      {states.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
                     </select>
-                    {errors.state && (<div className="invalid-feedback">{errors.state}</div>)}
+                    {errors.state && <div className="invalid-feedback">{errors.state}</div>}
                   </div>
                   <div className="col-md-3">
                     <label htmlFor="city" className="form-label required">City</label>
                     <select
-                      id="city" className={`form-control ${errors.city ? "is-invalid" : ""}`}
+                      id="city"
+                      className={`form-control select2 ${errors.city ? "is-invalid" : ""}`}
                       value={selectedCity}
                       onChange={handleCityChange}
-                      disabled={!selectedState}
                     >
                       <option value="">Select City</option>
-                      {cities?.map((city) => (
+                      {cities.map((city) => (
                         <option key={city.id} value={city.id}>{city.name}</option>
                       ))}
                     </select>
-                    {errors.city && (
-                      <div className="invalid-feedback">{errors.city}</div>
-                    )}
+                    {errors.city && <div className="invalid-feedback">{errors.city}</div>}
                   </div>
                   <div className="col-md-4">
                     <label htmlFor="zipcode" className="form-label required">Post Code</label>
