@@ -77,25 +77,25 @@ const HomeBannerModals = ({
                     />
                     {errors.file && <div className="invalid-feedback">{errors.file}</div>}
                     {formData.file ? (
-                    <img
-                      src={URL.createObjectURL(formData.file)}
-                      className="img-preview object-fit-cover mt-3"
-                      width={150}
-                      height={150}
-                      alt="Preview"
-                    />
-                  ) : formData.meta_image ? (
-                    <ImageWithFallback
-                      src={`${ROOT_URL}/${formData.meta_image}`}
-                      width={150}
-                      height={150}
-                      showFallback={false}
-                    />
-                  ) : null}
+                      <img
+                        src={URL.createObjectURL(formData.file)}
+                        className="img-preview object-fit-cover mt-3"
+                        width={150}
+                        height={150}
+                        alt="Preview"
+                      />
+                    ) : formData.meta_image ? (
+                      <ImageWithFallback
+                        src={`${ROOT_URL}/${formData.meta_image}`}
+                        width={150}
+                        height={150}
+                        showFallback={false}
+                      />
+                    ) : null}
                   </div>
                   <div className="modal-footer justify-content-between col-md-12">
-                    <button type="button" className="btn btn-secondary" onClick={closeModal}>Close</button>
-                    <button type="submit" className="btn btn-primary">{isEditing ? "Update" : "Save"}</button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={closeModal}>Close</button>
+                    <button type="submit" className="btn btn-primary btn-sm">{isEditing ? "Update" : "Save"}</button>
                   </div>
                 </form>
               </div>
@@ -115,7 +115,7 @@ const HomeBannerModals = ({
               </div>
               <div className="modal-body">Are you sure you want to delete this Seo Pages?</div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeDeleteModal}>Cancel</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>Cancel</button>
                 <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>Delete</button>
               </div>
             </div>

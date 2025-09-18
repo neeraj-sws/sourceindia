@@ -39,7 +39,7 @@ const TicketModals = ({
                       options={users?.map(user => ({ value: user.id, label: user.fname + " " + user.lname }))}
                       value={formData.user_id}
                       onChange={handleSelectChange("user_id")}
-                      placeholder="Select here"                      
+                      placeholder="Select here"
                     />
                     {errors.user_id && <div className="invalid-feedback">{errors.user_id}</div>}
                   </div>
@@ -76,10 +76,10 @@ const TicketModals = ({
                       options={categories?.map(cat => ({ value: String(cat.id), label: cat.name }))}
                       value={formData.category}
                       onChange={handleSelectChange("category")}
-                      placeholder="Select category"                      
+                      placeholder="Select category"
                     />
                     {errors.category && <div className="invalid-feedback">{errors.category}</div>}
-                  </div>                  
+                  </div>
                   <div className="form-group col-md-12 mb-3">
                     <label htmlFor="message" className="form-label required">Message</label>
                     <textarea
@@ -115,8 +115,8 @@ const TicketModals = ({
                     {errors.status && <div className="invalid-feedback">{errors.status}</div>}
                   </div>
                   <div className="modal-footer justify-content-between col-md-12">
-                    <button type="button" className="btn btn-secondary" onClick={closeModal}>Close</button>
-                    <button type="submit" className="btn btn-primary">{isEditing ? "Update" : "Save"}</button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={closeModal}>Close</button>
+                    <button type="submit" className="btn btn-primary btn-sm">{isEditing ? "Update" : "Save"}</button>
                   </div>
                 </form>
               </div>
@@ -136,7 +136,7 @@ const TicketModals = ({
               </div>
               <div className="modal-body">Are you sure you want to delete this Ticket?</div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeDeleteModal}>Cancel</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>Cancel</button>
                 <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>Delete</button>
               </div>
             </div>

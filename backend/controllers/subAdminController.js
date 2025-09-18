@@ -2,7 +2,7 @@ const { Op } = require('sequelize');
 const Admin = require('../models/Admin');
 const Roles = require('../models/Roles');
 const validator = require('validator');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 exports.createSubAdmin = async (req, res) => {
   try {

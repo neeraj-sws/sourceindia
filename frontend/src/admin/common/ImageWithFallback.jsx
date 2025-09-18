@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const ImageWithFallback = ({ src, alt = 'Image', width = 100, height = 100, showFallback = true }) => {
+const ImageWithFallback = ({ src, alt = 'Image', width = 80, height = 80, showFallback = true }) => {
   const [imageExists, setImageExists] = useState(false);
 
   useEffect(() => {
@@ -17,13 +17,13 @@ const ImageWithFallback = ({ src, alt = 'Image', width = 100, height = 100, show
 
   if (!imageExists) {
     if (showFallback) {
-      return (<img className="object-fit-cover mt-3" src="/default.png" width={width} height={height} alt="Fallback" />);
+      return (<img className="object-fit-cover  img-fluid img-thumbnail" src="/default.png" width={width} height={height} alt="Fallback" />);
     } else {
       return null;
     }
   }
 
-  return (<img className="object-fit-cover mt-3" src={src} width={width} height={height} alt={alt} />);
+  return (<img className="object-fit-cover  img-fluid img-thumbnail" src={src} width={width} height={height} alt={alt} />);
 };
 
 export default ImageWithFallback;

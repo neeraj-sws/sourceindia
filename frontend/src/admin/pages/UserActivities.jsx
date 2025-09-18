@@ -32,7 +32,7 @@ const UserActivities = () => {
         console.error('API error:', err);
         setChartLoading(false);
       });
-  }, []);  
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -121,109 +121,110 @@ const UserActivities = () => {
           <Breadcrumb page="Settings" title="User Activities" />
           <div className="row mb-3">
             <div className="col-md-6">
-                <div id="accordionCount">
-                    <div className="card">
-                    <div className="card-header d-flex justify-content-between align-items-center cursor-pointer"
+              <div id="accordionCount">
+                <div className="card">
+                  <div className="card-header bg-white d-flex justify-content-between align-items-center cursor-pointer"
                     data-bs-toggle="collapse"
                     data-bs-target="#collapseCount"
                     aria-expanded="true"
                     aria-controls="collapseCount">
-                        <span>Count</span>
-                        <i className='bx bx-chevron-down'></i>
-                    </div>
-                    <div id="collapseCount" className="collapse show" data-bs-parent="#accordionCount">
-                        <div className="row p-3">
-                            <div className="col-sm-6">
-                                <div className="card radius-10 mb-3">
-                                <div className="card-body">
-                                    <div className="d-flex align-items-center">
-                                    <div>
-                                        <p className="mb-0 text-secondary">Inactive</p>
-                                        <h4 className="my-1">{userStats.UserInactiveStatus}</h4>
-                                    </div>
-                                    <div className="widgets-icons bg-light-primary text-primary ms-auto">
-                                        <i className="bx bxs-user-x" />
-                                    </div>
-                                    </div>
-                                </div>
-                                </div>
+                    <span className="fw-bolder">Count</span>
+                    <i className='bx bx-chevron-down'></i>
+                  </div>
+                  <div id="collapseCount" className="collapse show" data-bs-parent="#accordionCount">
+                    <div className="row p-3">
+                      <div className="col-sm-6">
+                        <div className="card radius-10 mb-3">
+                          <div className="card-body bg-light shadow-sm rounded h-100">
+                            <div className="d-flex align-items-center">
+                              <div>
+                                <p className="mb-0 text-secondary">Inactive</p>
+                                <h4 className="my-1">{userStats.UserInactiveStatus}</h4>
+                              </div>
+                              <div className="widgets-icons bg-light-primary text-primary ms-auto">
+                                <i className="bx bxs-user-x" />
+                              </div>
                             </div>
-                            <div className="col-sm-6">
-                                <div className="card radius-10 mb-3">
-                                <div className="card-body">
-                                    <div className="d-flex align-items-center">
-                                    <div>
-                                        <p className="mb-0 text-secondary">Active</p>
-                                        <h4 className="my-1">{userStats.UserActiveStatus}</h4>
-                                    </div>
-                                    <div className="widgets-icons bg-light-warning text-warning ms-auto">
-                                        <i className="bx bxs-user-check" />
-                                    </div>
-                                    </div>
-                                </div>
-                                </div>
-                            </div>
-                            <div className="col-sm-6">
-                                <div className="card radius-10 mb-3">
-                                <div className="card-body">
-                                    <div className="d-flex align-items-center">
-                                    <div>
-                                        <p className="mb-0 text-secondary">Approved</p>
-                                        <h4 className="my-1">{userStats.UserApprove}</h4>
-                                    </div>
-                                    <div className="widgets-icons bg-light-success text-success ms-auto">
-                                        <i className="bx bxs-user-plus" />
-                                    </div>
-                                    </div>
-                                </div>
-                                </div>
-                            </div>
-                            <div className="col-sm-6">
-                                <div className="card radius-10 mb-3">
-                                <div className="card-body">
-                                    <div className="d-flex align-items-center">
-                                    <div>
-                                        <p className="mb-0 text-secondary">Deleted</p>
-                                        <h4 className="my-1">{userStats.UserDeleted}</h4>
-                                    </div>
-                                    <div className="widgets-icons bg-light-danger text-danger ms-auto">
-                                        <i className="bx bxs-trash" />
-                                    </div>
-                                    </div>
-                                </div>
-                                </div>
-                            </div>
+                          </div>
                         </div>
+                      </div>
+                      <div className="col-sm-6">
+                        <div className="card radius-10 mb-3">
+                          <div className="card-body bg-light shadow-sm rounded">
+                            <div className="d-flex align-items-center">
+                              <div>
+                                <p className="mb-0 text-secondary">Active</p>
+                                <h4 className="my-1">{userStats.UserActiveStatus}</h4>
+                              </div>
+                              <div className="widgets-icons bg-light-warning text-warning ms-auto">
+                                <i className="bx bxs-user-check" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-sm-6">
+                        <div className="card radius-10 mb-3">
+                          <div className="card-body bg-light shadow-sm rounded">
+                            <div className="d-flex align-items-center">
+                              <div>
+                                <p className="mb-0 text-secondary">Approved</p>
+                                <h4 className="my-1">{userStats.UserApprove}</h4>
+                              </div>
+                              <div className="widgets-icons bg-light-success text-success ms-auto">
+                                <i className="bx bxs-user-plus" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-sm-6">
+                        <div className="card radius-10 mb-3">
+                          <div className="card-body bg-light shadow-sm rounded">
+                            <div className="d-flex align-items-center">
+                              <div>
+                                <p className="mb-0 text-secondary">Deleted</p>
+                                <h4 className="my-1">{userStats.UserDeleted}</h4>
+                              </div>
+                              <div className="widgets-icons bg-light-danger text-danger ms-auto">
+                                <i className="bx bxs-trash" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    </div>
+                  </div>
                 </div>
+              </div>
             </div>
             <div className="col-md-6">
-                <div id="accordionChart">
-                    <div className="card">
-                    <div className="card-header d-flex justify-content-between align-items-center cursor-pointer"
+              <div id="accordionChart">
+                <div className="card">
+                  <div className="card-header bg-white d-flex justify-content-between align-items-center cursor-pointer h-100"
                     data-bs-toggle="collapse"
                     data-bs-target="#collapseChart"
                     aria-expanded="true"
                     aria-controls="collapseChart">
-                        <span>Pie Chart</span>
-                        <i className='bx bx-chevron-down'></i>
+                    <span className="fw-bolder">Pie Chart</span>
+                    <i className='bx bx-chevron-down'></i>
+                  </div>
+                  <div id="collapseChart" className="collapse show" data-bs-parent="#accordionChart">
+                    <div className="card-body text-center">
+                      <div className="mb-3">
+                        <span className="badge bg-primary me-2">Inactive: {userStats.UserInactiveStatus}</span>
+                        <span className="badge bg-warning me-2">Active: {userStats.UserActiveStatus}</span>
+                        <span className="badge bg-success me-2">Approved: {userStats.UserApprove}</span>
+                        <span className="badge bg-danger">Deleted: {userStats.UserDeleted}</span>
+                      </div>
+                      <div style={{ maxWidth: '180px', margin: '0 auto' }}>
+                        <Pie data={countData} options={options} />
+                      </div>
+
                     </div>
-                    <div id="collapseChart" className="collapse show" data-bs-parent="#accordionChart">
-                        <div className="card-body text-center">
-                            <div style={{ maxWidth: '250px', margin: '0 auto' }}>
-                            <Pie data={countData} options={options} />
-                            </div>
-                            <div className="mt-3">
-                            <span className="badge bg-primary me-2">Inactive: {userStats.UserInactiveStatus}</span>
-                            <span className="badge bg-warning me-2">Active: {userStats.UserActiveStatus}</span>
-                            <span className="badge bg-success me-2">Approved: {userStats.UserApprove}</span>
-                            <span className="badge bg-danger">Deleted: {userStats.UserDeleted}</span>
-                            </div>
-                        </div>
-                    </div>
-                    </div>
+                  </div>
                 </div>
+              </div>
             </div>
           </div>
           <div className="card">
@@ -254,13 +255,13 @@ const UserActivities = () => {
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     <td><Link to={`/admin/user-activity-details/${row.user_id}`}>{(page - 1) * limit + index + 1}</Link></td>
-                    <td>{row.user_company_name && (<h6>{row.user_company_name}</h6>)}
-                    {row.user_name && (<><i className='bx bx-user' /> {row.user_name}<br /></>)}
-                    {row.user_email && (<><i className='bx bx-envelope' /> {row.user_email}<br /></>)}
-                    {row.user_mobile && (<><i className='bx bx-mobile' /> {row.user_mobile}<br /></>)}
+                    <td>{row.user_company_name && (<h6 className="username">{row.user_company_name}</h6>)}
+                      {row.user_name && (<><i className='bx bx-user' /> {row.user_name}<br /></>)}
+                      {row.user_email && (<><i className='bx bx-envelope' /> {row.user_email}<br /></>)}
+                      {row.user_mobile && (<><i className='bx bx-mobile' /> {row.user_mobile}<br /></>)}
                     </td>
-                    <td><h5><span className="badge bg-primary">{row.user_status==1 ? "Active" : row.user_status==0 ? "Inactive" : ""}</span></h5></td>
-                    <td><h5><span className="badge bg-primary">{row.user_is_seller==1 ? "Seller" : row.user_is_seller==0 ? "Buyer" : ""}</span></h5></td>
+                    <td><span className="badge bg-primary">{row.user_status == 1 ? "Active" : row.user_status == 0 ? "Inactive" : ""}</span></td>
+                    <td><span className="badge bg-primary">{row.user_is_seller == 1 ? "Seller" : row.user_is_seller == 0 ? "Buyer" : ""}</span></td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                   </tr>

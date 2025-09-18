@@ -59,8 +59,8 @@ const FaqCategoryModals = ({
                     {errors.status && <div className="invalid-feedback">{errors.status}</div>}
                   </div>
                   <div className="modal-footer justify-content-between col-md-12">
-                    <button type="button" className="btn btn-secondary" onClick={closeModal}>Close</button>
-                    <button type="submit" className="btn btn-primary">{isEditing ? "Update" : "Save"}</button>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={closeModal}>Close</button>
+                    <button type="submit" className="btn btn-primary btn-sm">{isEditing ? "Update" : "Save"}</button>
                   </div>
                 </form>
               </div>
@@ -80,7 +80,7 @@ const FaqCategoryModals = ({
               </div>
               <div className="modal-body">Are you sure you want to delete this FAQ Category?</div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeDeleteModal}>Cancel</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>Cancel</button>
                 <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>Delete</button>
               </div>
             </div>
@@ -101,7 +101,7 @@ const FaqCategoryModals = ({
                 Are you sure you want to {statusToggleInfo.currentStatus === 1 ? "deactivate" : "activate"} this FAQ Category?
               </div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeStatusModal}>Cancel</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeStatusModal}>Cancel</button>
                 <button type="button" className="btn btn-warning" onClick={handleStatusConfirm}>Yes, Change</button>
               </div>
             </div>

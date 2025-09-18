@@ -53,7 +53,7 @@ const AddEmailCircular = () => {
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     const maxSize = 2 * 1024 * 1024;
     if (files.length === 0 && !isEditing) {
-    errs.file = 'At least one email circular image is required';
+      errs.file = 'At least one email circular image is required';
     } else {
       files.forEach((file, index) => {
         if (!allowedImageTypes.includes(file.type)) {
@@ -143,88 +143,114 @@ const AddEmailCircular = () => {
         ...prev,
         images: [...prev.images, ...(Array.isArray(res.data) ? res.data : [res.data])]
       }));
-        setFiles([]);
-        showNotification("Images added successfully!", "success");
-      } catch (error) {
-        console.error("Error adding images:", error);
-        showNotification("Failed to add images", "error");
-      }
-    };
+      setFiles([]);
+      showNotification("Images added successfully!", "success");
+    } catch (error) {
+      console.error("Error adding images:", error);
+      showNotification("Failed to add images", "error");
+    }
+  };
 
-    const openDeleteModal = (id) => { setImageToDelete(id); setShowDeleteModal(true); };
+  const openDeleteModal = (id) => { setImageToDelete(id); setShowDeleteModal(true); };
 
-    const closeDeleteModal = () => { setShowDeleteModal(false); setImageToDelete(null); };
+  const closeDeleteModal = () => { setShowDeleteModal(false); setImageToDelete(null); };
 
-    const handleDeleteConfirm = async () => {
-      if (!imageToDelete) return;
+  const handleDeleteConfirm = async () => {
+    if (!imageToDelete) return;
 
-      try {
-        await axios.delete(`${API_BASE_URL}/newsletters/${newsletterId}/images/${imageToDelete}`);
-        setFormData(prev => ({
-          ...prev,
-          images: prev.images.filter(img => img.id !== imageToDelete)
-        }));
-        showNotification("Image removed successfully!", "success");
-      } catch (error) {
-        console.error("Error removing image:", error);
-        showNotification("Failed to remove image", "error");
-      } finally {
-        closeDeleteModal();
-      }
-    };
+    try {
+      await axios.delete(`${API_BASE_URL}/newsletters/${newsletterId}/images/${imageToDelete}`);
+      setFormData(prev => ({
+        ...prev,
+        images: prev.images.filter(img => img.id !== imageToDelete)
+      }));
+      showNotification("Image removed successfully!", "success");
+    } catch (error) {
+      console.error("Error removing image:", error);
+      showNotification("Failed to remove image", "error");
+    } finally {
+      closeDeleteModal();
+    }
+  };
 
   return (
-  <>
-    <div className="page-wrapper">
-      <div className="page-content">
-        <Breadcrumb page="Settings" title={isEditing ? "Edit Email Circular" : "Add Email Circular"} add_button="Back" add_link="/admin/email_circular" />
-        <div className="row">
-          <div className="col-xl-12 mx-auto">
-            <div className="card">
-              <div className="card-body p-5">
-                <form className="row g-3" onSubmit={handleSubmit}>
-                  <div className="col-md-6">
-                    <label htmlFor="user_type" className="form-label required">User</label>
-                    <SearchDropdown
-                      id="user_type"
-                      options={userType?.map((user) => ({ value: user.id, label: user.name.charAt(0).toUpperCase() + user.name.slice(1) }))}
-                      value={formData.user_type}
-                      onChange={handleSelectChange("user_type")}
-                      placeholder="Select here"
-                    />
-                    {errors.user_type && (<div className="invalid-feedback">{errors.user_type}</div>)}
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="title" className="form-label required">Title</label>
-                    <input
-                    type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
-                    id="title"
-                    placeholder="Title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    />
-                    {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="subject" className="form-label">Subject</label>
-                    <input
-                    type="text" className="form-control"
-                    id="subject"
-                    placeholder="Subject"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    />
-                    {errors.subject && (<div className="invalid-feedback">{errors.subject}</div>)}
-                  </div>
-                  <div className="col-md-12">
-                    <div className="d-flex justify-content-between mb-2">
-                    <label htmlFor="description" className="form-label my-auto required">Long Description</label>
-                    {showButton && (
-                      <button type="button" className="btn btn-primary mb-3 mb-lg-0">
-                        <i className="bx bxs-plus-square mr-1" />
-                        Test Mail
-                      </button>
-                    )}
+    <>
+      <div className="page-wrapper">
+        <div className="page-content">
+          <Breadcrumb page="Settings" title={isEditing ? "Edit Email Circular" : "Add Email Circular"} add_button="Back" add_link="/admin/email_circular" />
+          <div className="row">
+            <div className="col-xl-12 mx-auto">
+              <form className="row g-3" onSubmit={handleSubmit}>
+                <div className="card">
+                  <div className="card-body p-5">
+                    <div className="col-md-6">
+                      <label htmlFor="user_type" className="form-label required">User</label>
+                      <SearchDropdown
+                        id="user_type"
+                        options={userType?.map((user) => ({ value: user.id, label: user.name.charAt(0).toUpperCase() + user.name.slice(1) }))}
+                        value={formData.user_type}
+                        onChange={handleSelectChange("user_type")}
+                        placeholder="Select here"
+                      />
+                      {errors.user_type && (<div className="invalid-feedback">{errors.user_type}</div>)}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="title" className="form-label required">Title</label>
+                      <input
+                        type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
+                        id="title"
+                        placeholder="Title"
+                        value={formData.title}
+                        onChange={handleInputChange}
+                      />
+                      {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="subject" className="form-label">Subject</label>
+                      <input
+                        type="text" className="form-control"
+                        id="subject"
+                        placeholder="Subject"
+                        value={formData.subject}
+                        onChange={handleInputChange}
+                      />
+                      {errors.subject && (<div className="invalid-feedback">{errors.subject}</div>)}
+                    </div>
+                    <div className="col-md-12">
+                      <div className="d-flex justify-content-between mb-2">
+                        <label htmlFor="description" className="form-label my-auto required">Long Description</label>
+                        {showButton && (
+                          <button type="button" className="btn btn-primary mb-3 mb-lg-0">
+                            <i className="bx bxs-plus-square mr-1" />
+                            Test Mail
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="col-md-12">
+                      <div className="mt-3 d-flex flex-wrap">
+                        {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
+                          <div key={index} className="position-relative m-2">
+                            <img
+                              src={`${ROOT_URL}/${image.file}`}
+                              alt={`Preview ${index}`}
+                              className="object-fit-cover m-3"
+                              width={80}
+                              height={80}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-remove-image"
+                              style={{ width: '1.5rem', height: '1.5rem' }}
+                              onClick={() => openDeleteModal(image.id)}
+                            >
+                              <i className="bx bx-x me-0" />
+                            </button>
+                          </div>
+                        ))}
+
+                      </div>
+
                     </div>
                     <JoditEditor
                       value={formData.description}
@@ -254,74 +280,96 @@ const AddEmailCircular = () => {
                       multiple
                       accept="image/png, image/jpeg"
                     />
-                    <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={() => fileInputRef.current.click()}>
                       <i className="bx bxs-plus-square" />Add Attachment
                     </button>
                     {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
                     <div className="col-md-12">
                       <div className="mt-3 d-flex flex-wrap">
-                        {formData.images && formData.images.length > 0 &&  formData.images?.map((image, index) => (
-                        <div key={index} className="position-relative m-2">
-                          <img
-                          src={`${ROOT_URL}/${image.file}`}
-                          alt={`Preview ${index}`}
-                          className="object-fit-cover m-3"
-                          width={80}
-                          height={80}
-                          />
-                          <button
-                          type="button"
-                          className="btn btn-danger btn-remove-image"
-                          style={{width: '1.5rem', height: '1.5rem'}}
-                          onClick={() => openDeleteModal(image.id)}
-                          >
-                          <i className="bx bx-x me-0" />
-                          </button>
-                        </div>
+                        {formData.images && formData.images.length > 0 && formData.images.map((image, index) => (
+                          <div key={index} className="position-relative m-2">
+                            <img
+                              src={`${ROOT_URL}/${image.file}`}
+                              alt={`Preview ${index}`}
+                              className="object-fit-cover m-3"
+                              width={80}
+                              height={80}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-remove-image"
+                              style={{ width: '1.5rem', height: '1.5rem' }}
+                              onClick={() => openDeleteModal(image.id)}
+                            >
+                              <i className="bx bx-x me-0" />
+                            </button>
+                          </div>
                         ))}
-                        {files.length > 0 && files?.map((file, index) => (
-                        <div key={index} className="position-relative m-2">
-                          <img
-                          src={URL.createObjectURL(file)}
-                          alt={`New Preview ${index}`}
-                          className="object-fit-cover m-3"
-                          width={80}
-                          height={80}
-                          />
-                          <button
-                          variant="danger"
-                          size="sm"
-                          className="btn btn-danger btn-remove-image"
-                          style={{width: '1.5rem', height: '1.5rem'}}
-                          onClick={() => {
-                          setFiles(prev => prev.filter((_, i) => i !== index));
-                          }}
-                          >
-                          <i className="bx bx-x me-0" />
-                          </button>
-                        </div>
+                        {files.length > 0 && files.map((file, index) => (
+                          <div key={index} className="position-relative m-2">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`New Preview ${index}`}
+                              className="object-fit-cover m-3"
+                              width={80}
+                              height={80}
+                            />
+                            <button
+                              variant="danger"
+                              size="sm"
+                              className="btn btn-danger btn-remove-image"
+                              style={{ width: '1.5rem', height: '1.5rem' }}
+                              onClick={() => {
+                                setFiles(prev => prev.filter((_, i) => i !== index));
+                              }}
+                            >
+                              <i className="bx bx-x me-0" />
+                            </button>
+                          </div>
                         ))}
                       </div>
-                    </div>
+
+                      {files.length > 0 && files?.map((file, index) => (
+                        <div key={index} className="position-relative m-2">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`New Preview ${index}`}
+                            className="object-fit-cover m-3"
+                            width={80}
+                            height={80}
+                          />
+                          <button
+                            variant="danger"
+                            size="sm"
+                            className="btn btn-danger btn-remove-image"
+                            style={{ width: '1.5rem', height: '1.5rem' }}
+                            onClick={() => {
+                              setFiles(prev => prev.filter((_, i) => i !== index));
+                            }}
+                          >
+                            <i className="bx bx-x me-0" />
+                          </button>
+                        </div>
+                      ))}
+                    </div >
+                  </div >
+                  <div className="col-12 text-end">
+                    <button type="submit" className="btn btn-primary btn-sm px-4">Save</button>
                   </div>
-                  <div className="col-12">
-                    <button type="submit" className="btn btn-primary px-5">Save</button>
-                  </div>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
           </div>
         </div>
         {/*end row*/}
       </div>
-    </div>
-    <EmailCircularModals
-      showDeleteModal={showDeleteModal}
-      closeDeleteModal={closeDeleteModal}
-      handleDeleteConfirm={handleDeleteConfirm}
-      deleteType="image"
-    />
-  </>
+      <EmailCircularModals
+        showDeleteModal={showDeleteModal}
+        closeDeleteModal={closeDeleteModal}
+        handleDeleteConfirm={handleDeleteConfirm}
+        deleteType="image"
+      />
+    </>
   )
 }
 

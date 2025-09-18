@@ -33,7 +33,7 @@ const ProductModals = ({
                 {`Are you sure you want to delete this ${deleteType === "image" ? "image" : "product"}?`}
               </div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeDeleteModal}>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>
                   Cancel
                 </button>
                 <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>
@@ -58,7 +58,7 @@ const ProductModals = ({
                 Are you sure you want to {statusToggleInfo.currentStatus === 1 ? "deactivate" : "activate"} this Product?
               </div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeStatusModal}>Cancel</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeStatusModal}>Cancel</button>
                 <button type="button" className="btn btn-warning" onClick={handleStatusConfirm}>Yes, Change</button>
               </div>
             </div>
