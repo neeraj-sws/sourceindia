@@ -2979,6 +2979,14 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	font-weight: 900;
 }
 
+.badge {
+	font-size: 11px;
+}
+
+.border-blue {
+	border-color: var(--primary-color);
+}
+
 .scroll-btn.left {
 	left: -16px;
 }

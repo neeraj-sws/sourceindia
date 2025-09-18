@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+
 const sequelize = require('./config/database');
 const fileRoutes = require('./routes/fileRoutes');
 const adminAuthRoutes = require('./routes/adminAuthRoutes');
@@ -37,45 +38,60 @@ const contactsRoutes = require('./routes/contactsRoutes');
 const emailsRoutes = require('./routes/emailsRoutes');
 
 const app = express();
+const basePath = '/v2'; // All APIs will start with /v2
+
 app.use(cors());
 app.use(express.json());
 
-app.use('/upload', express.static(path.join(__dirname, 'upload')));
-app.use('/api/files', fileRoutes);
-app.use('/api/admin', adminAuthRoutes);
-app.use('/api/activities', activityRoutes);
-app.use('/api/core_activities', coreActivityRoutes);
-app.use('/api/ticket_categories', ticketCategoryRoutes);
-app.use('/api/testimonials', testimonialRoutes);
-app.use('/api/faq_categories', faqCategoryRoutes);
-app.use('/api/faqs', faqRoutes);
-app.use('/api/home_banners', homeBannerRoutes);
-app.use('/api/roles', rolesRoutes);
-app.use('/api/sub_admin', subAdminRoutes);
-app.use('/api/knowledge_center', knowledgeCenterRoutes);
-app.use('/api/location', locationRoutes);
-app.use('/api/buyers', buyerRoutes);
-app.use('/api/membership_plan', membershipPlanRoutes);
-app.use('/api/categories', categoriesRoutes);
-app.use('/api/sub_categories', subCategoryRoutes);
-app.use('/api/interest_categories', interestCategoriesRoutes);
-app.use('/api/interest_sub_categories', interestSubCategoriesRoutes);
-app.use('/api/sub_sub_categories', subSubCategoriesRoutes);
-app.use('/api/tickets', ticketRoutes);
-app.use('/api/sellers', sellerRoutes);
-app.use('/api/applications', applicationRoutes);
-app.use('/api/products', productsRoutes);
-app.use('/api/settings', settingRoutes);
-app.use('/api/newsletters', newsletterRoutes);
-app.use('/api/enquiries', enquiriesRoutes);
-app.use('/api/open_enquiries', openEnquiriesRoutes);
-app.use('/api/seo_pages', seoPagesRoutes);
-app.use('/api/user_activity', userActivityRoutes);
-app.use('/api/seller_mail_histories', sellerMailHistoriesRoutes);
-app.use('/api/contacts', contactsRoutes);
-app.use('/api/emails', emailsRoutes);
+// Health check
+app.get(basePath + '/', (req, res) => {
+  res.send('Node.js app is running under ' + basePath);
+});
 
-sequelize.sync().then(() => {
-  console.log('MySQL connected and models synced');
-  app.listen(5000, () => console.log('Server running on http://localhost:5000'));
-}).catch(err => console.error('DB connection error:', err));
+// Serve static files under basePath
+app.use(basePath + '/upload', express.static(path.join(__dirname, 'upload')));
+
+// All APIs under /v2/api/...
+app.use(basePath + '/api/files', fileRoutes);
+app.use(basePath + '/api/admin', adminAuthRoutes);
+app.use(basePath + '/api/activities', activityRoutes);
+app.use(basePath + '/api/core_activities', coreActivityRoutes);
+app.use(basePath + '/api/ticket_categories', ticketCategoryRoutes);
+app.use(basePath + '/api/testimonials', testimonialRoutes);
+app.use(basePath + '/api/faq_categories', faqCategoryRoutes);
+app.use(basePath + '/api/faqs', faqRoutes);
+app.use(basePath + '/api/home_banners', homeBannerRoutes);
+app.use(basePath + '/api/roles', rolesRoutes);
+app.use(basePath + '/api/sub_admin', subAdminRoutes);
+app.use(basePath + '/api/knowledge_center', knowledgeCenterRoutes);
+app.use(basePath + '/api/location', locationRoutes);
+app.use(basePath + '/api/buyers', buyerRoutes);
+app.use(basePath + '/api/membership_plan', membershipPlanRoutes);
+app.use(basePath + '/api/categories', categoriesRoutes);
+app.use(basePath + '/api/sub_categories', subCategoryRoutes);
+app.use(basePath + '/api/interest_categories', interestCategoriesRoutes);
+app.use(basePath + '/api/interest_sub_categories', interestSubCategoriesRoutes);
+app.use(basePath + '/api/sub_sub_categories', subSubCategoriesRoutes);
+app.use(basePath + '/api/tickets', ticketRoutes);
+app.use(basePath + '/api/sellers', sellerRoutes);
+app.use(basePath + '/api/applications', applicationRoutes);
+app.use(basePath + '/api/products', productsRoutes);
+app.use(basePath + '/api/settings', settingRoutes);
+app.use(basePath + '/api/newsletters', newsletterRoutes);
+app.use(basePath + '/api/enquiries', enquiriesRoutes);
+app.use(basePath + '/api/open_enquiries', openEnquiriesRoutes);
+app.use(basePath + '/api/seo_pages', seoPagesRoutes);
+app.use(basePath + '/api/user_activity', userActivityRoutes);
+app.use(basePath + '/api/seller_mail_histories', sellerMailHistoriesRoutes);
+app.use(basePath + '/api/contacts', contactsRoutes);
+app.use(basePath + '/api/emails', emailsRoutes);
+
+sequelize
+  .sync()
+  .then(() => {
+    console.log('MySQL connected and models synced');
+    app.listen(5000, () =>
+      console.log('Server running on http://localhost:5000' + basePath)
+    );
+  })
+  .catch((err) => console.error('DB connection error:', err));
