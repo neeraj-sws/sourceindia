@@ -236,8 +236,8 @@ const HomeBanners = () => {
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td><ImageWithFallback
                       src={`${ROOT_URL}/${row.file_name}`}
-                      width={100}
-                      height={100}
+                      width={50}
+                      height={50}
                       showFallback={true}
                     /></td>
                     <td>{row.title}</td>

@@ -5,21 +5,21 @@ import { useAlert } from "../../../context/AlertContext";
 
 const TestimonialSectionForm = () => {
   const { showNotification } = useAlert();
-    const [errors, setErrors] = useState({});
-    const [formData, setFormData] = useState({ testimonialsub_heading: '', testimonial_heading: '' });
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({ testimonialsub_heading: '', testimonial_heading: '' });
 
-    const handleInputChange = (e) => {
+  const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
-    
+
   useEffect(() => {
     const fetchData = async () => {
       const res = await axios.get(`${API_BASE_URL}/settings/home`);
       setFormData(res.data);
     }
     fetchData();
-  },[]);
+  }, []);
 
   const validateForm = () => {
     const errs = {};
@@ -48,25 +48,25 @@ const TestimonialSectionForm = () => {
 
   return (
     <>
-    <h6 className="mb-0 text-uppercase">Testimonial Section</h6>
-        <hr />
-    <form className="row g-3" onSubmit={handleSubmit}>
-      <div className="col-md-6">
-        <label htmlFor="testimonialsub_heading" className="form-label required">Sub Heading</label>
-            <input type="text" className={`form-control ${errors.testimonialsub_heading ? 'is-invalid' : ''}`} id="testimonialsub_heading" 
+      <h6 className="mb-0 fw-bold">Testimonial Section</h6>
+      <hr />
+      <form className="row g-3" onSubmit={handleSubmit}>
+        <div className="col-md-6">
+          <label htmlFor="testimonialsub_heading" className="form-label required">Sub Heading</label>
+          <input type="text" className={`form-control ${errors.testimonialsub_heading ? 'is-invalid' : ''}`} id="testimonialsub_heading"
             placeholder="Sub Heading" value={formData.testimonialsub_heading} onChange={handleInputChange} />
-            {errors.testimonialsub_heading && <div className="invalid-feedback">{errors.testimonialsub_heading}</div>}
-      </div>
-      <div className="col-md-6">
-        <label htmlFor="testimonial_heading" className="form-label required">Heading</label>
-        <input type="text" className={`form-control ${errors.testimonial_heading ? 'is-invalid' : ''}`} id="testimonial_heading" 
-        placeholder="Heading" value={formData.testimonial_heading} onChange={handleInputChange} />
-        {errors.testimonial_heading && <div className="invalid-feedback">{errors.testimonial_heading}</div>}
-      </div>
-      <div className="col-12">
-        <button type="submit" className="btn btn-primary px-5">Update</button>
-      </div>
-    </form>
+          {errors.testimonialsub_heading && <div className="invalid-feedback">{errors.testimonialsub_heading}</div>}
+        </div>
+        <div className="col-md-6">
+          <label htmlFor="testimonial_heading" className="form-label required">Heading</label>
+          <input type="text" className={`form-control ${errors.testimonial_heading ? 'is-invalid' : ''}`} id="testimonial_heading"
+            placeholder="Heading" value={formData.testimonial_heading} onChange={handleInputChange} />
+          {errors.testimonial_heading && <div className="invalid-feedback">{errors.testimonial_heading}</div>}
+        </div>
+        <div className="col-12 text-end">
+          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+        </div>
+      </form>
     </>
   )
 }

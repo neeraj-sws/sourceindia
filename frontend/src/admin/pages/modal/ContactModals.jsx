@@ -30,7 +30,7 @@ const ContactModals = ({
                 Are you sure you want to delete {isBulkDelete ? "the selected contacts" : "this contact"}?
               </div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeDeleteModal}>Cancel </button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>Cancel </button>
                 <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>
                   {isBulkDelete ? "Delete Selected" : "Delete"}
                 </button>
@@ -53,7 +53,7 @@ const ContactModals = ({
                 Are you sure you want to {statusToggleInfo.currentStatus === 1 ? "restore deleted" : "remove from list"}?
               </div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeStatusModal}>Cancel</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeStatusModal}>Cancel</button>
                 <button type="button" className="btn btn-warning" onClick={handleStatusConfirm}>
                   {statusToggleInfo.currentStatus === 1 ? "Restore" : "Remove"}
                 </button>

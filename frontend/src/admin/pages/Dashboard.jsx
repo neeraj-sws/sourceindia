@@ -7,34 +7,56 @@ import TotalRegisterBuyers from "../dashboard/TotalRegisterBuyers";
 const Dashboard = () => {
   const [counts, setCounts] = useState({});
 
-  const CountData = ({ label, value, icon }) => (
-    <div className="col mb-3">
-      <div className="card radius-10 overflow-hidden">
-        <div className="card-body">
-          <div className="d-flex align-items-center">
-            <div>
-              <p className="mb-0">{label}</p>
-              <h5 className="mb-0">{value}</h5>
-            </div>
-            <div className="ms-auto">
-              <i className={`font-30 ${icon}`}></i>
+  const CountData = ({ label, value, icon }) => {
+    // 1 to 4 ke beech ek random number
+    const randomNum = Math.floor(Math.random() * 4) + 1;
+    const imgSrc = `/element-0${randomNum}.svg`;
+
+    const colorMap = {
+      1: "bg-soft-primary border border-primary text-primary",
+      2: "bg-soft-success border border-success text-success",
+      3: "bg-soft-purple border border-purple text-purple",
+      4: "bg-soft-warning border border-warning text-warning",
+    };
+
+
+    const colorClass = colorMap[randomNum];
+
+    return (
+      <div className="col mb-4">
+        <div className="card radius-2 overflow-hidden position-relative h-100">
+          <div className="card-body ps-4 py-4">
+            <div className="d-flex align-items-center">
+              <div className="labeltitle">
+                <p className="mb-2">{label}</p>
+                <h2 className="mb-0">{value}</h2>
+              </div>
+              <div className={`ms-auto dashicon avatar avatar-md rounded-circle ${colorClass}`}>
+                <i className={`${icon}`}></i>
+              </div>
             </div>
           </div>
+          <img
+            src={imgSrc}
+            className="img-fluid position-absolute top-0 start-0"
+            alt="logo icon"
+          />
         </div>
       </div>
-    </div>
-  );
+    );
+  };
+
 
   useEffect(() => {
     const fetchCounts = async () => {
       try {
         const [sellers, buyers, categories, subCats, products, enquiries] = await Promise.all([
-            axios.get(`${API_BASE_URL}/sellers/count`),
-            axios.get(`${API_BASE_URL}/buyers/count`),
-            axios.get(`${API_BASE_URL}/categories/count`),
-            axios.get(`${API_BASE_URL}/sub_categories/count`),
-            axios.get(`${API_BASE_URL}/products/count`),
-            axios.get(`${API_BASE_URL}/enquiries/count`),
+          axios.get(`${API_BASE_URL}/sellers/count`),
+          axios.get(`${API_BASE_URL}/buyers/count`),
+          axios.get(`${API_BASE_URL}/categories/count`),
+          axios.get(`${API_BASE_URL}/sub_categories/count`),
+          axios.get(`${API_BASE_URL}/products/count`),
+          axios.get(`${API_BASE_URL}/enquiries/count`),
         ]);
         setCounts({
           sellers: {

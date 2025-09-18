@@ -1,4 +1,4 @@
-import  React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from "axios";
 import ImageWithFallback from "../../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../../config";
@@ -15,14 +15,14 @@ const ValuesForm = () => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
-    
+
   useEffect(() => {
     const fetchData = async () => {
       const res = await axios.get(`${API_BASE_URL}/settings/about`);
       setFormData(res.data);
     }
     fetchData();
-  },[]);
+  }, []);
 
   const handleValueFileChange = (e) => { setValueFile(e.target.files[0]) };
 
@@ -78,27 +78,16 @@ const ValuesForm = () => {
 
   return (
     <>
-    <h6 className="mb-0 text-uppercase">Values</h6>
-        <hr />
-    <form className="row g-3" onSubmit={handleSubmit}>
-      <div className="col-md-12">
-        <label htmlFor="value_heading" className="form-label required">Heading</label>
-        <input type="text" className={`form-control ${errors.value_heading ? 'is-invalid' : ''}`} id="value_heading" placeholder="Heading" 
-        value={formData.value_heading} onChange={handleInputChange} />
-        {errors.value_heading && <div className="invalid-feedback">{errors.value_heading}</div>}
-      </div>
-      <div className="col-md-12">
-        <label htmlFor="value_description" className="form-label required">Description</label>
-        <textarea
-          className={`form-control ${errors.value_description ? 'is-invalid' : ''}`}
-          id="value_description"
-          placeholder="Description"
-          rows={3}
-          onChange={handleInputChange}
-          defaultValue={formData.value_description}
-        />
-        {errors.value_description && <div className="invalid-feedback">{errors.value_description}</div>}
+      <h6 className="mb-0 fw-bold">Values</h6>
+      <hr />
+      <form className="row g-3" onSubmit={handleSubmit}>
+        <div className="col-md-12">
+          <label htmlFor="value_heading" className="form-label required">Heading</label>
+          <input type="text" className={`form-control ${errors.value_heading ? 'is-invalid' : ''}`} id="value_heading" placeholder="Heading"
+            value={formData.value_heading} onChange={handleInputChange} />
+          {errors.value_heading && <div className="invalid-feedback">{errors.value_heading}</div>}
         </div>
+
         <div className="col-md-6">
           <label htmlFor="value_file" className="form-label required">Logo</label>
           <input className={`form-control ${errors.value_file ? 'is-invalid' : ''}`} type="file" id="value_file" onChange={handleValueFileChange} />
@@ -119,8 +108,8 @@ const ValuesForm = () => {
               showFallback={false}
             />
           ) : null}
-      </div>
-      <div className="col-md-6">
+        </div>
+        <div className="col-md-6">
           <label htmlFor="value_icon" className="form-label required">Icon</label>
           <input className={`form-control ${errors.value_icon ? 'is-invalid' : ''}`} type="file" id="value_icon" onChange={handleValueIconChange} />
           {errors.value_icon && <div className="invalid-feedback">{errors.value_icon}</div>}
@@ -140,11 +129,23 @@ const ValuesForm = () => {
               showFallback={false}
             />
           ) : null}
-      </div>
-      <div className="col-12">
-        <button type="submit" className="btn btn-primary px-5">Update</button>
-      </div>
-    </form>
+        </div>
+        <div className="col-md-12">
+          <label htmlFor="value_description" className="form-label required">Description</label>
+          <textarea
+            className={`form-control ${errors.value_description ? 'is-invalid' : ''}`}
+            id="value_description"
+            placeholder="Description"
+            rows={3}
+            onChange={handleInputChange}
+            defaultValue={formData.value_description}
+          />
+          {errors.value_description && <div className="invalid-feedback">{errors.value_description}</div>}
+        </div>
+        <div className="col-12 text-end mt-4">
+          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+        </div>
+      </form>
     </>
   )
 }

@@ -9,7 +9,7 @@ const Reports = () => {
     <div className="row">
       <div className="col-xl-12 mx-auto">
         <div className="card mb-3">
-  <div className="card-body p-5">
+  <div className="card-body p-4">
     <form className="row g-3">
         <h5>Seller Filter</h5>
       <div className="col-md-3">
@@ -105,7 +105,7 @@ const Reports = () => {
   </div>
 </div>
 <div className="card mb-3">
-  <div className="card-body p-5">
+  <div className="card-body p-4">
     <form className="row g-3">
         <h5>Buyer Filter</h5>
       <div className="col-md-3">
@@ -201,7 +201,7 @@ const Reports = () => {
   </div>
 </div>
 <div className="card mb-3">
-  <div className="card-body p-5">
+  <div className="card-body p-4">
     <form className="row g-3">
         <h5>Company Filter</h5>
       <div className="col-md-3">
@@ -297,7 +297,7 @@ const Reports = () => {
   </div>
 </div>
 <div className="card mb-3">
-  <div className="card-body p-5">
+  <div className="card-body p-4">
     <form className="row g-3">
         <h5>Product Filter</h5>
       <div className="col-md-3">
@@ -418,7 +418,7 @@ const Reports = () => {
   </div>
 </div>
 <div className="card mb-3">
-  <div className="card-body p-5">
+  <div className="card-body p-4">
     <form className="row g-3">
         <h5>Enquiry Filter</h5>
       <div className="col-md-3">

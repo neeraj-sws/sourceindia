@@ -5,21 +5,21 @@ import { useAlert } from "../../../context/AlertContext";
 
 const ProductSectionForm = () => {
   const { showNotification } = useAlert();
-    const [errors, setErrors] = useState({});
-    const [formData, setFormData] = useState({ productsub_heading: '', product_heading: '', product_description: '' });
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({ productsub_heading: '', product_heading: '', product_description: '' });
 
-    const handleInputChange = (e) => {
+  const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
-    
+
   useEffect(() => {
     const fetchData = async () => {
       const res = await axios.get(`${API_BASE_URL}/settings/home`);
       setFormData(res.data);
     }
     fetchData();
-  },[]);
+  }, []);
 
   const validateForm = () => {
     const errs = {};
@@ -49,37 +49,37 @@ const ProductSectionForm = () => {
 
   return (
     <>
-    <h6 className="mb-0 text-uppercase">Product Section</h6>
-        <hr />
-    <form className="row g-3" onSubmit={handleSubmit}>
-      <div className="col-md-6">
-        <label htmlFor="productsub_heading" className="form-label required">Sub Heading</label>
-            <input type="text" className={`form-control ${errors.productsub_heading ? 'is-invalid' : ''}`} id="productsub_heading" 
+      <h6 className="mb-0 fw-bold">Product Section</h6>
+      <hr />
+      <form className="row g-3" onSubmit={handleSubmit}>
+        <div className="col-md-6">
+          <label htmlFor="productsub_heading" className="form-label required">Sub Heading</label>
+          <input type="text" className={`form-control ${errors.productsub_heading ? 'is-invalid' : ''}`} id="productsub_heading"
             placeholder="Sub Heading" value={formData.productsub_heading} onChange={handleInputChange} />
-            {errors.productsub_heading && <div className="invalid-feedback">{errors.productsub_heading}</div>}
-      </div>
-      <div className="col-md-6">
-        <label htmlFor="product_heading" className="form-label required">Heading</label>
-        <input type="text" className={`form-control ${errors.product_heading ? 'is-invalid' : ''}`} id="product_heading" 
-        placeholder="Heading" value={formData.product_heading} onChange={handleInputChange} />
-        {errors.product_heading && <div className="invalid-feedback">{errors.product_heading}</div>}
-      </div>
-      <div className="col-md-12">
-        <label htmlFor="product_description" className="form-label required">Short Description</label>
-            <textarea
-              className={`form-control ${errors.product_description ? 'is-invalid' : ''}`}
-              id="product_description"
-              placeholder="Short Description"
-              rows={3}
-              onChange={handleInputChange}
-          defaultValue={formData.product_description}
-            />
-            {errors.product_description && <div className="invalid-feedback">{errors.product_description}</div>}
-      </div>
-      <div className="col-12">
-        <button type="submit" className="btn btn-primary px-5">Update</button>
-      </div>
-    </form>
+          {errors.productsub_heading && <div className="invalid-feedback">{errors.productsub_heading}</div>}
+        </div>
+        <div className="col-md-6">
+          <label htmlFor="product_heading" className="form-label required">Heading</label>
+          <input type="text" className={`form-control ${errors.product_heading ? 'is-invalid' : ''}`} id="product_heading"
+            placeholder="Heading" value={formData.product_heading} onChange={handleInputChange} />
+          {errors.product_heading && <div className="invalid-feedback">{errors.product_heading}</div>}
+        </div>
+        <div className="col-md-12">
+          <label htmlFor="product_description" className="form-label required">Short Description</label>
+          <textarea
+            className={`form-control ${errors.product_description ? 'is-invalid' : ''}`}
+            id="product_description"
+            placeholder="Short Description"
+            rows={3}
+            onChange={handleInputChange}
+            defaultValue={formData.product_description}
+          />
+          {errors.product_description && <div className="invalid-feedback">{errors.product_description}</div>}
+        </div>
+        <div className="col-12 text-end mt-4">
+          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+        </div>
+      </form>
     </>
   )
 }

@@ -1,4 +1,4 @@
-import  React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from "axios";
 import ImageWithFallback from "../../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../../config";
@@ -15,14 +15,14 @@ const SystemSettingsForm = () => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
-    
+
   useEffect(() => {
     const fetchData = async () => {
       const res = await axios.get(`${API_BASE_URL}/settings/site`);
       setFormData(res.data);
     }
     fetchData();
-  },[]);
+  }, []);
 
   const handleLogoFileChange = (e) => { setLogoFile(e.target.files[0]) };
 
@@ -82,85 +82,86 @@ const SystemSettingsForm = () => {
 
   return (
     <>
-    <h6 className="mb-0 text-uppercase">System Settings</h6>
-    <hr />
-    <form className="row g-3" onSubmit={handleSubmit}>
-      <div className="col-md-4">
-        <label htmlFor="Title" className="form-label required">Title</label>
-        <input type="text" className={`form-control ${errors.title ? 'is-invalid' : ''}`} id="title" placeholder="Title" 
-        value={formData.title} onChange={handleInputChange} />
-        {errors.title && <div className="invalid-feedback">{errors.title}</div>}
-      </div>
-      <div className="col-md-4">
-        <label htmlFor="site_email" className="form-label required">Site Email</label>
-        <input type="email" className={`form-control ${errors.site_email ? 'is-invalid' : ''}`} id="site_email" placeholder="Site Email" 
-        value={formData.site_email} onChange={handleInputChange} />
-        {errors.site_email && <div className="invalid-feedback">{errors.site_email}</div>}
-      </div>
-      <div className="col-md-4">
-        <label htmlFor="mobile" className="form-label required">Mobile</label>
-        <input type="text" className={`form-control ${errors.mobile ? 'is-invalid' : ''}`} id="mobile" placeholder="Mobile" 
-        value={formData.mobile} onChange={handleInputChange} />
-        {errors.mobile && <div className="invalid-feedback">{errors.mobile}</div>}
-      </div>      
-      <div className="col-md-12">
-        <label htmlFor="address" className="form-label required">Address</label>
-        <textarea
-          className={`form-control ${errors.address ? 'is-invalid' : ''}`}
-          id="address"
-          placeholder="Address"
-          rows={3}
-          onChange={handleInputChange}
-          defaultValue={formData.address}
-        />
-        {errors.address && <div className="invalid-feedback">{errors.address}</div>}
-      </div>
-      <div className="col-md-6">
+      <h6 className="mb-0 fw-bold">System Settings</h6>
+      <hr />
+      <form className="row g-3" onSubmit={handleSubmit}>
+        <div className="col-md-4">
+          <label htmlFor="Title" className="form-label required">Title</label>
+          <input type="text" className={`form-control ${errors.title ? 'is-invalid' : ''}`} id="title" placeholder="Title"
+            value={formData.title} onChange={handleInputChange} />
+          {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+        </div>
+        <div className="col-md-4">
+          <label htmlFor="site_email" className="form-label required">Site Email</label>
+          <input type="email" className={`form-control ${errors.site_email ? 'is-invalid' : ''}`} id="site_email" placeholder="Site Email"
+            value={formData.site_email} onChange={handleInputChange} />
+          {errors.site_email && <div className="invalid-feedback">{errors.site_email}</div>}
+        </div>
+        <div className="col-md-4">
+          <label htmlFor="mobile" className="form-label required">Mobile</label>
+          <input type="text" className={`form-control ${errors.mobile ? 'is-invalid' : ''}`} id="mobile" placeholder="Mobile"
+            value={formData.mobile} onChange={handleInputChange} />
+          {errors.mobile && <div className="invalid-feedback">{errors.mobile}</div>}
+        </div>
+
+        <div className="col-md-6">
           <label htmlFor="logo_file" className="form-label required">Image</label>
           <input className={`form-control ${errors.logo_file ? 'is-invalid' : ''}`} type="file" id="logo_file" onChange={handleLogoFileChange} />
           {errors.logo_file && <div className="invalid-feedback">{errors.logo_file}</div>}
           {logoFile ? (
             <img
               src={URL.createObjectURL(logoFile)}
-              className="img-preview object-fit-cover mt-3"
-              width={150}
-              height={150}
+              className="img-fluid  object-fit-cover mt-3"
+              width={80}
+              height={80}
               alt="Preview"
             />
           ) : formData.logo_file ? (
             <ImageWithFallback
               src={`${ROOT_URL}/${formData.logo_file}`}
-              width={150}
-              height={150}
+              width={80}
+              height={80}
               showFallback={false}
             />
           ) : null}
-      </div>
-      <div className="col-md-6">
+        </div>
+        <div className="col-md-6">
           <label htmlFor="favicon_file" className="form-label required">Favicon</label>
           <input className={`form-control ${errors.favicon_file ? 'is-invalid' : ''}`} type="file" id="favicon_file" onChange={handleFaviconFileChange} />
           {errors.favicon_file && <div className="invalid-feedback">{errors.favicon_file}</div>}
           {faviconFile ? (
             <img
               src={URL.createObjectURL(faviconFile)}
-              className="img-preview object-fit-cover mt-3"
-              width={150}
-              height={150}
+              className="img-fluid  object-fit-cover mt-3"
+              width={80}
+              height={80}
               alt="Preview"
             />
           ) : formData.favicon_file ? (
             <ImageWithFallback
               src={`${ROOT_URL}/${formData.favicon_file}`}
-              width={150}
-              height={150}
+              width={80}
+              height={80}
               showFallback={false}
             />
           ) : null}
-      </div>
-      <div className="col-12">
-        <button type="submit" className="btn btn-primary px-5">Update</button>
-      </div>
-    </form>
+        </div>
+        <div className="col-md-12">
+          <label htmlFor="address" className="form-label required">Address</label>
+          <textarea
+            className={`form-control ${errors.address ? 'is-invalid' : ''}`}
+            id="address"
+            placeholder="Address"
+            rows={3}
+            onChange={handleInputChange}
+            defaultValue={formData.address}
+          />
+          {errors.address && <div className="invalid-feedback">{errors.address}</div>}
+        </div>
+        <div className="col-12 text-end mt-4">
+          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+        </div>
+      </form>
     </>
   )
 }

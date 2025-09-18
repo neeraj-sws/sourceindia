@@ -14,7 +14,7 @@ const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 function createSlug(inputString) {
   return inputString.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
@@ -47,8 +47,8 @@ exports.createSeller = async (req, res) => {
       const {
         fname, lname, email, password, mobile, country, state, city, zipcode,
         address, status, is_trading, elcina_member, user_company, website, products,
-        step, mode, real_password, remember_token, payment_status, is_email_verify, featured_company, is_approve,        
-        organization_name, user_type, core_activity, activity, category_sell, sub_category, 
+        step, mode, real_password, remember_token, payment_status, is_email_verify, featured_company, is_approve,
+        organization_name, user_type, core_activity, activity, category_sell, sub_category,
         company_website, company_location, is_star_seller, is_verified, role,
         company_meta_title, company_video_second, brief_company,
         organizations_product_description, designation
@@ -166,7 +166,7 @@ exports.getSellerById = async (req, res) => {
         as: 'company_file',
         attributes: ['file'],
       }],
-    });    
+    });
     if (!seller) {
       return res.status(404).json({ message: 'Seller not found' });
     }
@@ -175,18 +175,18 @@ exports.getSellerById = async (req, res) => {
         model: UploadImage,
         as: 'companySamplePptFile',
         attributes: ['file'],
-      },{
+      }, {
         model: UploadImage,
         as: 'companySampleFile',
         attributes: ['file'],
-      },{
+      }, {
         model: UploadImage,
         as: 'companyVideo',
         attributes: ['file'],
       }],
     });
     const response = {
-      ...seller.toJSON(),...companyInfo.toJSON(),
+      ...seller.toJSON(), ...companyInfo.toJSON(),
       file_name: seller.file ? seller.file.file : null,
       company_file_name: seller.company_file ? seller.company_file.file : null,
       company_sample_ppt_file_name: companyInfo.companySamplePptFile ? companyInfo.companySamplePptFile.file : null,
@@ -220,11 +220,11 @@ exports.getSellerCount = async (req, res) => {
       Users.count({ where: { is_seller: 1, is_approve: 0 } }),
     ]);
     res.json({
-        total,
-        addedToday,
-        statusActive,
-        statusInactive,
-        notApproved,
+      total,
+      addedToday,
+      statusActive,
+      statusInactive,
+      notApproved,
     });
   } catch (err) {
     console.error(err);
@@ -453,7 +453,7 @@ exports.getAllSellerServerSide = async (req, res) => {
       sortBy = 'id',
       sort = 'DESC',
     } = req.query;
-    const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'mobile', 'country_name', 'state_name', 'city_name', 
+    const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'mobile', 'country_name', 'state_name', 'city_name',
       'zipcode', 'user_company', 'website', 'is_trading', 'elcina_member', 'address', 'products', 'category_name', 'sub_category_name',
       'designation', 'coreactivity_name', 'activity_name', 'status', 'is_approve', 'is_seller', 'walkin_buyer', 'created_at', 'updated_at'];
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';

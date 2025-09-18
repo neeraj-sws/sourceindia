@@ -92,7 +92,7 @@ const EmailCircular = () => {
           <Breadcrumb page="Settings" title="Email Circular" add_button="Add Email Circular" add_link="/admin/add_email_circular" />
           <div className="card">
             <div className="card-body">
-                <DataTable
+              <DataTable
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "title", label: "Title", sortable: true },
@@ -124,7 +124,7 @@ const EmailCircular = () => {
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
