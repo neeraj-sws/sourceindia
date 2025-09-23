@@ -14,6 +14,7 @@ const AboutForm = () => {
     aboutsub_heading: '', about_heading: '', aboutshort_description: '',
     about_description: '', about_video_url: '', about_file: ''
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -65,6 +66,7 @@ const AboutForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -76,6 +78,8 @@ const AboutForm = () => {
     } catch (error) {
       console.error('Error saving about form:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -148,11 +152,20 @@ const AboutForm = () => {
               setFormData(prev => ({ ...prev, about_description: data }));
             }}
           />
-          {errors.about_description && <div className="text-danger mt-1">{errors.about_description}</div>}
+          {errors.about_description && <div className="text-danger small mt-1">{errors.about_description}</div>}
         </div>
        
         <div className="col-12 text-end mt-4">
-          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
+          </button>
         </div>
       </form>
     </>

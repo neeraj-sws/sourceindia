@@ -6,7 +6,10 @@ import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import FaqModals from "./modal/FaqModals";
-const initialForm = { id: null, name: "", category: "", status: "1" };
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import SearchDropdown from "../common/SearchDropdown";
+const initialForm = { id: null, title: "", category: "", status: "1" };
 
 const FaqList = () => {
   const [data, setData] = useState([]);
@@ -18,9 +21,7 @@ const FaqList = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -29,6 +30,7 @@ const FaqList = () => {
   const [faqToDelete, setFaqToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,18 +76,21 @@ const FaqList = () => {
     }
   };
 
-  const openModal = (editData = null) => {
+  const openForm = (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
       setFormData({ ...editData, status: String(editData.status) });
     } else {
       setFormData(initialForm);
-    }    
-    setShowModal(true);
+    }
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -112,6 +117,7 @@ const FaqList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const selectedCategory = categories.find((c) => c.id.toString() === formData.category.toString());
     const payload = { ...formData, category_name: selectedCategory?.name || "" };
     try {
@@ -125,11 +131,13 @@ const FaqList = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`FAQ ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save FAQ.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -187,88 +195,157 @@ const FaqList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="FAQ" add_button="Add FAQ" add_link="#" onClick={openAddModal} />
-          <div className="card">
-            <div className="card-body">
-              <DataTable
-                columns={[
-                  { key: "id", label: "S.No.", sortable: true },
-                  { key: "title", label: "Title", sortable: true },
-                  { key: "category_name", label: "Category", sortable: true },
-                  { key: "created_at", label: "Created At", sortable: true },
-                  { key: "updated_at", label: "Updated At", sortable: true },
-                  { key: "status", label: "Status", sortable: false },
-                  { key: "action", label: "Action", sortable: false },
-                ]}
-                data={data}
-                loading={loading}
-                page={page}
-                totalRecords={totalRecords}
-                filteredRecords={filteredRecords}
-                limit={limit}
-                sortBy={sortBy}
-                sortDirection={sortDirection}
-                onPageChange={(newPage) => setPage(newPage)}
-                onSortChange={handleSortChange}
-                onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                search={search}
-                onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                getRangeText={getRangeText}
-                renderRow={(row, index) => (
-                  <tr key={row.id}>
-                    <td>{(page - 1) * limit + index + 1}</td>
-                    <td>{row.title}</td>
-                    <td>{row.category_name}</td>
-                    <td>{formatDateTime(row.created_at)}</td>
-                    <td>{formatDateTime(row.updated_at)}</td>
-                    <td>
-                      <div className="form-check form-switch">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id={`statusSwitch_${row.id}`}
-                          checked={row.status == 1}
-                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                          readOnly
-                        />
-                      </div>
-                    </td>
-                    <td>
-                      <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i className="bx bx-dots-vertical-rounded"></i>
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li>
-                            <button className="dropdown-item" onClick={() => openModal(row)}>
-                              <i className="bx bx-edit me-2"></i> Edit
+          <Breadcrumb page="Settings" title="FAQ" add_button="Add FAQ" add_link="#" onClick={() => openForm()} />
+          <div className="row">
+            <div className="col-md-5">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title mb-3">{isEditing ? "Edit Faq" : "Add Faq"}</h5>
+                  <form className="row" onSubmit={handleSubmit} noValidate>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="title" className="form-label required">Title</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.title ? "is-invalid" : ""}`}
+                        id="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        placeholder="Title"
+                      />
+                      {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="description" className="form-label required">Description</label>
+                      <CKEditor
+                        editor={ClassicEditor}
+                        data={formData.description || ''}
+                        onChange={(event, editor) => {
+                          const data = editor.getData();
+                          handleChange({ target: { id: 'description', value: data } });
+                        }}
+                      />
+                      {errors.description && <div className="text-danger small mt-1">{errors.description}</div>}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="category" className="form-label required">Category</label>
+                      <SearchDropdown
+                        id="category"
+                        options={categories?.map(cat => ({ value: cat.id, label: cat.name }))}
+                        value={formData.category}
+                        onChange={handleSelectChange("category")}
+                        placeholder="Select Category"
+                        className={`form-control ${errors.category ? "is-invalid" : ""}`}
+                      />
+                      {errors.category && (<div className="text-danger small mt-1">{errors.category} </div>
+                      )}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="status" className="form-label required">Status</label>
+                      <select
+                        id="status"
+                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
+                        value={formData.status}
+                        onChange={handleChange}
+                      >
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                      </select>
+                      {errors.status && (<div className="invalid-feedback">{errors.status}</div>
+                      )}
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
+                        {isEditing ? "Cancel" : "Reset"}
+                      </button>
+                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+                        {submitting ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            {isEditing ? "Updating..." : "Saving..."}
+                          </>
+                        ) : (
+                          isEditing ? "Update" : "Save"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-7">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title mb-3">Faq List</h5>
+                  <DataTable
+                    columns={[
+                      { key: "id", label: "S.No.", sortable: true },
+                      { key: "title", label: "Title", sortable: true },
+                      { key: "category_name", label: "Category", sortable: true },
+                      { key: "created_at", label: "Created At", sortable: true },
+                      { key: "status", label: "Status", sortable: false },
+                      { key: "action", label: "Action", sortable: false },
+                    ]}
+                    data={data}
+                    loading={loading}
+                    page={page}
+                    totalRecords={totalRecords}
+                    filteredRecords={filteredRecords}
+                    limit={limit}
+                    sortBy={sortBy}
+                    sortDirection={sortDirection}
+                    onPageChange={(newPage) => setPage(newPage)}
+                    onSortChange={handleSortChange}
+                    onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                    search={search}
+                    onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                    getRangeText={getRangeText}
+                    renderRow={(row, index) => (
+                      <tr key={row.id}>
+                        <td>{(page - 1) * limit + index + 1}</td>
+                        <td>{row.title}</td>
+                        <td>{row.category_name}</td>
+                        <td>{formatDateTime(row.created_at)}</td>
+                        <td>
+                          <div className="form-check form-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`statusSwitch_${row.id}`}
+                              checked={row.status == 1}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                              readOnly
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <div className="dropdown">
+                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                              <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              />
+                            <ul className="dropdown-menu">
+                              <li>
+                                <button className="dropdown-item" onClick={() => openForm(row)}>
+                                  <i className="bx bx-edit me-2"></i> Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </ul>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
       <FaqModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        categories={categories}
-        handleChange={handleChange}
-        handleSelectChange={handleSelectChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

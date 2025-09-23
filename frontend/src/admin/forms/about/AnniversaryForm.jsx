@@ -12,6 +12,7 @@ const AnniversaryForm = () => {
     year: '', about_heading: '', aboutshort_description: '',
     about_description: '', about_file: ''
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -54,6 +55,7 @@ const AnniversaryForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -65,6 +67,8 @@ const AnniversaryForm = () => {
     } catch (error) {
       console.error('Error saving anniversary form:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -120,7 +124,16 @@ const AnniversaryForm = () => {
           {errors.aboutshort_description && <div className="invalid-feedback">{errors.aboutshort_description}</div>}
         </div>
         <div className="col-12 text-end mt-4">
-          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
+          </button>
         </div>
       </form>
     </>

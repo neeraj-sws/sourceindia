@@ -10,6 +10,7 @@ const WhyChooseForm = () => {
     choosesub_heading: '', choose_heading: '', choose_inner_heading_1: '',
     choose_inner_desc_1: '', choose_inner_heading_2: '', choose_inner_desc_2: '', choose_inner_heading_3: '', choose_inner_desc_3: '',
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -42,6 +43,7 @@ const WhyChooseForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -52,6 +54,8 @@ const WhyChooseForm = () => {
     } catch (error) {
       console.error('Error saving why choose form:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -127,8 +131,15 @@ const WhyChooseForm = () => {
           {errors.choose_inner_desc_3 && <div className="invalid-feedback">{errors.choose_inner_desc_3}</div>}
         </div>
         <div className="col-12 text-end mt-4">
-          <button type="submit" className="btn btn-primary btn-sm px-4">
-            Update
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
           </button>
         </div>
       </form>

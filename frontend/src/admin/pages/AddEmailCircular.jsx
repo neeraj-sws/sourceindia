@@ -21,6 +21,7 @@ const AddEmailCircular = () => {
   const [errors, setErrors] = useState({});
   const [showButton, setShowButton] = useState(false);
   const fileInputRef = useRef(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchUserType = async () => {
@@ -91,7 +92,7 @@ const AddEmailCircular = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+    setSubmitting(true);
     try {
       let endpoint, method, payload, headers;
       if (isEditing) {
@@ -122,6 +123,8 @@ const AddEmailCircular = () => {
     } catch (error) {
       console.error("Error saving Email Circular:", error);
       showNotification(`Failed to ${isEditing ? "update" : "add"} Email Circular`, "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -354,7 +357,16 @@ const AddEmailCircular = () => {
                     </div>
                   </div>
                   <div className="col-12 text-end">
-                    <button type="submit" className="btn btn-primary btn-sm px-4">Save</button>
+                    <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
+                      {submitting ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          {isEditing ? "Updating..." : "Saving..."}
+                        </>
+                      ) : (
+                        isEditing ? "Update" : "Save"
+                      )}
+                    </button>
                   </div>
                 </div>
               </form>

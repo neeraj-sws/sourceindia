@@ -40,6 +40,7 @@ const AddSeller = () => {
   const [companyFile, setCompanyFile] = useState(null);
   const [companyBrochure, setCompanyBrochure] = useState(null);
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -108,13 +109,53 @@ const AddSeller = () => {
         const cityId = $(this).val();
         handleCityChange({ target: { value: cityId } });
       });
+
+      $('#category_sell').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select Category"
+      }).on("change", function () {
+        const categoryId = $(this).val();
+        handleCategoryChange({ target: { value: categoryId } });
+      });
+
+      $('#sub_category').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select Sub Category"
+      }).on("change", function () {
+        const subCategoryId = $(this).val();
+        handleSubCategoryChange({ target: { value: subCategoryId } });
+      });
+
+      $('#core_activity').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select Core Activity"
+      }).on("change", function () {
+        const coreActivityId = $(this).val();
+        handleCoreActivityChange({ target: { value: coreActivityId } });
+      });
+
+      $('#activity').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select Activity"
+      }).on("change", function () {
+        const activityId = $(this).val();
+        handleActivityChange({ target: { value: activityId } });
+      });
   
       return () => {
         $('#country').off("change").select2('destroy');
         $('#state').off("change").select2('destroy');
         $('#city').off("change").select2('destroy');
+        $('#category_sell').off("change").select2('destroy');
+        $('#sub_category').off("change").select2('destroy');
+        $('#core_activity').off("change").select2('destroy');
+        $('#activity').off("change").select2('destroy');
       };
-    }, [countries, states, cities]);
+    }, [countries, states, cities, categories, subCategories, coreactivities, activities]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -157,10 +198,10 @@ const AddSeller = () => {
   }, []);
 
   const handleCoreActivityChange = async (event) => {
-    const coreactivityId = event.target.value;
-    setSelectedCoreActivity(coreactivityId);
+    const coreActivityId = event.target.value;
+    setSelectedCoreActivity(coreActivityId);
     try {
-      const res = await axios.get(`${API_BASE_URL}/activities/coreactivity/${coreactivityId}`);
+      const res = await axios.get(`${API_BASE_URL}/activities/coreactivity/${coreActivityId}`);
       setActivities(res.data);
       setSelectedActivity("");
     } catch (error) {
@@ -340,6 +381,7 @@ const AddSeller = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => { data.append(key, value); });
     data.append("country", selectedCountry);
@@ -363,6 +405,8 @@ const AddSeller = () => {
     } catch (error) {
       console.error("Error saving seller:", error);
       showNotification(`Failed to ${isEditing ? "update" : "add"} seller`, "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -392,7 +436,7 @@ const AddSeller = () => {
               <div className="card-body p-4">
                 <form className="row g-3" onSubmit={handleSubmit}>
                   <div className="col-md-4">
-                    <label htmlFor="user_company" className="form-label required">Organization Name1</label>
+                    <label htmlFor="user_company" className="form-label required">Organization Name</label>
                     <input
                       type="text" className={`form-control ${errors.user_company ? "is-invalid" : ""}`}
                       id="user_company"
@@ -838,7 +882,16 @@ const AddSeller = () => {
                     {errors.address && (<div className="invalid-feedback">{errors.address}</div>)}
                   </div>
                   <div className="col-12 text-end">
-                    <button type="submit" className="btn btn-sm btn-primary px-4 mt-3">Save</button>
+                    <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
+                      {submitting ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          {isEditing ? "Updating..." : "Saving..."}
+                        </>
+                      ) : (
+                        isEditing ? "Update" : "Save"
+                      )}
+                    </button>
                   </div>
                 </form>
               </div>

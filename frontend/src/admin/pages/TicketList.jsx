@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import SearchDropdown from "../common/SearchDropdown";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
@@ -18,9 +19,7 @@ const TicketList = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -29,6 +28,7 @@ const TicketList = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState(null);
   const listStatus = ["Pending", "In Progress", "Resolved", "Cancel"];
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,7 +74,7 @@ const TicketList = () => {
     }
   };
 
-  const openModal = async (editData = null) => {
+  const openForm = async (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
@@ -83,10 +83,13 @@ const TicketList = () => {
     } else {
       setFormData(initialForm);
     }
-    setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value, files } = e.target;
@@ -122,6 +125,7 @@ const TicketList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const selectedCategory = categories.find((c) => c.id.toString() === formData.category.toString());
     const selectedUser = users.find((u) => u.id.toString() === formData.user_id.toString());
     const payload = { ...formData, category_name: selectedCategory?.name || "", user_name: selectedUser?.fname+" "+selectedUser?.lname };
@@ -140,11 +144,13 @@ const TicketList = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`Ticket ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save Ticket.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -194,81 +200,181 @@ const TicketList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Ticket" add_button="Add Ticket" add_link="#" onClick={openAddModal} />
-          <div className="card">
-            <div className="card-body">
-              <DataTable
-                columns={[
-                  { key: "id", label: "S.No.", sortable: true },
-                  { key: "title", label: "Title", sortable: true },
-                  { key: "priority", label: "Priority", sortable: true },
-                  { key: "category_name", label: "Ticket Category", sortable: true },
-                  { key: "created_at", label: "Created At", sortable: true },
-                  { key: "updated_at", label: "Updated At", sortable: true },
-                  { key: "status", label: "Status", sortable: false },
-                  { key: "action", label: "Action", sortable: false },
-                ]}
-                data={data}
-                loading={loading}
-                page={page}
-                totalRecords={totalRecords}
-                filteredRecords={filteredRecords}
-                limit={limit}
-                sortBy={sortBy}
-                sortDirection={sortDirection}
-                onPageChange={(newPage) => setPage(newPage)}
-                onSortChange={handleSortChange}
-                onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                search={search}
-                onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                getRangeText={getRangeText}
-                renderRow={(row, index) => (
-                  <tr key={row.id}>
-                    <td>{(page - 1) * limit + index + 1}</td>
-                    <td>{row.title}</td>
-                    <td>{row.priority}</td>
-                    <td>{row.category_name}</td>
-                    <td>{formatDateTime(row.created_at)}</td>
-                    <td>{formatDateTime(row.updated_at)}</td>
-                    <td>{listStatus.map((s,i) => (row.status == i ? s : ""))}</td>
-                    <td>
-                      <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i className="bx bx-dots-vertical-rounded"></i>
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li>
-                            <button className="dropdown-item" onClick={() => openModal(row)}>
-                              <i className="bx bx-edit me-2"></i> Edit
+          <Breadcrumb page="Settings" title="Ticket" add_button="Add Ticket" add_link="#" onClick={() => openForm()} />
+          <div className="row">
+            <div className="col-md-5">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title mb-3">{isEditing ? "Edit Ticket" : "Add Ticket"}</h5>
+                  <form className="row" onSubmit={handleSubmit} noValidate>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="user_id" className="form-label required">On Behalf Of</label>
+                      <SearchDropdown
+                        id="user_id"
+                        options={users?.map(user => ({ value: user.id, label: user.fname + " " + user.lname }))}
+                        value={formData.user_id}
+                        onChange={handleSelectChange("user_id")}
+                        placeholder="Select here"
+                        className={`form-control ${errors.user_id ? "is-invalid" : ""}`}
+                      />
+                      {errors.user_id && <div className="text-danger small mt-1">{errors.user_id}</div>}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="title" className="form-label required">Title</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.title ? "is-invalid" : ""}`}
+                        id="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        placeholder="Title"
+                      />
+                      {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+                    </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="priority" className="form-label required">Priority</label>
+                      <select
+                        id="priority"
+                        className={`form-select ${errors.priority ? "is-invalid" : ""}`}
+                        value={formData.priority}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select here</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                      </select>
+                      {errors.priority && <div className="invalid-feedback">{errors.priority}</div>}
+                    </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="category" className="form-label required">Category</label>
+                      <SearchDropdown
+                        id="category"
+                        options={categories?.map(cat => ({ value: String(cat.id), label: cat.name }))}
+                        value={formData.category}
+                        onChange={handleSelectChange("category")}
+                        placeholder="Select category"
+                        className={`form-control ${errors.category ? "is-invalid" : ""}`}
+                      />
+                      {errors.category && <div className="text-danger small mt-1">{errors.category}</div>}
+                    </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="message" className="form-label required">Message</label>
+                      <textarea
+                        className={`form-control ${errors.message ? "is-invalid" : ""}`}
+                        id="message"
+                        onChange={handleChange}
+                        placeholder="message"
+                        value={formData.message}
+                      />
+                      {errors.message && <div className="invalid-feedback">{errors.message}</div>}
+                    </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="attachment" className="form-label required">Attachment</label>
+                      <input
+                        type="file"
+                        className={`form-control ${errors.attachment ? "is-invalid" : ""}`}
+                        id="attachment"
+                        onChange={handleChange}
+                      />
+                      {errors.attachment && <div className="invalid-feedback">{errors.attachment}</div>}
+                    </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="status" className="form-label required">Status</label>
+                      <select
+                        id="status"
+                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
+                        value={formData.status}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select here</option>
+                        {listStatus?.map((status, key) => (<option key={key} value={key}>{status}</option>))}
+                      </select>
+                      {errors.status && <div className="invalid-feedback">{errors.status}</div>}
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
+                        {isEditing ? "Cancel" : "Reset"}
+                      </button>
+                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+                        {submitting ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            {isEditing ? "Updating..." : "Saving..."}
+                          </>
+                        ) : (
+                          isEditing ? "Update" : "Save"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-7">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title mb-3">Ticket List</h5>  
+                  <DataTable
+                    columns={[
+                      { key: "id", label: "S.No.", sortable: true },
+                      { key: "title", label: "Title", sortable: true },
+                      { key: "priority", label: "Priority", sortable: true },
+                      { key: "category_name", label: "Ticket Category", sortable: true },
+                      { key: "created_at", label: "Created At", sortable: true },
+                      { key: "status", label: "Status", sortable: false },
+                      { key: "action", label: "Action", sortable: false },
+                    ]}
+                    data={data}
+                    loading={loading}
+                    page={page}
+                    totalRecords={totalRecords}
+                    filteredRecords={filteredRecords}
+                    limit={limit}
+                    sortBy={sortBy}
+                    sortDirection={sortDirection}
+                    onPageChange={(newPage) => setPage(newPage)}
+                    onSortChange={handleSortChange}
+                    onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                    search={search}
+                    onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                    getRangeText={getRangeText}
+                    renderRow={(row, index) => (
+                      <tr key={row.id}>
+                        <td>{(page - 1) * limit + index + 1}</td>
+                        <td>{row.title}</td>
+                        <td>{row.priority}</td>
+                        <td>{row.category_name}</td>
+                        <td>{formatDateTime(row.created_at)}</td>
+                        <td>{listStatus.map((s,i) => (row.status == i ? s : ""))}</td>
+                        <td>
+                          <div className="dropdown">
+                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                              <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              />
+                            <ul className="dropdown-menu">
+                              <li>
+                                <button className="dropdown-item" onClick={() => openForm(row)}>
+                                  <i className="bx bx-edit me-2"></i> Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </ul>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
       <TicketModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        users={users}
-        categories={categories}
-        listStatus={listStatus}
-        handleChange={handleChange}
-        handleSelectChange={handleSelectChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

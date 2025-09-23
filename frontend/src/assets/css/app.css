@@ -2829,6 +2829,10 @@ input.search-control-2::placeholder {
 	box-shadow: none;
 }
 
+.select2-dropdown {
+    z-index: 99999;
+}
+
 .form-label {
 	color: var(--dark-color);
 	margin-bottom: 4px;
