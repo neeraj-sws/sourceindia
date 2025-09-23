@@ -10,6 +10,7 @@ const ValuesForm = () => {
   const [valueIcon, setValueIcon] = useState(null);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({ value_heading: '', value_description: '', value_file: '', value_icon: '' });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -61,6 +62,7 @@ const ValuesForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -73,6 +75,8 @@ const ValuesForm = () => {
     } catch (error) {
       console.error('Error saving values form:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -143,7 +147,16 @@ const ValuesForm = () => {
           {errors.value_description && <div className="invalid-feedback">{errors.value_description}</div>}
         </div>
         <div className="col-12 text-end mt-4">
-          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
+          </button>
         </div>
       </form>
     </>

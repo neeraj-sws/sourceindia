@@ -10,6 +10,7 @@ const CounterSectionForm = () => {
     counter_1_heading: '', counter_1_number: '', counter_2_heading: '', counter_2_number: '',
     counter_3_heading: '', counter_3_number: ''
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -40,6 +41,7 @@ const CounterSectionForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -50,6 +52,8 @@ const CounterSectionForm = () => {
     } catch (error) {
       console.error('Error saving counter section form:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -101,8 +105,15 @@ const CounterSectionForm = () => {
           {errors.counter_3_number && <div className="invalid-feedback">{errors.counter_3_number}</div>}
         </div>
         <div className="col-12 text-end mt-4">
-          <button type="submit" className="btn btn-primary btn-sm px-4">
-            Update
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
           </button>
         </div>
       </form>

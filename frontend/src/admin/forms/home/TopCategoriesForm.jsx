@@ -7,6 +7,7 @@ const TopCategoriesForm = () => {
   const { showNotification } = useAlert();
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({ categorysub_heading: '', category_heading: '', categoryshort_description: '' });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -34,6 +35,7 @@ const TopCategoriesForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -44,6 +46,8 @@ const TopCategoriesForm = () => {
     } catch (error) {
       console.error('Error saving category form:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -77,7 +81,16 @@ const TopCategoriesForm = () => {
           {errors.categoryshort_description && <div className="invalid-feedback">{errors.categoryshort_description}</div>}
         </div>
         <div className="col-12 text-end mt-4">
-          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
+          </button>
         </div>
       </form>
     </>

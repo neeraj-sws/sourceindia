@@ -16,6 +16,7 @@ const AddEmail = () => {
     title: '', email_for: 'User', subject: '', description: '', is_seller_direct: '', message: '', status: ''
   });
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -64,7 +65,7 @@ const AddEmail = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+    setSubmitting(true);
     try {
       let endpoint, method, payload, headers;
       if (isEditing) {
@@ -89,6 +90,8 @@ const AddEmail = () => {
     } catch (error) {
       console.error("Error saving Email:", error);
       showNotification(`Failed to ${isEditing ? "update" : "add"} Email`, "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -184,10 +187,19 @@ const AddEmail = () => {
                           setFormData(prev => ({ ...prev, message: data }));
                         }}
                       />
-                      {errors.message && <div className="text-danger mt-1">{errors.message}</div>}
+                      {errors.message && <div className="text-danger small mt-1">{errors.message}</div>}
                     </div>
                     <div className="col-12">
-                      <button type="submit" className="btn btn-primary btn-sm px-5">{isEditing ? "Update" : "Save"} Email</button>
+                      <button type="submit" className="btn btn-primary btn-sm px-5" disabled={submitting}>
+                        {submitting ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          {isEditing ? "Updating..." : "Saving..."}
+                        </>
+                      ) : (
+                        isEditing ? "Update Email" : "Save Email"
+                      )}
+                      </button>
                     </div>
                   </form>
                 </div>

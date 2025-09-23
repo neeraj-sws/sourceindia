@@ -12,6 +12,7 @@ const ContactUsInformationForm = () => {
     contactsub_heading: '', contact_heading: '', contactshort_description: '',
     contactaddress: '', contactphone_1: '', contactphone_2: '', contactemail: '', contact_map_url: ''
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -53,6 +54,7 @@ const ContactUsInformationForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -63,6 +65,8 @@ const ContactUsInformationForm = () => {
     } catch (error) {
       console.error('Error saving contact us information form:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -107,7 +111,7 @@ const ContactUsInformationForm = () => {
               setFormData(prev => ({ ...prev, contactaddress: data }));
             }}
           />
-          {errors.contactaddress && <div className="text-danger mt-1">{errors.contactaddress}</div>}
+          {errors.contactaddress && <div className="text-danger small mt-1">{errors.contactaddress}</div>}
         </div>
         <div className="col-md-4">
           <label htmlFor="contactphone_1" className="form-label required">Phone 1</label>
@@ -134,8 +138,15 @@ const ContactUsInformationForm = () => {
           {errors.contact_map_url && <div className="invalid-feedback">{errors.contact_map_url}</div>}
         </div>
         <div className="col-12 text-end mt-4">
-          <button type="submit" className="btn btn-primary btn-sm px-4">
-            Update
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
           </button>
         </div>
       </form>

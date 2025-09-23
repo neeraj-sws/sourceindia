@@ -10,6 +10,7 @@ const FooterSectionForm = () => {
     newsletter_heading: '', newsletter_short_description: '', footer_heading: '',
     footershort_description: '', facebook_url: '', twitter_url: '', instagram_url: '', linkedin_url: '', youtube_url: ''
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -58,6 +59,7 @@ const FooterSectionForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -68,6 +70,8 @@ const FooterSectionForm = () => {
     } catch (error) {
       console.error('Error saving footer section form:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -143,7 +147,16 @@ const FooterSectionForm = () => {
           {errors.youtube_url && <div className="invalid-feedback">{errors.youtube_url}</div>}
         </div>
         <div className="col-12 text-end mt-4">
-          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
+          </button>
         </div>
       </form>
     </>

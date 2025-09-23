@@ -32,6 +32,7 @@ const AddProduct = () => {
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchSellers = async () => {
@@ -85,30 +86,30 @@ const AddProduct = () => {
 
   const handleSubCategoryChange = (event) => { setSelectedSubCategory(event.target.value); };
 
-      useEffect(() => {
-      $('#category').select2({
-        theme: "bootstrap",
-        width: '100%',
-        placeholder: "Select Category"
-      }).on("change", function () {
-        const categoryId = $(this).val();
-        handleCategoryChange({ target: { value: categoryId } });
-      });
-  
-      $('#sub_category').select2({
-        theme: "bootstrap",
-        width: '100%',
-        placeholder: "Select Sub Category"
-      }).on("change", function () {
-        const subCategoryId = $(this).val();
-        handleSubCategoryChange({ target: { value: subCategoryId } });
-      });
-  
-      return () => {
-        $('#category').off("change").select2('destroy');
-        $('#sub_category').off("change").select2('destroy');
-      };
-    }, [categories, subCategories]);
+  useEffect(() => {
+    $('#category').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Category"
+    }).on("change", function () {
+      const categoryId = $(this).val();
+      handleCategoryChange({ target: { value: categoryId } });
+    });
+
+    $('#sub_category').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Sub Category"
+    }).on("change", function () {
+      const subCategoryId = $(this).val();
+      handleSubCategoryChange({ target: { value: subCategoryId } });
+    });
+
+    return () => {
+      $('#category').off("change").select2('destroy');
+      $('#sub_category').off("change").select2('destroy');
+    };
+  }, [categories, subCategories]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -184,7 +185,7 @@ const AddProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+    setSubmitting(true);
     try {
       let endpoint, method, payload, headers;
       if (isEditing) {
@@ -221,6 +222,8 @@ const AddProduct = () => {
     } catch (error) {
       console.error("Error saving Product:", error);
       showNotification(`Failed to ${isEditing ? "update" : "add"} Product`, "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -615,7 +618,16 @@ const AddProduct = () => {
                       </div>
                     </div>
                     <div className="col-12 text-end mt-2">
-                      <button type="submit" className="btn btn-primary btn-sm px-4">Save</button>
+                      <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
+                      {submitting ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          {isEditing ? "Updating..." : "Saving..."}
+                        </>
+                      ) : (
+                        isEditing ? "Update" : "Save"
+                      )}
+                    </button>
                     </div>
                   </form>
                 </div>

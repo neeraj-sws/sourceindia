@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
-import API_BASE_URL from "../../config";
+import ImageWithFallback from "../common/ImageWithFallback";
+import SearchDropdown from "../common/SearchDropdown";
+import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import InterestCategoriesModals from "./modal/InterestCategoriesModals";
@@ -18,9 +20,7 @@ const InterestCategories = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -29,6 +29,7 @@ const InterestCategories = () => {
   const [interestCategoriesToDelete, setInterestCategoriesToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,7 +75,7 @@ const InterestCategories = () => {
     }
   };
 
-  const openModal = async (editData = null) => {
+  const openForm = async (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
@@ -83,14 +84,24 @@ const InterestCategories = () => {
     } else {
       setFormData(initialForm);
     }
-    setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
+  };
+
+  const handleSelectChange = (fieldName) => (selectedOption) => {
+    setFormData((prev) => ({
+      ...prev,
+      [fieldName]: selectedOption ? selectedOption.value : "",
+    }));
   };
 
   const allowedImageTypes = ["image/jpeg", "image/png", "image/gif"];
@@ -122,6 +133,7 @@ const InterestCategories = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const selectedColor = colors.find((c) => c.id.toString() === formData.color.toString());
     const payload = { ...formData, color_name: selectedColor?.title || "" };
     try {
@@ -139,11 +151,13 @@ const InterestCategories = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`Interest Category ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save Interest Category.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -201,40 +215,128 @@ const InterestCategories = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Interest Category" add_button="Add Interest Category" add_link="#" onClick={openAddModal} />
-          <div className="card">
-            <div className="card-body">
-              <DataTable
-                columns={[
-                  { key: "id", label: "S.No.", sortable: true },
-                  { key: "name", label: "Name", sortable: true },
-                  { key: "color_name", label: "Color", sortable: true },
-                  { key: "created_at", label: "Created At", sortable: true },
-                  { key: "updated_at", label: "Updated At", sortable: true },
-                  { key: "status", label: "Status", sortable: false },
-                  { key: "action", label: "Action", sortable: false },
-                ]}
-                data={data}
-                loading={loading}
-                page={page}
-                totalRecords={totalRecords}
-                filteredRecords={filteredRecords}
-                limit={limit}
-                sortBy={sortBy}
-                sortDirection={sortDirection}
-                onPageChange={(newPage) => setPage(newPage)}
-                onSortChange={handleSortChange}
-                onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                search={search}
-                onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                getRangeText={getRangeText}
-                renderRow={(row, index) => (
-                  <tr key={row.id}>
+          <Breadcrumb page="Settings" title="Interest Category" add_button="Add Interest Category" add_link="#" onClick={() => openForm()} />
+          <div className="row">
+            <div className="col-md-5">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title mb-3">{isEditing ? "Edit Interest Category" : "Add Interest Category"}</h5>
+                    <form className="row" onSubmit={handleSubmit} noValidate>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="name" className="form-label required">Name</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.name ? "is-invalid" : ""}`}
+                        id="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Name"
+                      />
+                      {errors.name && <div className="invalid-feedback">{errors.name}</div>}
+                    </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="color" className="form-label required">Color</label>
+                      <SearchDropdown
+                          options={colors?.map(color => ({ value: String(color.id), label: color.title }))}
+                          value={formData.color}
+                          onChange={handleSelectChange("color")}
+                          placeholder="Select Core Activity"
+                          id="color"
+                        />
+                        {errors.color && (<div className="invalid-feedback">{errors.color} </div>
+                        )}
+                      </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="status" className="form-label required">Status</label>
+                      <select
+                        id="status"
+                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
+                        value={formData.status}
+                        onChange={handleChange}
+                      >
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                      </select>
+                      {errors.status && <div className="invalid-feedback">{errors.status}</div>}
+                    </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="file" className="form-label required">Interest Category Image</label>
+                      <input
+                        type="file"
+                        className={`form-control ${errors.file ? "is-invalid" : ""}`}
+                        id="file"
+                        onChange={handleFileChange}
+                      />
+                      {errors.file && <div className="invalid-feedback">{errors.file}</div>}
+                      {formData.file ? (
+                        <img
+                          src={URL.createObjectURL(formData.file)}
+                          className="img-preview object-fit-cover mt-3"
+                          width={150}
+                          height={150}
+                          alt="Preview"
+                        />
+                      ) : formData.file_name ? (
+                        <ImageWithFallback
+                          src={`${ROOT_URL}/${formData.file_name}`}
+                          width={150}
+                          height={150}
+                          showFallback={false}
+                        />
+                      ) : null}
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
+                        {isEditing ? "Cancel" : "Reset"}
+                      </button>
+                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+                        {submitting ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            {isEditing ? "Updating..." : "Saving..."}
+                          </>
+                        ) : (
+                          isEditing ? "Update" : "Save"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-7">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title mb-3">Interest Category List</h5>
+                  <DataTable
+                    columns={[
+                      { key: "id", label: "S.No.", sortable: true },
+                      { key: "name", label: "Name", sortable: true },
+                      { key: "color_name", label: "Color", sortable: true },
+                      { key: "created_at", label: "Created At", sortable: true },
+                      { key: "status", label: "Status", sortable: false },
+                      { key: "action", label: "Action", sortable: false },
+                    ]}
+                    data={data}
+                    loading={loading}
+                    page={page}
+                    totalRecords={totalRecords}
+                    filteredRecords={filteredRecords}
+                    limit={limit}
+                    sortBy={sortBy}
+                    sortDirection={sortDirection}
+                    onPageChange={(newPage) => setPage(newPage)}
+                    onSortChange={handleSortChange}
+                    onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                    search={search}
+                    onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                    getRangeText={getRangeText}
+                    renderRow={(row, index) => (
+                      <tr key={row.id}>
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td>{row.name}</td>
                         <td>{row.color_name}</td>
                         <td>{formatDateTime(row.created_at)}</td>
-                        <td>{formatDateTime(row.updated_at)}</td>
                         <td>
                           <div className="form-check form-switch">
                             <input
@@ -248,41 +350,34 @@ const InterestCategories = () => {
                           </div>
                         </td>
                         <td>
-                      <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i className="bx bx-dots-vertical-rounded"></i>
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li>
-                            <button className="dropdown-item" onClick={() => openModal(row)}>
-                              <i className="bx bx-edit me-2"></i> Edit
+                          <div className="dropdown">
+                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                              <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
+                            <ul className="dropdown-menu">
+                              <li>
+                                <button className="dropdown-item" onClick={() => openForm(row)}>
+                                  <i className="bx bx-edit me-2"></i> Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </ul>
+                          </div>
+                        </td>
                       </tr>
-                )}
-              />
+                    )}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
       <InterestCategoriesModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        colors={colors}
-        handleChange={handleChange}
-        handleFileChange={handleFileChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

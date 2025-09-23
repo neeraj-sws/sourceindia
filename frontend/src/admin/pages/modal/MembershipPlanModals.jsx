@@ -8,6 +8,7 @@ const MembershipPlanModals = ({
   errors,
   handleChange,
   handleSubmit,
+  submitting,
 
   // Delete modal
   showDeleteModal,
@@ -174,7 +175,16 @@ const MembershipPlanModals = ({
                   </div>
                   <div className="modal-footer justify-content-between col-md-12">
                     <button type="button" className="btn btn-secondary btn-sm" onClick={closeModal}>Close</button>
-                    <button type="submit" className="btn btn-primary btn-sm">{isEditing ? "Update" : "Save"}</button>
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+                      {submitting ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                          {isEditing ? "Updating..." : "Saving..."}
+                        </>
+                      ) : (
+                        isEditing ? "Update" : "Save"
+                      )}
+                    </button>
                   </div>
                 </form>
               </div>
