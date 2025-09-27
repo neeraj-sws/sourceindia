@@ -5,7 +5,7 @@ import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 
-const LeadsList = ({getPublic, getApprove, viewType}) => {
+const LeadsList = ({ getPublic, getApprove, viewType }) => {
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -20,8 +20,10 @@ const LeadsList = ({getPublic, getApprove, viewType}) => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/enquiries/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, 
-        getPublic: getPublic ? 'true' : 'false', getApprove: getApprove ? 'true' : 'false', viewType: 'leads' },
+        params: {
+          page, limit, search, sortBy, sort: sortDirection,
+          getPublic: getPublic ? 'true' : 'false', getApprove: getApprove ? 'true' : 'false', viewType: 'leads'
+        },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -65,7 +67,7 @@ const LeadsList = ({getPublic, getApprove, viewType}) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title={ getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : "Leads" } />
+          <Breadcrumb mainhead="Leads" maincount={totalRecords} page="" title={getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : "Leads"} />
           <div className="card">
             <div className="card-body">
               <DataTable

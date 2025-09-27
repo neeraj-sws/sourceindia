@@ -167,7 +167,7 @@ const TicketCategoryList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Ticket Category" add_button="Add Ticket Category" add_link="#" onClick={openAddModal} />
+          <Breadcrumb mainhead="Ticket Categories" maincount={totalRecords} page="" title="Ticket Category" add_button="Add Ticket Category" add_link="#" onClick={openAddModal} />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -217,7 +217,7 @@ const TicketCategoryList = () => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -227,7 +227,7 @@ const TicketCategoryList = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>

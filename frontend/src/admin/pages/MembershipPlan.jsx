@@ -6,8 +6,10 @@ import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import MembershipPlanModals from "./modal/MembershipPlanModals";
-const initialForm = { id: null, name: "", sub_title: "", price: "", user: "", category: "", product: "", 
-  expire_days: "", is_default: "", free: "", elcina_plan: "", status: "1" };
+const initialForm = {
+  id: null, name: "", sub_title: "", price: "", user: "", category: "", product: "",
+  expire_days: "", is_default: "", free: "", elcina_plan: "", status: "1"
+};
 
 const MembershipPlan = () => {
   const [data, setData] = useState([]);
@@ -79,8 +81,10 @@ const MembershipPlan = () => {
     setErrors({});
     if (editData) {
       const res = await axios.get(`${API_BASE_URL}/membership_plan/${editData.id}`);
-      setFormData({ ...editData, status: String(editData.status), expire_days: String(res.data.expire_days), 
-        is_default: String(res.data.is_default), free: String(res.data.free), elcina_plan: String(res.data.elcina_plan) });
+      setFormData({
+        ...editData, status: String(editData.status), expire_days: String(res.data.expire_days),
+        is_default: String(res.data.is_default), free: String(res.data.free), elcina_plan: String(res.data.elcina_plan)
+      });
     } else {
       setFormData(initialForm);
     }
@@ -175,7 +179,7 @@ const MembershipPlan = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Membership Plan" add_button="Add Membership Plan" add_link="#" onClick={openAddModal} />
+          <Breadcrumb mainhead="Membership Plans" maincount={totalRecords} page="" title="Membership Plan" add_button="Add Membership Plan" add_link="#" onClick={openAddModal} />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -231,7 +235,7 @@ const MembershipPlan = () => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -241,7 +245,7 @@ const MembershipPlan = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>

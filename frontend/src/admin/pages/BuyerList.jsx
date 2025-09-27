@@ -103,7 +103,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     try {
       await axios.patch(`${API_BASE_URL}/buyers/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if(field=="seller_status" || field=="delete_status"){
+      if (field == "seller_status" || field == "delete_status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
@@ -209,46 +209,46 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                     )}
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
                           {!getDeleted ? (
-                          <>
-                          <li>
-                            <button className="dropdown-item" onClick={() => navigate(`/admin/edit_buyer/${row.id}`)}>
-                              <i className="bx bx-edit me-2"></i> Edit
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" 
-                              onClick={(e) => {
-                                e.preventDefault(); 
-                                openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                              }}
-                            >
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                          </>                          
+                            <>
+                              <li>
+                                <button className="dropdown-item" onClick={() => navigate(`/admin/edit_buyer/${row.id}`)}>
+                                  <i className="bx bx-edit me-2"></i> Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </>
                           ) : (
-                          <>
-                          <li>
-                            <button className="dropdown-item" 
-                              onClick={(e) => {
-                                e.preventDefault(); 
-                                openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                              }}
-                            >
-                              <i className="bx bx-windows me-2"></i> Restore
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                          </>
+                            <>
+                              <li>
+                                <button className="dropdown-item"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-windows me-2"></i> Restore
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </>
                           )}
                         </ul>
                       </div>

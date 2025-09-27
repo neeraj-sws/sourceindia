@@ -124,7 +124,7 @@ const TicketList = () => {
     if (!validateForm()) return;
     const selectedCategory = categories.find((c) => c.id.toString() === formData.category.toString());
     const selectedUser = users.find((u) => u.id.toString() === formData.user_id.toString());
-    const payload = { ...formData, category_name: selectedCategory?.name || "", user_name: selectedUser?.fname+" "+selectedUser?.lname };
+    const payload = { ...formData, category_name: selectedCategory?.name || "", user_name: selectedUser?.fname + " " + selectedUser?.lname };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/tickets/${formData.id}`, payload, {
@@ -194,7 +194,7 @@ const TicketList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Ticket" add_button="Add Ticket" add_link="#" onClick={openAddModal} />
+          <Breadcrumb mainhead="Tickets" maincount={totalRecords} page="" title="Ticket" add_button="Add Ticket" add_link="#" onClick={openAddModal} />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -230,10 +230,10 @@ const TicketList = () => {
                     <td>{row.category_name}</td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
-                    <td>{listStatus.map((s,i) => (row.status == i ? s : ""))}</td>
+                    <td>{listStatus.map((s, i) => (row.status == i ? s : ""))}</td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -243,7 +243,7 @@ const TicketList = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>

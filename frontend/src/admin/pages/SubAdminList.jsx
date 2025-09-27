@@ -87,7 +87,7 @@ const SubAdminList = () => {
       setFormData({ ...editData, status: String(editData.status), password: "" });
     } else {
       setFormData(initialForm);
-    }    
+    }
     setShowModal(true);
   };
 
@@ -221,7 +221,7 @@ const SubAdminList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Sub Admin" add_button="Add Sub Admin" add_link="#" onClick={openAddModal} />
+          <Breadcrumb mainhead="Sub Admins" maincount={totalRecords}  page="" title="Sub Admins" add_button="Add Sub Admin" add_link="#" onClick={openAddModal} />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -269,7 +269,7 @@ const SubAdminList = () => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -279,7 +279,7 @@ const SubAdminList = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>

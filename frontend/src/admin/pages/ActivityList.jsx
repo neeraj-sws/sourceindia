@@ -74,7 +74,7 @@ const ActivityList = () => {
       setFormData({ ...editData, status: String(editData.status) });
     } else {
       setFormData(initialForm);
-    }    
+    }
     setShowModal(true);
   };
 
@@ -179,7 +179,7 @@ const ActivityList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Activity" add_button="Add Activity" add_link="#" onClick={openAddModal} />
+          <Breadcrumb mainhead="Activities" maincount={totalRecords} page="Settings" title="Activity" add_button="Add Activity" add_link="#" onClick={openAddModal} />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -227,7 +227,7 @@ const ActivityList = () => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -237,7 +237,7 @@ const ActivityList = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>

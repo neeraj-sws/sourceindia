@@ -115,7 +115,7 @@ const ProductList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Shop" title="Product" add_button="Add Product" add_link="/admin/add_product" />
+          <Breadcrumb mainhead="Products" maincount={totalRecords} page="" title="Product" add_button="Add Product" add_link="/admin/add_product" />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -169,7 +169,7 @@ const ProductList = () => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -179,7 +179,7 @@ const ProductList = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>

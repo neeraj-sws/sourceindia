@@ -5,7 +5,7 @@ const menuData = [
   {
     title: 'Dashboard',
     icon: 'bx bx-home-circle',
-    link: ['/admin','/admin/dashboard'],
+    link: ['/admin', '/admin/dashboard'],
   },
   {
     title: 'Buyers',
@@ -36,7 +36,7 @@ const menuData = [
       { title: 'Leads', link: '/admin/leads' },
       { title: 'Approve Leads', link: '/admin/approve_leads' },
       { title: 'Public Enquiries', link: '/admin/public_enquiries' },
-      { title: 'Open Enquiries', link: '/admin/open_enquiries' },      
+      { title: 'Open Enquiries', link: '/admin/open_enquiries' },
     ],
   },
   {
@@ -48,13 +48,22 @@ const menuData = [
     ],
   },
   {
-    title: 'Shop',
+    title: 'Category Master',
+    icon: 'bx bx-cart',
+    subMenu: [
+      { title: 'Categories', link: '/admin/product_categories' },
+      { title: 'Sub Categories', link: '/admin/product_sub_categories' },
+      { title: 'Interest Categories', link: '/admin/interest_categories' },
+      { title: 'Source Interest Categories', link: '/admin/source_interest_categories' },
+      { title: 'Items', link: '/admin/items' },
+    ],
+  },
+  {
+    title: 'Products',
     icon: 'bx bx-cart',
     subMenu: [
       { title: 'Product List', link: '/admin/products' },
       { title: 'Add Product', link: '/admin/add_product' },
-      { title: 'Product Categories', link: '/admin/product_categories' },
-      { title: 'Product Sub Categories', link: '/admin/product_sub_categories' },
     ],
   },
   {
@@ -64,7 +73,7 @@ const menuData = [
       { title: 'Ticket List', link: '/admin/tickets' },
       { title: 'Ticket Categories', link: '/admin/ticket_categories' },
     ],
-  },  
+  },
   {
     title: 'FAQ',
     icon: 'bx bx-question-mark',
@@ -114,15 +123,7 @@ const menuData = [
       { title: 'Activity', link: '/admin/activity' },
     ],
   },
-  {
-    title: 'Category Master',
-    icon: 'bx bx-list-ul',
-    subMenu: [      
-      { title: 'Interest Categories', link: '/admin/interest_categories' },      
-      { title: 'Source Interest Categories', link: '/admin/source_interest_categories' },
-      { title: 'Items', link: '/admin/items' },
-    ],
-  },
+
   {
     title: 'Applications',
     icon: 'bx bx-mobile',
@@ -233,7 +234,7 @@ const Sidebar = () => {
                   <div>
                     <img src="/logo.png" className="logo-icon" alt="logo icon" />
                   </div>
-                 
+
                   <div className="toggle-icon ms-auto">
                     <i className="bx bx-arrow-to-left" />
                   </div>
@@ -250,7 +251,7 @@ const Sidebar = () => {
                     />
                   ))}
                 </ul>
-              {/*end navigation*/}
+                {/*end navigation*/}
               </div>
             </div>
           </div>

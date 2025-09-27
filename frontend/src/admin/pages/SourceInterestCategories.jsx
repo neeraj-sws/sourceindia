@@ -81,7 +81,7 @@ const SourceInterestCategories = () => {
       setFormData({ ...editData, status: String(editData.status) });
     } else {
       setFormData(initialForm);
-    }    
+    }
     setShowModal(true);
   };
 
@@ -186,7 +186,7 @@ const SourceInterestCategories = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Source interest category" add_button="Add source interest category" add_link="#" onClick={openAddModal} />
+          <Breadcrumb mainhead="Source Interest Categories" maincount={totalRecords} page="" title="Source interest category" add_button="Add source interest category" add_link="#" onClick={openAddModal} />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -234,7 +234,7 @@ const SourceInterestCategories = () => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -244,7 +244,7 @@ const SourceInterestCategories = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>

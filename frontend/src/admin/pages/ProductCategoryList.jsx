@@ -192,18 +192,18 @@ const ProductCategoryList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Product Category List" add_button="Add Product Category" add_link="#" onClick={openAddModal} />
+          <Breadcrumb mainhead="Categories" maincount={totalRecords}  page="" title="Category List" add_button="Add  Category" add_link="#" onClick={openAddModal} />
           <div className="card">
             <div className="card-body">
-                <DataTable
+              <DataTable
                 columns={[
-                    { key: "id", label: "S.No.", sortable: true },
-                    { key: "image", label: "Image", sortable: false },
-                    { key: "name", label: "Name", sortable: true },
-                    { key: "created_at", label: "Created At", sortable: true },
-                    { key: "updated_at", label: "Updated At", sortable: true },
-                    { key: "status", label: "Status", sortable: false },
-                    { key: "action", label: "Action", sortable: false },
+                  { key: "id", label: "S.No.", sortable: true },
+                  { key: "image", label: "Image", sortable: false },
+                  { key: "name", label: "Name", sortable: true },
+                  { key: "created_at", label: "Created At", sortable: true },
+                  { key: "updated_at", label: "Updated At", sortable: true },
+                  { key: "status", label: "Status", sortable: false },
+                  { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}
                 loading={loading}
@@ -232,20 +232,20 @@ const ProductCategoryList = () => {
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>
-                        <div className="form-check form-switch">
+                      <div className="form-check form-switch">
                         <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id={`statusSwitch_${row.id}`}
-                            checked={row.status == 1}
-                            onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                            readOnly
+                          className="form-check-input"
+                          type="checkbox"
+                          id={`statusSwitch_${row.id}`}
+                          checked={row.status == 1}
+                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                          readOnly
                         />
-                        </div>
+                      </div>
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -255,14 +255,14 @@ const ProductCategoryList = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>
                         </ul>
                       </div>
                     </td>
-                    </tr>
+                  </tr>
                 )}
               />
             </div>

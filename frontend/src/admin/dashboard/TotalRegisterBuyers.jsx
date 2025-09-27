@@ -92,7 +92,7 @@ const TotalRegisterBuyers = () => {
       <hr />
       <div className="card">
         <div className="card-body">
-            <DataTable
+          <DataTable
             columns={[
               { key: "id", label: "S.No.", sortable: true },
               { key: "full_name", label: "Name", sortable: true },
@@ -123,11 +123,11 @@ const TotalRegisterBuyers = () => {
                 <td>{formatDateTime(row.created_at)}</td>
                 <td>{formatDateTime(row.updated_at)}</td>
                 <td>
-                  <button className="btn btn-sm btn-primary me-2 mb-2 edit-btn" onClick={(e) => navigate(`/admin/edit_buyer/${row.id}`)}>
-                  <i className="bx bx-edit me-0" />
+                  <button className="btn  btn-primary me-2 mb-2 edit-btn" onClick={(e) => navigate(`/admin/edit_buyer/${row.id}`)}>
+                    <i className="bx bx-edit me-0" />
                   </button>
                   <button className="btn btn-sm btn-danger mb-2" onClick={() => openDeleteModal(row.id)}>
-                  <i className="bx bx-trash me-0" />
+                    <i className="bx bx-trash me-0" />
                   </button>
                 </td>
               </tr>

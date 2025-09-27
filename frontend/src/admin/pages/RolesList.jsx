@@ -87,7 +87,7 @@ const RolesList = () => {
       setFormData({ ...editData, status: String(editData.status) });
     } else {
       setFormData(initialForm);
-    }    
+    }
     setShowModal(true);
   };
 
@@ -238,15 +238,15 @@ const RolesList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Roles" add_button="Add Roles" add_link="#" onClick={openAddModal}
-          actions={
-            <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
-            <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedRoles.length === 0}>
-              Delete Selected
-            </button>
-            </>
-          }
+          <Breadcrumb mainhead="Roles" maincount={totalRecords}  page="" title="Roles" add_button="Add Roles" add_link="#" onClick={openAddModal}
+            actions={
+              <>
+                <button className="btn  btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedRoles.length === 0}>
+                  Delete Selected
+                </button>
+              </>
+            }
           />
           <div className="card">
             <div className="card-body">
@@ -277,7 +277,7 @@ const RolesList = () => {
                 getRangeText={getRangeText}
                 renderRow={(row, index) => (
                   <tr key={row.id}>
-                    <td>                    
+                    <td>
                       <input type="checkbox" checked={selectedRoles.includes(row.id)} onChange={() => handleSelectRole(row.id)} />
                     </td>
                     <td>{(page - 1) * limit + index + 1}</td>
@@ -299,7 +299,7 @@ const RolesList = () => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -309,7 +309,7 @@ const RolesList = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>

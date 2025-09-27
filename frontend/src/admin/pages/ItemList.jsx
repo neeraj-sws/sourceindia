@@ -120,7 +120,7 @@ const ItemList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    
+
     const sCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
     const ssCategory = subcategories.find((c) => c.id.toString() === selectedSubCategory.toString());
     const payload = { ...formData, category: selectedCategory, category_name: sCategory?.name || "", sub_category: selectedSubCategory, sub_category_name: ssCategory?.name || "" };
@@ -213,7 +213,7 @@ const ItemList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Item" add_button="Add Item" add_link="#" onClick={openAddModal} />
+          <Breadcrumb mainhead="Items" maincount={totalRecords} page="" title="Item" add_button="Add Item" add_link="#" onClick={openAddModal} />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -263,7 +263,7 @@ const ItemList = () => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -273,7 +273,7 @@ const ItemList = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>

@@ -89,7 +89,7 @@ const EmailCircular = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Email Circular" add_button="Add Email Circular" add_link="/admin/add_email_circular" />
+          <Breadcrumb mainhead="Email Circular" maincount={totalRecords} page="" title="Email Circular" add_button="Add Email Circular" add_link="/admin/add_email_circular" />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -134,7 +134,7 @@ const EmailCircular = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>

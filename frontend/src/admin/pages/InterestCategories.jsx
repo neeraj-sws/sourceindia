@@ -201,7 +201,7 @@ const InterestCategories = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Interest Category" add_button="Add Interest Category" add_link="#" onClick={openAddModal} />
+          <Breadcrumb mainhead="Interest Categories" maincount={totalRecords} page="" title="Interest Category" add_button="Add Interest Category" add_link="#" onClick={openAddModal} />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -230,26 +230,26 @@ const InterestCategories = () => {
                 getRangeText={getRangeText}
                 renderRow={(row, index) => (
                   <tr key={row.id}>
-                        <td>{(page - 1) * limit + index + 1}</td>
-                        <td>{row.name}</td>
-                        <td>{row.color_name}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
-                        <td>{formatDateTime(row.updated_at)}</td>
-                        <td>
-                          <div className="form-check form-switch">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`statusSwitch_${row.id}`}
-                              checked={row.status == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                              readOnly
-                            />
-                          </div>
-                        </td>
-                        <td>
+                    <td>{(page - 1) * limit + index + 1}</td>
+                    <td>{row.name}</td>
+                    <td>{row.color_name}</td>
+                    <td>{formatDateTime(row.created_at)}</td>
+                    <td>{formatDateTime(row.updated_at)}</td>
+                    <td>
+                      <div className="form-check form-switch">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id={`statusSwitch_${row.id}`}
+                          checked={row.status == 1}
+                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                          readOnly
+                        />
+                      </div>
+                    </td>
+                    <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -259,14 +259,14 @@ const InterestCategories = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>
                         </ul>
                       </div>
                     </td>
-                      </tr>
+                  </tr>
                 )}
               />
             </div>

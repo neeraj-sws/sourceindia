@@ -89,7 +89,7 @@ const OpenEnquiry = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Open Enquiries" />
+          <Breadcrumb mainhead="Leads" maincount={totalRecords}  page="" title="Open Enquiries" />
           <div className="card">
             <div className="card-body">
               <DataTable
