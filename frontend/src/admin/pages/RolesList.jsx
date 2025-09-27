@@ -3,6 +3,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import SearchDropdown from "../common/SearchDropdown";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
@@ -20,9 +21,7 @@ const RolesList = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -35,6 +34,7 @@ const RolesList = () => {
   const [isBulkDelete, setIsBulkDelete] = useState(false);
   const [roleData, setRoleData] = useState([]);
   const excelExportRef = useRef();
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -80,7 +80,7 @@ const RolesList = () => {
     }
   };
 
-  const openModal = (editData = null) => {
+  const openForm = (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
@@ -91,7 +91,11 @@ const RolesList = () => {
     setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -116,6 +120,7 @@ const RolesList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const selectedCategory = categories.find((c) => c.id.toString() === formData.ticket_category.toString());
     const payload = { ...formData, category_name: selectedCategory?.name || "" };
     try {
@@ -129,11 +134,13 @@ const RolesList = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`Roles ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save roles.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -236,124 +243,177 @@ const RolesList = () => {
 
   return (
     <>
-      <div className="page-wrapper">
-        <div className="page-content">
-          <Breadcrumb mainhead="Roles" maincount={totalRecords}  page="" title="Roles" add_button="Add Roles" add_link="#" onClick={openAddModal}
-            actions={
-              <>
-                <button className="btn  btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedRoles.length === 0}>
-                  Delete Selected
-                </button>
-              </>
-            }
-          />
-          <div className="card">
-            <div className="card-body">
-              <DataTable
-                columns={[
-                  ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
-                  { key: "id", label: "S.No.", sortable: true },
-                  { key: "name", label: "Name", sortable: true },
-                  { key: "category_name", label: "Ticket Category", sortable: true },
-                  { key: "created_at", label: "Created At", sortable: true },
-                  { key: "updated_at", label: "Updated At", sortable: true },
-                  { key: "status", label: "Status", sortable: false },
-                  { key: "action", label: "Action", sortable: false },
-                ]}
-                data={data}
-                loading={loading}
-                page={page}
-                totalRecords={totalRecords}
-                filteredRecords={filteredRecords}
-                limit={limit}
-                sortBy={sortBy}
-                sortDirection={sortDirection}
-                onPageChange={(newPage) => setPage(newPage)}
-                onSortChange={handleSortChange}
-                onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                search={search}
-                onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                getRangeText={getRangeText}
-                renderRow={(row, index) => (
-                  <tr key={row.id}>
-                    <td>
-                      <input type="checkbox" checked={selectedRoles.includes(row.id)} onChange={() => handleSelectRole(row.id)} />
-                    </td>
-                    <td>{(page - 1) * limit + index + 1}</td>
-                    <td>{row.name}</td>
-                    <td>{row.category_name}</td>
-                    <td>{formatDateTime(row.created_at)}</td>
-                    <td>{formatDateTime(row.updated_at)}</td>
-                    <td>
-                      <div className="form-check form-switch">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id={`statusSwitch_${row.id}`}
-                          checked={row.status == 1}
-                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                          readOnly
-                        />
-                      </div>
-                    </td>
-                    <td>
-                      <div className="dropdown">
-                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i className="bx bx-dots-vertical-rounded"></i>
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li>
-                            <button className="dropdown-item" onClick={() => openModal(row)}>
-                              <i className="bx bx-edit me-2"></i> Edit
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              />
+    <div className="page-wrapper">
+      <div className="page-content">
+        <Breadcrumb mainhead="Roles" maincount={totalRecords}  page="" title="Roles" add_button="Add Roles" add_link="#" onClick={() => openForm()}
+        actions={
+          <>
+          <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+          <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedRoles.length === 0}>
+            Delete Selected
+          </button>
+          </>
+        }
+        />
+        <div className="row">
+          <div className="col-md-5">
+            <div className="card">
+              <div className="card-body">
+                <h5 className="card-title mb-3">{isEditing ? "Edit Role" : "Add Role"}</h5>
+                <form className="row" onSubmit={handleSubmit} noValidate>
+                  <div className="form-group mb-3 col-md-12">
+                    <label htmlFor="name" className="form-label required">Name</label>
+                    <input
+                      type="text"
+                      className={`form-control ${errors.name ? "is-invalid" : ""}`}
+                      id="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="Name"
+                    />
+                    {errors.name && (<div className="invalid-feedback">{errors.name}</div>)}
+                  </div>
+                  <div className="form-group mb-3 col-md-12">
+                    <label htmlFor="ticket_category" className="form-label">Ticket Category</label>
+                    <SearchDropdown
+                      id="ticket_category"
+                      options={categories?.map(cat => ({ value: cat.id, label: cat.name }))}
+                      value={formData.ticket_category}
+                      onChange={handleSelectChange("ticket_category")}
+                      placeholder="Select Ticket Category"
+                    />
+                  </div>
+                  <div className="form-group mb-3 col-md-12">
+                    <label htmlFor="status" className="form-label required">Status</label>
+                    <select
+                      id="status"
+                      className={`form-select ${errors.status ? "is-invalid" : ""}`}
+                      value={formData.status}
+                      onChange={handleChange}
+                    >
+                      <option value="1">Active</option>
+                      <option value="0">Inactive</option>
+                    </select>
+                    {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
+                  </div>
+                  <div className="d-flex justify-content-between">
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
+                      {isEditing ? "Cancel" : "Reset"}
+                    </button>
+                    <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+                        {submitting ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            {isEditing ? "Updating..." : "Saving..."}
+                          </>
+                        ) : (
+                          isEditing ? "Update" : "Save"
+                        )}
+                      </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-7">
+            <div className="card">
+              <div className="card-body">
+                <h5 className="card-title mb-3">Roles List</h5>
+                <DataTable
+                  columns={[
+                    ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
+                    { key: "id", label: "S.No.", sortable: true },
+                    { key: "name", label: "Name", sortable: true },
+                    { key: "category_name", label: "Ticket Category", sortable: true },
+                    { key: "created_at", label: "Created At", sortable: true },
+                    { key: "status", label: "Status", sortable: false },
+                    { key: "action", label: "Action", sortable: false },
+                  ]}
+                  data={data}
+                  loading={loading}
+                  page={page}
+                  totalRecords={totalRecords}
+                  filteredRecords={filteredRecords}
+                  limit={limit}
+                  sortBy={sortBy}
+                  sortDirection={sortDirection}
+                  onPageChange={(newPage) => setPage(newPage)}
+                  onSortChange={handleSortChange}
+                  onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                  search={search}
+                  onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                  getRangeText={getRangeText}
+                  renderRow={(row, index) => (
+                    <tr key={row.id}>
+                      <td>                    
+                        <input type="checkbox" checked={selectedRoles.includes(row.id)} onChange={() => handleSelectRole(row.id)} />
+                      </td>
+                      <td>{(page - 1) * limit + index + 1}</td>
+                      <td>{row.name}</td>
+                      <td>{row.category_name}</td>
+                      <td>{formatDateTime(row.created_at)}</td>
+                      <td>
+                        <div className="form-check form-switch">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id={`statusSwitch_${row.id}`}
+                            checked={row.status == 1}
+                            onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                            readOnly
+                          />
+                        </div>
+                      </td>
+                      <td>
+                        <div className="dropdown">
+                          <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i className="bx bx-dots-vertical-rounded"></i>
+                          </button>
+                          <ul className="dropdown-menu">
+                            <li>
+                              <button className="dropdown-item" onClick={() => openForm(row)}>
+                                <i className="bx bx-edit me-2"></i> Edit
+                              </button>
+                            </li>
+                            <li>
+                              <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                <i className="bx bx-trash me-2"></i> Delete
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <RoleModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        categories={categories}
-        handleChange={handleChange}
-        handleSelectChange={handleSelectChange}
-        handleSubmit={handleSubmit}
-        showDeleteModal={showDeleteModal}
-        closeDeleteModal={closeDeleteModal}
-        handleDeleteConfirm={handleDeleteConfirm}
-        isBulkDelete={isBulkDelete}
-        showStatusModal={showStatusModal}
-        statusToggleInfo={statusToggleInfo}
-        closeStatusModal={closeStatusModal}
-        handleStatusConfirm={handleStatusConfirm}
-      />
-      <ExcelExport
-        ref={excelExportRef}
-        columnWidth={34.29}
-        fileName="Roles Export.xlsx"
-        data={roleData}
-        columns={[
-          { label: "Name", key: "name" },
-          { label: "Status", key: "getStatus" },
-          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
-          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
-        ]}
-      />
+    </div>
+    <RoleModals
+      showDeleteModal={showDeleteModal}
+      closeDeleteModal={closeDeleteModal}
+      handleDeleteConfirm={handleDeleteConfirm}
+      isBulkDelete={isBulkDelete}
+      showStatusModal={showStatusModal}
+      statusToggleInfo={statusToggleInfo}
+      closeStatusModal={closeStatusModal}
+      handleStatusConfirm={handleStatusConfirm}
+    />
+    <ExcelExport
+      ref={excelExportRef}
+      columnWidth={34.29}
+      fileName="Roles Export.xlsx"
+      data={roleData}
+      columns={[
+        { label: "Name", key: "name" },
+        { label: "Status", key: "getStatus" },
+        { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+        { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+      ]}
+    />
     </>
   );
 };

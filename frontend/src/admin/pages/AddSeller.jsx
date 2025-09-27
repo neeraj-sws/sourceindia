@@ -40,6 +40,7 @@ const AddSeller = () => {
   const [companyFile, setCompanyFile] = useState(null);
   const [companyBrochure, setCompanyBrochure] = useState(null);
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -157,10 +158,10 @@ const AddSeller = () => {
   }, []);
 
   const handleCoreActivityChange = async (event) => {
-    const coreactivityId = event.target.value;
-    setSelectedCoreActivity(coreactivityId);
+    const coreActivityId = event.target.value;
+    setSelectedCoreActivity(coreActivityId);
     try {
-      const res = await axios.get(`${API_BASE_URL}/activities/coreactivity/${coreactivityId}`);
+      const res = await axios.get(`${API_BASE_URL}/activities/coreactivity/${coreActivityId}`);
       setActivities(res.data);
       setSelectedActivity("");
     } catch (error) {
@@ -340,6 +341,7 @@ const AddSeller = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => { data.append(key, value); });
     data.append("country", selectedCountry);
@@ -363,6 +365,8 @@ const AddSeller = () => {
     } catch (error) {
       console.error("Error saving seller:", error);
       showNotification(`Failed to ${isEditing ? "update" : "add"} seller`, "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 

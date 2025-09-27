@@ -19,9 +19,7 @@ const ApplicationList = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -29,6 +27,7 @@ const ApplicationList = () => {
   const [applicationToDelete, setApplicationToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,7 +73,7 @@ const ApplicationList = () => {
     }
   };
 
-  const openModal = async (editData = null) => {
+  const openForm = async (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
@@ -83,10 +82,13 @@ const ApplicationList = () => {
     } else {
       setFormData(initialForm);
     }
-    setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -122,6 +124,7 @@ const ApplicationList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const payload = { ...formData };
     try {
       if (isEditing) {
@@ -142,11 +145,13 @@ const ApplicationList = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`Application ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save Application.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -285,14 +290,6 @@ const ApplicationList = () => {
         </div>
       </div>
       <ApplicationModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        handleChange={handleChange}
-        handleFileChange={handleFileChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

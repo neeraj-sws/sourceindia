@@ -27,6 +27,7 @@ const AddBuyer = () => {
   const [file, setFile] = useState(null);
   const [companyFile, setCompanyFile] = useState(null);
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -216,7 +217,7 @@ const AddBuyer = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -242,6 +243,8 @@ const AddBuyer = () => {
     } catch (error) {
       console.error('Error saving buyer:', error);
       showNotification(`Failed to ${isEditing ? 'update' : 'add'} buyer`, "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 

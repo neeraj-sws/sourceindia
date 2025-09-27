@@ -10,6 +10,7 @@ const SystemSettingsForm = () => {
   const [faviconFile, setFaviconFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({ title: '', site_email: '', mobile: '', address: '', logo_file: '', favicon_file: '' });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -65,6 +66,7 @@ const SystemSettingsForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -77,6 +79,8 @@ const SystemSettingsForm = () => {
     } catch (error) {
       console.error('Error saving system setting:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -159,7 +163,16 @@ const SystemSettingsForm = () => {
           {errors.address && <div className="invalid-feedback">{errors.address}</div>}
         </div>
         <div className="col-12 text-end mt-4">
-          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
+          </button>
         </div>
       </form>
     </>

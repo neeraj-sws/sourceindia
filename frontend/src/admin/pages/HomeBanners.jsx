@@ -7,6 +7,8 @@ import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import HomeBannerModals from "./modal/HomeBannerModals";
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 const initialForm = { id: null, title: "", sub_title: "", description: "", button_text: "", button_url: "", status: "1", file: null };
 
 const HomeBanners = () => {
@@ -19,9 +21,7 @@ const HomeBanners = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -29,6 +29,7 @@ const HomeBanners = () => {
   const [homeBannerToDelete, setHomeBannerToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,7 +75,7 @@ const HomeBanners = () => {
     }
   };
 
-  const openModal = async (editData = null) => {
+  const openForm = async (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
@@ -83,10 +84,13 @@ const HomeBanners = () => {
     } else {
       setFormData(initialForm);
     }
-    setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -133,6 +137,7 @@ const HomeBanners = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const payload = { ...formData };
     try {
       if (isEditing) {
@@ -153,11 +158,13 @@ const HomeBanners = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`Home Banner ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save Home Banner.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -283,14 +290,6 @@ const HomeBanners = () => {
         </div>
       </div>
       <HomeBannerModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        handleChange={handleChange}
-        handleFileChange={handleFileChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

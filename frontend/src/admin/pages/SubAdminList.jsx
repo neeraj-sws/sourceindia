@@ -3,6 +3,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import SearchDropdown from "../common/SearchDropdown";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
@@ -20,9 +21,7 @@ const SubAdminList = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -35,6 +34,7 @@ const SubAdminList = () => {
   const [isBulkDelete, setIsBulkDelete] = useState(false);
   const [subAdminData, setSubAdminData] = useState([]);
   const excelExportRef = useRef();
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -80,18 +80,22 @@ const SubAdminList = () => {
     }
   };
 
-  const openModal = async (editData = null) => {
+  const openForm = async (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
-      setFormData({ ...editData, status: String(editData.status), password: "" });
+      setFormData({ ...editData, status: String(editData.status) });
     } else {
       setFormData(initialForm);
     }
     setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -128,6 +132,7 @@ const SubAdminList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const selectedRole = roles.find((c) => c.id.toString() === formData.role.toString());
     const payload = { ...formData, role_name: selectedRole?.name || "" };
     try {
@@ -141,11 +146,13 @@ const SubAdminList = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`Sub Admin ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err.response.data.error);
       showNotification("Failed to save Sub Admin.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -221,88 +228,182 @@ const SubAdminList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Sub Admins" maincount={totalRecords}  page="" title="Sub Admins" add_button="Add Sub Admin" add_link="#" onClick={openAddModal} />
-          <div className="card">
-            <div className="card-body">
-              <DataTable
-                columns={[
-                  { key: "id", label: "S.No.", sortable: true },
-                  { key: "name", label: "Name", sortable: true },
-                  { key: "role_name", label: "Role", sortable: true },
-                  { key: "created_at", label: "Created At", sortable: true },
-                  { key: "updated_at", label: "Updated At", sortable: true },
-                  { key: "status", label: "Status", sortable: false },
-                  { key: "action", label: "Action", sortable: false },
-                ]}
-                data={data}
-                loading={loading}
-                page={page}
-                totalRecords={totalRecords}
-                filteredRecords={filteredRecords}
-                limit={limit}
-                sortBy={sortBy}
-                sortDirection={sortDirection}
-                onPageChange={(newPage) => setPage(newPage)}
-                onSortChange={handleSortChange}
-                onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                search={search}
-                onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                getRangeText={getRangeText}
-                renderRow={(row, index) => (
-                  <tr key={row.id}>
-                    <td>{(page - 1) * limit + index + 1}</td>
-                    <td>{row.name}</td>
-                    <td>{row.role_name}</td>
-                    <td>{formatDateTime(row.created_at)}</td>
-                    <td>{formatDateTime(row.updated_at)}</td>
-                    <td>
-                      <div className="form-check form-switch">
+          <Breadcrumb mainhead="Sub Admins" maincount={totalRecords}  page="" title="Sub Admin" add_button="Add Sub Admin" add_link="#" onClick={() => openForm()} />          
+          <div className="row">
+            <div className="col-md-5">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title mb-3">{isEditing ? "Edit Sub Admin" : "Add Sub Admin"}</h5>
+                  <form className="row" onSubmit={handleSubmit} noValidate>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="name" className="form-label required">Name</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.name ? "is-invalid" : ""}`}
+                        id="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Name"
+                      />
+                      {errors.name && (<div className="invalid-feedback">{errors.name}</div>)}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="mobile" className="form-label required">Mobile</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.mobile ? "is-invalid" : ""}`}
+                        id="mobile"
+                        value={formData.mobile}
+                        onChange={handleChange}
+                        placeholder="Mobile"
+                      />
+                      {errors.mobile && (<div className="invalid-feedback">{errors.mobile}</div>)}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="email" className="form-label required">Email</label>
+                      <input
+                        type="email"
+                        className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                        id="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="Email"
+                      />
+                      {errors.email && (<div className="invalid-feedback">{errors.email}</div>)}
+                    </div>
+                    {!isEditing &&
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="password" className="form-label required">Password</label>
                         <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id={`statusSwitch_${row.id}`}
-                          checked={row.status == 1}
-                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                          readOnly
+                          type="text"
+                          className={`form-control ${errors.password ? "is-invalid" : ""}`}
+                          id="password"
+                          value={formData.password || ""}
+                          onChange={handleChange}
+                          placeholder="Password"
                         />
+                        {errors.password && (<div className="invalid-feedback">{errors.password}</div>)}
                       </div>
-                    </td>
-                    <td>
-                      <div className="dropdown">
-                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i className="bx bx-dots-vertical-rounded"></i>
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li>
-                            <button className="dropdown-item" onClick={() => openModal(row)}>
-                              <i className="bx bx-edit me-2"></i> Edit
+                    }
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="role" className="form-label required">Role</label>
+                      <SearchDropdown
+                        id="role"
+                        options={roles?.map(role => ({ value: role.id, label: role.name }))}
+                        value={formData.role}
+                        onChange={handleSelectChange("role")}
+                        placeholder="Select role"
+                        className={`form-control ${errors.role ? "is-invalid" : ""}`}
+                      />
+                      {errors.role && <div className="text-danger small mt-1">{errors.role}</div>}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="status" className="form-label required">Status</label>
+                      <select
+                        id="status"
+                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
+                        value={formData.status}
+                        onChange={handleChange}
+                      >
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                      </select>
+                      {errors.status && (<div className="invalid-feedback">{errors.status}</div>
+                      )}
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
+                        {isEditing ? "Cancel" : "Reset"}
+                      </button>
+                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+                        {submitting ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            {isEditing ? "Updating..." : "Saving..."}
+                          </>
+                        ) : (
+                          isEditing ? "Update" : "Save"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-7">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title mb-3">Sub Admin List</h5>
+                  <DataTable
+                    columns={[
+                      { key: "id", label: "S.No.", sortable: true },
+                      { key: "name", label: "Name", sortable: true },
+                      { key: "role_name", label: "Role", sortable: true },
+                      { key: "created_at", label: "Created At", sortable: true },
+                      { key: "status", label: "Status", sortable: false },
+                      { key: "action", label: "Action", sortable: false },
+                    ]}
+                    data={data}
+                    loading={loading}
+                    page={page}
+                    totalRecords={totalRecords}
+                    filteredRecords={filteredRecords}
+                    limit={limit}
+                    sortBy={sortBy}
+                    sortDirection={sortDirection}
+                    onPageChange={(newPage) => setPage(newPage)}
+                    onSortChange={handleSortChange}
+                    onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                    search={search}
+                    onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                    getRangeText={getRangeText}
+                    renderRow={(row, index) => (
+                      <tr key={row.id}>
+                        <td>{(page - 1) * limit + index + 1}</td>
+                        <td>{row.name}</td>
+                        <td>{row.role_name}</td>
+                        <td>{formatDateTime(row.created_at)}</td>
+                        <td>
+                          <div className="form-check form-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`statusSwitch_${row.id}`}
+                              checked={row.status == 1}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                              readOnly
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <div className="dropdown">
+                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                              <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              />
+                            <ul className="dropdown-menu">
+                              <li>
+                                <button className="dropdown-item" onClick={() => openForm(row)}>
+                                  <i className="bx bx-edit me-2"></i> Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </ul>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
       <SubAdminModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        roles={roles}
-        handleChange={handleChange}
-        handleSelectChange={handleSelectChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

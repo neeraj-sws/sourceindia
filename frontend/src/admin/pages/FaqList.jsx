@@ -6,7 +6,10 @@ import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import FaqModals from "./modal/FaqModals";
-const initialForm = { id: null, name: "", category: "", status: "1" };
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import SearchDropdown from "../common/SearchDropdown";
+const initialForm = { id: null, title: "", category: "", status: "1" };
 
 const FaqList = () => {
   const [data, setData] = useState([]);
@@ -18,9 +21,7 @@ const FaqList = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -29,6 +30,7 @@ const FaqList = () => {
   const [faqToDelete, setFaqToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,7 +76,7 @@ const FaqList = () => {
     }
   };
 
-  const openModal = (editData = null) => {
+  const openForm = (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
@@ -85,7 +87,11 @@ const FaqList = () => {
     setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -112,6 +118,7 @@ const FaqList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const selectedCategory = categories.find((c) => c.id.toString() === formData.category.toString());
     const payload = { ...formData, category_name: selectedCategory?.name || "" };
     try {
@@ -125,11 +132,13 @@ const FaqList = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`FAQ ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save FAQ.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -260,15 +269,6 @@ const FaqList = () => {
         </div>
       </div>
       <FaqModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        categories={categories}
-        handleChange={handleChange}
-        handleSelectChange={handleSelectChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

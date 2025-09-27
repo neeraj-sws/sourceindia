@@ -7,6 +7,9 @@ import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import ItemModals from "./modal/ItemModals";
 const initialForm = { id: null, name: "", category: "", sub_category: "", status: "1" };
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const ItemList = () => {
   const [data, setData] = useState([]);
@@ -18,9 +21,7 @@ const ItemList = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -32,6 +33,7 @@ const ItemList = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -77,7 +79,7 @@ const ItemList = () => {
     }
   };
 
-  const openModal = async (editData = null) => {
+  const openForm = async (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
@@ -97,10 +99,18 @@ const ItemList = () => {
       setSelectedSubCategory('');
       setSubCategories([]);
     }
-    setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+    setSelectedCategory('');
+    setSelectedSubCategory('');
+    setSubCategories([]);
+    $('#category').val(null).trigger('change');
+    $('#sub_category').val(null).trigger('change');
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -120,7 +130,6 @@ const ItemList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
     const sCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
     const ssCategory = subcategories.find((c) => c.id.toString() === selectedSubCategory.toString());
     const payload = { ...formData, category: selectedCategory, category_name: sCategory?.name || "", sub_category: selectedSubCategory, sub_category_name: ssCategory?.name || "" };
@@ -135,11 +144,13 @@ const ItemList = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`Item ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save Item.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -170,6 +181,31 @@ const ItemList = () => {
   const handleSubCategoryChange = (event) => {
     setSelectedSubCategory(event.target.value);
   };
+
+  useEffect(() => {
+    $('#category').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Category"
+    }).on("change", function () {
+      const categoryId = $(this).val();
+      handleCategoryChange({ target: { value: categoryId } });
+    });
+
+    $('#sub_category').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Sub Category"
+    }).on("change", function () {
+      const subCategoryId = $(this).val();
+      handleSubCategoryChange({ target: { value: subCategoryId } });
+    });
+
+    return () => {
+      if ($('#category').data('select2')) {$('#category').select2('destroy') };
+      if ($('#sub_category').data('select2')) {$('#sub_category').select2('destroy')};
+    };
+  }, [categories, subcategories]);
 
   const openDeleteModal = (subSubCategoriesId) => { setItemToDelete(subSubCategoriesId); setShowDeleteModal(true); };
 
@@ -288,19 +324,6 @@ const ItemList = () => {
         </div>
       </div>
       <ItemModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        categories={categories}
-        subcategories={subcategories}
-        selectedCategory={selectedCategory}
-        selectedSubCategory={selectedSubCategory}
-        handleCategoryChange={handleCategoryChange}
-        handleSubCategoryChange={handleSubCategoryChange}
-        handleChange={handleChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import SearchDropdown from "../common/SearchDropdown";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
@@ -18,9 +19,7 @@ const ProductSubCategoryList = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -29,6 +28,7 @@ const ProductSubCategoryList = () => {
   const [subCategoryToDelete, setSubCategoryToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,7 +74,7 @@ const ProductSubCategoryList = () => {
     }
   };
 
-  const openModal = (editData = null) => {
+  const openForm = (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
@@ -85,7 +85,11 @@ const ProductSubCategoryList = () => {
     setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -111,6 +115,7 @@ const ProductSubCategoryList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const selectedCategory = categories.find((c) => c.id.toString() === formData.category.toString());
     const payload = { ...formData, category_name: selectedCategory?.name || "" };
     try {
@@ -124,11 +129,13 @@ const ProductSubCategoryList = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`Sub Category ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save Sub Category.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -259,15 +266,6 @@ const ProductSubCategoryList = () => {
         </div>
       </div>
       <ProductSubCategoryModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        categories={categories}
-        handleChange={handleChange}
-        handleSelectChange={handleSelectChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

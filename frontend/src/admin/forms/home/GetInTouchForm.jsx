@@ -7,6 +7,7 @@ const GetInTouchForm = () => {
   const { showNotification } = useAlert();
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({ get_touchsub_heading: '', get_touch_heading: '', get_touchshort_description: '' });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -34,6 +35,7 @@ const GetInTouchForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -44,6 +46,8 @@ const GetInTouchForm = () => {
     } catch (error) {
       console.error('Error saving get in touch form:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -77,7 +81,16 @@ const GetInTouchForm = () => {
           {errors.get_touchshort_description && <div className="invalid-feedback">{errors.get_touchshort_description}</div>}
         </div>
         <div className="col-12 text-end">
-          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
+          </button>
         </div>
       </form>
     </>

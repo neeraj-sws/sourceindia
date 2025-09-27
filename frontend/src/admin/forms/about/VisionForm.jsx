@@ -10,6 +10,7 @@ const VisionForm = () => {
   const [visionIcon, setVisionIcon] = useState(null);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({ vision_heading: '', vision_description: '', vision_file: '', vision_icon: '' });
+  const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -61,6 +62,7 @@ const VisionForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
@@ -73,6 +75,8 @@ const VisionForm = () => {
     } catch (error) {
       console.error('Error saving vision form:', error);
       showNotification("Failed to update", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -143,7 +147,16 @@ const VisionForm = () => {
           {errors.vision_description && <div className="invalid-feedback">{errors.vision_description}</div>}
         </div>
         <div className="col-12 mt-4 text-end">
-          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
+          </button>
         </div>
       </form>
     </>

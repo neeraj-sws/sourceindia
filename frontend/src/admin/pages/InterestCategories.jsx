@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
-import API_BASE_URL from "../../config";
+import ImageWithFallback from "../common/ImageWithFallback";
+import SearchDropdown from "../common/SearchDropdown";
+import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import InterestCategoriesModals from "./modal/InterestCategoriesModals";
@@ -18,9 +20,7 @@ const InterestCategories = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -29,6 +29,7 @@ const InterestCategories = () => {
   const [interestCategoriesToDelete, setInterestCategoriesToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -74,7 +75,7 @@ const InterestCategories = () => {
     }
   };
 
-  const openModal = async (editData = null) => {
+  const openForm = async (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
@@ -83,14 +84,24 @@ const InterestCategories = () => {
     } else {
       setFormData(initialForm);
     }
-    setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
+  };
+
+  const handleSelectChange = (fieldName) => (selectedOption) => {
+    setFormData((prev) => ({
+      ...prev,
+      [fieldName]: selectedOption ? selectedOption.value : "",
+    }));
   };
 
   const allowedImageTypes = ["image/jpeg", "image/png", "image/gif"];
@@ -122,6 +133,7 @@ const InterestCategories = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const selectedColor = colors.find((c) => c.id.toString() === formData.color.toString());
     const payload = { ...formData, color_name: selectedColor?.title || "" };
     try {
@@ -139,11 +151,13 @@ const InterestCategories = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`Interest Category ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save Interest Category.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -274,15 +288,6 @@ const InterestCategories = () => {
         </div>
       </div>
       <InterestCategoriesModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        colors={colors}
-        handleChange={handleChange}
-        handleFileChange={handleFileChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

@@ -9,6 +9,7 @@ const ChangePasswordForm = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   const validateForm = () => {
     const errs = {};
@@ -22,6 +23,7 @@ const ChangePasswordForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const token = localStorage.getItem('token');
     if (!token) {
       showNotification('You must be logged in.', "error");
@@ -44,6 +46,8 @@ const ChangePasswordForm = () => {
       } else {
         showNotification('Something went wrong.', "error");
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -89,7 +93,16 @@ const ChangePasswordForm = () => {
           {errors.confirmPassword && <div className="invalid-feedback">{errors.confirmPassword}</div>}
         </div>
         <div className="col-12 text-end mt-4">
-          <button type="submit" className="btn btn-primary btn-sm px-4">Update</button>
+          <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
+            {submitting ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Updating...
+              </>
+            ) : (
+              "Update"
+            )}
+          </button>
         </div>
       </form>
     </>

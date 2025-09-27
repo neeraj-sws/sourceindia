@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import SearchDropdown from "../common/SearchDropdown";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
@@ -18,9 +19,7 @@ const ActivityList = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -29,6 +28,7 @@ const ActivityList = () => {
   const [activityToDelete, setActivityToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -58,6 +58,13 @@ const ActivityList = () => {
   };
 
   const getRangeText = () => {
+    if (filteredRecords === 0) {
+      if (search.trim()) {
+        return `Showing 0 to 0 of 0 entries (filtered from ${totalRecords} total entries)`;
+      } else {
+        return "Showing 0 to 0 of 0 entries";
+      }
+    }
     const start = (page - 1) * limit + 1;
     const end = Math.min(page * limit, filteredRecords);
     if (search.trim()) {
@@ -67,18 +74,22 @@ const ActivityList = () => {
     }
   };
 
-  const openModal = (editData = null) => {
+  const openForm = (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
       setFormData({ ...editData, status: String(editData.status) });
     } else {
       setFormData(initialForm);
-    }
+    }    
     setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -104,6 +115,7 @@ const ActivityList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const selectedCoreActivity = coreActivities.find((c) => c.id.toString() === formData.coreactivity.toString());
     const payload = { ...formData, coreactivity_name: selectedCoreActivity?.name || "" };
     try {
@@ -117,11 +129,13 @@ const ActivityList = () => {
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
       }
-      setShowModal(false);
       showNotification(`Activity ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save activity.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -179,7 +193,7 @@ const ActivityList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Activities" maincount={totalRecords} page="Settings" title="Activity" add_button="Add Activity" add_link="#" onClick={openAddModal} />
+          <Breadcrumb page="Settings" title="Activity" add_button="Add Activity" add_link="#" onClick={openAddModal} />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -227,7 +241,7 @@ const ActivityList = () => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -237,7 +251,7 @@ const ActivityList = () => {
                             </button>
                           </li>
                           <li>
-                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
+                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>
@@ -252,15 +266,6 @@ const ActivityList = () => {
         </div>
       </div>
       <ActivityModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        coreActivities={coreActivities}
-        handleChange={handleChange}
-        handleSelectChange={handleSelectChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

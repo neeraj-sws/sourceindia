@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 
-const SearchDropdown = ({ id = "", options, value, onChange, placeholder = "Search..." }) => {
+const SearchDropdown = ({ id = "", options, value, onChange, placeholder = "Search...", className="form-control" }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -63,7 +63,7 @@ const SearchDropdown = ({ id = "", options, value, onChange, placeholder = "Sear
       <input
         id={id}
         type="text"
-        className="form-control"
+        className={className}
         placeholder={placeholder}
         value={searchTerm}
         onChange={handleInputChange}

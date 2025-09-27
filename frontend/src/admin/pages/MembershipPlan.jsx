@@ -31,6 +31,7 @@ const MembershipPlan = () => {
   const [membershipPlanToDelete, setMembershipPlanToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -101,7 +102,7 @@ const MembershipPlan = () => {
   const validateForm = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = "Name is required";
-    if (!formData.sub_title.trim()) errs.sub_title = "Sub title is required";
+    if (!formData.sub_title) errs.sub_title = "Sub title is required";
     if (!formData.price) errs.price = "Price is required";
     if (!formData.user) errs.user = "No. of user is required";
     if (!formData.category) errs.category = "No. of category is required";
@@ -118,6 +119,7 @@ const MembershipPlan = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const payload = { ...formData };
     try {
       if (isEditing) {
@@ -134,6 +136,8 @@ const MembershipPlan = () => {
     } catch (err) {
       console.error(err);
       showNotification("Failed to save Membership Plan.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -267,6 +271,7 @@ const MembershipPlan = () => {
         errors={errors}
         handleChange={handleChange}
         handleSubmit={handleSubmit}
+        submitting={submitting}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}

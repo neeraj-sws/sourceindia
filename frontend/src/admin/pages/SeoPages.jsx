@@ -18,14 +18,13 @@ const SeoPages = () => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const openAddModal = () => openModal();
   const { showNotification } = useAlert();
-  const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [seoPagesToDelete, setSeoPagesToDelete] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -71,7 +70,7 @@ const SeoPages = () => {
     }
   };
 
-  const openModal = async (editData = null) => {
+  const openForm = async (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
@@ -80,10 +79,13 @@ const SeoPages = () => {
     } else {
       setFormData(initialForm);
     }
-    setShowModal(true);
   };
 
-  const closeModal = () => { setShowModal(false); setErrors({}); };
+  const resetForm = () => {
+    setFormData(initialForm);
+    setIsEditing(false);
+    setErrors({});
+  };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -119,6 +121,7 @@ const SeoPages = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
+    setSubmitting(true);
     const form = new FormData();
     form.append("title", formData.title);
     form.append("meta_title", formData.meta_title);
@@ -134,11 +137,13 @@ const SeoPages = () => {
         const res = await axios.post(`${API_BASE_URL}/seo_pages`, form);
         fetchData();
       }
-      setShowModal(false);
       showNotification(`Seo Pages ${isEditing ? "updated" : "added"} successfully!`, "success");
+      resetForm();
     } catch (err) {
       console.error(err);
       showNotification("Failed to save Seo Pages.", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -164,79 +169,161 @@ const SeoPages = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Seo Pages" maincount={totalRecords}  page="" title="Seo Pages" add_button="Add Seo Pages" add_link="#" onClick={openAddModal} />
-          <div className="card">
-            <div className="card-body">
-              <DataTable
-                columns={[
-                  { key: "id", label: "S.No.", sortable: true },
-                  { key: "image", label: "Image", sortable: false },
-                  { key: "title", label: "Title", sortable: true },
-                  { key: "meta_title", label: "Meta Title", sortable: true },
-                  { key: "meta_description", label: "Meta Description", sortable: true },
-                  { key: "action", label: "Action", sortable: false },
-                ]}
-                data={data}
-                loading={loading}
-                page={page}
-                totalRecords={totalRecords}
-                filteredRecords={filteredRecords}
-                limit={limit}
-                sortBy={sortBy}
-                sortDirection={sortDirection}
-                onPageChange={(newPage) => setPage(newPage)}
-                onSortChange={handleSortChange}
-                onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                search={search}
-                onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                getRangeText={getRangeText}
-                renderRow={(row, index) => (
-                  <tr key={row.id}>
-                    <td>{(page - 1) * limit + index + 1}</td>
-                    <td><ImageWithFallback
-                      src={`${ROOT_URL}/${row.meta_image}`}
-                      width={50}
-                      height={50}
-                      showFallback={true}
-                    /></td>
-                    <td>{row.title}</td>
-                    <td>{row.meta_title}</td>
-                    <td>{row.meta_description}</td>
-                    <td>
-                      <div className="dropdown">
-                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i className="bx bx-dots-vertical-rounded"></i>
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li>
-                            <button className="dropdown-item" onClick={() => openModal(row)}>
-                              <i className="bx bx-edit me-2"></i> Edit
+          <Breadcrumb mainhead="Seo Pages" maincount={totalRecords}  page="" title="Seo Pages" add_button="Add Seo Pages" add_link="#" onClick={() => openForm()} />
+          <div className="row">
+            <div className="col-md-5">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title mb-3">{isEditing ? "Edit Seo Pages" : "Add Seo Pages"}</h5>
+                  <form className="row" onSubmit={handleSubmit} noValidate>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="title" className="form-label required">Title</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.title ? "is-invalid" : ""}`}
+                        id="title"
+                        value={formData.title}
+                        onChange={handleChange}
+                        placeholder="Title"
+                      />
+                      {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="meta_title" className="form-label required">Meta Title</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.meta_title ? "is-invalid" : ""}`}
+                        id="meta_title"
+                        value={formData.meta_title}
+                        onChange={handleChange}
+                        placeholder="Meta Title"
+                      />
+                      {errors.meta_title && <div className="invalid-feedback">{errors.meta_title}</div>}
+                    </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="meta_description" className="form-label required">Description</label>
+                      <textarea
+                        className={`form-control ${errors.meta_description ? "is-invalid" : ""}`}
+                        id="meta_description"
+                        onChange={handleChange}
+                        placeholder="Description"
+                        value={formData.meta_description}
+                      />
+                      {errors.meta_description && <div className="text-danger small mt-1">{errors.meta_description}</div>}
+                    </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="file" className="form-label required">Meta Image</label>
+                      <input
+                        type="file"
+                        className={`form-control ${errors.file ? "is-invalid" : ""}`}
+                        id="file"
+                        onChange={handleFileChange}
+                      />
+                      {errors.file && <div className="invalid-feedback">{errors.file}</div>}
+                      {formData.file ? (
+                        <img
+                          src={URL.createObjectURL(formData.file)}
+                          className="img-preview object-fit-cover mt-3"
+                          width={150}
+                          height={150}
+                          alt="Preview"
+                        />
+                      ) : formData.meta_image ? (
+                        <ImageWithFallback
+                          src={`${ROOT_URL}/${formData.meta_image}`}
+                          width={150}
+                          height={150}
+                          showFallback={false}
+                        />
+                      ) : null}
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
+                        {isEditing ? "Cancel" : "Reset"}
+                      </button>
+                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+                        {submitting ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            {isEditing ? "Updating..." : "Saving..."}
+                          </>
+                        ) : (
+                          isEditing ? "Update" : "Save"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div className="col-md-7">
+              <div className="card">
+                <div className="card-body">
+                  <h5 className="card-title mb-3">Seo Pages List</h5>
+                  <DataTable
+                    columns={[
+                      { key: "id", label: "S.No.", sortable: true },
+                      { key: "image", label: "Image", sortable: false },
+                      { key: "title", label: "Title", sortable: true },
+                      { key: "meta_title", label: "Meta Title", sortable: true },
+                      { key: "meta_description", label: "Meta Description", sortable: true },
+                      { key: "action", label: "Action", sortable: false },
+                    ]}
+                    data={data}
+                    loading={loading}
+                    page={page}
+                    totalRecords={totalRecords}
+                    filteredRecords={filteredRecords}
+                    limit={limit}
+                    sortBy={sortBy}
+                    sortDirection={sortDirection}
+                    onPageChange={(newPage) => setPage(newPage)}
+                    onSortChange={handleSortChange}
+                    onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                    search={search}
+                    onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                    getRangeText={getRangeText}
+                    renderRow={(row, index) => (
+                      <tr key={row.id}>
+                        <td>{(page - 1) * limit + index + 1}</td>
+                        <td><ImageWithFallback
+                          src={`${ROOT_URL}/${row.meta_image}`}
+                          width={50}
+                          height={50}
+                          showFallback={true}
+                        /></td>
+                        <td>{row.title}</td>
+                        <td>{row.meta_title}</td>
+                        <td>{row.meta_description}</td>
+                        <td>
+                          <div className="dropdown">
+                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                              <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              />
+                            <ul className="dropdown-menu">
+                              <li>
+                                <button className="dropdown-item" onClick={() => openForm(row)}>
+                                  <i className="bx bx-edit me-2"></i> Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </ul>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
       <SeoPagesModals
-        showModal={showModal}
-        closeModal={closeModal}
-        isEditing={isEditing}
-        formData={formData}
-        errors={errors}
-        handleChange={handleChange}
-        handleFileChange={handleFileChange}
-        handleSubmit={handleSubmit}
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}
