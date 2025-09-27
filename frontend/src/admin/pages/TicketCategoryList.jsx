@@ -172,7 +172,7 @@ const TicketCategoryList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Ticket Category" add_button="Add Ticket Category" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb mainhead="Ticket Categories" maincount={totalRecords} page="" title="Ticket Category" add_button="Add Ticket Category" add_link="#" onClick={() => openForm()} />
           <div className="row">
             <div className="col-md-5">
               <div className="card">
@@ -284,7 +284,7 @@ const TicketCategoryList = () => {
                         </td>
                         <td>
                           <div className="dropdown">
-                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                               <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
                             <ul className="dropdown-menu">

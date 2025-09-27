@@ -82,6 +82,7 @@ const SourceInterestCategories = () => {
     } else {
       setFormData(initialForm);
     }
+    setShowModal(true);
   };
 
   const resetForm = () => {
@@ -192,7 +193,7 @@ const SourceInterestCategories = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Source interest category" add_button="Add source interest category" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb mainhead="Source Interest Categories" maincount={totalRecords} page="" title="Source interest category" add_button="Add source interest category" add_link="#" onClick={() => openForm()} />
           <div className="row">
             <div className="col-md-5">
               <div className="card">

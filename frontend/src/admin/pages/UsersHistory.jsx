@@ -89,7 +89,7 @@ const UsersHistory = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="User History" />
+          <Breadcrumb mainhead="User Histories" maincount={totalRecords} page="" title="User History" />
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -120,16 +120,16 @@ const UsersHistory = () => {
                   <tr key={row.id}>
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td>{row.user_company_name && (<h6 className="username">{row.user_company_name}</h6>)}
-                    {row.user_elcina_member == 1 ? ( <><span className="badge bg-primary">Elcina Member</span><br /></> ) : ("")}
-                    {row.user_name && (<><i className='bx bx-user' /> {row.user_name}<br /></>)}
-                    {row.user_email && (<><i className='bx bx-envelope' /> {row.user_email}<br /></>)}
-                    {row.user_mobile && (<><i className='bx bx-mobile' /> {row.user_mobile}<br /></>)}
-                    {row.country && (<><i className='bx bx-globe' /> {row.country}<br /></>)}
-                    {row.state && (<><i className='bx bx-map' /> {row.state}<br /></>)}
-                    {row.city && (<><i className='bx bx-map' /> {row.city}</>)}
+                      {row.user_elcina_member == 1 ? (<><span className="badge bg-primary">Elcina Member</span><br /></>) : ("")}
+                      {row.user_name && (<><i className='bx bx-user' /> {row.user_name}<br /></>)}
+                      {row.user_email && (<><i className='bx bx-envelope' /> {row.user_email}<br /></>)}
+                      {row.user_mobile && (<><i className='bx bx-mobile' /> {row.user_mobile}<br /></>)}
+                      {row.country && (<><i className='bx bx-globe' /> {row.country}<br /></>)}
+                      {row.state && (<><i className='bx bx-map' /> {row.state}<br /></>)}
+                      {row.city && (<><i className='bx bx-map' /> {row.city}</>)}
                     </td>
-                    <td><span className="badge bg-primary">{row.user_status==1 ? "Active Seller" : row.user_status==0 ? "Inactive Seller" : ""}</span></td>
-                    <td><span className="badge bg-primary">{row.user_is_seller==1 ? "Seller" : row.user_is_seller==0 ? "Buyer" : ""}</span></td>
+                    <td><span className="badge bg-primary">{row.user_status == 1 ? "Active Seller" : row.user_status == 0 ? "Inactive Seller" : ""}</span></td>
+                    <td><span className="badge bg-primary">{row.user_is_seller == 1 ? "Seller" : row.user_is_seller == 0 ? "Buyer" : ""}</span></td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>

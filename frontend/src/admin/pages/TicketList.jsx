@@ -128,7 +128,7 @@ const TicketList = () => {
     setSubmitting(true);
     const selectedCategory = categories.find((c) => c.id.toString() === formData.category.toString());
     const selectedUser = users.find((u) => u.id.toString() === formData.user_id.toString());
-    const payload = { ...formData, category_name: selectedCategory?.name || "", user_name: selectedUser?.fname+" "+selectedUser?.lname };
+    const payload = { ...formData, category_name: selectedCategory?.name || "", user_name: selectedUser?.fname + " " + selectedUser?.lname };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/tickets/${formData.id}`, payload, {
@@ -200,7 +200,7 @@ const TicketList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Ticket" add_button="Add Ticket" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb mainhead="Tickets" maincount={totalRecords} page="" title="Ticket" add_button="Add Ticket" add_link="#" onClick={() => openForm()} />
           <div className="row">
             <div className="col-md-5">
               <div className="card">
@@ -313,7 +313,7 @@ const TicketList = () => {
             <div className="col-md-7">
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">Ticket List</h5>  
+                  <h5 className="card-title mb-3">Ticket List</h5>
                   <DataTable
                     columns={[
                       { key: "id", label: "S.No.", sortable: true },
@@ -345,10 +345,10 @@ const TicketList = () => {
                         <td>{row.priority}</td>
                         <td>{row.category_name}</td>
                         <td>{formatDateTime(row.created_at)}</td>
-                        <td>{listStatus.map((s,i) => (row.status == i ? s : ""))}</td>
+                        <td>{listStatus.map((s, i) => (row.status == i ? s : ""))}</td>
                         <td>
                           <div className="dropdown">
-                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                               <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
                             <ul className="dropdown-menu">

@@ -88,6 +88,7 @@ const RolesList = () => {
     } else {
       setFormData(initialForm);
     }
+    setShowModal(true);
   };
 
   const resetForm = () => {
@@ -244,7 +245,7 @@ const RolesList = () => {
     <>
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb page="Settings" title="Roles" add_button="Add Roles" add_link="#" onClick={() => openForm()}
+        <Breadcrumb mainhead="Roles" maincount={totalRecords}  page="" title="Roles" add_button="Add Roles" add_link="#" onClick={() => openForm()}
         actions={
           <>
           <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>

@@ -215,164 +215,74 @@ const InterestCategories = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Interest Category" add_button="Add Interest Category" add_link="#" onClick={() => openForm()} />
-          <div className="row">
-            <div className="col-md-5">
-              <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">{isEditing ? "Edit Interest Category" : "Add Interest Category"}</h5>
-                    <form className="row" onSubmit={handleSubmit} noValidate>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="name" className="form-label required">Name</label>
-                      <input
-                        type="text"
-                        className={`form-control ${errors.name ? "is-invalid" : ""}`}
-                        id="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Name"
-                      />
-                      {errors.name && <div className="invalid-feedback">{errors.name}</div>}
-                    </div>
-                    <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="color" className="form-label required">Color</label>
-                      <SearchDropdown
-                          options={colors?.map(color => ({ value: String(color.id), label: color.title }))}
-                          value={formData.color}
-                          onChange={handleSelectChange("color")}
-                          placeholder="Select Core Activity"
-                          id="color"
+          <Breadcrumb mainhead="Interest Categories" maincount={totalRecords} page="" title="Interest Category" add_button="Add Interest Category" add_link="#" onClick={openAddModal} />
+          <div className="card">
+            <div className="card-body">
+              <DataTable
+                columns={[
+                  { key: "id", label: "S.No.", sortable: true },
+                  { key: "name", label: "Name", sortable: true },
+                  { key: "color_name", label: "Color", sortable: true },
+                  { key: "created_at", label: "Created At", sortable: true },
+                  { key: "updated_at", label: "Updated At", sortable: true },
+                  { key: "status", label: "Status", sortable: false },
+                  { key: "action", label: "Action", sortable: false },
+                ]}
+                data={data}
+                loading={loading}
+                page={page}
+                totalRecords={totalRecords}
+                filteredRecords={filteredRecords}
+                limit={limit}
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                onPageChange={(newPage) => setPage(newPage)}
+                onSortChange={handleSortChange}
+                onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                search={search}
+                onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                getRangeText={getRangeText}
+                renderRow={(row, index) => (
+                  <tr key={row.id}>
+                    <td>{(page - 1) * limit + index + 1}</td>
+                    <td>{row.name}</td>
+                    <td>{row.color_name}</td>
+                    <td>{formatDateTime(row.created_at)}</td>
+                    <td>{formatDateTime(row.updated_at)}</td>
+                    <td>
+                      <div className="form-check form-switch">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id={`statusSwitch_${row.id}`}
+                          checked={row.status == 1}
+                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                          readOnly
                         />
-                        {errors.color && (<div className="invalid-feedback">{errors.color} </div>
-                        )}
                       </div>
-                    <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="status" className="form-label required">Status</label>
-                      <select
-                        id="status"
-                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
-                        value={formData.status}
-                        onChange={handleChange}
-                      >
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                      </select>
-                      {errors.status && <div className="invalid-feedback">{errors.status}</div>}
-                    </div>
-                    <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="file" className="form-label required">Interest Category Image</label>
-                      <input
-                        type="file"
-                        className={`form-control ${errors.file ? "is-invalid" : ""}`}
-                        id="file"
-                        onChange={handleFileChange}
-                      />
-                      {errors.file && <div className="invalid-feedback">{errors.file}</div>}
-                      {formData.file ? (
-                        <img
-                          src={URL.createObjectURL(formData.file)}
-                          className="img-preview object-fit-cover mt-3"
-                          width={150}
-                          height={150}
-                          alt="Preview"
-                        />
-                      ) : formData.file_name ? (
-                        <ImageWithFallback
-                          src={`${ROOT_URL}/${formData.file_name}`}
-                          width={150}
-                          height={150}
-                          showFallback={false}
-                        />
-                      ) : null}
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
-                        {isEditing ? "Cancel" : "Reset"}
-                      </button>
-                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            {isEditing ? "Updating..." : "Saving..."}
-                          </>
-                        ) : (
-                          isEditing ? "Update" : "Save"
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-7">
-              <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">Interest Category List</h5>
-                  <DataTable
-                    columns={[
-                      { key: "id", label: "S.No.", sortable: true },
-                      { key: "name", label: "Name", sortable: true },
-                      { key: "color_name", label: "Color", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
-                      { key: "status", label: "Status", sortable: false },
-                      { key: "action", label: "Action", sortable: false },
-                    ]}
-                    data={data}
-                    loading={loading}
-                    page={page}
-                    totalRecords={totalRecords}
-                    filteredRecords={filteredRecords}
-                    limit={limit}
-                    sortBy={sortBy}
-                    sortDirection={sortDirection}
-                    onPageChange={(newPage) => setPage(newPage)}
-                    onSortChange={handleSortChange}
-                    onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                    search={search}
-                    onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                    getRangeText={getRangeText}
-                    renderRow={(row, index) => (
-                      <tr key={row.id}>
-                        <td>{(page - 1) * limit + index + 1}</td>
-                        <td>{row.name}</td>
-                        <td>{row.color_name}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
-                        <td>
-                          <div className="form-check form-switch">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`statusSwitch_${row.id}`}
-                              checked={row.status == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                              readOnly
-                            />
-                          </div>
-                        </td>
-                        <td>
-                          <div className="dropdown">
-                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                              <i className="bx bx-dots-vertical-rounded"></i>
+                    </td>
+                    <td>
+                      <div className="dropdown">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          <i className="bx bx-dots-vertical-rounded"></i>
+                        </button>
+                        <ul className="dropdown-menu">
+                          <li>
+                            <button className="dropdown-item" onClick={() => openModal(row)}>
+                              <i className="bx bx-edit me-2"></i> Edit
                             </button>
-                            <ul className="dropdown-menu">
-                              <li>
-                                <button className="dropdown-item" onClick={() => openForm(row)}>
-                                  <i className="bx bx-edit me-2"></i> Edit
-                                </button>
-                              </li>
-                              <li>
-                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                  <i className="bx bx-trash me-2"></i> Delete
-                                </button>
-                              </li>
-                            </ul>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  />
-                </div>
-              </div>
+                          </li>
+                          <li>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
+                              <i className="bx bx-trash me-2"></i> Delete
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              />
             </div>
           </div>
         </div>

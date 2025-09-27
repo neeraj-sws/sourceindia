@@ -197,171 +197,79 @@ const ProductCategoryList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Product Category List" add_button="Add Product Category" add_link="#" onClick={() => openForm()} />
-          <div className="row">
-            <div className="col-md-5">
-              <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">{isEditing ? "Edit Product Category" : "Add Product Category"}</h5>
-                  <form className="row" onSubmit={handleSubmit} noValidate>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="name" className="form-label required">Name</label>
-                      <input
-                        type="text"
-                        className={`form-control ${errors.name ? "is-invalid" : ""}`}
-                        id="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Name"
-                      />
-                      {errors.name && <div className="invalid-feedback">{errors.name}</div>}
-                    </div>
-                    <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="top_category" className="form-label required">Top Category</label>
-                      <select
-                        id="top_category"
-                        className={`form-select ${errors.top_category ? "is-invalid" : ""}`}
-                        value={formData.top_category}
-                        onChange={handleChange}
-                      >
-                        <option value="">Select here</option>
-                        <option value="1">Yes</option>
-                        <option value="0">No</option>
-                      </select>
-                      {errors.top_category && <div className="invalid-feedback">{errors.top_category}</div>}
-                    </div>
-                    <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="status" className="form-label required">Status</label>
-                      <select
-                        id="status"
-                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
-                        value={formData.status}
-                        onChange={handleChange}
-                      >
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                      </select>
-                      {errors.status && <div className="invalid-feedback">{errors.status}</div>}
-                    </div>
-                    <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="file" className="form-label required">Product Category Image</label>
-                      <input
-                        type="file"
-                        className={`form-control ${errors.file ? "is-invalid" : ""}`}
-                        id="file"
-                        onChange={handleFileChange}
-                      />
-                      {errors.file && <div className="invalid-feedback">{errors.file}</div>}
-                      {formData.file ? (
-                        <img
-                          src={URL.createObjectURL(formData.file)}
-                          className="img-preview object-fit-cover mt-3"
-                          width={150}
-                          height={150}
-                          alt="Preview"
+          <Breadcrumb mainhead="Categories" maincount={totalRecords}  page="" title="Category List" add_button="Add  Category" add_link="#" onClick={openAddModal} />
+          <div className="card">
+            <div className="card-body">
+              <DataTable
+                columns={[
+                  { key: "id", label: "S.No.", sortable: true },
+                  { key: "image", label: "Image", sortable: false },
+                  { key: "name", label: "Name", sortable: true },
+                  { key: "created_at", label: "Created At", sortable: true },
+                  { key: "updated_at", label: "Updated At", sortable: true },
+                  { key: "status", label: "Status", sortable: false },
+                  { key: "action", label: "Action", sortable: false },
+                ]}
+                data={data}
+                loading={loading}
+                page={page}
+                totalRecords={totalRecords}
+                filteredRecords={filteredRecords}
+                limit={limit}
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                onPageChange={(newPage) => setPage(newPage)}
+                onSortChange={handleSortChange}
+                onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                search={search}
+                onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                getRangeText={getRangeText}
+                renderRow={(row, index) => (
+                  <tr key={row.id}>
+                    <td>{(page - 1) * limit + index + 1}</td>
+                    <td><ImageWithFallback
+                      src={`${ROOT_URL}/${row.file_name}`}
+                      width={50}
+                      height={50}
+                      showFallback={true}
+                    /></td>
+                    <td>{row.name}</td>
+                    <td>{formatDateTime(row.created_at)}</td>
+                    <td>{formatDateTime(row.updated_at)}</td>
+                    <td>
+                      <div className="form-check form-switch">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id={`statusSwitch_${row.id}`}
+                          checked={row.status == 1}
+                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                          readOnly
                         />
-                      ) : formData.file_name ? (
-                        <ImageWithFallback
-                          src={`${ROOT_URL}/${formData.file_name}`}
-                          width={150}
-                          height={150}
-                          showFallback={false}
-                        />
-                      ) : null}
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
-                        {isEditing ? "Cancel" : "Reset"}
-                      </button>
-                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            {isEditing ? "Updating..." : "Saving..."}
-                          </>
-                        ) : (
-                          isEditing ? "Update" : "Save"
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-7">
-              <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">Product Category List</h5>
-                  <DataTable
-                  columns={[
-                      { key: "id", label: "S.No.", sortable: true },
-                      { key: "image", label: "Image", sortable: false },
-                      { key: "name", label: "Name", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
-                      { key: "status", label: "Status", sortable: false },
-                      { key: "action", label: "Action", sortable: false },
-                  ]}
-                  data={data}
-                  loading={loading}
-                  page={page}
-                  totalRecords={totalRecords}
-                  filteredRecords={filteredRecords}
-                  limit={limit}
-                  sortBy={sortBy}
-                  sortDirection={sortDirection}
-                  onPageChange={(newPage) => setPage(newPage)}
-                  onSortChange={handleSortChange}
-                  onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                  search={search}
-                  onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                  getRangeText={getRangeText}
-                  renderRow={(row, index) => (
-                    <tr key={row.id}>
-                      <td>{(page - 1) * limit + index + 1}</td>
-                      <td><ImageWithFallback
-                        src={`${ROOT_URL}/${row.file_name}`}
-                        width={50}
-                        height={50}
-                        showFallback={true}
-                      /></td>
-                      <td>{row.name}</td>
-                      <td>{formatDateTime(row.created_at)}</td>
-                      <td>
-                          <div className="form-check form-switch">
-                          <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`statusSwitch_${row.id}`}
-                              checked={row.status == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                              readOnly
-                          />
-                          </div>
-                      </td>
-                      <td>
-                        <div className="dropdown">
-                          <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i className="bx bx-dots-vertical-rounded"></i>
-                          </button>
-                          <ul className="dropdown-menu">
-                            <li>
-                              <button className="dropdown-item" onClick={() => openForm(row)}>
-                                <i className="bx bx-edit me-2"></i> Edit
-                              </button>
-                            </li>
-                            <li>
-                              <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                <i className="bx bx-trash me-2"></i> Delete
-                              </button>
-                            </li>
-                          </ul>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  />
-                </div>
-              </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="dropdown">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          <i className="bx bx-dots-vertical-rounded"></i>
+                        </button>
+                        <ul className="dropdown-menu">
+                          <li>
+                            <button className="dropdown-item" onClick={() => openModal(row)}>
+                              <i className="bx bx-edit me-2"></i> Edit
+                            </button>
+                          </li>
+                          <li>
+                            <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
+                              <i className="bx bx-trash me-2"></i> Delete
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              />
             </div>
           </div>
         </div>

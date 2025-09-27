@@ -182,21 +182,21 @@ const ContactsList = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Contact Us" : "Contact Us"}
+          <Breadcrumb mainhead="Contact List" maincount={totalRecords} page="" title={getDeleted ? "Recently Deleted Contact Us" : "Contact Us"}
             actions={
               <>
-                <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+                <button className="btn  btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
                 {!getDeleted ? (
                   <>
                     <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedContacts.length === 0}>
                       Delete Selected
                     </button>
-                    <Link className="btn btn-sm btn-primary mb-2" to="/admin/contact-remove-list">
+                    <Link className="btn  btn-primary mb-2" to="/admin/contact-remove-list">
                       Recently Deleted Contact
                     </Link>
                   </>
                 ) : (
-                  <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                  <button className="btn  btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
                     Back
                   </button>
                 )}
@@ -310,7 +310,7 @@ const ContactsList = ({ getDeleted }) => {
                           {!getDeleted ? (
                             <>
                               <li>
-                                <button className="dropdown-item text-danger"
+                                <button className="dropdown-item"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
@@ -333,7 +333,7 @@ const ContactsList = ({ getDeleted }) => {
                                 </button>
                               </li>
                               <li>
-                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                                   <i className="bx bx-trash me-2"></i> Delete
                                 </button>
                               </li>

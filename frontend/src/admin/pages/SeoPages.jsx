@@ -169,7 +169,7 @@ const SeoPages = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Seo Pages" add_button="Add Seo Pages" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb mainhead="Seo Pages" maincount={totalRecords}  page="" title="Seo Pages" add_button="Add Seo Pages" add_link="#" onClick={() => openForm()} />
           <div className="row">
             <div className="col-md-5">
               <div className="card">

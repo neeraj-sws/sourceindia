@@ -81,7 +81,8 @@ const ActivityList = () => {
       setFormData({ ...editData, status: String(editData.status) });
     } else {
       setFormData(initialForm);
-    }
+    }    
+    setShowModal(true);
   };
 
   const resetForm = () => {
@@ -192,140 +193,74 @@ const ActivityList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Activity" add_button="Add Activity" add_link="#" onClick={() => openForm()} />
-          <div className="row">
-            <div className="col-md-5">
-              <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">{isEditing ? "Edit Activity" : "Add Activity"}</h5>
-                  <form className="row" onSubmit={handleSubmit} noValidate>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="name" className="form-label required">Name</label>
-                      <input
-                        type="text"
-                        className={`form-control ${errors.name ? "is-invalid" : ""}`}
-                        id="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Name"
-                      />
-                      {errors.name && (<div className="invalid-feedback">{errors.name}</div>)}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="coreactivity" className="form-label required">Core Activity</label>
-                      <SearchDropdown
-                        options={coreActivities?.map(cat => ({ value: cat.id, label: cat.name }))}
-                        value={formData.coreactivity}
-                        onChange={handleSelectChange("coreactivity")}
-                        placeholder="Select Core Activity"
-                        id="coreactivity"
-                        className={`form-control ${errors.coreactivity ? "is-invalid" : ""}`}
-                      />
-                      {errors.coreactivity && (<div className="text-danger small mt-1">{errors.coreactivity} </div>
-                      )}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="status" className="form-label required">Status</label>
-                      <select
-                        id="status"
-                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
-                        value={formData.status}
-                        onChange={handleChange}
-                      >
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                      </select>
-                      {errors.status && (<div className="invalid-feedback">{errors.status}</div>
-                      )}
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
-                        {isEditing ? "Cancel" : "Reset"}
-                      </button>
-                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            {isEditing ? "Updating..." : "Saving..."}
-                          </>
-                        ) : (
-                          isEditing ? "Update" : "Save"
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-            <div className="col-md-7">
-              <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">Activity List</h5>
-                  <DataTable
-                    columns={[
-                      { key: "id", label: "S.No.", sortable: true },
-                      { key: "name", label: "Name", sortable: true },
-                      { key: "coreactivity_name", label: "Core Activity", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
-                      { key: "status", label: "Status", sortable: false },
-                      { key: "action", label: "Action", sortable: false },
-                    ]}
-                    data={data}
-                    loading={loading}
-                    page={page}
-                    totalRecords={totalRecords}
-                    filteredRecords={filteredRecords}
-                    limit={limit}
-                    sortBy={sortBy}
-                    sortDirection={sortDirection}
-                    onPageChange={(newPage) => setPage(newPage)}
-                    onSortChange={handleSortChange}
-                    onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                    search={search}
-                    onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                    getRangeText={getRangeText}
-                    renderRow={(row, index) => (
-                      <tr key={row.id}>
-                        <td>{(page - 1) * limit + index + 1}</td>
-                        <td>{row.name}</td>
-                        <td>{row.coreactivity_name}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
-                        <td>
-                          <div className="form-check form-switch">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`statusSwitch_${row.id}`}
-                              checked={row.status == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                              readOnly
-                            />
-                          </div>
-                        </td>
-                        <td>
-                          <div className="dropdown">
-                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                              <i className="bx bx-dots-vertical-rounded"></i>
+          <Breadcrumb page="Settings" title="Activity" add_button="Add Activity" add_link="#" onClick={openAddModal} />
+          <div className="card">
+            <div className="card-body">
+              <DataTable
+                columns={[
+                  { key: "id", label: "S.No.", sortable: true },
+                  { key: "name", label: "Name", sortable: true },
+                  { key: "coreactivity_name", label: "Core Activity", sortable: true },
+                  { key: "created_at", label: "Created At", sortable: true },
+                  { key: "updated_at", label: "Updated At", sortable: true },
+                  { key: "status", label: "Status", sortable: false },
+                  { key: "action", label: "Action", sortable: false },
+                ]}
+                data={data}
+                loading={loading}
+                page={page}
+                totalRecords={totalRecords}
+                filteredRecords={filteredRecords}
+                limit={limit}
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                onPageChange={(newPage) => setPage(newPage)}
+                onSortChange={handleSortChange}
+                onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                search={search}
+                onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                getRangeText={getRangeText}
+                renderRow={(row, index) => (
+                  <tr key={row.id}>
+                    <td>{(page - 1) * limit + index + 1}</td>
+                    <td>{row.name}</td>
+                    <td>{row.coreactivity_name}</td>
+                    <td>{formatDateTime(row.created_at)}</td>
+                    <td>{formatDateTime(row.updated_at)}</td>
+                    <td>
+                      <div className="form-check form-switch">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          id={`statusSwitch_${row.id}`}
+                          checked={row.status == 1}
+                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                          readOnly
+                        />
+                      </div>
+                    </td>
+                    <td>
+                      <div className="dropdown">
+                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          <i className="bx bx-dots-vertical-rounded"></i>
+                        </button>
+                        <ul className="dropdown-menu">
+                          <li>
+                            <button className="dropdown-item" onClick={() => openModal(row)}>
+                              <i className="bx bx-edit me-2"></i> Edit
                             </button>
-                            <ul className="dropdown-menu">
-                              <li>
-                                <button className="dropdown-item" onClick={() => openForm(row)}>
-                                  <i className="bx bx-edit me-2"></i> Edit
-                                </button>
-                              </li>
-                              <li>
-                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                  <i className="bx bx-trash me-2"></i> Delete
-                                </button>
-                              </li>
-                            </ul>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  />
-                </div>
-              </div>
+                          </li>
+                          <li>
+                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                              <i className="bx bx-trash me-2"></i> Delete
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              />
             </div>
           </div>
         </div>

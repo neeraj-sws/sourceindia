@@ -118,7 +118,7 @@ const UserActivities = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="User Activities" />
+          <Breadcrumb mainhead="User Activity" maincount={totalRecords} page="" title="User Activities" />
           <div className="row mb-3">
             <div className="col-md-6">
               <div id="accordionCount">

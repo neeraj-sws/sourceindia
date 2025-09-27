@@ -88,6 +88,7 @@ const SubAdminList = () => {
     } else {
       setFormData(initialForm);
     }
+    setShowModal(true);
   };
 
   const resetForm = () => {
@@ -227,7 +228,7 @@ const SubAdminList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Sub Admin" add_button="Add Sub Admin" add_link="#" onClick={() => openForm()} />          
+          <Breadcrumb mainhead="Sub Admins" maincount={totalRecords}  page="" title="Sub Admin" add_button="Add Sub Admin" add_link="#" onClick={() => openForm()} />          
           <div className="row">
             <div className="col-md-5">
               <div className="card">
