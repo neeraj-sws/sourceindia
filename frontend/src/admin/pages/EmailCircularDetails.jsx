@@ -1,16 +1,69 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom'
 import axios from "axios";
+import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
-import $ from 'jquery'
 import Breadcrumb from '../common/Breadcrumb';
 
-const EmailCircularDetails = () => {
+const EmailCircularDetails = ({newsLatter_id}) => {
+  const navigate = useNavigate();
+  const [data, setData] = useState([]);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [filteredRecords, setFilteredRecords] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("id");
+  const [sortDirection, setSortDirection] = useState("DESC");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const { newsletterId } = useParams();
-  const tableRef = useRef(null)
-  const [emailCircular, setEmailCircular] = useState([])
-  const dataTableRef = useRef(null)
+  const [counts, setCounts] = useState({all: 0, mailSent: 0, mailUnSent: 0, mailOpen: 0, mailNotOpen: 0});
   const [formData, setFormData] = useState({ user_type: '', title: '', subject: '', description: '' });
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/newsletter_histories/server-side`, {
+        params: { page, limit, search, sortBy, sort: sortDirection, newsLatter_id: newsletterId },
+      });
+      setData(response.data.data);
+      setTotalRecords(response.data.totalRecords);
+      setFilteredRecords(response.data.filteredRecords);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, newsLatter_id]);
+
+  const handleSortChange = (column) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection == "ASC" ? "DESC" : "ASC");
+    } else {
+      setSortBy(column);
+      setSortDirection("ASC");
+    }
+  };
+
+  const getRangeText = () => {
+    if (filteredRecords === 0) {
+      if (search.trim()) {
+        return `Showing 0 to 0 of 0 entries (filtered from ${totalRecords} total entries)`;
+      } else {
+        return "Showing 0 to 0 of 0 entries";
+      }
+    }
+    const start = (page - 1) * limit + 1;
+    const end = Math.min(page * limit, filteredRecords);
+    if (search.trim()) {
+      return `Showing ${start} to ${end} of ${filteredRecords} entries (filtered from ${totalRecords} total entries)`;
+    } else {
+      return `Showing ${start} to ${end} of ${totalRecords} entries`;
+    }
+  };
 
   useEffect(() => {
     const fetchNewsletter = async () => {
@@ -32,57 +85,39 @@ const EmailCircularDetails = () => {
   }, [newsletterId]);
 
   useEffect(() => {
-    const mockData = [
-      { id: 1, user_name: 'Tiger Nixon' },
-      { id: 2, user_name: 'Garrett Winters' },
-      { id: 3, user_name: 'Ashton Cox' },
-      { id: 4, user_name: 'fdsf' },
-      { id: 5, user_name: 'yuiyu' },
-      { id: 6, user_name: 'qwerw' },
-      { id: 7, user_name: 'bvfhf' },
-      { id: 8, user_name: 'yuiy' },
-      { id: 9, user_name: 'zsds' },
-      { id: 10, user_name: 'myhjkuy' },
-      { id: 11, user_name: 'qweerq' },
-      { id: 12, user_name: 'yut' },
-      { id: 13, user_name: 'pioiu' },
-      { id: 14, user_name: 'ljkyh' },
-      { id: 15, user_name: 'sds' },
-    ]
-    setEmailCircular(mockData)
-  }, [])
+    const fetchCounts = async () => {
+      try {
+        if (!newsletterId) return;
+        const countData = await axios.get(`${API_BASE_URL}/newsletter_histories/count`, {
+          params: { newsLatter_id: newsletterId }
+        });
+        setCounts({
+          all: countData.data.all,
+          mailSent: countData.data.mailSent,
+          mailUnSent: countData.data.mailUnSent,
+          mailOpen: countData.data.mailOpen,
+          mailNotOpen: countData.data.mailNotOpen,
+        });
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+      }
+    };
+    fetchCounts(newsletterId);
+  }, []);
 
-  useEffect(() => {
-    if (tableRef.current && !dataTableRef.current) {
-      dataTableRef.current = $(tableRef.current).DataTable({
-        columnDefs: [
-          { targets: [-1, -2, -3], orderable: false, searchable: false }
-        ],
-      })
-    }
-  }, [])
-
-  useEffect(() => {
-    const table = dataTableRef.current
-    if (!table) return
-    table.clear()
-    emailCircular.forEach((email_circular, index) => {
-      table.row.add([
-        index + 1,
-        email_circular.user_name,
-        `<button class="btn btn-success btn-sm">Yes</button>`,
-        `<button class="btn btn-danger btn-sm">No</button>`,
-        `<button class="btn btn-primary btn-sm btn-sm">Resend</button>`,
-      ])
-    })
-    table.draw()
-  }, [emailCircular])
+  const stats = [
+    { label: "All Users", colorClass: "success", value: counts?.all, icon: "bx bxs-user" },
+    { label: "Sent Mail", colorClass: "info", value: counts?.mailSent, icon: "bx bx-mail-send" },
+    { label: "Un Sent Mail", colorClass: "danger", value: counts?.mailUnSent, icon: "bx bx-mail-send" },
+    { label: "Open Mail", colorClass: "warning", value: counts?.mailOpen, icon: "bx bx-mail-send" },
+    { label: "Not Open Mail", colorClass: "warning", value: counts?.mailNotOpen, icon: "bx bx-mail-send" },
+  ]
 
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Email Circular Details" add_button="Back" add_link="/admin/email_circular" />
+          <Breadcrumb page="Settings" title="Email Circular Details" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
           <div className="card mb-3">
             <div className="card-body">
               <h2>{formData.subject}</h2>
@@ -91,97 +126,57 @@ const EmailCircularDetails = () => {
           </div>
 
           <div className="row row-cols-1 row-cols-md-2 row-cols-xl-4">
-            <div className="col">
-              <div className="card radius-10 mb-3">
-                <div className="card-body">
-                  <div className="d-flex align-items-center">
-                    <div>
-                      <p className="mb-0 text-secondary">All Users</p>
-                      <h4 className="my-1">191</h4>
-                    </div>
-                    <div className="widgets-icons bg-light-success text-success ms-auto">
-                      <i className="bx bxs-user" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col">
-              <div className="card radius-10 mb-3">
-                <div className="card-body">
-                  <div className="d-flex align-items-center">
-                    <div>
-                      <p className="mb-0 text-secondary">Sent Mail</p>
-                      <h4 className="my-1">191</h4>
-                    </div>
-                    <div className="widgets-icons bg-light-info text-info ms-auto">
-                      <i className="bx bx-mail-send" />
+            {stats.map((stat, index) => (
+              <div className="col" key={index}>
+                <div className="card radius-10 mb-3">
+                  <div className="card-body">
+                    <div className="d-flex align-items-center">
+                      <div>
+                        <p className="mb-0 text-secondary">{stat.label}</p>
+                        <h4 className="my-1">{stat.value}</h4>
+                      </div>
+                      <div className={`widgets-icons bg-light-${stat.colorClass} text-${stat.colorClass} ms-auto`}>
+                        <i className={stat.icon} />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="col">
-              <div className="card radius-10 mb-3">
-                <div className="card-body">
-                  <div className="d-flex align-items-center">
-                    <div>
-                      <p className="mb-0 text-secondary">Un Sent Mail</p>
-                      <h4 className="my-1">0</h4>
-                    </div>
-                    <div className="widgets-icons bg-light-danger text-danger ms-auto">
-                      <i className="bx bx-mail-send" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col">
-              <div className="card radius-10 mb-3">
-                <div className="card-body">
-                  <div className="d-flex align-items-center">
-                    <div>
-                      <p className="mb-0 text-secondary">Open Mail</p>
-                      <h4 className="my-1">0</h4>
-                    </div>
-                    <div className="widgets-icons bg-light-warning text-warning ms-auto">
-                      <i className="bx bx-mail-send" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col">
-              <div className="card radius-10 mb-3">
-                <div className="card-body">
-                  <div className="d-flex align-items-center">
-                    <div>
-                      <p className="mb-0 text-secondary">Not Open Mail</p>
-                      <h4 className="my-1">191</h4>
-                    </div>
-                    <div className="widgets-icons bg-light-warning text-primary ms-auto">
-                      <i className="bx bx-mail-send" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div className="table-responsive">
-            <table ref={tableRef} className="table table-striped table-bordered" style={{ width: '100%' }}>
-              <thead>
-                <tr>
-                  <th>S.No</th>
-                  <th>User Name</th>
-                  <th>Is Mail Sent</th>
-                  <th>Is Mail Open</th>
-                  <th>Resend Mail</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={[
+              { key: "id", label: "S.No.", sortable: true },
+              { key: "user_name", label: "User Name", sortable: true },
+              { key: "is_mail", label: "User Type", sortable: false },
+              { key: "email_view_count", label: "Is Mail Open", sortable: false },
+              { key: "action", label: "Action", sortable: false },
+            ]}
+            data={data}
+            loading={loading}
+            page={page}
+            totalRecords={totalRecords}
+            filteredRecords={filteredRecords}
+            limit={limit}
+            sortBy={sortBy}
+            sortDirection={sortDirection}
+            onPageChange={(newPage) => setPage(newPage)}
+            onSortChange={handleSortChange}
+            onSearchChange={(val) => { setSearch(val); setPage(1); }}
+            search={search}
+            onLimitChange={(val) => { setLimit(val); setPage(1); }}
+            getRangeText={getRangeText}
+            renderRow={(row, index) => (
+              <tr key={row.id}>
+                <td>{(page - 1) * limit + index + 1}</td>
+                <td><Link to={`/admin/${row.user_is_seller==1 ? 'seller' : 'buyer'}/user-profile/${row.user_id}`}>{row.user_name}</Link></td>
+                <td>{row.is_mail && row.is_mail == 1 ? (<span className="badge bg-success">Yes</span>) : (<span className="badge bg-danger">No</span>)}</td>
+                <td>{row.email_view_count && row.email_view_count == 1 ? (<span className="badge bg-success">Yes</span>) : (<span className="badge bg-danger">No</span>)}</td>
+                <td><button className="btn btn-primary btn-sm btn-sm">Resend</button></td>
+              </tr>
+            )}
+          />
         </div>
       </div>
     </>

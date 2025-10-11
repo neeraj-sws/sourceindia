@@ -18,7 +18,12 @@ exports.createEmails = async (req, res) => {
 exports.getAllEmails = async (req, res) => {
   try {
     const emails = await Emails.findAll({ order: [['id', 'ASC']] });
-    res.json(emails);
+    const modifiedEmails = emails.map(email => {
+      const emailsData = email.toJSON();
+      emailsData.getStatus = emailsData.status === 1 ? 'Active' : 'Inactive';
+      return emailsData;
+    });
+    res.json(modifiedEmails);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -78,6 +83,7 @@ exports.getAllEmailsServerSide = async (req, res) => {
       search = '',
       sortBy = 'id',
       sort = 'DESC',
+      emailFor = ''
     } = req.query;
     const validColumns = ['id', 'title', 'email_for', 'subject', 'description', 'is_seller_direct', 
       'message', 'status', 'created_at', 'updated_at'];
@@ -103,6 +109,11 @@ exports.getAllEmailsServerSide = async (req, res) => {
           { subject: { [Op.like]: `%${search}%` } },
         ];
       }
+    }
+    if (emailFor) {
+      where.email_for = {
+        [Op.like]: `%${emailFor}%`
+      };
     }
     const totalRecords = await Emails.count();
     const { count: filteredRecords, rows } = await Emails.findAndCountAll({

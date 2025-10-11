@@ -6,6 +6,7 @@ const Categories = require('./Categories');
 const SubCategories = require('./SubCategories');
 const Users = require('./Users');
 const Applications = require('./Applications');
+const Color = require('./Color');
 
 const Products = sequelize.define('Products', {
   user_id: { type: DataTypes.INTEGER, allowNull: false },
@@ -60,5 +61,6 @@ Products.belongsTo(Users, { foreignKey: 'user_id', targetKey: 'id', as: 'Users',
 Products.belongsTo(Categories, { foreignKey: 'category', targetKey: 'id', as: 'Categories', constraints: false });
 Products.belongsTo(SubCategories, { foreignKey: 'sub_category', targetKey: 'id', as: 'SubCategories', constraints: false });
 Products.belongsTo(Applications, { foreignKey: 'application', targetKey: 'id', as: 'Applications', constraints: false });
+Products.belongsTo(Color, { foreignKey: 'color', targetKey: 'id', as: 'Color', constraints: false });
 
 module.exports = Products;

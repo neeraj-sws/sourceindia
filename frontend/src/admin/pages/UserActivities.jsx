@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from 'react-router-dom';
 import axios from "axios";
+import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import ExcelExport from "../common/ExcelExport";
 import API_BASE_URL from "../../config";
 import { formatDateTime } from '../../utils/formatDate';
 import { Pie } from 'react-chartjs-2';
@@ -21,6 +23,8 @@ const UserActivities = () => {
   const [limit, setLimit] = useState(10);
   const [userStats, setUserStats] = useState(null);
   const [chartLoading, setChartLoading] = useState(false);
+  const [userActivityData, setUserActivityData] = useState([]);
+  const excelExportRef = useRef();
 
   useEffect(() => {
     axios.get(`${API_BASE_URL}/user_activity/count`)
@@ -51,6 +55,18 @@ const UserActivities = () => {
   };
 
   useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection]);
+
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/user_activity`).then((res) => {
+      setUserActivityData(res.data);
+    });
+  }, []);
+
+  const handleDownload = () => {
+    if (excelExportRef.current) {
+      excelExportRef.current.exportToExcel();
+    }
+  };
 
   if (chartLoading) {
     return <div>Loading chart...</div>;
@@ -118,7 +134,9 @@ const UserActivities = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="User Activities" />
+          <Breadcrumb page="Settings" title="User Activities" actions={
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+          } />
           <div className="row mb-3">
             <div className="col-md-6">
               <div id="accordionCount">
@@ -271,6 +289,22 @@ const UserActivities = () => {
           </div>
         </div>
       </div>
+      <ExcelExport
+        ref={excelExportRef}
+        columnWidth={34.29}
+        fileName="User Activity Export.xlsx"
+        data={userActivityData}
+        columns={[
+          { label: "Organization Name", key: "company_name" },
+          { label: "Fname", key: "user_fname" },
+          { label: "Lname", key: "user_lname" },
+          { label: "Email", key: "user_email" },
+          { label: "Mobile", key: "user_mobile" },
+          { label: "Is Seller", key: "user_type" },
+          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+        ]}
+      />
     </>
   );
 };

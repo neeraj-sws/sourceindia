@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from 'react-router-dom';
 import axios from "axios";
+import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
+import ExcelExport from "../common/ExcelExport";
 import EmailCircularModals from "./modal/EmailCircularModals";
 
 const EmailCircular = () => {
@@ -22,6 +24,10 @@ const EmailCircular = () => {
   const { showNotification } = useAlert();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [newsletterToDelete, setNewsletterToDelete] = useState(null);
+  const [selectedEmailCircular, setSelectedEmailCircular] = useState([]);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
+  const [emailCircularData, setEmailCircularData] = useState([]);
+  const excelExportRef = useRef();
 
   const fetchData = async () => {
     setLoading(true);
@@ -67,21 +73,68 @@ const EmailCircular = () => {
     }
   };
 
-  const openDeleteModal = (newsletterId) => { setNewsletterToDelete(newsletterId); setShowDeleteModal(true); };
-
+  const openDeleteModal = (newsletterId) => { setNewsletterToDelete(newsletterId); setIsBulkDelete(false); setShowDeleteModal(true); };
+  const openBulkDeleteModal = () => { setNewsletterToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
   const closeDeleteModal = () => { setNewsletterToDelete(null); setShowDeleteModal(false); };
 
   const handleDeleteConfirm = async () => {
-    try {
-      await axios.delete(`${API_BASE_URL}/newsletters/${newsletterToDelete}`);
-      setData((prevData) => prevData.filter((item) => item.id !== newsletterToDelete));
-      setTotalRecords((prev) => prev - 1);
-      setFilteredRecords((prev) => prev - 1);
-      closeDeleteModal();
-      showNotification("Email Circular deleted successfully!", "success");
-    } catch (error) {
-      console.error("Error deleting Email Circular:", error);
-      showNotification("Failed to delete Email Circular.", "error");
+    if (isBulkDelete) {
+      try {
+        const res = await axios.delete(`${API_BASE_URL}/newsletters/delete-selected`, {
+          data: { ids: selectedEmailCircular }
+        });
+        setData((prevData) => prevData.filter((item) => !selectedEmailCircular.includes(item.id)));
+        setTotalRecords((prev) => prev - selectedEmailCircular.length);
+        setFilteredRecords((prev) => prev - selectedEmailCircular.length);
+        setSelectedEmailCircular([]);
+        showNotification(res.data?.message || "Selected newsletters deleted successfully!", "success");
+      } catch (error) {
+        console.error("Error deleting selected newsletters:", error);
+        showNotification("Failed to delete selected newsletters.", "error");
+      } finally {
+        closeDeleteModal();
+      }
+    } else {
+      try {
+        await axios.delete(`${API_BASE_URL}/newsletters/${newsletterToDelete}`);
+        setData((prevData) => prevData.filter((item) => item.id !== newsletterToDelete));
+        setTotalRecords((prev) => prev - 1);
+        setFilteredRecords((prev) => prev - 1);
+        closeDeleteModal();
+        showNotification("Email Circular deleted successfully!", "success");
+      } catch (error) {
+        console.error("Error deleting Email Circular:", error);
+        showNotification("Failed to delete Email Circular.", "error");
+      }
+    }
+  };
+
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelectedEmailCircular(data?.map((item) => item.id));
+    } else {
+      setSelectedEmailCircular([]);
+    }
+  };
+
+  const handleSelectEmailCircular = (emailCircularId) => {
+    setSelectedEmailCircular((prevSelectedEmailCircular) =>
+      prevSelectedEmailCircular.includes(emailCircularId)
+        ? prevSelectedEmailCircular.filter((id) => id !== emailCircularId)
+        : [...prevSelectedEmailCircular, emailCircularId]
+    );
+  };
+
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/newsletters`).then((res) => {
+      const filtered = res.data.filter((c) => c.is_delete === 0);
+      setEmailCircularData(filtered);
+    });
+  }, []);
+
+  const handleDownload = () => {
+    if (excelExportRef.current) {
+      excelExportRef.current.exportToExcel();
     }
   };
 
@@ -89,11 +142,21 @@ const EmailCircular = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Email Circular" add_button="Add Email Circular" add_link="/admin/add_email_circular" />
+          <Breadcrumb page="Settings" title="Email Circular" add_button={<><i className="bx bxs-plus-square"></i> Add Email Circular</>} add_link="/admin/add_email_circular"
+          actions={
+            <>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedEmailCircular.length === 0}>
+              <i className="bx bx-trash"></i> Delete Selected
+            </button>
+            </>
+          }
+          />
           <div className="card">
             <div className="card-body">
               <DataTable
                 columns={[
+                  ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "title", label: "Title", sortable: true },
                   { key: "user_type_name", label: "User Type", sortable: true },
@@ -117,6 +180,9 @@ const EmailCircular = () => {
                 getRangeText={getRangeText}
                 renderRow={(row, index) => (
                   <tr key={row.id}>
+                    <td>                    
+                      <input type="checkbox" checked={selectedEmailCircular.includes(row.id)} onChange={() => handleSelectEmailCircular(row.id)} />
+                    </td>
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td><Link to={`/admin/email_circular_details/${row.id}`}>{row.title}</Link></td>
                     <td>{row.user_type_name ? row.user_type_name.charAt(0).toUpperCase() + row.user_type_name.slice(1) : ''}</td>
@@ -152,7 +218,20 @@ const EmailCircular = () => {
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}
+        isBulkDelete={isBulkDelete}
         deleteType="newsletter"
+      />
+      <ExcelExport
+        ref={excelExportRef}
+        columnWidth={34.29}
+        fileName="Email Circular Export.xlsx"
+        data={emailCircularData}
+        columns={[
+          { label: "Title", key: "title" },
+          { label: "User Type", key: "user_category_name" },
+          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+        ]}
       />
     </>
   );

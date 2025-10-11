@@ -6,6 +6,7 @@ const ProductModals = ({
   closeDeleteModal,
   handleDeleteConfirm,
   deleteType,
+  isBulkDelete = false,
 
   // Status modal
   showStatusModal,
@@ -21,7 +22,7 @@ const ProductModals = ({
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Confirm Deletion</h5>
+                <h5 className="modal-title">Confirm {isBulkDelete ? "Bulk Deletion" : "Deletion"}</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -30,14 +31,14 @@ const ProductModals = ({
                 />
               </div>
               <div className="modal-body">
-                {`Are you sure you want to delete this ${deleteType === "image" ? "image" : "product"}?`}
+                {`Are you sure you want to delete this ${deleteType === "image" ? "image" : isBulkDelete ? "the selected products" :  "product"}?`}
               </div>
               <div className="modal-footer justify-content-between">
                 <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>
                   Cancel
                 </button>
                 <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>
-                  Delete
+                  {isBulkDelete ? "Delete Selected" : "Delete"}
                 </button>
               </div>
             </div>
@@ -55,11 +56,16 @@ const ProductModals = ({
                 <button type="button" className="btn-close" onClick={closeStatusModal} aria-label="Close" />
               </div>
               <div className="modal-body">
-                Are you sure you want to {statusToggleInfo.currentStatus === 1 ? "deactivate" : "activate"} this Product?
+                {
+                  statusToggleInfo.field === "status" ? `Are you sure you want to ${statusToggleInfo.currentStatus === 1 ? "deactivate" : "activate"} this product Status` :
+                  statusToggleInfo.field === "delete_status" ? `Are you sure want to ${statusToggleInfo.currentStatus === 1 ? "restore deleted" : "remove from list"}` : "item"
+                }?
               </div>
               <div className="modal-footer justify-content-between">
                 <button type="button" className="btn btn-secondary btn-sm" onClick={closeStatusModal}>Cancel</button>
-                <button type="button" className="btn btn-warning" onClick={handleStatusConfirm}>Yes, Change</button>
+                <button type="button" className="btn btn-warning" onClick={handleStatusConfirm}>
+                  {statusToggleInfo.field === "delete_status" ? statusToggleInfo.currentStatus === 1 ? "Restore" : "Remove" : "Yes, Change"}
+                </button>
               </div>
             </div>
           </div>

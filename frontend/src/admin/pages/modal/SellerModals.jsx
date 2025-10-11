@@ -5,6 +5,7 @@ const SellerModals = ({
   showDeleteModal,
   closeDeleteModal,
   handleDeleteConfirm,
+  isBulkDelete = false,
 
   // Status modal
   showStatusModal,
@@ -20,13 +21,19 @@ const SellerModals = ({
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Confirm Deletion</h5>
+                <h5 className="modal-title">
+                  Confirm {isBulkDelete ? "Bulk Deletion" : "Deletion"}
+                </h5>
                 <button type="button" className="btn-close" onClick={closeDeleteModal} aria-label="Close" />
               </div>
-              <div className="modal-body">Are you sure you want to delete this Seller?</div>
+              <div className="modal-body">
+                Are you sure you want to delete {isBulkDelete ? "the selected sellers" : "this seller"}?
+              </div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>Cancel</button>
-                <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>Delete</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>Cancel </button>
+                <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>
+                  {isBulkDelete ? "Delete Selected" : "Delete"}
+                </button>
               </div>
             </div>
           </div>
@@ -45,7 +52,7 @@ const SellerModals = ({
               <div className="modal-body">
                 {
                   statusToggleInfo.field === "status" ? `Are you sure you want to ${statusToggleInfo.currentStatus === 1 ? "deactivate" : "activate"} this Seller Status` :
-                    statusToggleInfo.field === "delete_status" ? `Are you sure want to ${statusToggleInfo.currentStatus === 1 ? "restore deleted" : "remove from list"}` : "item"
+                  statusToggleInfo.field === "delete_status" ? `Are you sure want to ${statusToggleInfo.currentStatus === 1 ? "restore deleted" : "remove from list"}` : "item"
                 }?
               </div>
               <div className="modal-footer justify-content-between">

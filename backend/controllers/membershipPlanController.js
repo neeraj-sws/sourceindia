@@ -1,4 +1,5 @@
 const { Op } = require('sequelize');
+const moment = require('moment');
 const MembershipPlan = require('../models/MembershipPlan');
 
 exports.createMembershipPlan = async (req, res) => {
@@ -16,7 +17,12 @@ exports.createMembershipPlan = async (req, res) => {
 exports.getAllMembershipPlan = async (req, res) => {
   try {
     const membershipPlan = await MembershipPlan.findAll({ order: [['id', 'ASC']] });
-    res.json(membershipPlan);
+    const modifiedMembershipPlan = membershipPlan.map(membership_plan => {
+      const membershipPlanData = membership_plan.toJSON();
+      membershipPlanData.getStatus = membershipPlanData.status === 1 ? 'Active' : 'Inactive';
+      return membershipPlanData;
+    });
+    res.json(modifiedMembershipPlan);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -71,6 +77,37 @@ exports.deleteMembershipPlan = async (req, res) => {
   }
 };
 
+exports.deleteSelectedMembershipPlan = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Please provide an array of IDs to delete.' });
+    }
+    const parsedIds = ids.map(id => parseInt(id, 10));
+    const membershipPlan = await MembershipPlan.findAll({
+      where: {
+        id: {
+          [Op.in]: parsedIds,
+        },
+      },
+    });
+    if (membershipPlan.length === 0) {
+      return res.status(404).json({ message: 'No membership plan found with the given IDs.' });
+    }
+    await MembershipPlan.destroy({
+      where: {
+        id: {
+          [Op.in]: parsedIds,
+        },
+      },
+    });
+    res.json({ message: `${membershipPlan.length} membership plan deleted successfully.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.updateMembershipPlanStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -91,6 +128,22 @@ exports.updateMembershipPlanStatus = async (req, res) => {
   }
 };
 
+exports.updateMembershipPlanDeleteStatus = async (req, res) => {
+  try {
+    const { is_delete } = req.body;
+    if (is_delete !== 0 && is_delete !== 1) {
+      return res.status(400).json({ message: 'Invalid delete status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const membershipPlan = await MembershipPlan.findByPk(req.params.id);
+    if (!membershipPlan) return res.status(404).json({ message: 'Membership Plan not found' });
+    membershipPlan.is_delete = is_delete;
+    await membershipPlan.save();
+    res.json({ message: 'Membership Plan is removed', membershipPlan });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getAllMembershipPlanServerSide = async (req, res) => {
   try {
     const {
@@ -99,6 +152,9 @@ exports.getAllMembershipPlanServerSide = async (req, res) => {
       search = '',
       sortBy = 'id',
       sort = 'DESC',
+      dateRange = '',
+      startDate,
+      endDate,
     } = req.query;
     const validColumns = ['id', 'name', 'sub_title', 'price', 'user', 'category', 'product', 'created_at', 'updated_at'];
     const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
@@ -110,9 +166,13 @@ exports.getAllMembershipPlanServerSide = async (req, res) => {
     } else {
       order = [['id', 'DESC']];
     }
-    const where = {};
+    const where = { is_delete: 0 };
+    if (req.query.getDeleted === 'true') {
+      where.is_delete = 1;
+    }
+    const searchWhere = { ...where };
     if (search) {
-      where[Op.or] = [
+      searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         { price: { [Op.like]: `%${search}%` } },
         { user: { [Op.like]: `%${search}%` } },
@@ -120,9 +180,60 @@ exports.getAllMembershipPlanServerSide = async (req, res) => {
         { product: { [Op.like]: `%${search}%` } },
       ];
     }
-    const totalRecords = await MembershipPlan.count();
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      searchWhere.created_at = dateCondition;
+    }
+    const totalRecords = await MembershipPlan.count({ where });
     const { count: filteredRecords, rows } = await MembershipPlan.findAndCountAll({
-      where,
+      where: searchWhere,
       order,
       limit: limitValue,
       offset,
@@ -137,6 +248,7 @@ exports.getAllMembershipPlanServerSide = async (req, res) => {
       category: row.category,
       product: row.product,
       status: row.status,
+      is_delete: row.is_delete,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));

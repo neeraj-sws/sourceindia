@@ -1,4 +1,5 @@
 const Sequelize = require('sequelize');
+const moment = require('moment');
 const { Op, fn, col } = Sequelize;
 const fs = require('fs');
 const path = require('path');
@@ -8,6 +9,12 @@ const UploadImage = require('../models/UploadImage');
 const Countries = require('../models/Countries');
 const States = require('../models/States');
 const Cities = require('../models/Cities');
+const CoreActivity = require('../models/CoreActivity');
+const Activity = require('../models/Activity');
+const Categories = require('../models/Categories');
+const MembershipPlan = require('../models/MembershipPlan');
+const BuyerInterests = require('../models/BuyerInterests');
+const InterestSubCategories = require('../models/InterestSubCategories');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
@@ -114,8 +121,49 @@ exports.createBuyer = async (req, res) => {
 
 exports.getAllBuyer = async (req, res) => {
   try {
-    const buyers = await Users.findAll({ where: { is_seller: 0 }, order: [['id', 'ASC']] });
-    res.json(buyers);
+    const buyers = await Users.findAll({
+      where: { is_seller: 0 },
+      order: [['id', 'ASC']],
+      include: [
+        { model: Countries, as: 'country_data', attributes: ['id', 'name'] },
+        { model: States, as: 'state_data', attributes: ['id', 'name'] },
+        { model: Cities, as: 'city_data', attributes: ['id', 'name'] },
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['id', 'organization_name', 'category_sell'],
+          include: [
+            { model: MembershipPlan, as: 'MembershipPlan', attributes: ['id', 'name'] },
+          ]
+        },
+        {
+          model: BuyerInterests,
+          as: 'buyer_interests',
+          attributes: ['activity_id'],
+          include: [
+            { model: InterestSubCategories, as: 'activity', attributes: ['name'] }
+          ]
+        }
+      ],
+    });
+    const modifiedBuyers = buyers.map(buyer => {
+      const buyersData = buyer.toJSON();
+      buyersData.getStatus = buyersData.status === 1 ? 'Active' : 'Inactive';
+      buyersData.getApproved = buyersData.is_approve === 1 ? 'Approved' : 'Not Approved';
+      buyersData.country_name = buyersData.country_data?.name || 'NA';
+      buyersData.state_name = buyersData.state_data?.name || 'NA';
+      buyersData.city_name = buyersData.city_data?.name || 'NA';
+      buyersData.company_name = buyersData.company_info?.organization_name || null;
+      buyersData.membership_plan_name = buyersData.company_info?.MembershipPlan?.name || 'NA';
+      buyersData.interest_names = buyersData.buyer_interests?.map(bi => bi.activity?.name).filter(Boolean).join(', ') || '';
+      delete buyersData.country_data;
+      delete buyersData.state_data;
+      delete buyersData.city_data;
+      delete buyersData.company_info;
+      delete buyersData.buyer_interests;
+      return buyersData;
+    });
+    res.json(modifiedBuyers);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -124,29 +172,40 @@ exports.getAllBuyer = async (req, res) => {
 exports.getBuyerById = async (req, res) => {
   try {
     const buyers = await Users.findByPk(req.params.id, {
-      include: [{
-        model: UploadImage,
-        as: 'file',
-        attributes: ['file'],
-      },
-      {
-        model: UploadImage,
-        as: 'company_file',
-        attributes: ['file'],
-      }],
+      include: [
+        {model: UploadImage, as: 'file', attributes: ['file']},
+        {model: UploadImage, as: 'company_file', attributes: ['file']},
+        {model: Countries, as: 'country_data', attributes: ['name']},
+        {model: States, as: 'state_data', attributes: ['name']},
+        {model: Cities, as: 'city_data', attributes: ['name']}
+      ]
     });    
     if (!buyers) {
       return res.status(404).json({ message: 'Buyer not found' });
     }
     let companyInfo = null;
     if (buyers.company_id) {
-      companyInfo = await CompanyInfo.findByPk(buyers.company_id);
+      companyInfo = await CompanyInfo.findByPk(buyers.company_id, {
+      include: [
+        {model: CoreActivity, as: 'CoreActivity', attributes: ['name']},
+        {model: Activity, as: 'Activity', attributes: ['name']},
+        {model: Categories, as: 'Categories', attributes: ['name']},
+        {model: MembershipPlan, as: 'MembershipPlan', attributes: ['name']}
+      ]
+    });
     }
     const response = {
       ...buyers.toJSON(),
       ...(companyInfo ? companyInfo.toJSON() : {}),
       file_name: buyers.file ? buyers.file.file : null,
       company_file_name: buyers.company_file ? buyers.company_file.file : null,
+      country_name: buyers.country_data ? buyers.country_data.name : null,
+      state_name: buyers.state_data ? buyers.state_data.name : null,
+      city_name: buyers.city_data ? buyers.city_data.name : null,
+      coreactivity_name: companyInfo && companyInfo.CoreActivity ? companyInfo.CoreActivity.name : null,
+      activity_name: companyInfo && companyInfo.Activity ? companyInfo.Activity.name : null,
+      category_name: companyInfo && companyInfo.Categories ? companyInfo.Categories.name : null,
+      plan_name: companyInfo && companyInfo.MembershipPlan ? companyInfo.MembershipPlan.name : null,
     };
     res.json(response);
   } catch (err) {
@@ -303,6 +362,41 @@ exports.deleteBuyer = async (req, res) => {
   }
 };
 
+exports.deleteSelectedBuyer = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Please provide an array of IDs to update.' });
+    }
+    const parsedIds = ids.map(id => parseInt(id, 10));
+    const buyers = await Users.findAll({
+      where: {
+        id: {
+          [Op.in]: parsedIds,
+        },
+        is_delete: 0
+      }
+    });
+    if (buyers.length === 0) {
+      return res.status(404).json({ message: 'No buyer found with the given IDs.' });
+    }
+    await Users.update(
+      { is_delete: 1 },
+      {
+        where: {
+          id: {
+            [Op.in]: parsedIds,
+          }
+        }
+      }
+    );
+    res.json({ message: `${buyers.length} buyer marked as deleted.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.updateBuyerStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -375,6 +469,14 @@ exports.getAllBuyerServerSide = async (req, res) => {
       search = '',
       sortBy = 'id',
       sort = 'DESC',
+      dateRange = '',
+      startDate,
+      endDate,
+      country,
+      state,
+      city,
+      full_name,
+      customerId
     } = req.query;
     const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'mobile', 'country_name', 'state_name', 
       'city_name', 'zipcode', 'user_company', 'website', 'is_trading', 'elcina_member', 'address', 'products', 
@@ -418,6 +520,15 @@ exports.getAllBuyerServerSide = async (req, res) => {
       where.is_delete = 1;
     }
     const searchWhere = { ...where };
+    if (country) {
+      searchWhere.country = country;
+    }
+    if (state) {
+      searchWhere.state = state;
+    }
+    if (city) {
+      searchWhere.city = city;
+    }
     if (search) {
       searchWhere[Op.or] = [
         Sequelize.where(fn('concat', col('fname'), ' ', col('lname')), { [Op.like]: `%${search}%` }),
@@ -425,6 +536,73 @@ exports.getAllBuyerServerSide = async (req, res) => {
         { mobile: { [Op.like]: `%${search}%` } },
         { user_company: { [Op.like]: `%${search}%` } },
       ];
+    }
+    if (customerId) {
+      searchWhere.id = {
+        [Op.like]: `%${customerId}%`
+      };
+    }
+    if (full_name) {
+      if (!searchWhere[Op.or]) searchWhere[Op.or] = [];
+      searchWhere[Op.or].push(
+        Sequelize.where(
+          fn('concat', col('fname'), ' ', col('lname')),
+          {
+            [Op.like]: `%${full_name}%`
+          }
+        )
+      );
+    }
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      searchWhere.created_at = dateCondition;
     }
     const totalRecords = await Users.count({ where });
     const { count: filteredRecords, rows } = await Users.findAndCountAll({

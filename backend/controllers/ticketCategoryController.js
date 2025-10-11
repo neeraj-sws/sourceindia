@@ -18,7 +18,12 @@ exports.createTicketCategory = async (req, res) => {
 exports.getAllTicketCategories = async (req, res) => {
   try {
     const ticketCategory = await TicketCategory.findAll({ order: [['id', 'ASC']] });
-    res.json(ticketCategory);
+    const modifiedTicketCategory = ticketCategory.map(ticket_category => {
+      const ticketCategoryData = ticket_category.toJSON();
+      ticketCategoryData.getStatus = ticketCategoryData.status === 1 ? 'Active' : 'Inactive';
+      return ticketCategoryData;
+    });
+    res.json(modifiedTicketCategory);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -63,6 +68,37 @@ exports.deleteTicketCategory = async (req, res) => {
     await ticketCategory.destroy();
     res.json({ message: 'Ticket Category deleted successfully' });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteSelectedTicketCategory = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Please provide an array of IDs to delete.' });
+    }
+    const parsedIds = ids.map(id => parseInt(id, 10));
+    const ticketCategory = await TicketCategory.findAll({
+      where: {
+        id: {
+          [Op.in]: parsedIds,
+        },
+      },
+    });
+    if (ticketCategory.length === 0) {
+      return res.status(404).json({ message: 'No ticket category found with the given IDs.' });
+    }
+    await TicketCategory.destroy({
+      where: {
+        id: {
+          [Op.in]: parsedIds,
+        },
+      },
+    });
+    res.json({ message: `${ticketCategory.length} ticket category deleted successfully.` });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };

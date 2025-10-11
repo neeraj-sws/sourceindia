@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, Link } from 'react-router-dom';
 import axios from "axios";
+import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import ImageWithFallback from "../common/ImageWithFallback";
@@ -8,8 +10,14 @@ import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import ApplicationModals from "./modal/ApplicationModals";
 const initialForm = { id: null, name: "", top_category: "", status: "1", file: null };
+import ExcelExport from "../common/ExcelExport";
+import { DateRangePicker } from 'react-date-range';
+import 'react-date-range/dist/styles.css'; 
+import 'react-date-range/dist/theme/default.css'; 
+import { format } from 'date-fns';
 
-const ApplicationList = () => {
+const ApplicationList = ({ getDeleted }) => {
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -28,12 +36,25 @@ const ApplicationList = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
   const [submitting, setSubmitting] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState([]);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
+  const [applicationData, setApplicationData] = useState([]);
+  const excelExportRef = useRef();
+  const [dateRange, setDateRange] = useState('');
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [tempStartDate, setTempStartDate] = useState(null);
+  const [tempEndDate, setTempEndDate] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [range, setRange] = useState([
+    {startDate: new Date(), endDate: new Date(), key: 'selection'}
+  ]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/applications/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection },
+        params: { page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false', dateRange, startDate, endDate },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -45,7 +66,7 @@ const ApplicationList = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -57,20 +78,17 @@ const ApplicationList = () => {
   };
 
   const getRangeText = () => {
+    const isFiltered = search.trim() || dateRange || (startDate && endDate);
     if (filteredRecords === 0) {
-      if (search.trim()) {
-        return `Showing 0 to 0 of 0 entries (filtered from ${totalRecords} total entries)`;
-      } else {
-        return "Showing 0 to 0 of 0 entries";
-      }
+      return isFiltered
+        ? `Showing 0 to 0 of 0 entries (filtered from ${totalRecords} total entries)`
+        : "Showing 0 to 0 of 0 entries";
     }
     const start = (page - 1) * limit + 1;
     const end = Math.min(page * limit, filteredRecords);
-    if (search.trim()) {
-      return `Showing ${start} to ${end} of ${filteredRecords} entries (filtered from ${totalRecords} total entries)`;
-    } else {
-      return `Showing ${start} to ${end} of ${totalRecords} entries`;
-    }
+    return isFiltered
+      ? `Showing ${start} to ${end} of ${filteredRecords} entries (filtered from ${totalRecords} total entries)`
+      : `Showing ${start} to ${end} of ${totalRecords} entries`;
   };
 
   const openForm = async (editData = null) => {
@@ -155,21 +173,68 @@ const ApplicationList = () => {
     }
   };
 
-  const openDeleteModal = (applicationsId) => { setApplicationToDelete(applicationsId); setShowDeleteModal(true); };
-
+  const openDeleteModal = (applicationsId) => { setApplicationToDelete(applicationsId); setIsBulkDelete(false); setShowDeleteModal(true); };
+  const openBulkDeleteModal = () => { setApplicationToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
   const closeDeleteModal = () => { setApplicationToDelete(null); setShowDeleteModal(false); };
 
   const handleDeleteConfirm = async () => {
-    try {
-      await axios.delete(`${API_BASE_URL}/applications/${applicationToDelete}`);
-      setData((prevData) => prevData.filter((item) => item.id !== applicationToDelete));
-      setTotalRecords((prev) => prev - 1);
-      setFilteredRecords((prev) => prev - 1);
-      closeDeleteModal();
-      showNotification("Application deleted successfully!", "success");
-    } catch (error) {
-      console.error("Error deleting Application:", error);
-      showNotification("Failed to delete Application.", "error");
+    if (isBulkDelete) {
+      try {
+        const res = await axios.delete(`${API_BASE_URL}/applications/delete-selected`, {
+          data: { ids: selectedApplication }
+        });
+        setData((prevData) => prevData.filter((item) => !selectedApplication.includes(item.id)));
+        setTotalRecords((prev) => prev - selectedApplication.length);
+        setFilteredRecords((prev) => prev - selectedApplication.length);
+        setSelectedApplication([]);
+        showNotification(res.data?.message || "Selected applications deleted successfully!", "success");
+      } catch (error) {
+        console.error("Error deleting selected applications:", error);
+        showNotification("Failed to delete selected applications.", "error");
+      } finally {
+        closeDeleteModal();
+      }
+    } else {
+      try {
+        await axios.delete(`${API_BASE_URL}/applications/${applicationToDelete}`);
+        setData((prevData) => prevData.filter((item) => item.id !== applicationToDelete));
+        setTotalRecords((prev) => prev - 1);
+        setFilteredRecords((prev) => prev - 1);
+        closeDeleteModal();
+        showNotification("Application deleted successfully!", "success");
+      } catch (error) {
+        console.error("Error deleting Application:", error);
+        showNotification("Failed to delete Application.", "error");
+      }
+    }
+  };
+
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelectedApplication(data?.map((item) => item.id));
+    } else {
+      setSelectedApplication([]);
+    }
+  };
+
+  const handleSelectApplication = (applicationId) => {
+    setSelectedApplication((prevSelectedApplication) =>
+      prevSelectedApplication.includes(applicationId)
+        ? prevSelectedApplication.filter((id) => id !== applicationId)
+        : [...prevSelectedApplication, applicationId]
+    );
+  };
+
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/applications`).then((res) => {
+      const filtered = res.data.filter((c) => c.is_delete=== (getDeleted ? 1 : 0));
+      setApplicationData(filtered);
+    });
+  }, []);
+
+  const handleDownload = () => {
+    if (excelExportRef.current) {
+      excelExportRef.current.exportToExcel();
     }
   };
 
@@ -184,7 +249,17 @@ const ApplicationList = () => {
     try {
       await axios.patch(`${API_BASE_URL}/applications/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      showNotification("Status updated!", "success");
+      if(field=="delete_status"){
+        setData((prevData) => prevData.filter((item) => item.id !== id));
+        setTotalRecords((prev) => prev - 1);
+        setFilteredRecords((prev) => prev - 1);
+        closeDeleteModal();
+      }
+      if (field == "delete_status") {
+        showNotification(newStatus == 1 ? "Removed from list" : "Restored from deleted", "success");
+      } else {
+        showNotification("Status updated!", "success");
+      }
     } catch (error) {
       console.error("Error updating status:", error);
       showNotification("Failed to update status.", "danger");
@@ -194,12 +269,52 @@ const ApplicationList = () => {
     }
   };
 
+  const clearFilters = () => {
+    setTempStartDate(null);
+    setTempEndDate(null);
+    setDateRange('');
+    setStartDate(null);
+    setEndDate(null);
+    setPage(1);
+  };
+  
+  const handleRangeChange = (item) => {
+    const start = item.selection.startDate;
+    const end = item.selection.endDate;
+    setRange([item.selection]);
+    setTempStartDate(format(start, 'yyyy-MM-dd'));
+    setTempEndDate(format(end, 'yyyy-MM-dd'));
+    setShowPicker(false);
+  };
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Application" add_button="Add Application" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Application" : "Application"}
+          add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Application</>)} add_link="#" onClick={() => openForm()}
+          actions={
+            <>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            {!getDeleted ? (
+              <>
+                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedApplication.length === 0}>
+                  <i className="bx bx-trash"></i> Delete Selected
+                </button>
+                <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/application-remove-list">
+                  Recently Deleted Contact
+                </Link>
+              </>
+            ) : (
+              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                Back
+              </button>
+            )}
+            </>
+          }
+          />
           <div className="row">
+            {!getDeleted && (
             <div className="col-md-5">
               <div className="card">
                 <div className="card-body">
@@ -288,12 +403,51 @@ const ApplicationList = () => {
                 </div>
               </div>
             </div>
-            <div className="col-md-7">
+            )}
+            <div className={!getDeleted ? "col-md-7" : "col-md-12"}>
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">Application List</h5>
+                  <h5 className="card-title mb-3">{!getDeleted ? "Application List" : "Recently Deleted Application List"}</h5>
+                  {getDeleted && (
+                    <div className="row mb-3">
+                      <div className="col-md-8">
+                        <div className="d-flex align-items-center gap-2">
+                          <label className="form-label mb-0">Date Filter:</label>
+                          <div className="position-relative">
+                            <button className="form-control text-start" onClick={() => setShowPicker(!showPicker)}>
+                              <i className="bx bx-calendar me-2"></i>
+                              {format(range[0].startDate, 'MMMM dd, yyyy')} - {format(range[0].endDate, 'MMMM dd, yyyy')}
+                            </button>
+                            {showPicker && (
+                              <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: '100%', left: 0 }}>
+                                <DateRangePicker
+                                  ranges={range}
+                                  onChange={handleRangeChange}
+                                  showSelectionPreview={true}
+                                  moveRangeOnFirstSelection={false}
+                                  editableDateInputs={true}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-4 d-flex justify-content-end gap-2">
+                        <button className="btn btn-primary" onClick={() => {
+                          setStartDate(tempStartDate);
+                          setEndDate(tempEndDate);
+                          setDateRange('customrange');
+                          setPage(1);
+                        }}>
+                          Apply
+                        </button>
+                        <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
+                      </div>
+                    </div>
+                  )}
                   <DataTable
                     columns={[
+                      ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
@@ -318,6 +472,11 @@ const ApplicationList = () => {
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
                       <tr key={row.id}>
+                        {!getDeleted && (
+                        <td>                    
+                          <input type="checkbox" checked={selectedApplication.includes(row.id)} onChange={() => handleSelectApplication(row.id)} />
+                        </td>
+                        )}
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td><ImageWithFallback
                           src={`${ROOT_URL}/${row.file_name}`}
@@ -328,18 +487,25 @@ const ApplicationList = () => {
                         <td>{row.name}</td>
                         <td>{formatDateTime(row.created_at)}</td>
                         <td>
+                          {!getDeleted ? (
                           <div className="form-check form-switch">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id={`statusSwitch_${row.id}`}
-                            checked={row.status == 1}
-                            onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
-                            readOnly
-                          />
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={row.status == 1}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openStatusModal(row.id, row.status, "status", "status");
+                              }}
+                              readOnly
+                            />
                           </div>
+                          ):(
+                            row.status == 1 ? (<span className="badge bg-success">Active</span>) : (<span className="badge bg-danger">InActive</span>)
+                          )}
                         </td>
                         <td>
+                          {!getDeleted ? (
                           <div className="form-check form-switch">
                           <input
                             className="form-check-input"
@@ -349,6 +515,9 @@ const ApplicationList = () => {
                             readOnly
                           />
                           </div>
+                          ):(
+                            row.top_category == 1 ? (<span className="badge bg-success">Yes</span>) : (<span className="badge bg-danger">No</span>)
+                          )}
                         </td>
                         <td>
                           <div className="dropdown">
@@ -356,9 +525,34 @@ const ApplicationList = () => {
                               <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
                             <ul className="dropdown-menu">
+                              {!getDeleted ? (
+                              <>
                               <li>
                                 <button className="dropdown-item" onClick={() => openForm(row)}>
                                   <i className="bx bx-edit me-2"></i> Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" 
+                                  onClick={(e) => {
+                                    e.preventDefault(); 
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                              </>                          
+                              ) : (
+                              <>
+                              <li>
+                                <button className="dropdown-item" 
+                                  onClick={(e) => {
+                                    e.preventDefault(); 
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-windows me-2"></i> Restore
                                 </button>
                               </li>
                               <li>
@@ -366,6 +560,8 @@ const ApplicationList = () => {
                                   <i className="bx bx-trash me-2"></i> Delete
                                 </button>
                               </li>
+                              </>
+                              )}
                             </ul>
                           </div>
                         </td>
@@ -382,10 +578,23 @@ const ApplicationList = () => {
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}
+        isBulkDelete={isBulkDelete}
         showStatusModal={showStatusModal}
         statusToggleInfo={statusToggleInfo}
         closeStatusModal={closeStatusModal}
         handleStatusConfirm={handleStatusConfirm}
+      />
+      <ExcelExport
+        ref={excelExportRef}
+        columnWidth={34.29}
+        fileName="Application Export.xlsx"
+        data={applicationData}
+        columns={[
+          { label: "Name", key: "name" },
+          { label: "Status", key: "getStatus" },
+          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+        ]}
       />
     </>
   );

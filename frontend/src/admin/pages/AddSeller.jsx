@@ -23,17 +23,17 @@ const AddSeller = () => {
   const [selectedCity, setSelectedCity] = useState("");
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedSubCategory, setSelectedSubCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState([]);
+  const [selectedSubCategory, setSelectedSubCategory] = useState([]);
   const [coreactivities, setCoreactivities] = useState([]);
   const [activities, setActivities] = useState([]);
   const [selectedCoreActivity, setSelectedCoreActivity] = useState("");
   const [selectedActivity, setSelectedActivity] = useState("");
   const [roles, setRoles] = useState([]);
   const [formData, setFormData] = useState({
-    fname: "", lname: "", email: "", password: "", mobile: "", zipcode: "", website: "", is_trading: "", elcina_member: "", address: "",
-    file: null, company_logo: null, user_company: "", user_type: "", company_location: "", is_star_seller: "",
-    is_verified: "", company_meta_title: "", company_video_second: "", brief_company: "", products: "",
+    fname: "", lname: "", email: "", password: "", mobile: "", zipcode: "", website: "", is_trading: "", elcina_member: "",
+    address: "", file: null, company_logo: null, user_company: "", user_type: "", company_location: "",
+    is_star_seller: "", is_verified: "", company_meta_title: "", company_video_second: "", brief_company: "", products: "",
     designation: "", featured_company: "", company_sample_ppt_file: null, company_video: null, sample_file_id: null,
   });
   const [file, setFile] = useState(null);
@@ -83,79 +83,100 @@ const AddSeller = () => {
   const handleCityChange = (event) => { setSelectedCity(event.target.value); };
 
   useEffect(() => {
-      $('#country').select2({
-        theme: "bootstrap",
-        width: '100%',
-        placeholder: "Select Country"
-      }).on("change", function () {
-        const countryId = $(this).val();
-        handleCountryChange({ target: { value: countryId } });
-      });
-  
-      $('#state').select2({
-        theme: "bootstrap",
-        width: '100%',
-        placeholder: "Select State"
-      }).on("change", function () {
-        const stateId = $(this).val();
-        handleStateChange({ target: { value: stateId } });
-      });
-  
-      $('#city').select2({
-        theme: "bootstrap",
-        width: '100%',
-        placeholder: "Select City"
-      }).on("change", function () {
-        const cityId = $(this).val();
-        handleCityChange({ target: { value: cityId } });
-      });
+    $('#country').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Country"
+    }).on("change", function () {
+      const countryId = $(this).val();
+      handleCountryChange({ target: { value: countryId } });
+    });
 
-      $('#category_sell').select2({
-        theme: "bootstrap",
-        width: '100%',
-        placeholder: "Select Category"
-      }).on("change", function () {
-        const categoryId = $(this).val();
-        handleCategoryChange({ target: { value: categoryId } });
-      });
+    $('#state').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select State"
+    }).on("change", function () {
+      const stateId = $(this).val();
+      handleStateChange({ target: { value: stateId } });
+    });
 
-      $('#sub_category').select2({
-        theme: "bootstrap",
-        width: '100%',
-        placeholder: "Select Sub Category"
-      }).on("change", function () {
-        const subCategoryId = $(this).val();
-        handleSubCategoryChange({ target: { value: subCategoryId } });
-      });
+    $('#city').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select City"
+    }).on("change", function () {
+      const cityId = $(this).val();
+      handleCityChange({ target: { value: cityId } });
+    });
 
-      $('#core_activity').select2({
-        theme: "bootstrap",
-        width: '100%',
-        placeholder: "Select Core Activity"
-      }).on("change", function () {
-        const coreActivityId = $(this).val();
-        handleCoreActivityChange({ target: { value: coreActivityId } });
-      });
+    $('#category_sell').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Category",
+      multiple: true,
+    }).on("change", function () {
+      const selectedValues = $(this).val();
+      setSelectedCategory(selectedValues || []);
+      if (selectedValues.length > 0) {
+        axios.post(`${API_BASE_URL}/sub_categories/categories`, { categories: selectedValues })
+          .then(res => {
+            const newSubCategories = res.data;
+            const validSelectedSubCategories = selectedSubCategory.filter(id =>
+              newSubCategories.some(sub => sub.id == id)
+            );
+            setSubCategories(newSubCategories);
+            setSelectedSubCategory(validSelectedSubCategories);
+          })
+          .catch(err => {
+            console.error("Error fetching subcategories:", err);
+            setSubCategories([]);
+            setSelectedSubCategory([]);
+          });
+      } else {
+        setSubCategories([]);
+        setSelectedSubCategory([]);
+      }
+    });
 
-      $('#activity').select2({
-        theme: "bootstrap",
-        width: '100%',
-        placeholder: "Select Activity"
-      }).on("change", function () {
-        const activityId = $(this).val();
-        handleActivityChange({ target: { value: activityId } });
-      });
-  
-      return () => {
-        $('#country').off("change").select2('destroy');
-        $('#state').off("change").select2('destroy');
-        $('#city').off("change").select2('destroy');
-        $('#category_sell').off("change").select2('destroy');
-        $('#sub_category').off("change").select2('destroy');
-        $('#core_activity').off("change").select2('destroy');
-        $('#activity').off("change").select2('destroy');
-      };
-    }, [countries, states, cities, categories, subCategories, coreactivities, activities]);
+    $('#sub_category').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Sub Category",
+      multiple: true,
+    }).on("change", function () {
+      const selectedValues = $(this).val() || [];
+      setSelectedSubCategory(selectedValues.map(Number));
+    });
+
+    $('#core_activity').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Core Activity"
+    }).on("change", function () {
+      const coreActivityId = $(this).val();
+      handleCoreActivityChange({ target: { value: coreActivityId } });
+    });
+
+    $('#activity').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Activity"
+    }).on("change", function () {
+      const activityId = $(this).val();
+      handleActivityChange({ target: { value: activityId } });
+    });
+
+    return () => {
+      $('#country').off("change").select2('destroy');
+      $('#state').off("change").select2('destroy');
+      $('#city').off("change").select2('destroy');
+      $('#category_sell').off("change").select2('destroy');
+      $('#sub_category').off("change").select2('destroy');
+      $('#core_activity').off("change").select2('destroy');
+      $('#activity').off("change").select2('destroy');
+    };
+  }, [countries, states, cities, categories, subCategories, coreactivities, activities]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -170,20 +191,34 @@ const AddSeller = () => {
   }, []);
 
   const handleCategoryChange = async (event) => {
-    const categoryId = event.target.value;
-    setSelectedCategory(categoryId);
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/sub_categories/category/${categoryId}`
-      );
-      setSubCategories(res.data);
-      setSelectedSubCategory("");
-    } catch (error) {
-      console.error("Error fetching sub categories:", error);
+    const selectedOptions = Array.from(event.target.selectedOptions, (option) => Number(option.value));
+    setSelectedCategory(selectedOptions);
+    if (selectedOptions.length > 0) {
+      try {
+        const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+          categories: selectedOptions
+        });
+        const subCats = res.data;
+        const validSelectedSubCategories = selectedSubCategory.filter(id =>
+          subCats.some(sub => sub.id == id)
+        );
+        setSubCategories(subCats);
+        setSelectedSubCategory(validSelectedSubCategories);
+        $('#sub_category').val(validSelectedSubCategories).trigger('change');
+      } catch (err) {
+        console.error("Error fetching subcategories:", err);
+      }
+    } else {
+      setSubCategories([]);
+      setSelectedSubCategory([]);
+      $('#sub_category').val([]).trigger('change');
     }
   };
 
-  const handleSubCategoryChange = (event) => { setSelectedSubCategory(event.target.value); };
+  const handleSubCategoryChange = (event) => {
+    const options = Array.from(event.target.selectedOptions, (option) => Number(option.value));
+    setSelectedSubCategory(options);
+  };
 
   useEffect(() => {
     const fetchCoreactivities = async () => {
@@ -228,7 +263,6 @@ const AddSeller = () => {
 
   const validateForm = () => {
     const errs = {};
-
     if (!formData.fname?.trim()) errs.fname = "First Name is required";
     if (!formData.lname?.trim()) errs.lname = "Last Name is required";
     if (!formData.email?.trim()) errs.email = "Email is required";
@@ -355,8 +389,8 @@ const AddSeller = () => {
         setSelectedCountry(data.country || "");
         setSelectedState(data.state || "");
         setSelectedCity(data.city || "");
-        setSelectedCategory(data.category_sell || "");
-        setSelectedSubCategory(data.sub_category || "");
+        setSelectedCategory(data.category_sell ? data.category_sell.split(',') : []);
+        setSelectedSubCategory(data.sub_category ? data.sub_category.split(',') : []);
         setSelectedCoreActivity(data.core_activity || "");
         setSelectedActivity(data.activity || "");
         if (data.country) {
@@ -366,7 +400,14 @@ const AddSeller = () => {
           const ctRes = await axios.get(`${API_BASE_URL}/location/cities/${data.state}`); setCities(ctRes.data);
         }
         if (data.category_sell) {
-          const cRes = await axios.get(`${API_BASE_URL}/sub_categories/category/${data.category_sell}`); setSubCategories(cRes.data);
+          const categoriesArray = data.category_sell.split(',').map(Number);
+          setSelectedCategory(categoriesArray);
+          const cRes = await axios.post(`${API_BASE_URL}/sub_categories/categories`, { categories: categoriesArray });
+          setSubCategories(cRes.data);
+          const subCatArray = data.sub_category ? data.sub_category.split(',').map(Number) : [];
+          setSelectedSubCategory(subCatArray);
+          $('#sub_category').val(subCatArray).trigger('change');
+          $('#category_sell').val(categoriesArray).trigger('change');
         }
         if (data.core_activity) {
           const aRes = await axios.get(`${API_BASE_URL}/activities/coreactivity/${data.core_activity}`); setActivities(aRes.data);
@@ -387,8 +428,8 @@ const AddSeller = () => {
     data.append("country", selectedCountry);
     data.append("state", selectedState);
     data.append("city", selectedCity);
-    data.append("category_sell", selectedCategory);
-    data.append("sub_category", selectedSubCategory);
+    data.append("category_sell", selectedCategory.join(","));
+    data.append("sub_category", selectedSubCategory.join(","));
     data.append("core_activity", selectedCoreActivity);
     data.append("activity", selectedActivity);
     if (file) data.append("file", file);
@@ -489,9 +530,10 @@ const AddSeller = () => {
                   <div className="col-md-4">
                     <label htmlFor="category_sell" className="form-label required">Category</label>
                     <select
-                      id="category_sell" className={`form-control ${errors.category_sell ? "is-invalid" : ""}`}
+                      id="category_sell" className={`form-control select2 ${errors.category_sell ? "is-invalid" : ""}`}
                       value={selectedCategory}
                       onChange={handleCategoryChange}
+                      multiple
                     >
                       <option value="">Select Category</option>
                       {categories?.map((category) => (
@@ -503,10 +545,11 @@ const AddSeller = () => {
                   <div className="col-md-4">
                     <label htmlFor="sub_category" className="form-label">Sub Category</label>
                     <select
-                      id="sub_category" className="form-control"
+                      id="sub_category" className="form-control select2"
                       value={selectedSubCategory}
                       onChange={handleSubCategoryChange}
-                      disabled={!selectedCategory}
+                      disabled={subCategories.length === 0}
+                      multiple
                     >
                       <option value="">Select Sub Category</option>
                       {subCategories?.map((sub_category) => (

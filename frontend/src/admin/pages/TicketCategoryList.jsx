@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import TicketCategoryModals from "./modal/TicketCategoryModals";
+import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, name: "", email: "", status: "1" };
 
 const TicketCategoryList = () => {
@@ -24,8 +26,12 @@ const TicketCategoryList = () => {
   const [errors, setErrors] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [ticketCategoryToDelete, setTicketCategoryToDelete] = useState(null);
+  const [selectedTicketCategory, setSelectedTicketCategory] = useState([]);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
+  const [ticketCategoryData, setTicketCategoryData] = useState([]);
+  const excelExportRef = useRef();
   const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
@@ -130,21 +136,67 @@ const TicketCategoryList = () => {
     }
   };
 
-  const openDeleteModal = (ticketCategoryId) => { setTicketCategoryToDelete(ticketCategoryId); setShowDeleteModal(true); };
-
+  const openDeleteModal = (ticketCategoryId) => { setTicketCategoryToDelete(ticketCategoryId); setIsBulkDelete(false); setShowDeleteModal(true); };
+  const openBulkDeleteModal = () => { setTicketCategoryToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
   const closeDeleteModal = () => { setTicketCategoryToDelete(null); setShowDeleteModal(false); };
 
   const handleDeleteConfirm = async () => {
-    try {
-      await axios.delete(`${API_BASE_URL}/ticket_categories/${ticketCategoryToDelete}`);
-      setData((prevData) => prevData.filter((item) => item.id !== ticketCategoryToDelete));
-      setTotalRecords((prev) => prev - 1);
-      setFilteredRecords((prev) => prev - 1);
-      closeDeleteModal();
-      showNotification("Ticket Category deleted successfully!", "success");
-    } catch (error) {
-      console.error("Error deleting Ticket Category:", error);
-      showNotification("Failed to delete Ticket Category.", "error");
+    if (isBulkDelete) {
+      try {
+        const res = await axios.delete(`${API_BASE_URL}/ticket_categories/delete-selected`, {
+          data: { ids: selectedTicketCategory }
+        });
+        setData((prevData) => prevData.filter((item) => !selectedTicketCategory.includes(item.id)));
+        setTotalRecords((prev) => prev - selectedTicketCategory.length);
+        setFilteredRecords((prev) => prev - selectedTicketCategory.length);
+        setSelectedTicketCategory([]);
+        showNotification(res.data?.message || "Selected ticket categories deleted successfully!", "success");
+      } catch (error) {
+        console.error("Error deleting selected ticket categories:", error);
+        showNotification("Failed to delete selected ticket categories.", "error");
+      } finally {
+        closeDeleteModal();
+      }
+    } else {
+      try {
+        const res = await axios.delete(`${API_BASE_URL}/ticket_categories/${ticketCategoryToDelete}`);
+        setData((prevData) => prevData.filter((item) => item.id !== ticketCategoryToDelete));
+        setTotalRecords((prev) => prev - 1);
+        setFilteredRecords((prev) => prev - 1);
+        closeDeleteModal();
+        showNotification(res.data?.message || "Ticket Category deleted successfully!", "success");
+      } catch (error) {
+        console.error("Error deleting Ticket Category:", error);
+        showNotification("Failed to delete Ticket Category.", "error");
+      }
+    }
+  };
+
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelectedTicketCategory(data?.map((item) => item.id));
+    } else {
+      setSelectedTicketCategory([]);
+    }
+  };
+
+  const handleSelectTicketCategory = (ticketCategoryId) => {
+    setSelectedTicketCategory((prevSelectedTicketCategory) =>
+      prevSelectedTicketCategory.includes(ticketCategoryId)
+        ? prevSelectedTicketCategory.filter((id) => id !== ticketCategoryId)
+        : [...prevSelectedTicketCategory, ticketCategoryId]
+    );
+  };
+
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/ticket_categories`).then((res) => {
+      setTicketCategoryData(res.data);
+    });
+  }, []);
+
+  const handleDownload = () => {
+    if (excelExportRef.current) {
+      excelExportRef.current.exportToExcel();
     }
   };
 
@@ -172,7 +224,17 @@ const TicketCategoryList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Ticket Category" add_button="Add Ticket Category" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb page="Settings" title="Ticket Category"
+          add_button={<><i className="bx bxs-plus-square"></i> Add Ticket Category</>} add_link="#" onClick={() => openForm()}
+          actions={
+            <>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedTicketCategory.length === 0}>
+              <i className="bx bx-trash"></i> Delete Selected
+            </button>
+            </>
+          }
+          />
           <div className="row">
             <div className="col-md-5">
               <div className="card">
@@ -241,6 +303,7 @@ const TicketCategoryList = () => {
                   <h5 className="card-title mb-3">Ticket Category List</h5>
                   <DataTable
                     columns={[
+                      ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "name", label: "Name", sortable: true },
                       { key: "email", label: "Email", sortable: true },
@@ -264,6 +327,9 @@ const TicketCategoryList = () => {
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
                       <tr key={row.id}>
+                        <td>                    
+                          <input type="checkbox" checked={selectedTicketCategory.includes(row.id)} onChange={() => handleSelectTicketCategory(row.id)} />
+                        </td>
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td>{row.name}</td>
                         <td>{row.email}</td>
@@ -274,10 +340,7 @@ const TicketCategoryList = () => {
                               className="form-check-input"
                               type="checkbox"
                               checked={row.status == 1}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                openStatusModal(row.id, row.status);
-                              }}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
                               readOnly
                             />
                           </div>
@@ -314,10 +377,24 @@ const TicketCategoryList = () => {
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}
+        isBulkDelete={isBulkDelete}
         showStatusModal={showStatusModal}
         statusToggleInfo={statusToggleInfo}
         closeStatusModal={closeStatusModal}
         handleStatusConfirm={handleStatusConfirm}
+      />
+      <ExcelExport
+        ref={excelExportRef}
+        columnWidth={34.29}
+        fileName="Ticket Categories Export.xlsx"
+        data={ticketCategoryData}
+        columns={[
+          { label: "Name", key: "name" },
+          { label: "Email", key: "email" },
+          { label: "Status", key: "getStatus" },
+          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+        ]}
       />
     </>
   );

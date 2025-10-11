@@ -2,6 +2,11 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const UploadImage = require('./UploadImage');
 const CompanyInfo = require('./CompanyInfo');
+const Countries = require('./Countries');
+const States = require('./States');
+const Cities = require('./Cities');
+const CoreActivity = require('./CoreActivity');
+const Activity = require('./Activity');
 
 const Users = sequelize.define('Users', {
   company_id: { type: DataTypes.INTEGER, allowNull: true, },
@@ -62,5 +67,8 @@ const Users = sequelize.define('Users', {
 Users.belongsTo(UploadImage, { foreignKey: 'file_id', targetKey: 'id', as: 'file', onDelete: 'CASCADE' });
 Users.belongsTo(UploadImage, { foreignKey: 'company_file_id', targetKey: 'id', as: 'company_file', onDelete: 'CASCADE' });
 Users.belongsTo(CompanyInfo, { foreignKey: 'company_id', targetKey: 'id', as: 'company_info', constraints: false });
+Users.belongsTo(Countries, { foreignKey: 'country', targetKey: 'id', as: 'country_data', constraints: false });
+Users.belongsTo(States, { foreignKey: 'state', targetKey: 'id', as: 'state_data', constraints: false });
+Users.belongsTo(Cities, { foreignKey: 'city', targetKey: 'id', as: 'city_data', constraints: false });
 
 module.exports = Users;

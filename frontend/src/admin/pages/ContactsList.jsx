@@ -9,6 +9,10 @@ import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import ContactModals from "./modal/ContactModals";
 import ExcelExport from "../common/ExcelExport";
+import { DateRangePicker } from 'react-date-range';
+import 'react-date-range/dist/styles.css'; 
+import 'react-date-range/dist/theme/default.css'; 
+import { format } from 'date-fns';
 
 const ContactsList = ({ getDeleted }) => {
   const navigate = useNavigate();
@@ -33,15 +37,18 @@ const ContactsList = ({ getDeleted }) => {
   const [dateRange, setDateRange] = useState('');
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-  const [tempDateRange, setTempDateRange] = useState('');
   const [tempStartDate, setTempStartDate] = useState(null);
   const [tempEndDate, setTempEndDate] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [range, setRange] = useState([
+    {startDate: new Date(), endDate: new Date(), key: 'selection'}
+  ]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/contacts/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false', dateRange, startDate, endDate, },
+        params: { page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false', dateRange, startDate, endDate },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -85,14 +92,14 @@ const ContactsList = ({ getDeleted }) => {
   const handleDeleteConfirm = async () => {
     if (isBulkDelete) {
       try {
-        await axios.delete(`${API_BASE_URL}/contacts/delete-selected`, {
+        const res = await axios.delete(`${API_BASE_URL}/contacts/delete-selected`, {
           data: { ids: selectedContacts }
         });
         setData((prevData) => prevData.filter((item) => !selectedContacts.includes(item.id)));
         setTotalRecords((prev) => prev - selectedContacts.length);
         setFilteredRecords((prev) => prev - selectedContacts.length);
         setSelectedContacts([]);
-        showNotification("Selected contacts deleted successfully!", "success");
+        showNotification(res.data?.message || "Selected contacts deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting selected contacts:", error);
         showNotification("Failed to delete selected contacts.", "error");
@@ -101,12 +108,12 @@ const ContactsList = ({ getDeleted }) => {
       }
     } else {
       try {
-        await axios.delete(`${API_BASE_URL}/contacts/${contactToDelete}`);
+        const res = await axios.delete(`${API_BASE_URL}/contacts/${contactToDelete}`);
         setData((prevData) => prevData.filter((item) => item.id !== contactToDelete));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
         closeDeleteModal();
-        showNotification("Contact deleted successfully!", "success");
+        showNotification(res.data?.message || "Contact deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting Contact:", error);
         showNotification("Failed to delete Contact.", "error");
@@ -169,13 +176,21 @@ const ContactsList = ({ getDeleted }) => {
   };
 
   const clearFilters = () => {
-    setTempDateRange('');
     setTempStartDate(null);
     setTempEndDate(null);
     setDateRange('');
     setStartDate(null);
     setEndDate(null);
     setPage(1);
+  };
+  
+  const handleRangeChange = (item) => {
+    const start = item.selection.startDate;
+    const end = item.selection.endDate;
+    setRange([item.selection]);
+    setTempStartDate(format(start, 'yyyy-MM-dd'));
+    setTempEndDate(format(end, 'yyyy-MM-dd'));
+    setShowPicker(false);
   };
 
   return (
@@ -189,7 +204,7 @@ const ContactsList = ({ getDeleted }) => {
                 {!getDeleted ? (
                   <>
                     <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedContacts.length === 0}>
-                      Delete Selected
+                      <i className="bx bx-trash"></i> Delete Selected
                     </button>
                     <Link className="btn btn-sm btn-primary mb-2" to="/admin/contact-remove-list">
                       Recently Deleted Contact
@@ -210,51 +225,30 @@ const ContactsList = ({ getDeleted }) => {
                   <div className="col-md-8">
                     <div className="d-flex align-items-center gap-2">
                       <label className="form-label mb-0">Date Filter:</label>
-                      <select
-                        className="form-select"
-                        style={{ width: '200px' }}
-                        value={tempDateRange}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setTempDateRange(val);
-                          if (val !== 'customrange') {
-                            setTempStartDate(null);
-                            setTempEndDate(null);
-                          }
-                        }}
-                      >
-                        <option value="">All</option>
-                        <option value="today">Today</option>
-                        <option value="yesterday">Yesterday</option>
-                        <option value="last7days">Last 7 Days</option>
-                        <option value="last30days">Last 30 Days</option>
-                        <option value="thismonth">This Month</option>
-                        <option value="lastmonth">Last Month</option>
-                        <option value="customrange">Custom Range</option>
-                      </select>
-                      {tempDateRange === 'customrange' && (
-                        <>
-                          <input
-                            type="date"
-                            className="form-control"
-                            value={tempStartDate || ''}
-                            onChange={(e) => setTempStartDate(e.target.value)}
-                          />
-                          <input
-                            type="date"
-                            className="form-control"
-                            value={tempEndDate || ''}
-                            onChange={(e) => setTempEndDate(e.target.value)}
-                          />
-                        </>
-                      )}
+                      <div className="position-relative">
+                        <button className="form-control text-start" onClick={() => setShowPicker(!showPicker)}>
+                          <i className="bx bx-calendar me-2"></i>
+                          {format(range[0].startDate, 'MMMM dd, yyyy')} - {format(range[0].endDate, 'MMMM dd, yyyy')}
+                        </button>
+                        {showPicker && (
+                          <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: '100%', left: 0 }}>
+                            <DateRangePicker
+                              ranges={range}
+                              onChange={handleRangeChange}
+                              showSelectionPreview={true}
+                              moveRangeOnFirstSelection={false}
+                              editableDateInputs={true}
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="col-md-4 d-flex justify-content-end gap-2">
                     <button className="btn btn-primary" onClick={() => {
-                      setDateRange(tempDateRange);
                       setStartDate(tempStartDate);
                       setEndDate(tempEndDate);
+                      setDateRange('customrange');
                       setPage(1);
                     }}>
                       Apply

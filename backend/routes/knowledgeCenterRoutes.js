@@ -5,9 +5,11 @@ const knowledgeCenterController = require('../controllers/knowledgeCenterControl
 router.post('/', knowledgeCenterController.createKnowledgeCenter);
 router.get('/', knowledgeCenterController.getAllKnowledgeCenter);
 router.get('/server-side', knowledgeCenterController.getAllKnowledgeCenterServerSide);
+router.delete('/delete-selected', knowledgeCenterController.deleteSelectedKnowledgeCenter);
 router.get('/:id', knowledgeCenterController.getKnowledgeCenterById);
 router.put('/:id', knowledgeCenterController.updateKnowledgeCenter);
 router.delete('/:id', knowledgeCenterController.deleteKnowledgeCenter);
 router.patch('/:id/status', knowledgeCenterController.updateKnowledgeCenterStatus);
+router.patch('/:id/delete_status', knowledgeCenterController.updateKnowledgeCenterDeleteStatus);
 
 module.exports = router;

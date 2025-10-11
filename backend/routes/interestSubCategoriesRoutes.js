@@ -5,6 +5,7 @@ const interestSubCategoriesController = require('../controllers/interestSubCateg
 router.post('/', interestSubCategoriesController.createInterestSubCategories);
 router.get('/', interestSubCategoriesController.getAllInterestSubCategories);
 router.get('/server-side', interestSubCategoriesController.getAllInterestSubCategoriesServerSide);
+router.delete('/delete-selected', interestSubCategoriesController.deleteSelectedInterestSubCategories);
 router.get('/category/:interest_category_id', interestSubCategoriesController.getInterestSubCategoriesByCategory);
 router.get('/:id', interestSubCategoriesController.getInterestSubCategoriesById);
 router.put('/:id', interestSubCategoriesController.updateInterestSubCategories);

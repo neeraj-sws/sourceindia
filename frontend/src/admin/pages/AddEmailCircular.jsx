@@ -180,7 +180,7 @@ const AddEmailCircular = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title={isEditing ? "Edit Email Circular" : "Add Email Circular"} add_button="Back" add_link="/admin/email_circular" />
+          <Breadcrumb page="Settings" title={isEditing ? "Edit Email Circular" : "Add Email Circular"} add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <form className="row g-3" onSubmit={handleSubmit}>
@@ -229,31 +229,6 @@ const AddEmailCircular = () => {
                           </button>
                         )}
                       </div>
-                    </div>
-                    <div className="col-md-12">
-                      <div className="mt-3 d-flex flex-wrap">
-                        {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
-                          <div key={index} className="position-relative m-2">
-                            <img
-                              src={`${ROOT_URL}/${image.file}`}
-                              alt={`Preview ${index}`}
-                              className="object-fit-cover m-3"
-                              width={80}
-                              height={80}
-                            />
-                            <button
-                              type="button"
-                              className="btn btn-danger btn-remove-image"
-                              style={{ width: '1.5rem', height: '1.5rem' }}
-                              onClick={() => openDeleteModal(image.id)}
-                            >
-                              <i className="bx bx-x me-0" />
-                            </button>
-                          </div>
-                        ))}
-
-                      </div>
-
                     </div>
                     <JoditEditor
                       value={formData.description}
