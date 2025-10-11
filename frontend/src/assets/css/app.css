@@ -2833,7 +2833,7 @@ input.search-control-2::placeholder {
 }
 
 .select2-dropdown {
-    z-index: 99999;
+	z-index: 99999;
 }
 
 .form-label {
@@ -3092,4 +3092,14 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 .dropdown-menu {
 	padding: 2px 0;
 	min-width: 11rem;
+}
+
+.loginlogo img {
+	width: 210px;
+}
+
+.sidebg img {
+	height: 100vh;
+	border-radius: 30px;
+	padding: 10px 0	;
 }

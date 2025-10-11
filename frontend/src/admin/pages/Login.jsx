@@ -74,17 +74,21 @@ const Login = () => {
   };
 
   return (
-    <div className="section-authentication-signin d-flex align-items-center justify-content-center my-5 my-lg-4">
+    <div className="section-authentication-signin d-flex align-items-center justify-content-center bg-white">
       <div className="container-fluid">
-        <div className="row row-cols-1 row-cols-lg-2 row-cols-xl-3">
-          <div className="col mx-auto">
-            <div className="card mt-5 mt-lg-0">
-              <div className="card-body">
-                <div className="border p-4 rounded">
-                  <div className="text-center">
-                    <h3 className="">Log In</h3>
+        <div className="row align-items-center">
+          <div className="col-lg-5 mx-auto">
+            <div className="cardg">
+              <div className="card-body px-5">
+                <div className="">
+                  <div className='loginlogo text-center'>
+                    <img src='/logo.png' className='img-fluid' />
                   </div>
-                  <div className="form-body">
+                  <div className="mt-5">
+                    <h3 className="fw-bold">Sign In</h3>
+                    <p>Sign in to the Admin Dashboard using your email and passcode.</p>
+                  </div>
+                  <div className="form-body mt-3">
                     <form className="row g-3" onSubmit={handleSubmit}>
                       <div className="col-12">
                         <label htmlFor="inputEmailAddress" className="form-label required">
@@ -148,6 +152,11 @@ const Login = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+          <div className="col-lg-6">
+            <div className='sidebg ps-xl-5'>
+              <img src='/services.jpg' className='img-fluid w-100' />
             </div>
           </div>
         </div>
