@@ -61,7 +61,6 @@ const Login = () => {
         Cookies.remove('rememberedEmail');
         Cookies.remove('rememberedPassword');
       }
-
       showNotification('Login successful!', "success");
       navigate('/admin/dashboard');
     } catch (error) {

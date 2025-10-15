@@ -1,8 +1,88 @@
 const { Op, fn, col, literal } = require('sequelize');
+const moment = require('moment');
 const Enquiries = require('../models/Enquiries');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
 const EnquiryUsers = require('../models/EnquiryUsers');
+
+exports.getAllEnquiries = async (req, res) => {
+  try {
+    const enquiries = await Enquiries.findAll({
+      order: [['id', 'ASC']],
+      include: [
+        {
+          model: Users,
+          as: 'from_user',
+          attributes: [
+            'id', 'email', 'mobile', 'company_id', 'is_seller', 'fname', 'lname',
+            [fn('CONCAT', col('from_user.fname'), ' ', col('from_user.lname')), 'full_name']
+          ],
+          include: [
+            {
+              model: CompanyInfo,
+              as: 'company_info',
+              attributes: [['organization_name', 'organization_name']],
+              required: false,
+            }
+          ],
+          required: false,
+        },
+        {
+          model: Users,
+          as: 'to_user',
+          attributes: [
+            ['id', 'id'],
+            ['email', 'to_email'],
+            ['mobile', 'to_mobile'],
+            ['company_id', 'to_company_id'],
+            'is_seller',
+            'fname',
+            'lname',
+            [fn('CONCAT', col('to_user.fname'), ' ', col('to_user.lname')), 'to_full_name']
+          ],
+          include: [
+            {
+              model: CompanyInfo,
+              as: 'company_info',
+              attributes: [['organization_name', 'organization_name']],
+              required: false,
+            }
+          ],
+          required: false,
+        }
+      ]
+    });
+    const modifiedEnquiries = enquiries.map(enquiry => {
+      const data = enquiry.toJSON();
+      const result = {
+        ...data,
+        getStatus: data.status === 1 ? 'Active' : 'Inactive',
+        from_full_name: data.from_user ? `${data.from_user.fname} ${data.from_user.lname}` : null,
+        from_fname: data.from_user?.fname || null,
+        from_lname: data.from_user?.lname || null,
+        from_email: data.from_user?.email || null,
+        from_mobile: data.from_user?.mobile || null,
+        from_organization_name: data.from_user?.company_info?.organization_name || null,
+        from_user_type: data.from_user?.is_seller ?? null,
+        to_full_name: data.to_user ? `${data.to_user.fname} ${data.to_user.lname}` : null,
+        to_fname: data.to_user?.fname || null,
+        to_lname: data.to_user?.lname || null,
+        to_email: data.to_user?.to_email || null,
+        to_mobile: data.to_user?.to_mobile || null,
+        to_company_id: data.to_user?.to_company_id || null,
+        to_organization_name: data.to_user?.company_info?.organization_name || null,
+        to_user_type: data.to_user?.is_seller ?? null,
+      };
+      delete result.from_user;
+      delete result.to_user;
+      return result;
+    });
+    res.json(modifiedEnquiries);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
 
 exports.getEnquiriesByNumber = async (req, res) => {
   try {
@@ -70,6 +150,68 @@ exports.getEnquiriesCount = async (req, res) => {
   }
 };
 
+exports.deleteEnquiries = async (req, res) => {
+  try {
+    const enquiry = await Enquiries.findByPk(req.params.id);
+    if (!enquiry) return res.status(404).json({ message: 'Enquiries not found' });
+    await enquiry.destroy();
+    res.json({ message: 'Enquiries deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteSelectedEnquiries = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Please provide an array of IDs to update.' });
+    }
+    const parsedIds = ids.map(id => parseInt(id, 10));
+    const enquiries = await Enquiries.findAll({
+      where: {
+        id: {
+          [Op.in]: parsedIds,
+        },
+        is_delete: 0
+      }
+    });
+    if (enquiries.length === 0) {
+      return res.status(404).json({ message: 'No enquiries found with the given IDs.' });
+    }
+    await Enquiries.update(
+      { is_delete: 1 },
+      {
+        where: {
+          id: {
+            [Op.in]: parsedIds,
+          }
+        }
+      }
+    );
+    res.json({ message: `${enquiries.length} enquiries marked as deleted.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateEnquiriesDeleteStatus = async (req, res) => {
+  try {
+    const { is_delete } = req.body;
+    if (is_delete !== 0 && is_delete !== 1) {
+      return res.status(400).json({ message: 'Invalid delete status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const enquiries = await Enquiries.findByPk(req.params.id);
+    if (!enquiries) return res.status(404).json({ message: 'Enquiries not found' });
+    enquiries.is_delete = is_delete;
+    await enquiries.save();
+    res.json({ message: 'Enquiries is removed', enquiries });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getAllEnquiriesServerSide = async (req, res) => {
   try {
     const {
@@ -78,10 +220,16 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
       search = '',
       sortBy = 'id',
       sort = 'DESC',
+      dateRange = '',
+      startDate,
+      endDate,
+      enquiry_no,
+      category,
+      sub_category,
     } = req.query;
     const validColumns = [
-      'id', 'enquiry_number', 'created_at', 'updated_at', 'name', 'email', 'phone', 'category_name', 'company',
-      'from_email', 'from_organization_name', 'to_organization_name', 'enquiry_product'
+      'id', 'enquiry_number', 'created_at', 'updated_at', 'name', 'email', 'phone', 'category_name', 'sub_category_name',
+      'company', 'from_email', 'from_organization_name', 'to_organization_name', 'enquiry_product', 'quantity', 'is_approve'
     ];
     const viewType = req.query.viewType || 'dashboard';
     const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
@@ -113,13 +261,17 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
     }
     const where = {};
     if (req.query.getPublic === 'true') { where.user_id = null; }
+    if (req.query.user_id) { where.user_id = req.query.user_id; }
     if (req.query.getApprove === 'true') { where.is_approve = 1; }
+    if (req.query.getNotApprove === 'true') { where.is_approve = 0; }
+    if (req.query.getDeleted === 'true') { baseWhere.is_delete = 1; }
     const searchWhere = { ...where };
     if (search) {
       searchWhere[Op.or] = [];
       if (viewType === 'leads') {
         searchWhere[Op.or].push(
           { enquiry_number: { [Op.like]: `%${search}%` } },
+          { quantity: { [Op.like]: `%${search}%` } },
           { category_name: { [Op.like]: `%${search}%` } },
           literal(`CONCAT(from_user.fname, ' ', from_user.lname) LIKE '%${search}%'`),
           { '$from_user.email$': { [Op.like]: `%${search}%` } },
@@ -141,6 +293,72 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
         );
       }
     }
+    if (enquiry_no) {
+      searchWhere.enquiry_number = {
+        [Op.like]: `%${enquiry_no}%`
+      };
+    }
+    if (category) {
+      searchWhere.category_name = {
+        [Op.like]: `%${category}%`
+      };
+    }
+    if (sub_category) {
+      searchWhere.sub_category_name = {
+        [Op.like]: `%${sub_category}%`
+      };
+    }
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      searchWhere.created_at = dateCondition;
+    }
     const totalRecords = await Enquiries.count({ where });
     const { count: filteredRecords, rows } = await Enquiries.findAndCountAll({
       subQuery: false,
@@ -157,6 +375,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
             'email',
             'mobile',
             'company_id',
+            'is_seller',
             'fname',
             'lname',
             [fn('CONCAT', col('from_user.fname'), ' ', col('from_user.lname')), 'full_name']
@@ -179,6 +398,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
             ['email', 'to_email'],
             ['mobile', 'to_mobile'],
             ['company_id', 'to_company_id'],
+            'is_seller',
             'fname',
             'lname',
             [fn('CONCAT', col('to_user.fname'), ' ', col('to_user.lname')), 'to_full_name']
@@ -204,10 +424,14 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
     const mappedRows = rows.map(row => {
       const base = {
         id: row.id,
+        user_id: row.user_id,
         enquiry_number: row.enquiry_number,
+        quantity: row.quantity,
         category_name: row.category_name,
+        is_delete: row.is_delete,
         created_at: row.created_at,
         updated_at: row.updated_at,
+        is_approve: row.is_approve,
         from_full_name: row.from_user ? `${row.from_user.fname} ${row.from_user.lname}` : null,
         from_email: row.from_user?.email || null,
       };
@@ -223,11 +447,13 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           ...base,
           from_mobile: row.from_user?.mobile || null,
           from_organization_name: row.from_user?.company_info?.organization_name || null,
+          from_user_type: row.from_user?.is_seller ?? null,
           to_full_name: row.to_user ? `${row.to_user.fname} ${row.to_user.lname}` : null,
           to_email: row.to_user?.to_email || null,
           to_mobile: row.to_user?.to_mobile || null,
           to_company_id: row.to_user?.to_company_id || null,
           to_organization_name: row.to_user?.company_info?.organization_name || null,
+          to_user_type: row.to_user?.is_seller ?? null,
         };
       }
       return base;

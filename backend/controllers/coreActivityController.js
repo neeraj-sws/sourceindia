@@ -1,4 +1,5 @@
 const { Op } = require('sequelize');
+const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
 const CoreActivity = require('../models/CoreActivity');
@@ -27,7 +28,7 @@ exports.createCoreActivity = async (req, res) => {
         status,
         file_id
       });
-      res.status(201).json({ message: 'Core Activity created', coreActivity });
+      res.status(201).json({ message: 'Core activity created', coreActivity });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -37,7 +38,12 @@ exports.createCoreActivity = async (req, res) => {
 exports.getAllCoreActivities = async (req, res) => {
   try {
     const coreActivity = await CoreActivity.findAll({ order: [['id', 'ASC']] });
-    res.json(coreActivity);
+    const modifiedCoreActivity = coreActivity.map(core_activity => {
+      const coreActivityData = core_activity.toJSON();
+      coreActivityData.getStatus = coreActivityData.status === 1 ? 'Active' : 'Inactive';
+      return coreActivityData;
+    });
+    res.json(modifiedCoreActivity);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -52,7 +58,7 @@ exports.getCoreActivityById = async (req, res) => {
       }],
     });
     if (!coreActivity) {
-      return res.status(404).json({ message: 'Core Activity not found' });
+      return res.status(404).json({ message: 'Core activity not found' });
     }
     const response = {
       ...coreActivity.toJSON(),
@@ -78,7 +84,7 @@ exports.updateCoreActivity = async (req, res) => {
       }
       const coreActivity = await CoreActivity.findByPk(req.params.id);
       if (!coreActivity) {
-        return res.status(404).json({ message: 'Core Activity not found' });
+        return res.status(404).json({ message: 'Core activity not found' });
       }
       const uploadDir = path.resolve('upload/coreactivity');
       if (!fs.existsSync(uploadDir)) {
@@ -115,7 +121,7 @@ exports.updateCoreActivity = async (req, res) => {
       coreActivity.status = status;
       coreActivity.updated_at = new Date();
       await coreActivity.save();
-      res.json({ message: 'Core Activity updated', coreActivity });
+      res.json({ message: 'Core activity updated', coreActivity });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: err.message });
@@ -126,7 +132,7 @@ exports.updateCoreActivity = async (req, res) => {
 exports.deleteCoreActivity = async (req, res) => {
   try {
     const coreActivity = await CoreActivity.findByPk(req.params.id);
-    if (!coreActivity) return res.status(404).json({ message: 'Core Activity not found' });
+    if (!coreActivity) return res.status(404).json({ message: 'Core activity not found' });
 
     if (coreActivity.file_id) {
       const uploadImage = await UploadImage.findByPk(coreActivity.file_id);
@@ -139,7 +145,42 @@ exports.deleteCoreActivity = async (req, res) => {
       }
     }
     await coreActivity.destroy();
-    res.json({ message: 'Core Activity deleted successfully' });
+    res.json({ message: 'Core activity deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteSelectedCoreActivity = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Please provide an array of IDs to update.' });
+    }
+    const parsedIds = ids.map(id => parseInt(id, 10));
+    const coreActivity = await CoreActivity.findAll({
+      where: {
+        id: {
+          [Op.in]: parsedIds,
+        },
+        is_delete: 0
+      }
+    });
+    if (coreActivity.length === 0) {
+      return res.status(404).json({ message: 'No core activity found with the given IDs.' });
+    }
+    await CoreActivity.update(
+      { is_delete: 1 },
+      {
+        where: {
+          id: {
+            [Op.in]: parsedIds,
+          }
+        }
+      }
+    );
+    res.json({ message: `${coreActivity.length} core activity marked as deleted.` });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -153,10 +194,26 @@ exports.updateCoreActivityStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid status. Use 1 (Active) or 0 (Deactive).' });
     }
     const coreActivity = await CoreActivity.findByPk(req.params.id);
-    if (!coreActivity) return res.status(404).json({ message: 'Core Activity not found' });
+    if (!coreActivity) return res.status(404).json({ message: 'Core activity not found' });
     coreActivity.status = status;
     await coreActivity.save();
     res.json({ message: 'Status updated', coreActivity });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateCoreActivityDeleteStatus = async (req, res) => {
+  try {
+    const { is_delete } = req.body;
+    if (is_delete !== 0 && is_delete !== 1) {
+      return res.status(400).json({ message: 'Invalid delete status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const coreActivity = await CoreActivity.findByPk(req.params.id);
+    if (!coreActivity) return res.status(404).json({ message: 'Core activity not found' });
+    coreActivity.is_delete = is_delete;
+    await coreActivity.save();
+    res.json({ message: 'Core activity is removed', coreActivity });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -179,6 +236,9 @@ exports.getAllCoreActivitiesServerSide = async (req, res) => {
       search = '',
       sortBy = 'id',
       sort = 'DESC',
+      dateRange = '',
+      startDate,
+      endDate,
     } = req.query;
     const validColumns = ['id', 'name', 'created_at', 'updated_at', 'color_name'];
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
@@ -192,16 +252,71 @@ exports.getAllCoreActivitiesServerSide = async (req, res) => {
     } else {
       order = [['id', 'DESC']];
     }
-    const where = {};
+    const where = { is_delete: 0 };
+    if (req.query.getDeleted === 'true') {
+      where.is_delete = 1;
+    }
+    const searchWhere = { ...where };
     if (search) {
-      where[Op.or] = [
+      searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         { '$Color.title$': { [Op.like]: `%${search}%` } }
       ];
     }
-    const totalRecords = await CoreActivity.count();
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      searchWhere.created_at = dateCondition;
+    }
+    const totalRecords = await CoreActivity.count({ where });
     const { count: filteredRecords, rows } = await CoreActivity.findAndCountAll({
-      where,
+      where: searchWhere,
       order,
       limit: limitValue,
       offset,
@@ -218,6 +333,7 @@ exports.getAllCoreActivitiesServerSide = async (req, res) => {
       file_id: row.file_id,
       file_name: row.UploadImage ? row.UploadImage.file : null,
       status: row.status,
+      is_delete: row.is_delete,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));

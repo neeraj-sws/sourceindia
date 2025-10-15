@@ -31,7 +31,13 @@ exports.createTickets = async (req, res) => {
 exports.getAllTickets = async (req, res) => {
   try {
     const tickets = await Tickets.findAll({ order: [['id', 'ASC']] });
-    res.json(tickets);
+    const modifiedTicket = tickets.map(ticket => {
+      const ticketData = ticket.toJSON();
+      ticketData.getStatus = ticketData.status === 0 ? 'Pending' : ticketData.status === 1 ? 'In Progress' :
+      ticketData.status === 2 ? 'Resolved' : ticketData.status === 3 ? 'Cancel' : '';
+      return ticketData;
+    });
+    res.json(modifiedTicket);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

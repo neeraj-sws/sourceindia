@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import SearchDropdown from "../common/SearchDropdown";
@@ -7,6 +8,7 @@ import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import TicketModals from "./modal/TicketModals";
+import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, user_id: "", title: "", message: "", priority: "", category: "", status: "", attachment: null };
 
 const TicketList = () => {
@@ -28,6 +30,8 @@ const TicketList = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState(null);
   const listStatus = ["Pending", "In Progress", "Resolved", "Cancel"];
+  const [ticketData, setTicketData] = useState([]);
+  const excelExportRef = useRef();
   const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
@@ -196,11 +200,25 @@ const TicketList = () => {
     }
   };
 
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/tickets`).then((res) => {
+      setTicketData(res.data);
+    });
+  }, []);
+
+  const handleDownload = () => {
+    if (excelExportRef.current) {
+      excelExportRef.current.exportToExcel();
+    }
+  };
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Tickets" maincount={totalRecords} page="" title="Ticket" add_button="Add Ticket" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb page="Settings" title="Ticket" add_button={<><i className="bx bxs-plus-square"></i> Add Ticket</>} add_link="#" onClick={() => openForm()}
+          actions={<button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>}
+          />
           <div className="row">
             <div className="col-md-5">
               <div className="card">
@@ -378,6 +396,21 @@ const TicketList = () => {
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}
+      />
+      <ExcelExport
+        ref={excelExportRef}
+        columnWidth={34.29}
+        fileName="Ticket Export.xlsx"
+        data={ticketData}
+        columns={[
+          { label: "Ticket Id", key: "ticket_id" },
+          { label: "Title", key: "title" },
+          { label: "Priority", key: "priority" },
+          { label: "Added By", key: "added_by" },
+          { label: "Status", key: "getStatus" },
+          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+        ]}
       />
     </>
   );

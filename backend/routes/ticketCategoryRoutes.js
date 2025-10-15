@@ -5,6 +5,7 @@ const ticketCategoryController = require('../controllers/ticketCategoryControlle
 router.post('/', ticketCategoryController.createTicketCategory);
 router.get('/', ticketCategoryController.getAllTicketCategories);
 router.get('/server-side', ticketCategoryController.getAllTicketCategoriesServerSide);
+router.delete('/delete-selected', ticketCategoryController.deleteSelectedTicketCategory);
 router.get('/:id', ticketCategoryController.getTicketCategoryById);
 router.put('/:id', ticketCategoryController.updateTicketCategory);
 router.delete('/:id', ticketCategoryController.deleteTicketCategory);

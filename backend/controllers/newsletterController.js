@@ -43,8 +43,21 @@ exports.createNewsletters = async (req, res) => {
 
 exports.getAllNewsletters = async (req, res) => {
   try {
-    const newsletters = await Newsletters.findAll({ order: [['id', 'ASC']] });
-    res.json(newsletters);
+    const newsletters = await Newsletters.findAll({ order: [['id', 'ASC']],
+    include: [
+      {
+        model: UserCategory,
+        as: 'UserCategory',
+        attributes: ['id', 'name'],
+      },
+    ], });
+    const modifiedNewsletters = newsletters.map(activity => {
+      const newslettersData = activity.toJSON();
+      newslettersData.user_category_name = newslettersData.UserCategory?.name || null;
+      delete newslettersData.UserCategory;
+      return newslettersData;
+    });
+    res.json(modifiedNewsletters);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -17,8 +17,24 @@ exports.createInterestSubCategories = async (req, res) => {
 
 exports.getAllInterestSubCategories = async (req, res) => {
   try {
-    const interestSubCategories = await InterestSubCategories.findAll({ order: [['id', 'ASC']] });
-    res.json(interestSubCategories);
+    const interestSubCategories = await InterestSubCategories.findAll({
+      order: [['id', 'ASC']],
+      include: [
+        {
+          model: InterestCategories,
+          as: 'InterestCategories',
+          attributes: ['id', 'name'],
+        },
+      ],
+    });
+    const modifiedInterestSubCategories = interestSubCategories.map(sub_categories => {
+      const interestSubCategoriesData = sub_categories.toJSON();
+      interestSubCategoriesData.getStatus = interestSubCategoriesData.status === 1 ? 'Active' : 'Inactive';
+      interestSubCategoriesData.category_name = interestSubCategoriesData.InterestCategories?.name || null;
+      delete interestSubCategoriesData.InterestCategories;
+      return interestSubCategoriesData;
+    });
+    res.json(modifiedInterestSubCategories);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -76,6 +92,37 @@ exports.deleteInterestSubCategories = async (req, res) => {
     await interestSubCategories.destroy();
     res.json({ message: 'Interest sub category deleted successfully' });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteSelectedInterestSubCategories = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Please provide an array of IDs to delete.' });
+    }
+    const parsedIds = ids.map(id => parseInt(id, 10));
+    const interestSubCategories = await InterestSubCategories.findAll({
+      where: {
+        id: {
+          [Op.in]: parsedIds,
+        },
+      },
+    });
+    if (interestSubCategories.length === 0) {
+      return res.status(404).json({ message: 'No sub admin found with the given IDs.' });
+    }
+    await InterestSubCategories.destroy({
+      where: {
+        id: {
+          [Op.in]: parsedIds,
+        },
+      },
+    });
+    res.json({ message: `${interestSubCategories.length} sub admin deleted successfully.` });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };

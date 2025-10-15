@@ -5,6 +5,7 @@ const BuyerModals = ({
   showDeleteModal,
   closeDeleteModal,
   handleDeleteConfirm,
+  isBulkDelete = false,
 
   // Status modal
   showStatusModal,
@@ -20,13 +21,19 @@ const BuyerModals = ({
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Confirm Deletion</h5>
+                <h5 className="modal-title">
+                  Confirm {isBulkDelete ? "Bulk Deletion" : "Deletion"}
+                </h5>
                 <button type="button" className="btn-close" onClick={closeDeleteModal} aria-label="Close" />
               </div>
-              <div className="modal-body">Are you sure you want to delete this Buyer?</div>
+              <div className="modal-body">
+                Are you sure you want to delete {isBulkDelete ? "the selected buyers" : "this buyer"}?
+              </div>
               <div className="modal-footer justify-content-between">
-                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>Cancel</button>
-                <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>Delete</button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>Cancel </button>
+                <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>
+                  {isBulkDelete ? "Delete Selected" : "Delete"}
+                </button>
               </div>
             </div>
           </div>

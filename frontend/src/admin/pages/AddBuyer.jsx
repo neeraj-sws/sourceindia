@@ -464,7 +464,16 @@ const AddBuyer = () => {
                       {errors.products && <div className="invalid-feedback">{errors.products}</div>}
                     </div>
                     <div className="col-md-12 text-end">
-                      <button type="submit" className="btn  btn-primary px-4 mt-4">{isEditing ? "Update" : "Save"}</button>
+                      <button type="submit" className="btn btn-primary px-4 mt-4">
+                        {submitting ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            {isEditing ? "Updating..." : "Saving..."}
+                          </>
+                        ) : (
+                          isEditing ? "Update" : "Save"
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>

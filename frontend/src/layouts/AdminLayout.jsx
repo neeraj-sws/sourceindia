@@ -18,8 +18,10 @@ import NotFound from '../admin/pages/NotFound';
 import Dashboard from '../admin/pages/Dashboard';
 import BuyerList from '../admin/pages/BuyerList';
 import AddBuyer from '../admin/pages/AddBuyer';
+import BuyerProfile from '../admin/pages/BuyerProfile';
 import SellerList from '../admin/pages/SellerList';
 import AddSeller from '../admin/pages/AddSeller';
+import SellerProfile from '../admin/pages/SellerProfile';
 import ProductList from '../admin/pages/ProductList';
 import AddProduct from '../admin/pages/AddProduct';
 import ProductCategoryList from '../admin/pages/ProductCategoryList';
@@ -57,6 +59,7 @@ import UsersHistory from '../admin/pages/UsersHistory';
 import EmailsList from '../admin/pages/EmailsList';
 import AddEmail from '../admin/pages/AddEmail';
 import ContactsList from '../admin/pages/ContactsList';
+import Inventories from '../admin/pages/Inventories';
 
 function AdminLayout() {
   const location = useLocation();
@@ -85,26 +88,36 @@ function AdminLayout() {
           <Route path="/removed_buyers" element={<ProtectedRoute><BuyerList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/add_buyer" element={<ProtectedRoute><AddBuyer /></ProtectedRoute>} />
           <Route path="/edit_buyer/:buyerId" element={<ProtectedRoute><AddBuyer /></ProtectedRoute>} />
+          <Route path="/buyer/user-profile/:buyerId" element={<ProtectedRoute><BuyerProfile /></ProtectedRoute>} />
           <Route path="/sellers" element={<ProtectedRoute><SellerList /></ProtectedRoute>} />
           <Route path="/inactive_sellers" element={<ProtectedRoute><SellerList getInactive={true} /></ProtectedRoute>} />
           <Route path="/not_approved_sellers" element={<ProtectedRoute><SellerList getNotApproved={true} /></ProtectedRoute>} />
+          <Route path="/not_completed_sellers" element={<ProtectedRoute><SellerList getNotCompleted={true} /></ProtectedRoute>} />
           <Route path="/removed_sellers" element={<ProtectedRoute><SellerList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/add_seller" element={<ProtectedRoute><AddSeller /></ProtectedRoute>} />
           <Route path="/edit_seller/:sellerId" element={<ProtectedRoute><AddSeller /></ProtectedRoute>} />
-          <Route path="/products" element={<ProtectedRoute><ProductList /></ProtectedRoute>} />          
+          <Route path="/seller/user-profile/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
+          <Route path="/products" element={<ProtectedRoute><ProductList /></ProtectedRoute>} />
+          <Route path="/product-remove" element={<ProtectedRoute><ProductList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/add_product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
           <Route path="/edit_product/:productId" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
           <Route path="/product_categories" element={<ProtectedRoute><ProductCategoryList /></ProtectedRoute>} />
+          <Route path="/category-remove-list" element={<ProtectedRoute><ProductCategoryList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/product_sub_categories" element={<ProtectedRoute><ProductSubCategoryList /></ProtectedRoute>} />
+          <Route path="/subcategory-remove-list" element={<ProtectedRoute><ProductSubCategoryList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/tickets" element={<ProtectedRoute><TicketList /></ProtectedRoute>} />
           <Route path="/ticket_categories" element={<ProtectedRoute><TicketCategoryList /></ProtectedRoute>} />
           <Route path="/site_settings" element={<ProtectedRoute><SiteSettings /></ProtectedRoute>} />
           <Route path="/faqs" element={<ProtectedRoute><FaqList /></ProtectedRoute>} />
+          <Route path="/faq-remove-list" element={<ProtectedRoute><FaqList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/faq_categories" element={<ProtectedRoute><FaqCategoryList /></ProtectedRoute>} />
           <Route path="/knowledge_center" element={<ProtectedRoute><KnowledgeCenter /></ProtectedRoute>} />
+          <Route path="/knowledgecenter-remove-list" element={<ProtectedRoute><KnowledgeCenter getDeleted={true} /></ProtectedRoute>} />
           <Route path="/about_settings" element={<ProtectedRoute><AboutSettings /></ProtectedRoute>} />
           <Route path="/home_banners" element={<ProtectedRoute><HomeBanners /></ProtectedRoute>} />
+          <Route path="/homebanner-remove-list" element={<ProtectedRoute><HomeBanners getDeleted={true} /></ProtectedRoute>} />
           <Route path="/membership_plan" element={<ProtectedRoute><MembershipPlan /></ProtectedRoute>} />
+          <Route path="/membership-plan-remove-list" element={<ProtectedRoute><MembershipPlan getDeleted={true} /></ProtectedRoute>} />
           <Route path="/email_circular" element={<ProtectedRoute><EmailCircular /></ProtectedRoute>} />
           <Route path="/add_email_circular" element={<ProtectedRoute><AddEmailCircular /></ProtectedRoute>} />
           <Route path="/edit_email_circular/:newsletterId" element={<ProtectedRoute><AddEmailCircular /></ProtectedRoute>} />
@@ -113,18 +126,25 @@ function AdminLayout() {
           <Route path="/sub_admin" element={<ProtectedRoute><SubAdminList /></ProtectedRoute>} />
           <Route path="/roles" element={<ProtectedRoute><RolesList /></ProtectedRoute>} />
           <Route path="/core_activity" element={<ProtectedRoute><CoreActivityList /></ProtectedRoute>} />
+          <Route path="/coreactivity-remove-list" element={<ProtectedRoute><CoreActivityList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/activity" element={<ProtectedRoute><ActivityList /></ProtectedRoute>} />
+          <Route path="/activity-remove-list" element={<ProtectedRoute><ActivityList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/items" element={<ProtectedRoute><ItemList /></ProtectedRoute>} />
+          <Route path="/item-remove-list" element={<ProtectedRoute><ItemList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/source_interest_categories" element={<ProtectedRoute><SourceInterestCategories /></ProtectedRoute>} />
           <Route path="/applications" element={<ProtectedRoute><ApplicationList /></ProtectedRoute>} />
+          <Route path="/application-remove-list" element={<ProtectedRoute><ApplicationList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
           <Route path="/testimonials" element={<ProtectedRoute><TestimonialList /></ProtectedRoute>} />
           <Route path="/interest_categories" element={<ProtectedRoute><InterestCategories /></ProtectedRoute>} />
           <Route path="/leads" element={<ProtectedRoute><LeadsList /></ProtectedRoute>} />
           <Route path="/approve_leads" element={<ProtectedRoute><LeadsList getApprove={true} /></ProtectedRoute>} />
+          <Route path="/enquiries-list" element={<ProtectedRoute><LeadsList getNotApprove={true} /></ProtectedRoute>} />
           <Route path="/public_enquiries" element={<ProtectedRoute><LeadsList getPublic={true} /></ProtectedRoute>} />
+          <Route path="/enquiry-remove-list" element={<ProtectedRoute><LeadsList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/admin-view-enquiry/:enquiry_number" element={<ProtectedRoute><ViewEnquiry /></ProtectedRoute>} />
           <Route path="/open_enquiries" element={<ProtectedRoute><OpenEnquiry /></ProtectedRoute>} />
+          <Route path="/open-enquiry-remove-list" element={<ProtectedRoute><OpenEnquiry getDeleted={true} /></ProtectedRoute>} />
           <Route path="/seo_pages" element={<ProtectedRoute><SeoPages /></ProtectedRoute>} />
           <Route path="/user_activity" element={<ProtectedRoute><UserActivities /></ProtectedRoute>} />
           <Route path="/user-activity-details/:userId" element={<ProtectedRoute><UserActivityDetails /></ProtectedRoute>} />
@@ -134,6 +154,7 @@ function AdminLayout() {
           <Route path="/email-edit/:emailId" element={<ProtectedRoute><AddEmail /></ProtectedRoute>} />
           <Route path="/contacts-list" element={<ProtectedRoute><ContactsList /></ProtectedRoute>} />
           <Route path="/contact-remove-list" element={<ProtectedRoute><ContactsList getDeleted={true} /></ProtectedRoute>} />
+          <Route path="/inventory-list" element={<ProtectedRoute><Inventories /></ProtectedRoute>} />
         </Routes>
       </div>
       {showLayout && <Footer />}

@@ -168,21 +168,21 @@ const SubAdminList = () => {
     fetchRoles();
   }, []);
 
-  const openDeleteModal = (subAdminId) => { setSubAdminToDelete(subAdminId); setShowDeleteModal(true); };
-
+  const openDeleteModal = (subAdminId) => { setSubAdminToDelete(subAdminId); setIsBulkDelete(false); setShowDeleteModal(true); };
+  const openBulkDeleteModal = () => { setSubAdminToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
   const closeDeleteModal = () => { setSubAdminToDelete(null); setShowDeleteModal(false); };
 
   const handleDeleteConfirm = async () => {
     if (isBulkDelete) {
       try {
-        await axios.delete(`${API_BASE_URL}/sub_admin/delete-selected`, {
-          data: { ids: selectedRoles }
+        const res = await axios.delete(`${API_BASE_URL}/sub_admin/delete-selected`, {
+          data: { ids: selectedSubAdmin }
         });
-        setData((prevData) => prevData.filter((item) => !selectedRoles.includes(item.id)));
-        setTotalRecords((prev) => prev - selectedRoles.length);
-        setFilteredRecords((prev) => prev - selectedRoles.length);
-        setSelectedRoles([]);
-        showNotification("Selected Sub Admin deleted successfully!", "success");
+        setData((prevData) => prevData.filter((item) => !selectedSubAdmin.includes(item.id)));
+        setTotalRecords((prev) => prev - selectedSubAdmin.length);
+        setFilteredRecords((prev) => prev - selectedSubAdmin.length);
+        setSelectedSubAdmin([]);
+        showNotification(res.data?.message || "Selected Sub Admin deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting selected Sub Admin:", error);
         showNotification("Failed to delete selected Sub Admin.", "error");
@@ -191,12 +191,12 @@ const SubAdminList = () => {
       }
     } else {
       try {
-        await axios.delete(`${API_BASE_URL}/sub_admin/${subAdminToDelete}`);
+        const res = await axios.delete(`${API_BASE_URL}/sub_admin/${subAdminToDelete}`);
         setData((prevData) => prevData.filter((item) => item.id !== subAdminToDelete));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
         closeDeleteModal();
-        showNotification("Sub Admin deleted successfully!", "success");
+        showNotification(res.data?.message || "Sub Admin deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting Sub Admin:", error);
         showNotification("Failed to delete Sub Admin.", "error");
@@ -224,11 +224,48 @@ const SubAdminList = () => {
     }
   };
 
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelectedSubAdmin(data?.map((item) => item.id));
+    } else {
+      setSelectedSubAdmin([]);
+    }
+  };
+
+  const handleSelectSubAdmin = (subAdminId) => {
+    setSelectedSubAdmin((prevSelectedSubAdmin) =>
+      prevSelectedSubAdmin.includes(subAdminId)
+        ? prevSelectedSubAdmin.filter((id) => id !== subAdminId)
+        : [...prevSelectedSubAdmin, subAdminId]
+    );
+  };
+
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/sub_admin`).then((res) => {
+      setSubAdminData(res.data);
+    });
+  }, []);
+
+  const handleDownload = () => {
+    if (excelExportRef.current) {
+      excelExportRef.current.exportToExcel();
+    }
+  };
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Sub Admins" maincount={totalRecords}  page="" title="Sub Admin" add_button="Add Sub Admin" add_link="#" onClick={() => openForm()} />          
+          <Breadcrumb page="Settings" title="Sub Admin" add_button={<><i className="bx bxs-plus-square"></i> Add Sub Admin</>} add_link="#" onClick={() => openForm()}
+          actions={
+            <>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedSubAdmin.length === 0}>
+              <i className="bx bx-trash"></i> Delete Selected
+            </button>
+            </>
+          }
+          />          
           <div className="row">
             <div className="col-md-5">
               <div className="card">
@@ -336,6 +373,7 @@ const SubAdminList = () => {
                   <h5 className="card-title mb-3">Sub Admin List</h5>
                   <DataTable
                     columns={[
+                      ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "name", label: "Name", sortable: true },
                       { key: "role_name", label: "Role", sortable: true },
@@ -359,6 +397,9 @@ const SubAdminList = () => {
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
                       <tr key={row.id}>
+                        <td>                    
+                          <input type="checkbox" checked={selectedSubAdmin.includes(row.id)} onChange={() => handleSelectSubAdmin(row.id)} />
+                        </td>
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td>{row.name}</td>
                         <td>{row.role_name}</td>
@@ -407,10 +448,26 @@ const SubAdminList = () => {
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}
+        isBulkDelete={isBulkDelete}
         showStatusModal={showStatusModal}
         statusToggleInfo={statusToggleInfo}
         closeStatusModal={closeStatusModal}
         handleStatusConfirm={handleStatusConfirm}
+      />
+      <ExcelExport
+        ref={excelExportRef}
+        columnWidth={34.29}
+        fileName="User Export.xlsx"
+        data={subAdminData}
+        columns={[
+          { label: "Name", key: "name" },
+          { label: "Email", key: "email" },
+          { label: "Phone", key: "mobile" },
+          { label: "Address", key: "address" },
+          { label: "Status", key: "getStatus" },
+          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+        ]}
       />
     </>
   );

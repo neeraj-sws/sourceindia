@@ -5,6 +5,7 @@ const TicketCategoryModals = ({
   showDeleteModal,
   closeDeleteModal,
   handleDeleteConfirm,
+  isBulkDelete = false,
 
   // Status modal
   showStatusModal,
@@ -20,13 +21,15 @@ const TicketCategoryModals = ({
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Confirm Deletion</h5>
-                <button type="button" className="btn-close" onClick={closeDeleteModal} aria-label="Close" />
+                <h5 className="modal-title" id="deleteModalLabel">Confirm {isBulkDelete ? "Bulk Deletion" : "Deletion"}</h5>
+                <button type="button" className="btn-close" onClick={closeDeleteModal} aria-label="Close" ></button>
               </div>
-              <div className="modal-body">Are you sure you want to delete this Ticket Category?</div>
+              <div className="modal-body">Are you sure you want to delete this {isBulkDelete ? "the selected ticket categories" : "this ticket category"}?</div>
               <div className="modal-footer justify-content-between">
                 <button type="button" className="btn btn-secondary btn-sm" onClick={closeDeleteModal}>Cancel</button>
-                <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>Delete</button>
+                <button type="button" className="btn btn-danger" onClick={handleDeleteConfirm}>
+                  {isBulkDelete ? "Delete Selected" : "Delete"}
+                </button>
               </div>
             </div>
           </div>

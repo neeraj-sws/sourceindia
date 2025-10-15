@@ -3,9 +3,11 @@ const router = express.Router();
 const buyerController = require('../controllers/buyerController');
 
 router.post('/', buyerController.createBuyer);
+router.post('/login', buyerController.login);
 router.get('/count', buyerController.getBuyerCount);
 router.get('/', buyerController.getAllBuyer);
 router.get('/server-side', buyerController.getAllBuyerServerSide);
+router.delete('/delete-selected', buyerController.deleteSelectedBuyer);
 router.get('/:id', buyerController.getBuyerById);
 router.put('/:id', buyerController.updateBuyer);
 router.delete('/:id', buyerController.deleteBuyer);

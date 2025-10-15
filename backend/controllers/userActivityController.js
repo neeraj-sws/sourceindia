@@ -3,6 +3,51 @@ const UserActivity = require('../models/UserActivity');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
 
+exports.getAllUserActivity = async (req, res) => {
+  try {
+    const userActivity = await UserActivity.findAll({ order: [['id', 'ASC']],
+    include: [
+      {
+        model: Users,
+        as: 'Users',
+        attributes: ['id', 'fname', 'lname', 'email', 'mobile', 'is_seller'], include: [
+      {
+        model: CompanyInfo,
+        as: 'company_info',
+        attributes: [['organization_name', 'organization_name']],
+        required: false,
+      }]}
+    ]});
+    const modifiedNewsletters = userActivity.map(user_activity => {
+      const userActivityData = user_activity.toJSON();
+      if (userActivityData.Users) {
+        userActivityData.user_fname = userActivityData.Users.fname || null;
+        userActivityData.user_lname = userActivityData.Users.lname || null;
+        userActivityData.user_email = userActivityData.Users.email || null;
+        userActivityData.user_mobile = userActivityData.Users.mobile || null;
+
+        if (userActivityData.Users.is_seller !== null && userActivityData.Users.is_seller !== undefined) {
+          userActivityData.user_type = userActivityData.Users.is_seller == 1 ? 'Seller' : 'Buyer';
+        } else {
+          userActivityData.user_type = '';
+        }
+
+        userActivityData.company_name = userActivityData.Users.company_info?.organization_name || null;
+      } else {
+        userActivityData.user_fname = null;
+        userActivityData.user_lname = null;
+        userActivityData.user_type = '';
+        userActivityData.company_name = null;
+      }
+      delete userActivityData.Users;
+      return userActivityData;
+    });
+    res.json(modifiedNewsletters);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getUserActivitiesCount = async (req, res) => {
   try {
     const userIdsInActivity = await UserActivity.findAll({

@@ -17,6 +17,7 @@ const ExcelExport = forwardRef(
         });
         return row;
       });
+      console.log("Excel export data:", exportData);
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       worksheet["!cols"] = columns?.map(() => ({ wch: columnWidth }));
       const headerLabels = columns?.map((col) => col.label);

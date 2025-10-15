@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import SearchDropdown from "../common/SearchDropdown";
@@ -7,6 +8,7 @@ import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import SourceInterestCategoriesModals from "./modal/SourceInterestCategoriesModals";
+import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, name: "", interest_category_id: "", status: "1" };
 
 const SourceInterestCategories = () => {
@@ -29,6 +31,10 @@ const SourceInterestCategories = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
   const [submitting, setSubmitting] = useState(false);
+  const [selectedSourceInterestCategory, setSelectedSourceInterestCategory] = useState([]);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
+  const [sourceInterestCategoryData, setSourceInterestCategoryData] = useState([]);
+  const excelExportRef = useRef();
 
   const fetchData = async () => {
     setLoading(true);
@@ -151,21 +157,39 @@ const SourceInterestCategories = () => {
     fetchCategories();
   }, []);
 
-  const openDeleteModal = (interestSubCategoriesId) => { setSourceInterestCategoryToDelete(interestSubCategoriesId); setShowDeleteModal(true); };
-
+  const openDeleteModal = (interestSubCategoriesId) => { setSourceInterestCategoryToDelete(interestSubCategoriesId); setIsBulkDelete(false); setShowDeleteModal(true); };
+  const openBulkDeleteModal = () => { setSourceInterestCategoryToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
   const closeDeleteModal = () => { setSourceInterestCategoryToDelete(null); setShowDeleteModal(false); };
 
   const handleDeleteConfirm = async () => {
-    try {
-      await axios.delete(`${API_BASE_URL}/interest_sub_categories/${sourceInterestCategoryToDelete}`);
-      setData((prevData) => prevData.filter((item) => item.id !== sourceInterestCategoryToDelete));
-      setTotalRecords((prev) => prev - 1);
-      setFilteredRecords((prev) => prev - 1);
-      closeDeleteModal();
-      showNotification("Source interest category deleted successfully!", "success");
-    } catch (error) {
-      console.error("Error deleting source interest category:", error);
-      showNotification("Failed to delete source interest category.", "error");
+    if (isBulkDelete) {
+      try {
+        const res = await axios.delete(`${API_BASE_URL}/interest_sub_categories/delete-selected`, {
+          data: { ids: selectedSourceInterestCategory }
+        });
+        setData((prevData) => prevData.filter((item) => !selectedSourceInterestCategory.includes(item.id)));
+        setTotalRecords((prev) => prev - selectedSourceInterestCategory.length);
+        setFilteredRecords((prev) => prev - selectedSourceInterestCategory.length);
+        setSelectedSourceInterestCategory([]);
+        showNotification(res.data?.message || "Selected interest category deleted successfully!", "success");
+      } catch (error) {
+        console.error("Error deleting selected interest category:", error);
+        showNotification("Failed to delete selected interest category.", "error");
+      } finally {
+        closeDeleteModal();
+      }
+    } else {
+      try {
+        await axios.delete(`${API_BASE_URL}/interest_sub_categories/${sourceInterestCategoryToDelete}`);
+        setData((prevData) => prevData.filter((item) => item.id !== sourceInterestCategoryToDelete));
+        setTotalRecords((prev) => prev - 1);
+        setFilteredRecords((prev) => prev - 1);
+        closeDeleteModal();
+        showNotification("Source interest category deleted successfully!", "success");
+      } catch (error) {
+        console.error("Error deleting source interest category:", error);
+        showNotification("Failed to delete source interest category.", "error");
+      }
     }
   };
 
@@ -189,16 +213,53 @@ const SourceInterestCategories = () => {
     }
   };
 
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelectedSourceInterestCategory(data?.map((item) => item.id));
+    } else {
+      setSelectedSourceInterestCategory([]);
+    }
+  };
+
+  const handleSelectSourceInterestCategory = (sourceInterestCategoryId) => {
+    setSelectedSourceInterestCategory((prevSelectedSourceInterestCategory) =>
+      prevSelectedSourceInterestCategory.includes(sourceInterestCategoryId)
+        ? prevSelectedSourceInterestCategory.filter((id) => id !== sourceInterestCategoryId)
+        : [...prevSelectedSourceInterestCategory, sourceInterestCategoryId]
+    );
+  };
+
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/interest_sub_categories`).then((res) => {
+      setSourceInterestCategoryData(res.data);
+    });
+  }, []);
+
+  const handleDownload = () => {
+    if (excelExportRef.current) {
+      excelExportRef.current.exportToExcel();
+    }
+  };
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Source Interest Categories" maincount={totalRecords} page="" title="Source interest category" add_button="Add source interest category" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb page="Settings" title="Source interest category" add_button={<><i className="bx bxs-plus-square"></i> Add source interest category</>} add_link="#" onClick={() => openForm()}
+          actions={
+            <>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedSourceInterestCategory.length === 0}>
+              <i className="bx bx-trash"></i> Delete Selected
+            </button>
+            </>
+          }
+          />
           <div className="row">
             <div className="col-md-5">
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">{isEditing ? "Edit source interest categories" : "Add source interest categories"}</h5>
+                  <h5 className="card-title mb-3">{isEditing ? "Edit source interest category" : "Add source interest category"}</h5>
                   <form className="row" onSubmit={handleSubmit} noValidate>
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="name" className="form-label required">Name</label>
@@ -263,6 +324,7 @@ const SourceInterestCategories = () => {
                   <h5 className="card-title mb-3">Source interest category list</h5>
                   <DataTable
                     columns={[
+                      ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "name", label: "Name", sortable: true },
                       { key: "category_name", label: "Category", sortable: true },
@@ -286,6 +348,9 @@ const SourceInterestCategories = () => {
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
                       <tr key={row.id}>
+                        <td>                    
+                          <input type="checkbox" checked={selectedSourceInterestCategory.includes(row.id)} onChange={() => handleSelectSourceInterestCategory(row.id)} />
+                        </td>
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td>{row.name}</td>
                         <td>{row.category_name}</td>
@@ -334,10 +399,24 @@ const SourceInterestCategories = () => {
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}
+        isBulkDelete={isBulkDelete}
         showStatusModal={showStatusModal}
         statusToggleInfo={statusToggleInfo}
         closeStatusModal={closeStatusModal}
         handleStatusConfirm={handleStatusConfirm}
+      />
+      <ExcelExport
+        ref={excelExportRef}
+        columnWidth={34.29}
+        fileName="Interest SubCategory Export.xlsx"
+        data={sourceInterestCategoryData}
+        columns={[
+          { label: "Name", key: "name" },
+          { label: "Interest Category", key: "category_name" },
+          { label: "Status", key: "getStatus" },
+          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+        ]}
       />
     </>
   );

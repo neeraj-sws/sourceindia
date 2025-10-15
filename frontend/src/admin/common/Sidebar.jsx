@@ -25,6 +25,7 @@ const menuData = [
       { title: 'Add Seller', link: '/admin/add_seller' },
       { title: 'Sellers List', link: '/admin/sellers' },
       { title: 'Inactive Sellers', link: '/admin/inactive_sellers' },
+      { title: 'Not Completed Sellers', link: '/admin/not_completed_sellers' },
       { title: 'Not Approved Sellers', link: '/admin/not_approved_sellers' },
       { title: 'Recently Deleted Sellers', link: '/admin/removed_sellers' },
     ],
@@ -35,6 +36,7 @@ const menuData = [
     subMenu: [
       { title: 'Leads', link: '/admin/leads' },
       { title: 'Approve Leads', link: '/admin/approve_leads' },
+      { title: 'Pending Leads', link: '/admin/enquiries-list' },
       { title: 'Public Enquiries', link: '/admin/public_enquiries' },
       { title: 'Open Enquiries', link: '/admin/open_enquiries' },
     ],
@@ -147,6 +149,11 @@ const menuData = [
     title: 'Seo Pages',
     icon: 'bx bxs-file',
     link: '/admin/seo_pages',
+  },
+  {
+    title: 'Inventory',
+    icon: 'bx bxs-cloud-upload',
+    link: '/admin/inventory-list',
   },
   {
     title: 'User History',

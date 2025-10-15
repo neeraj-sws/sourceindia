@@ -44,12 +44,12 @@ const Breadcrumb = ({ mainhead = null, maincount = null, page, title, add_button
             className={`btn btn-primary mb-2 ${actions ? "me-2" : ""}`}
             onClick={onClick}
           >
-            <i
+            {/* <i
               className={`fadeIn animated bx ${add_button.toLowerCase() === "back"
                 ? "bx-arrow-back me-1"
                 : "bx-message-square-add me-2"
                 }`}
-            ></i>{" "}
+            ></i>{" "} */}
             {add_button}
           </button>
         ) : (
@@ -58,12 +58,12 @@ const Breadcrumb = ({ mainhead = null, maincount = null, page, title, add_button
             className={`btn btn-primary mb-2 ${actions ? "me-2" : ""}`}
             to={add_link}
           >
-            <i
+            {/* <i
               className={`fadeIn animated bx ${add_button.toLowerCase() === "back"
                 ? "bx-arrow-back me-1"
                 : "bx-message-square-add me-2"
                 }`}
-            ></i>{" "}
+            ></i>{" "} */}
             {add_button}
           </Link>
         ) : (

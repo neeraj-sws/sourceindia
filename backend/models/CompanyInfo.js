@@ -5,6 +5,8 @@ const Categories = require('./Categories');
 const SubCategories = require('./SubCategories');
 const CoreActivity = require('./CoreActivity');
 const Activity = require('./Activity');
+const MembershipPlan = require('./MembershipPlan');
+const NatureBusinesses = require('./NatureBusinesses');
 
 const CompanyInfo = sequelize.define('CompanyInfo', {
   organization_name: { type: DataTypes.STRING, allowNull: true },
@@ -60,5 +62,7 @@ CompanyInfo.belongsTo(Categories, { foreignKey: 'category_sell', targetKey: 'id'
 CompanyInfo.belongsTo(SubCategories, { foreignKey: 'sub_category', targetKey: 'id', as: 'SubCategories', constraints: false });
 CompanyInfo.belongsTo(CoreActivity, { foreignKey: 'core_activity', targetKey: 'id', as: 'CoreActivity', constraints: false });
 CompanyInfo.belongsTo(Activity, { foreignKey: 'activity', targetKey: 'id', as: 'Activity', constraints: false });
+CompanyInfo.belongsTo(MembershipPlan, { foreignKey: 'membership_plan', targetKey: 'id', as: 'MembershipPlan', constraints: false });
+CompanyInfo.belongsTo(NatureBusinesses, { foreignKey: 'nature_business', targetKey: 'id', as: 'NatureBusinesses', constraints: false });
 
 module.exports = CompanyInfo;

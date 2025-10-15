@@ -9,7 +9,6 @@ const Dashboard = () => {
   const [counts, setCounts] = useState({});
 
   const CountData = ({ label, value, icon }) => {
-    // 1 to 4 ke beech ek random number
     const randomNum = Math.floor(Math.random() * 4) + 1;
     const imgSrc = `/element-0${randomNum}.svg`;
 
@@ -48,7 +47,6 @@ const Dashboard = () => {
       </div>
     );
   };
-
 
   useEffect(() => {
     const fetchCounts = async () => {

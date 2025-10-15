@@ -180,7 +180,7 @@ const AddEmailCircular = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title={isEditing ? "Edit Email Circular" : "Add Email Circular"} add_button="Back" add_link="/admin/email_circular" />
+          <Breadcrumb page="Settings" title={isEditing ? "Edit Email Circular" : "Add Email Circular"} add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <form className="row g-3" onSubmit={handleSubmit}>
@@ -198,83 +198,26 @@ const AddEmailCircular = () => {
                         />
                         {errors.user_type && (<div className="invalid-feedback">{errors.user_type}</div>)}
                       </div>
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="title" className="form-label required">Title</label>
-                        <input
-                          type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
-                          id="title"
-                          placeholder="Title"
-                          value={formData.title}
-                          onChange={handleInputChange}
-                        />
-                        {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
-                      </div>
-                      <div className="col-md-12 mb-3">
-                        <label htmlFor="subject" className="form-label">Subject</label>
-                        <input
-                          type="text" className="form-control"
-                          id="subject"
-                          placeholder="Subject"
-                          value={formData.subject}
-                          onChange={handleInputChange}
-                        />
-                        {errors.subject && (<div className="invalid-feedback">{errors.subject}</div>)}
-                      </div>
-                      <div className="col-md-12">
-                        <div className="d-flex justify-content-between mb-2">
-                          <label htmlFor="description" className="form-label my-auto required">Long Description</label>
-                          {showButton && (
-                            <button type="button" className="btn btn-primary mb-3 mb-lg-0">
-                              <i className="bx bxs-plus-square mr-1" />
-                              Test Mail
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="col-md-12">
-                        <div className="mt-3 d-flex flex-wrap">
-                          {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
-                            <div key={index} className="position-relative m-2">
-                              <img
-                                src={`${ROOT_URL}/${image.file}`}
-                                alt={`Preview ${index}`}
-                                className="object-fit-cover m-3"
-                                width={80}
-                                height={80}
-                              />
-                              <button
-                                type="button"
-                                className="btn btn-danger btn-remove-image"
-                                style={{ width: '1.5rem', height: '1.5rem' }}
-                                onClick={() => openDeleteModal(image.id)}
-                              >
-                                <i className="bx bx-x me-0" />
-                              </button>
-                            </div>
-                          ))}
-
-                        </div>
-
-                      </div>
-                      <JoditEditor
-                        value={formData.description}
-                        config={{
-                          readonly: false,
-                          height: 300,
-                          toolbarSticky: false,
-                          buttons: [
-                            'source', '|', 'bold', 'italic', 'underline', '|',
-                            'ul', 'ol', '|', 'outdent', 'indent', '|',
-                            'image', 'link', '|', 'undo', 'redo'
-                          ]
-                        }}
-                        onChange={newContent => {
-                          setFormData(prev => ({ ...prev, description: newContent }));
-                          setShowButton(newContent.replace(/<[^>]*>/g, "").trim() !== "");
-                        }}
-                      />
                     </div>
-                     <div className="col-md-12 mt-3">
+                    <JoditEditor
+                      value={formData.description}
+                      config={{
+                        readonly: false,
+                        height: 300,
+                        toolbarSticky: false,
+                        buttons: [
+                          'source', '|', 'bold', 'italic', 'underline', '|',
+                          'ul', 'ol', '|', 'outdent', 'indent', '|',
+                          'image', 'link', '|', 'undo', 'redo'
+                        ]
+                      }}
+                      onChange={newContent => {
+                        setFormData(prev => ({ ...prev, description: newContent }));
+                        setShowButton(newContent.replace(/<[^>]*>/g, "").trim() !== "");
+                      }}
+                    />
+                  </div>
+                  <div className="col-md-12">
                     <label htmlFor="file" className="form-label required">Email Circular Images</label><br />
                     <input
                       ref={fileInputRef}
@@ -356,7 +299,6 @@ const AddEmailCircular = () => {
                         </div>
                       ))}
                     </div>
-                  </div>
                   </div>
                  
                   <div className="col-12 text-end">

@@ -183,14 +183,14 @@ const RolesList = () => {
   const handleDeleteConfirm = async () => {
     if (isBulkDelete) {
       try {
-        await axios.delete(`${API_BASE_URL}/roles/delete-selected`, {
+        const res = await axios.delete(`${API_BASE_URL}/roles/delete-selected`, {
           data: { ids: selectedRoles }
         });
         setData((prevData) => prevData.filter((item) => !selectedRoles.includes(item.id)));
         setTotalRecords((prev) => prev - selectedRoles.length);
         setFilteredRecords((prev) => prev - selectedRoles.length);
         setSelectedRoles([]);
-        showNotification("Selected roles deleted successfully!", "success");
+        showNotification(res.data?.message || "Selected roles deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting selected roles:", error);
         showNotification("Failed to delete selected roles.", "error");
@@ -199,12 +199,12 @@ const RolesList = () => {
       }
     } else {
       try {
-        await axios.delete(`${API_BASE_URL}/roles/${roleToDelete}`);
+        const res = await axios.delete(`${API_BASE_URL}/roles/${roleToDelete}`);
         setData((prevData) => prevData.filter((item) => item.id !== roleToDelete));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
         closeDeleteModal();
-        showNotification("Role deleted successfully!", "success");
+        showNotification(res.data?.message || "Role deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting Role:", error);
         showNotification("Failed to delete Role.", "error");
@@ -245,12 +245,12 @@ const RolesList = () => {
     <>
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead="Roles" maincount={totalRecords}  page="" title="Roles" add_button="Add Roles" add_link="#" onClick={() => openForm()}
+        <Breadcrumb page="Settings" title="Roles" add_button={<><i className="bx bxs-plus-square"></i> Add Roles</>} add_link="#" onClick={() => openForm()}
         actions={
           <>
           <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
           <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedRoles.length === 0}>
-            Delete Selected
+            <i className="bx bx-trash"></i> Delete Selected
           </button>
           </>
         }

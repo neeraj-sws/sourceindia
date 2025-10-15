@@ -1,6 +1,16 @@
 const { Op } = require('sequelize');
 const OpenEnquiries = require('../models/OpenEnquiries');
 const Categories = require('../models/Categories');
+const Users = require('../models/Users');
+
+exports.getAllOpenEnquiries = async (req, res) => {
+  try {
+    const openEnquiries = await OpenEnquiries.findAll({ order: [['id', 'ASC']] });
+    res.json(openEnquiries);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 exports.updateOpenEnquiriesStatus = async (req, res) => {
   try {
@@ -18,6 +28,34 @@ exports.updateOpenEnquiriesStatus = async (req, res) => {
   }
 };
 
+exports.updateOpenEnquiriesDeleteStatus = async (req, res) => {
+  try {
+    const { is_delete } = req.body;
+    if (is_delete !== 0 && is_delete !== 1) {
+      return res.status(400).json({ message: 'Invalid delete status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const openEnquiries = await OpenEnquiries.findByPk(req.params.id);
+    if (!openEnquiries) return res.status(404).json({ message: 'Open Enquiries not found' });
+    openEnquiries.is_delete = is_delete;
+    await openEnquiries.save();
+    res.json({ message: 'Open Enquiries is removed', openEnquiries });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteOpenEnquiries = async (req, res) => {
+  try {
+    const openEnquiries = await OpenEnquiries.findByPk(req.params.id);
+    if (!openEnquiries) return res.status(404).json({ message: 'Open Enquiries not found' });
+
+    await openEnquiries.destroy();
+    res.json({ message: 'Open Enquiries deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getAllOpenEnquiriesServerSide = async (req, res) => {
   try {
     const {
@@ -26,6 +64,10 @@ exports.getAllOpenEnquiriesServerSide = async (req, res) => {
       search = '',
       sortBy = 'id',
       sort = 'DESC',
+      user_id,
+      dateRange = '',
+      startDate,
+      endDate,
     } = req.query;
     const validColumns = ['id', 'title', 'created_at', 'updated_at', 'name', 'email', 'phone', 'description', 'company'];
     const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
@@ -37,9 +79,67 @@ exports.getAllOpenEnquiriesServerSide = async (req, res) => {
     } else {
       order = [['id', 'DESC']];
     }
-    const where = {};
+    const baseWhere = {};
+    if (user_id) {
+      baseWhere.user_id = user_id;
+    }
+    baseWhere.is_delete = 0;
+    if (req.query.getDeleted === 'true') {
+      baseWhere.is_delete = 1;
+    }
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      baseWhere.created_at = dateCondition;
+    }
     if (search) {
-      where[Op.or] = [
+      baseWhere[Op.or] = [
         { title: { [Op.like]: `%${search}%` } },
         { name: { [Op.like]: `%${search}%` } },
         { email: { [Op.like]: `%${search}%` } },
@@ -48,16 +148,19 @@ exports.getAllOpenEnquiriesServerSide = async (req, res) => {
         { company: { [Op.like]: `%${search}%` } },
       ];
     }
-    const totalRecords = await OpenEnquiries.count();
+    const totalRecords = await OpenEnquiries.count({where: { ...baseWhere }});
     const { count: filteredRecords, rows } = await OpenEnquiries.findAndCountAll({
-      where,
+      where: baseWhere,
       order,
       limit: limitValue,
       offset,
-      include: [],
+      include: [
+        { model: Users, attributes: ['is_seller'], as: 'Users' },
+      ],
     });
     const mappedRows = rows.map(row => ({
       id: row.id,
+      user_id: row.user_id,
       title: row.title,
       name: row.name,
       email: row.email,
@@ -65,6 +168,8 @@ exports.getAllOpenEnquiriesServerSide = async (req, res) => {
       description: row.description,
       company: row.company,
       is_home: row.is_home,
+      is_delete: row.is_delete,
+      user_type: row.Users ? row.Users.is_seller : null,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));

@@ -5,9 +5,11 @@ const subSubCategoriesController = require('../controllers/subSubCategoriesContr
 router.post('/', subSubCategoriesController.createSubSubCategories);
 router.get('/', subSubCategoriesController.getAllSubSubCategories);
 router.get('/server-side', subSubCategoriesController.getAllSubSubCategoriesServerSide);
+router.delete('/delete-selected', subSubCategoriesController.deleteSelectedSubSubCategories);
 router.get('/:id', subSubCategoriesController.getSubSubCategoriesById);
 router.put('/:id', subSubCategoriesController.updateSubSubCategories);
 router.delete('/:id', subSubCategoriesController.deleteSubSubCategories);
 router.patch('/:id/status', subSubCategoriesController.updateSubSubCategoriesStatus);
+router.patch('/:id/delete_status', subSubCategoriesController.updateSubSubCategoriesDeleteStatus);
 
 module.exports = router;

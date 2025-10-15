@@ -1,8 +1,11 @@
-const { Op } = require('sequelize');
+const { Op, literal } = require('sequelize');
+const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
+const sequelize = require('../config/database');
 const Categories = require('../models/Categories');
 const UploadImage = require('../models/UploadImage');
+const Products = require('../models/Products');
 const getMulterUpload = require('../utils/upload');
 
 exports.createCategories = async (req, res) => {
@@ -32,8 +35,35 @@ exports.createCategories = async (req, res) => {
 
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Categories.findAll({ order: [['id', 'ASC']] });
-    res.json(categories);
+    const categories = await Categories.findAll({
+      order: [['id', 'ASC']],
+      include: [
+        {
+          model: UploadImage,
+          attributes: ['file'],
+        },
+      ],
+    });
+    const productCounts = await Products.findAll({
+      attributes: ['category', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      where: { is_delete: 0 },
+      group: ['category'],
+      raw: true,
+    });
+    const countMap = {};
+    productCounts.forEach(item => {
+      countMap[item.category] = parseInt(item.count);
+    });
+    const modifiedCategories = categories.map(category => {
+      const categoryData = category.toJSON();
+      const { UploadImage, ...rest } = categoryData;
+      return {
+        ...rest,
+        file_name: UploadImage?.file || null,
+        product_count: countMap[category.id] || 0,
+      };
+    });
+    res.json(modifiedCategories);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -152,6 +182,41 @@ exports.deleteCategories = async (req, res) => {
   }
 };
 
+exports.deleteSelectedCategories = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Please provide an array of IDs to update.' });
+    }
+    const parsedIds = ids.map(id => parseInt(id, 10));
+    const categories = await Categories.findAll({
+      where: {
+        id: {
+          [Op.in]: parsedIds,
+        },
+        is_delete: 0
+      }
+    });
+    if (categories.length === 0) {
+      return res.status(404).json({ message: 'No categories found with the given IDs.' });
+    }
+    await Categories.update(
+      { is_delete: 1 },
+      {
+        where: {
+          id: {
+            [Op.in]: parsedIds,
+          }
+        }
+      }
+    );
+    res.json({ message: `${categories.length} categories marked as deleted.` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.updateCategoriesStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -168,6 +233,38 @@ exports.updateCategoriesStatus = async (req, res) => {
   }
 };
 
+exports.updateCategoriesTopCategory = async (req, res) => {
+  try {
+    const { top_category } = req.body;
+    if (top_category !== 0 && top_category !== 1) {
+      return res.status(400).json({ message: 'Invalid category status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const categories = await Categories.findByPk(req.params.id);
+    if (!categories) return res.status(404).json({ message: 'Categories not found' });
+    categories.top_category = top_category;
+    await categories.save();
+    res.json({ message: 'Category status updated', categories });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateCategoriesDeleteStatus = async (req, res) => {
+  try {
+    const { is_delete } = req.body;
+    if (is_delete !== 0 && is_delete !== 1) {
+      return res.status(400).json({ message: 'Invalid delete status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const categories = await Categories.findByPk(req.params.id);
+    if (!categories) return res.status(404).json({ message: 'Categories not found' });
+    categories.is_delete = is_delete;
+    await categories.save();
+    res.json({ message: 'Categories is removed', categories });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getAllCategoriesServerSide = async (req, res) => {
   try {
     const {
@@ -176,31 +273,99 @@ exports.getAllCategoriesServerSide = async (req, res) => {
       search = '',
       sortBy = 'id',
       sort = 'DESC',
+      dateRange = '',
+      startDate,
+      endDate,
     } = req.query;
-    const validColumns = ['id', 'name', 'top_category', 'created_at', 'updated_at'];
+    const validColumns = ['id', 'name', 'top_category', 'created_at', 'updated_at', 'product_count'];
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitValue = parseInt(limit);
     let order = [];
-    if (validColumns.includes(sortBy)) {
+    if (sortBy === 'product_count') {
+      order = [[literal('product_count'), sortDirection]];
+    } else if (validColumns.includes(sortBy)) {
       order = [[sortBy, sortDirection]];
     } else {
       order = [['id', 'DESC']];
     }
-    const where = {};
+    const where = { is_delete: 0 };
+    if (req.query.getDeleted === 'true') {
+      where.is_delete = 1;
+    }
+    const searchWhere = { ...where };
     if (search) {
-      where[Op.or] = [
+      searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
       ];
     }
-    const totalRecords = await Categories.count();
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      searchWhere.created_at = dateCondition;
+    }
+    const totalRecords = await Categories.count({ where });
     const { count: filteredRecords, rows } = await Categories.findAndCountAll({
-      where,
+      where: searchWhere,
       order,
       limit: limitValue,
       offset,
+      attributes: {
+        include: [
+          [literal(`(SELECT COUNT(*) FROM products WHERE products.category = Categories.id AND products.is_delete = 0)`), 'product_count']
+        ]
+      },
       include: [
-        { model: UploadImage, attributes: ['file'] },
+        {
+          model: UploadImage,
+          attributes: ['file']
+        }
       ],
     });
     const mappedRows = rows.map(row => ({
@@ -210,6 +375,8 @@ exports.getAllCategoriesServerSide = async (req, res) => {
       cat_file_id: row.cat_file_id,
       file_name: row.UploadImage ? row.UploadImage.file : null,
       status: row.status,
+      is_delete: row.is_delete,
+      product_count: row.get('product_count') || 0,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
