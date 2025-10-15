@@ -458,10 +458,13 @@ exports.deleteSelectedProducts = async (req, res) => {
 
 exports.getAllCompanyInfo = async (req, res) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const limit = req.query.limit ? parseInt(req.query.limit) : 20;
+    const page = req.query.page ? parseInt(req.query.page) : 1;
+    const offset = (page - 1) * limit;
     const companies = await CompanyInfo.findAll({
       order: [['id', 'ASC']],
-      ...(limit && { limit }),
+      limit,
+      offset,
       include: [
         {
           model: UploadImage,
