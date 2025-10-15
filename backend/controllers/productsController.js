@@ -9,8 +9,11 @@ const UploadImage = require('../models/UploadImage');
 const Users = require('../models/Users');
 const Color = require('../models/Color');
 const CompanyInfo = require('../models/CompanyInfo');
+const States = require('../models/States');
+const ReviewRating = require('../models/ReviewRating');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
+const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
 
 exports.createProducts = async (req, res) => {
   const upload = getMulterUpload('products');
@@ -70,13 +73,51 @@ exports.createProducts = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const { user_state, sort_by, title, category, sub_category, company_id } = req.query;
+    let order = [['id', 'ASC']];
+    if (sort_by === 'newest') order = [['created_at', 'DESC']];
+    else if (sort_by === 'oldest') order = [['created_at', 'ASC']];
+    else if (sort_by === 'a_to_z') order = [['title', 'ASC']];
+    else if (sort_by === 'z_to_a') order = [['title', 'DESC']];
+    const productWhereClause = {};
+    if (title) productWhereClause.title = { [Op.iLike]: `%${title}%` };
+    if (category) {
+      const categoryArray = parseCsv(category);
+      productWhereClause.category = { [Op.in]: categoryArray };
+    }
+    if (sub_category) {
+      const subCategoryArray = parseCsv(sub_category);
+      productWhereClause.sub_category = { [Op.in]: subCategoryArray };
+    }
+    if (company_id) {
+      const companyArray = parseCsv(company_id);
+      productWhereClause.company_id = { [Op.in]: companyArray };
+    }
+    let userWhereClause = {};
+    if (user_state) {
+      const stateIds = parseCsv(user_state);
+      userWhereClause.state = { [Op.in]: stateIds };
+    }
     const products = await Products.findAll({
-      order: [['id', 'ASC']],
+      where: productWhereClause,
+      order,
+      ...(limit && { limit }),
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
         { model: Color, as: 'Color', attributes: ['id', 'title'] },
         { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+        { model: UploadImage, as: 'file', attributes: ['file'] },
+        {
+          model: Users,
+          as: 'Users',
+          attributes: ['id', 'fname', 'lname', 'state'],
+          where: Object.keys(userWhereClause).length ? userWhereClause : undefined,
+          include: [
+            { model: States, as: 'state_data', attributes: ['id', 'name'] }
+          ]
+        }
       ],
     });
     const modifiedProducts = products.map(product => {
@@ -86,13 +127,21 @@ exports.getAllProducts = async (req, res) => {
       productsData.sub_category_name = productsData.SubCategories?.name || null;
       productsData.color_name = productsData.Color?.title || null;
       productsData.company_name = productsData.company_info?.organization_name || null;
+      productsData.file_name = productsData.file?.file || null;
+      productsData.state_name = productsData.Users?.state_data?.name || null;
+      productsData.user_full_name = productsData.Users ? `${productsData.Users.fname} ${productsData.Users.lname}` : null;
       delete productsData.Categories;
       delete productsData.SubCategories;
       delete productsData.Color;
       delete productsData.company_info;
+      delete productsData.file;
+      delete productsData.Users;
       return productsData;
     });
-    res.json(modifiedProducts);
+    res.json({
+      total: modifiedProducts.length,
+      products: modifiedProducts
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -100,29 +149,55 @@ exports.getAllProducts = async (req, res) => {
 
 exports.getProductsById = async (req, res) => {
   try {
-    const product = await Products.findByPk(req.params.id);
+    const product = await Products.findByPk(req.params.id, {
+      include: [
+        { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+        { model: Color, as: 'Color', attributes: ['id', 'title'] },
+        { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+        { model: UploadImage, as: 'file', attributes: ['file'] }
+      ]
+    });
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-
-    const fileIds = product.file_ids ? product.file_ids.split(',') : [];
+    const productData = product.toJSON();
+    const fileIds = productData.file_ids ? productData.file_ids.split(',') : [];
     const associatedImages = await UploadImage.findAll({
-      where: {
-        id: {
-          [Op.in]: fileIds,
-        },
-      },
+      where: { id: { [Op.in]: fileIds } },
       attributes: ['id', 'file'],
     });
-
+    const reviews = await ReviewRating.findAll({
+      where: { product_id: req.params.id },
+      attributes: ['id', 'rating', 'review', 'created_at'],
+      include: [{
+        model: Users,
+        as: 'reviewer',
+        attributes: ['id', 'fname', 'lname']
+      }]
+    });
+    const formattedReviews = reviews.map(r => ({
+      id: r.id,
+      rating: r.rating,
+      review: r.review,
+      created_at: r.created_at,
+      reviewer_name: r.reviewer ? `${r.reviewer.fname} ${r.reviewer.lname}` : null
+    }));
     const response = {
-      ...product.toJSON(),
-      images: associatedImages.map(image => ({
-        id: image.id,
-        file: image.file,
-      })),
+      ...productData,
+      category_name: productData.Categories?.name || null,
+      sub_category_name: productData.SubCategories?.name || null,
+      color_name: productData.Color?.title || null,
+      company_name: productData.company_info?.organization_name || null,
+      file_name: productData.file?.file || null,
+      images: associatedImages.map(image => ({ id: image.id, file: image.file })),
+      reviews: formattedReviews
     };
-
+    delete response.Categories;
+    delete response.SubCategories;
+    delete response.Color;
+    delete response.company_info;
+    delete response.file;
     res.json(response);
   } catch (err) {
     console.error(err);
@@ -383,8 +458,25 @@ exports.deleteSelectedProducts = async (req, res) => {
 
 exports.getAllCompanyInfo = async (req, res) => {
   try {
-    const companies = await CompanyInfo.findAll({ order: [['id', 'ASC']] });
-    res.json(companies);
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const companies = await CompanyInfo.findAll({
+      order: [['id', 'ASC']],
+      ...(limit && { limit }),
+      include: [
+        {
+          model: UploadImage,
+          as: 'companyLogo',
+          attributes: ['file'],
+        },
+      ],
+    });
+    const modifiedCompanies = companies.map(company => {
+      const companyData = company.toJSON();
+      companyData.company_logo_file = companyData.companyLogo?.file || null;
+      delete companyData.companyLogo;
+      return companyData;
+    });
+    res.json(modifiedCompanies);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

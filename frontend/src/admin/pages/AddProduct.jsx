@@ -283,7 +283,7 @@ const AddProduct = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Shop" title={isEditing ? "Edit Product" : "Add Product"} add_button="Back" add_link="/admin/products" />
+          <Breadcrumb  page="Product" title={isEditing ? "Edit Product" : "Add Product"} add_button="Back" add_link="/admin/products" />
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <div className="card">

@@ -99,7 +99,8 @@ const ActivityList = ({ getDeleted }) => {
       setFormData({ ...editData, status: String(editData.status) });
     } else {
       setFormData(initialForm);
-    }
+    }    
+    setShowModal(true);
   };
 
   const resetForm = () => {

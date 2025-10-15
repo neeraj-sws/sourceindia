@@ -3,6 +3,7 @@ const router = express.Router();
 const buyerController = require('../controllers/buyerController');
 
 router.post('/', buyerController.createBuyer);
+router.post('/login', buyerController.login);
 router.get('/count', buyerController.getBuyerCount);
 router.get('/', buyerController.getAllBuyer);
 router.get('/server-side', buyerController.getAllBuyerServerSide);

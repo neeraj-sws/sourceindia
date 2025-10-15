@@ -185,49 +185,18 @@ const AddEmailCircular = () => {
             <div className="col-xl-12 mx-auto">
               <form className="row g-3" onSubmit={handleSubmit}>
                 <div className="card">
-                  <div className="card-body p-5">
-                    <div className="col-md-6">
-                      <label htmlFor="user_type" className="form-label required">User</label>
-                      <SearchDropdown
-                        id="user_type"
-                        options={userType?.map((user) => ({ value: user.id, label: user.name.charAt(0).toUpperCase() + user.name.slice(1) }))}
-                        value={formData.user_type}
-                        onChange={handleSelectChange("user_type")}
-                        placeholder="Select here"
-                      />
-                      {errors.user_type && (<div className="invalid-feedback">{errors.user_type}</div>)}
-                    </div>
-                    <div className="col-md-6">
-                      <label htmlFor="title" className="form-label required">Title</label>
-                      <input
-                        type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
-                        id="title"
-                        placeholder="Title"
-                        value={formData.title}
-                        onChange={handleInputChange}
-                      />
-                      {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
-                    </div>
-                    <div className="col-md-6">
-                      <label htmlFor="subject" className="form-label">Subject</label>
-                      <input
-                        type="text" className="form-control"
-                        id="subject"
-                        placeholder="Subject"
-                        value={formData.subject}
-                        onChange={handleInputChange}
-                      />
-                      {errors.subject && (<div className="invalid-feedback">{errors.subject}</div>)}
-                    </div>
-                    <div className="col-md-12">
-                      <div className="d-flex justify-content-between mb-2">
-                        <label htmlFor="description" className="form-label my-auto required">Long Description</label>
-                        {showButton && (
-                          <button type="button" className="btn btn-primary mb-3 mb-lg-0">
-                            <i className="bx bxs-plus-square mr-1" />
-                            Test Mail
-                          </button>
-                        )}
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label htmlFor="user_type" className="form-label required">User</label>
+                        <SearchDropdown
+                          id="user_type"
+                          options={userType?.map((user) => ({ value: user.id, label: user.name.charAt(0).toUpperCase() + user.name.slice(1) }))}
+                          value={formData.user_type}
+                          onChange={handleSelectChange("user_type")}
+                          placeholder="Select here"
+                        />
+                        {errors.user_type && (<div className="invalid-feedback">{errors.user_type}</div>)}
                       </div>
                     </div>
                     <JoditEditor
@@ -331,6 +300,7 @@ const AddEmailCircular = () => {
                       ))}
                     </div>
                   </div>
+                 
                   <div className="col-12 text-end">
                     <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
                       {submitting ? (

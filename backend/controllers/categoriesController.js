@@ -2,8 +2,10 @@ const { Op, literal } = require('sequelize');
 const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
+const sequelize = require('../config/database');
 const Categories = require('../models/Categories');
 const UploadImage = require('../models/UploadImage');
+const Products = require('../models/Products');
 const getMulterUpload = require('../utils/upload');
 
 exports.createCategories = async (req, res) => {
@@ -33,8 +35,35 @@ exports.createCategories = async (req, res) => {
 
 exports.getAllCategories = async (req, res) => {
   try {
-    const categories = await Categories.findAll({ order: [['id', 'ASC']] });
-    res.json(categories);
+    const categories = await Categories.findAll({
+      order: [['id', 'ASC']],
+      include: [
+        {
+          model: UploadImage,
+          attributes: ['file'],
+        },
+      ],
+    });
+    const productCounts = await Products.findAll({
+      attributes: ['category', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      where: { is_delete: 0 },
+      group: ['category'],
+      raw: true,
+    });
+    const countMap = {};
+    productCounts.forEach(item => {
+      countMap[item.category] = parseInt(item.count);
+    });
+    const modifiedCategories = categories.map(category => {
+      const categoryData = category.toJSON();
+      const { UploadImage, ...rest } = categoryData;
+      return {
+        ...rest,
+        file_name: UploadImage?.file || null,
+        product_count: countMap[category.id] || 0,
+      };
+    });
+    res.json(modifiedCategories);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -329,15 +358,7 @@ exports.getAllCategoriesServerSide = async (req, res) => {
       offset,
       attributes: {
         include: [
-          [
-            literal(`(
-              SELECT COUNT(*) FROM products 
-              WHERE 
-                products.category = Categories.id 
-                AND products.is_delete = 0
-            )`),
-            'product_count'
-          ]
+          [literal(`(SELECT COUNT(*) FROM products WHERE products.category = Categories.id AND products.is_delete = 0)`), 'product_count']
         ]
       },
       include: [

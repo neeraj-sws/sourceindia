@@ -148,7 +148,6 @@ const ItemList = ({ getDeleted }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setSubmitting(true);
     const sCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
     const ssCategory = subcategories.find((c) => c.id.toString() === selectedSubCategory.toString());
     const payload = { ...formData, category: selectedCategory, category_name: sCategory?.name || "", sub_category: selectedSubCategory, sub_category_name: ssCategory?.name || "" };

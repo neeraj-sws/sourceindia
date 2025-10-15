@@ -238,8 +238,10 @@ const ApplicationList = ({ getDeleted }) => {
     }
   };
 
-  const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggleInfo({ id, currentStatus, field, valueKey }); 
-  setShowStatusModal(true); };
+  const openStatusModal = (id, currentStatus, field, valueKey) => {
+    setStatusToggleInfo({ id, currentStatus, field, valueKey });
+    setShowStatusModal(true);
+  };
 
   const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
 
@@ -367,22 +369,6 @@ const ApplicationList = ({ getDeleted }) => {
                         onChange={handleFileChange}
                       />
                       {errors.file && <div className="invalid-feedback">{errors.file}</div>}
-                      {formData.file ? (
-                        <img
-                          src={URL.createObjectURL(formData.file)}
-                          className="img-preview object-fit-cover mt-3"
-                          width={150}
-                          height={150}
-                          alt="Preview"
-                        />
-                      ) : formData.file_name ? (
-                        <ImageWithFallback
-                          src={`${ROOT_URL}/${formData.file_name}`}
-                          width={150}
-                          height={150}
-                          showFallback={false}
-                        />
-                      ) : null}
                     </div>
                     <div className="d-flex justify-content-between">
                       <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Breadcrumb from "../common/Breadcrumb";
@@ -41,6 +41,8 @@ const AddSeller = () => {
   const [companyBrochure, setCompanyBrochure] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const previousSelectedCategoriesRef = useRef([]);
+  const [subCategoryMap, setSubCategoryMap] = useState({}); 
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -115,27 +117,53 @@ const AddSeller = () => {
       width: '100%',
       placeholder: "Select Category",
       multiple: true,
-    }).on("change", function () {
-      const selectedValues = $(this).val();
-      setSelectedCategory(selectedValues || []);
-      if (selectedValues.length > 0) {
-        axios.post(`${API_BASE_URL}/sub_categories/categories`, { categories: selectedValues })
-          .then(res => {
-            const newSubCategories = res.data;
-            const validSelectedSubCategories = selectedSubCategory.filter(id =>
-              newSubCategories.some(sub => sub.id == id)
-            );
-            setSubCategories(newSubCategories);
-            setSelectedSubCategory(validSelectedSubCategories);
-          })
-          .catch(err => {
-            console.error("Error fetching subcategories:", err);
-            setSubCategories([]);
-            setSelectedSubCategory([]);
+    }).on("change", async function () {
+      const currentSelected = $(this).val()?.map(Number) || [];
+      const previousSelectedCategories = previousSelectedCategoriesRef.current;
+      const addedCategories = currentSelected.filter(cat => !previousSelectedCategories.includes(cat));
+      const removedCategories = previousSelectedCategories.filter(cat => !currentSelected.includes(cat));
+      previousSelectedCategoriesRef.current = [...currentSelected];
+      setSelectedCategory(currentSelected);
+      let updatedSubCategories = [...subCategories];
+      let updatedMap = { ...subCategoryMap };
+      if (addedCategories.length > 0) {
+        try {
+          const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+            categories: addedCategories
           });
-      } else {
+          const newSubCats = res.data;
+          newSubCats.forEach(sub => {
+            if (!updatedMap[sub.id]) updatedMap[sub.id] = new Set();
+            addedCategories.forEach(catId => updatedMap[sub.id].add(catId));
+            if (!updatedSubCategories.find(s => s.id === sub.id)) {
+              updatedSubCategories.push(sub);
+            }
+          });
+        } catch (err) {
+          console.error("Error adding subcategories:", err);
+        }
+      }
+      if (removedCategories.length > 0) {
+        Object.entries(updatedMap).forEach(([subId, categorySet]) => {
+          removedCategories.forEach(catId => categorySet.delete(catId));
+        });
+        updatedSubCategories = updatedSubCategories.filter(sub => {
+          const set = updatedMap[sub.id];
+          return set && set.size > 0;
+        });
+        const updatedSelected = selectedSubCategory.filter(subId => {
+          return updatedMap[subId] && updatedMap[subId].size > 0;
+        });
+        setSelectedSubCategory(updatedSelected);
+        $('#sub_category').val(updatedSelected).trigger('change');
+      }
+      setSubCategories(updatedSubCategories);
+      setSubCategoryMap(updatedMap);
+      if (currentSelected.length === 0) {
         setSubCategories([]);
         setSelectedSubCategory([]);
+        setSubCategoryMap({});
+        $('#sub_category').val([]).trigger('change');
       }
     });
 
@@ -176,7 +204,7 @@ const AddSeller = () => {
       $('#core_activity').off("change").select2('destroy');
       $('#activity').off("change").select2('destroy');
     };
-  }, [countries, states, cities, categories, subCategories, coreactivities, activities]);
+  }, [countries, states, cities, categories, subCategories, selectedSubCategory, subCategoryMap, coreactivities, activities]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -468,14 +496,15 @@ const AddSeller = () => {
   };
 
   return (
+    <>
     <div className="page-wrapper">
       <div className="page-content">
         <Breadcrumb page="Seller" title="Add Seller" add_button="Back" add_link="/admin/sellers" />
         <div className="row">
-          <div className="col-xl-12 mx-auto">
-            <div className="card">
-              <div className="card-body p-4">
-                <form className="row g-3" onSubmit={handleSubmit}>
+          <div className="col-xl-12 mx-auto">            
+            <form className="" onSubmit={handleSubmit}>
+              <div className="card mb-4">
+                <div className="card-body px-4 row g-3">
                   <div className="col-md-4">
                     <label htmlFor="user_company" className="form-label required">Organization Name</label>
                     <input
@@ -758,192 +787,201 @@ const AddSeller = () => {
                       onChange={handleInputChange}
                     />
                   </div>
-                  <h5 className="">Company User</h5>
-                  <div className="col-md-3">
-                    <label htmlFor="fname" className="form-label required">First Name</label>
-                    <input
-                      type="text" className={`form-control ${errors.fname ? "is-invalid" : ""}`}
-                      id="fname"
-                      placeholder="First Name"
-                      value={formData.fname}
-                      onChange={handleInputChange}
-                    />
-                    {errors.fname && (<div className="invalid-feedback">{errors.fname}</div>)}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="lname" className="form-label required">Last Name</label>
-                    <input
-                      type="text" className={`form-control ${errors.lname ? "is-invalid" : ""}`}
-                      id="lname"
-                      placeholder="Last Name"
-                      value={formData.lname}
-                      onChange={handleInputChange}
-                    />
-                    {errors.lname && (<div className="invalid-feedback">{errors.lname}</div>)}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="mobile" className="form-label required">Mobile</label>
-                    <input
-                      type="text" className={`form-control ${errors.mobile ? "is-invalid" : ""}`}
-                      id="mobile"
-                      placeholder="Mobile"
-                      value={formData.mobile}
-                      onChange={handleInputChange}
-                    />
-                    {errors.mobile && (<div className="invalid-feedback">{errors.mobile}</div>)}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="email" className="form-label required">Email</label>
-                    <input
-                      type="email" className={`form-control ${errors.email ? "is-invalid" : ""}`}
-                      id="email"
-                      placeholder="Email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                    />
-                    {errors.email && (<div className="invalid-feedback">{errors.email}</div>)}
-                  </div>
-                  {!isEditing && (
-                    <div className="col-md-3">
-                      <label htmlFor="password" className="form-label required">Password</label>
+                </div>
+              </div>
+              <div className="card card-border mb-4">
+                <div className='card-header py-3 px-3'>
+                  <h6 className="mb-0 fw-bold">Company User</h6>
+                </div>
+                <div className="card-body px-4 mb-4">
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="fname" className="form-label required">First Name</label>
                       <input
-                        type="password"
-                        className={`form-control ${errors.password ? "is-invalid" : ""}`}
-                        id="password"
-                        placeholder="Password"
-                        value={formData.password}
+                        type="text" className={`form-control ${errors.fname ? "is-invalid" : ""}`}
+                        id="fname"
+                        placeholder="First Name"
+                        value={formData.fname}
                         onChange={handleInputChange}
                       />
-                      {errors.password && (<div className="invalid-feedback">{errors.password}</div>)}
+                      {errors.fname && (<div className="invalid-feedback">{errors.fname}</div>)}
                     </div>
-                  )}
-                  <div className="col-md-3">
-                    <label htmlFor="country" className="form-label required">Country</label>
-                    <select
-                      id="country"
-                      className={`form-control select2 ${errors.country ? 'is-invalid' : ''}`}
-                      value={selectedCountry}
-                      onChange={handleCountryChange}
-                    >
-                      <option value="">Select Country</option>
-                      {countries.map(country => (
-                        <option key={country.id} value={country.id}>{country.name}</option>
-                      ))}
-                    </select>
-                    {errors.country && <div className="invalid-feedback">{errors.country}</div>}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="state" className="form-label required">State</label>
-                    <select
-                      id="state"
-                      className={`form-control select2 ${errors.state ? "is-invalid" : ""}`}
-                      value={selectedState}
-                      onChange={handleStateChange}
-                    >
-                      <option value="">Select State</option>
-                      {states.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
-                    {errors.state && <div className="invalid-feedback">{errors.state}</div>}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="city" className="form-label required">City</label>
-                    <select
-                      id="city"
-                      className={`form-control select2 ${errors.city ? "is-invalid" : ""}`}
-                      value={selectedCity}
-                      onChange={handleCityChange}
-                    >
-                      <option value="">Select City</option>
-                      {cities.map((city) => (
-                        <option key={city.id} value={city.id}>{city.name}</option>
-                      ))}
-                    </select>
-                    {errors.city && <div className="invalid-feedback">{errors.city}</div>}
-                  </div>
-                  <div className="col-md-4">
-                    <label htmlFor="zipcode" className="form-label required">Post Code</label>
-                    <input
-                      type="number" className={`form-control ${errors.zipcode ? "is-invalid" : ""}`}
-                      id="zipcode"
-                      placeholder="Post Code"
-                      value={formData.zipcode}
-                      onChange={handleInputChange}
-                    />
-                    {errors.zipcode && (<div className="invalid-feedback">{errors.zipcode}</div>)}
-                  </div>
-                  <div className="col-md-4">
-                    <label htmlFor="designation" className="form-label required">Designation</label>
-                    <input
-                      type="text" className={`form-control ${errors.designation ? "is-invalid" : ""}`}
-                      id="designation"
-                      placeholder="Designation"
-                      value={formData.designation}
-                      onChange={handleInputChange}
-                    />
-                    {errors.designation && (<div className="invalid-feedback">{errors.designation}</div>)}
-                  </div>
-                  <div className="col-md-4">
-                    <label htmlFor="file" className="form-label required">
-                      Image
-                    </label>
-                    <input
-                      className={`form-control ${errors.file ? "is-invalid" : ""}`}
-                      type="file"
-                      id="file"
-                      onChange={handleFileChange}
-                    />
-                    {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
-                    {file ? (
-                      <img
-                        src={URL.createObjectURL(file)}
-                        className="img-preview object-fit-cover mt-3"
-                        width={150}
-                        height={150}
-                        alt="Preview"
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="lname" className="form-label required">Last Name</label>
+                      <input
+                        type="text" className={`form-control ${errors.lname ? "is-invalid" : ""}`}
+                        id="lname"
+                        placeholder="Last Name"
+                        value={formData.lname}
+                        onChange={handleInputChange}
                       />
-                    ) : formData.file_name ? (
-                      <ImageWithFallback
-                        src={`${ROOT_URL}/${formData.file_name}`}
-                        width={150}
-                        height={150}
-                        showFallback={false}
+                      {errors.lname && (<div className="invalid-feedback">{errors.lname}</div>)}
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <label htmlFor="mobile" className="form-label required">Mobile</label>
+                      <input
+                        type="text" className={`form-control ${errors.mobile ? "is-invalid" : ""}`}
+                        id="mobile"
+                        placeholder="Mobile"
+                        value={formData.mobile}
+                        onChange={handleInputChange}
                       />
-                    ) : null}
+                      {errors.mobile && (<div className="invalid-feedback">{errors.mobile}</div>)}
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <label htmlFor="email" className="form-label required">Email</label>
+                      <input
+                        type="email" className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                        id="email"
+                        placeholder="Email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                      />
+                      {errors.email && (<div className="invalid-feedback">{errors.email}</div>)}
+                    </div>
+                    {!isEditing && (
+                      <div className="col-md-4 mb-3">
+                        <label htmlFor="password" className="form-label required">Password</label>
+                        <input
+                          type="password"
+                          className={`form-control ${errors.password ? "is-invalid" : ""}`}
+                          id="password"
+                          placeholder="Password"
+                          value={formData.password}
+                          onChange={handleInputChange}
+                        />
+                        {errors.password && (<div className="invalid-feedback">{errors.password}</div>)}
+                      </div>
+                    )}
+                    <div className="col-md-3 mb-3">
+                      <label htmlFor="country" className="form-label required">Country</label>
+                      <select
+                        id="country"
+                        className={`form-control select2 ${errors.country ? 'is-invalid' : ''}`}
+                        value={selectedCountry}
+                        onChange={handleCountryChange}
+                      >
+                        <option value="">Select Country</option>
+                        {countries.map(country => (
+                          <option key={country.id} value={country.id}>{country.name}</option>
+                        ))}
+                      </select>
+                      {errors.country && <div className="invalid-feedback">{errors.country}</div>}
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label htmlFor="state" className="form-label required">State</label>
+                      <select
+                        id="state"
+                        className={`form-control select2 ${errors.state ? "is-invalid" : ""}`}
+                        value={selectedState}
+                        onChange={handleStateChange}
+                      >
+                        <option value="">Select State</option>
+                        {states.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                      {errors.state && <div className="invalid-feedback">{errors.state}</div>}
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label htmlFor="city" className="form-label required">City</label>
+                      <select
+                        id="city"
+                        className={`form-control select2 ${errors.city ? "is-invalid" : ""}`}
+                        value={selectedCity}
+                        onChange={handleCityChange}
+                      >
+                        <option value="">Select City</option>
+                        {cities.map((city) => (
+                          <option key={city.id} value={city.id}>{city.name}</option>
+                        ))}
+                      </select>
+                      {errors.city && <div className="invalid-feedback">{errors.city}</div>}
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label htmlFor="zipcode" className="form-label required">Post Code</label>
+                      <input
+                        type="number" className={`form-control ${errors.zipcode ? "is-invalid" : ""}`}
+                        id="zipcode"
+                        placeholder="Post Code"
+                        value={formData.zipcode}
+                        onChange={handleInputChange}
+                      />
+                      {errors.zipcode && (<div className="invalid-feedback">{errors.zipcode}</div>)}
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="designation" className="form-label required">Designation</label>
+                      <input
+                        type="text" className={`form-control ${errors.designation ? "is-invalid" : ""}`}
+                        id="designation"
+                        placeholder="Designation"
+                        value={formData.designation}
+                        onChange={handleInputChange}
+                      />
+                      {errors.designation && (<div className="invalid-feedback">{errors.designation}</div>)}
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="file" className="form-label required">
+                        Image
+                      </label>
+                      <input
+                        className={`form-control ${errors.file ? "is-invalid" : ""}`}
+                        type="file"
+                        id="file"
+                        onChange={handleFileChange}
+                      />
+                      {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
+                      {file ? (
+                        <img
+                          src={URL.createObjectURL(file)}
+                          className="object-fit-cover mt-3"
+                          width={100}
+                          height={100}
+                          alt="Preview"
+                        />
+                      ) : formData.file_name ? (
+                        <ImageWithFallback
+                          src={`${ROOT_URL}/${formData.file_name}`}
+                          width={100}
+                          height={100}
+                          showFallback={false}
+                        />
+                      ) : null}
+                    </div>
+                    <div className="col-md-12">
+                      <label htmlFor="address" className="form-label required">Address</label>
+                      <textarea
+                        className={`form-control ${errors.address ? "is-invalid" : ""}`}
+                        id="address"
+                        placeholder="Address"
+                        rows={3}
+                        value={formData.address}
+                        onChange={handleInputChange}
+                      />
+                      {errors.address && (<div className="invalid-feedback">{errors.address}</div>)}
+                    </div>
+                    <div className="col-12 text-end mt-3">
+                      <button type="submit" className="btn btn-primary px-4 mt-3" disabled={submitting}>
+                        {submitting ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            {isEditing ? "Updating..." : "Saving..."}
+                          </>
+                        ) : (
+                          isEditing ? "Update" : "Save"
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <div className="col-md-12">
-                    <label htmlFor="address" className="form-label required">Address</label>
-                    <textarea
-                      className={`form-control ${errors.address ? "is-invalid" : ""}`}
-                      id="address"
-                      placeholder="Address"
-                      rows={3}
-                      value={formData.address}
-                      onChange={handleInputChange}
-                    />
-                    {errors.address && (<div className="invalid-feedback">{errors.address}</div>)}
-                  </div>
-                  <div className="col-12 text-end">
-                    <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
-                      {submitting ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          {isEditing ? "Updating..." : "Saving..."}
-                        </>
-                      ) : (
-                        isEditing ? "Update" : "Save"
-                      )}
-                    </button>
-                  </div>
-                </form>
+                </div>
               </div>
-            </div>
+            </form>
+            {/*end row*/}
           </div>
         </div>
-        {/*end row*/}
       </div>
     </div>
+    </>
   );
 };
 

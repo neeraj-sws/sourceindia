@@ -197,7 +197,7 @@ const TestimonialList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Testimonial" add_button="Add Testimonial" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb mainhead="Testimonials" maincount={totalRecords} page=""  title="Testimonial" add_button="Add Testimonial" add_link="#" onClick={() => openForm()} />
           <div className="row">
             <div className="col-md-5">
               <div className="card">

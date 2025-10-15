@@ -358,7 +358,6 @@ const CoreActivityList = ({ getDeleted }) => {
                           id="color"
                           className={`form-control ${errors.color ? "is-invalid" : ""}`}
                         />
-                        {errors.color && (<div className="text-danger small mt-1">{errors.color} </div>)}
                       </div>
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="status" className="form-label required">Status</label>

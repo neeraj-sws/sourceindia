@@ -70,7 +70,7 @@ const AddBuyer = () => {
   const handleCityChange = (event) => {
     setSelectedCity(event.target.value);
   };
-  
+
   useEffect(() => {
     $('#country').select2({
       theme: "bootstrap",
@@ -254,212 +254,232 @@ const AddBuyer = () => {
         <Breadcrumb page="Users" title={isEditing ? "Edit Buyer" : "Add Buyer"} add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
         <div className="row">
           <div className="col-xl-12 mx-auto">
-            <div className="card">
-              <div className="card-body p-4">
-                <form className="row g-3" onSubmit={handleSubmit}>
-                  <div className="col-md-3">
-                    <label htmlFor="fname" className="form-label required">First Name</label>
-                    <input type="text" className={`form-control ${errors.fname ? 'is-invalid' : ''}`} id="fname"
-                      placeholder="First Name" value={formData.fname} onChange={handleInputChange} />
-                    {errors.fname && <div className="invalid-feedback">{errors.fname}</div>}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="lname" className="form-label required">Last Name</label>
-                    <input type="text" className={`form-control ${errors.lname ? 'is-invalid' : ''}`} id="lname"
-                      placeholder="Last Name" value={formData.lname} onChange={handleInputChange} />
-                    {errors.lname && <div className="invalid-feedback">{errors.lname}</div>}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="email" className="form-label required">Email</label>
-                    <input type="email" className={`form-control ${errors.email ? 'is-invalid' : ''}`} id="email"
-                      placeholder="Email" value={formData.email} onChange={handleInputChange} />
-                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
-                  </div>
-                  {!isEditing &&
-                    <div className="col-md-3">
-                      <label htmlFor="password" className="form-label required">Password</label>
-                      <input type="password" className={`form-control ${errors.password ? 'is-invalid' : ''}`} id="password"
-                        placeholder="Password" value={formData.password} onChange={handleInputChange} />
-                      {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+            <form className="row g-3" onSubmit={handleSubmit}>
+              <div className="card mb-2">
+                <div className='card-header py-3 px-2 bg-white'>
+                  <h6 class="mb-0 fw-bold">Basic Information</h6>
+                </div>
+                <div className="card-body mb-3">
+                  <div className='row'>
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="fname" className="form-label required">First Name</label>
+                      <input type="text" className={`form-control ${errors.fname ? 'is-invalid' : ''}`} id="fname"
+                        placeholder="First Name" value={formData.fname} onChange={handleInputChange} />
+                      {errors.fname && <div className="invalid-feedback">{errors.fname}</div>}
                     </div>
-                  }
-                  <div className="col-md-3">
-                    <label htmlFor="mobile" className="form-label required">Mobile</label>
-                    <input type="text" className={`form-control ${errors.mobile ? 'is-invalid' : ''}`} id="mobile"
-                      placeholder="Mobile" value={formData.mobile} onChange={handleInputChange} />
-                    {errors.mobile && <div className="invalid-feedback">{errors.mobile}</div>}
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="lname" className="form-label required">Last Name</label>
+                      <input type="text" className={`form-control ${errors.lname ? 'is-invalid' : ''}`} id="lname"
+                        placeholder="Last Name" value={formData.lname} onChange={handleInputChange} />
+                      {errors.lname && <div className="invalid-feedback">{errors.lname}</div>}
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <label htmlFor="email" className="form-label required">Email</label>
+                      <input type="email" className={`form-control ${errors.email ? 'is-invalid' : ''}`} id="email"
+                        placeholder="Email" value={formData.email} onChange={handleInputChange} />
+                      {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                    </div>
+                    {!isEditing &&
+                      <div className="col-md-4 mb-3">
+                        <label htmlFor="password" className="form-label required">Password</label>
+                        <input type="password" className={`form-control ${errors.password ? 'is-invalid' : ''}`} id="password"
+                          placeholder="Password" value={formData.password} onChange={handleInputChange} />
+                        {errors.password && <div className="invalid-feedback">{errors.password}</div>}
+                      </div>
+                    }
+                    <div className="col-md-4 mb-3">
+                      <label htmlFor="mobile" className="form-label required">Mobile</label>
+                      <input type="text" className={`form-control ${errors.mobile ? 'is-invalid' : ''}`} id="mobile"
+                        placeholder="Mobile" value={formData.mobile} onChange={handleInputChange} />
+                      {errors.mobile && <div className="invalid-feedback">{errors.mobile}</div>}
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label htmlFor="country" className="form-label required">Country</label>
+                      <select
+                        id="country"
+                        className={`form-control select2 ${errors.country ? 'is-invalid' : ''}`}
+                        value={selectedCountry}
+                        onChange={handleCountryChange}
+                      >
+                        <option value="">Select Country</option>
+                        {countries.map(country => (
+                          <option key={country.id} value={country.id}>{country.name}</option>
+                        ))}
+                      </select>
+                      {errors.country && <div className="invalid-feedback">{errors.country}</div>}
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label htmlFor="state" className="form-label required">State</label>
+                      <select
+                        id="state"
+                        className={`form-control select2 ${errors.state ? "is-invalid" : ""}`}
+                        value={selectedState}
+                        onChange={handleStateChange}
+                      >
+                        <option value="">Select State</option>
+                        {states.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                      {errors.state && <div className="invalid-feedback">{errors.state}</div>}
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label htmlFor="city" className="form-label required">City</label>
+                      <select
+                        id="city"
+                        className={`form-control select2 ${errors.city ? "is-invalid" : ""}`}
+                        value={selectedCity}
+                        onChange={handleCityChange}
+                      >
+                        <option value="">Select City</option>
+                        {cities.map((city) => (
+                          <option key={city.id} value={city.id}>{city.name}</option>
+                        ))}
+                      </select>
+                      {errors.city && <div className="invalid-feedback">{errors.city}</div>}
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label htmlFor="zipcode" className="form-label required">Post Code</label>
+                      <input type="number" className={`form-control ${errors.zipcode ? 'is-invalid' : ''}`} id="zipcode"
+                        placeholder="Post Code" value={formData.zipcode} onChange={handleInputChange} />
+                      {errors.zipcode && <div className="invalid-feedback">{errors.zipcode}</div>}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="file" className="form-label required">Image</label>
+                      <input className={`form-control ${errors.file ? 'is-invalid' : ''}`} type="file"
+                        id="file" onChange={handleFileChange} />
+                      {errors.file && <div className="invalid-feedback">{errors.file}</div>}
+                      {file ? (
+                        <img
+                          src={URL.createObjectURL(file)}
+                          className="img-preview object-fit-cover mt-3"
+                          width={150}
+                          height={150}
+                          alt="Preview"
+                        />
+                      ) : formData.file_name ? (
+                        <ImageWithFallback
+                          src={`${ROOT_URL}/${formData.file_name}`}
+                          width={150}
+                          height={150}
+                          showFallback={false}
+                        />
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="col-md-3">
-                    <label htmlFor="country" className="form-label required">Country</label>
-                    <select
-                      id="country"
-                      className={`form-control select2 ${errors.country ? 'is-invalid' : ''}`}
-                      value={selectedCountry}
-                      onChange={handleCountryChange}
-                    >
-                      <option value="">Select Country</option>
-                      {countries.map(country => (
-                        <option key={country.id} value={country.id}>{country.name}</option>
-                      ))}
-                    </select>
-                    {errors.country && <div className="invalid-feedback">{errors.country}</div>}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="state" className="form-label required">State</label>
-                    <select
-                      id="state"
-                      className={`form-control select2 ${errors.state ? "is-invalid" : ""}`}
-                      value={selectedState}
-                      onChange={handleStateChange}
-                    >
-                      <option value="">Select State</option>
-                      {states.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
-                    {errors.state && <div className="invalid-feedback">{errors.state}</div>}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="city" className="form-label required">City</label>
-                    <select
-                      id="city"
-                      className={`form-control select2 ${errors.city ? "is-invalid" : ""}`}
-                      value={selectedCity}
-                      onChange={handleCityChange}
-                    >
-                      <option value="">Select City</option>
-                      {cities.map((city) => (
-                        <option key={city.id} value={city.id}>{city.name}</option>
-                      ))}
-                    </select>
-                    {errors.city && <div className="invalid-feedback">{errors.city}</div>}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="zipcode" className="form-label required">Post Code</label>
-                    <input type="number" className={`form-control ${errors.zipcode ? 'is-invalid' : ''}`} id="zipcode"
-                      placeholder="Post Code" value={formData.zipcode} onChange={handleInputChange} />
-                    {errors.zipcode && <div className="invalid-feedback">{errors.zipcode}</div>}
-                  </div>
-                  <div className="col-md-3">
-                    <label htmlFor="user_company" className="form-label required">Company Name</label>
-                    <input type="text" className={`form-control ${errors.user_company ? 'is-invalid' : ''}`} id="user_company"
-                      placeholder="Company Name" value={formData.user_company} onChange={handleInputChange} />
-                    {errors.user_company && <div className="invalid-feedback">{errors.user_company}</div>}
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="website" className="form-label required">Website</label>
-                    <input type="url" className={`form-control ${errors.website ? 'is-invalid' : ''}`} id="website"
-                      placeholder="Website" value={formData.website} onChange={handleInputChange} />
-                    {errors.website && <div className="invalid-feedback">{errors.website}</div>}
-                  </div>
-
-                  <div className="col-md-4">
-                    <label htmlFor="is_trading" className="form-label required">Trader</label>
-                    <select id="is_trading" className={`form-control ${errors.is_trading ? 'is-invalid' : ''}`}
-                      value={formData.is_trading} onChange={handleInputChange}>
-                      <option value="">Select Trader</option>
-                      <option value="1">Yes</option>
-                      <option value="0">No</option>
-                    </select>
-                    {errors.is_trading && <div className="invalid-feedback">{errors.is_trading}</div>}
-                  </div>
-                  <div className="col-md-4">
-                    <label htmlFor="elcina_member" className="form-label required">ELCINA Member</label>
-                    <select id="elcina_member" className={`form-select ${errors.elcina_member ? 'is-invalid' : ''}`}
-                      value={formData.elcina_member} onChange={handleInputChange}>
-                      <option value="">Select Member</option>
-                      <option value="1">Yes</option>
-                      <option value="2">No</option>
-                      <option value="3">Not Sure</option>
-                    </select>
-                    {errors.elcina_member && <div className="invalid-feedback">{errors.elcina_member}</div>}
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="file" className="form-label required">Image</label>
-                    <input className={`form-control ${errors.file ? 'is-invalid' : ''}`} type="file"
-                      id="file" onChange={handleFileChange} />
-                    {errors.file && <div className="invalid-feedback">{errors.file}</div>}
-                    {file ? (
-                      <img
-                        src={URL.createObjectURL(file)}
-                        className="img-preview object-fit-cover mt-3"
-                        width={150}
-                        height={150}
-                        alt="Preview"
-                      />
-                    ) : formData.file_name ? (
-                      <ImageWithFallback
-                        src={`${ROOT_URL}/${formData.file_name}`}
-                        width={150}
-                        height={150}
-                        showFallback={false}
-                      />
-                    ) : null}
-                  </div>
-                  <div className="col-md-6">
-                    <label htmlFor="company_file" className="form-label required">Company Image</label>
-                    <input className={`form-control ${errors.company_file ? 'is-invalid' : ''}`} type="file"
-                      id="company_file" onChange={handleCompanyFileChange} />
-                    {errors.company_file && <div className="invalid-feedback">{errors.company_file}</div>}
-                    {companyFile ? (
-                      <img
-                        src={URL.createObjectURL(companyFile)}
-                        className="img-preview object-fit-cover mt-3"
-                        width={150}
-                        height={150}
-                        alt="Preview"
-                      />
-                    ) : formData.file_name ? (
-                      <ImageWithFallback
-                        src={`${ROOT_URL}/${formData.company_file_name}`}
-                        width={150}
-                        height={150}
-                        showFallback={false}
-                      />
-                    ) : null}
-                  </div>
-                  <div className="col-md-12">
-                    <label htmlFor="address" className="form-label required">
-                      Address
-                    </label>
-                    <textarea
-                      className={`form-control ${errors.address ? 'is-invalid' : ''}`}
-                      id="address"
-                      placeholder="Address"
-                      rows={3}
-                      value={formData.address}
-                      onChange={handleInputChange}
-                    />
-                    {errors.address && <div className="invalid-feedback">{errors.address}</div>}
-                  </div>
-                  <div className="col-md-12">
-                    <label htmlFor="products" className="form-label required">Products</label>
-                    <textarea
-                      className={`form-control ${errors.products ? 'is-invalid' : ''}`}
-                      id="products"
-                      placeholder="Products"
-                      rows={3}
-                      defaultValue={formData.products}
-                      onChange={handleInputChange}
-                    />
-                    {errors.products && <div className="invalid-feedback">{errors.products}</div>}
-                  </div>
-                  <div className="col-md-12 text-end">
-                    <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
-                      {submitting ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          {isEditing ? "Updating..." : "Saving..."}
-                        </>
-                      ) : (
-                        isEditing ? "Update" : "Save"
-                      )}
-                    </button>
-                  </div>
-                </form>
+                </div>
               </div>
 
-            </div>
+
+              <div className="card">
+                <div className='card-header py-3 px-2 bg-white'>
+                  <h6 class="mb-0 fw-bold">Company Information</h6>
+                </div>
+                <div className="card-body">
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="user_company" className="form-label required">Company Name</label>
+                      <input type="text" className={`form-control ${errors.user_company ? 'is-invalid' : ''}`} id="user_company"
+                        placeholder="Company Name" value={formData.user_company} onChange={handleInputChange} />
+                      {errors.user_company && <div className="invalid-feedback">{errors.user_company}</div>}
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="website" className="form-label required">Website</label>
+                      <input type="url" className={`form-control ${errors.website ? 'is-invalid' : ''}`} id="website"
+                        placeholder="Website" value={formData.website} onChange={handleInputChange} />
+                      {errors.website && <div className="invalid-feedback">{errors.website}</div>}
+                    </div>
+
+                    <div className="col-md-3 mb-3">
+                      <label htmlFor="is_trading" className="form-label required">Trader</label>
+                      <select id="is_trading" className={`form-select ${errors.is_trading ? 'is-invalid' : ''}`}
+                        value={formData.is_trading} onChange={handleInputChange}>
+                        <option value="">Select Trader</option>
+                        <option value="1">Yes</option>
+                        <option value="0">No</option>
+                      </select>
+                      {errors.is_trading && <div className="invalid-feedback">{errors.is_trading}</div>}
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label htmlFor="elcina_member" className="form-label required">ELCINA Member</label>
+                      <select id="elcina_member" className={`form-select ${errors.elcina_member ? 'is-invalid' : ''}`}
+                        value={formData.elcina_member} onChange={handleInputChange}>
+                        <option value="">Select Member</option>
+                        <option value="1">Yes</option>
+                        <option value="2">No</option>
+                        <option value="3">Not Sure</option>
+                      </select>
+                      {errors.elcina_member && <div className="invalid-feedback">{errors.elcina_member}</div>}
+                    </div>
+
+                    <div className="col-md-6">
+                      <label htmlFor="company_file" className="form-label required">Company Image</label>
+                      <div className=''>
+                        <input className={`w-75 float-start form-control ${errors.company_file ? 'is-invalid' : ''}`} type="file"
+                          id="company_file" onChange={handleCompanyFileChange} />
+                        {errors.company_file && <div className="invalid-feedback">{errors.company_file}</div>}
+                        {companyFile ? (
+                          <img
+                            src={URL.createObjectURL(companyFile)}
+                            className="object-fit-cover float-end"
+                            width={100}
+                            height={80}
+                            alt="Preview"
+                          />
+                        ) : formData.file_name ? (
+                          <ImageWithFallback
+                            src={`${ROOT_URL}/${formData.company_file_name}`}
+                            className="bject-fit-cover ms-2"
+                            width={100}
+                            height={100}
+                            showFallback={false}
+                          />
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="address" className="form-label required">
+                        Address
+                      </label>
+                      <textarea
+                        className={`form-control ${errors.address ? 'is-invalid' : ''}`}
+                        id="address"
+                        placeholder="Address"
+                        rows={3}
+                        value={formData.address}
+                        onChange={handleInputChange}
+                      />
+                      {errors.address && <div className="invalid-feedback">{errors.address}</div>}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="products" className="form-label required">Products</label>
+                      <textarea
+                        className={`form-control ${errors.products ? 'is-invalid' : ''}`}
+                        id="products"
+                        placeholder="Products"
+                        rows={3}
+                        defaultValue={formData.products}
+                        onChange={handleInputChange}
+                      />
+                      {errors.products && <div className="invalid-feedback">{errors.products}</div>}
+                    </div>
+                    <div className="col-md-12 text-end">
+                      <button type="submit" className="btn btn-primary px-4 mt-4">
+                        {submitting ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            {isEditing ? "Updating..." : "Saving..."}
+                          </>
+                        ) : (
+                          isEditing ? "Update" : "Save"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+
           </div>
         </div>
       </div>

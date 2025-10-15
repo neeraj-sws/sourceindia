@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import Breadcrumb from '../common/Breadcrumb';
 import API_BASE_URL from "../../config";
 import LeadsList from '../dashboard/LeadsList';
 import TotalRegisterBuyers from "../dashboard/TotalRegisterBuyers";
@@ -22,29 +23,30 @@ const Dashboard = () => {
     const colorClass = colorMap[randomNum];
 
     return (
-      <div className="col mb-4">
-        <div className="card radius-2 overflow-hidden position-relative h-100">
-          <div className="card-body ps-4 py-4">
-            <div className="d-flex align-items-center">
-              <div className="labeltitle">
-                <p className="mb-2">{label}</p>
-                <h2 className="mb-0">{value}</h2>
-              </div>
-              <div className={`ms-auto dashicon avatar avatar-md rounded-circle ${colorClass}`}>
-                <i className={`${icon}`}></i>
+      <div className="">
+        <div className="col mb-4">
+          <div className="card radius-2 overflow-hidden position-relative h-100 card-border">
+            <div className="card-body ps-4 py-4">
+              <div className="d-flex align-items-center">
+                <div className="labeltitle">
+                  <p className="mb-2">{label}</p>
+                  <h2 className="mb-0">{value}</h2>
+                </div>
+                <div className={`ms-auto dashicon avatar avatar-md rounded-circle ${colorClass}`}>
+                  <i className={`${icon}`}></i>
+                </div>
               </div>
             </div>
+            <img
+              src={imgSrc}
+              className="img-fluid position-absolute top-0 start-0"
+              alt="logo icon"
+            />
           </div>
-          <img
-            src={imgSrc}
-            className="img-fluid position-absolute top-0 start-0"
-            alt="logo icon"
-          />
         </div>
       </div>
     );
   };
-
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -90,8 +92,8 @@ const Dashboard = () => {
   }, []);
 
   const stats = [
-    { label: "Today Register Seller Members", value: counts.sellers?.addedToday, icon: "bx bxs-user-plus" },
-    { label: "Today Register Buyer Members", value: counts.buyers?.addedToday, icon: "bx bxs-user-plus" },
+    { label: "Today Seller Members", value: counts.sellers?.addedToday, icon: "bx bxs-user-plus" },
+    { label: "Today Buyer Members", value: counts.buyers?.addedToday, icon: "bx bxs-user-plus" },
     { label: "Total Seller Members", value: counts.sellers?.total, icon: "bx bxs-group" },
     { label: "Active Seller Members", value: counts.sellers?.statusActive, icon: "bx bxs-user-check" },
     { label: "Inactive Seller Members", value: counts.sellers?.statusInactive, icon: "bx bxs-user-x" },
@@ -106,7 +108,7 @@ const Dashboard = () => {
     { label: "Total Products", value: counts.products?.total, icon: "bx bxs-shopping-bag" },
     { label: "Total Public Products", value: counts.products?.statusPublic, icon: "bx bxs-group" },
     { label: "Total Draft Products", value: counts.products?.statusDraft, icon: "bx bxs-shopping-bag" },
-    { label: "Enquiries (created) Generated", value: counts.enquiries, icon: "bx bx-search" },
+    { label: "Enquiries Generated", value: counts.enquiries, icon: "bx bx-search" },
     { label: "Product added this month", value: counts.products?.addedThisMonth, icon: "bx bxs-shopping-bags" },
     // { label: "Today Mail Send", value: "", icon: "bx bx-mail-send" },
     // { label: "2024 Registration", value: "", icon: "bx bxs-user-plus" },
@@ -115,6 +117,7 @@ const Dashboard = () => {
   return (
     <div className="page-wrapper">
       <div className="page-content">
+        <Breadcrumb mainhead="Dashboard" title="" />
         <div className="row row-cols-1 row-cols-md-2 row-cols-xl-4">
           {stats?.map((s, idx) => (
             <CountData key={idx} label={s.label} value={s.value || 0} icon={s.icon} />

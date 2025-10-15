@@ -1,0 +1,79 @@
+.form-container {
+    max-width: 500px;
+    margin: auto;
+    padding: 30px;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.hero .overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1;
+}
+.hero .carousel-caption {
+  z-index: 2;
+}
+
+.multi-carousel-container {
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.multi-carousel-container .carousel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.multi-carousel-container .carousel-viewport {
+  overflow: hidden;
+  width: 100%;
+}
+
+.multi-carousel-container .carousel-track {
+  display: flex;
+  transition: transform 0.5s ease;
+  width: 100%;
+}
+
+.multi-carousel-container .carousel-slide {
+  display: flex;
+  flex: 0 0 100%;
+  justify-content: center;
+  gap: 20px;
+}
+
+.multi-carousel-container .carousel-item-custom {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.multi-carousel-container .carousel-control {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #444;
+  cursor: pointer;
+  padding: 10px;
+  z-index: 1;
+}
+
+.multi-carousel-container .carousel-control.left {
+  position: absolute;
+  left: 0;
+}
+
+.multi-carousel-container .carousel-control.right {
+  position: absolute;
+  right: 0;
+}

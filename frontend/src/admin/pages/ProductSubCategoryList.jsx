@@ -103,6 +103,7 @@ const ProductSubCategoryList = ({ getDeleted }) => {
     } else {
       setFormData(initialForm);
     }
+    setShowModal(true);
   };
 
   const resetForm = () => {

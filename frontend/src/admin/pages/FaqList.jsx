@@ -105,6 +105,7 @@ const FaqList = ({ getDeleted }) => {
     } else {
       setFormData(initialForm);
     }
+    setShowModal(true);
   };
 
   const resetForm = () => {

@@ -88,6 +88,7 @@ const SubAdminList = () => {
     } else {
       setFormData(initialForm);
     }
+    setShowModal(true);
   };
 
   const resetForm = () => {

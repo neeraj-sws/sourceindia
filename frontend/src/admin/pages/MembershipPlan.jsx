@@ -8,6 +8,7 @@ import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import MembershipPlanModals from "./modal/MembershipPlanModals";
+
 const initialForm = { id: null, name: "", sub_title: "", price: "", user: "", category: "", product: "", 
   expire_days: "", is_default: "", free: "", elcina_plan: "", status: "1" };
 import ExcelExport from "../common/ExcelExport";
@@ -15,6 +16,12 @@ import { DateRangePicker } from 'react-date-range';
 import 'react-date-range/dist/styles.css'; 
 import 'react-date-range/dist/theme/default.css'; 
 import { format } from 'date-fns';  
+
+// const initialForm = {
+//   id: null, name: "", sub_title: "", price: "", user: "", category: "", product: "",
+//   expire_days: "", is_default: "", free: "", elcina_plan: "", status: "1"
+// };
+
 
 const MembershipPlan = ({ getDeleted }) => {
   const navigate = useNavigate();
@@ -98,8 +105,10 @@ const MembershipPlan = ({ getDeleted }) => {
     setErrors({});
     if (editData) {
       const res = await axios.get(`${API_BASE_URL}/membership_plan/${editData.id}`);
-      setFormData({ ...editData, status: String(editData.status), expire_days: String(res.data.expire_days), 
-        is_default: String(res.data.is_default), free: String(res.data.free), elcina_plan: String(res.data.elcina_plan) });
+      setFormData({
+        ...editData, status: String(editData.status), expire_days: String(res.data.expire_days),
+        is_default: String(res.data.is_default), free: String(res.data.free), elcina_plan: String(res.data.elcina_plan)
+      });
     } else {
       setFormData(initialForm);
     }
@@ -272,6 +281,7 @@ const MembershipPlan = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
+
           <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Membership Plan" : "Membership Plan"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Membership Plan</>)} add_link="#" onClick={openAddModal}
           actions={
@@ -294,6 +304,8 @@ const MembershipPlan = ({ getDeleted }) => {
             </>
           }
           />
+          <Breadcrumb mainhead="Membership Plans" maincount={totalRecords} page="" title="Membership Plan" add_button="Add Membership Plan" add_link="#" onClick={openAddModal} />
+
           <div className="card">
             <div className="card-body">
               {getDeleted && (
@@ -396,7 +408,7 @@ const MembershipPlan = ({ getDeleted }) => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
@@ -408,6 +420,7 @@ const MembershipPlan = ({ getDeleted }) => {
                             </button>
                           </li>
                           <li>
+
                             <button className="dropdown-item text-danger" 
                               onClick={(e) => {
                                 e.preventDefault(); 

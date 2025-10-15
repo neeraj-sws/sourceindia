@@ -88,6 +88,7 @@ const SourceInterestCategories = () => {
     } else {
       setFormData(initialForm);
     }
+    setShowModal(true);
   };
 
   const resetForm = () => {

@@ -10,72 +10,76 @@ const SiteSettings = () => {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb page="Settings" title="Site Settings" />
-        <div className="col-xl-12 mx-auto">
-          <div className='card  mb-4'>
-            <div className='card-body py-0 px-1'>
-              <ul className="nav nav-pills pb-0 customnavbar" role="tablist">
-                <li className="nav-item" role="presentation">
-                  <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-system" role="tab" aria-selected="true">
-                    <div className="d-flex align-items-center">
-                      <div className="tab-icon"><i className="bx bx-folder font-18 me-1" /></div>
-                      <div className="tab-title">System Settings</div>
-                    </div>
-                  </a>
-                </li>
-                <li className="nav-item" role="presentation">
-                  <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-password" role="tab" aria-selected="false">
-                    <div className="d-flex align-items-center">
-                      <div className="tab-icon"><i className="bx bx-key font-18 me-1" /></div>
-                      <div className="tab-title">Change Password</div>
-                    </div>
-                  </a>
-                </li>
-                <li className="nav-item" role="presentation">
-                  <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-meta" role="tab" aria-selected="false">
-                    <div className="d-flex align-items-center">
-                      <div className="tab-icon"><i className="bx bx-cog font-18 me-1" /></div>
-                      <div className="tab-title">Meta Settings</div>
-                    </div>
-                  </a>
-                </li>
-                <li className="nav-item" role="presentation">
-                  <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-email" role="tab" aria-selected="false">
-                    <div className="d-flex align-items-center">
-                      <div className="tab-icon"><i className="bx bx-at font-18 me-1" /></div>
-                      <div className="tab-title">Email Settings</div>
-                    </div>
-                  </a>
-                </li>
-                <li className="nav-item" role="presentation">
-                  <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-sms" role="tab" aria-selected="false">
-                    <div className="d-flex align-items-center">
-                      <div className="tab-icon"><i className="bx bx-message font-18 me-1" /></div>
-                      <div className="tab-title">SMS Settings</div>
-                    </div>
-                  </a>
-                </li>
-              </ul>
+        <Breadcrumb mainhead="Site Settings" page="" title="Site Setting" />
+        <div className='row'>
+          <div className="col-xl-3 mx-auto">
+            <div className='card card-border mb-4'>
+              <div className='card-body'>
+                <h6 class="mb-3 fw-bold">Site Settings</h6>
+                <ul className="nav nav-pills pb-0 customnavbar d-block pt-1" role="tablist">
+                  <li className="nav-item mb-1" role="presentation">
+                    <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-system" role="tab" aria-selected="true">
+                      <div className="d-flex align-items-center gap-1">
+                        <div className="tab-icon"><i className="bx bx-folder font-18 me-1" /></div>
+                        <div className="tab-title">System Settings</div>
+                      </div>
+                    </a>
+                  </li>
+                  <li className="nav-item mb-1" role="presentation">
+                    <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-password" role="tab" aria-selected="false">
+                      <div className="d-flex align-items-center gap-1">
+                        <div className="tab-icon"><i className="bx bx-key font-18 me-1" /></div>
+                        <div className="tab-title">Change Password</div>
+                      </div>
+                    </a>
+                  </li>
+                  <li className="nav-item mb-1" role="presentation">
+                    <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-meta" role="tab" aria-selected="false">
+                      <div className="d-flex align-items-center gap-1">
+                        <div className="tab-icon"><i className="bx bx-cog font-18 me-1" /></div>
+                        <div className="tab-title">Meta Settings</div>
+                      </div>
+                    </a>
+                  </li>
+                  <li className="nav-item mb-1" role="presentation">
+                    <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-email" role="tab" aria-selected="false">
+                      <div className="d-flex align-items-center gap-1">
+                        <div className="tab-icon"><i className="bx bx-at font-18 me-1" /></div>
+                        <div className="tab-title">Email Settings</div>
+                      </div>
+                    </a>
+                  </li>
+                  <li className="nav-item mb-1" role="presentation">
+                    <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-sms" role="tab" aria-selected="false">
+                      <div className="d-flex align-items-center gap-1">
+                        <div className="tab-icon"><i className="bx bx-message font-18 me-1" /></div>
+                        <div className="tab-title">SMS Settings</div>
+                      </div>
+                    </a>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
-          <div className="card">
-            <div className="card-body">
-
-              <div className="tab-content" id="pills-tabContent">
-                <div className="tab-pane fade show active" id="primary-pills-system" role="tabpanel">
-                  <SystemSettingsForm />
-                </div>
-                <div className="tab-pane fade" id="primary-pills-password" role="tabpanel">
-                  <ChangePasswordForm />
-                </div>
-                <div className="tab-pane fade" id="primary-pills-meta" role="tabpanel">
-                  <MetaSettingsForm />
-                </div>
-                <div className="tab-pane fade" id="primary-pills-email" role="tabpanel">
-                  <EmailSettingsForm />
-                </div>
-                <div className="tab-pane fade" id="primary-pills-sms" role="tabpanel">
-                  <SmsSettingsForm />
+          <div className='col-md-9'>
+            <div className="card card-border">
+              <div className="card-body">
+                <div className="tab-content" id="pills-tabContent">
+                  <div className="tab-pane fade show active" id="primary-pills-system" role="tabpanel">
+                    <SystemSettingsForm />
+                  </div>
+                  <div className="tab-pane fade" id="primary-pills-password" role="tabpanel">
+                    <ChangePasswordForm />
+                  </div>
+                  <div className="tab-pane fade" id="primary-pills-meta" role="tabpanel">
+                    <MetaSettingsForm />
+                  </div>
+                  <div className="tab-pane fade" id="primary-pills-email" role="tabpanel">
+                    <EmailSettingsForm />
+                  </div>
+                  <div className="tab-pane fade" id="primary-pills-sms" role="tabpanel">
+                    <SmsSettingsForm />
+                  </div>
                 </div>
               </div>
             </div>

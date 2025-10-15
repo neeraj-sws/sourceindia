@@ -247,7 +247,7 @@ const ProductList = ({ getDeleted }) => {
 
   useEffect(() => {
     axios.get(`${API_BASE_URL}/products`).then((res) => {
-      const filtered = res.data.filter((c) => c.is_delete=== (getDeleted ? 1 : 0));
+      const filtered = res.data.products.filter((c) => c.is_delete=== (getDeleted ? 1 : 0));
       setProductsData(filtered);
     });
   }, []);
@@ -487,7 +487,7 @@ const ProductList = ({ getDeleted }) => {
                     </td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">

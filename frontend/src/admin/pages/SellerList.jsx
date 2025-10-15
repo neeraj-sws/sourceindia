@@ -387,8 +387,10 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
     }
   };
 
-  const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggleInfo({ id, currentStatus, field, valueKey }); 
-  setShowStatusModal(true); };
+  const openStatusModal = (id, currentStatus, field, valueKey) => {
+    setStatusToggleInfo({ id, currentStatus, field, valueKey });
+    setShowStatusModal(true);
+  };
 
   const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
 
@@ -398,15 +400,15 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
     try {
       await axios.patch(`${API_BASE_URL}/sellers/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if(field=="delete_status"){
+      if (field == "delete_status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
         closeDeleteModal();
       }
-      if(field=="delete_status"){
-        showNotification(newStatus==1 ? "Removed from list" : "Restored from deleted", "success");
-      }else{
+      if (field == "delete_status") {
+        showNotification(newStatus == 1 ? "Removed from list" : "Restored from deleted", "success");
+      } else {
         showNotification("Status updated!", "success");
       }
     } catch (error) {
@@ -662,7 +664,7 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "organization_name", label: "Company Name", sortable: true },
                   { key: "coreactivity_name", label: "Coreactivity / Category / Segment / Sub Segment", sortable: true },
-                  { key: "designation", label: "Designation / Website / Quality Certification", sortable: true },                  
+                  { key: "designation", label: "Designation / Website / Quality Certification", sortable: true },
                   { key: "created_at", label: "Created", sortable: true },
                   { key: "updated_at", label: "Last Update", sortable: true },
                   ...(!getDeleted ? [{ key: "status", label: "Status", sortable: false }] : []),
@@ -706,21 +708,21 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     {!getDeleted && (
-                    <td>
-                      <div className="form-check form-switch">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={row.status == 1}
-                        onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
-                        readOnly
-                      />
-                      </div>
-                    </td>
+                      <td>
+                        <div className="form-check form-switch">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            checked={row.status == 1}
+                            onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
+                            readOnly
+                          />
+                        </div>
+                      </td>
                     )}
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">

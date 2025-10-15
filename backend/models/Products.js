@@ -7,6 +7,8 @@ const SubCategories = require('./SubCategories');
 const Users = require('./Users');
 const Applications = require('./Applications');
 const Color = require('./Color');
+const States = require('./States');
+const ReviewRating = require('./ReviewRating');
 
 const Products = sequelize.define('Products', {
   user_id: { type: DataTypes.INTEGER, allowNull: false },
