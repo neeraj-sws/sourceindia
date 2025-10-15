@@ -28,10 +28,17 @@ const FrontHeader = () => {
             </div>
             <div className="lastbox">
               <div className="d-flex align-items-center gap-2">
+<<<<<<< HEAD
                 <a href="javascript:void(0);" className="thLink text-center me-2"><i className="lni lni-question-circle d-block"></i>
                   Support</a>
                 <Link to="/login" className="btn btn-sm btnType1">Sign In</Link>
                 <a href="javascript:void(0);" className="btn btn-sm btn-primary">Join Free</a>
+=======
+                <Link to="/get-support" className="thLink text-center me-2"><i className="lni lni-question-circle d-block"></i>
+                  Support</Link>
+                <Link to="/login" className="btn btn-sm btnType1">Sign In</Link>
+                <Link to="/registration" className="btn btn-sm btn-primary">Join Free</Link>
+>>>>>>> dc7dcbf9522dd78c8af7dbc38df16cc6b0a261bd
               </div>
             </div>
           </div>
@@ -71,10 +78,7 @@ const FrontHeader = () => {
                         </li>
 
                         <li className="nav-item">
-                          <a className="nav-link" href="javascript:void(0);">Registration</a>
-                        </li>
-                        <li className="nav-item">
-                          <a className="nav-link" href="javascript:void(0);">Event</a>
+                          <a className="nav-link" href="https://event.sourceindia-electronics.com/">Event</a>
                         </li>
                         <li className="nav-item">
                           <a className="nav-link" href="javascript:void(0);">Enquiry</a>
@@ -85,7 +89,7 @@ const FrontHeader = () => {
                 </nav>
               </div>
               <div>
-                <a className="post-btn">ELCINA Website</a>
+                <a href="https://elcina.com" className="post-btn">ELCINA Website</a>
               </div>
             </div>
           </div>
