@@ -30,7 +30,7 @@ const FrontHeader = () => {
               <div className="d-flex align-items-center gap-2">
                 <a href="javascript:void(0);" className="thLink text-center me-2"><i className="lni lni-question-circle d-block"></i>
                   Support</a>
-                <a href="javascript:void(0);" className="btn btn-sm btnType1">Sign In</a>
+                <Link to="/login" className="btn btn-sm btnType1">Sign In</Link>
                 <a href="javascript:void(0);" className="btn btn-sm btn-primary">Join Free</a>
               </div>
             </div>
@@ -40,9 +40,9 @@ const FrontHeader = () => {
           <div className="container">
             <div className="d-flex flex-wrap justify-content-between align-items-center">
               <div>
-                <a href="javascript:void(0);" className="d-flex align-items-center text-decoration-none">
+                <Link href="/" className="d-flex align-items-center text-decoration-none">
                   <img src="/logo.png" alt="Logo" height="40" className="me-2" />
-                </a>
+                </Link>
               </div>
               <div className="centerMenu">
                 <nav className="navbar navbar-expand-lg">
@@ -54,10 +54,10 @@ const FrontHeader = () => {
                     <div className="collapse navbar-collapse" id="mainNavbar">
                       <ul className="navbar-nav ms-auto">
                         <li className="nav-item">
-                          <a className="nav-link active" href="javascript:void(0);">Home</a>
+                          <Link className="nav-link active" to="/">Home</Link>
                         </li>
                         <li className="nav-item">
-                          <a className="nav-link" href="javascript:void(0);">Product Categories</a>
+                          <Link className="nav-link" to="/categories">Product Categories</Link>
                         </li>
                         <li className="nav-item dropdown">
                           <a className="nav-link dropdown-toggle" href="javascript:void(0);" id="companyDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">

@@ -9,7 +9,7 @@ const Product = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/products?limit=6`);
+        const res = await axios.get(`${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=6`);
         setProducts(res.data.products);
       } catch (err) {
         console.error("Error fetching categories:", err);

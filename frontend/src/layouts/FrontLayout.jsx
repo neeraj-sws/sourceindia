@@ -6,6 +6,8 @@ import Home from '../pages/Home';
 import About from '../pages/About';
 import Login from '../pages/Login';
 import Companies from '../pages/Companies';
+import Categories from '../pages/Categories';
+import ProductsList from '../pages/ProductsList';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AlertProvider } from '../context/AlertContext';
@@ -22,6 +24,8 @@ function FrontLayout() {
           <Route path="/login" element={<Login />} />
           <Route path="/about" element={<About />} />
           <Route path="/companies" element={<Companies />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/products" element={<ProductsList />} />
         </Routes>
       </main>
       <FrontFooter />

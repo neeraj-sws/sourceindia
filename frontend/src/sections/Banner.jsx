@@ -10,7 +10,8 @@ const Banner = () => {
     const fetchHomeBanner = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/home_banners`);
-        setHomeBanner(res.data);
+        const filtered = res.data.filter(slider => slider.status == 1 && slider.is_delete == 0);
+        setHomeBanner(filtered);
       } catch (err) {
         console.error("Error fetching home banners:", err);
       }
@@ -35,7 +36,7 @@ const Banner = () => {
                     height={500}
                   />
                   <img
-                    src="http://localhost:5000/v2/upload/home_banners/1760508363325.jpg"
+                    src={`${ROOT_URL}/${slider.file_name}`}
                     className="d-block w-100 object-fit-cover"
                     alt={slider.title}
                     height={500}

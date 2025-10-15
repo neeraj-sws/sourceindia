@@ -14,10 +14,9 @@ const Companies = () => {
     const fetchCompanies = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${API_BASE_URL}/products/companies`, {
+        const res = await axios.get(`${API_BASE_URL}/products/companies?is_delete=0`, {
           params: { page, limit: 20 } // assuming backend supports these
         });
-
         if (res.data.length === 0) {
           setHasMore(false); // no more companies to load
         } else {
@@ -72,7 +71,7 @@ const Companies = () => {
 
       {/* Loader div observed for triggering next load */}
       <div ref={loaderRef} style={{ height: '100px', textAlign: 'center' }}>
-        {loading && <p>Loading more companies...</p>}
+        {loading && <img src="/loading.gif" height={20} />}
         {!hasMore && <p>No more companies to load</p>}
       </div>
     </section>
