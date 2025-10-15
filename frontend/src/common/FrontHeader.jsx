@@ -71,9 +71,6 @@ const FrontHeader = () => {
                         </li>
 
                         <li className="nav-item">
-                          <a className="nav-link" href="javascript:void(0);">Registration</a>
-                        </li>
-                        <li className="nav-item">
                           <a className="nav-link" href="https://event.sourceindia-electronics.com/">Event</a>
                         </li>
                         <li className="nav-item">
