@@ -5,23 +5,23 @@ const UploadImage = require('./UploadImage');
 const HomeBanners = sequelize.define('HomeBanners', {
   title: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   sub_title: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   description: {
     type: DataTypes.TEXT,
-    allowNull: false
+    allowNull: true
   },
   button_text: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   button_url: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   file_id: {
     type: DataTypes.INTEGER,

@@ -12,7 +12,7 @@ exports.createHomeBanners = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
       const { title, sub_title, description, button_text, button_url, status } = req.body;
-      if (!title || !sub_title || !description || !status || !req.file) {
+      if (!status || !req.file) {
         return res.status(400).json({ message: 'All fields (title, sub_title, description, button_text, button_url, status, file) are required' });
       }
       const uploadImage = await UploadImage.create({
@@ -36,8 +36,19 @@ exports.createHomeBanners = async (req, res) => {
 
 exports.getAllHomeBanners = async (req, res) => {
   try {
-    const homeBanners = await HomeBanners.findAll({ order: [['id', 'ASC']] });
-    res.json(homeBanners);
+    const homeBanners = await HomeBanners.findAll({ 
+      order: [['id', 'ASC']],
+      include: [
+        { model: UploadImage, attributes: ['file'] },
+      ],
+    });
+    const modifiedHomeBanners = homeBanners.map(home_banner => {
+      const homeBannersData = home_banner.toJSON();
+      homeBannersData.file_name = homeBannersData.UploadImage?.file || null;
+      delete homeBannersData.UploadImage;
+      return homeBannersData;
+    });
+    res.json(modifiedHomeBanners);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -73,7 +84,7 @@ exports.updateHomeBanners = async (req, res) => {
     }
     try {
       const { title, sub_title, description, button_text, button_url, status } = req.body;
-      if (!title || !sub_title || !description || !status) {
+      if (!status) {
         return res.status(400).json({ message: 'All fields (title, sub_title, description, button_text, button_url, status) are required' });
       }
       const homeBanners = await HomeBanners.findByPk(req.params.id);

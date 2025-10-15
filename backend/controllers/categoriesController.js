@@ -35,6 +35,16 @@ exports.createCategories = async (req, res) => {
 
 exports.getAllCategories = async (req, res) => {
   try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const isDeleted = req.query.is_delete;
+    const status = req.query.status;
+    const whereCondition = {};    
+    if (typeof isDeleted !== 'undefined') {
+      whereCondition.is_delete = parseInt(isDeleted);
+    }
+    if (typeof status !== 'undefined') {
+      whereCondition.status = parseInt(status);
+    }
     const categories = await Categories.findAll({
       order: [['id', 'ASC']],
       include: [
@@ -43,6 +53,8 @@ exports.getAllCategories = async (req, res) => {
           attributes: ['file'],
         },
       ],
+      where: whereCondition,
+      ...(limit && { limit }),
     });
     const productCounts = await Products.findAll({
       attributes: ['category', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],

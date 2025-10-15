@@ -115,7 +115,7 @@ const HomeBanners = ({ getDeleted }) => {
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
   };
 
-  const allowedImageTypes = ["image/jpeg", "image/png", "image/gif"];
+  const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -131,7 +131,7 @@ const HomeBanners = ({ getDeleted }) => {
 
   const validateForm = () => {
     const errs = {};
-    if (!formData.title?.trim()) errs.title = "Title is required";
+    /*if (!formData.title?.trim()) errs.title = "Title is required";
     if (!formData.sub_title?.trim()) errs.sub_title = "Sub Title is required";
     if (!formData.description?.trim()) errs.description = "Description is required";
     if (!formData.button_text?.trim()) errs.button_text = "Button Text is required";
@@ -143,7 +143,7 @@ const HomeBanners = ({ getDeleted }) => {
       } catch (_) {
         errs.button_url = "Please enter a valid URL (e.g. https://example.com)";
       }
-    }
+    }*/
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
     if (!formData.file && !isEditing) {
       errs.file = "Image is required";

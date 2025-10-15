@@ -74,7 +74,7 @@ exports.createProducts = async (req, res) => {
 exports.getAllProducts = async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
-    const { user_state, sort_by, title, category, sub_category, company_id } = req.query;
+    const { user_state, sort_by, title, category, sub_category, company_id, is_delete, status, is_approve } = req.query;
     let order = [['id', 'ASC']];
     if (sort_by === 'newest') order = [['created_at', 'DESC']];
     else if (sort_by === 'oldest') order = [['created_at', 'ASC']];
@@ -93,6 +93,15 @@ exports.getAllProducts = async (req, res) => {
     if (company_id) {
       const companyArray = parseCsv(company_id);
       productWhereClause.company_id = { [Op.in]: companyArray };
+    }
+    if (is_delete) {
+      productWhereClause.is_delete = is_delete;
+    }
+    if (status) {
+      productWhereClause.status = status;
+    }
+    if (is_approve) {
+      productWhereClause.is_approve = is_approve;
     }
     let userWhereClause = {};
     if (user_state) {
@@ -458,13 +467,11 @@ exports.deleteSelectedProducts = async (req, res) => {
 
 exports.getAllCompanyInfo = async (req, res) => {
   try {
-    const limit = req.query.limit ? parseInt(req.query.limit) : 20;
-    const page = req.query.page ? parseInt(req.query.page) : 1;
-    const offset = (page - 1) * limit;
-    const companies = await CompanyInfo.findAll({
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const page = req.query.page ? parseInt(req.query.page) : null;
+    const isDeleted = req.query.is_delete;
+    const options = {
       order: [['id', 'ASC']],
-      limit,
-      offset,
       include: [
         {
           model: UploadImage,
@@ -472,7 +479,16 @@ exports.getAllCompanyInfo = async (req, res) => {
           attributes: ['file'],
         },
       ],
-    });
+      where: {},
+    };
+    if (typeof isDeleted !== 'undefined') {
+      options.where.is_delete = parseInt(isDeleted);
+    }
+    if (limit && page) {
+      options.limit = limit;
+      options.offset = (page - 1) * limit;
+    }
+    const companies = await CompanyInfo.findAll(options);
     const modifiedCompanies = companies.map(company => {
       const companyData = company.toJSON();
       companyData.company_logo_file = companyData.companyLogo?.file || null;

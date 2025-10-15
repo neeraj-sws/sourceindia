@@ -1,12 +1,14 @@
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import API_BASE_URL, { ROOT_URL } from "./../config";
-import React, { useEffect, useState } from 'react'; import ImageFront from "../admin/common/ImageFront";
+import ImageFront from "../admin/common/ImageFront";
 import axios from "axios";
-const Company = () => {
+const Company = ({limit}) => {
   const [companies, setCompanies] = useState([]);
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/products/companies?limit=11`);
+        const res = await axios.get(`${API_BASE_URL}/products/companies?is_delete=0&limit=${limit}&page=1`);
         setCompanies(res.data);
       } catch (err) {
         console.error("Error fetching companies:", err);
@@ -21,7 +23,6 @@ const Company = () => {
           <div className="firstHead text-center pb-5">
             <h1>FEATURED COMPANIES</h1>
           </div>
-
           <div className="companyGrid">
             <div className="row gx-3">
               {companies.map((item) => (
@@ -41,16 +42,15 @@ const Company = () => {
                 </div>
               ))}
               <div className="col-md-2 mb-3">
-                <a href="javascript:void(0);" className="d-block h-100">
+                <Link to="/companies" className="d-block h-100">
                   <div className="companyBox px-3 py-4 bg-white border text-center h-100">
                     <div className="ComImg">
                       <img src="/morecompany.jpg" alt="company" className="img-fluid p-3" />
                       <p>More Companies</p>
                     </div>
                   </div>
-                </a>
+                </Link>
               </div>
-
             </div>
           </div>
         </div>
