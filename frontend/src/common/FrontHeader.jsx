@@ -28,23 +28,10 @@ const FrontHeader = () => {
             </div>
             <div className="lastbox">
               <div className="d-flex align-items-center gap-2">
-<<<<<<< HEAD
-<<<<<<< HEAD
-                <a href="javascript:void(0);" className="thLink text-center me-2"><i className="lni lni-question-circle d-block"></i>
-                  Support</a>
-                <Link to="/login" className="btn btn-sm btnType1">Sign In</Link>
-                <a href="javascript:void(0);" className="btn btn-sm btn-primary">Join Free</a>
-=======
-=======
->>>>>>> 2855156f652dd94aa244051a8b45f35dac613fb9
                 <Link to="/get-support" className="thLink text-center me-2"><i className="lni lni-question-circle d-block"></i>
                   Support</Link>
                 <Link to="/login" className="btn btn-sm btnType1">Sign In</Link>
                 <Link to="/registration" className="btn btn-sm btn-primary">Join Free</Link>
-<<<<<<< HEAD
->>>>>>> dc7dcbf9522dd78c8af7dbc38df16cc6b0a261bd
-=======
->>>>>>> 2855156f652dd94aa244051a8b45f35dac613fb9
               </div>
             </div>
           </div>
