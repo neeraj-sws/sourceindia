@@ -2,6 +2,106 @@ const Sequelize = require('sequelize');
 const { Op, fn, col, where: SequelizeWhere } = Sequelize;
 const moment = require('moment');
 const Contacts = require('../models/Contacts');
+const Emails = require('../models/Emails');
+const nodemailer = require('nodemailer');
+const { getTransporter } = require('../helpers/mailHelper');
+
+
+
+exports.contactStore = async (req, res) => {
+  try {
+    const { fname, lname, email, subject, message } = req.body;
+
+    // Validation
+    if (!fname || !lname || !email || !subject || !message) {
+      return res.status(400).json({ success: false, message: "All fields are required." });
+    }
+
+    // 🗃️ Save contact to database
+    const newContact = await Contacts.create({
+      fname,
+      lname,
+      email,
+      subject,
+      message,
+      is_delete: 0,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    // ✉️ Email configuration (SMTP)
+   
+
+    const adminEmailTemplateId = 61;
+    const adminEmailData = await Emails.findByPk(adminEmailTemplateId);
+    let adminMessage = "";
+    if (adminEmailData.message) {
+      // longblob / buffer ko string me convert karo
+      const msgStr = adminEmailData.message.toString('utf8');
+      adminMessage = msgStr
+        .replace("{{ USER_FNAME }}", `${fname} ${lname}`)
+        .replace("{{ EMAIL }}", email)
+        .replace("{{ SUBJECT }}", subject)
+        .replace("{{ MESSAGE }}", message);
+    } else {
+      adminMessage = `<p>New message from ${fname} ${lname}</p>`;
+    }
+ const { transporter, siteConfig } = await getTransporter();
+    const adminMailOptions = {
+      from: `"Contact Form" <${email}>`,
+      to: siteConfig['site_email'],
+      subject: adminEmailData.subject || `New Contact from ${fname} ${lname}`,
+      html: adminMessage,
+    };
+
+
+    await transporter.sendMail(adminMailOptions);
+
+
+    // 📧 Optional: Send confirmation email to user
+    const userEmailTemplateId = 59;
+    const userEmailData = await Emails.findByPk(userEmailTemplateId);
+
+    let userMessage = "";
+    if (userEmailData.message) {
+      const usermsgStr = userEmailData.message.toString('utf8');
+      userMessage = usermsgStr.replace("{{ USER_FNAME }}", `${fname} ${lname}`);
+    } else {
+      userMessage = `<p>Hi ${fname}, thank you for contacting us!</p>`;
+    }
+
+    const userMailOptions = {
+      from: "support@elcina.com",
+      to: email,
+      subject: userEmailData.subject || "Thanks for contacting us!",
+      html: userMessage,
+    };
+
+
+    await transporter.sendMail(userMailOptions);
+
+    return res.status(200).json({
+      success: true,
+      message: "Your message has been sent successfully!",
+      contact: newContact,
+    });
+
+  } catch (err) {
+    console.error("❌ contactStore Error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong. Please try again later.",
+      error: err.message,
+    });
+  }
+};
+
+// ================================
+// 🗃️ OTHER EXISTING CONTACT METHODS
+// ================================
+
+
+
 
 exports.getAllContacts = async (req, res) => {
   try {

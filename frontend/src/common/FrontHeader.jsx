@@ -47,7 +47,7 @@ const FrontHeader = () => {
               <div className="centerMenu">
                 <nav className="navbar navbar-expand-lg">
                   <div className="">
-                    <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="javascript:void(0);mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                    <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
                       <span className="navbar-toggler-icon"></span>
                     </button>
 
@@ -60,13 +60,13 @@ const FrontHeader = () => {
                           <Link className="nav-link" to="/categories">Product Categories</Link>
                         </li>
                         <li className="nav-item dropdown">
-                          <a className="nav-link dropdown-toggle" href="javascript:void(0);" id="companyDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                          <a className="nav-link dropdown-toggle" href="#" id="companyDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Companies
                           </a>
                           <ul className="dropdown-menu" aria-labelledby="companyDropdown">
-                            <li><a className="dropdown-item" href="javascript:void(0);">Company 1</a></li>
-                            <li><a className="dropdown-item" href="javascript:void(0);">Company 2</a></li>
-                            <li><a className="dropdown-item" href="javascript:void(0);">Company 3</a></li>
+                            <li><a className="dropdown-item" href="#">Company 1</a></li>
+                            <li><a className="dropdown-item" href="#">Company 2</a></li>
+                            <li><a className="dropdown-item" href="#">Company 3</a></li>
                           </ul>
                         </li>
 
@@ -74,7 +74,7 @@ const FrontHeader = () => {
                           <a className="nav-link" href="https://event.sourceindia-electronics.com/">Event</a>
                         </li>
                         <li className="nav-item">
-                          <a className="nav-link" href="javascript:void(0);">Enquiry</a>
+                          <a className="nav-link" href="#">Enquiry</a>
                         </li>
                       </ul>
                     </div>

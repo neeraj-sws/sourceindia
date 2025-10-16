@@ -38,6 +38,7 @@ const contactsRoutes = require('./routes/contactsRoutes');
 const emailsRoutes = require('./routes/emailsRoutes');
 const newsletterHistoriesRoutes = require('./routes/newsletterHistoriesRoutes');
 const inventoriesRoutes = require('./routes/inventoriesRoutes');
+const usersRoutes = require('./routes/usersRoutes');
 
 const app = express();
 const basePath = '/v2'; // All APIs will start with /v2
@@ -89,6 +90,8 @@ app.use(basePath + '/api/contacts', contactsRoutes);
 app.use(basePath + '/api/emails', emailsRoutes);
 app.use(basePath + '/api/newsletter_histories', newsletterHistoriesRoutes);
 app.use(basePath + '/api/inventories', inventoriesRoutes);
+app.use(basePath + '/api/signup', usersRoutes);
+
 
 sequelize
   .sync()
