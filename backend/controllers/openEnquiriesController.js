@@ -2,11 +2,54 @@ const { Op } = require('sequelize');
 const OpenEnquiries = require('../models/OpenEnquiries');
 const Categories = require('../models/Categories');
 const Users = require('../models/Users');
+const CompanyInfo = require('../models/CompanyInfo');
 
 exports.getAllOpenEnquiries = async (req, res) => {
   try {
-    const openEnquiries = await OpenEnquiries.findAll({ order: [['id', 'ASC']] });
-    res.json(openEnquiries);
+    const { is_delete, is_home } = req.query;
+    const whereConditions = {};
+    if (is_delete !== undefined) {
+      whereConditions.is_delete = is_delete;
+    }
+    if (is_home !== undefined) {
+      whereConditions.is_home = is_home;
+    }
+    const openEnquiries = await OpenEnquiries.findAll({
+      where: whereConditions,
+      order: [['id', 'ASC']],
+      include: [
+        {
+          model: Users,
+          as: 'Users',
+          attributes: ['fname', 'lname', 'email', 'company_id'],
+          include: [
+            {
+              model: CompanyInfo,
+              as: 'company_info',
+              attributes: ['organization_name']
+            }
+          ]
+        }
+      ],
+      raw: false,
+      nest: true
+    });
+    const transformed = openEnquiries.map(item => {
+      const enquiry = item.toJSON();
+      const flattened = {
+        ...enquiry,
+        ...enquiry.Users && {
+          fname: enquiry.Users.fname,
+          lname: enquiry.Users.lname,
+          email: enquiry.Users.email,
+          company_id: enquiry.Users.company_id,
+          organization_name: enquiry.Users.company_info?.organization_name || null
+        }
+      };
+      delete flattened.Users;
+      return flattened;
+    });
+    res.json(transformed);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
