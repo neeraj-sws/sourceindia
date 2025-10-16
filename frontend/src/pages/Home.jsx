@@ -1,8 +1,4 @@
-import React, { useEffect, useState } from 'react'
-import axios from "axios";
-import API_BASE_URL, { ROOT_URL } from "./../config";
-import ImageWithFallback from "../admin/common/ImageWithFallback";
-import CompaniesCarousel from './common/CompaniesCarousel';
+import React from 'react'
 import Banner from '../sections/Banner';
 import Category from '../sections/Category';
 import Product from '../sections/Product';

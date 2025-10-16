@@ -8,6 +8,7 @@ router.get('/', productsController.getAllProducts);
 router.get('/server-side', productsController.getAllProductsServerSide);
 router.delete('/delete-selected', productsController.deleteSelectedProducts);
 router.get('/companies', productsController.getAllCompanyInfo);
+router.get('/companies/:id', productsController.getCompanyInfoById);
 router.get('/:id', productsController.getProductsById);
 router.put('/:id', productsController.updateProducts);
 router.delete('/:id', productsController.deleteProducts);
