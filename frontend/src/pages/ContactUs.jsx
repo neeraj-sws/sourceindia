@@ -3,9 +3,10 @@ import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "../config";
 import ImageFront from "../admin/common/ImageFront";
 import { Link } from "react-router-dom";
+import { useAlert } from "../context/AlertContext";
 
 const ContactUs = () => {
-
+  const { showNotification } = useAlert();
   const [formData, setFormData] = useState({
     fname: "",
     lname: "",
@@ -14,28 +15,56 @@ const ContactUs = () => {
     message: "",
   });
 
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [responseMsg, setResponseMsg] = useState("");
 
-  // Handle input changes
+  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    // Remove error of that field when user starts typing
+    setErrors((prev) => ({
+      ...prev,
+      [name]: "",
+    }));
   };
 
-  // Handle form submit
+  // Validate fields
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.fname.trim()) newErrors.fname = "First name is required.";
+    if (!formData.lname.trim()) newErrors.lname = "Last name is required.";
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required.";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Enter a valid email address.";
+    }
+    if (!formData.subject.trim()) newErrors.subject = "Subject is required.";
+    if (!formData.message.trim()) newErrors.message = "Message is required.";
+    return newErrors;
+  };
+
+  // Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setResponseMsg("");
+    // showNotification("");
 
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setLoading(true);
     try {
-      // Example API endpoint
-      const res = await axios.post(`${API_BASE_URL}/contactStore`, formData);
-      setResponseMsg("Your message has been sent successfully!");
+      await axios.post(`${API_BASE_URL}/contacts`, formData);
+      // setResponseMsg("Your message has been sent successfully!");
+      showNotification('our message has been sent successfully!', "success");
       setFormData({
         fname: "",
         lname: "",
@@ -43,14 +72,15 @@ const ContactUs = () => {
         subject: "",
         message: "",
       });
+      setErrors({});
     } catch (err) {
       console.error(err);
-      setResponseMsg("Something went wrong. Please try again later.");
+      // setResponseMsg("Something went wrong. Please try again later.");
+      showNotification('Something went wrong. Please try again later.', "warning");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <section className="my-5">
       <div className="container">
@@ -77,7 +107,7 @@ const ContactUs = () => {
                       <i className="bi bi-telephone-fill"></i>
                       <div>
                         <h6 className="text-orange">Call Us Now</h6>
-                        <p className="d-flex align-items-center gap-2"><i class="lni lni-phone"></i> <a href="tel:+91-11-41615985" className="nav-link">
+                        <p className="d-flex align-items-center gap-2"><i className="lni lni-phone"></i> <a href="tel:+91-11-41615985" className="nav-link">
                           +91-11-41615985, </a>
                           <a href="tel:+91-11-41615985" className="nav-link">
                             +91-11-41011291</a>
@@ -89,7 +119,7 @@ const ContactUs = () => {
                       <i className="bi bi-geo-alt-fill"></i>
                       <div>
                         <h6 className="text-orange">Our Location</h6>
-                        <p className="d-flex align-items-center gap-2"><i class="lni lni-map-marker"></i> Elcina House, 422, Okhla Industrial Estate, Phase-III, New Delhi, Delhi 110020</p>
+                        <p className="d-flex align-items-center gap-2"><i className="lni lni-map-marker"></i> Elcina House, 422, Okhla Industrial Estate, Phase-III, New Delhi, Delhi 110020</p>
                       </div>
                     </div>
 
@@ -97,7 +127,7 @@ const ContactUs = () => {
                       <i className="bi bi-envelope-fill"></i>
                       <div>
                         <h6 className="text-orange">Write Us Now</h6>
-                        <p className="d-flex align-items-center gap-2"><i class="fadeIn animated bx bx-comment-detail"></i> support@sourceindia-electronics.com</p>
+                        <p className="d-flex align-items-center gap-2"><i className="fadeIn animated bx bx-comment-detail"></i> support@sourceindia-electronics.com</p>
                       </div>
                     </div>
                   </div>
@@ -107,38 +137,105 @@ const ContactUs = () => {
                     <h2 className="mb-4">HAVE A QUESTION?</h2>
                     <form onSubmit={handleSubmit}>
                       <div className="row">
-                        <div className="col-md-6 p-3">
-                          <div className="form-group m-0">
-                            <input type="text" name="fname" value={formData.fname}
-                              onChange={handleChange} placeholder="Your First Name*" className="form-control  bg-white rounded-2 shadow-sm p-2" />
+                        {/* First Name */}
+                        <div className="col-md-6 p-2">
+                          <div className="form-group">
+                            <input
+                              type="text"
+                              name="fname"
+                              placeholder="Your First Name*"
+                              value={formData.fname}
+                              onChange={handleChange}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.fname ? "is-invalid" : ""
+                                }`}
+                            />
+                            {errors.fname && (
+                              <small className="text-danger">{errors.fname}</small>
+                            )}
                           </div>
                         </div>
-                        <div className="col-md-6 p-3">
-                          <div className="form-group m-0">
-                            <input type="text" name="lname" placeholder="Your Last Name*" value={formData.lname}
-                              onChange={handleChange} className="form-control bg-white rounded-2 shadow-sm p-2" />
+
+                        {/* Last Name */}
+                        <div className="col-md-6 p-2">
+                          <div className="form-group">
+                            <input
+                              type="text"
+                              name="lname"
+                              placeholder="Your Last Name*"
+                              value={formData.lname}
+                              onChange={handleChange}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.lname ? "is-invalid" : ""
+                                }`}
+                            />
+                            {errors.lname && (
+                              <small className="text-danger">{errors.lname}</small>
+                            )}
                           </div>
                         </div>
-                        <div className="col-md-6 p-3">
-                          <div className="form-group m-0">
-                            <input type="text" name="email" placeholder="Your Email*" value={formData.email}
-                              onChange={handleChange} className="form-control  bg-white rounded-2 shadow-sm p-2" />
+
+                        {/* Email */}
+                        <div className="col-md-12 p-2">
+                          <div className="form-group">
+                            <input
+                              type="text"
+                              name="email"
+                              placeholder="Your Email*"
+                              value={formData.email}
+                              onChange={handleChange}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.email ? "is-invalid" : ""
+                                }`}
+                            />
+                            {errors.email && (
+                              <small className="text-danger">{errors.email}</small>
+                            )}
                           </div>
                         </div>
-                        <div className="col-md-6 p-3">
-                          <div className="form-group m-0">
-                            <input type="text" name="subject" placeholder="Subject*" value={formData.subject}
-                              onChange={handleChange} className="form-control  bg-white rounded-2 shadow-sm p-2" />
+
+                        {/* Subject */}
+                        <div className="col-md-12 p-2">
+                          <div className="form-group">
+                            <input
+                              type="text"
+                              name="subject"
+                              placeholder="Subject*"
+                              value={formData.subject}
+                              onChange={handleChange}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.subject ? "is-invalid" : ""
+                                }`}
+                            />
+                            {errors.subject && (
+                              <small className="text-danger">{errors.subject}</small>
+                            )}
                           </div>
                         </div>
-                        <div className="col-md-12 p-3">
-                          <div className="form-group m-0">
-                            <textarea className="form-control pt-3 bg-white rounded-2 shadow-sm p-2" placeholder="Your Message" name="message" value={formData.message}
-                              onChange={handleChange} rows="10"></textarea>
+
+                        {/* Message */}
+                        <div className="col-md-12 p-2">
+                          <div className="form-group">
+                            <textarea
+                              name="message"
+                              placeholder="Your Message*"
+                              rows="6"
+                              value={formData.message}
+                              onChange={handleChange}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.message ? "is-invalid" : ""
+                                }`}
+                            ></textarea>
+                            {errors.message && (
+                              <small className="text-danger">{errors.message}</small>
+                            )}
                           </div>
                         </div>
-                        <div className="col-md-12 pt-md-4 py-34 text-center">
-                          <button type="submit" disabled={loading} className="btn btn-primary w-100">  {loading ? "Sending..." : "Submit Now"}</button>
+
+                        {/* Submit Button */}
+                        <div className="col-md-12 text-center pt-3">
+                          <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn btn-primary w-100"
+                          >
+                            {loading ? "Sending..." : "Submit Now"}
+                          </button>
 
                           {responseMsg && (
                             <div className="col-md-12 text-center mt-3">

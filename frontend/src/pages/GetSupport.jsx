@@ -104,7 +104,7 @@ const GetSupport = () => {
                       <div className="col-md-6">
                         <div className="card supportTicket">
                           <div className="card-body">
-                            <a href="javascript:void(0);" className="d-block">
+                            <a href="#" className="d-block">
                               <div className="text-center ticketicon">
                                 <i class="fadeIn animated bx bx-envelope-open"></i>
                                 <h6>Create Ticket</h6>
@@ -116,7 +116,7 @@ const GetSupport = () => {
                       <div className="col-md-6">
                         <div className="card supportTicket">
                           <div className="card-body">
-                            <a href="javascript:void(0);" className="d-block">
+                            <a href="#" className="d-block">
                               <div className="text-center ticketicon">
                                 <i class="fadeIn animated bx bx-envelope-open"></i>
                                 <h6>Track a Ticket</h6>
