@@ -58,7 +58,7 @@ exports.getAllCategories = async (req, res) => {
     });
     const productCounts = await Products.findAll({
       attributes: ['category', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
-      where: { is_delete: 0 },
+      where: { is_delete: 0, is_approve: 1, status: 1 },
       group: ['category'],
       raw: true,
     });

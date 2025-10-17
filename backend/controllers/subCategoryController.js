@@ -1,7 +1,9 @@
 const { Op } = require('sequelize');
 const moment = require('moment');
+const sequelize = require('../config/database');
 const SubCategories = require('../models/SubCategories');
 const Categories = require('../models/Categories');
+const Products = require('../models/Products');
 
 exports.createSubCategories = async (req, res) => {
   try {
@@ -18,6 +20,15 @@ exports.createSubCategories = async (req, res) => {
 
 exports.getAllSubCategories = async (req, res) => {
   try {
+    const isDeleted = req.query.is_delete;
+    const status = req.query.status;
+    const whereCondition = {};    
+    if (typeof isDeleted !== 'undefined') {
+      whereCondition.is_delete = parseInt(isDeleted);
+    }
+    if (typeof status !== 'undefined') {
+      whereCondition.status = parseInt(status);
+    }
     const subCategories = await SubCategories.findAll({ order: [['id', 'ASC']],
       include: [
         {
@@ -26,11 +37,23 @@ exports.getAllSubCategories = async (req, res) => {
           attributes: ['id', 'name'],
         },
       ],
+      where: whereCondition,
+    });
+    const productCounts = await Products.findAll({
+      attributes: ['sub_category', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      where: { is_delete: 0, is_approve: 1, status: 1 },
+      group: ['sub_category'],
+      raw: true,
+    });
+    const countMap = {};
+    productCounts.forEach(item => {
+      countMap[item.sub_category] = parseInt(item.count);
     });
     const modifiedSubCategories = subCategories.map(sub_categories => {
       const subCategoriesData = sub_categories.toJSON();
       subCategoriesData.getStatus = subCategoriesData.status === 1 ? 'Active' : 'Inactive';
       subCategoriesData.category_name = subCategoriesData.Categories?.name || null;
+      subCategoriesData.product_count = countMap[subCategoriesData.id] || 0;
       delete subCategoriesData.Categories;
       return subCategoriesData;
     });

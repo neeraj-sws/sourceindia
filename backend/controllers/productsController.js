@@ -160,7 +160,14 @@ exports.getAllProducts = async (req, res) => {
 
 exports.getProductsById = async (req, res) => {
   try {
-    const product = await Products.findByPk(req.params.id, {
+    const identifier = req.params.id;
+
+    // Check if identifier is a number (ID) or a string (slug)
+    const isNumeric = /^\d+$/.test(identifier);
+
+    // Fetch product by ID or Slug
+    const product = await Products.findOne({
+      where: isNumeric ? { id: identifier } : { slug: identifier },
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
@@ -169,12 +176,15 @@ exports.getProductsById = async (req, res) => {
         { model: UploadImage, as: 'file', attributes: ['file'] }
       ]
     });
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+
     const productData = product.toJSON();
     const categorySellString = productData.company_info?.category_sell || '';
     const allowedCategories = categorySellString.split(',').map(id => id.trim());
+
     const allCompanies = await CompanyInfo.findAll({
       where: {
         id: { [Op.ne]: productData.company_info?.id }
@@ -188,18 +198,22 @@ exports.getProductsById = async (req, res) => {
         }
       ]
     });
+
     const recommendedCompanies = allCompanies.filter(company => {
       if (!company.category_sell) return false;
       const companyCategories = company.category_sell.split(',').map(id => id.trim());
       return companyCategories.some(cat => allowedCategories.includes(cat));
     });
+
     const fileIds = productData.file_ids ? productData.file_ids.split(',') : [];
+
     const associatedImages = await UploadImage.findAll({
       where: { id: { [Op.in]: fileIds } },
       attributes: ['id', 'file'],
     });
+
     const reviews = await ReviewRating.findAll({
-      where: { product_id: req.params.id },
+      where: { product_id: product.id },
       attributes: ['id', 'rating', 'review', 'created_at'],
       include: [{
         model: Users,
@@ -207,6 +221,7 @@ exports.getProductsById = async (req, res) => {
         attributes: ['id', 'fname', 'lname']
       }]
     });
+
     const formattedReviews = reviews.map(r => ({
       id: r.id,
       rating: r.rating,
@@ -214,6 +229,7 @@ exports.getProductsById = async (req, res) => {
       created_at: r.created_at,
       reviewer_name: r.reviewer ? `${r.reviewer.fname} ${r.reviewer.lname}` : null
     }));
+
     const similarProducts = await Products.findAll({
       where: {
         category: product.category,
@@ -224,6 +240,7 @@ exports.getProductsById = async (req, res) => {
         { model: UploadImage, as: 'file', attributes: ['file'] }
       ],
     });
+
     const formattedSimilarProducts = await Promise.all(similarProducts.map(async (p) => {
       return {
         id: p.id,
@@ -231,6 +248,7 @@ exports.getProductsById = async (req, res) => {
         file_name: p.file?.file || null,
       };
     }));
+
     const response = {
       ...productData,
       category_name: productData.Categories?.name || null,
@@ -240,19 +258,22 @@ exports.getProductsById = async (req, res) => {
       file_name: productData.file?.file || null,
       images: associatedImages.map(image => ({ id: image.id, file: image.file })),
       reviews: formattedReviews,
-      similar_products: formattedSimilarProducts
+      similar_products: formattedSimilarProducts,
+      recommended_companies: recommendedCompanies.map(c => ({
+        id: c.id,
+        organization_name: c.organization_name,
+        category_sell: c.category_sell,
+        company_logo_file: c.companyLogo?.file || null
+      }))
     };
-    response.recommended_companies = recommendedCompanies.map(c => ({
-      id: c.id,
-      organization_name: c.organization_name,
-      category_sell: c.category_sell,
-      company_logo_file: c.companyLogo?.file || null
-    }));
+
+    // Clean up unwanted fields
     delete response.Categories;
     delete response.SubCategories;
     delete response.Color;
     delete response.company_info;
     delete response.file;
+
     res.json(response);
   } catch (err) {
     console.error(err);
@@ -528,18 +549,29 @@ exports.getAllCompanyInfo = async (req, res) => {
 
 exports.getCompanyInfoById = async (req, res) => {
   try {
-    const company = await CompanyInfo.findByPk(req.params.id, {
+    const identifier = req.params.id;
+
+    // Check if identifier is numeric (ID) or a string slug
+    const isNumeric = /^\d+$/.test(identifier);
+
+    // Fetch company by ID or organization_slug
+    const company = await CompanyInfo.findOne({
+      where: isNumeric ? { id: identifier } : { organization_slug: identifier },
       include: [
         { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
         { model: Activity, as: 'Activity', attributes: ['name'] },
         { model: UploadImage, as: 'companyLogo', attributes: ['file'] },
       ]
     });
+
     if (!company) {
       return res.status(404).json({ message: 'Company not found' });
     }
+
     const data = company.toJSON();
     data.company_logo_file = data.companyLogo?.file || null;
+
+    // Get products belonging to the company
     const products = await Products.findAll({
       where: { company_id: company.id, is_delete: 0, status: 1, is_approve: 1 },
       attributes: ['id', 'title'],
@@ -547,6 +579,7 @@ exports.getCompanyInfoById = async (req, res) => {
         { model: UploadImage, as: 'file', attributes: ['file'] }
       ]
     });
+
     const productList = products.map(product => {
       const p = product.toJSON();
       return {
@@ -555,9 +588,12 @@ exports.getCompanyInfoById = async (req, res) => {
         image: p.file?.file || null
       };
     });
+
+    // Get category names from stored category IDs
     const categoryIdsStr = data.category_sell;
     let categoryNames = [];
     let allowedCategories = [];
+
     if (categoryIdsStr) {
       allowedCategories = categoryIdsStr.split(',').map(id => id.trim());
       const categoryIds = allowedCategories.map(id => parseInt(id)).filter(id => !isNaN(id));
@@ -567,16 +603,21 @@ exports.getCompanyInfoById = async (req, res) => {
       });
       categoryNames = categories.map(cat => cat.name);
     }
+
+    // Get sub-category names
     const subCategoryIdsStr = data.sub_category;
     let subCategoryNames = [];
+
     if (subCategoryIdsStr) {
       const subCategoryIds = subCategoryIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-      const categories = await SubCategories.findAll({
+      const subCategories = await SubCategories.findAll({
         where: { id: { [Op.in]: subCategoryIds } },
         attributes: ['name']
       });
-      subCategoryNames = categories.map(cat => cat.name);
+      subCategoryNames = subCategories.map(cat => cat.name);
     }
+
+    // Fetch other companies for recommendations
     const allCompanies = await CompanyInfo.findAll({
       where: {
         id: { [Op.ne]: company.id }
@@ -590,11 +631,13 @@ exports.getCompanyInfoById = async (req, res) => {
         }
       ]
     });
+
     const recommendedCompanies = allCompanies.filter(c => {
       if (!c.category_sell) return false;
       const companyCategories = c.category_sell.split(',').map(id => id.trim());
       return companyCategories.some(cat => allowedCategories.includes(cat));
     });
+
     const response = {
       ...data,
       coreactivity_name: data.CoreActivity?.name || null,
@@ -609,18 +652,18 @@ exports.getCompanyInfoById = async (req, res) => {
         company_logo_file: c.companyLogo?.file || null
       }))
     };
+
+    // Clean up included models
     delete response.CoreActivity;
     delete response.Activity;
-    delete response.Categories;
-    delete response.SubCategories;
     delete response.companyLogo;
+
     res.json(response);
   } catch (err) {
     console.error("Error fetching company info:", err);
     res.status(500).json({ error: err.message });
   }
 };
-
 
 exports.getAllProductsServerSide = async (req, res) => {
   try {

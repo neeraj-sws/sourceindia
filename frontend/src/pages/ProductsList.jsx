@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import API_BASE_URL, { ROOT_URL } from './../config'; // Assuming you have ROOT_URL for images
+import API_BASE_URL, { ROOT_URL } from './../config';
 
 const ProductsList = () => {
-  const [categories, setCategories] = useState([]);
   const [productsData, setProductsData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [selectedSubCategories, setSelectedSubCategories] = useState([]);
 
-  // Fetch categories once on mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/categories?is_delete=0&status=1`);
         const cats = res.data || [];
-        // Filter categories that have products
         const filtered = cats.filter(cat => cat.product_count > 0);
         setCategories(filtered);
       } catch (err) {
@@ -24,16 +24,29 @@ const ProductsList = () => {
     fetchCategories();
   }, []);
 
-  // Fetch products when selectedCategories changes
+  useEffect(() => {
+    const fetchSubCategories = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/sub_categories?is_delete=0&status=1`);
+        const subs = res.data || [];
+        const filtered = subs.filter(sub => sub.product_count > 0);
+        setSubCategories(filtered);
+      } catch (err) {
+        console.error('Error fetching sub-categories:', err);
+      }
+    };
+    fetchSubCategories();
+  }, []);
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         let url = `${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1`;
-        if (selectedCategories.length === 1) {
-          url += `&category=${selectedCategories[0]}`;
-        } else if (selectedCategories.length > 1) {
-          // If your API supports multiple category filter by comma separated
+        if (selectedCategories.length > 0) {
           url += `&category=${selectedCategories.join(',')}`;
+        }
+        if (selectedSubCategories.length > 0) {
+          url += `&sub_category=${selectedSubCategories.join(',')}`;
         }
         const res = await axios.get(url);
         const products = res.data.products || [];
@@ -42,9 +55,8 @@ const ProductsList = () => {
         console.error('Error fetching products:', err);
       }
     };
-
     fetchProducts();
-  }, [selectedCategories]);
+  }, [selectedCategories, selectedSubCategories]);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value.toLowerCase());
@@ -58,7 +70,14 @@ const ProductsList = () => {
     );
   };
 
-  // Filter products by search term on client side
+  const handleSubCategoryCheckboxChange = (subCategoryId) => {
+    setSelectedSubCategories(prev =>
+      prev.includes(subCategoryId)
+        ? prev.filter(id => id !== subCategoryId)
+        : [...prev, subCategoryId]
+    );
+  };
+
   const filteredProducts = productsData.filter(product =>
     product.title.toLowerCase().includes(searchTerm)
   );
@@ -67,27 +86,10 @@ const ProductsList = () => {
     <div className="bg-dark text-white min-vh-100">
       <nav className="bg-secondary py-3 mb-4">
         <div className="container position-relative">
-          <input
-            type="text"
-            onChange={handleSearch}
-            placeholder="Search products..."
-            className="form-control ps-5"
-          />
-          <svg
-            className="position-absolute top-50 start-0 translate-middle-y ms-3"
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-            stroke="currentColor"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="10" cy="10" r="7" />
-            <path d="M21 21l-6 -6" />
-          </svg>
+          <div className="input-group flex-nowrap">
+            <i className="bx bx-search input-group-text" />
+            <input type="text" className="form-control" onChange={handleSearch} placeholder="Search products..." />
+          </div>
         </div>
       </nav>
 
@@ -95,7 +97,6 @@ const ProductsList = () => {
         <div className="row">
           {/* Filters */}
           <aside className="col-12 col-md-3 mb-4">
-            <h2 className="fs-4">Filters</h2>
             <h3 className="fs-5 mb-3">Category</h3>
             <div className="d-flex flex-column gap-2">
               {categories.map(cat => (
@@ -107,15 +108,29 @@ const ProductsList = () => {
                     checked={selectedCategories.includes(cat.id)}
                     onChange={() => handleCheckboxChange(cat.id)}
                   />
-                  <label
-                    htmlFor={`cat-${cat.id}`}
-                    className="form-check-label text-capitalize"
-                  >
+                  <label htmlFor={`cat-${cat.id}`} className="form-check-label text-capitalize">
                     {cat.name} ({cat.product_count})
                   </label>
                 </div>
               ))}
             </div>
+            <h3 className="fs-5 mt-4 mb-3">Sub Category</h3>
+              <div className="d-flex flex-column gap-2">
+                {subCategories.map(sub => (
+                  <div className="form-check" key={sub.id}>
+                    <input
+                      type="checkbox"
+                      id={`subcat-${sub.id}`}
+                      className="form-check-input"
+                      checked={selectedSubCategories.includes(sub.id)}
+                      onChange={() => handleSubCategoryCheckboxChange(sub.id)}
+                    />
+                    <label htmlFor={`subcat-${sub.id}`} className="form-check-label text-capitalize">
+                      {sub.name} ({sub.product_count})
+                    </label>
+                  </div>
+                ))}
+              </div>
           </aside>
 
           {/* Products grid */}
