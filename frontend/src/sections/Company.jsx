@@ -27,7 +27,7 @@ const Company = ({ limit }) => {
             <div className="row gx-3">
               {companies.map((item) => (
                 <div className="col-md-2 mb-3">
-                  <a href="#" className="d-block h-100">
+                  <Link to={`/companies/${item.organization_slug}`} className="d-block h-100">
                     <div key={item.id} className="companyBox px-3 py-4 bg-white border h-100 d-flex align-items-center justify-content-center">
                       <div className="ComImg">
                         <ImageFront
@@ -38,11 +38,11 @@ const Company = ({ limit }) => {
                         />
                       </div>
                     </div>
-                  </a>
+                  </Link>
                 </div>
               ))}
               <div className="col-md-2 mb-3">
-                <Link to="/companies" className="d-block h-100">
+                <Link to="/companies"  className="d-block h-100">
                   <div className="companyBox px-3 py-4 bg-white border text-center h-100">
                     <div className="ComImg">
                       <img src="/morecompany.jpg" alt="company" className="img-fluid p-3" />

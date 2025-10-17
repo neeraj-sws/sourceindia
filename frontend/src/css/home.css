@@ -15,6 +15,13 @@ body {
     --box-shadow: 0px 4px 4px 0px rgba(219, 219, 219, 0.25);
 }
 
+.btn-orange {
+    background-color: var(--color-orange);
+
+    border-color: var(--color-orange);
+    color: #fff;
+}
+
 .text-orange {
     color: var(--color-orange);
 }
@@ -255,4 +262,21 @@ body {
 .card.supportTicket:hover h6,
 .card.supportTicket:hover i {
     color: #fff;
+}
+
+.productTable th {
+    padding-left: 0;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.companyLogo {
+    height: 124px;
+    object-fit: contain;
+    border: 1px solid #eeeeee;
+}
+
+.company-card img {
+    object-fit: contain;
+    height: auto;
 }
