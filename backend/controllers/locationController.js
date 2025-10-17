@@ -1,7 +1,10 @@
 const { Op } = require('sequelize');
+const sequelize = require('../config/database');
 const Countries = require('../models/Countries');
 const States = require('../models/States');
 const Cities = require('../models/Cities');
+const Products = require('../models/Products');
+const Users = require('../models/Users');
 
 exports.getAllCountries = async (req, res) => {
   try {
@@ -40,7 +43,41 @@ exports.getStatesByCountry = async (req, res) => {
       where: { country_id },
       order: [['id', 'ASC']],
     });
-    res.json(states);
+    const productCounts = await Products.findAll({
+      attributes: [
+        [sequelize.col('users.state'), 'state'],
+        [sequelize.fn('COUNT', sequelize.col('Products.id')), 'count']
+      ],
+      include: [
+        {
+          model: Users,
+          as: 'Users',
+          attributes: [],
+          where: {
+            country: country_id
+          }
+        }
+      ],
+      where: {
+        is_delete: 0,
+        is_approve: 1,
+        status: 1,
+      },
+      group: ['users.state'],
+      raw: true,
+    });
+    const countMap = {};
+    productCounts.forEach(item => {
+      countMap[item.state] = parseInt(item.count);
+    });
+    const modifiedStates = states.map(state => {
+      const stateData = state.toJSON();
+      return {
+        ...stateData,
+        product_count: countMap[state.id] || 0,
+      };
+    });
+    res.json(modifiedStates);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -12,10 +12,15 @@ import KnowledgeCenter from '../pages/KnowledgeCenter';
 import ContactUs from '../pages/ContactUs';
 import GetSupport from '../pages/GetSupport';
 import Registration from '../pages/Registration';
+import Profile from '../pages/Profile';
+import Dashboard from '../pages/Dashboard';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AlertProvider } from '../context/AlertContext';
+
+import PrivateRoute from '../routes/PrivateRoute';
+import PublicRoute from '../routes/PublicRoute';
 
 function FrontLayout() {
   return (
@@ -26,7 +31,6 @@ function FrontLayout() {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
           <Route path="/about" element={<About />} />
           <Route path="/companies" element={<Companies />} />
           <Route path="/categories" element={<Categories />} />
@@ -34,7 +38,10 @@ function FrontLayout() {
           <Route path="/knowledge-center" element={<KnowledgeCenter />} />
           <Route path="/contact-us" element={<ContactUs />} />
           <Route path="/get-support" element={<GetSupport />} />
-          <Route path="/registration" element={<Registration />} />
+          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/registration" element={<PublicRoute><Registration /></PublicRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         </Routes>
       </main>
       <FrontFooter />

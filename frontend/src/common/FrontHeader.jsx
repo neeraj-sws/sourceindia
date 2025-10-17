@@ -1,8 +1,53 @@
-import React from 'react'
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_BASE_URL from '../config';
 import "../css/home.css";
 
 const FrontHeader = () => {
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('user_token'));
+  const [user, setUser] = useState(null);
+  const token = localStorage.getItem('user_token');
+
+  useEffect(() => {
+    // Optional: sync state with token change
+    const checkToken = () => {
+      setIsLoggedIn(!!localStorage.getItem('user_token'));
+    };
+
+    // Listen for localStorage changes across tabs
+    window.addEventListener('storage', checkToken);
+
+    return () => {
+      window.removeEventListener('storage', checkToken);
+    };
+  }, []);
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    localStorage.removeItem('user_token');
+    setIsLoggedIn(false); // update state
+    navigate('/login');
+  };
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!token) return;
+      try {
+        const response = await axios.get(`${API_BASE_URL}/signup/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setUser(response.data.user);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchProfile();
+  }, [token]);
+
   return (
     <>
       <header className='mainHeader'>
@@ -28,10 +73,43 @@ const FrontHeader = () => {
             </div>
             <div className="lastbox">
               <div className="d-flex align-items-center gap-2">
-                <Link to="/get-support" className="thLink text-center me-2"><i className="lni lni-question-circle d-block"></i>
-                  Support</Link>
-                <Link to="/login" className="btn btn-sm btnType1">Sign In</Link>
-                <Link to="/registration" className="btn btn-sm btn-primary">Join Free</Link>
+                <Link to="/get-support" className="thLink text-center me-2">
+                  <i className="lni lni-question-circle d-block"></i>Support
+                </Link>
+                {isLoggedIn && user ? (
+                  <div className="dropdown">
+                    <div
+                      className="d-flex align-items-center dropdown-toggle"
+                      id="userDropdown"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      role="button"
+                    >
+                      <div className="position-relative me-2">
+                        <div className="rounded-circle bg-light d-flex align-items-center justify-content-center"
+                          style={{ width: "40px", height: "40px", border: "1px solid #ccc" }}>
+                          <i className="bi bi-person"></i>
+                        </div>
+                        <span className="badge bg-primary text-white position-absolute top-0 start-100 translate-middle badge-sm">
+                          {user.is_seller ? 'Seller' : 'Buyer'}
+                        </span>
+                      </div>
+                      <div className="text-start">
+                        <div className="fw-bold">{user.fname}</div>
+                        <div className="fw-bold">{user.lname}</div>
+                      </div>
+                    </div>
+                    <ul className="dropdown-menu dropdown-menu-end mt-2" aria-labelledby="userDropdown">
+                      <li><Link className="dropdown-item" to="/dashboard">Dashboard</Link></li>
+                      <li><Link className="dropdown-item" to="#" onClick={handleLogout}>Logout</Link></li>
+                    </ul>
+                  </div>
+                ) : (
+                  <>
+                    <Link to="/login" className="btn btn-sm btnType1">Sign In</Link>
+                    <Link to="/registration" className="btn btn-sm btn-primary">Join Free</Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -40,7 +118,7 @@ const FrontHeader = () => {
           <div className="container">
             <div className="d-flex flex-wrap justify-content-between align-items-center">
               <div>
-                <Link href="/" className="d-flex align-items-center text-decoration-none">
+                <Link to="/" className="d-flex align-items-center text-decoration-none">
                   <img src="/logo.png" alt="Logo" height="40" className="me-2" />
                 </Link>
               </div>
@@ -82,7 +160,7 @@ const FrontHeader = () => {
                 </nav>
               </div>
               <div>
-                <a href="https://elcina.com" className="post-btn">ELCINA Website</a>
+                <a href="https://elcina.com" className="post-btn" target="_blank">ELCINA Website</a>
               </div>
             </div>
           </div>

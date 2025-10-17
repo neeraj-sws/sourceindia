@@ -12,8 +12,65 @@ const Companyinfo = require('../models/CompanyInfo');
 const MembershipDetail = require('../models/MembershipDetail');
 const { getTransporter } = require('../helpers/mailHelper');
 const { generateUniqueSlug  } = require('../helpers/mailHelper');
-
 const nodemailer = require('nodemailer');
+const secretKey = 'your_secret_key';
+const jwt = require('jsonwebtoken');
+
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+    const user = await Users.findOne({
+      where: { email: email, is_delete: 0 },
+    });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+    const token = jwt.sign({ id: user.id, email: user.email, is_seller: user.is_seller }, 'your_jwt_secret_key', {
+      expiresIn: '1h',
+    });
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        fname: user.fname,
+        lname: user.lname,
+        email: user.email,
+        is_seller: user.is_seller,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id; // Retrieved from token via middleware
+
+    const user = await Users.findOne({
+      where: { id: userId, is_delete: 0 },
+      attributes: { exclude: ['password'] }, // Don't return the password
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 // Send OTP
 exports.sendOtp = async (req, res) => {

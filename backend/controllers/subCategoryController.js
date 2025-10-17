@@ -20,15 +20,6 @@ exports.createSubCategories = async (req, res) => {
 
 exports.getAllSubCategories = async (req, res) => {
   try {
-    const isDeleted = req.query.is_delete;
-    const status = req.query.status;
-    const whereCondition = {};    
-    if (typeof isDeleted !== 'undefined') {
-      whereCondition.is_delete = parseInt(isDeleted);
-    }
-    if (typeof status !== 'undefined') {
-      whereCondition.status = parseInt(status);
-    }
     const subCategories = await SubCategories.findAll({ order: [['id', 'ASC']],
       include: [
         {
@@ -37,23 +28,11 @@ exports.getAllSubCategories = async (req, res) => {
           attributes: ['id', 'name'],
         },
       ],
-      where: whereCondition,
-    });
-    const productCounts = await Products.findAll({
-      attributes: ['sub_category', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
-      where: { is_delete: 0, is_approve: 1, status: 1 },
-      group: ['sub_category'],
-      raw: true,
-    });
-    const countMap = {};
-    productCounts.forEach(item => {
-      countMap[item.sub_category] = parseInt(item.count);
     });
     const modifiedSubCategories = subCategories.map(sub_categories => {
       const subCategoriesData = sub_categories.toJSON();
       subCategoriesData.getStatus = subCategoriesData.status === 1 ? 'Active' : 'Inactive';
       subCategoriesData.category_name = subCategoriesData.Categories?.name || null;
-      subCategoriesData.product_count = countMap[subCategoriesData.id] || 0;
       delete subCategoriesData.Categories;
       return subCategoriesData;
     });
@@ -91,22 +70,54 @@ exports.getSubCategoriesByCategory = async (req, res) => {
 
 exports.getSubCategoriesByCategories = async (req, res) => {
   try {
-    const { categories } = req.body;  // Expecting the categories to be sent as an array in the request body
+    const { categories } = req.body;
     if (!categories || !Array.isArray(categories) || categories.length === 0) {
       return res.status(400).json({ error: 'categories array is required and cannot be empty' });
     }
 
-    // Fetch subcategories for multiple categories
-    const interestSubCategories = await SubCategories.findAll({
+    // Fetch subcategories with category info
+    const subCategories = await SubCategories.findAll({
       where: {
         category: {
-          [Op.in]: categories,  // Using Sequelize's Op.in to match any of the categories in the array
+          [Op.in]: categories,
         },
+        is_delete: 0,
+        status: 1
       },
       order: [['id', 'ASC']],
+      include: [
+        {
+          model: Categories,
+          as: 'Categories',
+          attributes: ['id', 'name'],
+        },
+      ],
     });
 
-    res.json(interestSubCategories);
+    // Fetch product counts grouped by sub_category
+    const productCounts = await Products.findAll({
+      attributes: ['sub_category', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      where: { is_delete: 0, is_approve: 1, status: 1 },
+      group: ['sub_category'],
+      raw: true,
+    });
+
+    const countMap = {};
+    productCounts.forEach(item => {
+      countMap[item.sub_category] = parseInt(item.count);
+    });
+
+    // Modify subcategories to add status text, category name, and product count
+    const modifiedSubCategories = subCategories.map(sub_categories => {
+      const subCategoriesData = sub_categories.toJSON();
+      subCategoriesData.getStatus = subCategoriesData.status === 1 ? 'Active' : 'Inactive';
+      subCategoriesData.category_name = subCategoriesData.Categories?.name || null;
+      subCategoriesData.product_count = countMap[subCategoriesData.id] || 0;
+      delete subCategoriesData.Categories;
+      return subCategoriesData;
+    });
+
+    res.json(modifiedSubCategories);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

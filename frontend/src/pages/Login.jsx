@@ -46,7 +46,7 @@ const Login = () => {
         setErrors('');
         if (!validateForm()) return;
         try {
-        const response = await axios.post(`${API_BASE_URL}/buyers/login`, {
+        const response = await axios.post(`${API_BASE_URL}/signup/login`, {
             email: formData.email,
             password: formData.password
         });
