@@ -27,14 +27,7 @@ const Banner = () => {
           <div id="carouselExampleCaptions" className="carousel slide" data-bs-ride="carousel">
             <div className="carousel-inner">
               {homeBanner.map((slider, index) => (
-
                 <div className={`carousel-item ${index === 0 ? 'active' : ''}`} key={slider.id || index}>
-                  <img
-                    src={`${ROOT_URL}/${slider.file_name}`}
-                    className="d-block w-100 object-fit-cover d-none"
-                    alt={slider.title}
-                    height={500}
-                  />
                   <img
                     src={`${ROOT_URL}/${slider.file_name}`}
                     className="d-block w-100 object-fit-cover"
@@ -49,17 +42,34 @@ const Banner = () => {
                 </div>
               ))}
             </div>
-            <button className="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
-              <span className="carousel-control-prev-icon" aria-hidden="true" />
-              <span className="visually-hidden">Previous</span>
-            </button>
-            <button className="carousel-control-next" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="next">
-              <span className="carousel-control-next-icon" aria-hidden="true" />
-              <span className="visually-hidden">Next</span>
-            </button>
+
+            {homeBanner.length > 1 && (
+              <>
+                <button
+                  className="carousel-control-prev"
+                  type="button"
+                  data-bs-target="#carouselExampleCaptions"
+                  data-bs-slide="prev"
+                >
+                  <span className="carousel-control-prev-icon" aria-hidden="true" />
+                  <span className="visually-hidden">Previous</span>
+                </button>
+
+                <button
+                  className="carousel-control-next"
+                  type="button"
+                  data-bs-target="#carouselExampleCaptions"
+                  data-bs-slide="next"
+                >
+                  <span className="carousel-control-next-icon" aria-hidden="true" />
+                  <span className="visually-hidden">Next</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
-      </div >
+      </div>
+
     </>
   );
 };

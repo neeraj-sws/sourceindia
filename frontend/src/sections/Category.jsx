@@ -48,7 +48,7 @@ const Category = ({isHome, limit}) => {
           </div>
         </div>
         {isHome &&
-        <div className="text-center mt-3"><Link to="/categories" className="btn btn-primary">View All Categories</Link></div>
+        <div className="text-center mt-5"><Link to="/categories" className="btn btn-primary">View All Categories</Link></div>
         }
       </section>
 

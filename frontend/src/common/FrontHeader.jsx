@@ -40,7 +40,7 @@ const FrontHeader = () => {
           <div className="container">
             <div className="d-flex flex-wrap justify-content-between align-items-center">
               <div>
-                <Link href="/" className="d-flex align-items-center text-decoration-none">
+                <Link to="/" className="d-flex align-items-center text-decoration-none">
                   <img src="/logo.png" alt="Logo" height="40" className="me-2" />
                 </Link>
               </div>
