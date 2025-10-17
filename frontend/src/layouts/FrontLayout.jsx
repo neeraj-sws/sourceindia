@@ -14,6 +14,9 @@ import GetSupport from '../pages/GetSupport';
 import Registration from '../pages/Registration';
 import CreateTicket from '../pages/CreateTicket';
 import TrackTicket from '../pages/TrackTicket';
+import ProductDetail from '../pages/ProductsDetail';
+import CompanyDetail from '../pages/CompanyDetail';
+import Enquiry from '../pages/Enquiry';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -31,14 +34,17 @@ function FrontLayout() {
             <Route path="/login" element={<Login />} />
             <Route path="/about" element={<About />} />
             <Route path="/companies" element={<Companies />} />
+            <Route path="/companies/:slug" element={<CompanyDetail />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/products" element={<ProductsList />} />
+            <Route path="/products/:slug" element={<ProductDetail />} />
             <Route path="/knowledge-center" element={<KnowledgeCenter />} />
             <Route path="/contact-us" element={<ContactUs />} />
             <Route path="/get-support" element={<GetSupport />} />
             <Route path="/registration" element={<Registration />} />
             <Route path="/get-support/createticket" element={<CreateTicket />} />
             <Route path="/get-support/trackticket" element={<TrackTicket />} />
+            <Route path="/open-enquiry" element={<Enquiry />} />
           </Routes>
         </main>
         <FrontFooter />

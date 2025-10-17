@@ -33,6 +33,7 @@
     "select2": "^4.1.0-rc.0",
     "select2-bootstrap-theme": "^0.1.0-beta.10",
     "simplebar": "^6.3.2",
+    "swiper": "^12.0.2",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

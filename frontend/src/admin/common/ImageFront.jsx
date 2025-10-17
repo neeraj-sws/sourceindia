@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const ImageFront = ({ src, alt = 'Image', width = 80, height = 80, showFallback = true }) => {
+const ImageFront = ({ src, alt = 'Image', width = 80, height = 80, showFallback = true, style = null, className = null, defaultimg = null }) => {
   const [imageExists, setImageExists] = useState(false);
 
   useEffect(() => {
@@ -17,7 +17,8 @@ const ImageFront = ({ src, alt = 'Image', width = 80, height = 80, showFallback 
 
   if (!imageExists) {
     if (showFallback) {
-      return (<img className="img-fluid" src="/default.png" alt="Fallback" />);
+      const fallbackSrc = defaultimg || '/default.png';
+      return (<img className={`img-fluid ${className}`} src={fallbackSrc} alt="Fallback" style={style} />);
     } else {
       return null;
     }
