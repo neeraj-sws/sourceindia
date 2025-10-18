@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
@@ -76,12 +76,16 @@ exports.createProducts = async (req, res) => {
 exports.getAllProducts = async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const page = req.query.page ? parseInt(req.query.page) : null;
+    const offset = limit && page ? (page - 1) * limit : null;
+
     const { user_state, sort_by, title, category, sub_category, company_id, is_delete, status, is_approve } = req.query;
+
     let order = [['id', 'ASC']];
     if (sort_by === 'newest') order = [['created_at', 'DESC']];
-    else if (sort_by === 'oldest') order = [['created_at', 'ASC']];
     else if (sort_by === 'a_to_z') order = [['title', 'ASC']];
     else if (sort_by === 'z_to_a') order = [['title', 'DESC']];
+
     const productWhereClause = {};
     if (title) productWhereClause.title = { [Op.iLike]: `%${title}%` };
     if (category) {
@@ -105,15 +109,17 @@ exports.getAllProducts = async (req, res) => {
     if (is_approve) {
       productWhereClause.is_approve = is_approve;
     }
+
     let userWhereClause = {};
     if (user_state) {
       const stateIds = parseCsv(user_state);
       userWhereClause.state = { [Op.in]: stateIds };
     }
-    const products = await Products.findAll({
+
+    const { count, rows } = await Products.findAndCountAll({
       where: productWhereClause,
       order,
-      ...(limit && { limit }),
+      ...(limit && offset !== null ? { limit, offset } : {}),
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
@@ -125,13 +131,12 @@ exports.getAllProducts = async (req, res) => {
           as: 'Users',
           attributes: ['id', 'fname', 'lname', 'state'],
           where: Object.keys(userWhereClause).length ? userWhereClause : undefined,
-          include: [
-            { model: States, as: 'state_data', attributes: ['id', 'name'] }
-          ]
+          include: [{ model: States, as: 'state_data', attributes: ['id', 'name'] }]
         }
-      ],
+      ]
     });
-    const modifiedProducts = products.map(product => {
+
+    const modifiedProducts = rows.map(product => {
       const productsData = product.toJSON();
       productsData.getStatus = productsData.status === 1 ? 'Public' : 'Draft';
       productsData.category_name = productsData.Categories?.name || null;
@@ -141,16 +146,20 @@ exports.getAllProducts = async (req, res) => {
       productsData.file_name = productsData.file?.file || null;
       productsData.state_name = productsData.Users?.state_data?.name || null;
       productsData.user_full_name = productsData.Users ? `${productsData.Users.fname} ${productsData.Users.lname}` : null;
+
+      // Remove unnecessary data
       delete productsData.Categories;
       delete productsData.SubCategories;
       delete productsData.Color;
       delete productsData.company_info;
       delete productsData.file;
       delete productsData.Users;
+
       return productsData;
     });
+
     res.json({
-      total: modifiedProducts.length,
+      total: count, // total count of all matching products
       products: modifiedProducts
     });
   } catch (err) {
@@ -552,11 +561,32 @@ exports.getAllCompanyInfo = async (req, res) => {
       options.offset = (page - 1) * limit;
     }
     const companies = await CompanyInfo.findAll(options);
+    const productCounts = await Products.findAll({
+      attributes: [
+        'company_id',
+        [fn('COUNT', col('id')), 'count']
+      ],
+      where: {
+        is_delete: 0,
+        is_approve: 1,
+        status: 1,
+      },
+      group: ['company_id'],
+      raw: true,
+    });
+    const countMap = {};
+    productCounts.forEach(item => {
+      countMap[item.company_id] = parseInt(item.count);
+    });
     const modifiedCompanies = companies.map(company => {
       const companyData = company.toJSON();
-      companyData.company_logo_file = companyData.companyLogo?.file || null;
+      const file = companyData.companyLogo?.file || null;
       delete companyData.companyLogo;
-      return companyData;
+      return {
+        ...companyData,
+        company_logo_file: file,
+        product_count: countMap[companyData.id] || 0,
+      };
     });
     res.json(modifiedCompanies);
   } catch (err) {

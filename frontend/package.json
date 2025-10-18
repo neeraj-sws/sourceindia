@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "vite"
+    "dev": "vite"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^41.4.2",

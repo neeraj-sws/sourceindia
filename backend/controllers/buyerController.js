@@ -18,94 +18,10 @@ const InterestSubCategories = require('../models/InterestSubCategories');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
-const secretKey = 'your_secret_key';
-const jwt = require('jsonwebtoken');
-
-exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
-    const user = await Users.findOne({
-      where: { email: email, is_delete: 0 },
-    });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-    const token = jwt.sign({ id: user.id, email: user.email, is_seller: user.is_seller }, 'your_jwt_secret_key', {
-      expiresIn: '1h',
-    });
-    res.json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        fname: user.fname,
-        lname: user.lname,
-        email: user.email,
-        is_seller: user.is_seller,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
 
 function createSlug(inputString) {
   return inputString.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
 }
-
-exports.login = async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    // Find user by email
-    const user = await Users.findOne({
-      where: { email },
-      attributes: ['id', 'fname', 'lname', 'email', 'password', 'status'] // Include password for comparison
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Compare the provided password with the hashed password stored in DB
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, status: user.status }, // Add other info as needed
-      secretKey,
-      { expiresIn: '1h' } // Expiry time for the token
-    );
-
-    // Send the token to the client
-    res.status(200).json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        fname: user.fname,
-        lname: user.lname,
-        email: user.email
-      }
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
 
 exports.createBuyer = async (req, res) => {
   const upload = getMulterUpload();

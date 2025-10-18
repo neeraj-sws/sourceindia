@@ -10,7 +10,7 @@ const Product = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=6`);
+        const res = await axios.get(`${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=6&page=1`);
         setProducts(res.data.products);
       } catch (err) {
         console.error("Error fetching categories:", err);
@@ -18,8 +18,6 @@ const Product = () => {
     };
     fetchProducts();
   }, []);
-
-
 
   return (
     <>
@@ -31,8 +29,8 @@ const Product = () => {
 
           <div className="productGrid">
             <div className="row">
-              {products.map((product) => (
-                <div className="col-lg-4 col-md-3 col-sm-6 mb-4">
+              {products.map((product, index) => (
+                <div className="col-lg-4 col-md-3 col-sm-6 mb-4" key={index}>
                   <div key={product.id} className="productBox p-3 bg-white">
                     <div className="cateproduct">
                       <p>{product.category_name}</p>
