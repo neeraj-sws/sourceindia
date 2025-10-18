@@ -52,7 +52,11 @@ const FrontHeader = () => {
         <div className='container'>
           <div className="top-bar px-3 d-flex justify-content-between align-items-center">
             <div className="welcomeBox d-flex">
-              <div>Welcome User!</div>
+              {isLoggedIn && user ? (
+                <span>Welcome <b className="text-orange">{user.is_seller ? 'Seller' : 'Buyer'}</b>!</span>
+              ) : (
+                <span>Welcome User!</span>
+              )}
               <div className="text-center text-md-start d-none d-md-block">
                 <span className="ms-3">Support: +91-11-41615985</span>
               </div>
@@ -86,15 +90,15 @@ const FrontHeader = () => {
                       <div className="position-relative me-2">
                         <div className="rounded-circle bg-light d-flex align-items-center justify-content-center"
                           style={{ width: "40px", height: "40px", border: "1px solid #ccc" }}>
-                          <i className="bi bi-person"></i>
+                          <i className="bx bx-user"></i>
                         </div>
-                        <span className="badge bg-primary text-white position-absolute top-0 start-100 translate-middle badge-sm">
+                        {/* <span className="badge bg-primary text-white position-absolute badge-sm userbadge">
                           {user.is_seller ? 'Seller' : 'Buyer'}
-                        </span>
+                        </span> */}
                       </div>
-                      <div className="text-start">
-                        <div className="fw-bold">{user.fname}</div>
-                        <div className="fw-bold">{user.lname}</div>
+                      <div className="text-start lh-sm">
+                        <div className="fw-medium">{user.fname}</div>
+                        <div className="fw-medium">{user.lname}</div>
                       </div>
                     </div>
                     <ul className="dropdown-menu dropdown-menu-end mt-2" aria-labelledby="userDropdown">

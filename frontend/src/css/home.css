@@ -42,12 +42,14 @@ body {
     background-color: var(--color-orange);
     color: #000;
     border-color: var(--color-orange);
+    transition: all 0.3s ease;
 }
 
 .orange-hoverbtn:hover {
     border: 1px solid var(--color-orange);
     background-color: var(--color-white);
     color: var(--color-orange) !important;
+    transition: all 0.3s ease;
 }
 
 .primary-color-bg {
@@ -58,6 +60,7 @@ body {
 .btnType1:hover {
     color: var(--primary-color);
     border: 1px solid var(--primary-color);
+    transition: all 0.3s ease;
 }
 
 .mainHeader {
@@ -124,6 +127,7 @@ body {
 
 .centerMenu .navbar-nav .nav-link:hover {
     color: var(--color-orange);
+    transition: all 0.3s ease;
 }
 
 .bgCarouselImg img {
@@ -160,6 +164,7 @@ body {
 .cateBox:hover,
 .productBox:hover {
     box-shadow: 0px 3px 3px #e0e0e0;
+    transition: all 0.3s ease;
 }
 
 .countspan {
@@ -188,6 +193,12 @@ body {
     display: grid;
     flex-wrap: wrap;
     align-items: center;
+}
+
+
+.ProImg.ProImgDetail {
+    max-width: 125px;
+    min-width: 125px;
 }
 
 .ProImg img {
@@ -223,6 +234,7 @@ body {
 
 .mainFooter a:hover {
     text-decoration: underline;
+    transition: all 0.3s ease;
 }
 
 .footer-logo img {
@@ -285,11 +297,13 @@ body {
 .card.supportTicket:hover {
     background-color: var(--primary-color);
     border: 1px solid #deebfc;
+    transition: all 0.3s ease;
 }
 
 .card.supportTicket:hover h6,
 .card.supportTicket:hover i {
     color: var(--color-white);
+    transition: all 0.3s ease;
 }
 
 .productTable th {
@@ -339,4 +353,52 @@ body {
     border-radius: 6px;
     min-height: 90px;
     width: auto;
+}
+
+.userbadge {
+    font-size: 9px !important;
+    bottom: 0px;
+    right: -25px;
+}
+
+.ContentBox:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+.recommended-companies-carousel .swiper-slide p {
+    min-height: 42px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+}
+
+.swiper-slide.swiper-slide-visible.swiper-slide-fully-visible {
+    place-content: center;
+}
+
+button.nav-link.active,
+button.nav-link.active:hover {
+    border-bottom: 2px solid var(--color-orange) !important;
+    border: 0px;
+    color: var(--color-orange) !important;
+    font-weight: 600;
+}
+
+button.nav-link {
+    color: var(--primary-color) !important;
+    font-weight: 500;
+}
+
+.nav-item,
+button.nav-link,
+.nav-item:hover,
+button.nav-link:hover {
+    border-top-color: var(--color-white) !important;
+    border-left-color: var(--color-white) !important;
+    border-right-color: var(--color-white) !important;
 }

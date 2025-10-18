@@ -189,7 +189,7 @@ const ProductDetail = () => {
                 <div className="card-body">
                   <div className="mb-3">
                     <h6 className="mb-3">{product.company_name}</h6>
-                    <div className='text-center'>
+                    <div className='text-center border rounded-2'>
                       <ImageFront
                         src={`${ROOT_URL}/${product.company_logo}`}
                         alt={`${product.title}`}
@@ -198,7 +198,6 @@ const ProductDetail = () => {
                           width: 'auto',
                           height: 'auto',
                           objectFit: 'cover',
-                          border: '1px solid #ddd',
                           borderRadius: '5px',
                           cursor: 'pointer'
                         }}
@@ -208,6 +207,8 @@ const ProductDetail = () => {
                       />
                     </div>
                   </div>
+                </div>
+                <div className="card-footer pt-0 bg-white border-0">
                   <button className="btn btn-orange w-100">
                     <i className="lni lni-phone pe-2"></i> Enquiry
                   </button>
@@ -260,8 +261,8 @@ const ProductDetail = () => {
                       <div className="tab-pane fade show active" role="tabpanel">
                         <div className="product-details">
                           <div className="detailhead">
-                            <h4 className="">Product Specification:
-                            </h4>
+                            <h5 className="">Product Specification:
+                            </h5>
                           </div>
                           <div>
                             <div
@@ -275,7 +276,7 @@ const ProductDetail = () => {
                     {/* Company Details Tab */}
                     {activeTab === 'companyDetails' && (
                       <div className="tab-pane fade show active" role="tabpanel">
-                        <div className="company-details mt-4">
+                        <div className="company-details">
                           <h5>About the Company:
                           </h5>
                           <div className="mb-3">
@@ -320,7 +321,7 @@ const ProductDetail = () => {
                     {activeTab === 'reviews' && (
                       <div className="tab-pane fade show active" role="tabpanel">
                         <div className="reviews">
-                          <h4 className="text-orange">Reviews</h4>
+                          <h5 className="">Reviews</h5>
                           <div className="reviewSection pt-3 text-start border-top">
                             <form onSubmit={handleSubmit}>
                               <label className="form-label mt-2 mb-0">Rating</label>

@@ -47,7 +47,7 @@ const Enquiry = () => {
           </div>
           <div className="row">
             {enquiries.map((enquiry) => (
-              <div key={enquiry.id} className="col-lg-4 col-md-6 mb-3">
+              <div key={enquiry.id} className="col-lg-4 col-md-6 mb-4">
 
                 <div className="card h-100 border shadow-sm">
                   <div className="card-header bg-white">

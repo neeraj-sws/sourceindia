@@ -27,6 +27,8 @@ body.no-flex {
 	--crms-primary-rgb: 228, 31, 7;
 	--crms-success-rgb: 26, 190, 23;
 	--border-color: #E8E8E8;
+	--light-text: #4a4a4a;
+	--color-white: #fff;
 	--box-shadow: 0px 4px 4px 0px rgba(219, 219, 219, 0.25);
 }
 
@@ -81,7 +83,7 @@ table.dataTable .dt-type-numeric .dt-column-header {
 	top: 0;
 	bottom: 0;
 	left: 0;
-	background: #fff;
+	background: var(--color-white);
 	border-right: 1px solid var(--border-color);
 	z-index: 11;
 	box-shadow: none !important;
@@ -98,7 +100,7 @@ table.dataTable .dt-type-numeric .dt-column-header {
 	bottom: 0;
 	padding: 0 15px;
 	z-index: 5;
-	background: #fff;
+	background: var(--color-white);
 	background-clip: padding-box;
 	border-bottom: 1px solid #e4e4e4
 }
@@ -127,7 +129,7 @@ table.dataTable .dt-type-numeric .dt-column-header {
 	left: 250px;
 	right: 0;
 	height: 60px;
-	background: #fff;
+	background: var(--color-white);
 	border-bottom: 1px solid var(--border-color);
 	z-index: 10;
 	-webkit-box-shadow: none;
@@ -157,7 +159,7 @@ table.dataTable .dt-type-numeric .dt-column-header {
 }
 
 .page-footer {
-	background: #fff;
+	background: var(--color-white);
 	left: 250px;
 	right: 0;
 	bottom: 0;
@@ -300,7 +302,7 @@ a {
 
 .sidebar-wrapper .metismenu .mm-active a .parent-icon {
 	background-color: var(--primary-color);
-	color: #fff;
+	color: var(--color-white);
 }
 
 .menu-label {
@@ -389,7 +391,7 @@ a {
 	width: 2.5rem;
 	height: 2.5rem;
 	font-size: 14px;
-	background-color: #fff;
+	background-color: var(--color-white);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -426,7 +428,7 @@ a {
 	line-height: 40px;
 	text-align: center;
 	font-size: 26px;
-	color: #fff;
+	color: var(--color-white);
 	position: fixed;
 	border-radius: 10px;
 	bottom: 20px;
@@ -436,7 +438,7 @@ a {
 }
 
 .back-to-top:hover {
-	color: #fff;
+	color: var(--color-white);
 	background-color: #000;
 	transition: all .5s
 }
@@ -527,7 +529,7 @@ a {
 .product-img {
 	width: 60px;
 	height: 60px;
-	background-color: #fff;
+	background-color: var(--color-white);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -544,7 +546,7 @@ a {
 .product-img-2 {
 	width: 45px;
 	height: 45px;
-	background-color: #fff;
+	background-color: var(--color-white);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -596,7 +598,7 @@ a {
 
 @media (min-width:992px) {
 	.product-list .row:hover {
-		background-color: #fff;
+		background-color: var(--color-white);
 		margin-top: -.25rem;
 		margin-bottom: .25rem;
 		-webkit-box-shadow: 0 .5rem 1rem 0 rgba(0, 0, 0, .2);
@@ -643,7 +645,7 @@ a {
 
 .fm-menu .list-group a:hover {
 	background: var(--primary-color);
-	color: #fff;
+	color: var(--color-white);
 	transition: all .2s ease-out
 }
 
@@ -660,7 +662,7 @@ a {
 
 .fm-icon-box {
 	font-size: 32px;
-	background: #fff;
+	background: var(--color-white);
 	width: 52px;
 	height: 52px;
 	display: flex;
@@ -674,7 +676,7 @@ a {
 	height: 33px;
 	margin-left: -14px;
 	line-height: 33px;
-	background: #fff;
+	background: var(--color-white);
 	border-radius: 50%;
 	text-align: center;
 	font-size: 22px;
@@ -695,7 +697,7 @@ a {
 	width: 36px;
 	height: 36px;
 	line-height: 36px;
-	background: #fff;
+	background: var(--color-white);
 	border: 1px solid #eeecec;
 	text-align: center;
 	border-radius: 50%;
@@ -709,7 +711,7 @@ a {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: #fff;
+	background: var(--color-white);
 	border: 1px solid #eeecec;
 	text-align: center;
 	border-radius: 50%;
@@ -987,7 +989,7 @@ a {
 
 .invoice {
 	position: relative;
-	background-color: #fff;
+	background-color: var(--color-white);
 	min-height: 680px;
 	padding: 15px
 }
@@ -1085,7 +1087,7 @@ a {
 }
 
 .invoice table .no {
-	color: #fff;
+	color: var(--color-white);
 	font-size: 1.6em;
 	background: var(--primary-color)
 }
@@ -1170,7 +1172,7 @@ a {
 	height: 600px;
 	border-radius: .25rem;
 	position: relative;
-	background: #fff;
+	background: var(--color-white);
 	box-shadow: 0 .1rem .7rem rgba(0, 0, 0, .1)
 }
 
@@ -1178,7 +1180,7 @@ a {
 	width: 340px;
 	height: 100%;
 	position: absolute;
-	background: #fff;
+	background: var(--color-white);
 	left: 0;
 	top: 0;
 	bottom: 0;
@@ -1193,7 +1195,7 @@ a {
 	width: auto;
 	height: auto;
 	position: relative;
-	background: #fff;
+	background: var(--color-white);
 	border-bottom: 1px solid rgba(0, 0, 0, .125);
 	border-right: 0 solid rgba(0, 0, 0, .125);
 	border-top-left-radius: .25rem;
@@ -1216,7 +1218,7 @@ a {
 	width: 8px;
 	height: 8px;
 	border-radius: 50%;
-	box-shadow: 0 0 0 2px #fff;
+	box-shadow: 0 0 0 2px var(--color-white);
 	background: #16e15e
 }
 
@@ -1228,7 +1230,7 @@ a {
 	width: 8px;
 	height: 8px;
 	border-radius: 50%;
-	box-shadow: 0 0 0 2px #fff;
+	box-shadow: 0 0 0 2px var(--color-white);
 	background: #16e15e
 }
 
@@ -1244,7 +1246,7 @@ a {
 	right: 0;
 	top: 0;
 	padding: 15px;
-	background: #fff;
+	background: var(--color-white);
 	border-bottom: 1px solid rgba(0, 0, 0, .125);
 	border-top-right-radius: .25rem;
 	z-index: 1
@@ -1272,7 +1274,7 @@ a {
 	text-align: center;
 	border-radius: 50%;
 	margin: 3px;
-	background-color: #fff;
+	background-color: var(--color-white);
 	border: 1px solid rgb(0 0 0 / 15%)
 }
 
@@ -1336,7 +1338,7 @@ a {
 	text-align: center;
 	border-radius: 50%;
 	margin: 3px;
-	background-color: #fff;
+	background-color: var(--color-white);
 	border: 1px solid rgb(0 0 0 / 15%)
 }
 
@@ -1377,7 +1379,7 @@ a {
 	color: #6c757d;
 	border-radius: 50%;
 	cursor: pointer;
-	background-color: #fff;
+	background-color: var(--color-white);
 	border: 1px solid rgb(0 0 0 / 15%)
 }
 
@@ -1387,7 +1389,7 @@ a {
 	overflow: hidden;
 	border-radius: .25rem;
 	position: relative;
-	background: #fff;
+	background: var(--color-white);
 	box-shadow: 0 .1rem .7rem rgba(0, 0, 0, .1)
 }
 
@@ -1395,7 +1397,7 @@ a {
 	width: 250px;
 	height: 100%;
 	position: absolute;
-	background: #fff;
+	background: var(--color-white);
 	left: 0;
 	top: 0;
 	bottom: 0;
@@ -1410,7 +1412,7 @@ a {
 	width: auto;
 	height: auto;
 	position: relative;
-	background: #fff;
+	background: var(--color-white);
 	border-bottom: 1px solid rgba(0, 0, 0, .125);
 	border-right: 0 solid rgba(0, 0, 0, .125);
 	border-top-left-radius: .25rem;
@@ -1431,7 +1433,7 @@ a {
 	right: 0;
 	top: 0;
 	padding: 15px;
-	background: #fff;
+	background: var(--color-white);
 	border-bottom: 1px solid rgba(0, 0, 0, .125);
 	border-top-right-radius: .25rem;
 	z-index: 1
@@ -1446,7 +1448,7 @@ a {
 	height: auto;
 	margin-left: 250px;
 	padding: 0;
-	background: #fff;
+	background: var(--color-white);
 	border-top-left-radius: .25rem;
 	border-top-right-radius: .25rem
 }
@@ -1454,7 +1456,7 @@ a {
 .email-navigation a.list-group-item {
 	color: #404142;
 	padding: .35rem 1.25rem;
-	background-color: #fff;
+	background-color: var(--color-white);
 	border-bottom: 1px solid rgb(0 0 0 / 0%);
 	transition: all .3s ease-out
 }
@@ -1479,7 +1481,7 @@ a {
 .email-meeting a.list-group-item {
 	color: #404142;
 	padding: .35rem 1.25rem;
-	background-color: #fff;
+	background-color: var(--color-white);
 	border-bottom: 1px solid rgb(0 0 0 / 0%)
 }
 
@@ -1496,7 +1498,7 @@ a {
 	width: 8px;
 	height: 8px;
 	border-radius: 50%;
-	box-shadow: 0 0 0 2px #fff;
+	box-shadow: 0 0 0 2px var(--color-white);
 	background: #16e15e
 }
 
@@ -1509,7 +1511,7 @@ a {
 	color: #404142;
 	border-radius: 0;
 	cursor: pointer;
-	background-color: #fff;
+	background-color: var(--color-white);
 	border: 0 solid rgb(0 0 0 / 15%)
 }
 
@@ -1523,7 +1525,7 @@ a {
 }
 
 .email-list div.email-message {
-	background: #fff;
+	background: var(--color-white);
 	border-bottom: 1px solid rgb(0 0 0 / 8%);
 	color: #383a3c
 }
@@ -1599,12 +1601,12 @@ a {
 }
 
 .nav-pills-danger.nav-pills .nav-link.active {
-	color: #fff;
+	color: var(--color-white);
 	background-color: #f41127
 }
 
 .nav-pills-success.nav-pills .nav-link.active {
-	color: #fff;
+	color: var(--color-white);
 	background-color: #17a00e
 }
 
@@ -1854,7 +1856,7 @@ a {
 	height: 40px;
 	line-height: 40px;
 	font-size: 18px;
-	color: #fff;
+	color: var(--color-white);
 	text-align: center;
 	border-radius: 50%;
 	margin: 5px;
@@ -1889,7 +1891,7 @@ a {
 	position: relative;
 	top: 26px;
 	margin-top: -10px;
-	background: #fff;
+	background: var(--color-white);
 	padding: 5px;
 	font-size: 12px;
 	color: #cbcbcb;
@@ -2043,7 +2045,7 @@ a {
 }
 
 .btn-white {
-	background-color: #fff;
+	background-color: var(--color-white);
 	border-color: #e7eaf3
 }
 
@@ -2140,14 +2142,14 @@ input::placeholder {
 }
 
 .search-control-2 {
-	color: #fff;
+	color: var(--color-white);
 	background-color: #212529;
 	border: 1px solid rgb(255 255 255 / 12%) !important;
 	padding-right: 2.5rem
 }
 
 .search-control-2:focus {
-	color: #fff;
+	color: var(--color-white);
 	padding-right: 2.5rem;
 	background-color: #212529;
 	box-shadow: 0 0 0 .25rem rgba(255, 255, 255, .25)
@@ -2198,7 +2200,7 @@ input.search-control-2::placeholder {
 	border-radius: 50%;
 	font-size: 12px;
 	font-weight: 500;
-	color: #fff;
+	color: var(--color-white);
 	background: #f62718
 }
 
@@ -2239,7 +2241,7 @@ input.search-control-2::placeholder {
 	content: '';
 	width: 13px;
 	height: 13px;
-	background: #fff;
+	background: var(--color-white);
 	position: absolute;
 	top: -6px;
 	right: 16px;
@@ -2265,7 +2267,7 @@ input.search-control-2::placeholder {
 	padding: .8rem 1rem;
 	border-bottom: 1px solid #ededed;
 	background-clip: border-box;
-	background: #fff;
+	background: var(--color-white);
 	text-align: left;
 	display: flex;
 	align-items: center;
@@ -2333,7 +2335,7 @@ input.search-control-2::placeholder {
 	width: 8px;
 	height: 8px;
 	border-radius: 50%;
-	box-shadow: 0 0 0 2px #fff;
+	box-shadow: 0 0 0 2px var(--color-white);
 	background: #16e15e
 }
 
@@ -2444,7 +2446,7 @@ input.search-control-2::placeholder {
 	top: 0;
 	bottom: 0;
 	z-index: 16;
-	background: #fff;
+	background: var(--color-white);
 	border-left: 0 solid #d2d2d2;
 	box-shadow: 0 .3rem .6rem rgba(0, 0, 0, .13);
 	transition: all .2s ease-out
@@ -2457,7 +2459,7 @@ input.search-control-2::placeholder {
 	font-size: 24px;
 	background: var(--primary-color);
 	box-shadow: 0 .3rem .6rem rgba(0, 0, 0, .13);
-	color: #fff;
+	color: var(--color-white);
 	text-align: center;
 	border-top-left-radius: 10px;
 	border-bottom-left-radius: 10px;
@@ -2557,7 +2559,7 @@ input.search-control-2::placeholder {
 		position: absolute;
 		left: 0;
 		z-index: 100;
-		background: #ffffff;
+		background: var(--color-white);
 		height: 60px;
 		padding: 0 1.4rem
 	}
@@ -2576,13 +2578,13 @@ input.search-control-2::placeholder {
 	}
 
 	.search-control {
-		background-color: #fff;
+		background-color: var(--color-white);
 		border: 1px solid #f2efef00;
 		padding-left: 2.5rem
 	}
 
 	.search-control-2 {
-		color: #fff;
+		color: var(--color-white);
 		background-color: #212529;
 		border: 1px solid rgb(255 255 255 / 12%) !important;
 		padding-left: 2.5rem
@@ -2776,7 +2778,7 @@ input.search-control-2::placeholder {
 	align-items: center;
 	justify-content: center;
 	border-radius: 0.375rem;
-	color: #fff;
+	color: var(--color-white);
 	font-weight: 500;
 }
 
@@ -3097,4 +3099,36 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 .dropdown-menu {
 	padding: 2px 0;
 	min-width: 11rem;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+	color: #003366;
+	background-color: var(--color-white);
+	border: 1px solid #ddd;
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
+	top: 40%;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.swiper-button-next {
+	right: 0;
+}
+
+.swiper-button-prev {
+	left: 0;
+}
+
+.swiper-button-next::after,
+.swiper-button-prev::after {
+	font-size: 16px;
+	font-weight: bold;
+}
+
+.swiper-button-prev svg,
+.swiper-button-next svg {
+	height: 20px !important;
+	color: var(--color-orange);
 }
