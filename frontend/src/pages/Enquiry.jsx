@@ -1,6 +1,20 @@
-import React from 'react'
-
+import React, { useState, useEffect } from 'react';
 const Enquiry = () => {
+  const [enquiries, setEnquiries] = useState([]);
+
+  useEffect(() => {
+    const fetchEnquiries = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/v2/api/enquiries');
+        const data = await response.json();
+        setEnquiries(data);
+      } catch (error) {
+        console.error('Error fetching enquiries:', error);
+      }
+    };
+
+    fetchEnquiries();
+  }, []);
 
   return (
     <>
