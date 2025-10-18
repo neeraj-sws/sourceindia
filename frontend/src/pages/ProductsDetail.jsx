@@ -221,7 +221,7 @@ const ProductDetail = () => {
               <div className='card-body'>
                 <div className="tabs-container">
                   {/* Tab Navigation */}
-                  <ul className="nav nav-tabs" role="tablist">
+                  <ul className="nav nav-tabs border-bottom" role="tablist" style={{ paddingBottom: '1px' }}>
                     <li className="nav-item" role="presentation">
                       <button
                         className={`nav-link ${activeTab === 'productDetails' ? 'active' : ''}`}
@@ -322,7 +322,7 @@ const ProductDetail = () => {
                       <div className="tab-pane fade show active" role="tabpanel">
                         <div className="reviews">
                           <h5 className="">Reviews</h5>
-                          <div className="reviewSection pt-3 text-start border-top">
+                          <div className="reviewSection text-start">
                             <form onSubmit={handleSubmit}>
                               <label className="form-label mt-2 mb-0">Rating</label>
                               <div className="d-flex">
@@ -378,7 +378,7 @@ const ProductDetail = () => {
       </section >
       <div className="product-detail-container">
         <div className="container">
-          <h2>Similar Products</h2>
+          <h2 className="color-primary">Similar Products</h2>
           <Swiper
             modules={[Navigation, Pagination]}
             slidesPerView={3} // Display 3 items at a time
@@ -430,7 +430,7 @@ const ProductDetail = () => {
         <div className="recommended-companies">
 
           <div className='container'>
-            <h2>Recommended Companies</h2>
+            <h2 className="color-primary">Recommended Companies</h2>
             <div className="companygrid">
               <Swiper
                 modules={[Navigation, Pagination]}
