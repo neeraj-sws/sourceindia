@@ -17,10 +17,10 @@ const Companies = () => {
         const res = await axios.get(`${API_BASE_URL}/products/companies?is_delete=0`, {
           params: { page, limit: 20 } // assuming backend supports these
         });
-        if (res.data.length === 0) {
+        if (res.data.companies.length === 0) {
           setHasMore(false); // no more companies to load
         } else {
-          setCompanies(prev => [...prev, ...res.data]);
+          setCompanies(prev => [...prev, ...res.data.companies]);
         }
       } catch (err) {
         console.error("Error fetching companies:", err);

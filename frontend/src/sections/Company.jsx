@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import ImageFront from "../admin/common/ImageFront";
 import axios from "axios";
+
 const Company = ({ limit }) => {
   const [companies, setCompanies] = useState([]);
+
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
@@ -16,6 +18,7 @@ const Company = ({ limit }) => {
     };
     fetchCompanies();
   }, []);
+
   return (
     <>
       <section className="companySection py-5 my-4">
@@ -25,8 +28,8 @@ const Company = ({ limit }) => {
           </div>
           <div className="companyGrid">
             <div className="row gx-3">
-              {companies.map((item) => (
-                <div className="col-md-2 mb-3">
+              {companies.map((item, index) => (
+                <div className="col-md-2 mb-3" key={index}>
                   <Link to={`/companies/${item.organization_slug}`} className="d-block h-100">
                     <div key={item.id} className="companyBox px-3 py-4 bg-white border h-100 d-flex align-items-center justify-content-center">
                       <div className="ComImg">

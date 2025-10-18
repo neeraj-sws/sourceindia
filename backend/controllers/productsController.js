@@ -1,4 +1,4 @@
-const { Op, fn, col } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
@@ -16,6 +16,7 @@ const Activity = require('../models/Activity');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
+const parseCsv2 = (value) => value.split(',').map(item => item.trim());
 
 exports.createProducts = async (req, res) => {
   const upload = getMulterUpload('products');
@@ -78,14 +79,11 @@ exports.getAllProducts = async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const page = req.query.page ? parseInt(req.query.page) : null;
     const offset = limit && page ? (page - 1) * limit : null;
-
     const { user_state, sort_by, title, category, sub_category, company_id, is_delete, status, is_approve } = req.query;
-
     let order = [['id', 'ASC']];
     if (sort_by === 'newest') order = [['created_at', 'DESC']];
     else if (sort_by === 'a_to_z') order = [['title', 'ASC']];
     else if (sort_by === 'z_to_a') order = [['title', 'DESC']];
-
     const productWhereClause = {};
     if (title) productWhereClause.title = { [Op.iLike]: `%${title}%` };
     if (category) {
@@ -109,13 +107,11 @@ exports.getAllProducts = async (req, res) => {
     if (is_approve) {
       productWhereClause.is_approve = is_approve;
     }
-
     let userWhereClause = {};
     if (user_state) {
       const stateIds = parseCsv(user_state);
       userWhereClause.state = { [Op.in]: stateIds };
     }
-
     const { count, rows } = await Products.findAndCountAll({
       where: productWhereClause,
       order,
@@ -135,7 +131,6 @@ exports.getAllProducts = async (req, res) => {
         }
       ]
     });
-
     const modifiedProducts = rows.map(product => {
       const productsData = product.toJSON();
       productsData.getStatus = productsData.status === 1 ? 'Public' : 'Draft';
@@ -146,20 +141,16 @@ exports.getAllProducts = async (req, res) => {
       productsData.file_name = productsData.file?.file || null;
       productsData.state_name = productsData.Users?.state_data?.name || null;
       productsData.user_full_name = productsData.Users ? `${productsData.Users.fname} ${productsData.Users.lname}` : null;
-
-      // Remove unnecessary data
       delete productsData.Categories;
       delete productsData.SubCategories;
       delete productsData.Color;
       delete productsData.company_info;
       delete productsData.file;
       delete productsData.Users;
-
       return productsData;
     });
-
     res.json({
-      total: count, // total count of all matching products
+      total: count,
       products: modifiedProducts
     });
   } catch (err) {
@@ -541,36 +532,89 @@ exports.getAllCompanyInfo = async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const page = req.query.page ? parseInt(req.query.page) : null;
-    const isDeleted = req.query.is_delete;
-    const options = {
-      order: [['id', 'ASC']],
+    const offset = limit && page ? (page - 1) * limit : null;
+
+    const {
+      user_state,
+      sort_by,
+      title,
+      category,
+      sub_category,
+      is_delete
+    } = req.query;
+
+    let order = [['id', 'ASC']];
+    if (sort_by === 'newest') order = [['created_at', 'DESC']];
+    else if (sort_by === 'a_to_z') order = [['organization_name', 'ASC']];
+    else if (sort_by === 'z_to_a') order = [['organization_name', 'DESC']];
+
+    const whereClause = {};
+    if (typeof is_delete !== 'undefined') {
+      whereClause.is_delete = parseInt(is_delete);
+    }
+    if (title) {
+      whereClause.organization_name = { [Op.like]: `%${title}%` };
+    }
+
+    // For category filter (CSV field)
+    if (category) {
+      const catIds = parseCsv(category).map(x => parseInt(x)).filter(x => !isNaN(x));
+      if (catIds.length) {
+        // Build condition: ANY of these catIds is in category_sell
+        whereClause[Op.or] = catIds.map(id =>
+          literal(`FIND_IN_SET(${id}, category_sell)`)
+        );
+      }
+    }
+
+    if (sub_category) {
+      const subIds = parseCsv(sub_category).map(x => parseInt(x)).filter(x => !isNaN(x));
+      if (subIds.length) {
+        whereClause[Op.or] = whereClause[Op.or] || [];
+        subIds.forEach(id => {
+          whereClause[Op.or].push(
+            literal(`FIND_IN_SET(${id}, sub_category)`)
+          );
+        });
+      }
+    }
+
+    // user_state filter as earlier or via literal EXISTS
+
+    if (user_state) {
+      const stateIds = parseCsv(user_state).map(x => parseInt(x)).filter(x => !isNaN(x));
+      whereClause[Op.and] = whereClause[Op.and] || [];
+      whereClause[Op.and].push(
+        literal(`EXISTS (
+          SELECT 1 FROM users u WHERE u.company_id = CompanyInfo.id
+            AND u.state IN (${stateIds.join(',')})
+            AND u.is_delete = 0 AND u.status = 1
+        )`)
+      );
+    }
+
+    const total = await CompanyInfo.count({
+      where: whereClause
+    });
+
+    const companies = await CompanyInfo.findAll({
+      where: whereClause,
+      order,
+      ...(limit && offset !== null ? { limit, offset } : {}),
       include: [
         {
           model: UploadImage,
           as: 'companyLogo',
-          attributes: ['file'],
-        },
-      ],
-      where: {},
-    };
-    if (typeof isDeleted !== 'undefined') {
-      options.where.is_delete = parseInt(isDeleted);
-    }
-    if (limit && page) {
-      options.limit = limit;
-      options.offset = (page - 1) * limit;
-    }
-    const companies = await CompanyInfo.findAll(options);
+          attributes: ['file']
+        }
+        // You can include Users etc. if needed
+      ]
+    });
+
+    // product count same as before
     const productCounts = await Products.findAll({
-      attributes: [
-        'company_id',
-        [fn('COUNT', col('id')), 'count']
-      ],
-      where: {
-        is_delete: 0,
-        is_approve: 1,
-        status: 1,
-      },
+      attributes: ['company_id', [fn('COUNT', col('id')), 'count']],
+      where: { is_delete: 0, is_approve: 1, status: 1 },
       group: ['company_id'],
       raw: true,
     });
@@ -578,18 +622,25 @@ exports.getAllCompanyInfo = async (req, res) => {
     productCounts.forEach(item => {
       countMap[item.company_id] = parseInt(item.count);
     });
-    const modifiedCompanies = companies.map(company => {
-      const companyData = company.toJSON();
-      const file = companyData.companyLogo?.file || null;
-      delete companyData.companyLogo;
+
+    const modified = companies.map(c => {
+      const cd = c.toJSON();
+      const file = cd.companyLogo?.file || null;
+      delete cd.companyLogo;
       return {
-        ...companyData,
+        ...cd,
         company_logo_file: file,
-        product_count: countMap[companyData.id] || 0,
+        product_count: countMap[cd.id] || 0
       };
     });
-    res.json(modifiedCompanies);
+
+    res.json({
+      total,
+      companies: modified
+    });
+
   } catch (err) {
+    console.error('getAllCompanyInfo error:', err);
     res.status(500).json({ error: err.message });
   }
 };

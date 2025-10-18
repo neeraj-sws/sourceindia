@@ -43,7 +43,7 @@ const ProductsList = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/categories?is_delete=0&status=1`);
+        const res = await axios.get(`${API_BASE_URL}/categories?is_delete=0`);
         const cats = res.data || [];
         const filtered = cats.filter(cat => cat.product_count > 0);
         setCategories(filtered);
@@ -140,7 +140,7 @@ const ProductsList = () => {
       }
       if (
         newProducts.length === 0 ||
-        (!append && newProducts.length < 6) ||
+        (!append && newProducts.length < 9) ||
         (append && (productsData.length + newProducts.length >= res.data.total))
       ) {
         setHasMore(false);
