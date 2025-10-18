@@ -3,8 +3,8 @@ import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from './../config';
 import ImageWithFallback from "../admin/common/ImageWithFallback";
 
-const ProductsList = () => {
-  const [productsData, setProductsData] = useState([]);
+const CompaniesFilter = () => {
+  const [companies, setCompanies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -15,15 +15,12 @@ const ProductsList = () => {
   const [states, setStates] = useState([]);
   const [selectedStates, setSelectedStates] = useState([]);
   const [statesSearchTerm, setStatesSearchTerm] = useState('');
-  const [companies, setCompanies] = useState([]);
-  const [selectedCompanies, setSelectedCompanies] = useState([]);
-  const [companiesSearchTerm, setCompaniesSearchTerm] = useState('');
-  const [productsTotal, setProductsTotal] = useState(0);
-  const [sortBy, setSortBy] = useState('');
+  const [companiesTotal, setCompaniesTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [scrollLoading, setScrollLoading] = useState(false);
+  const [sortBy, setSortBy] = useState('');
 
   const filteredCategories = categories.filter(cat =>
     cat.name.toLowerCase().includes(categorySearchTerm)
@@ -34,16 +31,13 @@ const ProductsList = () => {
   const filteredStates = states.filter(state =>
     state.name.toLowerCase().includes(statesSearchTerm)
   );
-  const filteredCompanies = companies.filter(company =>
-    company.organization_name.toLowerCase().includes(companiesSearchTerm)
-  );
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/categories?is_delete=0`);
+        const res = await axios.get(`${API_BASE_URL}/categories?is_delete=0&status=1`);
         const cats = res.data || [];
-        const filtered = cats.filter(cat => cat.product_count > 0);
+        const filtered = cats.filter(cat => cat.company_count > 0);
         setCategories(filtered);
       } catch (err) {
         console.error('Error fetching categories:', err);
@@ -80,8 +74,8 @@ const ProductsList = () => {
     const fetchStates = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/location/states/101`);
-        const states = res.data || [];
-        const filtered = states.filter(state => state.product_count > 0);
+        const sts = res.data || [];
+        const filtered = sts.filter(state => state.company_count > 0);
         setStates(filtered);
       } catch (err) {
         console.error('Error fetching states:', err);
@@ -90,29 +84,13 @@ const ProductsList = () => {
     fetchStates();
   }, []);
 
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/products/companies?is_delete=0`);
-        const cats = res.data || [];
-        const filtered = cats.filter(company => company.product_count > 0);
-        setCompanies(filtered);
-      } catch (err) {
-        console.error('Error fetching companies:', err);
-      }
-    };
-    fetchCompanies();
-  }, []);
-
-  const fetchProducts = async (pageNumber = 1, append = false) => {
+  const fetchCompanies = async (pageNumber = 1, append = false) => {
     if ((append && scrollLoading) || (!append && loading)) return;
-    if (append) {
-      setScrollLoading(true);
-    } else {
-      setLoading(true);
-    }
+
+    append ? setScrollLoading(true) : setLoading(true);
+
     try {
-      let url = `${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=9&page=${pageNumber}`;      
+      let url = `${API_BASE_URL}/products/companies?is_delete=0&status=1&limit=9&page=${pageNumber}`;
       if (selectedCategories.length > 0) {
         url += `&category=${selectedCategories.join(',')}`;
       }
@@ -122,45 +100,39 @@ const ProductsList = () => {
       if (selectedStates.length > 0) {
         url += `&user_state=${selectedStates.join(',')}`;
       }
-      if (selectedCompanies.length > 0) {
-        url += `&company_id=${selectedCompanies.join(',')}`;
-      }
       if (sortBy) {
         url += `&sort_by=${sortBy}`;
       }
       const res = await axios.get(url);
-      const newProducts = res.data.products || [];
-      setProductsTotal(res.data.total);
+      const newCompanies = res.data.companies || [];
+      setCompaniesTotal(res.data.total);
       if (append) {
-        setProductsData(prev => [...prev, ...newProducts]);
+        setCompanies(prev => [...prev, ...newCompanies]);
       } else {
-        setProductsData(newProducts);
+        setCompanies(newCompanies);
       }
+
       if (
-        newProducts.length === 0 ||
-        (!append && newProducts.length < 9) ||
-        (append && (productsData.length + newProducts.length >= res.data.total))
+        newCompanies.length === 0 ||
+        (!append && newCompanies.length < 9) ||
+        (append && (companies.length + newCompanies.length >= res.data.total))
       ) {
         setHasMore(false);
       } else {
         setHasMore(true);
       }
     } catch (err) {
-      console.error('Error fetching products:', err);
+      console.error('Error fetching companies:', err);
     } finally {
-      if (append) {
-        setScrollLoading(false);
-      } else {
-        setLoading(false);
-      }
+      append ? setScrollLoading(false) : setLoading(false);
     }
   };
 
   useEffect(() => {
     setPage(1);
     setHasMore(true);
-    fetchProducts(1, false);
-  }, [selectedCategories, selectedSubCategories, selectedStates, selectedCompanies, sortBy]);
+    fetchCompanies(1, false);
+  }, [selectedCategories, selectedSubCategories, selectedStates, sortBy]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -172,7 +144,7 @@ const ProductsList = () => {
       ) {
         const nextPage = page + 1;
         setPage(nextPage);
-        fetchProducts(nextPage, true);
+        fetchCompanies(nextPage, true);
       }
     };
     window.addEventListener('scroll', handleScroll);
@@ -199,27 +171,22 @@ const ProductsList = () => {
     );
   };
 
-  const handleStatesCheckboxChange = (statesId) => {
+  const handleStatesCheckboxChange = (stateId) => {
     setSelectedStates(prev =>
-      prev.includes(statesId)
-        ? prev.filter(id => id !== statesId)
-        : [...prev, statesId]
+      prev.includes(stateId)
+        ? prev.filter(id => id !== stateId)
+        : [...prev, stateId]
     );
   };
 
-  const handleCompaniesCheckboxChange = (companiesId) => {
-    setSelectedCompanies(prev =>
-      prev.includes(companiesId)
-        ? prev.filter(id => id !== companiesId)
-        : [...prev, companiesId]
-    );
-  };
-
-  const filteredProducts = productsData.filter(product => product.title.toLowerCase().includes(searchTerm));
+  // Filter companies by search term
+  const filteredCompanies = companies.filter(company =>
+    company.organization_name.toLowerCase().includes(searchTerm)
+  );
 
   const getNameById = (array, id) => {
     const item = array.find(el => el.id === id);
-    return item ? item.name || item.organization_name : '';
+    return item ? item.name : '';
   };
 
   return (
@@ -228,12 +195,18 @@ const ProductsList = () => {
         {/* Filters */}
         <aside className="col-12 col-md-3 mb-4">
           <div className="mb-4">
-            <h3 className="fs-5 mb-3">Product Title</h3>
+            <h3 className="fs-5 mb-3">Company Name</h3>
             <div className="input-group flex-nowrap">
               <i className="bx bx-search input-group-text" />
-              <input type="text" className="form-control" onChange={handleSearch} placeholder="Search products..." />
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search companies..."
+                onChange={handleSearch}
+              />
             </div>
           </div>
+
           <div className="mb-4">
             <h3 className="fs-5 mb-3">Category</h3>
             <div className="d-flex flex-column gap-2">
@@ -247,20 +220,20 @@ const ProductsList = () => {
                 />
               </div>
               <div style={{ maxHeight: '190px', overflowY: filteredCategories.length >= 5 ? 'auto' : 'visible' }}>
-              {filteredCategories.map(cat => (
-                <div className="form-check mb-2" key={cat.id}>
-                  <input
-                    type="checkbox"
-                    id={`cat-${cat.id}`}
-                    className="form-check-input"
-                    checked={selectedCategories.includes(cat.id)}
-                    onChange={() => handleCategoryCheckboxChange(cat.id)}
-                  />
-                  <label htmlFor={`cat-${cat.id}`} className="form-check-label text-capitalize">
-                    {cat.name} ({cat.product_count})
-                  </label>
-                </div>
-              ))}
+                {filteredCategories.map(cat => (
+                  <div className="form-check mb-2" key={cat.id}>
+                    <input
+                      type="checkbox"
+                      id={`cat-${cat.id}`}
+                      className="form-check-input"
+                      checked={selectedCategories.includes(cat.id)}
+                      onChange={() => handleCategoryCheckboxChange(cat.id)}
+                    />
+                    <label htmlFor={`cat-${cat.id}`} className="form-check-label text-capitalize">
+                      {cat.name} ({cat.company_count})
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -311,58 +284,29 @@ const ProductsList = () => {
                 />
               </div>
               <div style={{ maxHeight: '190px', overflowY: filteredStates.length >= 5 ? 'auto' : 'visible' }}>
-              {filteredStates.map(state => (
-                <div className="form-check mb-2" key={state.id}>
-                  <input
-                    type="checkbox"
-                    id={`state-${state.id}`}
-                    className="form-check-input"
-                    checked={selectedStates.includes(state.id)}
-                    onChange={() => handleStatesCheckboxChange(state.id)}
-                  />
-                  <label htmlFor={`state-${state.id}`} className="form-check-label text-capitalize">
-                    {state.name} ({state.product_count})
-                  </label>
-                </div>
-              ))}
+                {filteredStates.map(state => (
+                  <div className="form-check mb-2" key={state.id}>
+                    <input
+                      type="checkbox"
+                      id={`state-${state.id}`}
+                      className="form-check-input"
+                      checked={selectedStates.includes(state.id)}
+                      onChange={() => handleStatesCheckboxChange(state.id)}
+                    />
+                    <label htmlFor={`state-${state.id}`} className="form-check-label text-capitalize">
+                      {state.name} ({state.company_count})
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-          <div className="mb-4">
-            <h3 className="fs-5 mb-3">Companies</h3>
-            <div className="d-flex flex-column gap-2">
-              <div className="input-group flex-nowrap">
-                <i className="bx bx-search input-group-text" />
-                <input
-                  type="text"
-                  placeholder="Search companies..."
-                  onChange={(e) => setCompaniesSearchTerm(e.target.value.toLowerCase())}
-                  className="form-control"
-                />
-              </div>
-              <div style={{ maxHeight: '190px', overflowY: filteredCompanies.length >= 5 ? 'auto' : 'visible' }}>
-              {filteredCompanies.map(company => (
-                <div className="form-check mb-2" key={company.id}>
-                  <input
-                    type="checkbox"
-                    id={`company-${company.id}`}
-                    className="form-check-input"
-                    checked={selectedCompanies.includes(company.id)}
-                    onChange={() => handleCompaniesCheckboxChange(company.id)}
-                  />
-                  <label htmlFor={`company-${company.id}`} className="form-check-label text-capitalize">
-                    {company.organization_name} ({company.product_count})
-                  </label>
-                </div>
-              ))}
-              </div>
-            </div>
-          </div>
-        </aside>            
-        {/* Products grid */}
+        </aside>
+
+        {/* Companies grid */}
         <section className="col-12 col-md-9 mb-4">
           <div className="d-flex align-items-center justify-content-between mb-2">
-            <div className="d-flex justify-content-between">
+            <div>
               <strong>Sort By :</strong>
               <ul className="list-unstyled filterLst d-flex flex-wrap mb-0">
                 <li className="sortPopular">
@@ -413,13 +357,12 @@ const ProductsList = () => {
               </ul>
             </div>
             <div class="ms-auto">
-              <p>{productsTotal} Products</p>
+              <p>{companiesTotal} Products</p>
             </div>
           </div>
           {(selectedCategories.length > 0 ||
           selectedSubCategories.length > 0 ||
-          selectedStates.length > 0 ||
-          selectedCompanies.length > 0) && (
+          selectedStates.length > 0) && (
           <div className="mb-3">
             <strong>Filter:</strong>
             <div className="d-flex align-items-center gap-2 mt-2">
@@ -456,23 +399,11 @@ const ProductsList = () => {
                   />
                 </span>
               ))}
-              {selectedCompanies.map(id => (
-                <span key={`comp-${id}`} className="badge bg-info text-white d-flex align-items-center">
-                  {getNameById(companies, id)}
-                  <button
-                    onClick={() => handleCompaniesCheckboxChange(id)}
-                    className="btn-close btn-close-white ms-2"
-                    style={{ fontSize: '0.6em' }}
-                    aria-label="Remove"
-                  />
-                </span>
-              ))}
               <button
                 onClick={() => {
                   setSelectedCategories([]);
                   setSelectedSubCategories([]);
                   setSelectedStates([]);
-                  setSelectedCompanies([]);
                 }}
                 className="btn btn-sm btn-outline-danger"
               >
@@ -481,32 +412,30 @@ const ProductsList = () => {
             </div>            
           </div>
           )}
-          <div className="row">
+          <div className="row g-3">
             {loading ? (
               <div className="text-center"><img src="/producfilter.gif" height={80} /></div>
-            ) : filteredProducts.length > 0 ? (
-              filteredProducts.map(product => (
-                <div key={product.id} className="col-sm-4">
-                  <div className="card h-100 text-dark">
-                    <div
-                      className="bg-light d-flex justify-content-center align-items-center"
-                      style={{ height: '200px', overflow: 'hidden' }}
-                    >
-                      <ImageWithFallback
-                        src={`${ROOT_URL}/${product.file_name}`}
-                        width={180}
-                        height={180}
-                        showFallback={true}
-                      />
-                    </div>
-                    <div className="card-body">
-                      <h5 className="card-title">{product.title}</h5>
-                      <p className="card-text"><i className="bx bx-building" /> {product.company_name}</p>
-                      <p className="card-text"><i className="bx bx-map" /> {product.state_name}</p>
+            ) : filteredCompanies.length > 0 ? (
+              filteredCompanies.map(company => (
+              <div className="col-12 col-sm-6 col-lg-4" key={company.id}>
+                <div className="card h-100 shadow-sm">
+                  <div className="card-body d-flex align-items-center gap-3">
+                    <ImageWithFallback
+                      src={`${ROOT_URL}/${company.company_logo_file}`}
+                      width={180}
+                      height={180}
+                      showFallback={true}
+                    />
+                    <div>
+                      <h5 className="card-title mb-1">{company.organization_name}</h5>
+                      <p className="card-text mb-0 small text-muted">
+                        Products: {company.product_count || 0}
+                      </p>
                     </div>
                   </div>
                 </div>
-              ))
+              </div>
+            ))
             ) : (
               <div className="col-12"><p className="text-center">No products found.</p></div>
             )}
@@ -515,11 +444,11 @@ const ProductsList = () => {
                 <img src="/producfilter.gif" alt="Loading..." height={60} />
               </div>
             )}
-          </div>
+          </div>          
         </section>
       </div>
     </div>
   );
 };
 
-export default ProductsList;
+export default CompaniesFilter;
