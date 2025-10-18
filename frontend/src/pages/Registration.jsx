@@ -387,7 +387,7 @@ const Registration = () => {
                                             </div>
                                             <div className="col-md-6 mb-3">
                                                 <label>User Category*</label>
-                                                <select class="form-select" name="user_category" value={form.user_category} onChange={handleChange}>
+                                                <select className="form-select" name="user_category" value={form.user_category} onChange={handleChange}>
                                                     <option value="">Select User Category</option>
                                                     <option value="brand">Brand</option>
                                                     <option value="ems">EMS</option>

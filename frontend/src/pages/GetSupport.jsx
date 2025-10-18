@@ -72,7 +72,7 @@ const GetSupport = () => {
                       <i className="bi bi-telephone-fill"></i>
                       <div>
                         <h6 className="text-orange">Call Us Now</h6>
-                        <p className="d-flex align-items-center gap-2"><i class="lni lni-phone"></i> <a href="tel:+91-11-41615985" className="nav-link">
+                        <p className="d-flex align-items-center gap-2"><i className="lni lni-phone"></i> <a href="tel:+91-11-41615985" className="nav-link">
                           +91-11-41615985, </a>
                           <a href="tel:+91-11-41615985" className="nav-link">
                             +91-11-41011291</a>
@@ -84,7 +84,7 @@ const GetSupport = () => {
                       <i className="bi bi-geo-alt-fill"></i>
                       <div>
                         <h6 className="text-orange">Our Location</h6>
-                        <p className="d-flex align-items-center gap-2"><i class="lni lni-map-marker"></i> Elcina House, 422, Okhla Industrial Estate, Phase-III, New Delhi, Delhi 110020</p>
+                        <p className="d-flex align-items-center gap-2"><i className="lni lni-map-marker"></i> Elcina House, 422, Okhla Industrial Estate, Phase-III, New Delhi, Delhi 110020</p>
                       </div>
                     </div>
 
@@ -92,7 +92,7 @@ const GetSupport = () => {
                       <i className="bi bi-envelope-fill"></i>
                       <div>
                         <h6 className="text-orange">Write Us Now</h6>
-                        <p className="d-flex align-items-center gap-2"><i class="fadeIn animated bx bx-comment-detail"></i> support@sourceindia-electronics.com</p>
+                        <p className="d-flex align-items-center gap-2"><i className="fadeIn animated bx bx-comment-detail"></i> support@sourceindia-electronics.com</p>
                       </div>
                     </div>
                   </div>
@@ -106,7 +106,7 @@ const GetSupport = () => {
                           <div className="card-body">
                             <Link to="/get-support/createticket" className="d-block">
                               <div className="text-center ticketicon">
-                                <i class="fadeIn animated bx bx-envelope-open"></i>
+                                <i className="fadeIn animated bx bx-envelope-open"></i>
                                 <h6>Create Ticket</h6>
                               </div>
                             </Link>
@@ -118,7 +118,7 @@ const GetSupport = () => {
                           <div className="card-body">
                             <Link to="/get-support/trackticket" className="d-block">
                               <div className="text-center ticketicon">
-                                <i class="fadeIn animated bx bx-envelope-open"></i>
+                                <i className="fadeIn animated bx bx-envelope-open"></i>
                                 <h6>Track a Ticket</h6>
                               </div>
                             </Link>

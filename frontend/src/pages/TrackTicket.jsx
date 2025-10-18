@@ -23,23 +23,23 @@ const TrackTicket = () => {
                 <div className="card-body p-5">
                   <div className="contact-form">
                     <h4 className="mb-4">Track Ticket</h4>
-                    <div class="row py-3">
-                      <div class="col-md-4">
-                        <div class="form-group ">
-                          <label class="form-label">Email<sup class="text-danger">*</sup></label>
-                          <input type="text" name="email" id="otp-email" class="form-control" placeholder="Enter Email" value="" />
+                    <div className="row py-3">
+                      <div className="col-md-4">
+                        <div className="form-group ">
+                          <label className="form-label">Email<sup className="text-danger">*</sup></label>
+                          <input type="text" name="email" id="otp-email" className="form-control" placeholder="Enter Email" value="" />
                         </div>
                       </div>
-                      <div class="col-md-4">
-                        <div class="form-group ">
-                          <label class="form-label">Ticket Number<sup class="text-danger">*</sup></label>
-                          <input type="text" name="ticket_number" id="ticket_number" class="form-control" placeholder="Enter Ticket Number" value="" />
+                      <div className="col-md-4">
+                        <div className="form-group ">
+                          <label className="form-label">Ticket Number<sup className="text-danger">*</sup></label>
+                          <input type="text" name="ticket_number" id="ticket_number" className="form-control" placeholder="Enter Ticket Number" value="" />
                         </div>
                       </div>
                     </div>
-                    <div class="mt-2 d-flex gap-2">
-                      <button type="submit" class="btn btn-primary">Submit <i class="st_loader spinner-border spinner-border-sm d-none"></i></button>
-                      <Link to="/get-support" class="btn btn-secondary">Back</Link>
+                    <div className="mt-2 d-flex gap-2">
+                      <button type="submit" className="btn btn-primary">Submit <i className="st_loader spinner-border spinner-border-sm d-none"></i></button>
+                      <Link to="/get-support" className="btn btn-secondary">Back</Link>
                     </div>
                   </div>
                 </div>
