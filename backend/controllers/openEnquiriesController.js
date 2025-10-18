@@ -3,6 +3,7 @@ const OpenEnquiries = require('../models/OpenEnquiries');
 const Categories = require('../models/Categories');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
+const UploadImage = require('../models/UploadImage');
 
 exports.getAllOpenEnquiries = async (req, res) => {
   try {
@@ -26,7 +27,14 @@ exports.getAllOpenEnquiries = async (req, res) => {
             {
               model: CompanyInfo,
               as: 'company_info',
-              attributes: ['organization_name']
+              attributes: ['organization_name', 'organization_slug'],
+              include: [
+                {
+                  model: UploadImage,
+                  as: 'companyLogo',
+                  attributes: ['file']
+                }
+              ]
             }
           ]
         }
@@ -43,7 +51,9 @@ exports.getAllOpenEnquiries = async (req, res) => {
           lname: enquiry.Users.lname,
           email: enquiry.Users.email,
           company_id: enquiry.Users.company_id,
-          organization_name: enquiry.Users.company_info?.organization_name || null
+          organization_name: enquiry.Users.company_info?.organization_name || null,
+          company_logo: enquiry.Users.company_info?.companyLogo?.file || null,
+          organization_slug: enquiry.Users.company_info?.organization_slug || null
         }
       };
       delete flattened.Users;
@@ -191,7 +201,7 @@ exports.getAllOpenEnquiriesServerSide = async (req, res) => {
         { company: { [Op.like]: `%${search}%` } },
       ];
     }
-    const totalRecords = await OpenEnquiries.count({where: { ...baseWhere }});
+    const totalRecords = await OpenEnquiries.count({ where: { ...baseWhere } });
     const { count: filteredRecords, rows } = await OpenEnquiries.findAndCountAll({
       where: baseWhere,
       order,

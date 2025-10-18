@@ -10,4 +10,6 @@ router.put('/:id', ticketController.updateTickets);
 router.delete('/:id', ticketController.deleteTickets);
 router.patch('/:id/status', ticketController.updateTicketsStatus);
 
+router.post('/send-otp', ticketController.sendOtp);
+
 module.exports = router;

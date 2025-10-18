@@ -121,6 +121,7 @@ exports.updateTicketsStatus = async (req, res) => {
   }
 };
 
+
 exports.getAllTicketsServerSide = async (req, res) => {
   try {
     const {
@@ -188,4 +189,8 @@ exports.getAllTicketsServerSide = async (req, res) => {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
+};
+
+exports.sendOtp = async (req, res) => {
+
 };
