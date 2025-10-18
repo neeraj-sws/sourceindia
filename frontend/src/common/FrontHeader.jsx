@@ -73,7 +73,7 @@ const FrontHeader = () => {
             </div>
             <div className="lastbox">
               <div className="d-flex align-items-center gap-2">
-                <Link to="/get-support" className="thLink text-center me-2">
+                <Link to="/get-support" className="thLink text-center me-2 lh-1">
                   <i className="lni lni-question-circle d-block"></i>Support
                 </Link>
                 {isLoggedIn && user ? (

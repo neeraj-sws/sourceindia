@@ -2177,6 +2177,11 @@ input.search-control-2::placeholder {
 	font-size: 22px
 }
 
+.dropdown-toggle::after {
+	margin-left: 0.555em;
+	vertical-align: 0.155em;
+}
+
 .dropdown-toggle-nocaret:after {
 	display: none
 }
@@ -2832,7 +2837,7 @@ input.search-control-2::placeholder {
 }
 
 .select2-dropdown {
-    z-index: 99999;
+	z-index: 99999;
 }
 
 .form-label {
@@ -3049,7 +3054,8 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	justify-content: center;
 	font-size: 0.875rem;
 	font-weight: 500;
-	padding: 8px 16px;
+	padding: 6px 16px;
+	/* padding: 8px 16px; */
 	border-radius: 0.3125rem;
 }
 
