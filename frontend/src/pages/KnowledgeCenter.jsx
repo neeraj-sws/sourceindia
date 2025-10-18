@@ -34,9 +34,9 @@ const KnowledgeCenter = () => {
             {knowledgeCenter
               .filter((item) => item.is_delete === 0 && item.status === 1)
               .map((item, index) => (
-                <div className="col-lg-4 col-sm-6 mb-4" key={index}>
-                  <div className="ContentBox bg-white shadow-sm border">
-                    <div className="innervideo">
+                <div className="col-lg-4 col-sm-6 mb-4 d-flex" key={index}>
+                  <div className="ContentBox bg-white shadow-sm border w-100 d-flex flex-column">
+                    <div className="innervideo text-center p-3 pb-0">
                       <ImageFront
                         src={`${ROOT_URL}/${item.file_name}`}
                         width={180}
@@ -44,10 +44,10 @@ const KnowledgeCenter = () => {
                         showFallback={true}
                       />
                     </div>
-                    <div className="videobox">
-                      <div className="p-3">
-                        <p className="">{item.name}</p>
-                        <Link to={item.video_url} className="btn btn-sm btn-primary w-100" target="_blank">
+                    <div className="videobox d-flex flex-column flex-grow-1">
+                      <div className="p-3 d-flex flex-column flex-grow-1">
+                        <p className="flex-grow-1">{item.name}</p>
+                        <Link to={item.video_url} className="btn btn-sm btn-primary w-100 mt-auto" target="_blank">
                           View ➜
                         </Link>
                       </div>

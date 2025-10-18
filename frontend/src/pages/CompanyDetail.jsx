@@ -183,7 +183,7 @@ const CompanyDetail = () => {
                 {company.products.map((similar) => (
                   <SwiperSlide key={similar.id}>
                     <div className="productBox p-3 bg-white d-flex align-items-center gap-3">
-                      <div className="ProImg">
+                      <div className="ProImg ProImgDetail">
                         <ImageFront
                           src={`${ROOT_URL}/${similar.image}`}
                           width={180}
@@ -230,7 +230,7 @@ const CompanyDetail = () => {
                         height={180}
                         showFallback
                       />
-                      <p className="mt-3">{item.organization_name}</p>
+                      <p className="mt-3 mb-2">{item.organization_name}</p>
                     </Link>
                   </SwiperSlide>
                 ))}
