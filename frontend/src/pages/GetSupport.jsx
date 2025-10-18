@@ -104,24 +104,24 @@ const GetSupport = () => {
                       <div className="col-md-6">
                         <div className="card supportTicket">
                           <div className="card-body">
-                            <a href="#" className="d-block">
+                            <Link to="/get-support/createticket" className="d-block">
                               <div className="text-center ticketicon">
                                 <i class="fadeIn animated bx bx-envelope-open"></i>
                                 <h6>Create Ticket</h6>
                               </div>
-                            </a>
+                            </Link>
                           </div>
                         </div>
                       </div>
                       <div className="col-md-6">
                         <div className="card supportTicket">
                           <div className="card-body">
-                            <a href="#" className="d-block">
+                            <Link to="/get-support/trackticket" className="d-block">
                               <div className="text-center ticketicon">
                                 <i class="fadeIn animated bx bx-envelope-open"></i>
                                 <h6>Track a Ticket</h6>
                               </div>
-                            </a>
+                            </Link>
                           </div>
                         </div>
                       </div>

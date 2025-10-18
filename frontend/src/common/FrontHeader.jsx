@@ -152,7 +152,7 @@ const FrontHeader = () => {
                           <a className="nav-link" href="https://event.sourceindia-electronics.com/">Event</a>
                         </li>
                         <li className="nav-item">
-                          <a className="nav-link" href="#">Enquiry</a>
+                          <Link className="nav-link" to="/open-enquiry">Enquiry</Link>
                         </li>
                       </ul>
                     </div>

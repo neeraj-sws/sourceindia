@@ -23,9 +23,9 @@ exports.createProducts = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
 
     try {
-      const { 
-        user_id, title, code, article_number, category, sub_category, 
-        is_gold, is_featured, is_recommended, best_product, status, 
+      const {
+        user_id, title, code, article_number, category, sub_category,
+        is_gold, is_featured, is_recommended, best_product, status,
         application, short_description, description, slug, core_activity, activity, segment, product_service
       } = req.body;
 
@@ -42,19 +42,19 @@ exports.createProducts = async (req, res) => {
       const fileIds = uploadImages.map(image => image.id).join(',');
 
       const products = await Products.create({
-        user_id, 
-        title, 
-        code, 
-        article_number, 
-        category, 
-        sub_category, 
-        is_gold, 
-        is_featured, 
-        is_recommended, 
-        best_product, 
-        status, 
-        application, 
-        short_description, 
+        user_id,
+        title,
+        code,
+        article_number,
+        category,
+        sub_category,
+        is_gold,
+        is_featured,
+        is_recommended,
+        best_product,
+        status,
+        application,
+        short_description,
         description,
         slug: slug || '',
         core_activity: core_activity || 0,
@@ -181,7 +181,17 @@ exports.getProductsById = async (req, res) => {
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
         { model: Color, as: 'Color', attributes: ['id', 'title'] },
-        { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name', 'category_sell'] },
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['id', 'organization_name', 'category_sell', 'company_logo', 'brief_company', 'company_location', 'activity', 'core_activity'
+          ],
+          include: [
+            { model: UploadImage, as: 'companyLogo', attributes: ['file'] },
+            { model: Activity, as: 'Activity', attributes: ['name'] },
+            { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
+          ]
+        },
         { model: UploadImage, as: 'file', attributes: ['file'] }
       ]
     });
@@ -193,6 +203,7 @@ exports.getProductsById = async (req, res) => {
     const productData = product.toJSON();
     const categorySellString = productData.company_info?.category_sell || '';
     const allowedCategories = categorySellString.split(',').map(id => id.trim());
+
 
     const allCompanies = await CompanyInfo.findAll({
       where: {
@@ -244,7 +255,7 @@ exports.getProductsById = async (req, res) => {
         category: product.category,
         id: { [Op.ne]: product.id }
       },
-      attributes: ['id', 'title', 'file_ids'],
+      attributes: ['id', 'title', 'file_ids', 'slug'],
       include: [
         { model: UploadImage, as: 'file', attributes: ['file'] }
       ],
@@ -253,6 +264,7 @@ exports.getProductsById = async (req, res) => {
     const formattedSimilarProducts = await Promise.all(similarProducts.map(async (p) => {
       return {
         id: p.id,
+        slug: p.slug,
         title: p.title,
         file_name: p.file?.file || null,
       };
@@ -264,6 +276,11 @@ exports.getProductsById = async (req, res) => {
       sub_category_name: productData.SubCategories?.name || null,
       color_name: productData.Color?.title || null,
       company_name: productData.company_info?.organization_name || null,
+      company_logo: productData.company_info?.companyLogo?.file || null,
+      brief_company: productData.company_info?.brief_company || null,
+      company_location: productData.company_info?.company_location || null,
+      activity_name: productData.company_info?.Activity?.name || null,
+      core_activity_name: productData.company_info?.CoreActivity?.name || null,
       file_name: productData.file?.file || null,
       images: associatedImages.map(image => ({ id: image.id, file: image.file })),
       reviews: formattedReviews,
@@ -604,7 +621,7 @@ exports.getCompanyInfoById = async (req, res) => {
     // Get products belonging to the company
     const products = await Products.findAll({
       where: { company_id: company.id, is_delete: 0, status: 1, is_approve: 1 },
-      attributes: ['id', 'title'],
+      attributes: ['id', 'title', 'slug'],
       include: [
         { model: UploadImage, as: 'file', attributes: ['file'] }
       ]
@@ -614,6 +631,7 @@ exports.getCompanyInfoById = async (req, res) => {
       const p = product.toJSON();
       return {
         id: p.id,
+        slug: p.slug,
         title: p.title,
         image: p.file?.file || null
       };
@@ -652,7 +670,7 @@ exports.getCompanyInfoById = async (req, res) => {
       where: {
         id: { [Op.ne]: company.id }
       },
-      attributes: ['id', 'organization_name', 'category_sell'],
+      attributes: ['id', 'organization_name', 'category_sell', 'organization_slug'],
       include: [
         {
           model: UploadImage,
@@ -679,7 +697,8 @@ exports.getCompanyInfoById = async (req, res) => {
         id: c.id,
         organization_name: c.organization_name,
         category_sell: c.category_sell,
-        company_logo_file: c.companyLogo?.file || null
+        company_logo_file: c.companyLogo?.file || null,
+        organization_slug: c.organization_slug || null,
       }))
     };
 
@@ -851,3 +870,42 @@ exports.getAllProductsServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.companyReview = async (req, res) => {
+  try {
+
+    const { company_id, product_id = null, user_id, rating, review } = req.body;
+
+    if (!review || review.trim() === "") {
+      return res.status(400).json({ success: 0, message: "Review is required." });
+    }
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: 0, message: "Rating must be between 1 and 5." });
+    }
+
+    const obj = await ReviewRating.create({
+      company_id,
+      product_id,
+      user_id,
+      rating,
+      review,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    return res.json({
+      success: 1,
+      message: "Review submitted successfully.",
+      id: obj.id,
+    });
+  } catch (error) {
+    console.error("Error submitting company review:", error);
+    return res.status(500).json({
+      success: 0,
+      message: "Server error while submitting review.",
+    });
+  }
+};
+
+
+

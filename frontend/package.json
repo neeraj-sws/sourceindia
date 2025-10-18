@@ -3,11 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {   
-    "dev": "vite",
+  "scripts": {
+    "start": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev": "vite"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^41.4.2",
@@ -33,6 +34,7 @@
     "select2": "^4.1.0-rc.0",
     "select2-bootstrap-theme": "^0.1.0-beta.10",
     "simplebar": "^6.3.2",
+    "swiper": "^12.0.2",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
