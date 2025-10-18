@@ -27,7 +27,7 @@ const Enquiry = () => {
         <div className="container my-5">
           <div className="card mb-5 commonHead border shadow-none">
             <div className="card-body py-5 text-center">
-              <h1 className="text-white">Open Enquiery
+              <h1 className="text-white">Open Enquiry
 
               </h1>
             </div>
