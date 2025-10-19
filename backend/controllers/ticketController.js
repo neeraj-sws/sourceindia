@@ -3,10 +3,13 @@ const fs = require('fs');
 const path = require('path');
 const Tickets = require('../models/Tickets');
 const TicketCategory = require('../models/TicketCategory');
+const Emails = require('../models/Emails');
 const Users = require('../models/Users');
 const getMulterUpload = require('../utils/upload');
+const { body, validationResult } = require('express-validator');
 const upload = getMulterUpload('tickets').single('attachment');
 const moment = require('moment');
+const { getTransporter } = require('../helpers/mailHelper');
 
 exports.createTickets = async (req, res) => {
   upload(req, res, async (err) => {
@@ -17,7 +20,7 @@ exports.createTickets = async (req, res) => {
       const { user_id, title, message, priority, category, status } = req.body;
       const attachment = req.file ? req.file.filename : null;
       const dateStr = moment().format('YYYYMMDD');
-      const randomNum = Math.floor(100 + Math.random() * 900); 
+      const randomNum = Math.floor(100 + Math.random() * 900);
       const ticket_id = `SOURCE-INDIA-${dateStr}-${randomNum}`;
       const ticket = await Tickets.create({ user_id, ticket_id, title, message, priority, category, status, attachment });
       res.status(201).json({ message: 'Ticket created successfully', ticket });
@@ -34,7 +37,7 @@ exports.getAllTickets = async (req, res) => {
     const modifiedTicket = tickets.map(ticket => {
       const ticketData = ticket.toJSON();
       ticketData.getStatus = ticketData.status === 0 ? 'Pending' : ticketData.status === 1 ? 'In Progress' :
-      ticketData.status === 2 ? 'Resolved' : ticketData.status === 3 ? 'Cancel' : '';
+        ticketData.status === 2 ? 'Resolved' : ticketData.status === 3 ? 'Cancel' : '';
       return ticketData;
     });
     res.json(modifiedTicket);
@@ -58,31 +61,32 @@ exports.updateTickets = async (req, res) => {
     if (err) {
       return res.status(400).json({ error: 'Attachment upload failed', details: err.message });
     }
-  try {
-    const { user_id, title, message, priority, category, status } = req.body;
-    const tickets = await Tickets.findByPk(req.params.id);
-    if (!tickets) return res.status(404).json({ message: 'Ticket not found' });
-    tickets.user_id = user_id;
-    tickets.title = title;
-    tickets.message = message;
-    tickets.priority = priority;
-    tickets.category = category;
-    tickets.status = status;
-    if (req.file) { 
-      if (tickets.attachment) {
-        const oldPath = path.join(__dirname, '../upload/tickets/', tickets.attachment);
-        fs.unlink(oldPath, (err) => {
-          console.log(oldPath)
-          if (err) console.error('Failed to delete old attachment:', err);
-        });
+    try {
+      const { user_id, title, message, priority, category, status } = req.body;
+      const tickets = await Tickets.findByPk(req.params.id);
+      if (!tickets) return res.status(404).json({ message: 'Ticket not found' });
+      tickets.user_id = user_id;
+      tickets.title = title;
+      tickets.message = message;
+      tickets.priority = priority;
+      tickets.category = category;
+      tickets.status = status;
+      if (req.file) {
+        if (tickets.attachment) {
+          const oldPath = path.join(__dirname, '../upload/tickets/', tickets.attachment);
+          fs.unlink(oldPath, (err) => {
+            console.log(oldPath)
+            if (err) console.error('Failed to delete old attachment:', err);
+          });
+        }
+        tickets.attachment = req.file.filename;
       }
-      tickets.attachment = req.file.filename; }
-    tickets.updated_at = new Date();
-    await tickets.save();
-    res.json({ message: 'Ticket updated', tickets });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+      tickets.updated_at = new Date();
+      await tickets.save();
+      res.json({ message: 'Ticket updated', tickets });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   });
 };
 
@@ -192,5 +196,91 @@ exports.getAllTicketsServerSide = async (req, res) => {
 };
 
 exports.sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
 
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    // Step 1: Generate 4-digit OTP
+    const generatedOtp = Math.floor(1000 + Math.random() * 9000);
+
+    // Step 2: Find or create ticket
+    let ticket = await Tickets.findOne({ where: { email } });
+
+    if (ticket) {
+      ticket.otp = generatedOtp;
+      ticket.is_verify = 0;
+      await ticket.save();
+    } else {
+      ticket = await Tickets.create({
+        email,
+        otp: generatedOtp,
+        is_verify: 0,
+      });
+    }
+
+    // Step 3: Get Email Template (ID: 86)
+    const emailTemplate = await Emails.findByPk(86);
+    if (!emailTemplate) {
+      return res.status(404).json({ message: "Email template not found" });
+    }
+
+    const msgStr = emailTemplate.message.toString("utf8");
+    const userMessage = msgStr
+      .replace("{{ OTP }}", generatedOtp)
+      .replace("{{ USER_FNAME }}", "Guest");
+
+    // Step 4: Send OTP via Mail
+    const { transporter } = await getTransporter();
+    await transporter.sendMail({
+      from: `"Support Team" <info@sourceindia-electronics.com>`,
+      to: email,
+      subject: emailTemplate.subject || "Your OTP Code",
+      html: userMessage,
+    });
+
+    return res.json({
+      success: 1,
+      message: "OTP sent successfully",
+      ticket_id: ticket.id,
+      email: ticket.email,
+    });
+  } catch (err) {
+    console.error("OTP Error:", err);
+    return res.status(500).json({ message: "Failed to send OTP" });
+  }
+};
+
+// ✅ Verify OTP
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    const ticket = await Tickets.findOne({ where: { email } });
+
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    if (ticket.otp != otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    ticket.is_verify = 1;
+    await ticket.save();
+
+    return res.json({
+      success: 2,
+      message: "OTP verified successfully",
+      ticket_id: ticket.id,
+      email: ticket.email,
+    });
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    return res.status(500).json({ message: "Failed to verify OTP" });
+  }
 };
