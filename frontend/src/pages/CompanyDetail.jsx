@@ -78,7 +78,7 @@ const CompanyDetail = () => {
                 <div className="card-body text-center p-4">
                   <h6 className="my-3 text-start">{company.organization_name}</h6>
 
-                  <div className="border rounded-2">
+                  <div className="rounded-2">
                     <ImageFront
                       src={`${ROOT_URL}/${company.company_logo_file}`}
                       alt={company.organization_name}
@@ -169,79 +169,85 @@ const CompanyDetail = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Products Carousel */}
-          <div className="container mt-5">
-            <div className="companyProducts">
-              <h2 className="color-primary">Products</h2>
-              <Swiper
-                modules={[Navigation, Pagination]}
-                slidesPerView={3}
-                spaceBetween={20}
-                navigation
-                loop={false}
-                className="similar-products-carousel"
-                style={{ padding: "20px 0" }}
-              >
-                {company.products.map((similar) => (
-                  <SwiperSlide key={similar.id}>
-                    <div className="productBox p-3 bg-white d-flex align-items-center gap-3">
-                      <div className="ProImg ProImgDetail">
-                        <ImageFront
-                          src={`${ROOT_URL}/${similar.image}`}
-                          width={180}
-                          height={180}
-                          showFallback
-                        />
-                      </div>
-                      <div className="productlink">
-                        <p className="mb-0">{similar.title}</p>
-                        <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2">
-                          <span className="pe-2">View</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44">
-                            <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path>
-                          </svg>
-                        </Link>
-                      </div>
-                    </div>
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            </div>
-
-            {/* ⭐ Review Section */}
-
-
-            {/* Recommended Companies */}
-            <div className="similerCompany mt-5">
-              <h2 className="color-primary">Recommended Companies</h2>
-              <Swiper
-                modules={[Navigation, Pagination]}
-                slidesPerView={5}
-                spaceBetween={20}
-                navigation
-                loop
-                className="recommended-companies-carousel"
-                style={{ padding: "20px 0" }}
-              >
-                {company.recommended_companies.map((item) => (
-                  <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
-                    <Link to={`/companies/${item.organization_slug}`}>
+      {/* Products Carousel */}
+      <div className="container mt-5">
+        <div className="companyProducts">
+          <h2 className="color-primary">Products</h2>
+          <Swiper
+            modules={[Navigation, Pagination]}
+            slidesPerView={3}
+            spaceBetween={20}
+            navigation
+            loop={false}
+            className="similar-products-carousel"
+            style={{ padding: "20px 0" }}
+          >
+            {company.products.map((similar) => (
+              <SwiperSlide key={similar.id}>
+                <div className="productBox p-3 bg-white">
+                  <div className="middlepro">
+                    <div className="ProImg ProImgDetail">
                       <ImageFront
-                        src={`${ROOT_URL}/${item.company_logo_file}`}
+                        src={`${ROOT_URL}/${similar.image}`}
                         width={180}
                         height={180}
                         showFallback
                       />
-                      <p className="mt-3 mb-2">{item.organization_name}</p>
-                    </Link>
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            </div>
-          </div>
+                    </div>
+                    <div className="productlink">
+                      <p className="mb-0">{similar.title}</p>
+                      <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2">
+                        <span className="pe-2">View</span>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="15"
+                          viewBox="4 9.28 23.91 13.44"
+                          className="filtersvg">
+                          <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path>
+                        </svg>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
-      </section>
+
+        {/* ⭐ Review Section */}
+
+
+        {/* Recommended Companies */}
+        <div className="similerCompany mt-5">
+          <h2 className="color-primary">Recommended Companies</h2>
+          <Swiper
+            modules={[Navigation, Pagination]}
+            slidesPerView={5}
+            spaceBetween={20}
+            navigation
+            loop
+            className="recommended-companies-carousel"
+            style={{ padding: "20px 0" }}
+          >
+            {company.recommended_companies.map((item) => (
+              <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
+                <Link to={`/companies/${item.organization_slug}`}>
+                  <ImageFront
+                    src={`${ROOT_URL}/${item.company_logo_file}`}
+                    width={180}
+                    height={180}
+                    showFallback
+                  />
+                  <p className="mt-3 mb-2">{item.organization_name}</p>
+                </Link>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
+      </div>
     </>
   );
 };

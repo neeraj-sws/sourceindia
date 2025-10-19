@@ -416,22 +416,24 @@ const ProductsList = () => {
             </div>
             <div className="ms-auto d-flex gap-2 align-items-center">
               <p className="mb-0">{productsTotal} Products</p>
+
               <button
-                className="btn btn-sm btn-outline-white text-white text-nowrap"
+                className={`btn btn-sm text-nowrap ${!isListView ? 'btn-orange' : 'btn-outline-white text-white'}`}
                 style={{ padding: '0.188rem 0.625rem' }}
                 onClick={() => setIsListView(false)}
               >
-                <i className="bx bx-grid-alt me-2"></i>  Grid View
+                <i className="bx bx-grid-alt me-2"></i> Grid View
               </button>
 
               <button
-                className="btn btn-sm btn-outline-white text-white text-nowrap"
+                className={`btn btn-sm text-nowrap ${isListView ? 'btn-orange' : 'btn-outline-white text-white'}`}
                 style={{ padding: '0.188rem 0.625rem' }}
                 onClick={() => setIsListView(true)}
               >
-                <i className="bx bx-list-ul me-2"></i>  List View
+                <i className="bx bx-list-ul me-2"></i> List View
               </button>
             </div>
+
           </div>
           {(selectedCategories.length > 0 ||
             selectedSubCategories.length > 0 ||

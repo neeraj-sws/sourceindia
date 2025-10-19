@@ -358,14 +358,27 @@ const CompaniesFilter = () => {
                 </li>
               </ul>
             </div>
-            <div class="ms-auto">
+
+            <div className="ms-auto d-flex gap-2 align-items-center">
               <p className="mb-0">{companiesTotal} Products</p>
+
+              <button
+                className={`btn btn-sm text-nowrap ${viewMode === 'grid' ? 'btn-orange' : 'btn-outline-white text-white'}`}
+                style={{ padding: '0.188rem 0.625rem' }}
+                onClick={() => setViewMode("grid")}
+              >
+                <i className="bx bx-grid-alt me-2"></i>Grid View
+              </button>
+
+              <button
+                className={`btn btn-sm text-nowrap ${viewMode === 'list' ? 'btn-orange' : 'btn-outline-white text-white'}`}
+                style={{ padding: '0.188rem 0.625rem' }}
+                onClick={() => setViewMode("list")}
+              >
+                <i className="bx bx-list-ul me-2"></i>List View
+              </button>
             </div>
 
-            <div className="mb-3 text-end">
-              <button className="btn btn-sm btn-outline-primary me-2" onClick={() => setViewMode("grid")}>Grid View</button>
-              <button className="btn btn-sm btn-outline-secondary" onClick={() => setViewMode("list")}>List View</button>
-            </div>
 
           </div>
           {(selectedCategories.length > 0 ||
@@ -532,9 +545,9 @@ const CompaniesFilter = () => {
                   key={company.id}
                 >
                   <div className={`card shadow-sm border comapnycardlogo h-100 ${viewMode === 'list' ? 'flex-row p-2' : ''}`}>
-                    <div className={`card-header border-0 ${viewMode === 'list' ? 'border-end pe-3' : ''}`}>
+                    <div className={`card-header border-0 ${viewMode === 'list' ? 'p-0 ps-2 bg-white' : ''}`}>
                       <div className={`d-flex ${viewMode === 'list' ? '' : 'align-items-center gap-2'}`}>
-                        <div className="me-3">
+                        <div className={viewMode === 'list' ? 'me-0' : 'me-3'}>
                           <ImageWithFallback
                             src={`${ROOT_URL}/${company.company_logo_file}`}
                             width={viewMode === 'list' ? 100 : 180}
@@ -542,7 +555,7 @@ const CompaniesFilter = () => {
                             showFallback={true}
                           />
                         </div>
-                        <div>
+                        <div className={viewMode === 'list' ? 'd-none' : ''}>
                           <h5 className="card-title mb-1">{company.organization_name}</h5>
                           <div className="companyitems companylocation mb-2 d-flex gap-2">
                             <b className="fw-semibold">Location:</b>
@@ -554,8 +567,18 @@ const CompaniesFilter = () => {
                       </div>
                     </div>
 
-                    <div className="card-body">
+                    <div className={`card-body ${viewMode === 'list' ? 'pt-2' : ''}`}>
                       <div>
+                        <div className={viewMode === 'list' ? 'd-block' : 'd-none'}>
+
+                          <h5 className="card-title mb-1">{company.organization_name}</h5>
+                          <div className="companyitems companylocation companylocationlist mb-2 d-flex gap-2">
+                            <b className="fw-semibold">Location:</b>
+                            <p className="mb-0">
+                              4th Floor, Survey No. 8, Khatha No. 3, Dooravaninagar Post, Vijinapura Extension, Bengaluru Urban, Karnataka, 560016
+                            </p>
+                          </div>
+                        </div>
                         <div className="companyitems companywebsite mb-2 d-flex gap-2">
                           <b className="fw-semibold">Website:</b>
                           <p className="mb-0">https://www.aaviza.com/</p>
@@ -614,12 +637,12 @@ const CompaniesFilter = () => {
                       </div>
                     </div>
 
-                    <div className="card-footer">
-                      <div className="d-flex gap-2">
-                        <Link className="d-block w-100 pt-2 btn btn-primary">
+                    <div className={`card-footer ${viewMode === 'list' ? 'bg-white border-0 pe-2 pt-0' : ''}`}>
+                      <div className={`d-flex gap-2 ${viewMode === 'list' ? 'flex-column' : 'flex-row'}`}>
+                        <Link className="d-block w-100 pt-2 btn btn-primary text-nowrap px-5">
                           <span className="">View Details</span>
                         </Link>
-                        <Link className="d-block w-100 pt-2 btn btn-orange">
+                        <Link className="d-block w-100 pt-2 btn btn-orange text-nowrap px-5">
                           <span className="">Enquiry</span>
                         </Link>
                       </div>
