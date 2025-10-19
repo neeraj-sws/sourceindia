@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from './../config';
 import ImageWithFallback from "../admin/common/ImageWithFallback";
+import { Link } from "react-router-dom";
 
 const CompaniesFilter = () => {
   const [companies, setCompanies] = useState([]);
@@ -21,6 +22,7 @@ const CompaniesFilter = () => {
   const [hasMore, setHasMore] = useState(true);
   const [scrollLoading, setScrollLoading] = useState(false);
   const [sortBy, setSortBy] = useState('');
+  const [viewMode, setViewMode] = useState("grid");
 
   const filteredCategories = categories.filter(cat =>
     cat.name.toLowerCase().includes(categorySearchTerm)
@@ -194,9 +196,9 @@ const CompaniesFilter = () => {
       <div className="row">
         {/* Filters */}
         <aside className="col-12 col-md-3 mb-4">
-          <div className="mb-4">
-            <h3 className="fs-5 mb-3">Company Name</h3>
-            <div className="input-group flex-nowrap">
+          <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+            <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Company Name</h3>
+            <div className="input-group flex-nowrap ps-2 pe-4">
               <i className="bx bx-search input-group-text" />
               <input
                 type="text"
@@ -207,10 +209,10 @@ const CompaniesFilter = () => {
             </div>
           </div>
 
-          <div className="mb-4">
-            <h3 className="fs-5 mb-3">Category</h3>
+          <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+            <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Category</h3>
             <div className="d-flex flex-column gap-2">
-              <div className="input-group flex-nowrap">
+              <div className="input-group flex-nowrap ps-2 pe-4">
                 <i className="bx bx-search input-group-text" />
                 <input
                   type="text"
@@ -219,7 +221,7 @@ const CompaniesFilter = () => {
                   className="form-control"
                 />
               </div>
-              <div style={{ maxHeight: '190px', overflowY: filteredCategories.length >= 5 ? 'auto' : 'visible' }}>
+              <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredCategories.length >= 5 ? 'auto' : 'visible' }}>
                 {filteredCategories.map(cat => (
                   <div className="form-check mb-2" key={cat.id}>
                     <input
@@ -238,43 +240,43 @@ const CompaniesFilter = () => {
             </div>
           </div>
           {filteredSubCategories.length > 0 && (
-          <>
-          <div className="mb-4">
-            <h3 className="fs-5 mb-3">Sub Category</h3>
-            <div className="d-flex flex-column gap-2">
-              <div className="input-group flex-nowrap">
-                <i className="bx bx-search input-group-text" />
-                <input
-                  type="text"
-                  placeholder="Search sub-categories..."
-                  onChange={(e) => setSubCategorySearchTerm(e.target.value.toLowerCase())}
-                  className="form-control"
-                />
-              </div>
-              <div style={{ maxHeight: '190px', overflowY: filteredSubCategories.length >= 5 ? 'auto' : 'visible' }}>
-              {filteredSubCategories.map(sub => (
-                <div className="form-check mb-2" key={sub.id}>
-                  <input
-                    type="checkbox"
-                    id={`subcat-${sub.id}`}
-                    className="form-check-input"
-                    checked={selectedSubCategories.includes(sub.id)}
-                    onChange={() => handleSubCategoryCheckboxChange(sub.id)}
-                  />
-                  <label htmlFor={`subcat-${sub.id}`} className="form-check-label text-capitalize">
-                    {sub.name} ({sub.product_count})
-                  </label>
+            <>
+              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Sub Category</h3>
+                <div className="d-flex flex-column gap-2">
+                  <div className="input-group flex-nowrap ps-2 pe-4">
+                    <i className="bx bx-search input-group-text" />
+                    <input
+                      type="text"
+                      placeholder="Search sub-categories..."
+                      onChange={(e) => setSubCategorySearchTerm(e.target.value.toLowerCase())}
+                      className="form-control"
+                    />
+                  </div>
+                  <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSubCategories.length >= 5 ? 'auto' : 'visible' }}>
+                    {filteredSubCategories.map(sub => (
+                      <div className="form-check mb-2" key={sub.id}>
+                        <input
+                          type="checkbox"
+                          id={`subcat-${sub.id}`}
+                          className="form-check-input"
+                          checked={selectedSubCategories.includes(sub.id)}
+                          onChange={() => handleSubCategoryCheckboxChange(sub.id)}
+                        />
+                        <label htmlFor={`subcat-${sub.id}`} className="form-check-label text-capitalize">
+                          {sub.name} ({sub.product_count})
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
               </div>
-            </div>
-          </div>
-          </>
+            </>
           )}
-          <div className="mb-4">
-            <h3 className="fs-5 mb-3">State</h3>
+          <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+            <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">State</h3>
             <div className="d-flex flex-column gap-2">
-              <div className="input-group flex-nowrap">
+              <div className="input-group flex-nowrap ps-2 pe-4">
                 <i className="bx bx-search input-group-text" />
                 <input
                   type="text"
@@ -283,7 +285,7 @@ const CompaniesFilter = () => {
                   className="form-control"
                 />
               </div>
-              <div style={{ maxHeight: '190px', overflowY: filteredStates.length >= 5 ? 'auto' : 'visible' }}>
+              <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredStates.length >= 5 ? 'auto' : 'visible' }}>
                 {filteredStates.map(state => (
                   <div className="form-check mb-2" key={state.id}>
                     <input
@@ -305,8 +307,8 @@ const CompaniesFilter = () => {
 
         {/* Companies grid */}
         <section className="col-12 col-md-9 mb-4">
-          <div className="d-flex align-items-center justify-content-between mb-2">
-            <div>
+          <div className="d-flex align-items-center justify-content-between mb-2 primary-color-bg px-3 py-2 rounded-2 text-white">
+            <div className="d-flex justify-content-between">
               <strong>Sort By :</strong>
               <ul className="list-unstyled filterLst d-flex flex-wrap mb-0">
                 <li className="sortPopular">
@@ -357,85 +359,274 @@ const CompaniesFilter = () => {
               </ul>
             </div>
             <div class="ms-auto">
-              <p>{companiesTotal} Products</p>
+              <p className="mb-0">{companiesTotal} Products</p>
             </div>
+
+            <div className="mb-3 text-end">
+              <button className="btn btn-sm btn-outline-primary me-2" onClick={() => setViewMode("grid")}>Grid View</button>
+              <button className="btn btn-sm btn-outline-secondary" onClick={() => setViewMode("list")}>List View</button>
+            </div>
+
           </div>
           {(selectedCategories.length > 0 ||
-          selectedSubCategories.length > 0 ||
-          selectedStates.length > 0) && (
-          <div className="mb-3">
-            <strong>Filter:</strong>
-            <div className="d-flex align-items-center gap-2 mt-2">
-              {selectedCategories.map(id => (
-                <span key={`cat-${id}`} className="badge bg-primary text-white d-flex align-items-center">
-                  {getNameById(categories, id)}
+            selectedSubCategories.length > 0 ||
+            selectedStates.length > 0) && (
+              <div className="mb-3 border px-3 py-2 bg-white rounded-2">
+                <strong className="pb-2">Filter:</strong>
+                <div className="d-flex align-items-baseline justify-content-between gap-2 mb-2">
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
+                    {selectedCategories.map(id => (
+                      <span key={`cat-${id}`} className="badge bg-primary text-white d-flex align-items-center">
+                        {getNameById(categories, id)}
+                        <button
+                          onClick={() => handleCategoryCheckboxChange(id)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
+                    {selectedSubCategories.map(id => (
+                      <span key={`sub-${id}`} className="badge bg-secondary text-white d-flex align-items-center">
+                        {getNameById(subCategories, id)}
+                        <button
+                          onClick={() => handleSubCategoryCheckboxChange(id)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
+                    {selectedStates.map(id => (
+                      <span key={`state-${id}`} className="badge bg-success text-white d-flex align-items-center">
+                        {getNameById(states, id)}
+                        <button
+                          onClick={() => handleStatesCheckboxChange(id)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
+                  </div>
                   <button
-                    onClick={() => handleCategoryCheckboxChange(id)}
-                    className="btn-close btn-close-white ms-2"
-                    style={{ fontSize: '0.6em' }}
-                    aria-label="Remove"
-                  />
-                </span>
-              ))}
-              {selectedSubCategories.map(id => (
-                <span key={`sub-${id}`} className="badge bg-secondary text-white d-flex align-items-center">
-                  {getNameById(subCategories, id)}
-                  <button
-                    onClick={() => handleSubCategoryCheckboxChange(id)}
-                    className="btn-close btn-close-white ms-2"
-                    style={{ fontSize: '0.6em' }}
-                    aria-label="Remove"
-                  />
-                </span>
-              ))}
-              {selectedStates.map(id => (
-                <span key={`state-${id}`} className="badge bg-success text-white d-flex align-items-center">
-                  {getNameById(states, id)}
-                  <button
-                    onClick={() => handleStatesCheckboxChange(id)}
-                    className="btn-close btn-close-white ms-2"
-                    style={{ fontSize: '0.6em' }}
-                    aria-label="Remove"
-                  />
-                </span>
-              ))}
-              <button
-                onClick={() => {
-                  setSelectedCategories([]);
-                  setSelectedSubCategories([]);
-                  setSelectedStates([]);
-                }}
-                className="btn btn-sm btn-outline-danger"
-              >
-                Clear All
-              </button>
-            </div>            
+                    onClick={() => {
+                      setSelectedCategories([]);
+                      setSelectedSubCategories([]);
+                      setSelectedStates([]);
+                    }}
+                    className="btn btn-sm btn-outline-danger text-nowrap" style={{
+                      padding: '0.188rem 0.625rem'
+                    }}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            )}
+
+          <div className={`row g-3 ${viewMode === 'list' ? 'flex-column' : ''}`} style={{ display: 'none' }}>
+            {loading ? (
+              <div className="text-center">
+                <img src="/producfilter.gif" height={80} />
+              </div>
+            ) : filteredCompanies.length > 0 ? (
+              filteredCompanies.map((company) => (
+                <div
+                  className={viewMode === 'grid' ? 'col-12 col-sm-6' : 'col-12'}
+                  key={company.id}
+                >
+                  <div
+                    className={`card shadow-sm border p-3 ${viewMode === 'list' ? 'list-view-card' : 'h-100'
+                      }`}
+                  >
+                    <div
+                      className={`d-flex ${viewMode === 'list'
+                        ? 'flex-column flex-md-row align-items-start gap-3'
+                        : 'flex-column'
+                        }`}
+                    >
+                      {/* Company Logo */}
+                      <div className="flex-shrink-0 text-center">
+                        <ImageWithFallback
+                          src={`${ROOT_URL}/${company.company_logo_file}`}
+                          width={viewMode === 'list' ? 100 : 180}
+                          height={viewMode === 'list' ? 100 : 180}
+                          showFallback={true}
+                          className="rounded border"
+                        />
+                      </div>
+
+                      {/* Company Details */}
+                      <div className="flex-grow-1">
+                        <h5 className="mb-1">{company.organization_name}</h5>
+
+                        <div className="companyitems companylocation d-flex gap-2 mb-2">
+                          <b className="fw-semibold">Location:</b>
+                          <p className="mb-0">
+                            {company.address ||
+                              '4th Floor, Survey No. 8, Vijinapura Extension, Bengaluru...'}
+                          </p>
+                        </div>
+
+                        <div className="d-flex flex-wrap gap-3">
+                          <div className="d-flex gap-2">
+                            <b className="fw-semibold">Website:</b>
+                            <p className="mb-0">https://www.aaviza.com</p>
+                          </div>
+                          <div className="d-flex gap-2">
+                            <b className="fw-semibold">Core:</b>
+                            <p className="mb-0">Manufacturing</p>
+                          </div>
+                          <div className="d-flex gap-2">
+                            <b className="fw-semibold">Activity:</b>
+                            <p className="mb-0">Finished products</p>
+                          </div>
+                          <div className="d-flex gap-2">
+                            <b className="fw-semibold">Category:</b>
+                            <p className="mb-0">Cables & Wire</p>
+                          </div>
+                          <div className="d-flex gap-2">
+                            <b className="fw-semibold">Sub Category:</b>
+                            <p className="mb-0">
+                              Audio Video Cables, Wire Management
+                            </p>
+                          </div>
+                          <div className="d-flex gap-2">
+                            <b className="fw-semibold">Products:</b>
+                            <p className="mb-0">{company.product_count || 0}</p>
+                          </div>
+                        </div>
+
+                        {/* Tags */}
+                        <div className="mt-2 d-flex flex-wrap gap-2">
+                          <span className="badge bg-orange small">PCB Assembly</span>
+                          <span className="badge bg-orange small">Product Assembly</span>
+                        </div>
+                      </div>
+
+                      {/* Buttons */}
+                      <div className="d-flex flex-column gap-2 ms-md-auto w-100 w-md-auto mt-3 mt-md-0">
+                        <Link className="btn btn-sm btn-primary w-100">View Details</Link>
+                        <Link className="btn btn-sm btn-orange w-100">Enquiry</Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-12">
+                <p className="text-center">No products found.</p>
+              </div>
+            )}
           </div>
-          )}
-          <div className="row g-3">
+
+
+          <div className={`row g-3 ${viewMode === 'list' ? 'flex-column' : ''}`}>
             {loading ? (
               <div className="text-center"><img src="/producfilter.gif" height={80} /></div>
             ) : filteredCompanies.length > 0 ? (
               filteredCompanies.map(company => (
-              <div className="col-12 col-sm-6 col-lg-4" key={company.id}>
-                <div className="card h-100 shadow-sm">
-                  <div className="card-body d-flex align-items-center gap-3">
-                    <ImageWithFallback
-                      src={`${ROOT_URL}/${company.company_logo_file}`}
-                      width={180}
-                      height={180}
-                      showFallback={true}
-                    />
-                    <div>
-                      <h5 className="card-title mb-1">{company.organization_name}</h5>
-                      <p className="card-text mb-0 small text-muted">
-                        Products: {company.product_count || 0}
-                      </p>
+                <div
+                  className={viewMode === 'grid' ? 'col-12 col-sm-6' : 'col-12'}
+                  key={company.id}
+                >
+                  <div className={`card shadow-sm border comapnycardlogo h-100 ${viewMode === 'list' ? 'flex-row p-2' : ''}`}>
+                    <div className={`card-header border-0 ${viewMode === 'list' ? 'border-end pe-3' : ''}`}>
+                      <div className={`d-flex ${viewMode === 'list' ? '' : 'align-items-center gap-2'}`}>
+                        <div className="me-3">
+                          <ImageWithFallback
+                            src={`${ROOT_URL}/${company.company_logo_file}`}
+                            width={viewMode === 'list' ? 100 : 180}
+                            height={viewMode === 'list' ? 100 : 180}
+                            showFallback={true}
+                          />
+                        </div>
+                        <div>
+                          <h5 className="card-title mb-1">{company.organization_name}</h5>
+                          <div className="companyitems companylocation mb-2 d-flex gap-2">
+                            <b className="fw-semibold">Location:</b>
+                            <p className="mb-0">
+                              4th Floor, Survey No. 8, Khatha No. 3, Dooravaninagar Post, Vijinapura Extension, Bengaluru Urban, Karnataka, 560016
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="card-body">
+                      <div>
+                        <div className="companyitems companywebsite mb-2 d-flex gap-2">
+                          <b className="fw-semibold">Website:</b>
+                          <p className="mb-0">https://www.aaviza.com/</p>
+                        </div>
+
+                        <div className="companyitems companycoreactivity mb-2 d-flex gap-2">
+                          <b className="fw-semibold">Core Activity:</b>
+                          <p className="mb-0">Manufacturing</p>
+                        </div>
+
+                        <div className="companyitems companactivity mb-2 d-flex gap-2">
+                          <b className="fw-semibold">Activity:</b>
+                          <p className="mb-0">Finished products</p>
+                        </div>
+
+                        <div className="companyitems compancatrgory mb-2 d-flex gap-2">
+                          <b className="fw-semibold">Category:</b>
+                          <p className="mb-0">Cables & Wire</p>
+                        </div>
+
+                        <div className="companyitems compansubcatrgory mb-2 d-flex gap-2">
+                          <b className="fw-semibold">Sub Category:</b>
+                          <p className="mb-0">Audio Video Cables, Wire Management</p>
+                        </div>
+
+                        <div className="companyitems companyproductcount mb-2 d-flex gap-2">
+                          <b className="fw-semibold">Companies:</b>
+                          <p className="mb-0">{company.product_count || 0}</p>
+                        </div>
+
+                        <div className="featuredCompaniesPara d-flex align-items-center gap-1 flex-wrap">
+                          <a
+                            className="small badge text-decoration-none text-white btn-orange text-start"
+                            style={{
+                              whiteSpace: "pre-wrap",
+                              lineHeight: "17px",
+                              padding: "2px 6px",
+                              fontSize: "10px"
+                            }}
+                          >
+                            PCB Assembly
+                          </a>
+                          <a
+                            className="small badge text-decoration-none text-white btn-orange text-start"
+                            style={{
+                              whiteSpace: "pre-wrap",
+                              lineHeight: "17px",
+                              padding: "2px 6px",
+                              fontSize: "10px"
+                            }}
+                          >
+                            Product Assembly
+                          </a>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    <div className="card-footer">
+                      <div className="d-flex gap-2">
+                        <Link className="d-block w-100 pt-2 btn btn-primary">
+                          <span className="">View Details</span>
+                        </Link>
+                        <Link className="d-block w-100 pt-2 btn btn-orange">
+                          <span className="">Enquiry</span>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))
             ) : (
               <div className="col-12"><p className="text-center">No products found.</p></div>
             )}
@@ -444,10 +635,11 @@ const CompaniesFilter = () => {
                 <img src="/producfilter.gif" alt="Loading..." height={60} />
               </div>
             )}
-          </div>          
+          </div>
+
         </section>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 

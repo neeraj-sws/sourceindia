@@ -29,6 +29,10 @@ body {
     color: var(--color-white);
 }
 
+.color-primary {
+    color: var(--primary-color);
+}
+
 .text-orange {
     color: var(--color-orange);
 }
@@ -312,10 +316,17 @@ body {
     color: var(--primary-color);
 }
 
+/* Product detail css starts */
 .companyLogo {
     height: 124px;
     object-fit: contain;
     border: 1px solid #eeeeee;
+}
+
+.ContentBox:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
 }
 
 .company-card img {
@@ -347,6 +358,19 @@ body {
     overflow: hidden;
 }
 
+.recommended-companies-carousel .swiper-slide p {
+    min-height: 42px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+}
+
+/* Product detail css ends */
+
+/* Enquiry css starts */
 .compnaylogo {
     place-content: center;
     border: 1px solid var(--border-color);
@@ -361,26 +385,14 @@ body {
     right: -25px;
 }
 
-.ContentBox:hover {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-    transition: all 0.3s ease;
-}
-
-.recommended-companies-carousel .swiper-slide p {
-    min-height: 42px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal;
-}
-
+/* Swiper slider css starts */
 .swiper-slide.swiper-slide-visible.swiper-slide-fully-visible {
     place-content: center;
 }
 
+/* Swiper slider css starts */
+
+/* nav tabs css starts */
 button.nav-link.active,
 button.nav-link.active:hover {
     border-bottom: 2px solid var(--color-orange) !important;
@@ -398,7 +410,54 @@ button.nav-link {
 button.nav-link,
 .nav-item:hover,
 button.nav-link:hover {
-    border-top-color: var(--color-white) !important;
-    border-left-color: var(--color-white) !important;
-    border-right-color: var(--color-white) !important;
+    border: var(--color-white) !important;
 }
+
+/* nav tabs css ends */
+
+/* company details css starts */
+.comapnycardlogo img {
+    min-height: 90px;
+    min-width: 90px;
+}
+
+.comapnycardlogo h5 {
+    font-size: 1.125rem;
+}
+
+/* .companyitems.companylocation p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+} */
+
+/* CSS for improved list view */
+.list-view-card {
+    border-left: 4px solid #0d6efd;
+    transition: all 0.3s ease;
+}
+
+.list-view-card:hover {
+    background-color: #f9f9f9;
+}
+
+/* Two-line ellipsis for location */
+.companyitems.companylocation p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Orange badge */
+.bg-orange {
+    background-color: #f57c00;
+    color: white;
+}
+
+
+/* company details css ends */

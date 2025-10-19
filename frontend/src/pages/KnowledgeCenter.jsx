@@ -35,7 +35,7 @@ const KnowledgeCenter = () => {
               .filter((item) => item.is_delete === 0 && item.status === 1)
               .map((item, index) => (
                 <div className="col-lg-4 col-sm-6 mb-4 d-flex" key={index}>
-                  <div className="ContentBox bg-white shadow-sm border w-100 d-flex flex-column">
+                  <div className="ContentBox bg-white shadow-sm border w-100 d-flex flex-column rounded-2">
                     <div className="innervideo text-center p-3 pb-0">
                       <ImageFront
                         src={`${ROOT_URL}/${item.file_name}`}

@@ -76,23 +76,26 @@ const CompanyDetail = () => {
             <div className="col-lg-3">
               <div className="card h-100 shadow-sm">
                 <div className="card-body text-center p-4">
-                  <ImageFront
-                    src={`${ROOT_URL}/${company.company_logo_file}`}
-                    alt={company.organization_name}
-                    style={{
-                      width: 'auto',
-                      height: '100px',
-                      objectFit: 'cover',
-                      border: '1px solid #ddd',
-                      borderRadius: '5px',
-                      cursor: 'pointer',
-                    }}
-                    showFallback={true}
-                    defaultimg="/company.png"
-                  />
-                  <p className="mt-3">{company.organization_name}</p>
+                  <h6 className="my-3 text-start">{company.organization_name}</h6>
 
-                  <div className="reviewSection pt-3 text-start border-top">
+                  <div className="border rounded-2">
+                    <ImageFront
+                      src={`${ROOT_URL}/${company.company_logo_file}`}
+                      alt={company.organization_name}
+                      style={{
+                        width: 'auto',
+                        height: '100px',
+                        objectFit: 'cover',
+                        border: '1px solid #ddd',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                      }}
+                      showFallback={true}
+                      defaultimg="/company.png"
+                    />
+                  </div>
+
+                  <div className="reviewSection pt-3 text-start">
 
                     <form onSubmit={handleSubmit}>
                       <h5>Review</h5>
@@ -170,7 +173,7 @@ const CompanyDetail = () => {
           {/* Products Carousel */}
           <div className="container mt-5">
             <div className="companyProducts">
-              <h2>Products</h2>
+              <h2 className="color-primary">Products</h2>
               <Swiper
                 modules={[Navigation, Pagination]}
                 slidesPerView={3}
@@ -211,7 +214,7 @@ const CompanyDetail = () => {
 
             {/* Recommended Companies */}
             <div className="similerCompany mt-5">
-              <h2>Recommended Companies</h2>
+              <h2 className="color-primary">Recommended Companies</h2>
               <Swiper
                 modules={[Navigation, Pagination]}
                 slidesPerView={5}
