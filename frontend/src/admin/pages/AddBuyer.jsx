@@ -257,7 +257,7 @@ const AddBuyer = () => {
             <form className="row g-3" onSubmit={handleSubmit}>
               <div className="card mb-2">
                 <div className='card-header py-3 px-2 bg-white'>
-                  <h6 class="mb-0 fw-bold">Basic Information</h6>
+                  <h6 className="mb-0 fw-bold">Basic Information</h6>
                 </div>
                 <div className="card-body mb-3">
                   <div className='row'>
@@ -373,7 +373,7 @@ const AddBuyer = () => {
 
               <div className="card">
                 <div className='card-header py-3 px-2 bg-white'>
-                  <h6 class="mb-0 fw-bold">Company Information</h6>
+                  <h6 className="mb-0 fw-bold">Company Information</h6>
                 </div>
                 <div className="card-body">
                   <div className="row">

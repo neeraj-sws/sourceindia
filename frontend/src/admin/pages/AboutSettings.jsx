@@ -17,7 +17,7 @@ const AboutSettings = () => {
           <div className="col-xl-3 mx-auto">
             <div className='card card-border mb-4'>
               <div className='card-body'>
-                <h6 class="mb-3 fw-bold">About  Settings</h6>
+                <h6 className="mb-3 fw-bold">About  Settings</h6>
                 <ul className="nav nav-pills pb-0 customnavbar d-block" role="tablist">
                   <li className="nav-item mb-1" role="presentation">
                     <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-status" role="tab" aria-selected="true">

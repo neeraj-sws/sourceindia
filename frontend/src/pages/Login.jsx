@@ -4,9 +4,11 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import API_BASE_URL from "./../config";
 import { useAlert } from "../context/AlertContext";
+import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
     const { showNotification } = useAlert();
+    const { login, setUser } = useAuth();
     const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
@@ -51,8 +53,10 @@ const Login = () => {
             password: formData.password
         });
 
-        const { token } = response.data;
-        localStorage.setItem('user_token', token);
+        const { token, user } = response.data;
+        // localStorage.setItem('user_token', token);
+        login(token); // Updates context
+      setUser(user);
         if (rememberMe) {
         Cookies.set('userEmail', formData.email, { expires: 7 });
         Cookies.set('userPassword', formData.password, { expires: 7 });

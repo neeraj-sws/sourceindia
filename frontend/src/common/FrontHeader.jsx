@@ -1,24 +1,21 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import API_BASE_URL from '../config';
 import "../css/home.css";
 
 const FrontHeader = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('user_token'));
-  const [user, setUser] = useState(null);
+  const {isLoggedIn, logout, user, setUser} = useAuth();
+  // const [user, setUser] = useState(null);
   const token = localStorage.getItem('user_token');
 
   useEffect(() => {
-    // Optional: sync state with token change
     const checkToken = () => {
       setIsLoggedIn(!!localStorage.getItem('user_token'));
     };
-
-    // Listen for localStorage changes across tabs
     window.addEventListener('storage', checkToken);
-
     return () => {
       window.removeEventListener('storage', checkToken);
     };
@@ -26,14 +23,15 @@ const FrontHeader = () => {
 
   const handleLogout = (e) => {
     e.preventDefault();
-    localStorage.removeItem('user_token');
-    setIsLoggedIn(false); // update state
+    // localStorage.removeItem('user_token');
+    // setIsLoggedIn(false);
+    logout();
     navigate('/login');
   };
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!token) return;
+      if (!token || user) return;
       try {
         const response = await axios.get(`${API_BASE_URL}/signup/profile`, {
           headers: {
@@ -46,7 +44,7 @@ const FrontHeader = () => {
       }
     };
     fetchProfile();
-  }, [token]);
+  }, [token, user, setUser]);
 
   return (
     <>
@@ -54,7 +52,11 @@ const FrontHeader = () => {
         <div className='container'>
           <div className="top-bar px-3 d-flex justify-content-between align-items-center">
             <div className="welcomeBox d-flex">
-              <div>Welcome User!</div>
+              {isLoggedIn && user ? (
+                <span>Welcome <b className="text-orange">{user.is_seller ? 'Seller' : 'Buyer'}</b>!</span>
+              ) : (
+                <span>Welcome User!</span>
+              )}
               <div className="text-center text-md-start d-none d-md-block">
                 <span className="ms-3">Support: +91-11-41615985</span>
               </div>
@@ -73,7 +75,7 @@ const FrontHeader = () => {
             </div>
             <div className="lastbox">
               <div className="d-flex align-items-center gap-2">
-                <Link to="/get-support" className="thLink text-center me-2">
+                <Link to="/get-support" className="thLink text-center me-2 lh-1">
                   <i className="lni lni-question-circle d-block"></i>Support
                 </Link>
                 {isLoggedIn && user ? (
@@ -88,15 +90,15 @@ const FrontHeader = () => {
                       <div className="position-relative me-2">
                         <div className="rounded-circle bg-light d-flex align-items-center justify-content-center"
                           style={{ width: "40px", height: "40px", border: "1px solid #ccc" }}>
-                          <i className="bi bi-person"></i>
+                          <i className="bx bx-user"></i>
                         </div>
-                        <span className="badge bg-primary text-white position-absolute top-0 start-100 translate-middle badge-sm">
+                        {/* <span className="badge bg-primary text-white position-absolute badge-sm userbadge">
                           {user.is_seller ? 'Seller' : 'Buyer'}
-                        </span>
+                        </span> */}
                       </div>
-                      <div className="text-start">
-                        <div className="fw-bold">{user.fname}</div>
-                        <div className="fw-bold">{user.lname}</div>
+                      <div className="text-start lh-sm">
+                        <div className="fw-medium">{user.fname}</div>
+                        <div className="fw-medium">{user.lname}</div>
                       </div>
                     </div>
                     <ul className="dropdown-menu dropdown-menu-end mt-2" aria-labelledby="userDropdown">
@@ -128,7 +130,6 @@ const FrontHeader = () => {
                     <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
                       <span className="navbar-toggler-icon"></span>
                     </button>
-
                     <div className="collapse navbar-collapse" id="mainNavbar">
                       <ul className="navbar-nav ms-auto">
                         <li className="nav-item">
@@ -142,12 +143,11 @@ const FrontHeader = () => {
                             Companies
                           </a>
                           <ul className="dropdown-menu" aria-labelledby="companyDropdown">
-                            <li><a className="dropdown-item" href="#">Company 1</a></li>
-                            <li><a className="dropdown-item" href="#">Company 2</a></li>
-                            <li><a className="dropdown-item" href="#">Company 3</a></li>
+                            <li><a className="dropdown-item" href="#">Seller <small><i>(Manufacturer)</i></small></a></li>
+                            <li><a className="dropdown-item" href="#">Buyers</a></li>
+                            <li><a className="dropdown-item" href="#">Distributors</a></li>
                           </ul>
                         </li>
-
                         <li className="nav-item">
                           <a className="nav-link" href="https://event.sourceindia-electronics.com/">Event</a>
                         </li>
@@ -159,9 +159,7 @@ const FrontHeader = () => {
                   </div>
                 </nav>
               </div>
-              <div>
-                <a href="https://elcina.com" className="post-btn" target="_blank">ELCINA Website</a>
-              </div>
+              <div><a href="https://elcina.com" className="post-btn" target="_blank">ELCINA Website</a></div>
             </div>
           </div>
         </div>

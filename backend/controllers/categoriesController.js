@@ -1,4 +1,4 @@
-const { Op, literal } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
@@ -6,6 +6,7 @@ const sequelize = require('../config/database');
 const Categories = require('../models/Categories');
 const UploadImage = require('../models/UploadImage');
 const Products = require('../models/Products');
+const CompanyInfo = require('../models/CompanyInfo');
 const getMulterUpload = require('../utils/upload');
 
 exports.createCategories = async (req, res) => {
@@ -38,13 +39,15 @@ exports.getAllCategories = async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const isDeleted = req.query.is_delete;
     const status = req.query.status;
-    const whereCondition = {};    
+
+    const whereCondition = {};
     if (typeof isDeleted !== 'undefined') {
       whereCondition.is_delete = parseInt(isDeleted);
     }
     if (typeof status !== 'undefined') {
       whereCondition.status = parseInt(status);
     }
+
     const categories = await Categories.findAll({
       order: [['id', 'ASC']],
       include: [
@@ -54,29 +57,63 @@ exports.getAllCategories = async (req, res) => {
         },
       ],
       where: whereCondition,
-      ...(limit && { limit }),
+      ...(limit && { limit })
     });
+
+    // product count per category (unchanged)
     const productCounts = await Products.findAll({
-      attributes: ['category', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      attributes: ['category', [fn('COUNT', col('id')), 'count']],
       where: { is_delete: 0, is_approve: 1, status: 1 },
       group: ['category'],
       raw: true,
     });
-    const countMap = {};
+    const productCountMap = {};
     productCounts.forEach(item => {
-      countMap[item.category] = parseInt(item.count);
+      productCountMap[item.category] = parseInt(item.count);
     });
+
+    // company count per category using FIND_IN_SET
+    // We do a raw query or use sequelize.where + fn
+    const companyCounts = await CompanyInfo.findAll({
+      attributes: [
+        [fn('COUNT', col('id')), 'count'],
+        'category_sell'
+      ],
+      where: {
+        is_delete: 0
+      },
+      group: ['category_sell'],
+      raw: true,
+    });
+
+    const companyCountMap = {};
+    companyCounts.forEach(item => {
+      // item.category_sell is something like "1,2,3" — this is grouping by the exact string,
+      // but we need to break it down
+      const csv = item.category_sell || '';
+      const count = parseInt(item.count) || 0;
+      csv.split(',').forEach(catIdStr => {
+        const catId = parseInt(catIdStr);
+        if (!isNaN(catId)) {
+          companyCountMap[catId] = (companyCountMap[catId] || 0) + count;
+        }
+      });
+    });
+
     const modifiedCategories = categories.map(category => {
-      const categoryData = category.toJSON();
-      const { UploadImage, ...rest } = categoryData;
+      const cd = category.toJSON();
+      const { UploadImage, ...rest } = cd;
       return {
         ...rest,
         file_name: UploadImage?.file || null,
-        product_count: countMap[category.id] || 0,
+        product_count: productCountMap[category.id] || 0,
+        company_count: companyCountMap[category.id] || 0,
       };
     });
+
     res.json(modifiedCategories);
   } catch (err) {
+    console.error('getAllCategories error:', err);
     res.status(500).json({ error: err.message });
   }
 };

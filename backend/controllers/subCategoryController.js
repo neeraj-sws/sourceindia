@@ -1,9 +1,10 @@
-const { Op } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 const moment = require('moment');
 const sequelize = require('../config/database');
 const SubCategories = require('../models/SubCategories');
 const Categories = require('../models/Categories');
 const Products = require('../models/Products');
+const CompanyInfo = require('../models/CompanyInfo');
 
 exports.createSubCategories = async (req, res) => {
   try {
@@ -71,11 +72,12 @@ exports.getSubCategoriesByCategory = async (req, res) => {
 exports.getSubCategoriesByCategories = async (req, res) => {
   try {
     const { categories } = req.body;
+
     if (!categories || !Array.isArray(categories) || categories.length === 0) {
       return res.status(400).json({ error: 'categories array is required and cannot be empty' });
     }
 
-    // Fetch subcategories with category info
+    // 1. Fetch subcategories
     const subCategories = await SubCategories.findAll({
       where: {
         category: {
@@ -94,31 +96,53 @@ exports.getSubCategoriesByCategories = async (req, res) => {
       ],
     });
 
-    // Fetch product counts grouped by sub_category
+    // 2. Product counts per subcategory
     const productCounts = await Products.findAll({
-      attributes: ['sub_category', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      attributes: ['sub_category', [fn('COUNT', col('id')), 'count']],
       where: { is_delete: 0, is_approve: 1, status: 1 },
       group: ['sub_category'],
       raw: true,
     });
 
-    const countMap = {};
+    const productCountMap = {};
     productCounts.forEach(item => {
-      countMap[item.sub_category] = parseInt(item.count);
+      productCountMap[item.sub_category] = parseInt(item.count);
     });
 
-    // Modify subcategories to add status text, category name, and product count
-    const modifiedSubCategories = subCategories.map(sub_categories => {
-      const subCategoriesData = sub_categories.toJSON();
-      subCategoriesData.getStatus = subCategoriesData.status === 1 ? 'Active' : 'Inactive';
-      subCategoriesData.category_name = subCategoriesData.Categories?.name || null;
-      subCategoriesData.product_count = countMap[subCategoriesData.id] || 0;
-      delete subCategoriesData.Categories;
-      return subCategoriesData;
+    // 3. Company counts per subcategory using FIND_IN_SET
+    const companyCounts = await CompanyInfo.findAll({
+      attributes: ['sub_category', [fn('COUNT', col('id')), 'count']],
+      where: { is_delete: 0 },
+      raw: true,
+    });
+
+    const companyCountMap = {};
+    companyCounts.forEach(item => {
+      const csv = item.sub_category || '';
+      const count = parseInt(item.count) || 0;
+      csv.split(',').forEach(subCatIdStr => {
+        const subCatId = parseInt(subCatIdStr);
+        if (!isNaN(subCatId)) {
+          companyCountMap[subCatId] = (companyCountMap[subCatId] || 0) + 1;
+        }
+      });
+    });
+
+    // 4. Format response
+    const modifiedSubCategories = subCategories.map(subCat => {
+      const subCatData = subCat.toJSON();
+      return {
+        ...subCatData,
+        getStatus: subCatData.status === 1 ? 'Active' : 'Inactive',
+        category_name: subCatData.Categories?.name || null,
+        product_count: productCountMap[subCatData.id] || 0,
+        company_count: companyCountMap[subCatData.id] || 0,
+      };
     });
 
     res.json(modifiedSubCategories);
   } catch (err) {
+    console.error('getSubCategoriesByCategories error:', err);
     res.status(500).json({ error: err.message });
   }
 };
