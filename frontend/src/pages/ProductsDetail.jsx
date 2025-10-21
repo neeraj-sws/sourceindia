@@ -393,9 +393,7 @@ const ProductDetail = () => {
               <SwiperSlide key={similar.id}>
                 <div className="mb-4">
                   <div className="productBox p-3 bg-white">
-                    <div className="cateproduct">
-                      <p>{similar.category_name}</p>
-                    </div>
+
                     <div className="middlepro">
                       <div className="ProImg">
                         <ImageFront
@@ -406,14 +404,22 @@ const ProductDetail = () => {
                         />
                       </div>
                       <div className="productlink">
-                        <p className="mb-0">{similar.title}</p>
-                        <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2">
+                        <div className="">
+                          <div className="cateproduct">
+                            <h6 className={!similar.category_name ? "mb-0" : "mb-1"}>
+                              {similar.category_name || ""}
+                            </h6>
+                          </div>
+
+                          <p className="mb-0">{similar.title}</p>
+                        </div>
+                        <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2">
                           <span className="pe-2">View</span>
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="15"
                             viewBox="4 9.28 23.91 13.44"
-                          >
+                            className="filtersvg">
                             <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path>
                           </svg>
                         </Link>
