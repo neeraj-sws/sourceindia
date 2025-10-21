@@ -1,0 +1,71 @@
+First Step = data showing/ui
+
+1) TOP CATEGORIES - $data['categories'] = $categories = Category::select('categories.*', \DB::raw('COUNT(products.id) as product_count'))
+    ->join('products', 'categories.id', '=', 'products.category')
+    ->join('users', 'products.user_id', '=', 'users.id')
+    ->where([
+        ['categories.status', 1],
+        ['categories.top_category', 1],
+        ['categories.is_delete', 0],
+        ['products.status', 1],
+        ['products.is_delete', 0],
+        ['users.status', 1],
+        ['users.is_approve', 1],
+    ])
+    ->groupBy('categories.id')
+    ->orderBy('product_count','DESC')
+    ->get();
+	
+2) Products -  $data['products'] = Product::where('best_product', 1)->join('upload_images', 'products.file_id', '=', 'upload_images.id')->where('is_delete', 0)->where('is_approve', 1)->take(6)->get(); 
+
+
+3) FEATURED COMPANIES -   $companies = User::where('company_info.featured_company', 1)->where('company_info.is_delete', 0)->where('company_info.company_logo','!=', '')->select('company_info.company_logo','company_info.organization_slug')->join('company_info', 'users.company_id', '=', 'company_info.id')->get();
+
+4) Registration Data post - users,company_info
+
+5) Open Enquiry  Data post/get
+6) Get Support Data post = 
+7) Contact Us Data post = half done
+8) Knowledge  =  $data['knowledges'] = KnowledgeCenter::where('status', 1)->where('is_delete', 0)->join('upload_images', 'knowledge_centers.file_id', '=', 'upload_images.id')->get(); = done
+
+9) Login
+
+Front pages
+
+1. Home Page - Done
+2. Product Category - Done
+3. Company - Done
+4. Contact Us - Done
+5. Sign In - Done
+6. Knowledge Center - Done
+7. Registration - Done
+8. Company list
+9. Product list - Done
+10. Company Detail -> Done
+11. Product Detail -> Done
+12. Support---
+13. Enquiry -> api
+
+
+
+Second Step: User Dashboard
+
+1) Dashboard
+2) Profile
+3) My Product
+4) Leads
+5) Leads Message
+6) Enquiry
+7) Enquiry Message
+8) Open Enquiry
+9) My Open Enquiry
+10) My All Enquiries chats
+
+
+Functional Work
+
+1) User side Enquiry system
+2) Mailing all side
+3) contact form submit
+4) support form submit
+

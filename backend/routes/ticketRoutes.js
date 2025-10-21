@@ -4,7 +4,10 @@ const ticketController = require('../controllers/ticketController');
 
 router.post('/', ticketController.createTickets);
 router.post('/send-otp', ticketController.sendOtp);
-router.post('/verify-otp', ticketController.sendOtp);
+router.post('/verify-otp', ticketController.verifyOtp);
+router.post('/store-ticket', ticketController.createstoreTicket);
+router.get('/support-ticket/track/:number', ticketController.getTicketByNumber);
+router.post('/store-support-ticket-reply', ticketController.ticketReplystore);
 
 router.get('/', ticketController.getAllTickets);
 router.get('/server-side', ticketController.getAllTicketsServerSide);

@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const Tickets = require('../models/Tickets');
 const TicketCategory = require('../models/TicketCategory');
+const TicketReply = require('../models/TicketReply');
 const Emails = require('../models/Emails');
 const Users = require('../models/Users');
 const getMulterUpload = require('../utils/upload');
@@ -10,6 +11,7 @@ const { body, validationResult } = require('express-validator');
 const upload = getMulterUpload('tickets').single('attachment');
 const moment = require('moment');
 const { getTransporter } = require('../helpers/mailHelper');
+require('dotenv').config();
 
 exports.createTickets = async (req, res) => {
   upload(req, res, async (err) => {
@@ -205,22 +207,27 @@ exports.sendOtp = async (req, res) => {
     const generatedOtp = Math.floor(1000 + Math.random() * 9000);
 
     // Step 2: Find or create ticket
-    let ticket = await Tickets.findOne({ where: { email } });
+    let ticket = await Tickets.findOne({
+      where: {
+        email,
+        is_complete: 0,
+      },
+    });
 
     if (ticket) {
       ticket.otp = generatedOtp;
-      ticket.is_verify = 0;
+      ticket.added_by = 'front';
       await ticket.save();
     } else {
       ticket = await Tickets.create({
         email,
         otp: generatedOtp,
-        is_verify: 0,
+        added_by: 'front',
       });
     }
 
     // Step 3: Get Email Template (ID: 86)
-    const emailTemplate = await Emails.findByPk(86);
+    const emailTemplate = await Emails.findByPk(87);
     if (!emailTemplate) {
       return res.status(404).json({ message: "Email template not found" });
     }
@@ -260,7 +267,12 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Email and OTP are required" });
     }
 
-    const ticket = await Tickets.findOne({ where: { email } });
+    const ticket = await Tickets.findOne({
+      where: {
+        email,
+        is_complete: 0,
+      }
+    });
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
@@ -282,5 +294,247 @@ exports.verifyOtp = async (req, res) => {
   } catch (error) {
     console.error("Verify OTP Error:", error);
     return res.status(500).json({ message: "Failed to verify OTP" });
+  }
+};
+
+exports.createstoreTicket = async (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ error: 'Attachment upload failed', details: err.message });
+    }
+    try {
+
+      const { first_name, last_name, phone, title, message, email, ticket_id } = req.body;
+
+      const ticket = await Tickets.findByPk(ticket_id);
+      if (!ticket || ticket.email !== email) {
+        return res.status(403).json({ message: "Email not verified" });
+      }
+      const created_by = "Guest";
+      const ticketId = `SOURCE-INDIA-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 900 + 100)}`;
+      const crypto = require("crypto");
+
+      const token = crypto.createHash("md5").update(req.body.title).digest("hex");
+      // Save final ticket info
+      ticket.fname = first_name;
+      ticket.lname = last_name;
+      ticket.phone = phone;
+      ticket.title = title;
+      ticket.message = message;
+      ticket.ticket_id = ticketId;
+      ticket.attachment = req.file ? req.file.filename : null;
+      ticket.status = 0;
+      ticket.priority = 'high';
+      ticket.category = 1;
+      ticket.is_complete = 1;
+      ticket.created_by = created_by;
+      ticket.token = token;
+      await ticket.save();
+
+      const mediaType = req.file?.mimetype?.startsWith("image/") ? "image" : "file";
+
+      await TicketReply.create({
+        user_id: 0, // since guest
+        ticket_id: ticket_id,
+        reply: message,
+        added_by: created_by,
+        attachment: req.file ? req.file.filename : null,
+        media_type: mediaType,
+      });
+
+
+      res.json({ success: true, message: "Ticket created successfully" });
+    } catch (err) {
+      console.error("Ticket Create Error:", err);
+      res.status(500).json({ message: "Failed to create ticket" });
+    }
+  });
+};
+
+exports.getTicketByNumber = async (req, res) => {
+  try {
+    const ticketId = req.params.number; // e.g. SOURCE-INDIA-20251019-395
+    const { token } = req.query;
+
+    if (!ticketId) {
+      return res.status(400).json({ message: 'Ticket ID is required' });
+    }
+
+    const getTicket = await Tickets.findOne({
+      where: { ticket_id: ticketId },
+      include: [
+        { model: TicketCategory, attributes: ['name'], as: 'TicketCategory' },
+      ],
+    });
+
+    const trackUrl = `/support-ticket/track/${ticketId}`;
+
+    if (!token) {
+      return res.redirect(trackUrl);
+    }
+
+    if (getTicket && getTicket.token !== token) {
+      return res.redirect(trackUrl);
+    }
+
+    if (!getTicket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    const allTicket = await Tickets.findAll({
+      where: { is_complete: 1, email: getTicket.email },
+    });
+
+    const ticketReply = await TicketReply.findAll({
+      where: { ticket_id: getTicket.id },
+      order: [['id', 'DESC']],
+    });
+
+
+    const ticketLastReply = ticketReply.length > 0 ? ticketReply[0] : null;
+
+
+    return res.json({
+      ticket: getTicket,
+      relatedTickets: allTicket,
+      replies: ticketReply,
+      lastReply: ticketLastReply,
+    });
+  } catch (err) {
+    console.error('Error fetching ticket:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.ticketReplystore = async (req, res) => {
+  try {
+    upload(req, res, async () => {
+      const { id, message, type } = req.body;
+      const attachment = req.file;
+
+      // Validate required fields
+      if (!id || !message) {
+        return res.status(400).json({ message: 'Ticket ID and message are required' });
+      }
+
+      // Find the ticket
+      const ticket = await Tickets.findOne({ where: { ticket_id: id } });
+      if (!ticket) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+
+      // Handle attachment
+      let attachmentUrl = '';
+      if (attachment) {
+        const allowedExtensions = ['pdf', 'xls', 'xlsx', 'csv', 'jpg', 'png', 'jpeg', 'txt', 'svg'];
+        const ext = attachment.originalname.split('.').pop().toLowerCase();
+        if (!allowedExtensions.includes(ext)) {
+          return res.status(400).json({ message: 'Invalid file extension' });
+        }
+        attachmentUrl = `/uploads/${attachment.filename}`;
+      }
+
+      // Create a new reply
+      const reply = await TicketReply.create({
+        ticket_id: ticket.id,
+        reply: message,
+        attachment: attachment ? attachment.filename : null,
+        media_type: type || 'reply',
+        added_by: req.user ? req.user.role : 'Guest', // Adjust based on your auth setup
+      });
+
+      // Update ticket status if needed
+      if (ticket.status === 0) {
+        ticket.status = 1;
+        await ticket.save();
+      }
+
+      // Fetch all replies for the ticket
+      const ticketReply = await TicketReply.findAll({
+        where: { ticket_id: ticket.id },
+        order: [['id', 'DESC']],
+      });
+
+      // Prepare response data
+      const detailArr = {
+        user_name: ticket.fname + ' ' + ticket.lname,
+        message,
+        ticket_id: ticket.ticket_id,
+        added_by: reply.added_by,
+        attachmentUrl: attachmentUrl || '',
+        ticketReply,
+      };
+
+
+
+      const emailTemplate = await Emails.findByPk(84);
+      if (!emailTemplate) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+
+      const attUrl = attachmentUrl ? process.env.ROOT_URL + attachmentUrl : '';
+      const msgStr = emailTemplate.message.toString("utf8");
+      const userMessage = msgStr
+        .replace("{{ MESSAGE }}", message)
+        .replace("{{ USER_FNAME }}", ticket.fname)
+        .replace("{{ ADDED_BY }}", reply.added_by)
+        .replace("{{ TICKET_ID }}", ticket.ticket_id)
+        .replace("{{ LINK }}", attUrl)
+        .replace("{{ TITLE }}", ticket.title)
+        .replace("{{ ATTACHMENT }}", attUrl)
+        .replace("{{ USER_EMAIL }}", ticket.email)
+        .replace("{{ USER_NAME }}", ticket.fname + ' ' + ticket.lname);
+
+      // Step 4: Send OTP via Mail
+      const { transporter, siteConfig } = await getTransporter();
+
+      await transporter.sendMail({
+        from: `"Support Team" <info@sourceindia-electronics.com>`,
+        to: ticket.email,
+        subject: emailTemplate.subject,
+        html: userMessage,
+      });
+
+      const adminemailTemplate = await Emails.findByPk(85);
+      if (!adminemailTemplate) {
+        return res.status(404).json({ message: "Admin Email template not found" });
+      }
+
+      const adminmsgStr = adminemailTemplate.message.toString("utf8");
+      const adminMessage = adminmsgStr
+        .replace("{{ MESSAGE }}", message)
+        .replace("{{ USER_FNAME }}", ticket.fname)
+        .replace("{{ ADDED_BY }}", reply.added_by)
+        .replace("{{ TICKET_ID }}", ticket.ticket_id)
+        .replace("{{ LINK }}", attUrl)
+        .replace("{{ TITLE }}", ticket.title)
+        .replace("{{ ATTACHMENT }}", attUrl)
+        .replace("{{ USER_EMAIL }}", ticket.email)
+        .replace("{{ USER_NAME }}", ticket.fname + ' ' + ticket.lname);
+
+
+      await transporter.sendMail({
+        from: `"Support Team" <info@sourceindia-electronics.com>`,
+        to: siteConfig['site_email'],
+        subject: adminemailTemplate.subject,
+        html: adminMessage,
+      });
+
+
+      // Generate view HTML
+      const view = attachmentUrl
+        ? `<div><h6>${reply.added_by}</h6><span>${new Date().toLocaleString()}</span><p>${message}</p><a href="${attachmentUrl}">View Attachment</a></div>`
+        : `<div><h6>${reply.added_by}</h6><span>${new Date().toLocaleString()}</span><p>${message}</p></div>`;
+
+      return res.json({
+        success: 1,
+        view,
+        message: 'Support ticket reply sent successfully.',
+      });
+    });
+  } catch (error) {
+    console.error('Error storing ticket reply:', error);
+    return res.status(500).json({ message: error.message });
   }
 };
