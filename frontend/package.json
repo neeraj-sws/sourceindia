@@ -13,6 +13,7 @@
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^41.4.2",
     "@ckeditor/ckeditor5-react": "^11.0.0",
+    "@tinymce/tinymce-react": "^6.3.0",
     "axios": "^1.11.0",
     "bootstrap": "^5.3.8",
     "chart.js": "^4.5.0",
