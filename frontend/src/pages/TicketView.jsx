@@ -4,10 +4,12 @@ import API_BASE_URL, { ROOT_URL } from '../config'; // Assuming you have ROOT_UR
 import { useAlert } from "../context/AlertContext";
 import { useParams, useLocation } from "react-router-dom";
 import JoditEditor from "jodit-react";
+import { useNavigate } from "react-router-dom";
 const TicketView = () => {
   const { showNotification } = useAlert();
   const { number } = useParams(); // ticket_id from route like /support-ticket/track/:number
   const location = useLocation();
+
   const [ticketData, setTicketData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formloading, setFormLoading] = useState(false);

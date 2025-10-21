@@ -489,5 +489,6 @@ button.nav-link:hover {
 /* company details css ends */
 .conversationSection {
     max-height: 500px;
-    overflow-y: scroll;
+    overflow-y: auto;
+    overflow-x: hidden;
 }

@@ -6,6 +6,7 @@ router.post('/', ticketController.createTickets);
 router.post('/send-otp', ticketController.sendOtp);
 router.post('/verify-otp', ticketController.verifyOtp);
 router.post('/store-ticket', ticketController.createstoreTicket);
+router.post('/track-ticket', ticketController.trackTicket);
 router.get('/support-ticket/track/:number', ticketController.getTicketByNumber);
 router.post('/store-support-ticket-reply', ticketController.ticketReplystore);
 

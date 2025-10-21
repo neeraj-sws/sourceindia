@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
+import { useNavigate } from "react-router-dom";
 
 const CreateTicket = () => {
   const { showNotification } = useAlert();
@@ -12,7 +13,7 @@ const CreateTicket = () => {
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showTicketForm, setShowTicketForm] = useState(false);
-
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -84,6 +85,8 @@ const CreateTicket = () => {
       });
 
       showNotification(response.data.message || "Ticket created successfully", "success");
+      const { ticket_id, token } = response.data;
+      navigate(`/ticket/view/${ticket_id}?token=${token}`);
       setShowTicketForm(false);
       setShowOtpInput(false);
       setEmail("");

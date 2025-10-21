@@ -343,7 +343,45 @@ exports.createstoreTicket = async (req, res) => {
       });
 
 
-      res.json({ success: true, message: "Ticket created successfully" });
+      res.json({
+        success: true,
+        message: "Ticket created successfully",
+        ticket_id: ticketId, // Return the new ticket_id
+        token: token, // Return the generated token
+      });
+    } catch (err) {
+      console.error("Ticket Create Error:", err);
+      res.status(500).json({ message: "Failed to create ticket" });
+    }
+  });
+};
+
+exports.trackTicket = async (req, res) => {
+  upload(req, res, async (err) => {
+
+    try {
+
+      const { email, ticketId } = req.body;
+
+      const ticket = await Tickets.findOne({
+        where: {
+          ticket_id: ticketId,
+          email: email.toLowerCase(), // Case-insensitive email match
+        },
+      });
+      if (!ticket || ticket.email !== email) {
+        return res.status(403).json({ message: "Please enter valid credentials." });
+      }
+
+      const token = ticket.token;
+
+      res.json({
+        success: true,
+        message: "Ticket successfully",
+        ticket_id: ticketId,
+        token: token,
+      });
+
     } catch (err) {
       console.error("Ticket Create Error:", err);
       res.status(500).json({ message: "Failed to create ticket" });
