@@ -3,6 +3,7 @@ import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from './../config';
 import ImageWithFallback from "../admin/common/ImageWithFallback";
 import { Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const ProductsList = () => {
   const [productsData, setProductsData] = useState([]);
@@ -26,6 +27,20 @@ const ProductsList = () => {
   const [hasMore, setHasMore] = useState(true);
   const [scrollLoading, setScrollLoading] = useState(false);
   const [isListView, setIsListView] = useState(false);
+
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const cateParam = queryParams.get("cate");
+
+    if (cateParam) {
+      // For URLs like ?cate=3 or ?cate=3,5
+      const selectedFromUrl = cateParam.split(",").map((v) => parseInt(v.trim(), 10));
+      setSelectedCategories(selectedFromUrl);
+    }
+  }, [location.search]);
 
   const filteredCategories = categories.filter(cat =>
     cat.name.toLowerCase().includes(categorySearchTerm)

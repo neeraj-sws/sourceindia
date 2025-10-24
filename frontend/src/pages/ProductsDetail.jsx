@@ -9,6 +9,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/thumbs';
 import ImageFront from "../admin/common/ImageFront";
+import EnquiryForm from "./EnquiryForm";
 import { Link } from "react-router-dom";
 import { useAlert } from "../context/AlertContext";
 
@@ -24,7 +25,7 @@ const ProductDetail = () => {
   const [hover, setHover] = useState(0);
   const [review, setReview] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const [showModal, setShowModal] = useState(false);
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -209,9 +210,18 @@ const ProductDetail = () => {
                   </div>
                 </div>
                 <div className="card-footer pt-0 bg-white border-0">
-                  <button className="btn btn-orange w-100">
+                  <button className="btn btn-orange w-100" onClick={() => setShowModal(true)}>
                     <i className="lni lni-phone pe-2"></i> Enquiry
                   </button>
+
+                  <EnquiryForm
+                    show={showModal}
+                    onHide={() => setShowModal(false)}
+                    productId={`${product.id}`}
+                    companyId={`${product.company_id}`}
+                    productTitle={`${product.title}`}
+                    companyName={`${product.company_name}`}
+                  />
                 </div>
               </div>
             </div>
