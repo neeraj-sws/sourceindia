@@ -1,6 +1,15 @@
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
+const sequelize = require('../config/database'); // your sequelize instance
+const { QueryTypes } = require('sequelize');
 const InterestSubCategories = require('../models/InterestSubCategories');
 const InterestCategories = require('../models/InterestCategories');
+const Users = require('../models/Users');
+const BuyerInterests = require('../models/BuyerInterests');
+const CompanyInfo = require('../models/CompanyInfo');
+const UploadImage = require('../models/UploadImage');
+const Cities = require('../models/Cities');
+const States = require('../models/States');
+const Countries = require('../models/Countries');
 
 exports.createInterestSubCategories = async (req, res) => {
   try {
@@ -36,6 +45,42 @@ exports.getAllInterestSubCategories = async (req, res) => {
     });
     res.json(modifiedInterestSubCategories);
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getBuyerInterestsWithProductCount = async (req, res) => {
+  try {
+    // Raw SQL query
+    const sql = `
+      SELECT 
+        bi.id,
+        bi.buyer_id,
+        bi.activity_id,
+        isc.name AS category_name,
+        COUNT(bi.buyer_id) AS product_count,
+        u.status,
+        CASE WHEN u.status = 1 THEN 'Active' ELSE 'Inactive' END AS getStatus
+      FROM buyerinterests bi
+      INNER JOIN users u ON u.id = bi.buyer_id
+      INNER JOIN company_info ci ON ci.id = u.company_id AND ci.is_delete = 0
+      INNER JOIN interest_sub_categories isc ON isc.id = bi.activity_id
+      WHERE 
+        u.status = 1
+        AND u.is_approve = 1
+        AND u.is_seller = 0
+      GROUP BY isc.name, bi.activity_id, bi.id, bi.buyer_id, u.status
+      ORDER BY product_count DESC
+      LIMIT 5;
+    `;
+
+    const results = await sequelize.query(sql, {
+      type: QueryTypes.SELECT,
+    });
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };

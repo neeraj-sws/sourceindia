@@ -4,6 +4,7 @@ const interestSubCategoriesController = require('../controllers/interestSubCateg
 
 router.post('/', interestSubCategoriesController.createInterestSubCategories);
 router.get('/', interestSubCategoriesController.getAllInterestSubCategories);
+router.get('/count_relation', interestSubCategoriesController.getBuyerInterestsWithProductCount);
 router.get('/server-side', interestSubCategoriesController.getAllInterestSubCategoriesServerSide);
 router.delete('/delete-selected', interestSubCategoriesController.deleteSelectedInterestSubCategories);
 router.get('/category/:interest_category_id', interestSubCategoriesController.getInterestSubCategoriesByCategory);

@@ -8,8 +8,13 @@ const Cities = require('../models/Cities');
 const Emails = require('../models/Emails');
 const EmailVerification = require('../models/EmailVerification');
 const MembershipPlan = require('../models/MembershipPlan');
-const Companyinfo = require('../models/CompanyInfo');
+const CompanyInfo = require('../models/CompanyInfo');
 const MembershipDetail = require('../models/MembershipDetail');
+const CoreActivity = require('../models/CoreActivity');
+const Activity = require('../models/Activity');
+const Categories = require('../models/Categories');
+const SubCategories = require('../models/SubCategories');
+const UploadImage = require('../models/UploadImage');
 const { getTransporter } = require('../helpers/mailHelper');
 const { generateUniqueSlug } = require('../helpers/mailHelper');
 const nodemailer = require('nodemailer');
@@ -54,34 +59,119 @@ exports.login = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    const userId = req.user.id; // Retrieved from token via middleware
-
+    const userId = req.user.id;
     const user = await Users.findOne({
       where: { id: userId, is_delete: 0 },
-      attributes: { exclude: ['password'] }, // Don't return the password
+      attributes: { exclude: ['password', 'real_password'] },
+      include: [
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          where: { is_delete: 0 },
+          required: false,
+          include: [
+            {
+              model: UploadImage,
+              as: 'companyLogo',
+              required: false,
+              attributes: ['file']
+            },
+            {
+              model: UploadImage,
+              as: 'companySamplePptFile',
+              required: false,
+              attributes: ['file']
+            },
+            {
+              model: UploadImage,
+              as: 'companyVideo',
+              required: false,
+              attributes: ['file']
+            },
+            {
+              model: UploadImage,
+              as: 'companySampleFile',
+              required: false,
+              attributes: ['file']
+            },
+            {
+              model: CoreActivity,
+              as: 'CoreActivity',
+              required: false,
+              attributes: ['id', 'name']
+            },
+            {
+              model: Activity,
+              as: 'Activity',
+              required: false,
+              attributes: ['id', 'name']
+            }
+          ]
+        },
+        {
+          model: UploadImage,
+          as: 'file',
+          required: false,
+          attributes: ['file']
+        },
+        {
+          model: UploadImage,
+          as: 'company_file',
+          required: false,
+          attributes: ['file']
+        },
+        {
+          model: Countries,
+          as: 'country_data',
+          required: false,
+          attributes: ['id', 'name']
+        },
+        {
+          model: States,
+          as: 'state_data',
+          required: false,
+          attributes: ['id', 'name']
+        },
+        {
+          model: Cities,
+          as: 'city_data',
+          required: false,
+          attributes: ['id', 'name']
+        }
+      ]
     });
-
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
+    if (user.company_info) {
+      const { category_sell, sub_category } = user.company_info;
+      const parseIds = str => str ? str.split(',').map(id => parseInt(id.trim())).filter(Boolean) : [];
+      const categoryIds = parseIds(category_sell);
+      const subCategoryIds = parseIds(sub_category);
+      const [categories, subCategories] = await Promise.all([
+        categoryIds.length
+          ? Categories.findAll({ where: { id: { [Op.in]: categoryIds } }, attributes: ['name'] })
+          : [],
+        subCategoryIds.length
+          ? SubCategories.findAll({ where: { id: { [Op.in]: subCategoryIds } }, attributes: ['name'] })
+          : []
+      ]);
+      user.company_info.dataValues.category_sell_names = categories.map(c => c.name).join(', ');
+      user.company_info.dataValues.sub_category_names = subCategories.map(sc => sc.name).join(', ');
+    }
     res.json({ user });
   } catch (error) {
-    console.error(error);
+    console.error('Error in getProfile:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// Send OTP
 exports.sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
-
     const existingUser = await Users.findOne({ where: { email } });
     if (existingUser) return res.status(400).json({ error: "Email already taken" });
-
     const otp = Math.floor(1000 + Math.random() * 9000);
-
     let emailRecord = await EmailVerification.findOne({ where: { email } });
     if (emailRecord) {
       emailRecord.otp = otp;
@@ -90,12 +180,9 @@ exports.sendOtp = async (req, res) => {
     } else {
       emailRecord = await EmailVerification.create({ email, otp, is_verify: 0 });
     }
-
     const emailTemplate = await Emails.findByPk(99);
     const msgStr = emailTemplate.message.toString('utf8');
     let userMessage = msgStr.replace("{{ USER_PASSWORD }}", otp);
-
-
     const { transporter, siteConfig } = await getTransporter();
     await transporter.sendMail({
       from: `"OTP Verification" <info@sourceindia-electronics.com>`,
@@ -103,7 +190,6 @@ exports.sendOtp = async (req, res) => {
       subject: emailTemplate?.subject || "Verify your email",
       html: userMessage,
     });
-
     return res.json({ message: "OTP sent successfully", user_id: emailRecord.id });
   } catch (err) {
     console.error(err);
@@ -111,13 +197,11 @@ exports.sendOtp = async (req, res) => {
   }
 };
 
-// Verify OTP
 exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp, user_id } = req.body;
     const record = await EmailVerification.findOne({ where: { email, id: user_id } });
     if (!record) return res.status(400).json({ error: "Verification data not found" });
-
     if (record.otp.toString() === otp.toString()) {
       record.is_verify = 1;
       await record.save();
@@ -131,9 +215,7 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
-// Register User
 exports.register = async (req, res) => {
-
   try {
     const {
       fname,
@@ -199,9 +281,9 @@ exports.register = async (req, res) => {
     // ---------------------------
     // 🔹 Step 4: Create Company
     // ---------------------------
-    const organization_slug = await generateUniqueSlug(Companyinfo, cname);
+    const organization_slug = await generateUniqueSlug(CompanyInfo, cname);
 
-    const company = await Companyinfo.create({
+    const company = await CompanyInfo.create({
       organization_name: cname,
       organization_slug: organization_slug,  // save unique slug
       company_email: email,

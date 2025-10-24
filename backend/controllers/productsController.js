@@ -567,7 +567,9 @@ exports.getAllCompanyInfo = async (req, res) => {
       title,
       category,
       sub_category,
-      is_delete
+      is_delete,
+      is_seller,     // ✅ NEW
+      is_trading     // ✅ NEW
     } = req.query;
 
     let order = [['id', 'ASC']];
@@ -576,18 +578,18 @@ exports.getAllCompanyInfo = async (req, res) => {
     else if (sort_by === 'z_to_a') order = [['organization_name', 'DESC']];
 
     const whereClause = {};
+
     if (typeof is_delete !== 'undefined') {
       whereClause.is_delete = parseInt(is_delete);
     }
+
     if (title) {
       whereClause.organization_name = { [Op.like]: `%${title}%` };
     }
 
-    // For category filter (CSV field)
     if (category) {
       const catIds = parseCsv(category).map(x => parseInt(x)).filter(x => !isNaN(x));
       if (catIds.length) {
-        // Build condition: ANY of these catIds is in category_sell
         whereClause[Op.or] = catIds.map(id =>
           literal(`FIND_IN_SET(${id}, category_sell)`)
         );
@@ -597,73 +599,195 @@ exports.getAllCompanyInfo = async (req, res) => {
     if (sub_category) {
       const subIds = parseCsv(sub_category).map(x => parseInt(x)).filter(x => !isNaN(x));
       if (subIds.length) {
-        whereClause[Op.or] = whereClause[Op.or] || [];
-        subIds.forEach(id => {
-          whereClause[Op.or].push(
-            literal(`FIND_IN_SET(${id}, sub_category)`)
-          );
-        });
+        whereClause[Op.or] = subIds.map(id =>
+          literal(`FIND_IN_SET(${id}, sub_category)`)
+        );
       }
     }
 
-    // user_state filter as earlier or via literal EXISTS
+    // ✅ Collect all user filters
+    const userFilters = [`u.is_delete = 0`, `u.status = 1`];
 
     if (user_state) {
       const stateIds = parseCsv(user_state).map(x => parseInt(x)).filter(x => !isNaN(x));
-      whereClause[Op.and] = whereClause[Op.and] || [];
-      whereClause[Op.and].push(
-        literal(`EXISTS (
-          SELECT 1 FROM users u WHERE u.company_id = CompanyInfo.id
-            AND u.state IN (${stateIds.join(',')})
-            AND u.is_delete = 0 AND u.status = 1
-        )`)
-      );
+      if (stateIds.length) {
+        userFilters.push(`u.state IN (${stateIds.join(',')})`);
+      }
     }
 
-    const total = await CompanyInfo.count({
-      where: whereClause
-    });
+    if (typeof is_seller !== 'undefined') {
+      userFilters.push(`u.is_seller = ${parseInt(is_seller)}`);
+    }
 
+    if (typeof is_trading !== 'undefined') {
+      userFilters.push(`u.is_trading = ${parseInt(is_trading)}`);
+    }
+
+    // ✅ Add final user filter as EXISTS
+    whereClause[Op.and] = whereClause[Op.and] || [];
+    whereClause[Op.and].push(
+      literal(`EXISTS (SELECT 1 FROM users u WHERE u.company_id = CompanyInfo.id AND ${userFilters.join(' AND ')})`)
+    );
+
+    // Total count
+    const total = await CompanyInfo.count({ where: whereClause });
+
+    // Fetch company list
     const companies = await CompanyInfo.findAll({
       where: whereClause,
       order,
       ...(limit && offset !== null ? { limit, offset } : {}),
       include: [
-        {
-          model: UploadImage,
-          as: 'companyLogo',
-          attributes: ['file']
-        }
-        // You can include Users etc. if needed
+        { model: UploadImage, as: 'companyLogo', attributes: ['file'] },
+        { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
+        { model: Activity, as: 'Activity', attributes: ['name'] }
       ]
     });
 
-    // product count same as before
+    const companyIds = companies.map(c => c.id);
+
+    // ✅ Product counts
     const productCounts = await Products.findAll({
       attributes: ['company_id', [fn('COUNT', col('id')), 'count']],
-      where: { is_delete: 0, is_approve: 1, status: 1 },
+      where: { company_id: { [Op.in]: companyIds }, is_delete: 0, is_approve: 1, status: 1 },
       group: ['company_id'],
-      raw: true,
+      raw: true
     });
+
+    // ✅ Count users by is_seller
+    const sellerCounts = await Users.findAll({
+      attributes: ['is_seller', [fn('COUNT', col('id')), 'count']],
+      where: {
+        company_id: { [Op.in]: companyIds },
+        is_delete: 0,
+        status: 1
+      },
+      group: ['is_seller'],
+      raw: true
+    });
+
+    // ✅ Count users by is_trading
+    const tradingCounts = await Users.findAll({
+      attributes: ['is_trading', [fn('COUNT', col('id')), 'count']],
+      where: {
+        company_id: { [Op.in]: companyIds },
+        is_delete: 0,
+        status: 1
+      },
+      group: ['is_trading'],
+      raw: true
+    });
+
     const countMap = {};
     productCounts.forEach(item => {
       countMap[item.company_id] = parseInt(item.count);
     });
 
+    const sellerMap = {};
+    sellerCounts.forEach(item => {
+      sellerMap[item.is_seller] = parseInt(item.count);
+    });
+
+    const tradingMap = {};
+    tradingCounts.forEach(item => {
+      tradingMap[item.is_trading] = parseInt(item.count);
+    });
+
+    const allCategoryIds = new Set();
+    const allSubCategoryIds = new Set();
+    companies.forEach(c => {
+      const { category_sell, sub_category } = c;
+      if (category_sell) {
+        category_sell.split(',').forEach(id => {
+          const parsed = parseInt(id);
+          if (!isNaN(parsed)) allCategoryIds.add(parsed);
+        });
+      }
+      if (sub_category) {
+        sub_category.split(',').forEach(id => {
+          const parsed = parseInt(id);
+          if (!isNaN(parsed)) allSubCategoryIds.add(parsed);
+        });
+      }
+    });
+
+    const allProducts = await Products.findAll({
+      where: {
+        company_id: { [Op.in]: companyIds },
+        is_delete: 0,
+        is_approve: 1,
+        status: 1
+      },
+      attributes: ['id', 'title', 'slug', 'company_id'],
+      raw: true,
+      nest: true
+    });
+
+    const productMap = {};
+    allProducts.forEach(p => {
+      const companyId = p.company_id;
+      if (!productMap[companyId]) productMap[companyId] = [];
+      productMap[companyId].push({
+        id: p.id,
+        title: p.title,
+        slug: p.slug,
+      });
+    });
+
+    const [categoriesList, subCategoriesList] = await Promise.all([
+      Categories.findAll({
+        where: { id: [...allCategoryIds] },
+        attributes: ['id', 'name'],
+        raw: true
+      }),
+      SubCategories.findAll({
+        where: { id: [...allSubCategoryIds] },
+        attributes: ['id', 'name'],
+        raw: true
+      })
+    ]);
+
+    const categoryMap = {};
+    categoriesList.forEach(c => {
+      categoryMap[c.id] = c.name;
+    });
+
+    const subCategoryMap = {};
+    subCategoriesList.forEach(s => {
+      subCategoryMap[s.id] = s.name;
+    });
+
     const modified = companies.map(c => {
       const cd = c.toJSON();
       const file = cd.companyLogo?.file || null;
+      const coreActivityName = cd.CoreActivity?.name || null;
+      const activityName = cd.Activity?.name || null;
+      const categoryNames = cd.category_sell
+        ? cd.category_sell.split(',').map(id => categoryMap[parseInt(id)]).filter(Boolean).join(', ')
+        : '';
+      const subCategoryNames = cd.sub_category
+        ? cd.sub_category.split(',').map(id => subCategoryMap[parseInt(id)]).filter(Boolean).join(', ')
+        : '';
       delete cd.companyLogo;
+      delete cd.CoreActivity;
+      delete cd.Activity;
       return {
         ...cd,
         company_logo_file: file,
-        product_count: countMap[cd.id] || 0
+        product_count: countMap[cd.id] || 0,
+        core_activity_name: coreActivityName,
+        activity_name: activityName,
+        category_name: categoryNames,
+        sub_category_name: subCategoryNames,
+        products: productMap[cd.id] || []
       };
     });
 
     res.json({
       total,
-      companies: modified
+      companies: modified,
+      counts_by_seller: sellerMap,
+      counts_by_trading: tradingMap
     });
 
   } catch (err) {

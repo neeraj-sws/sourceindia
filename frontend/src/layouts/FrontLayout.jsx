@@ -1,7 +1,10 @@
-import { Outlet, Routes, Route } from 'react-router-dom';
+import { Outlet, Routes, Route, useLocation } from 'react-router-dom';
 import '../assets/css/style.css';
 import FrontHeader from '../common/FrontHeader';
 import FrontFooter from '../common/FrontFooter';
+import UserHeader from '../common/UserHeader';
+import UserSidebar from '../common/UserSidebar';
+import UserFooter from '../common/UserFooter';
 import Home from '../pages/Home';
 import About from '../pages/About';
 import Login from '../pages/Login';
@@ -14,6 +17,8 @@ import ContactUs from '../pages/ContactUs';
 import GetSupport from '../pages/GetSupport';
 import Registration from '../pages/Registration';
 import Profile from '../pages/Profile';
+import ProfileEdit from '../pages/ProfileEdit';
+import CompanyEdit from '../pages/CompanyEdit';
 import Dashboard from '../pages/Dashboard';
 import CreateTicket from '../pages/CreateTicket';
 import TrackTicket from '../pages/TrackTicket';
@@ -31,12 +36,16 @@ import PrivateRoute from '../routes/PrivateRoute';
 import PublicRoute from '../routes/PublicRoute';
 
 function FrontLayout() {
+  const location = useLocation();
+  const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit'];
+  const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
+
   return (
     <>
       <AuthProvider>
         <AlertProvider>
           <ToastContainer position="top-right" autoClose={2000} hideProgressBar={true} />
-          <FrontHeader />
+          {isUserLayout ? <><UserHeader /><UserSidebar /></> : <FrontHeader />}
           <main>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -45,7 +54,9 @@ function FrontLayout() {
               <Route path="/about" element={<About />} />
               <Route path="/companies" element={<Companies />} />
               <Route path="/companies/:slug" element={<CompanyDetail />} />
-              <Route path="/company-list" element={<CompaniesFilter />} />
+              <Route path="/company-list" element={<CompaniesFilter isSeller="1" />} />
+              <Route path="/buyer-list" element={<CompaniesFilter isSeller="0" />} />
+              <Route path="/trading-list" element={<CompaniesFilter isTrading="1" />} />
               <Route path="/categories" element={<Categories />} />
               <Route path="/products" element={<ProductsList />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
@@ -54,13 +65,15 @@ function FrontLayout() {
               <Route path="/get-support" element={<GetSupport />} />
               <Route path="/get-support/createticket" element={<CreateTicket />} />
               <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+              <Route path="/profile-edit" element={<PrivateRoute><ProfileEdit /></PrivateRoute>} />
+              <Route path="/company-edit" element={<PrivateRoute><CompanyEdit /></PrivateRoute>} />
               <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
               <Route path="/get-support/trackticket" element={<TrackTicket />} />
               <Route path="/open-enquiry" element={<Enquiry />} />
               <Route path="/ticket/view/:number" element={<TicketView />} />
             </Routes>
           </main>
-          <FrontFooter />
+          {isUserLayout ? <UserFooter /> : <FrontFooter />}
         </AlertProvider>
       </AuthProvider>
     </>
