@@ -6,10 +6,12 @@ import API_BASE_URL from '../config';
 import "../css/home.css";
 
 const FrontHeader = () => {
-  const navigate = useNavigate();
-  const {isLoggedIn, logout, user, setUser} = useAuth();
+  const { isLoggedIn, logout, user, setUser } = useAuth();
   // const [user, setUser] = useState(null);
   const token = localStorage.getItem('user_token');
+  const navigate = useNavigate();
+  const [searchType, setSearchType] = useState('product'); // Default to 'product'
+  const [searchQuery, setSearchQuery] = useState(''); // Store search input value
 
   useEffect(() => {
     const checkToken = () => {
@@ -46,6 +48,15 @@ const FrontHeader = () => {
     fetchProfile();
   }, [token, user, setUser]);
 
+
+  const handleSubmit = (e) => {
+    e.preventDefault(); // Prevent default form submission
+    if (searchQuery.trim()) {
+      const path = searchType === 'product' ? '/products' : '/company-list';
+      navigate(`${path}?search=${encodeURIComponent(searchQuery.trim())}`); // Navigate with query param
+    }
+  };
+
   return (
     <>
       <header className='mainHeader'>
@@ -62,14 +73,26 @@ const FrontHeader = () => {
               </div>
             </div>
             <div className="middleBox">
-              <form className="d-flex align-items-center flex-grow-1">
+              <form className="d-flex align-items-center flex-grow-1" onSubmit={handleSubmit}>
                 <div className="search-bar d-flex w-100">
-                  <select className="form-select w-auto px-3">
+                  <select
+                    className="form-select w-auto px-3"
+                    value={searchType}
+                    onChange={(e) => setSearchType(e.target.value)}
+                  >
                     <option value="product">Product</option>
                     <option value="company">Company</option>
                   </select>
-                  <input type="text" className="form-control" placeholder="Search.." />
-                  <button className="btn search-btn" type="submit">Search</button>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search.."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  <button className="btn search-btn" type="submit">
+                    Search
+                  </button>
                 </div>
               </form>
             </div>
