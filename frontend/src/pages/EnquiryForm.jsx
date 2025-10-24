@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import API_BASE_URL from '../config'; // Ensure this is defined
 import { useAlert } from "../context/AlertContext";
-
+import axios from 'axios';
 const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, companyName }) => {
   const { showNotification } = useAlert();
   const [step, setStep] = useState(1);
