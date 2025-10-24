@@ -15,7 +15,6 @@ const Users = sequelize.define('Users', {
   lname: { type: DataTypes.STRING, allowNull: true },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   mobile: { type: DataTypes.STRING, allowNull: true, },
-
   step: { type: DataTypes.INTEGER, allowNull: false, },
   mode: { type: DataTypes.INTEGER, allowNull: false, comment:  "0='online',1='offline'" },
   password: { type: DataTypes.STRING, allowNull: false },
@@ -33,25 +32,6 @@ const Users = sequelize.define('Users', {
   status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: '1 = Active, 0 = Inactive' },
   payment_status: { type: DataTypes.INTEGER, allowNull: false, comment: '0="Payment done",1="Payment Pending"' },
   is_approve: { type: DataTypes.INTEGER, allowNull: false, },
-
-  step: { type: DataTypes.INTEGER, allowNull: true, },
-  mode: { type: DataTypes.INTEGER, allowNull: true, comment: "0='online',1='offline'" },
-  password: { type: DataTypes.STRING, allowNull: true },
-  real_password: { type: DataTypes.STRING, allowNull: true },
-  country: { type: DataTypes.STRING, allowNull: true },
-  state: { type: DataTypes.STRING, allowNull: true },
-  city: { type: DataTypes.STRING, allowNull: true },
-  address: { type: DataTypes.TEXT, allowNull: true },
-  zipcode: { type: DataTypes.STRING(25), allowNull: true },
-  remember_token: { type: DataTypes.STRING, allowNull: true },
-  is_seller: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
-  membership_plan_id: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
-  plan_price: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
-  file_id: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
-  status: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 1, comment: '1 = Active, 0 = Inactive' },
-  payment_status: { type: DataTypes.INTEGER, allowNull: true, comment: '0="Payment done",1="Payment Pending"' },
-  is_approve: { type: DataTypes.INTEGER, allowNull: true, },
-
   approve_date: { type: DataTypes.DATE, allowNull: true, },
   email_token: { type: DataTypes.STRING, allowNull: true },
   is_email_verify: { type: DataTypes.INTEGER, allowNull: true, },
@@ -60,15 +40,9 @@ const Users = sequelize.define('Users', {
   featured_company: { type: DataTypes.INTEGER, allowNull: false },
   user_company: { type: DataTypes.STRING, allowNull: true },
   is_intrest: { type: DataTypes.INTEGER, allowNull: true },
-
   step_decline: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0, },
   is_new: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0, },
   step_prograss: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0, },
-
-  step_decline: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
-  is_new: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
-  step_prograss: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
-
   website: { type: DataTypes.STRING, allowNull: true },
   products: { type: DataTypes.TEXT, allowNull: true },
   request_admin: { type: DataTypes.INTEGER, allowNull: true },
@@ -84,7 +58,7 @@ const Users = sequelize.define('Users', {
   is_company: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 1, },
   is_product: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 1, },
 }, {
-  tableName: 'users',
+  tableName: 'users1',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at'

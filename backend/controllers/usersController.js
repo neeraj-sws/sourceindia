@@ -16,7 +16,7 @@ const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
 const { getTransporter } = require('../helpers/mailHelper');
-const { generateUniqueSlug } = require('../helpers/mailHelper');
+const { generateUniqueSlug  } = require('../helpers/mailHelper');
 const nodemailer = require('nodemailer');
 const secretKey = 'your_secret_key';
 const jwt = require('jsonwebtoken');
@@ -166,12 +166,16 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+// Send OTP
 exports.sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
+
     const existingUser = await Users.findOne({ where: { email } });
     if (existingUser) return res.status(400).json({ error: "Email already taken" });
+
     const otp = Math.floor(1000 + Math.random() * 9000);
+
     let emailRecord = await EmailVerification.findOne({ where: { email } });
     if (emailRecord) {
       emailRecord.otp = otp;
@@ -180,9 +184,12 @@ exports.sendOtp = async (req, res) => {
     } else {
       emailRecord = await EmailVerification.create({ email, otp, is_verify: 0 });
     }
+
     const emailTemplate = await Emails.findByPk(99);
     const msgStr = emailTemplate.message.toString('utf8');
     let userMessage = msgStr.replace("{{ USER_PASSWORD }}", otp);
+
+
     const { transporter, siteConfig } = await getTransporter();
     await transporter.sendMail({
       from: `"OTP Verification" <info@sourceindia-electronics.com>`,
@@ -190,6 +197,7 @@ exports.sendOtp = async (req, res) => {
       subject: emailTemplate?.subject || "Verify your email",
       html: userMessage,
     });
+
     return res.json({ message: "OTP sent successfully", user_id: emailRecord.id });
   } catch (err) {
     console.error(err);
@@ -197,11 +205,13 @@ exports.sendOtp = async (req, res) => {
   }
 };
 
+// Verify OTP
 exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp, user_id } = req.body;
     const record = await EmailVerification.findOne({ where: { email, id: user_id } });
     if (!record) return res.status(400).json({ error: "Verification data not found" });
+
     if (record.otp.toString() === otp.toString()) {
       record.is_verify = 1;
       await record.save();
@@ -215,7 +225,9 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
+// Register User
 exports.register = async (req, res) => {
+
   try {
     const {
       fname,
@@ -468,158 +480,5 @@ exports.getCities = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Failed to fetch cities' });
-  }
-};
-
-
-exports.sendLoginotp = async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    // Validate input
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
-    }
-
-    // Check if user exists and is not deleted
-    const user = await Users.findOne({
-      where: { email: email, is_delete: 0 },
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Check user status
-    if (user.status === 0) {
-      return res.status(400).json({ message: 'Your account is not active.' });
-    }
-
-    // Generate OTP
-    const otp = Math.floor(1234 + Math.random() * (9999 - 1234 + 1)).toString(); // 4-digit OTP
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10-minute expiry
-
-    // Store OTP in Users table
-    await user.update({ otp, otp_expiry: otpExpiry });
-
-    // Send OTP email
-    const emailTemplate = await Emails.findByPk(87);
-    if (!emailTemplate) {
-      return res.status(404).json({ message: "Email template not found" });
-    }
-    const msgStr = emailTemplate.message.toString("utf8");
-    const full_name = user.fname + ' ' + user.lname;
-    const userMessage = msgStr
-      .replace("{{ USER_FNAME }}", full_name)
-      .replace("{{ OTP }}", otp);
-
-    const { transporter, siteConfig } = await getTransporter();
-
-    await transporter.sendMail({
-      from: `"Support Team" <info@sourceindia-electronics.com>`,
-      to: email,
-      subject: emailTemplate.subject,
-      html: userMessage,
-    });
-
-    return res.json({
-      success: 1,
-      message: 'OTP sent successfully',
-      user: {
-        id: user.id,
-        fname: user.fname,
-        lname: user.lname,
-        email: user.email,
-        is_seller: user.is_seller,
-      },
-      userId: Buffer.from(user.id.toString()).toString('base64'), // Base64 user ID
-    });
-  } catch (error) {
-    console.error('Error in sendLoginotp:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-    });
-    if (error.name === 'SequelizeDatabaseError') {
-      return res.status(500).json({ message: 'Database error' });
-    } else if (error.code === 'EAUTH' || error.code === 'EENVELOPE') {
-      return res.status(500).json({ message: 'Failed to send OTP email' });
-    } else {
-      return res.status(500).json({ message: 'Server error' });
-    }
-  }
-};
-exports.verifyLoginotp = async (req, res) => {
-  try {
-    const { userId, otp } = req.body;
-
-    // Validate input
-    if (!userId || !otp) {
-      return res.status(400).json({ message: 'User ID and OTP are required' });
-    }
-
-    // Decode userId (base64 encoded)
-    let user_id;
-    try {
-      user_id = Buffer.from(userId, 'base64').toString('ascii');
-      if (!/^\d+$/.test(user_id)) {
-        return res.status(400).json({ message: 'Invalid user ID format' });
-      }
-    } catch (error) {
-      return res.status(400).json({ message: 'Invalid user ID' });
-    }
-
-    // Verify user exists
-    const user = await Users.findOne({
-      where: { id: user_id, is_delete: 0 },
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Verify OTP locally
-    if (!user.otp || user.otp !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
-
-    // Check OTP expiry
-    if (user.otp_expiry < new Date()) {
-      return res.status(400).json({ message: 'OTP has expired' });
-    }
-
-    // Clear OTP after successful verification
-    await user.update({ otp: null, otp_expiry: null });
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user.id, email: user.email, is_seller: user.is_seller },
-      process.env.JWT_SECRET || 'your_jwt_secret_key', // Use environment variable
-      { expiresIn: '1h' }
-    );
-
-    return res.json({
-      message: 'OTP verified successfully',
-      token,
-      user: {
-        id: user.id,
-        fname: user.fname,
-        lname: user.lname,
-        email: user.email,
-        is_seller: user.is_seller,
-      },
-    });
-  } catch (error) {
-    console.error('Error in verifyLoginotp:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-    });
-
-    if (error.name === 'SequelizeDatabaseError') {
-      return res.status(500).json({ message: 'Database error' });
-    } else {
-      return res.status(500).json({ message: 'Server error' });
-    }
   }
 };
