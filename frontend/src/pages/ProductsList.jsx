@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from './../config';
 import ImageWithFallback from "../admin/common/ImageWithFallback";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const ProductsList = () => {
   const [productsData, setProductsData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
@@ -26,6 +29,27 @@ const ProductsList = () => {
   const [hasMore, setHasMore] = useState(true);
   const [scrollLoading, setScrollLoading] = useState(false);
   const [isListView, setIsListView] = useState(false);
+
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const searchValue = searchParams.get('search');
+    if (searchValue) {
+      setSearchTerm(searchValue); // Set state if search param exists
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const cateParam = queryParams.get("cate");
+
+    if (cateParam) {
+      // For URLs like ?cate=3 or ?cate=3,5
+      const selectedFromUrl = cateParam.split(",").map((v) => parseInt(v.trim(), 10));
+      setSelectedCategories(selectedFromUrl);
+    }
+  }, [location.search]);
 
   const filteredCategories = categories.filter(cat =>
     cat.name.toLowerCase().includes(categorySearchTerm)
@@ -233,7 +257,7 @@ const ProductsList = () => {
             <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Product Title</h3>
             <div className="input-group flex-nowrap ps-2 pe-4">
               <i className="bx bx-search input-group-text" />
-              <input type="text" className="form-control" onChange={handleSearch} placeholder="Search products..." />
+              <input type="text" className="form-control" value={searchTerm} onChange={handleSearch} placeholder="Search products..." />
             </div>
           </div>
           <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">

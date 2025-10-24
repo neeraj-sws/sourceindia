@@ -5,12 +5,12 @@ const CompanyInfo = require('./CompanyInfo');
 
 const Enquiries = sequelize.define('Enquiries', {
   enquiry_number: { type: DataTypes.STRING, allowNull: true },
-  type: { type: DataTypes.INTEGER, allowNull: false, comment: "0 = public,1 = product,2 = company,3 = admin" },
+  type: { type: DataTypes.INTEGER, allowNull: true, comment: "0 = public,1 = product,2 = company,3 = admin" },
   company_id: { type: DataTypes.INTEGER, allowNull: false },
   user_id: { type: DataTypes.INTEGER, allowNull: true },
-  buyer_company_id: { type: DataTypes.INTEGER, allowNull: false },
-  quantity: { type: DataTypes.INTEGER, allowNull: false },
-  description: { type: DataTypes.TEXT, allowNull: false },
+  buyer_company_id: { type: DataTypes.INTEGER, allowNull: true },
+  quantity: { type: DataTypes.INTEGER, allowNull: true },
+  description: { type: DataTypes.TEXT, allowNull: true },
   category: { type: DataTypes.STRING, allowNull: true },
   sub_category: { type: DataTypes.STRING, allowNull: true },
   category_name: { type: DataTypes.STRING, allowNull: true },

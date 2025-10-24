@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from './../config';
 import ImageWithFallback from "../admin/common/ImageWithFallback";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 const CompaniesFilter = ({ isSeller, isTrading }) => {
   const [companies, setCompanies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
@@ -27,6 +28,13 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
   const [sortBy, setSortBy] = useState('');
   const [viewMode, setViewMode] = useState("grid");
 
+
+  useEffect(() => {
+    const searchValue = searchParams.get('search');
+    if (searchValue) {
+      setSearchTerm(searchValue); // Set state if search param exists
+    }
+  }, [searchParams]);
   const filteredCategories = categories.filter(cat =>
     cat.name.toLowerCase().includes(categorySearchTerm)
   );
@@ -238,6 +246,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 type="text"
                 className="form-control"
                 placeholder="Search companies..."
+                value={searchTerm}
                 onChange={handleSearch}
               />
             </div>

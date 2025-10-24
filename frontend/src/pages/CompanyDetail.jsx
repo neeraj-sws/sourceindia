@@ -9,6 +9,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import ImageFront from "../admin/common/ImageFront";
 import { useAlert } from "../context/AlertContext";
+import EnquiryForm from "./EnquiryForm";
 
 const CompanyDetail = () => {
   const { slug } = useParams();
@@ -19,6 +20,7 @@ const CompanyDetail = () => {
   const [hover, setHover] = useState(0);
   const [review, setReview] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const fetchCompany = async () => {
@@ -165,6 +167,20 @@ const CompanyDetail = () => {
                   </table>
                   <p>{company.brief_company || ""}</p>
                   <p>{company.organizations_product_description || ""}</p>
+                  <div className='w-25 mt-4'>
+                    <button className="btn btn-orange w-100" onClick={() => setShowModal(true)}>
+                      <i className="lni lni-phone pe-2"></i> Enquiry
+                    </button>
+                  </div>
+                  <EnquiryForm
+                    show={showModal}
+                    onHide={() => setShowModal(false)}
+                    productId=''
+                    companyId={`${company.id}`}
+                    productTitle=''
+                    companyName={`${company.organization_name}`}
+                  />
+
                 </div>
               </div>
             </div>
