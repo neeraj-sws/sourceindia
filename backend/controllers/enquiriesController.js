@@ -2,8 +2,17 @@ const { Op, fn, col, literal } = require('sequelize');
 const moment = require('moment');
 const Enquiries = require('../models/Enquiries');
 const Users = require('../models/Users');
+const Products = require('../models/Products');
 const CompanyInfo = require('../models/CompanyInfo');
 const EnquiryUsers = require('../models/EnquiryUsers');
+const UserMessage = require('../models/UserMessage');
+const EnquiryMessage = require('../models/EnquiryMessage');
+const Categories = require('../models/Categories');
+const SubCategories = require('../models/SubCategories');
+const Emails = require('../models/Emails');
+const { getTransporter } = require('../helpers/mailHelper');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 exports.getAllEnquiries = async (req, res) => {
   try {
@@ -84,6 +93,8 @@ exports.getAllEnquiries = async (req, res) => {
   }
 };
 
+
+
 exports.getEnquiriesByNumber = async (req, res) => {
   try {
     const enquiry = await Enquiries.findOne({
@@ -116,7 +127,7 @@ exports.getEnquiriesByNumber = async (req, res) => {
         {
           model: EnquiryUsers,
           as: 'enquiry_users',
-          attributes: ['id','product_name']
+          attributes: ['id', 'product_name']
         }
       ]
     });
@@ -468,3 +479,211 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+
+const sendOtpEmail = async (to, otp) => {
+
+  const emailTemplate = await Emails.findByPk(97);
+  const msgStr = emailTemplate.message.toString('utf8');
+  let userMessage = msgStr.replace("{{ OTP }}", otp);
+
+  const { transporter } = await getTransporter();
+  await transporter.sendMail({
+    from: `"OTP Verification" <info@sourceindia-electronics.com>`,
+    to: to,
+    subject: emailTemplate?.subject || "Verify your email",
+    html: userMessage,
+  });
+
+
+};
+const sendEnquiryConfirmation = async (to, name) => {
+
+  const emailTemplate = await Emails.findByPk(98);
+  const msgStr = emailTemplate.message.toString('utf8');
+  let userMessage = msgStr.replace("{{ USER_FNAME }}", name);
+
+  const { transporter } = await getTransporter();
+  await transporter.sendMail({
+    from: `"OTP Verification" <info@sourceindia-electronics.com>`,
+    to: to,
+    subject: emailTemplate?.subject || "Verify your email",
+    html: userMessage,
+  });
+
+
+};
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await Users.findOne({ where: { email } });
+    console.log(user);
+    if (user) {
+      return res.status(200).json({ exists: true, message: 'User exists, please login' });
+    }
+
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const password = 'SI' + new Date().getFullYear() + Math.floor(1000 + Math.random() * 9000).toString();
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new Users({
+      email,
+      otp,
+      password: hashedPassword,
+      real_password: password,
+    });
+    await newUser.save();
+    await sendOtpEmail(email, otp);
+    res.status(200).json({ exists: false, otpSent: true, userId: newUser._id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Resend OTP
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await Users.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    user.otp = otp;
+    await user.save();
+    await sendOtpEmail(email, otp);
+    res.status(200).json({ message: 'OTP resent' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Submit OTP
+
+
+exports.submitOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await Users.findOne({ where: { email } });
+    if (!user || user.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
+
+    user.otp = null;
+    await user.save();
+    res.status(200).json({ verified: true, userId: user.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Store Enquiry
+exports.storeEnquiry = async (req, res) => {
+  try {
+    const { userId, name, company, phone, description, product_id, enq_company_id } = req.body;
+
+    let category_ids = '';
+    let subcategory_names = '';
+    let subcategory_ids = '';
+    let category_names = '';
+
+    const product = await Products.findByPk(product_id);
+    const companyinfo = await CompanyInfo.findByPk(product.company_id);
+    if (companyinfo.category_sell) {
+      const catIds = companyinfo.category_sell.split(",");
+      const categoryDataArr = [];
+      const categoryNameArr = [];
+
+      for (const catId of catIds) {
+        const category = await Categories.findByPk(catId);
+        if (category) {
+          categoryDataArr.push(category.id);
+          categoryNameArr.push(category.name);
+        }
+      }
+
+      category_ids = categoryDataArr.join(", ");
+      category_names = categoryNameArr.join(", ");
+
+
+      let sub_cat_data_arr = [];
+      let sub_cat_name_arr = [];
+
+      for (const cat_id of catIds) {
+        if (cat_id !== "38") {
+          const sub_cat = await SubCategories.findOne({
+            where: {
+              id: product.sub_category,
+              category: cat_id,
+            },
+          });
+
+          if (sub_cat) {
+            sub_cat_data_arr.push(sub_cat.id);
+            sub_cat_name_arr.push(sub_cat.name);
+          }
+        }
+      }
+
+      subcategory_ids = sub_cat_data_arr.join(", ");
+      subcategory_names = sub_cat_name_arr.join(", ");
+
+    }
+
+    const newCompany = new CompanyInfo({ organization_name: company });
+    await newCompany.save();
+
+    const user = await Users.findByPk(userId);
+    // console.log('storeEnquiry' + user);
+    user.fname = name;
+    user.company_id = newCompany.id;
+    user.mobile = phone;
+    user.is_new = 1;
+    user.is_profile = 1;
+    user.is_complete = 1;
+    await user.save();
+
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    const enquiry_number = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const enquiry = new Enquiries({
+      enquiry_number,
+      company_id: enq_company_id,
+      user_id: user.id,
+      description,
+      category: category_ids,  // Fetch real data as needed
+      sub_category: subcategory_ids,
+      category_name: category_names,
+      sub_category_name: subcategory_names,
+    });
+    await enquiry.save();
+
+    const enquiryUser = new EnquiryUsers({
+      enquiry_id: enquiry.id,
+      company_id: enq_company_id,
+      product_id,
+      product_name: product.title,
+    });
+    await enquiryUser.save();
+
+    const enquiryMessage = new EnquiryMessage({
+      seller_company_id: enq_company_id,
+      enquiry_id: enquiry.id,
+      buyer_company_id: newCompany.id,
+    });
+    await enquiryMessage.save();
+
+    const userMessage = new UserMessage({
+      user_id: user.id,
+      message: description,
+      message_id: enquiryMessage.id,
+      company_id: newCompany.id,
+    });
+    await userMessage.save();
+
+    await sendEnquiryConfirmation(user.email, name);
+    res.status(200).json({ message: 'Enquiry submitted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+

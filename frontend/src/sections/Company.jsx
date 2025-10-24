@@ -11,13 +11,23 @@ const Company = ({ limit }) => {
     const fetchCompanies = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/products/companies?is_delete=0&limit=${limit}&page=1`);
-        setCompanies(res.data);
+        const data = res.data;
+        // Adjust based on real API shape
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data.data)
+            ? data.data
+            : Array.isArray(data.companies)
+              ? data.companies
+              : [];
+        setCompanies(list);
       } catch (err) {
         console.error("Error fetching companies:", err);
+        setCompanies([]); // prevent map() crash
       }
     };
     fetchCompanies();
-  }, []);
+  }, [limit]);
 
   return (
     <>
@@ -45,7 +55,7 @@ const Company = ({ limit }) => {
                 </div>
               ))}
               <div className="col-md-2 mb-3">
-                <Link to="/companies"  className="d-block h-100">
+                <Link to="/companies" className="d-block h-100">
                   <div className="companyBox px-3 py-4 bg-white border text-center h-100">
                     <div className="ComImg">
                       <img src="/morecompany.jpg" alt="company" className="img-fluid p-3" />

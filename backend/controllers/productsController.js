@@ -18,6 +18,33 @@ const sequelize = require('../config/database');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
 const parseCsv2 = (value) => value.split(',').map(item => item.trim());
 
+exports.allProduct = async (req, res) => {
+  try {
+    const { company_id } = req.query;
+
+    if (!company_id) {
+      return res.status(400).json({ success: false, message: 'Company ID is required', data: [] });
+    }
+
+    if (isNaN(company_id) || parseInt(company_id) <= 0) {
+      return res.status(422).json({ success: false, message: 'Company ID must be a valid positive number', data: [] });
+    }
+
+    const products = await Products.findAll({ where: { company_id: parseInt(company_id) }, attributes: ['id', 'title', 'description'] });
+    console.log(products);
+
+    if (!products || products.length === 0) {
+      return res.status(404).json({ success: false, message: 'No products found for the given company', data: [] });
+    }
+
+    console.log('Products fetched:', products);
+    res.status(200).json({ success: true, message: 'Products fetched successfully', data: products });
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ success: false, message: 'Server error while fetching products', data: [] });
+  }
+};
+
 exports.createProducts = async (req, res) => {
   const upload = getMulterUpload('products');
   upload.array('files', 10)(req, res, async (err) => { // allow up to 10 files

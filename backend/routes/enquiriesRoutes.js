@@ -10,4 +10,11 @@ router.get('/:enquiry_number', enquiriesController.getEnquiriesByNumber);
 router.delete('/:id', enquiriesController.deleteEnquiries);
 router.patch('/:id/delete_status', enquiriesController.updateEnquiriesDeleteStatus);
 
+
+router.post('/verify', enquiriesController.verifyEmail);
+router.post('/resend-otp', enquiriesController.resendOtp);
+router.post('/submit-otp', enquiriesController.submitOtp);
+router.post('/store', enquiriesController.storeEnquiry);
+
+
 module.exports = router;
