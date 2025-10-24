@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import API_BASE_URL from '../config';
+import API_BASE_URL, { ROOT_URL } from '../config';
+import ImageWithFallback from "../admin/common/ImageWithFallback";
 import "../css/home.css";
 
 const FrontHeader = () => {
@@ -88,10 +89,17 @@ const FrontHeader = () => {
                       role="button"
                     >
                       <div className="position-relative me-2">
-                        <div className="rounded-circle bg-light d-flex align-items-center justify-content-center"
+                        {/* <div className="rounded-circle bg-light d-flex align-items-center justify-content-center"
                           style={{ width: "40px", height: "40px", border: "1px solid #ccc" }}>
                           <i className="bx bx-user"></i>
-                        </div>
+                        </div> */}
+                        <ImageWithFallback
+                        src={user.file && `${ROOT_URL}/${user.file.file}`}
+                        width={50}
+                        height={50}
+                        showFallback={true}
+                        className="user-img"
+                    />
                         {/* <span className="badge bg-primary text-white position-absolute badge-sm userbadge">
                           {user.is_seller ? 'Seller' : 'Buyer'}
                         </span> */}
@@ -143,9 +151,9 @@ const FrontHeader = () => {
                             Companies
                           </a>
                           <ul className="dropdown-menu" aria-labelledby="companyDropdown">
-                            <li><a className="dropdown-item" href="#">Seller <small><i>(Manufacturer)</i></small></a></li>
-                            <li><a className="dropdown-item" href="#">Buyers</a></li>
-                            <li><a className="dropdown-item" href="#">Distributors</a></li>
+                            <li><Link className="dropdown-item" to="/company-list">Seller <small><i>(Manufacturer)</i></small></Link></li>
+                            <li><Link className="dropdown-item" to="/buyer-list">Buyers</Link></li>
+                            <li><Link className="dropdown-item" to="/trading-list">Distributors</Link></li>
                           </ul>
                         </li>
                         <li className="nav-item">

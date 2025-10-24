@@ -69,7 +69,7 @@ exports.getSubCategoriesByCategory = async (req, res) => {
   }
 };
 
-exports.getSubCategoriesByCategories = async (req, res) => {
+exports.getSubCategoriesByCategories = async (req, res) => { 
   try {
     const { categories } = req.body;
 
@@ -109,22 +109,21 @@ exports.getSubCategoriesByCategories = async (req, res) => {
       productCountMap[item.sub_category] = parseInt(item.count);
     });
 
-    // 3. Company counts per subcategory using FIND_IN_SET
-    const companyCounts = await CompanyInfo.findAll({
-      attributes: ['sub_category', [fn('COUNT', col('id')), 'count']],
+    // 3. Company counts per subcategory (CSV field logic)
+    const companyData = await CompanyInfo.findAll({
+      attributes: ['sub_category'], // CSV string like "1,2,3"
       where: { is_delete: 0 },
       raw: true,
     });
 
     const companyCountMap = {};
-    companyCounts.forEach(item => {
+    companyData.forEach(item => {
       const csv = item.sub_category || '';
-      const count = parseInt(item.count) || 0;
-      csv.split(',').forEach(subCatIdStr => {
-        const subCatId = parseInt(subCatIdStr);
-        if (!isNaN(subCatId)) {
-          companyCountMap[subCatId] = (companyCountMap[subCatId] || 0) + 1;
-        }
+      const subCatIds = csv.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+      const uniqueIds = [...new Set(subCatIds)];
+
+      uniqueIds.forEach(subCatId => {
+        companyCountMap[subCatId] = (companyCountMap[subCatId] || 0) + 1;
       });
     });
 

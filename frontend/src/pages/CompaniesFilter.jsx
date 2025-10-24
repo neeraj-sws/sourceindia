@@ -4,7 +4,7 @@ import API_BASE_URL, { ROOT_URL } from './../config';
 import ImageWithFallback from "../admin/common/ImageWithFallback";
 import { Link } from "react-router-dom";
 
-const CompaniesFilter = () => {
+const CompaniesFilter = ({ isSeller, isTrading }) => {
   const [companies, setCompanies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categories, setCategories] = useState([]);
@@ -16,6 +16,9 @@ const CompaniesFilter = () => {
   const [states, setStates] = useState([]);
   const [selectedStates, setSelectedStates] = useState([]);
   const [statesSearchTerm, setStatesSearchTerm] = useState('');
+  const [sourcingInterest, setSourcingInterest] = useState([]);
+  const [selectedSourcingInterest, setSelectedSourcingInterest] = useState([]);
+  const [sourcingInterestSearchTerm, setSourcingInterestSearchTerm] = useState('');
   const [companiesTotal, setCompaniesTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -32,6 +35,9 @@ const CompaniesFilter = () => {
   );
   const filteredStates = states.filter(state =>
     state.name.toLowerCase().includes(statesSearchTerm)
+  );
+  const filteredSourcingInterest = sourcingInterest.filter(sic =>
+    sic.category_name.toLowerCase().includes(sourcingInterestSearchTerm)
   );
 
   useEffect(() => {
@@ -60,7 +66,7 @@ const CompaniesFilter = () => {
           categories: selectedCategories,
         });
         const subs = res.data || [];
-        const filtered = subs.filter(sub => sub.product_count > 0);
+        const filtered = subs.filter(sub => sub.company_count > 0);
         setSubCategories(filtered);
         setSelectedSubCategories(prevSelected =>
           prevSelected.filter(id => filtered.some(sub => sub.id === id))
@@ -86,6 +92,20 @@ const CompaniesFilter = () => {
     fetchStates();
   }, []);
 
+  useEffect(() => {
+    const fetchSourcingInterest = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/interest_sub_categories/count_relation`);
+        const isc = res.data || [];
+        const filtered = isc.filter(si => si.product_count > 0);
+        setSourcingInterest(filtered);
+      } catch (err) {
+        console.error('Error fetching Sourcing Interest:', err);
+      }
+    };
+    fetchSourcingInterest();
+  }, []);
+
   const fetchCompanies = async (pageNumber = 1, append = false) => {
     if ((append && scrollLoading) || (!append && loading)) return;
 
@@ -93,6 +113,12 @@ const CompaniesFilter = () => {
 
     try {
       let url = `${API_BASE_URL}/products/companies?is_delete=0&status=1&limit=9&page=${pageNumber}`;
+      if (typeof isSeller !== 'undefined') {
+        url += `&is_seller=${isSeller}`;
+      }
+      if (typeof isTrading !== 'undefined') {
+        url += `&is_trading=${isTrading}`;
+      }
       if (selectedCategories.length > 0) {
         url += `&category=${selectedCategories.join(',')}`;
       }
@@ -134,7 +160,7 @@ const CompaniesFilter = () => {
     setPage(1);
     setHasMore(true);
     fetchCompanies(1, false);
-  }, [selectedCategories, selectedSubCategories, selectedStates, sortBy]);
+  }, [selectedCategories, selectedSubCategories, selectedStates, selectedSourcingInterest, sortBy, isSeller, isTrading]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -181,6 +207,14 @@ const CompaniesFilter = () => {
     );
   };
 
+  const handleSourcingInterestCheckboxChange = (sicId) => {
+    setSelectedSourcingInterest(prev =>
+      prev.includes(sicId)
+        ? prev.filter(id => id !== sicId)
+        : [...prev, sicId]
+    );
+  };
+
   // Filter companies by search term
   const filteredCompanies = companies.filter(company =>
     company.organization_name.toLowerCase().includes(searchTerm)
@@ -208,7 +242,8 @@ const CompaniesFilter = () => {
               />
             </div>
           </div>
-
+          {isSeller==1 && (
+          <>
           <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
             <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Category</h3>
             <div className="d-flex flex-column gap-2">
@@ -264,7 +299,7 @@ const CompaniesFilter = () => {
                           onChange={() => handleSubCategoryCheckboxChange(sub.id)}
                         />
                         <label htmlFor={`subcat-${sub.id}`} className="form-check-label text-capitalize">
-                          {sub.name} ({sub.product_count})
+                          {sub.name} ({sub.company_count})
                         </label>
                       </div>
                     ))}
@@ -303,6 +338,40 @@ const CompaniesFilter = () => {
               </div>
             </div>
           </div>
+          </>
+          )}
+          {isSeller==0 && (
+            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+            <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Sourcing Interest</h3>
+            <div className="d-flex flex-column gap-2">
+              <div className="input-group flex-nowrap ps-2 pe-4">
+                <i className="bx bx-search input-group-text" />
+                <input
+                  type="text"
+                  placeholder="Search sourcing interest..."
+                  onChange={(e) => setSourcingInterestSearchTerm(e.target.value.toLowerCase())}
+                  className="form-control"
+                />
+              </div>
+              <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSourcingInterest.length >= 5 ? 'auto' : 'visible' }}>
+                {filteredSourcingInterest.map(sic => (
+                  <div className="form-check mb-2" key={sic.id}>
+                    <input
+                      type="checkbox"
+                      id={`sic-${sic.id}`}
+                      className="form-check-input"
+                      checked={selectedSourcingInterest.includes(sic.id)}
+                      onChange={() => handleSourcingInterestCheckboxChange(sic.id)}
+                    />
+                    <label htmlFor={`sic-${sic.id}`} className="form-check-label text-capitalize">
+                      {sic.category_name} ({sic.product_count})
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          )}
         </aside>
 
         {/* Companies grid */}
@@ -477,7 +546,7 @@ const CompaniesFilter = () => {
                         <div className="companyitems companylocation d-flex gap-2 mb-2">
                           <b className="fw-semibold">Location:</b>
                           <p className="mb-0">
-                            {company.address ||
+                            {company.company_location ||
                               '4th Floor, Survey No. 8, Vijinapura Extension, Bengaluru...'}
                           </p>
                         </div>
@@ -489,25 +558,25 @@ const CompaniesFilter = () => {
                           </div>
                           <div className="d-flex gap-2">
                             <b className="fw-semibold">Core:</b>
-                            <p className="mb-0">Manufacturing</p>
+                            <p className="mb-0">{company.core_activity_name}</p>
                           </div>
                           <div className="d-flex gap-2">
                             <b className="fw-semibold">Activity:</b>
-                            <p className="mb-0">Finished products</p>
+                            <p className="mb-0">{company.activity_name}</p>
                           </div>
                           <div className="d-flex gap-2">
                             <b className="fw-semibold">Category:</b>
-                            <p className="mb-0">Cables & Wire</p>
+                            <p className="mb-0">{company.category_name}</p>
                           </div>
                           <div className="d-flex gap-2">
                             <b className="fw-semibold">Sub Category:</b>
                             <p className="mb-0">
-                              Audio Video Cables, Wire Management
+                              {company.sub_category_name}
                             </p>
                           </div>
                           <div className="d-flex gap-2">
                             <b className="fw-semibold">Products:</b>
-                            <p className="mb-0">{company.product_count || 0}</p>
+                            <p className="mb-0">{company.company_count || 0}</p>
                           </div>
                         </div>
 
@@ -560,7 +629,7 @@ const CompaniesFilter = () => {
                           <div className="companyitems companylocation mb-2 d-flex gap-2">
                             <b className="fw-semibold">Location:</b>
                             <p className="mb-0">
-                              4th Floor, Survey No. 8, Khatha No. 3, Dooravaninagar Post, Vijinapura Extension, Bengaluru Urban, Karnataka, 560016
+                              {company.company_location}
                             </p>
                           </div>
                         </div>
@@ -575,42 +644,40 @@ const CompaniesFilter = () => {
                           <div className="companyitems companylocation companylocationlist mb-2 d-flex gap-2">
                             <b className="fw-semibold">Location:</b>
                             <p className="mb-0">
-                              4th Floor, Survey No. 8, Khatha No. 3, Dooravaninagar Post, Vijinapura Extension, Bengaluru Urban, Karnataka, 560016
+                              {company.company_location}
                             </p>
                           </div>
                         </div>
                         <div className="companyitems companywebsite mb-2 d-flex gap-2">
                           <b className="fw-semibold">Website:</b>
-                          <p className="mb-0">https://www.aaviza.com/</p>
+                          <p className="mb-0">{company.company_website}</p>
                         </div>
 
                         <div className="companyitems companycoreactivity mb-2 d-flex gap-2">
                           <b className="fw-semibold">Core Activity:</b>
-                          <p className="mb-0">Manufacturing</p>
+                          <p className="mb-0">{company.core_activity_name}</p>
                         </div>
 
                         <div className="companyitems companactivity mb-2 d-flex gap-2">
                           <b className="fw-semibold">Activity:</b>
-                          <p className="mb-0">Finished products</p>
+                          <p className="mb-0">{company.activity_name}</p>
                         </div>
 
                         <div className="companyitems compancatrgory mb-2 d-flex gap-2">
                           <b className="fw-semibold">Category:</b>
-                          <p className="mb-0">Cables & Wire</p>
+                          <p className="mb-0">{company.category_name}</p>
                         </div>
 
                         <div className="companyitems compansubcatrgory mb-2 d-flex gap-2">
                           <b className="fw-semibold">Sub Category:</b>
-                          <p className="mb-0">Audio Video Cables, Wire Management</p>
-                        </div>
-
-                        <div className="companyitems companyproductcount mb-2 d-flex gap-2">
-                          <b className="fw-semibold">Companies:</b>
-                          <p className="mb-0">{company.product_count || 0}</p>
+                          <p className="mb-0">{company.sub_category_name}</p>
                         </div>
 
                         <div className="featuredCompaniesPara d-flex align-items-center gap-1 flex-wrap">
-                          <a
+                          {company.products && company.products.map((product, idx) => (
+                            <Link
+                            key={product.id || product.slug || idx}
+                            to={`/products/${product.slug}`}
                             className="small badge text-decoration-none text-white btn-orange text-start"
                             style={{
                               whiteSpace: "pre-wrap",
@@ -619,19 +686,9 @@ const CompaniesFilter = () => {
                               fontSize: "10px"
                             }}
                           >
-                            PCB Assembly
-                          </a>
-                          <a
-                            className="small badge text-decoration-none text-white btn-orange text-start"
-                            style={{
-                              whiteSpace: "pre-wrap",
-                              lineHeight: "17px",
-                              padding: "2px 6px",
-                              fontSize: "10px"
-                            }}
-                          >
-                            Product Assembly
-                          </a>
+                            {product.title}
+                          </Link>
+                          ))}
                         </div>
 
                       </div>
@@ -639,7 +696,7 @@ const CompaniesFilter = () => {
 
                     <div className={`card-footer ${viewMode === 'list' ? 'bg-white border-0 pe-2 pt-0' : ''}`}>
                       <div className={`d-flex gap-2 ${viewMode === 'list' ? 'flex-column' : 'flex-row'}`}>
-                        <Link className="d-block w-100 pt-2 btn btn-primary text-nowrap px-5">
+                        <Link to={`/companies/${company.organization_slug}`} className="d-block w-100 pt-2 btn btn-primary text-nowrap px-5">
                           <span className="">View Details</span>
                         </Link>
                         <Link className="d-block w-100 pt-2 btn btn-orange text-nowrap px-5">

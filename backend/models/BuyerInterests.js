@@ -14,8 +14,8 @@ const BuyerInterests = sequelize.define('BuyerInterests', {
   updatedAt: 'updated_at'
 });
 
-Users.hasMany(BuyerInterests, { foreignKey: 'buyer_id', as: 'buyer_interests', constraints: false });
-BuyerInterests.belongsTo(Users, { foreignKey: 'buyer_id', constraints: false });
+// Users.hasMany(BuyerInterests, { foreignKey: 'buyer_id', as: 'buyer_interests', constraints: false });
+BuyerInterests.belongsTo(Users, { foreignKey: 'buyer_id', as: 'buyer_interests', constraints: false });
 BuyerInterests.belongsTo(InterestSubCategories, {
   foreignKey: 'activity_id',
   targetKey: 'id',

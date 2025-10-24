@@ -28,7 +28,7 @@ const Company = ({ limit }) => {
           </div>
           <div className="companyGrid">
             <div className="row gx-3">
-              {companies.map((item, index) => (
+              {/* {companies.map((item, index) => (
                 <div className="col-md-2 mb-3" key={index}>
                   <Link to={`/companies/${item.organization_slug}`} className="d-block h-100">
                     <div key={item.id} className="companyBox px-3 py-4 bg-white border h-100 d-flex align-items-center justify-content-center">
@@ -43,7 +43,7 @@ const Company = ({ limit }) => {
                     </div>
                   </Link>
                 </div>
-              ))}
+              ))} */}
               <div className="col-md-2 mb-3">
                 <Link to="/companies"  className="d-block h-100">
                   <div className="companyBox px-3 py-4 bg-white border text-center h-100">

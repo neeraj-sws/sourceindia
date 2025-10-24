@@ -87,6 +87,7 @@ exports.getStatesByCountry = async (req, res) => {
         country: country_id,
         company_id: { [Op.ne]: null },
         is_delete: 0,
+        is_approve: 1,
         status: 1,
       },
       group: ['state'],
