@@ -6,6 +6,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 router.post('/send-otp', usersController.sendOtp);
 router.post('/verify-otp', usersController.verifyOtp);
 router.post('/login', usersController.login);
+router.post('/send-login-otp', usersController.sendLoginotp);
+router.post('/verify-login-otp', usersController.verifyLoginotp);
 router.post('/register', usersController.register);
 router.get('/profile', authMiddleware, usersController.getProfile);
 router.get('/countries', usersController.getCountries);
