@@ -15,12 +15,12 @@ const menuData = [
   {
     title: 'My Products',
     icon: 'bx bx-devices',
-    link: '#',
+    link: '/my-product',
   },
   {
     title: 'Leads',
     icon: 'bx bx-devices',
-    link: '#',
+    link: '/seller_enquiry',
   },
   {
     title: 'Lead Messages',
@@ -30,7 +30,7 @@ const menuData = [
   {
     title: 'Enquires',
     icon: 'bx bx-devices',
-    link: '#',
+    link: '/my_enquiry',
   },
   {
     title: 'Enquiry Messages',

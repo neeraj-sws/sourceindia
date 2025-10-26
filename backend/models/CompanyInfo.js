@@ -48,7 +48,7 @@ const CompanyInfo = sequelize.define('CompanyInfo', {
   is_pli: { type: DataTypes.INTEGER, allowNull: true },
   user_category: { type: DataTypes.STRING, allowNull: true },
 }, {
-  tableName: 'company_info1',
+  tableName: 'company_info',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at'

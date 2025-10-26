@@ -92,7 +92,6 @@ app.use(basePath + '/api/newsletter_histories', newsletterHistoriesRoutes);
 app.use(basePath + '/api/inventories', inventoriesRoutes);
 app.use(basePath + '/api/signup', usersRoutes);
 
-
 sequelize
   .sync()
   .then(() => {

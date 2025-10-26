@@ -18,6 +18,7 @@ const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
 const { getTransporter } = require('../helpers/mailHelper');
 const { generateUniqueSlug  } = require('../helpers/mailHelper');
+const getMulterUpload = require('../utils/upload');
 const nodemailer = require('nodemailer');
 const secretKey = 'your_secret_key';
 const jwt = require('jsonwebtoken');
@@ -54,115 +55,6 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-exports.getProfile = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const user = await Users.findOne({
-      where: { id: userId, is_delete: 0 },
-      attributes: { exclude: ['password', 'real_password'] },
-      include: [
-        {
-          model: CompanyInfo,
-          as: 'company_info',
-          where: { is_delete: 0 },
-          required: false,
-          include: [
-            {
-              model: UploadImage,
-              as: 'companyLogo',
-              required: false,
-              attributes: ['file']
-            },
-            {
-              model: UploadImage,
-              as: 'companySamplePptFile',
-              required: false,
-              attributes: ['file']
-            },
-            {
-              model: UploadImage,
-              as: 'companyVideo',
-              required: false,
-              attributes: ['file']
-            },
-            {
-              model: UploadImage,
-              as: 'companySampleFile',
-              required: false,
-              attributes: ['file']
-            },
-            {
-              model: CoreActivity,
-              as: 'CoreActivity',
-              required: false,
-              attributes: ['id', 'name']
-            },
-            {
-              model: Activity,
-              as: 'Activity',
-              required: false,
-              attributes: ['id', 'name']
-            }
-          ]
-        },
-        {
-          model: UploadImage,
-          as: 'file',
-          required: false,
-          attributes: ['file']
-        },
-        {
-          model: UploadImage,
-          as: 'company_file',
-          required: false,
-          attributes: ['file']
-        },
-        {
-          model: Countries,
-          as: 'country_data',
-          required: false,
-          attributes: ['id', 'name']
-        },
-        {
-          model: States,
-          as: 'state_data',
-          required: false,
-          attributes: ['id', 'name']
-        },
-        {
-          model: Cities,
-          as: 'city_data',
-          required: false,
-          attributes: ['id', 'name']
-        }
-      ]
-    });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    if (user.company_info) {
-      const { category_sell, sub_category } = user.company_info;
-      const parseIds = str => str ? str.split(',').map(id => parseInt(id.trim())).filter(Boolean) : [];
-      const categoryIds = parseIds(category_sell);
-      const subCategoryIds = parseIds(sub_category);
-      const [categories, subCategories] = await Promise.all([
-        categoryIds.length
-          ? Categories.findAll({ where: { id: { [Op.in]: categoryIds } }, attributes: ['name'] })
-          : [],
-        subCategoryIds.length
-          ? SubCategories.findAll({ where: { id: { [Op.in]: subCategoryIds } }, attributes: ['name'] })
-          : []
-      ]);
-      user.company_info.dataValues.category_sell_names = categories.map(c => c.name).join(', ');
-      user.company_info.dataValues.sub_category_names = subCategories.map(sc => sc.name).join(', ');
-    }
-    res.json({ user });
-  } catch (error) {
-    console.error('Error in getProfile:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -484,7 +376,6 @@ exports.getCities = async (req, res) => {
   }
 };
 
-
 exports.sendLoginotp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -562,16 +453,13 @@ exports.sendLoginotp = async (req, res) => {
     }
   }
 };
+
 exports.verifyLoginotp = async (req, res) => {
   try {
     const { userId, otp } = req.body;
-
-    // Validate input
     if (!userId || !otp) {
       return res.status(400).json({ message: 'User ID and OTP are required' });
     }
-
-    // Decode userId (base64 encoded)
     let user_id;
     try {
       user_id = Buffer.from(userId, 'base64').toString('ascii');
@@ -581,36 +469,24 @@ exports.verifyLoginotp = async (req, res) => {
     } catch (error) {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
-
-    // Verify user exists
     const user = await Users.findOne({
       where: { id: user_id, is_delete: 0 },
     });
-
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    // Verify OTP locally
     if (!user.otp || user.otp !== otp) {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
-
-    // Check OTP expiry
     if (user.otp_expiry < new Date()) {
       return res.status(400).json({ message: 'OTP has expired' });
     }
-
-    // Clear OTP after successful verification
     await user.update({ otp: null, otp_expiry: null });
-
-    // Generate JWT token
     const token = jwt.sign(
       { id: user.id, email: user.email, is_seller: user.is_seller },
-      process.env.JWT_SECRET || 'your_jwt_secret_key', // Use environment variable
+      process.env.JWT_SECRET || 'your_jwt_secret_key',
       { expiresIn: '1h' }
     );
-
     return res.json({
       message: 'OTP verified successfully',
       token,
@@ -628,7 +504,6 @@ exports.verifyLoginotp = async (req, res) => {
       stack: error.stack,
       code: error.code,
     });
-
     if (error.name === 'SequelizeDatabaseError') {
       return res.status(500).json({ message: 'Database error' });
     } else {
@@ -637,19 +512,251 @@ exports.verifyLoginotp = async (req, res) => {
   }
 };
 
-exports.getuserEnquiriesCount = async (req, res) => {
-  // try {
+exports.getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await Users.findOne({
+      where: { id: userId, is_delete: 0 },
+      attributes: { exclude: ['password', 'real_password'] },
+      include: [
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          where: { is_delete: 0 },
+          required: false,
+          include: [
+            {
+              model: UploadImage,
+              as: 'companyLogo',
+              required: false,
+              attributes: ['file']
+            },
+            {
+              model: UploadImage,
+              as: 'companySamplePptFile',
+              required: false,
+              attributes: ['file']
+            },
+            {
+              model: UploadImage,
+              as: 'companyVideo',
+              required: false,
+              attributes: ['file']
+            },
+            {
+              model: UploadImage,
+              as: 'companySampleFile',
+              required: false,
+              attributes: ['file']
+            },
+            {
+              model: CoreActivity,
+              as: 'CoreActivity',
+              required: false,
+              attributes: ['id', 'name']
+            },
+            {
+              model: Activity,
+              as: 'Activity',
+              required: false,
+              attributes: ['id', 'name']
+            }
+          ]
+        },
+        {
+          model: UploadImage,
+          as: 'file',
+          required: false,
+          attributes: ['file']
+        },
+        {
+          model: UploadImage,
+          as: 'company_file',
+          required: false,
+          attributes: ['file']
+        },
+        {
+          model: Countries,
+          as: 'country_data',
+          required: false,
+          attributes: ['id', 'name']
+        },
+        {
+          model: States,
+          as: 'state_data',
+          required: false,
+          attributes: ['id', 'name']
+        },
+        {
+          model: Cities,
+          as: 'city_data',
+          required: false,
+          attributes: ['id', 'name']
+        }
+      ]
+    });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.company_info) {
+      const { category_sell, sub_category } = user.company_info;
+      const parseIds = str => str ? str.split(',').map(id => parseInt(id.trim())).filter(Boolean) : [];
+      const categoryIds = parseIds(category_sell);
+      const subCategoryIds = parseIds(sub_category);
+      const [categories, subCategories] = await Promise.all([
+        categoryIds.length ? Categories.findAll({ where: { id: { [Op.in]: categoryIds } }, attributes: ['name'] }) : [],
+        subCategoryIds.length ? SubCategories.findAll({ where: { id: { [Op.in]: subCategoryIds } }, attributes: ['name'] }) : []
+      ]);
+      user.company_info.dataValues.category_sell_names = categories.map(c => c.name).join(', ');
+      user.company_info.dataValues.sub_category_names = subCategories.map(sc => sc.name).join(', ');
+    }
+    res.json({ user });
+  } catch (error) {
+    console.error('Error in getProfile:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
-  // if (!req.user || !req.user.id) {
-  //   return res.status(401).json({ error: 'Authentication failed' });
-  // }
+exports.updateProfile = async (req, res) => {
+  const upload = getMulterUpload('users');
+  upload.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'company_logo', maxCount: 1 },
+    { name: 'sample_file_id', maxCount: 1 },
+    { name: 'company_sample_ppt_file', maxCount: 1 },
+  ])(req, res, async (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+    try {
+      const userId = req.user.id;
+      const user = await Users.findByPk(userId);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      const companyInfo = await CompanyInfo.findOne({ where: { id: user.company_id } });
+      const updatedUserData = {
+        fname: req.body.fname,
+        lname: req.body.lname,
+        email: req.body.email,
+        mobile: req.body.mobile,
+        state: req.body.state,
+        city: req.body.city,
+        zipcode: req.body.zipcode,
+        address: req.body.address,
+        website: req.body.website
+      };
+      const profileImage = req.files?.file?.[0];
+      if (profileImage) {
+        const existingImage = await UploadImage.findByPk(user.file_id);
+        if (existingImage) {
+          const oldPath = path.resolve(existingImage.file);
+          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+          existingImage.file = `upload/users/${profileImage.filename}`;
+          existingImage.updated_at = new Date();
+          await existingImage.save();
+        } else {
+          const newImage = await UploadImage.create({
+            file: `upload/users/${profileImage.filename}`
+          });
+          updatedUserData.file_id = newImage.id;
+        }
+      }
+      await user.update(updatedUserData);
+      if (companyInfo) {
+        const companyLogo = req.files?.company_logo?.[0];
+        if (companyLogo) {
+          const existingLogo = await UploadImage.findByPk(companyInfo.company_logo);
+          if (existingLogo) {
+            const oldPath = path.resolve(existingLogo.file);
+            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            existingLogo.file = `upload/users/${companyLogo.filename}`;
+            existingLogo.updated_at = new Date();
+            await existingLogo.save();
+          } else {
+            const newLogo = await UploadImage.create({
+              file: `upload/users/${companyLogo.filename}`
+            });
+            await companyInfo.update({ company_logo: newLogo.id });
+          }
+        }
+        const sampleFile = req.files?.sample_file_id?.[0];
+        if (sampleFile) {
+          const existingSample = await UploadImage.findByPk(companyInfo.sample_file_id);
+          if (existingSample) {
+            const oldPath = path.resolve(existingSample.file);
+            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            existingSample.file = `upload/users/${sampleFile.filename}`;
+            existingSample.updated_at = new Date();
+            await existingSample.save();
+          } else {
+            const newSample = await UploadImage.create({
+              file: `upload/users/${sampleFile.filename}`
+            });
+            await companyInfo.update({ sample_file_id: newSample.id });
+          }
+        }
+        const pptFile = req.files?.company_sample_ppt_file?.[0];
+        if (pptFile) {
+          const existingPpt = await UploadImage.findByPk(companyInfo.company_sample_ppt_file);
+          if (existingPpt) {
+            const oldPath = path.resolve(existingPpt.file);
+            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            existingPpt.file = `upload/users/${pptFile.filename}`;
+            existingPpt.updated_at = new Date();
+            await existingPpt.save();
+          } else {
+            const newPpt = await UploadImage.create({
+              file: `upload/users/${pptFile.filename}`
+            });
+            await companyInfo.update({ company_sample_ppt_file: newPpt.id });
+          }
+        }
+        await companyInfo.update({
+          organization_name: req.body.organization_name,
+          organization_slug: generateUniqueSlug(req.body.organization_slug || req.body.organization_name),
+          core_activity: req.body.core_activity,
+          activity: req.body.activity,
+          category_sell: req.body.category_sell,
+          sub_category: req.body.sub_category,
+          company_website: req.body.company_website,
+          company_location: req.body.company_location,
+          organizations_product_description: req.body.organizations_product_description,
+          company_sample_ppt_file: req.body.company_sample_ppt_file,
+          company_video_second: req.body.company_video_second
+        });
+      }
+      return res.status(200).json({
+        message: 'Profile updated successfully',
+        user
+      });
+    } catch (error) {
+      console.error('Error in updateProfile:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+};
 
-  // const userId = req.user.id;
-  const total = await OpenEnquriy.count();
-
-  res.json({ total });
-  // } catch (err) {
-  //   console.error('Error fetching enquiry count:', err);
-  //   res.status(500).json({ error: 'Failed to fetch enquiry count' });
-  // }
+exports.changePassword = async (req, res) => {
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+  const userId = req.user.id;
+  if (!oldPassword || !newPassword || !confirmPassword) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ message: 'New password and confirm password do not match.' });
+  }
+  try {
+    const user = await Users.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Old password is incorrect.' });
+    }
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    await user.save();
+    return res.status(200).json({ message: 'Password changed successfully.' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    return res.status(500).json({ message: 'Server error.' });
+  }
 };
