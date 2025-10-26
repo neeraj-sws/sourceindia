@@ -1,6 +1,7 @@
 const { Op, fn, col, literal } = require('sequelize');
 const moment = require('moment');
 const Enquiries = require('../models/Enquiries');
+const OpenEnquriy = require('../models/OpenEnquiries');
 const Users = require('../models/Users');
 const Products = require('../models/Products');
 const CompanyInfo = require('../models/CompanyInfo');
@@ -160,6 +161,8 @@ exports.getEnquiriesCount = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
 
 exports.deleteEnquiries = async (req, res) => {
   try {

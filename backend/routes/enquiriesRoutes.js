@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const enquiriesController = require('../controllers/enquiriesController');
+const usersController = require('../controllers/usersController');
 
 router.get('/count', enquiriesController.getEnquiriesCount);
+router.get('/user-count', usersController.getuserEnquiriesCount);
 router.get('/', enquiriesController.getAllEnquiries);
 router.get('/server-side', enquiriesController.getAllEnquiriesServerSide);
 router.delete('/delete-selected', enquiriesController.deleteSelectedEnquiries);

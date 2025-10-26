@@ -3,6 +3,7 @@ const { Op } = Sequelize;
 const bcrypt = require('bcrypt');
 const Users = require('../models/Users');
 const Countries = require('../models/Countries');
+const OpenEnquriy = require('../models/OpenEnquiries');
 const States = require('../models/States');
 const Cities = require('../models/Cities');
 const Emails = require('../models/Emails');
@@ -622,4 +623,21 @@ exports.verifyLoginotp = async (req, res) => {
       return res.status(500).json({ message: 'Server error' });
     }
   }
+};
+
+exports.getuserEnquiriesCount = async (req, res) => {
+  // try {
+
+  // if (!req.user || !req.user.id) {
+  //   return res.status(401).json({ error: 'Authentication failed' });
+  // }
+
+  // const userId = req.user.id;
+  const total = await OpenEnquriy.count();
+
+  res.json({ total });
+  // } catch (err) {
+  //   console.error('Error fetching enquiry count:', err);
+  //   res.status(500).json({ error: 'Failed to fetch enquiry count' });
+  // }
 };
