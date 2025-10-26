@@ -20,6 +20,9 @@ import Profile from '../pages/Profile';
 import ProfileEdit from '../pages/ProfileEdit';
 import CompanyEdit from '../pages/CompanyEdit';
 import Dashboard from '../pages/Dashboard';
+import MyProducts from '../pages/MyProducts';
+import AddProduct from '../pages/AddProduct';
+import LeadsList from '../pages/LeadsList';
 import CreateTicket from '../pages/CreateTicket';
 import TrackTicket from '../pages/TrackTicket';
 import ProductDetail from '../pages/ProductsDetail';
@@ -37,7 +40,8 @@ import PublicRoute from '../routes/PublicRoute';
 
 function FrontLayout() {
   const location = useLocation();
-  const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit'];
+  const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit', '/my-product',
+    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry'];
   const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -68,6 +72,11 @@ function FrontLayout() {
               <Route path="/profile-edit" element={<PrivateRoute><ProfileEdit /></PrivateRoute>} />
               <Route path="/company-edit" element={<PrivateRoute><CompanyEdit /></PrivateRoute>} />
               <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="/my-product" element={<PrivateRoute><MyProducts /></PrivateRoute>} />
+              <Route path="/add_product" element={<PrivateRoute><AddProduct /></PrivateRoute>} />
+              <Route path="/edit_product/:productId" element={<PrivateRoute><AddProduct /></PrivateRoute>} />
+              <Route path="/seller_enquiry" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
+              <Route path="/my_enquiry" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
               <Route path="/get-support/trackticket" element={<TrackTicket />} />
               <Route path="/open-enquiry" element={<Enquiry />} />
               <Route path="/ticket/view/:number" element={<TicketView />} />

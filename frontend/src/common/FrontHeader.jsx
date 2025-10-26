@@ -112,10 +112,6 @@ const FrontHeader = () => {
                       role="button"
                     >
                       <div className="position-relative me-2">
-                        {/* <div className="rounded-circle bg-light d-flex align-items-center justify-content-center"
-                          style={{ width: "40px", height: "40px", border: "1px solid #ccc" }}>
-                          <i className="bx bx-user"></i>
-                        </div> */}
                         <ImageWithFallback
                         src={user.file && `${ROOT_URL}/${user.file.file}`}
                         width={50}

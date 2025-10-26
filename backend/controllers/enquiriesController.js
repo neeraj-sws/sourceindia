@@ -237,6 +237,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
       enquiry_no,
       category,
       sub_category,
+      user_id
     } = req.query;
     const validColumns = [
       'id', 'enquiry_number', 'created_at', 'updated_at', 'name', 'email', 'phone', 'category_name', 'sub_category_name',
@@ -318,6 +319,9 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
       searchWhere.sub_category_name = {
         [Op.like]: `%${sub_category}%`
       };
+    }
+    if (user_id) {
+      searchWhere.user_id = user_id;
     }
     let dateCondition = null;
     if (dateRange) {
