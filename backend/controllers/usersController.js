@@ -17,7 +17,7 @@ const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
 const { getTransporter } = require('../helpers/mailHelper');
-const { generateUniqueSlug } = require('../helpers/mailHelper');
+const { generateUniqueSlug  } = require('../helpers/mailHelper');
 const nodemailer = require('nodemailer');
 const secretKey = 'your_secret_key';
 const jwt = require('jsonwebtoken');
@@ -167,12 +167,16 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+// Send OTP
 exports.sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
+
     const existingUser = await Users.findOne({ where: { email } });
     if (existingUser) return res.status(400).json({ error: "Email already taken" });
+
     const otp = Math.floor(1000 + Math.random() * 9000);
+
     let emailRecord = await EmailVerification.findOne({ where: { email } });
     if (emailRecord) {
       emailRecord.otp = otp;
@@ -181,9 +185,12 @@ exports.sendOtp = async (req, res) => {
     } else {
       emailRecord = await EmailVerification.create({ email, otp, is_verify: 0 });
     }
+
     const emailTemplate = await Emails.findByPk(99);
     const msgStr = emailTemplate.message.toString('utf8');
     let userMessage = msgStr.replace("{{ USER_PASSWORD }}", otp);
+
+
     const { transporter, siteConfig } = await getTransporter();
     await transporter.sendMail({
       from: `"OTP Verification" <info@sourceindia-electronics.com>`,
@@ -191,6 +198,7 @@ exports.sendOtp = async (req, res) => {
       subject: emailTemplate?.subject || "Verify your email",
       html: userMessage,
     });
+
     return res.json({ message: "OTP sent successfully", user_id: emailRecord.id });
   } catch (err) {
     console.error(err);
@@ -198,11 +206,13 @@ exports.sendOtp = async (req, res) => {
   }
 };
 
+// Verify OTP
 exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp, user_id } = req.body;
     const record = await EmailVerification.findOne({ where: { email, id: user_id } });
     if (!record) return res.status(400).json({ error: "Verification data not found" });
+
     if (record.otp.toString() === otp.toString()) {
       record.is_verify = 1;
       await record.save();
@@ -216,7 +226,9 @@ exports.verifyOtp = async (req, res) => {
   }
 };
 
+// Register User
 exports.register = async (req, res) => {
+
   try {
     const {
       fname,
