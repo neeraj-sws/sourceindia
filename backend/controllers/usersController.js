@@ -3,6 +3,7 @@ const { Op } = Sequelize;
 const bcrypt = require('bcrypt');
 const Users = require('../models/Users');
 const Countries = require('../models/Countries');
+const OpenEnquriy = require('../models/OpenEnquiries');
 const States = require('../models/States');
 const Cities = require('../models/Cities');
 const Emails = require('../models/Emails');
