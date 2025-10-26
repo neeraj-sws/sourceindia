@@ -17,7 +17,7 @@ const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
 const { getTransporter } = require('../helpers/mailHelper');
-const { generateUniqueSlug  } = require('../helpers/mailHelper');
+const { generateUniqueSlug } = require('../helpers/mailHelper');
 const getMulterUpload = require('../utils/upload');
 const nodemailer = require('nodemailer');
 const secretKey = 'your_secret_key';
@@ -609,6 +609,10 @@ exports.getProfile = async (req, res) => {
       ]);
       user.company_info.dataValues.category_sell_names = categories.map(c => c.name).join(', ');
       user.company_info.dataValues.sub_category_names = subCategories.map(sc => sc.name).join(', ');
+
+
+
+
     }
     res.json({ user });
   } catch (error) {
@@ -659,6 +663,54 @@ exports.updateProfile = async (req, res) => {
         }
       }
       await user.update(updatedUserData);
+
+      const adminemailTemplate = await Emails.findByPk(32);
+      if (!adminemailTemplate) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      const msgStr = adminemailTemplate.message.toString("utf8");
+      const user_type = '';
+      if (user.is_seller === 1) {
+        user_type = 'Seller';
+      } else {
+        user_type = 'Buyer';
+      }
+
+      const { transporter, siteConfig } = await getTransporter();
+      const adminMessage = msgStr
+        .replace("{{ ADMIN_NAME }}", siteConfig['title'])
+        .replace("{{ USER_FNAME }}", user.fname)
+        .replace("{{ USER_LNAME }}", user.lname)
+        .replace("{{ USER_EMAIL }}", user.email)
+        .replace("{{ USER_MOBILE }}", user.mobile)
+        .replace("{{ USER_ADDRESS }}", user.address)
+        .replace("{{ USER_TYPE }}", user_type);
+
+      await transporter.sendMail({
+        from: `"Support Team" <info@sourceindia-electronics.com>`,
+        to: siteConfig['site_email'],
+        subject: adminemailTemplate.subject,
+        html: adminMessage,
+      });
+
+
+      const emailTemplate = await Emails.findByPk(33);
+      if (!emailTemplate) {
+        return res.status(404).json({ message: "Email template not found" });
+      }
+      const usermsgStr = emailTemplate.message.toString("utf8");
+      const subject = emailTemplate.subject.replace("{{ USER_FNAME }}", user.fname);
+      const userMessage = usermsgStr
+        .replace("{{ USER_FNAME }}", user.fname)
+        .replace("{{ USER_LNAME }}", user.lname);
+
+      await transporter.sendMail({
+        from: `"Support Team" <info@sourceindia-electronics.com>`,
+        to: user.email,
+        subject: subject,
+        html: userMessage,
+      });
+
       if (companyInfo) {
         const companyLogo = req.files?.company_logo?.[0];
         if (companyLogo) {
@@ -758,5 +810,15 @@ exports.changePassword = async (req, res) => {
   } catch (error) {
     console.error('Change password error:', error);
     return res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+exports.getuserEnquiriesCount = async (req, res) => {
+  try {
+    const total = await OpenEnquriy.count();
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 };
