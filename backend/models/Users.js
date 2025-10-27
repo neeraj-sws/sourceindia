@@ -58,7 +58,7 @@ const Users = sequelize.define('Users', {
   is_company: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 1, },
   is_product: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 1, },
 }, {
-  tableName: 'users1',
+  tableName: 'users',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at'
