@@ -5,7 +5,7 @@ const menuData = [
   {
     title: 'Dashboard',
     icon: 'bx bx-home-circle',
-    link: ['/dashboard'],
+    link: '/dashboard',
   },
   {
     title: 'Profile',

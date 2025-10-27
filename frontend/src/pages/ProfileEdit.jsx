@@ -28,6 +28,7 @@ const ProfileEdit = () => {
   const [selectedCity, setSelectedCity] = useState('');
   const [errors, setErrors] = useState({});
   const [file, setFile] = useState(null);
+  const [designations, setDesignations] = useState([]);
 
   useEffect(() => {
     const fetchStates = async () => {
@@ -124,19 +125,64 @@ const ProfileEdit = () => {
     }));
   };
 
+  useEffect(() => {
+    const fetchDesignations = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/sellers/designations?status=1`);
+        setDesignations(res.data);
+      } catch (error) {
+        console.error("Error fetching states:", error);
+      }
+    };
+    fetchDesignations();
+  }, []);
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem("user_token");
-    try {
-      await axios.post(`${API_BASE_URL}/signup/update-profile`, user, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      showNotification("Profile updated successfully!", 'success');
-    } catch (err) {
-      console.error("Update failed", err);
-      showNotification("Error updating profile", 'error');
+  e.preventDefault();
+  const token = localStorage.getItem("user_token");
+  if (!token) {
+    navigate("/login");
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+
+    // append all user fields
+    formData.append("fname", user.fname || "");
+    formData.append("lname", user.lname || "");
+    formData.append("email", user.email || "");
+    formData.append("mobile", user.mobile || "");
+    formData.append("state", selectedState || "");
+    formData.append("city", selectedCity || "");
+    formData.append("zipcode", user.zipcode || "");
+    formData.append("address", user.address || "");
+
+    // designation (from company_info)
+    formData.append("designation", user.company_info?.designation || "");
+
+    // append image file (field name must be 'file' because backend expects it)
+    if (file) {
+      formData.append("file", file);
     }
-  };
+
+    // (optional) If in the future you also support company_logo upload:
+    // if (companyLogoFile) formData.append("company_logo", companyLogoFile);
+
+    await axios.post(`${API_BASE_URL}/signup/update-profile`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    showNotification("Profile updated successfully!", "success");
+    navigate("/profile");
+  } catch (err) {
+    console.error("Update failed", err);
+    showNotification("Error updating profile", "error");
+  }
+};
 
   if (!user) return <div className="text-center mt-5">Loading profile...</div>;
 
@@ -209,21 +255,24 @@ const ProfileEdit = () => {
                     <div className="col-md-6">
                       <label className="form-label">Designation</label>
                       <input
-                        className={`form-control ${errors.designation ? 'is-invalid' : ''}`}
-                        list="browsers"
-                        name="designation"
-                        placeholder="Designation"
-                        id="browser"
-                        defaultValue=""
-                      />
+  className={`form-control ${errors.designation ? 'is-invalid' : ''}`}
+  list="browsers"
+  name="designation"
+  placeholder="Designation"
+  id="browser"
+  value={user.company_info?.designation || ""}
+  onChange={(e) => setUser(prev => ({
+    ...prev,
+    company_info: {
+      ...prev.company_info,
+      designation: e.target.value
+    }
+  }))}
+/>
                       <datalist id="browsers">
-                        <option value="Chairman" if=""></option>
-                        <option value="Chief Executive Officer" if=""></option>
-                        <option value="Chief Financial Officer" if=""></option>
-                        <option value="Deputy Manager" if=""></option>
-                        <option value="Designer" if=""></option>
-                        <option value="Director" if=""></option>
-                        <option value="Developer" if=""></option>
+                        {designations.map((d, index) => (
+                          <option value={d.name} if="" key={index}></option>
+                        ))}
                       </datalist>
                       {errors.designation && <div className="invalid-feedback">{errors.designation}</div>}
                     </div>
