@@ -40,12 +40,12 @@ const menuData = [
   {
     title: 'Open Enquiries',
     icon: 'bx bx-devices',
-    link: '#',
+    link: '/open-enquiry-dashboard',
   },
   {
     title: 'My Open Enquiries',
     icon: 'bx bx-devices',
-    link: '#',
+    link: '/my-open-enquiry-dashboard',
   },
   {
     title: 'Add Open Enquiries',
