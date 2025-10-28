@@ -10,6 +10,7 @@ const UserMessage = require('../models/UserMessage');
 const EnquiryMessage = require('../models/EnquiryMessage');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
+const UserActivity = require('../models/UserActivity');
 const Emails = require('../models/Emails');
 const { getTransporter } = require('../helpers/mailHelper');
 const jwt = require('jsonwebtoken');
@@ -694,3 +695,163 @@ exports.storeEnquiry = async (req, res) => {
   }
 };
 
+const getClientIp = (req) => {
+  return (
+    req.headers['x-forwarded-for']?.split(',').shift() ||
+    req.ip ||
+    req.connection?.remoteAddress ||
+    req.socket?.remoteAddress ||
+    '0.0.0.0'
+  );
+};
+
+
+const createUserActivity = async (req, userId = null, type = 'enquiry_created', isSide = 'front') => {
+  try {
+    const payload = {
+      user_id: userId ? parseInt(userId, 10) : null,
+      type,
+      is_side: isSide,
+      ip_address: getClientIp(req),
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    console.log('User Activity Logged:', payload);
+    await UserActivity.create(payload);
+  } catch (err) {
+    console.error('Failed to log UserActivity:', err.message);
+
+  }
+};
+
+exports.submitEnquiry = async (req, res) => {
+  const formData = req.body;
+  const isAuthenticated = formData.isAuthenticated === true;
+  const clientIp = getClientIp(req);
+  const errors = {};
+
+  console.log('isAuthenticated:', isAuthenticated);
+  console.log('Client IP:', clientIp);
+
+  try {
+    // ========== VALIDATION ==========
+    if (!formData.title?.trim()) {
+      errors.title = 'Enquiry title is required';
+    }
+    if (!formData.description?.trim()) {
+      errors.description = 'Description is required';
+    }
+
+    if (isAuthenticated) {
+      if (!formData.user_id || isNaN(formData.user_id)) {
+        errors.user_id = 'Valid user ID is required';
+      }
+    } else {
+      if (!formData.name?.trim()) errors.name = 'Name is required';
+
+      if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email))
+        errors.email = 'Valid email is required';
+
+      const phoneDigits = formData.phone?.replace(/\D/g, '') || '';
+      if (!phoneDigits || phoneDigits.length !== 10)
+        errors.phone = 'Phone number must be 10 digits';
+
+      if (!formData.company?.trim()) errors.company = 'Company name is required';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return res.status(422).json({ success: false, errors });
+    }
+
+    // ========== PREPARE ENQUIRY PAYLOAD ==========
+    const commonEnquiryFields = {
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      ip_address: clientIp,
+      status: 'pending',
+    };
+
+    const enquiryPayload = isAuthenticated
+      ? { ...commonEnquiryFields, user_id: parseInt(formData.user_id, 10) }
+      : {
+        ...commonEnquiryFields,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        company: formData.company.trim(),
+      };
+    const user = await Users.findByPk(formData.user_id);
+
+
+
+
+    // ========== SAVE ENQUIRY ==========
+    const enquiry = await OpenEnquriy.create(enquiryPayload);
+
+    // ========== LOG USER ACTIVITY ==========
+    if (isAuthenticated) {
+      await createUserActivity(
+        req,
+        formData.user_id,
+        'open_enquiry_created',
+        'front'
+      );
+    }
+
+
+
+    if (isAuthenticated) {
+      const emailTemplate = await Emails.findByPk(88);
+      const msgStr = emailTemplate.message.toString('utf8');
+      const full_name = user.fname + ' ' + user.lname;
+      let userMessage = msgStr.replace("{{ USER_FNAME }}", full_name);
+
+      const subject = formData.title.trim();
+      const { transporter, siteConfig } = await getTransporter();
+      await transporter.sendMail({
+        from: `"Enquiry " <info@sourceindia-electronics.com>`,
+        to: user.email,
+        subject: subject || "Enquiry submit successfully",
+        html: userMessage,
+      });
+    } else {
+
+      const emailTemplate = await Emails.findByPk(88);
+      const msgStr = emailTemplate.message.toString('utf8');
+      const full_name = formData.name.trim();
+      let userMessage = msgStr.replace("{{ USER_FNAME }}", full_name);
+
+      const subject = formData.title.trim();
+      const { transporter, siteConfig } = await getTransporter();
+      await transporter.sendMail({
+        from: `"Enquiry " <info@sourceindia-electronics.com>`,
+        to: formData.email.trim(),
+        subject: subject || "Enquiry submit successfully",
+        html: userMessage,
+      });
+    }
+    // ========== SUCCESS RESPONSE ==========
+    return res.json({
+      success: true,
+      message: 'New Enquiry Added Successfully',
+      data: enquiry,
+    });
+
+  } catch (err) {
+    console.error('Submit Enquiry Error:', err);
+
+    if (err.name === 'SequelizeValidationError') {
+      const validationErrors = {};
+      err.errors.forEach(e => {
+        validationErrors[e.path] = e.message;
+      });
+      return res.status(422).json({ success: false, errors: validationErrors });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error. Please try again later.',
+    });
+  }
+};
