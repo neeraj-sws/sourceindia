@@ -7,6 +7,7 @@ router.get('/count', enquiriesController.getEnquiriesCount);
 router.get('/user-count', usersController.getuserEnquiriesCount);
 router.get('/', enquiriesController.getAllEnquiries);
 router.get('/server-side', enquiriesController.getAllEnquiriesServerSide);
+router.get('/by-user', enquiriesController.getEnquiriesByUserServerSide);
 router.delete('/delete-selected', enquiriesController.deleteSelectedEnquiries);
 router.get('/:enquiry_number', enquiriesController.getEnquiriesByNumber);
 router.delete('/:id', enquiriesController.deleteEnquiries);

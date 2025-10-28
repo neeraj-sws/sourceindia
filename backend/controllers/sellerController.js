@@ -440,7 +440,7 @@ exports.updateSeller = async (req, res) => {
       if (companyInfo) {
         await companyInfo.update({
           organization_name: req.body.user_company,
-          organization_slug: createSlug(req.body.user_company),
+          organization_slug: createSlug(req.body.organization_name),
           role: req.body.role,
           user_type: req.body.user_type,
           core_activity: req.body.core_activity,
@@ -570,8 +570,16 @@ exports.deleteSelectedSeller = async (req, res) => {
 
 exports.getAllDesignations = async (req, res) => {
   try {
-    const nature_businesses = await Designations.findAll({ order: [['id', 'ASC']] });
-    res.json(nature_businesses);
+    const { status } = req.query;
+    const whereClause = {};
+    if (status !== undefined) {
+      whereClause.status = status;
+    }
+    const designations = await Designations.findAll({
+      where: whereClause,
+      order: [['id', 'ASC']],
+    });
+    res.json(designations);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

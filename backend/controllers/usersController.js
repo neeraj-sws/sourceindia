@@ -1,5 +1,7 @@
 const Sequelize = require('sequelize');
 const { Op } = Sequelize;
+const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcrypt');
 const Users = require('../models/Users');
 const Countries = require('../models/Countries');
@@ -22,6 +24,16 @@ const getMulterUpload = require('../utils/upload');
 const nodemailer = require('nodemailer');
 const secretKey = 'your_secret_key';
 const jwt = require('jsonwebtoken');
+
+function createSlug(inputString) {
+  if (!inputString) return ''; // Return empty string or handle as needed
+  return inputString
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
 
 exports.login = async (req, res) => {
   try {
@@ -520,79 +532,23 @@ exports.getProfile = async (req, res) => {
       attributes: { exclude: ['password', 'real_password'] },
       include: [
         {
-          model: CompanyInfo,
-          as: 'company_info',
+          model: CompanyInfo, as: 'company_info',
           where: { is_delete: 0 },
           required: false,
           include: [
-            {
-              model: UploadImage,
-              as: 'companyLogo',
-              required: false,
-              attributes: ['file']
-            },
-            {
-              model: UploadImage,
-              as: 'companySamplePptFile',
-              required: false,
-              attributes: ['file']
-            },
-            {
-              model: UploadImage,
-              as: 'companyVideo',
-              required: false,
-              attributes: ['file']
-            },
-            {
-              model: UploadImage,
-              as: 'companySampleFile',
-              required: false,
-              attributes: ['file']
-            },
-            {
-              model: CoreActivity,
-              as: 'CoreActivity',
-              required: false,
-              attributes: ['id', 'name']
-            },
-            {
-              model: Activity,
-              as: 'Activity',
-              required: false,
-              attributes: ['id', 'name']
-            }
+            { model: UploadImage, as: 'companyLogo', required: false, attributes: ['file'] },
+            { model: UploadImage, as: 'companySamplePptFile', required: false, attributes: ['file'] },
+            { model: UploadImage, as: 'companyVideo', required: false, attributes: ['file'] },
+            { model: UploadImage, as: 'companySampleFile', required: false, attributes: ['file'] },
+            { model: CoreActivity, as: 'CoreActivity', required: false, attributes: ['id', 'name'] },
+            { model: Activity, as: 'Activity', required: false, attributes: ['id', 'name'] }
           ]
         },
-        {
-          model: UploadImage,
-          as: 'file',
-          required: false,
-          attributes: ['file']
-        },
-        {
-          model: UploadImage,
-          as: 'company_file',
-          required: false,
-          attributes: ['file']
-        },
-        {
-          model: Countries,
-          as: 'country_data',
-          required: false,
-          attributes: ['id', 'name']
-        },
-        {
-          model: States,
-          as: 'state_data',
-          required: false,
-          attributes: ['id', 'name']
-        },
-        {
-          model: Cities,
-          as: 'city_data',
-          required: false,
-          attributes: ['id', 'name']
-        }
+        { model: UploadImage, as: 'file', required: false, attributes: ['file'] },
+        { model: UploadImage, as: 'company_file', required: false, attributes: ['file'] },
+        { model: Countries, as: 'country_data', required: false, attributes: ['id', 'name'] },
+        { model: States, as: 'state_data', required: false, attributes: ['id', 'name'] },
+        { model: Cities, as: 'city_data', required: false, attributes: ['id', 'name'] }
       ]
     });
     if (!user) {
@@ -609,10 +565,6 @@ exports.getProfile = async (req, res) => {
       ]);
       user.company_info.dataValues.category_sell_names = categories.map(c => c.name).join(', ');
       user.company_info.dataValues.sub_category_names = subCategories.map(sc => sc.name).join(', ');
-
-
-
-
     }
     res.json({ user });
   } catch (error) {
@@ -664,7 +616,7 @@ exports.updateProfile = async (req, res) => {
       }
       await user.update(updatedUserData);
 
-      const adminemailTemplate = await Emails.findByPk(32);
+      /*const adminemailTemplate = await Emails.findByPk(32);
       if (!adminemailTemplate) {
         return res.status(404).json({ message: "Email template not found" });
       }
@@ -709,7 +661,7 @@ exports.updateProfile = async (req, res) => {
         to: user.email,
         subject: subject,
         html: userMessage,
-      });
+      });*/
 
       if (companyInfo) {
         const companyLogo = req.files?.company_logo?.[0];
@@ -762,13 +714,17 @@ exports.updateProfile = async (req, res) => {
         }
         await companyInfo.update({
           organization_name: req.body.organization_name,
-          organization_slug: generateUniqueSlug(req.body.organization_slug || req.body.organization_name),
+          organization_slug: createSlug(req.body.organization_name),
           core_activity: req.body.core_activity,
           activity: req.body.activity,
           category_sell: req.body.category_sell,
           sub_category: req.body.sub_category,
+          company_email: req.body.company_email,
           company_website: req.body.company_website,
           company_location: req.body.company_location,
+          brief_company: req.body.brief_company,
+          designation: req.body.designation,
+          company_video_second: req.body.company_video_second,
           organizations_product_description: req.body.organizations_product_description,
           company_sample_ppt_file: req.body.company_sample_ppt_file,
           company_video_second: req.body.company_video_second

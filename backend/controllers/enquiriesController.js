@@ -95,8 +95,6 @@ exports.getAllEnquiries = async (req, res) => {
   }
 };
 
-
-
 exports.getEnquiriesByNumber = async (req, res) => {
   try {
     const enquiry = await Enquiries.findOne({
@@ -162,8 +160,6 @@ exports.getEnquiriesCount = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
-
 
 exports.deleteEnquiries = async (req, res) => {
   try {
@@ -488,10 +484,67 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
   }
 };
 
-
+exports.getEnquiriesByUserServerSide = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      sortBy = 'id',
+      sort = 'DESC',
+      user_id
+    } = req.query;
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitValue = parseInt(limit);
+    const sortDirection = sort.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    let order = [[sortBy, sortDirection]];
+    if (sortBy === 'enquiry_product') {
+      order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
+    }
+    const where = {
+      is_approve: 1,
+      is_delete: 0
+    };
+    const user = await Users.findByPk(user_id, { include: { model: CompanyInfo, as: 'company_info' } });
+    const companyId = user?.company_info?.id;
+    const include = [
+      {
+        model: EnquiryUsers,
+        as: 'enquiry_users',
+        required: true,
+        where: { company_id: companyId },
+      },
+    ];
+    if (search) {
+      where[Op.or] = [
+        { enquiry_number: { [Op.like]: `%${search}%` } },
+        { category_name: { [Op.like]: `%${search}%` } },
+        literal(`EXISTS (SELECT 1 FROM users AS u WHERE u.id = enquiries.user_id AND CONCAT(u.fname, ' ', u.lname) LIKE '%${search}%')`)
+      ];
+    }
+    const { count: filteredRecords, rows } = await Enquiries.findAndCountAll({
+      subQuery: false,
+      where,
+      order,
+      limit: limitValue,
+      offset,
+      include
+    });
+    res.json({
+      data: rows,
+      filteredRecords,
+      totalRecords: filteredRecords
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
 
 const sendOtpEmail = async (to, otp) => {
-
   const emailTemplate = await Emails.findByPk(97);
   const msgStr = emailTemplate.message.toString('utf8');
   let userMessage = msgStr.replace("{{ OTP }}", otp);
@@ -503,9 +556,8 @@ const sendOtpEmail = async (to, otp) => {
     subject: emailTemplate?.subject || "Verify your email",
     html: userMessage,
   });
-
-
 };
+
 const sendEnquiryConfirmation = async (to, name) => {
 
   const emailTemplate = await Emails.findByPk(98);
@@ -519,8 +571,6 @@ const sendEnquiryConfirmation = async (to, name) => {
     subject: emailTemplate?.subject || "Verify your email",
     html: userMessage,
   });
-
-
 };
 
 exports.verifyEmail = async (req, res) => {

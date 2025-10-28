@@ -1,15 +1,329 @@
-import React from 'react'
+import React, { useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import API_BASE_URL, { ROOT_URL } from "./../config";
+import ImageWithFallback from "../admin/common/ImageWithFallback";
+import { useNavigate } from 'react-router-dom';
+import { useAlert } from '../context/AlertContext';
 
 const CompanyEdit = () => {
+    const navigate = useNavigate();
+  const { showNotification } = useAlert();
+  const [user, setUser] = useState({
+    organization_name: "",
+    company_email: "",
+    company_location: "",
+    company_website: "",
+    core_activity: "",
+    activity: "",
+    category_sell: "",
+    sub_category: "",
+    brief_company: "",
+    companyLogo: null,
+    companySamplePptFile: null,
+    company_video_second: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState([]);
+  const [selectedSubCategory, setSelectedSubCategory] = useState([]);
+  const previousSelectedCategoriesRef = useRef([]);
+  const [subCategoryMap, setSubCategoryMap] = useState({});
+  const [coreActivities, setCoreActivities] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [selectedCoreActivity, setSelectedCoreActivity] = useState('');
+  const [selectedActivity, setSelectedActivity] = useState('');
+  const [errors, setErrors] = useState({});
+  const [file, setFile] = useState(null);
+  const [companyFile, setCompanyFile] = useState(null);
+  const [companyBrochure, setCompanyBrochure] = useState(null);
+
+  useEffect(() => {
+    const fetchCoreActivities = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/core_activities`);
+        setCoreActivities(res.data);
+      } catch (error) {
+        console.error("Error fetching core activities:", error);
+      }
+    };
+    fetchCoreActivities();
+  }, []);
+
+  const handleCoreActivityChange = async (event) => {
+    const coreActivityId = event.target.value;
+    setSelectedCoreActivity(coreActivityId);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/activities/coreactivity/${coreActivityId}`);
+      setActivities(res.data);
+      setSelectedActivity('');
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+    }
+  };
+
+  const handleActivityChange = (event) => {
+    setSelectedActivity(event.target.value);
+  };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/categories`);
+        setCategories(res.data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const handleCategoryChange = async (event) => {
+    const selectedOptions = Array.from(event.target.selectedOptions, (option) => Number(option.value));
+    setSelectedCategory(selectedOptions);
+    if (selectedOptions.length > 0) {
+      try {
+        const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+          categories: selectedOptions
+        });
+        const subCats = res.data;
+        const validSelectedSubCategories = selectedSubCategory.filter(id =>
+          subCats.some(sub => sub.id == id)
+        );
+        setSubCategories(subCats);
+        setSelectedSubCategory(validSelectedSubCategories);
+        $('#sub_category').val(validSelectedSubCategories).trigger('change');
+      } catch (err) {
+        console.error("Error fetching subcategories:", err);
+      }
+    } else {
+      setSubCategories([]);
+      setSelectedSubCategory([]);
+      $('#sub_category').val([]).trigger('change');
+    }
+  };
+
+  const handleSubCategoryChange = (event) => {
+    const options = Array.from(event.target.selectedOptions, (option) => Number(option.value));
+    setSelectedSubCategory(options);
+  };
+
+  useEffect(() => {
+    $('#category_sell').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Category",
+      multiple: true,
+    }).on("change", async function () {
+      const currentSelected = $(this).val()?.map(Number) || [];
+      const previousSelectedCategories = previousSelectedCategoriesRef.current;
+      const addedCategories = currentSelected.filter(cat => !previousSelectedCategories.includes(cat));
+      const removedCategories = previousSelectedCategories.filter(cat => !currentSelected.includes(cat));
+      previousSelectedCategoriesRef.current = [...currentSelected];
+      setSelectedCategory(currentSelected);
+      let updatedSubCategories = [...subCategories];
+      let updatedMap = { ...subCategoryMap };
+      if (addedCategories.length > 0) {
+        try {
+          const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+            categories: addedCategories
+          });
+          const newSubCats = res.data;
+          newSubCats.forEach(sub => {
+            if (!updatedMap[sub.id]) updatedMap[sub.id] = new Set();
+            addedCategories.forEach(catId => updatedMap[sub.id].add(catId));
+            if (!updatedSubCategories.find(s => s.id === sub.id)) {
+              updatedSubCategories.push(sub);
+            }
+          });
+        } catch (err) {
+          console.error("Error adding subcategories:", err);
+        }
+      }
+      if (removedCategories.length > 0) {
+        Object.entries(updatedMap).forEach(([subId, categorySet]) => {
+          removedCategories.forEach(catId => categorySet.delete(catId));
+        });
+        updatedSubCategories = updatedSubCategories.filter(sub => {
+          const set = updatedMap[sub.id];
+          return set && set.size > 0;
+        });
+        const updatedSelected = selectedSubCategory.filter(subId => {
+          return updatedMap[subId] && updatedMap[subId].size > 0;
+        });
+        setSelectedSubCategory(updatedSelected);
+        $('#sub_category').val(updatedSelected).trigger('change');
+      }
+      setSubCategories(updatedSubCategories);
+      setSubCategoryMap(updatedMap);
+      if (currentSelected.length === 0) {
+        setSubCategories([]);
+        setSelectedSubCategory([]);
+        setSubCategoryMap({});
+        $('#sub_category').val([]).trigger('change');
+      }
+    });
+
+    $('#sub_category').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Sub Category",
+      multiple: true,
+    }).on("change", function () {
+      const selectedValues = $(this).val() || [];
+      setSelectedSubCategory(selectedValues.map(Number));
+    });
+
+    $('#core_activity').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Core Activity"
+    }).on("change", function () {
+      const coreActivityId = $(this).val();
+      handleCoreActivityChange({ target: { value: coreActivityId } });
+    });
+
+    $('#activity').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Activity"
+    }).on("change", function () {
+      const activityId = $(this).val();
+      handleActivityChange({ target: { value: activityId } });
+    });
+
+    return () => {
+        $('#category_sell').off("change").select2('destroy');
+      $('#sub_category').off("change").select2('destroy');
+      $('#core_activity').off("change").select2('destroy');
+      $('#activity').off("change").select2('destroy');
+    };
+  }, [categories, subCategories, selectedSubCategory, subCategoryMap, coreActivities, activities]);
+
+  const handleFileChange = (e) => { setFile(e.target.files[0]); };
+
+  const handleCompanyFileChange = (e) => { setCompanyFile(e.target.files[0]); };
+
+  const handleCompanyBrochureChange = (e) => { setCompanyBrochure(e.target.files[0]); };
+
+  useEffect(() => {
+    const token = localStorage.getItem("user_token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    const fetchProfile = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/signup/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const userData = response.data.user;
+    setUser(userData);
+
+    // Parse stored category/subcategory ids
+    const categoryArray = userData.company_info?.category_sell
+      ? userData.company_info.category_sell.split(',').map(Number)
+      : [];
+    const subCategoryArray = userData.company_info?.sub_category
+      ? userData.company_info.sub_category.split(',').map(Number)
+      : [];
+
+    setSelectedCategory(categoryArray);
+    setSelectedSubCategory(subCategoryArray);
+    setSelectedCoreActivity(userData.company_info?.core_activity ?? '');
+    setSelectedActivity(userData.company_info?.activity ?? '');
+
+    if (categoryArray.length > 0) {
+      // Fetch subcategories for selected categories
+      const cRes = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+        categories: categoryArray,
+      });
+      setSubCategories(cRes.data);
+
+      // ✅ wait for the subcategories to finish rendering before setting select2 value
+      setTimeout(() => {
+        $('#category_sell').val(categoryArray).trigger('change');
+        $('#sub_category').val(subCategoryArray).trigger('change');
+      }, 300);
+    }
+
+    if (userData.company_info?.core_activity) {
+      const ctRes = await axios.get(
+        `${API_BASE_URL}/activities/coreactivity/${userData.company_info.core_activity}`
+      );
+      setActivities(ctRes.data);
+    }
+
+    setLoading(false);
+  } catch (err) {
+    console.error('Profile fetch failed', err);
+  }
+};
+
+    fetchProfile();
+  }, [navigate]);
+
+  const handleChange = (e) => {
+  const { name, value, files } = e.target;
+
+  // Check if the field belongs to company_info
+  if (user.company_info && name in user.company_info) {
+    setUser((prev) => ({
+      ...prev,
+      company_info: {
+        ...prev.company_info,
+        [name]: files ? files[0] : value,
+      },
+    }));
+  } else {
+    // For fields directly under user
+    setUser((prev) => ({
+      ...prev,
+      [name]: files ? files[0] : value,
+    }));
+  }
+};
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("user_token");
+    try {
+        const formData = new FormData();
+    formData.append("organization_name", user.company_info?.organization_name || "");
+    formData.append("company_email", user.company_info?.company_email || "");
+    formData.append("company_location", user.company_info?.company_location || "");
+    formData.append("company_website", user.company_info?.company_website || "");
+    formData.append("core_activity", selectedCoreActivity || "");
+    formData.append("activity", selectedActivity || "");
+    formData.append("category_sell", selectedCategory.join(","));
+    formData.append("sub_category", selectedSubCategory.join(","));
+    formData.append("brief_company", user.company_info?.brief_company || "");
+    formData.append("company_video_second", user.company_info?.company_video_second || "");
+
+    // Files (only append if present)
+    if (file) formData.append("company_logo", file); // company logo
+if (companyBrochure) formData.append("sample_file_id", companyBrochure); // company brochure
+if (companyFile) formData.append("company_sample_ppt_file", companyFile);
+      await axios.post(`${API_BASE_URL}/signup/update-profile`, formData, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
+      });
+      showNotification("Profile updated successfully!", 'success');
+      navigate("/profile");
+    } catch (err) {
+      console.error("Update failed", err);
+      showNotification("Error updating profile", 'error');
+    }
+  };
+
+  if (!user) return <div className="text-center mt-5">Loading profile...</div>;
+
   return (
     <div className="page-wrapper">
         <div className="page-content">
             <h4 className="pb-2">Company Update</h4>
-            <form
-            action="https://sourceindia-electronics.com/dashboard-company-update"
-            onsubmit="form_submit(this);return false;"
-            method="POST"
-            >
+            <form onSubmit={handleSubmit}>
             <div className="card">
                 <div className="card-body">
                 <div className="row g-3">
@@ -22,12 +336,14 @@ const CompanyEdit = () => {
                                 Organization Name<sup className="text-danger">*</sup>
                             </label>
                             <input
-                                type="text"
-                                className="form-control"
-                                name="organization_name"
-                                placeholder="Enter Organization Name"
-                                defaultValue="FICUS PAX PRIVATE LIMTIED"
-                            />
+                        type="text"
+                        name="organization_name"
+                        value={user.company_info?.organization_name || ""}
+                        onChange={handleChange}
+                        className={`form-control ${errors.organization_name ? 'is-invalid' : ''}`}
+                        placeholder="Enter Organization Name"
+                      />
+                      {errors.organization_name && <div className="invalid-feedback">{errors.organization_name}</div>}
                             </div>
                             <div className="col-md-6 mt-3">
                             <label className="form-label">
@@ -35,11 +351,13 @@ const CompanyEdit = () => {
                             </label>
                             <input
                                 type="email"
-                                className="form-control"
+                                className={`form-control ${errors.company_email ? 'is-invalid' : ''}`}
                                 name="company_email"
                                 placeholder="Enter  Comapny Email"
-                                defaultValue="VISHWANATH.S@FICUSPAX.COM"
+                                value={user.company_info?.company_email || ""}
+                                onChange={handleChange}
                             />
+                            {errors.company_email && <div className="invalid-feedback">{errors.company_email}</div>}
                             </div>
                             <div className="col-md-6">
                             <label className="form-label">
@@ -47,11 +365,13 @@ const CompanyEdit = () => {
                             </label>
                             <input
                                 type="text"
-                                className="form-control"
+                                className={`form-control ${errors.company_location ? 'is-invalid' : ''}`}
                                 name="company_location"
                                 placeholder="Enter Organization Name"
-                                defaultValue="Sy no 68/1,68/2, Part 120,121 and 123, Gokuldas warehousing co, Hosakote Chinthamaniroad,  Bheemakkanahalli, Hosakote Taluk, Bengaluru Rural, Karnataka,562122"
+                                value={user.company_info?.company_location || ""}
+                                onChange={handleChange}
                             />
+                            {errors.company_location && <div className="invalid-feedback">{errors.company_location}</div>}
                             </div>
                             <div className="col-md-6">
                             <label className="form-label">
@@ -59,349 +379,94 @@ const CompanyEdit = () => {
                             </label>
                             <input
                                 type="text"
-                                className="form-control"
+                                className={`form-control ${errors.company_website ? 'is-invalid' : ''}`}
                                 name="company_website"
                                 placeholder="Enter Company Website"
-                                defaultValue="VISHWANATH.S@FICUSPAX.COM"
+                                value={user.company_info?.company_website || ""}
+                                onChange={handleChange}
                             />
                             </div>
+                            <div className="col-md-6 mb-3">
+                      <label htmlFor="core_activity" className="form-label required">Core Activity</label>
+                      <select
+                        id="core_activity"
+                        className={`form-control select2 ${errors.core_activity ? "is-invalid" : ""}`}
+                        value={selectedCoreActivity}
+                        onChange={handleCoreActivityChange}
+                      >
+                        <option value="">Select Core Activity</option>
+                        {coreActivities.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                      {errors.core_activity && <div className="invalid-feedback">{errors.core_activity}</div>}
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="activity" className="form-label required">Activity</label>
+                      <select
+                        id="activity"
+                        className={`form-control select2 ${errors.activity ? "is-invalid" : ""}`}
+                        value={selectedActivity}
+                        onChange={handleActivityChange}
+                      >
+                        <option value="">Select Activity</option>
+                        {activities.map((activity) => (
+                          <option key={activity.id} value={activity.id}>{activity.name}</option>
+                        ))}
+                      </select>
+                      {errors.activity && <div className="invalid-feedback">{errors.activity}</div>}
+                    </div>
                             <div className="col-md-6">
-                            <label className="form-label">
-                                {" "}
-                                Core Activities<sup className="text-danger">*</sup>
-                            </label>
-                            <select
-                                className="form-select"
-                                name="core_activity[]"
-                                id="core_activity"
-                                data-placeholder="Select Core Activities"
-                                onchange="get_activity(this.value); return false;"
-                            >
-                                <option value="">Select Core Activities</option>
-                                <option value={32} selected="">
-                                Manufacturing
-                                </option>
-                                <option value={30}>Other</option>
-                                <option value={31}>Services</option>
-                            </select>
-                            </div>
-                            <div className="col-md-6">
-                            <label className="form-label">
-                                Activity<sup className="text-danger">*</sup>
-                            </label>
-                            <select
-                                className="form-control"
-                                name="activity[]"
-                                id="activity"
-                                data-placeholder="Select Activity"
-                            >
-                                <option value="">Select activity</option>
-                                <option value={24}>Assembly/ Sub-Assembly</option>
-                                <option value={25}>Component</option>
-                                <option value={27}>Design Services</option>
-                                <option value={23}>EMS</option>
-                                <option value={21} selected="">
-                                Finished products
-                                </option>
-                                <option value={26}>Raw Material</option>
-                            </select>
-                            </div>
-                            <div className="col-md-6">
-                            <label className="form-label">
-                                Category<sup className="text-danger">*</sup>
-                            </label>
-                            <select
-                                className="single-select-sell form-select select2-hidden-accessible"
-                                name="category_sell[]"
-                                id="category_sell"
-                                data-placeholder="Select Category Sell"
-                                multiple=""
-                                onchange='get_sub_category(this,`["263",""]`); return false;'
-                                data-select2-id="category_sell"
-                                tabIndex={-1}
-                                aria-hidden="true"
-                            >
-                                <option value="">Select categories</option>
-                                <option value={31}>3D Printing &amp; DIY</option>
-                                <option value={6}>Automotive Electronics</option>
-                                <option value={32}>Cables &amp; Wire</option>
-                                <option value={12}>Components</option>
-                                <option value={33}>Connectors</option>
-                                <option value={1}>Consumer Electronics</option>
-                                <option value={34}>Discrete Semiconductors</option>
-                                <option value={7}>Electric Vehicle</option>
-                                <option value={24}>
-                                Electro Mechanical Components
-                                </option>
-                                <option value={19}>
-                                Electronic Manufacturing Services
-                                </option>
-                                <option value={36}>Hardware Components</option>
-                                <option value={5}>Industrial Electronics</option>
-                                <option value={37}>Integrated Circuit</option>
-                                <option value={2}>IT/ Peripheral</option>
-                                <option value={14} selected="" data-select2-id={2}>
-                                Manufacturing Equipment / Tools
-                                </option>
-                                <option value={38}>
-                                Measuring Instruments &amp; Tools
-                                </option>
-                                <option value={8}>Medical Equipments</option>
-                                <option value={13}>Mobile Phone</option>
-                                <option value={11}>Mobile Phone Accessory</option>
-                                <option value={39}>Optoelectronics</option>
-                                <option value={16} selected="" data-select2-id={3}>
-                                Others
-                                </option>
-                                <option value={21} selected="" data-select2-id={4}>
-                                Packaging Material for Electronics
-                                </option>
-                                <option value={40}>Passive Components</option>
-                                <option value={41}>
-                                Power Supply &amp; Management
-                                </option>
-                                <option value={28}>Printed Circuit Boards (PCB)</option>
-                                <option value={29}>Raw Material</option>
-                                <option value={10}>Security and Surveillance</option>
-                                <option value={42}>Sensors</option>
-                                <option value={9}>Solar</option>
-                                <option value={4}>Strategic Electronics</option>
-                                <option value={17}>Support Services</option>
-                                <option value={3}>Telecom</option>
-                                <option value={43}>Wireless Automation</option>
-                            </select>
-                            <span
-                                className="select2 select2-container select2-container--bootstrap4"
-                                dir="ltr"
-                                data-select2-id={1}
-                            >
-                                <span className="selection">
-                                <span
-                                    className="select2-selection select2-selection--multiple"
-                                    role="combobox"
-                                    aria-haspopup="true"
-                                    aria-expanded="false"
-                                    tabIndex={-1}
-                                >
-                                    <ul className="select2-selection__rendered">
-                                    <span
-                                        className="select2-selection__clear"
-                                        data-select2-id={8}
-                                    >
-                                        ×
-                                    </span>
-                                    <li
-                                        className="select2-selection__choice"
-                                        title="Manufacturing Equipment / Tools"
-                                        data-select2-id={5}
-                                    >
-                                        <span
-                                        className="select2-selection__choice__remove"
-                                        role="presentation"
-                                        >
-                                        ×
-                                        </span>
-                                        Manufacturing Equipment / Tools
-                                    </li>
-                                    <li
-                                        className="select2-selection__choice"
-                                        title="Others"
-                                        data-select2-id={6}
-                                    >
-                                        <span
-                                        className="select2-selection__choice__remove"
-                                        role="presentation"
-                                        >
-                                        ×
-                                        </span>
-                                        Others
-                                    </li>
-                                    <li
-                                        className="select2-selection__choice"
-                                        title="Packaging Material for Electronics"
-                                        data-select2-id={7}
-                                    >
-                                        <span
-                                        className="select2-selection__choice__remove"
-                                        role="presentation"
-                                        >
-                                        ×
-                                        </span>
-                                        Packaging Material for Electronics
-                                    </li>
-                                    <li className="select2-search select2-search--inline">
-                                        <input
-                                        className="select2-search__field"
-                                        type="search"
-                                        tabIndex={0}
-                                        autoComplete="off"
-                                        autoCorrect="off"
-                                        autoCapitalize="none"
-                                        spellCheck="false"
-                                        role="textbox"
-                                        aria-autocomplete="list"
-                                        placeholder=""
-                                        style={{ width: "0.75em" }}
-                                        />
-                                    </li>
-                                    </ul>
-                                </span>
-                                </span>
-                                <span className="dropdown-wrapper" aria-hidden="true" />
-                            </span>
-                            </div>
-                            <div className="col-md-6">
-                            <label className="form-label">Sub Category</label>
-                            <select
-                                className="single-select-sell form-select select2-hidden-accessible"
-                                name="sub_category[]"
-                                id="sub_category"
-                                data-placeholder="Select Sub Segment"
-                                multiple=""
-                                data-select2-id="sub_category"
-                                tabIndex={-1}
-                                aria-hidden="true"
-                            >
-                                <option value={283}>Drill Bits/Router bits</option>
-                                <option value={291}>Machinery for Manufacturing</option>
-                                <option value={263} selected="" data-select2-id={10}>
-                                Special Packaging for Components
-                                </option>
-                                <option value={296}>Test Equipment</option>
-                            </select>
-                            <span
-                                className="select2 select2-container select2-container--bootstrap4"
-                                dir="ltr"
-                                data-select2-id={9}
-                            >
-                                <span className="selection">
-                                <span
-                                    className="select2-selection select2-selection--multiple"
-                                    role="combobox"
-                                    aria-haspopup="true"
-                                    aria-expanded="false"
-                                    tabIndex={-1}
-                                >
-                                    <ul className="select2-selection__rendered">
-                                    <span
-                                        className="select2-selection__clear"
-                                        data-select2-id={12}
-                                    >
-                                        ×
-                                    </span>
-                                    <li
-                                        className="select2-selection__choice"
-                                        title="Special Packaging for Components"
-                                        data-select2-id={11}
-                                    >
-                                        <span
-                                        className="select2-selection__choice__remove"
-                                        role="presentation"
-                                        >
-                                        ×
-                                        </span>
-                                        Special Packaging for Components
-                                    </li>
-                                    <li className="select2-search select2-search--inline">
-                                        <input
-                                        className="select2-search__field"
-                                        type="search"
-                                        tabIndex={0}
-                                        autoComplete="off"
-                                        autoCorrect="off"
-                                        autoCapitalize="none"
-                                        spellCheck="false"
-                                        role="textbox"
-                                        aria-autocomplete="list"
-                                        placeholder=""
-                                        style={{ width: "0.75em" }}
-                                        />
-                                    </li>
-                                    </ul>
-                                </span>
-                                </span>
-                                <span className="dropdown-wrapper" aria-hidden="true" />
-                            </span>
-                            </div>
-                            <input
-                            type="hidden"
-                            name="max_cat_selection"
-                            id="max_cat_selection"
-                            defaultValue={5}
-                            />
-                            <input
-                            type="hidden"
-                            name="max_core_selection"
-                            id="max_core_selection"
-                            defaultValue={5}
-                            />
+                    <label htmlFor="category_sell" className="form-label required">Category</label>
+                    <select
+                      id="category_sell" className={`form-control select2 ${errors.category_sell ? "is-invalid" : ""}`}
+                      value={selectedCategory}
+                      onChange={handleCategoryChange}
+                      multiple
+                    >
+                      <option value="">Select Category</option>
+                      {categories?.map((category) => (
+                        <option key={category.id} value={category.id}>{category.name}</option>
+                      ))}
+                    </select>
+                    {errors.category_sell && (<div className="invalid-feedback">{errors.category_sell}</div>)}
+                  </div>
+                  <div className="col-md-6">
+                    <label htmlFor="sub_category" className="form-label">Sub Category</label>
+                    <select
+                      id="sub_category" className="form-control select2"
+                      value={selectedSubCategory}
+                      onChange={handleSubCategoryChange}
+                      disabled={subCategories.length === 0}
+                      multiple
+                    >
+                      <option value="">Select Sub Category</option>
+                      {subCategories?.map((sub_category) => (
+                        <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
+                      ))}
+                    </select>
+                  </div>
                             <div className="col-md-12">
                             <label className="form-label">Company Logo </label>
-                            <div className="input-group ">
-                                <div className="col-md-9">
-                                <div className="custom-file">
-                                    <input
-                                    type="hidden"
-                                    name="logo_path"
-                                    defaultValue="upload/user/"
-                                    />
-                                    <input
-                                    type="hidden"
-                                    name="logo_name"
-                                    defaultValue="logo"
-                                    />
-                                    <input
-                                    type="file"
-                                    className="custom-file form-control"
-                                    name="logo"
-                                    onchange="upload_image_company($(form),'https://sourceindia-electronics.com/dashboard-image','logo','company_logo')"
-                                    accept=".jpg,.jpeg,.png"
-                                    />
-                                    <input
-                                    type="hidden"
-                                    name="company_logo"
-                                    id="company_logo"
-                                    defaultValue={7605}
-                                    />
-                                    <i
-                                    className="image_loader fa-btn-loader fa fa-refresh fa-spin fa-1x fa-fw"
-                                    style={{ display: "none" }}
-                                    />
-                                </div>
-                                </div>
-                                <div className="col-md-3 text-center">
-                                <a href="javascript:void(0);">
-                                    <img
-                                    src="https://sourceindia-electronics.com/upload/user/1758523927logo.webp"
-                                    id="logo_prev"
-                                    className="img-thumbnail play-video"
-                                    alt=""
-                                    width={100}
-                                    style={{ height: 45, width: 180 }}
-                                    />
-                                </a>
-                                <button
-                                    type="button"
-                                    className="btn  py-2 position-relative shadow-none"
-                                    id="dtlogo"
-                                    onclick="delete_logo()"
-                                >
-                                    <i
-                                    className="fa fa-times crose position-absolute bg-primary text-white"
-                                    aria-hidden="true"
-                                    style={{
-                                        bottom: 35,
-                                        left: "-15px",
-                                        padding: "2px 3px",
-                                        borderRadius: "71%"
-                                    }}
-                                    />
-                                </button>
-                                </div>
-                                <p className="mt-1">
-                                Format (JPG/PNG) &amp; Maximum Size (10MB)
-                                </p>
-                            </div>
+                            <input className={`form-control ${errors.file ? 'is-invalid' : ''}`} type="file"
+                          id="file" onChange={handleFileChange} />
+                        {errors.file && <div className="invalid-feedback">{errors.file}</div>}
+                        {file ? (
+  <img
+    src={URL.createObjectURL(file)}
+    className="img-preview mt-3"
+    width={150}
+    height={150}
+    alt="Preview"
+  />
+) : user.company_info?.companyLogo?.file ? (
+  <ImageWithFallback
+    src={`${ROOT_URL}/${user.company_info.companyLogo.file}`}
+    width={150}
+    height={150}
+    showFallback={false}
+  />
+) : null}
                             </div>
                             <div className="col-md-12">
                             <label className="form-label">
@@ -409,14 +474,11 @@ const CompanyEdit = () => {
                             </label>
                             <textarea
                                 className="form-control"
-                                name="brief_company"
-                                data-id="about"
+                                id="brief_company"
                                 placeholder="Company Introduction"
-                                rows={10}
-                                maxLength={1500}
-                                defaultValue={
-                                "We are a company with a pan-Indian presence providing complete packaging solutions to multinational and Indian companies.\n\nFicus Pax is an ISO 9001:2015 total packaging solutions provider to many MNCs in India and the Middle East. With more than 21 years of experience, we have offices and plants spread across the country. Our team of industry professionals consists of 30 design engineers, most of whom are alumni of the prestigious IIP (Indian Institute of Packaging). Our experienced packaging engineers and strong marketing team are supported by over 1000 skilled workers and staff. To our credit, we have more than 450 satisfied customers in India and the UAE.\nAs a company, we are committed to providing eco-friendly packaging material and sustainable packaging solutions to all our customers. We have a strong presence in the aerospace, automotive, pharmaceutical, telecom, energy and industrial equipment industries. Our clientele includes global leaders such as Schneider Electric, Volkswagen, General Motors, Tata Cummins Pvt Ltd, General Electric, Phillips, Siemens, Rolls-Royce, Tata Aerospace (Boeing, Airbus etc), Rane, JCB, JBM, LUK India, Luminous, and many others"
-                                }
+                                rows={5}
+                                value={user.company_info?.brief_company || ""}
+                                onChange={handleChange}
                             />
                             <p className="pt-3">
                                 Total Words Limit <span className="about">1500 </span>{" "}
@@ -424,92 +486,21 @@ const CompanyEdit = () => {
                             </div>
                             <div className="col-md-12 mt-3">
                             <label className="form-label">Ppt file</label>
-                            <div className="input-group row">
-                                <div className="col-md-10">
-                                <div className="custom-file">
-                                    <input
-                                    type="hidden"
-                                    name="sample_file_ppt_path"
-                                    defaultValue="upload/seller/"
-                                    />
-                                    <input
-                                    type="hidden"
-                                    name="sample_file_ppt_name"
-                                    defaultValue="sample_file_ppt"
-                                    />
-                                    <input
-                                    type="file"
-                                    className="custom-file form-control"
-                                    name="sample_file_ppt"
-                                    onchange="upload_sample_file_ppt($(form),'https://sourceindia-electronics.com/dashboard-image','sample_file_ppt','company_sample_ppt_file')"
-                                    accept=".ppt,.pptx"
-                                    />
-                                    <input
-                                    type="hidden"
-                                    name="company_sample_ppt_file"
-                                    id="company_sample_ppt_file"
-                                    defaultValue=""
-                                    />
-                                    <i
-                                    className="sample_file_ppt_loader fa-btn-loader fa fa-refresh fa-spin fa-1x fa-fw"
-                                    style={{ display: "none" }}
-                                    />
-                                </div>
-                                </div>
-                                <div className="col-md-2 text-center">
-                                <a
-                                    id="sample_file_ppt_prev"
-                                    href=""
-                                    title="test"
-                                    style={{ display: "none" }}
-                                >
-                                    <i className="fa fa-download" aria-hidden="true" />
-                                </a>
-                                </div>
-                                <p className="mt-1">
-                                Format (PPT/PPTX) &amp; Maximum Size (12MB)
-                                </p>
-                            </div>
-                            </div>
-                            <div className="col-md-12 mt-3 d-none">
-                            <label className="form-label">Upload Video </label>
-                            <div className="input-group row">
-                                <div className="col-md-10">
-                                <div className="custom-file">
-                                    {/* <input type="url" class="form-control" name="company_video" value=""> */}
-                                    <input
-                                    type="hidden"
-                                    name="video_path"
-                                    defaultValue="upload/seller/video/"
-                                    />
-                                    <input
-                                    type="hidden"
-                                    name="video_name"
-                                    defaultValue="video"
-                                    />
-                                    <input
-                                    type="file"
-                                    className="custom-file form-control"
-                                    name="video"
-                                    onchange="upload_video($(form),'https://sourceindia-electronics.com/dashboard-image','video','company_video')"
-                                    accept="video/mp4,video/x-m4v,video/*"
-                                    />
-                                    <input
-                                    type="hidden"
-                                    name="company_video"
-                                    id="company_video"
-                                    defaultValue=""
-                                    />
-                                    <i
-                                    className="video_loader fa-btn-loader fa fa-refresh fa-spin fa-1x fa-fw"
-                                    style={{ display: "none" }}
-                                    />
-                                </div>
-                                </div>
-                                <div className="col-md-2 text-center"></div>
-                                <p className="mt-1">Format MP4 Maximum Size (15MB)</p>
-                                {/* <small>(https://www.youtube.com/c/w3schools)</small> */}
-                            </div>
+                            <input
+                      type="file" className={`form-control ${errors.company_sample_ppt_file ? "is-invalid" : ""}`}
+                      id="company_sample_ppt_file"
+                      onChange={handleChange}
+                    />
+                    {user.company_info?.companySamplePptFile?.file && (
+  <a
+    href={`${ROOT_URL}/${user.company_info.companySamplePptFile.file}`}
+    target="_blank"
+    rel="noreferrer"
+  >
+    View Uploaded PPT
+  </a>
+)}
+                    {errors.company_sample_ppt_file && (<div className="invalid-feedback">{errors.company_sample_ppt_file}</div>)}
                             </div>
                             <div className="col-md-12 mt-3 ">
                             <label className="form-label">Upload Video Url</label>
@@ -520,68 +511,39 @@ const CompanyEdit = () => {
                                     type="url"
                                     className="form-control"
                                     name="company_video_second"
-                                    defaultValue="https://WWW.FCUSPAX.COM"
+                                    value={user.company_info?.company_video_second || ""}
+                                    onChange={handleChange}
                                     />
                                     <small>(https://www.youtube.com/c/w3schools)</small>
-                                    {/* <input type="hidden" name="new_video_path"value="upload/seller/video/">   
-                                <input type="hidden" name="new_video_name" value="new_video"> 
-                                <input type="file" class="custom-file form-control" name="new_video" onchange="upload_video($(form),'https://sourceindia-electronics.com/dashboard-image','new_video','company_new_video')" accept="video/mp4,video/x-m4v,video/*">
-                                <input type="hidden" name="company_new_video" id="company_new_video" value="https://WWW.FCUSPAX.COM">
-                                <i class="new_video_loader fa-btn-loader fa fa-refresh fa-spin fa-1x fa-fw" style="display:none;"></i> */}
                                 </div>
                                 </div>
-                                {/* <div class="col-md-2 text-center">
-                                <//?php if($company_info->new_video){ ?>
-                                <iframe src="https://sourceindia-electronics.com/" title="test">
-                                </iframe>
-                                <//?php } ?>
-                            </div> */}
                             </div>
                             </div>
                             <div className="col-md-12">
                             <label className="form-label">Company Brochure</label>
-                            <div className="input-group row">
-                                <div className="col-md-10">
-                                <div className="custom-file">
-                                    <input
-                                    type="hidden"
-                                    name="sample_file_path"
-                                    defaultValue="upload/seller/"
-                                    />
-                                    <input
-                                    type="hidden"
-                                    name="sample_file_name"
-                                    defaultValue="sample_file"
-                                    />
-                                    <input
-                                    type="file"
-                                    className="custom-file form-control"
-                                    name="sample_file"
-                                    onchange="upload_sample_file($(form),'https://sourceindia-electronics.com/dashboard-image','sample_file','company_sample_file')"
-                                    accept=".pdf"
-                                    />
-                                    <input
-                                    type="hidden"
-                                    name="company_sample_file"
-                                    id="company_sample_file"
-                                    defaultValue={7606}
-                                    />
-                                    <i
-                                    className="image_loader fa-btn-loader fa fa-refresh fa-spin fa-1x fa-fw"
-                                    style={{ display: "none" }}
-                                    />
-                                </div>
-                                </div>
-                                <div className="col-md-2 text-center">
-                                <a
-                                    href="https://sourceindia-electronics.com/upload/seller/1758524061_PackagingBrochure.pdf"
-                                    style={{ wordBreak: "break-all" }}
-                                >
-                                    1758524061_PackagingBrochure.pdf
-                                </a>
-                                </div>
-                                <p className="mt-1">Format (PDF) Maximum Size (10MB)</p>
-                            </div>
+                            <input
+                      className={`form-control ${errors.sample_file_id ? "is-invalid" : ""}`}
+                      type="file"
+                      id="sample_file_id"
+                      onChange={handleCompanyBrochureChange}
+                    />
+                    {errors.sample_file_id && (<div className="invalid-feedback">{errors.sample_file_id}</div>)}
+                    {companyBrochure ? (
+  <img
+    src={URL.createObjectURL(companyBrochure)}
+    className="img-preview mt-3"
+    width={150}
+    height={150}
+    alt="Preview"
+  />
+) : user.company_info?.companySampleFile?.file ? (
+  <ImageWithFallback
+    src={`${ROOT_URL}/${user.company_info.companySampleFile.file}`}
+    width={150}
+    height={150}
+    showFallback={false}
+  />
+) : null}
                             </div>
                         </div>
                         </div>
