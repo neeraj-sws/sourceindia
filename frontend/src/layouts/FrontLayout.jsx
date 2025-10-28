@@ -20,6 +20,7 @@ import Profile from '../pages/Profile';
 import ProfileEdit from '../pages/ProfileEdit';
 import CompanyEdit from '../pages/CompanyEdit';
 import Dashboard from '../pages/Dashboard';
+import Isinterested from '../pages/Isinterested';
 import MyProducts from '../pages/MyProducts';
 import AddProduct from '../pages/AddProduct';
 import LeadsList from '../pages/LeadsList';
@@ -43,7 +44,7 @@ import PublicRoute from '../routes/PublicRoute';
 function FrontLayout() {
   const location = useLocation();
   const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit', '/my-product',
-    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/Inbox', '/my-open-enquiry-dashboard'];
+    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/Inbox', '/my-open-enquiry-dashboard', '/is-interested'];
   const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -74,6 +75,7 @@ function FrontLayout() {
               <Route path="/profile-edit" element={<PrivateRoute><ProfileEdit /></PrivateRoute>} />
               <Route path="/company-edit" element={<PrivateRoute><CompanyEdit /></PrivateRoute>} />
               <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="/is-interested" element={<PrivateRoute><Isinterested /></PrivateRoute>} />
               <Route path="/my-product" element={<PrivateRoute><MyProducts /></PrivateRoute>} />
               <Route path="/add_product" element={<PrivateRoute><AddProduct /></PrivateRoute>} />
               <Route path="/edit_product/:productId" element={<PrivateRoute><AddProduct /></PrivateRoute>} />

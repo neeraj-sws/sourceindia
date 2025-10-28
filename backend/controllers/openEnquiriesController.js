@@ -1,5 +1,7 @@
 const { Op } = require('sequelize');
 const OpenEnquiries = require('../models/OpenEnquiries');
+const OpenEnquiriesChats = require('../models/OpenEnquiriesChats');
+
 const Categories = require('../models/Categories');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
@@ -7,7 +9,7 @@ const UploadImage = require('../models/UploadImage');
 
 exports.getAllOpenEnquiries = async (req, res) => {
   try {
-    const { is_delete, is_home } = req.query;
+    const { is_delete, is_home, user_id } = req.query;
     const whereConditions = {};
     if (is_delete !== undefined) {
       whereConditions.is_delete = is_delete;
@@ -15,6 +17,10 @@ exports.getAllOpenEnquiries = async (req, res) => {
     if (is_home !== undefined) {
       whereConditions.is_home = is_home;
     }
+    if (user_id !== undefined) {
+      whereConditions.user_id = user_id;
+    }
+
     const openEnquiries = await OpenEnquiries.findAll({
       where: whereConditions,
       order: [['id', 'ASC']],
@@ -40,8 +46,11 @@ exports.getAllOpenEnquiries = async (req, res) => {
         }
       ],
       raw: false,
-      nest: true
+      nest: true,
+
     });
+
+
     const transformed = openEnquiries.map(item => {
       const enquiry = item.toJSON();
       const flattened = {
@@ -59,48 +68,86 @@ exports.getAllOpenEnquiries = async (req, res) => {
       delete flattened.Users;
       return flattened;
     });
+
     res.json(transformed);
   } catch (err) {
+    console.error('Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 };
 
-exports.getOpenEnquiriesById = async (req, res) => {
+
+exports.getFrontOpenEnquiries = async (req, res) => {
   try {
-    const openEnquiries = await OpenEnquiries.findByPk(req.params.id, {
+    const { is_delete, is_home, user_id } = req.query;
+    const whereConditions = {};
+    if (is_delete !== undefined) {
+      whereConditions.is_delete = is_delete;
+    }
+    // if (is_home !== undefined) {
+    //   whereConditions.is_home = is_home;
+    // }
+    if (user_id !== undefined) {
+      whereConditions.user_id = user_id;
+    }
+
+    const openEnquiries = await OpenEnquiries.findAll({
+      where: whereConditions,
+      order: [['id', 'ASC']],
       include: [
         {
           model: Users,
           as: 'Users',
-          attributes: ['fname', 'lname', 'email', 'user_company'],
+          attributes: ['fname', 'lname', 'email', 'company_id'],
           include: [
-            { model: UploadImage, as: 'file', attributes: ['file'] }
+            {
+              model: CompanyInfo,
+              as: 'company_info',
+              attributes: ['organization_name', 'organization_slug'],
+              include: [
+                {
+                  model: UploadImage,
+                  as: 'companyLogo',
+                  attributes: ['file']
+                }
+              ]
+            }
           ]
         }
-      ]
+      ],
+      raw: false,
+      nest: true,
+
     });
-    if (!openEnquiries)
-      return res.status(404).json({ message: 'Open Enquiries not found' });
-    const data = openEnquiries.toJSON();
-    const mergedData = {
-      ...data, ...(data.Users || {})
-    };
-    let user_image = null;
-    if (data.Users && data.Users.file) {
-      if (data.Users.file.file_path && data.Users.file.file_name) {
-        user_image = `${data.Users.file.file_path}${data.Users.file.file_name}`;
-      } else if (data.Users.file.file) {
-        user_image = data.Users.file.file;
-      }
-    }
-    mergedData.user_image = user_image;
-    delete mergedData.Users;
-    delete mergedData.file;
-    res.json(mergedData);
+
+
+
+    const transformed = openEnquiries.map(item => {
+      const enquiry = item.toJSON();
+      const flattened = {
+        ...enquiry,
+        ...enquiry.Users && {
+          fname: enquiry.Users.fname,
+          lname: enquiry.Users.lname,
+          email: enquiry.Users.email,
+          company_id: enquiry.Users.company_id,
+          organization_name: enquiry.Users.company_info?.organization_name || null,
+          company_logo: enquiry.Users.company_info?.companyLogo?.file || null,
+          organization_slug: enquiry.Users.company_info?.organization_slug || null
+        }
+      };
+      delete flattened.Users;
+      return flattened;
+    });
+
+    res.json(transformed);
   } catch (err) {
+    console.error('Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 };
+
+
 
 exports.updateOpenEnquiriesStatus = async (req, res) => {
   try {
@@ -271,5 +318,39 @@ exports.getAllOpenEnquiriesServerSide = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.cheakUserchats = async (req, res) => {
+
+  const { id, user } = req.body;
+
+  const userId = user.id;
+  console.log(userId);
+  try {
+    const existing = await OpenEnquiriesChats.findOne({
+      where: { enquiry_id: id, user_id: userId },
+    });
+
+    if (!existing) {
+      const enquiry = await OpenEnquiries.findByPk(id);
+      if (!enquiry) return res.status(404).json({ error: 'Enquiry not found' });
+
+      await OpenEnquiriesChats.create({
+        message: 'Hii',
+        user_id: userId,
+        enquiry_user_id: enquiry.user_id,
+        enquiry_id: id,
+        reply_user_id: userId,
+      });
+
+      return res.json({ success: 1, enquiry_id: id });
+    }
+
+    res.json({ success: 2, enquiry_id: id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
 };

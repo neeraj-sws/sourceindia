@@ -8,7 +8,7 @@ const OpenEnquiries = sequelize.define('OpenEnquiries', {
   user_id: { type: DataTypes.INTEGER, allowNull: true },
   ip_address: { type: DataTypes.TEXT('long'), allowNull: false },
   is_home: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-  status: { type: DataTypes.INTEGER, allowNull: false },
+  status: { type: DataTypes.INTEGER, allowNull: true },
   is_delete: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   is_email: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   name: { type: DataTypes.STRING, allowNull: true },
