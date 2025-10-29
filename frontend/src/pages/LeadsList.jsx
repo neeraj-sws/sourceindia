@@ -172,8 +172,8 @@ const LeadsList = ({user_id}) => {
   };
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/enquiries`).then((res) => {
-      let filtered = res.data;
+    axios.get(`${API_BASE_URL}/enquiries/by-user?user_id=499&all=true`).then((res) => {
+      let filtered = res.data.data;
       filtered = filtered.filter((c) => c.is_approve === 1 && c.is_delete === 0);
       setEnquiriesData(filtered);
     });
@@ -276,26 +276,23 @@ const LeadsList = ({user_id}) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Enquiry List.xlsx"
+        fileName="Seller Product Enquiry List Export.xlsx"
         data={enquiriesData}
         columns={[
           { label: "Enquiry Number", key: "enquiry_number" },
-          { label: "User name", key: "from_full_name" },
-          { label: "User Email", key: "from_email" },
-          { label: "Enquiry to First Name", key: "to_fname" },
-          { label: "Enquiry to Last Name", key: "to_lname" },
-          { label: "Enquiry to Email", key: "to_email" },
-          { label: "Enquiry to Mobile", key: "to_mobile" },
-          { label: "Enquiry from First Name", key: "from_fname" },
-          { label: "Enquiry from Last Name", key: "from_lname" },
-          { label: "Enquiry from Email", key: "from_email" },
-          { label: "Enquiry from Mobile", key: "from_mobile" },
+          {label: "Name", key: "name", format: (val, row) => {
+            const name = row.name || "";
+            const email = row.email || "";
+            return `${name} ${email}`;
+          }},
+          { label: "Product Name", key: "product_name", format: (val, row) => {
+            const product_name = row.enquiry_users[0].product_name || "";
+            return `${product_name}`;
+          } },
+          { label: "Category", key: "category_name" },
+          { label: "Sub Category", key: "sub_category_name" },
           { label: "Quantity", key: "quantity" },
-          { label: "Category Name", key: "category_name" },
-          { label: "Sub Category Name", key: "sub_category_name" },
-          { label: "Status", key: "getStatus" },
-          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
-          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Created At", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
         ]}
       />
     </>

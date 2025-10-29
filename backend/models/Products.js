@@ -42,7 +42,7 @@ const Products = sequelize.define('Products', {
   application: { type: DataTypes.STRING, allowNull: true },
   is_delete: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
 }, {
-  tableName: 'products1',
+  tableName: 'products',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at'
