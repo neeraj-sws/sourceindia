@@ -354,3 +354,40 @@ exports.cheakUserchats = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+exports.getOpenEnquiriesById = async (req, res) => {
+  try {
+    const openEnquiries = await OpenEnquiries.findByPk(req.params.id, {
+      include: [
+        {
+          model: Users,
+          as: 'Users',
+          attributes: ['fname', 'lname', 'email', 'user_company'],
+          include: [
+            { model: UploadImage, as: 'file', attributes: ['file'] }
+          ]
+        }
+      ]
+    });
+    if (!openEnquiries)
+      return res.status(404).json({ message: 'Open Enquiries not found' });
+    const data = openEnquiries.toJSON();
+    const mergedData = {
+      ...data, ...(data.Users || {})
+    };
+    let user_image = null;
+    if (data.Users && data.Users.file) {
+      if (data.Users.file.file_path && data.Users.file.file_name) {
+        user_image = `${data.Users.file.file_path}${data.Users.file.file_name}`;
+      } else if (data.Users.file.file) {
+        user_image = data.Users.file.file;
+      }
+    }
+    mergedData.user_image = user_image;
+    delete mergedData.Users;
+    delete mergedData.file;
+    res.json(mergedData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
