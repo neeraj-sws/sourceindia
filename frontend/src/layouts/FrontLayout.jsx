@@ -24,6 +24,7 @@ import Isinterested from '../pages/Isinterested';
 import MyProducts from '../pages/MyProducts';
 import AddProduct from '../pages/AddProduct';
 import LeadsList from '../pages/LeadsList';
+import LeadDetail from '../pages/LeadDetail';
 import OpenEnquiry from '../pages/OpenEnquiry';
 import OpenEnquiryDetails from '../pages/OpenEnquiryDetails';
 import CreateTicket from '../pages/CreateTicket';
@@ -44,7 +45,7 @@ import PublicRoute from '../routes/PublicRoute';
 function FrontLayout() {
   const location = useLocation();
   const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit', '/my-product',
-    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/Inbox', '/my-open-enquiry-dashboard', '/is-interested'];
+    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/inbox', '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail'];
   const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -81,6 +82,7 @@ function FrontLayout() {
               <Route path="/edit_product/:productId" element={<PrivateRoute><AddProduct /></PrivateRoute>} />
               <Route path="/seller_enquiry" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
               <Route path="/my_enquiry" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
+              <Route path="/lead-detail/:enquiry_number" element={<PrivateRoute><LeadDetail /></PrivateRoute>} />
               <Route path="/open-enquiry-dashboard" element={<PrivateRoute><OpenEnquiry showAll={true} /></PrivateRoute>} />
               <Route path="/my-open-enquiry-dashboard" element={<PrivateRoute><OpenEnquiry /></PrivateRoute>} />
               <Route path="/Inbox/:OpenEnquiryId" element={<PrivateRoute><OpenEnquiryDetails /></PrivateRoute>} />

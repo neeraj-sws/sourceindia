@@ -15,9 +15,9 @@ import "react-date-range/dist/theme/default.css";
 import { format } from "date-fns";
 import UseAuth from '../sections/UseAuth';
 
-const LeadsList = ({user_id}) => {
+const LeadsList = ({ user_id }) => {
   const navigate = useNavigate();
-  const {user, loading} = UseAuth();
+  const { user, loading } = UseAuth();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -39,7 +39,7 @@ const LeadsList = ({user_id}) => {
   const [tempEndDate, setTempEndDate] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [range, setRange] = useState([
-    {startDate: new Date(), endDate: new Date(), key: 'selection'}
+    { startDate: new Date(), endDate: new Date(), key: 'selection' }
   ]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
@@ -86,17 +86,17 @@ const LeadsList = ({user_id}) => {
       width: "100%",
       placeholder: "Select Category",
     })
-    .on("change", function () {
-      handleCategoryChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleCategoryChange({ target: { value: $(this).val() } });
+      });
     $("#sub_category").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select Sub Category",
     })
-    .on("change", function () {
-      handleSubCategoryChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleSubCategoryChange({ target: { value: $(this).val() } });
+      });
     return () => {
       const $category = $("#category");
       const $subCategory = $("#sub_category");
@@ -114,9 +114,11 @@ const LeadsList = ({user_id}) => {
     setIsLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/enquiries/by-user`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, user_id: user?.id || null,
-      },
+        params: {
+          page, limit, search, sortBy, sort: sortDirection, user_id: user?.id || null,
+        },
       });
+
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
       setFilteredRecords(response.data.filteredRecords);
@@ -128,8 +130,8 @@ const LeadsList = ({user_id}) => {
   };
 
   useEffect(() => { if (!user || loading) return; fetchData(); },
-  [page, limit, search, sortBy, sortDirection, user
-  ]);
+    [page, limit, search, sortBy, sortDirection, user
+    ]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -184,7 +186,7 @@ const LeadsList = ({user_id}) => {
       excelExportRef.current.exportToExcel();
     }
   };
-  
+
   const handleRangeChange = (item) => {
     const start = item.selection.startDate;
     const end = item.selection.endDate;
@@ -201,9 +203,9 @@ const LeadsList = ({user_id}) => {
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb page="Settings" title="Lead List"
-          actions={
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
-          }
+            actions={
+              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            }
           />
           <div className="card">
             <div className="card-body">
@@ -236,23 +238,25 @@ const LeadsList = ({user_id}) => {
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     <td>{(page - 1) * limit + index + 1}</td>
-                    <td><Link to={`/admin/admin-view-enquiry/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
-                    <td>{row.name}</td>
+                    <td><Link to={`/lead-detail/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
+                    <td>{row.from_user.full_name}<br />
+                      <b>Email:</b> {row.from_user.email}
+                    </td>
                     <td>{row.enquiry_users[0].product_name}</td>
                     <td>{row.category_name}</td>
                     <td>{row.quantity}</td>
                     <td>{formatDateTime(row.created_at)}</td>
-                    <td>{row.enquiry_users && 
-                    row.enquiry_users[0].enquiry_status == 1 ? (<span className="badge bg-success">Open</span>) : 
-                    row.enquiry_users[0].enquiry_status == 2 ? (<span className="badge bg-danger">Closed</span>) : 
-                    row.enquiry_users[0].enquiry_status == 3 ? (<span className="badge bg-danger">Closed</span>) : 
-                    (<span className="badge bg-warning">Pending</span>)}</td>
+                    <td>{row.enquiry_users &&
+                      row.enquiry_users[0].enquiry_status == 1 ? (<span className="badge bg-success">Open</span>) :
+                      row.enquiry_users[0].enquiry_status == 2 ? (<span className="badge bg-danger">Closed</span>) :
+                        row.enquiry_users[0].enquiry_status == 3 ? (<span className="badge bg-danger">Closed</span>) :
+                          (<span className="badge bg-soft-warning text-warning">Pending</span>)}</td>
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
-                        <ul className="dropdown-menu">                          
+                        <ul className="dropdown-menu">
                           <li>
                             <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete

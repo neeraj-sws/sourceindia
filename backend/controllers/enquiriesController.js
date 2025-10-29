@@ -1,4 +1,4 @@
-const { Op, fn, col, literal } = require('sequelize');
+const { Op, fn, col, literal, Sequelize } = require('sequelize');
 const moment = require('moment');
 const Enquiries = require('../models/Enquiries');
 const OpenEnquriy = require('../models/OpenEnquiries');
@@ -108,9 +108,7 @@ exports.getEnquiriesByNumber = async (req, res) => {
             model: CompanyInfo,
             as: 'company_info',
             attributes: ['organization_name'],
-            required: false,
           }],
-          required: false,
         },
         {
           model: Users,
@@ -120,36 +118,79 @@ exports.getEnquiriesByNumber = async (req, res) => {
             model: CompanyInfo,
             as: 'company_info',
             attributes: ['organization_name'],
-            required: false,
           }],
-          required: false,
         },
         {
           model: EnquiryUsers,
           as: 'enquiry_users',
-          attributes: ['id', 'product_name']
-        }
-      ]
+          attributes: ['id', 'product_name', 'product_id', 'company_id', 'enquiry_status'],
+          include: [
+            {
+              model: Products,
+              as: 'Products',
+              attributes: ['id', 'title', 'description', 'user_id', 'category', 'sub_category'],
+              include: [
+                { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+                { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+                { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+              ],
+              required: false,
+            },
+          ],
+          required: false,
+        },
+      ],
     });
+
     if (!enquiry) return res.status(404).json({ message: 'Enquiry not found' });
+
+    // Fix: AWAIT findByPk
+    const eu = enquiry.enquiry_users[0];
+    let single_product = null;
+
+    if (eu?.product_id) {
+      single_product = await Products.findByPk(eu.product_id, {
+        attributes: ['id', 'title', 'description', 'user_id', 'category', 'sub_category'],
+        include: [
+          { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+          { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+          { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+        ],
+      });
+    }
+
+
+
     res.json({
       ...enquiry.toJSON(),
-      from_full_name: enquiry.from_user ? `${enquiry.from_user.fname} ${enquiry.from_user.lname}` : null,
+      from_full_name: enquiry.from_user ? `${enquiry.from_user.fname} ${enquiry.from_user.lname}`.trim() : null,
       from_email: enquiry.from_user?.email || null,
       from_mobile: enquiry.from_user?.mobile || null,
       from_company_id: enquiry.from_user?.company_id || null,
       from_organization_name: enquiry.from_user?.company_info?.organization_name || null,
-      to_full_name: enquiry.to_user ? `${enquiry.to_user.fname} ${enquiry.to_user.lname}` : null,
+
+      to_full_name: enquiry.to_user ? `${enquiry.to_user.fname} ${enquiry.to_user.lname}`.trim() : null,
       to_email: enquiry.to_user?.email || null,
       to_mobile: enquiry.to_user?.mobile || null,
       to_company_id: enquiry.to_user?.company_id || null,
       to_organization_name: enquiry.to_user?.company_info?.organization_name || null,
-      enquiry_product: enquiry.enquiry_users[0]?.product_name || null,
+
+      enquiry_product: eu?.product_name || null,
+      enquiryUser: eu || null,
+      product_details: single_product || eu?.Products || null, // Dono se best try karo
+
+      // Debug
+      product_source: single_product ? 'from_findByPk' : (eu?.Products ? 'from_include' : 'not_found'),
     });
+
   } catch (err) {
+    console.error('Error in getEnquiriesByNumber:', err);
     res.status(500).json({ error: err.message });
   }
 };
+
+
+
 
 exports.getEnquiriesCount = async (req, res) => {
   try {
@@ -501,6 +542,7 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
     }
 
     const sortDirection = sort.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
     let order = [[sortBy, sortDirection]];
     if (sortBy === 'enquiry_product') {
       order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
@@ -523,6 +565,28 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
         as: 'enquiry_users',
         required: true,
         where: { company_id: companyId },
+      },
+      {
+        model: Users,
+        as: 'from_user',
+        attributes: [
+          'id',
+          'fname',
+          'lname',
+          'email',
+          [Sequelize.literal("CONCAT(from_user.fname, ' ', from_user.lname)"), 'full_name']
+        ],
+      },
+      {
+        model: Users,
+        as: 'to_user',
+        attributes: [
+          'id',
+          'fname',
+          'lname',
+          'email',
+          [Sequelize.literal("CONCAT(to_user.fname, ' ', to_user.lname)"), 'full_name']
+        ],
       },
     ];
 
@@ -678,7 +742,6 @@ exports.storeEnquiry = async (req, res) => {
           categoryNameArr.push(category.name);
         }
       }
-
       category_ids = categoryDataArr.join(", ");
       category_names = categoryNameArr.join(", ");
 
@@ -711,7 +774,7 @@ exports.storeEnquiry = async (req, res) => {
     await newCompany.save();
 
     const user = await Users.findByPk(userId);
-    // console.log('storeEnquiry' + user);
+
     user.fname = name;
     user.company_id = newCompany.id;
     user.mobile = phone;
