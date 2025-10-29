@@ -29,6 +29,7 @@ const ProfileEdit = () => {
   const [errors, setErrors] = useState({});
   const [file, setFile] = useState(null);
   const [designations, setDesignations] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchStates = async () => {
@@ -78,8 +79,10 @@ const ProfileEdit = () => {
     });
 
     return () => {
-      $('#state').off("change").select2('destroy');
-      $('#city').off("change").select2('destroy');
+      const $state = $('#state');
+      const $city = $('#city');
+      if ($state.data('select2')) { $state.off("change").select2('destroy'); }
+      if ($city.data('select2')) { $city.off("change").select2('destroy'); }
     };
   }, [states, cities]);
 
@@ -137,54 +140,87 @@ const ProfileEdit = () => {
     fetchDesignations();
   }, []);
 
-  const handleSubmit = async (e) => {
-  e.preventDefault();
-  const token = localStorage.getItem("user_token");
-  if (!token) {
-    navigate("/login");
-    return;
-  }
-
-  try {
-    const formData = new FormData();
-
-    // append all user fields
-    formData.append("fname", user.fname || "");
-    formData.append("lname", user.lname || "");
-    formData.append("email", user.email || "");
-    formData.append("mobile", user.mobile || "");
-    formData.append("state", selectedState || "");
-    formData.append("city", selectedCity || "");
-    formData.append("zipcode", user.zipcode || "");
-    formData.append("address", user.address || "");
-
-    // designation (from company_info)
-    formData.append("designation", user.company_info?.designation || "");
-
-    // append image file (field name must be 'file' because backend expects it)
+  const validateForm = () => {
+    const errs = {};
+    if (!user.fname?.trim()) errs.fname = "First Name is required";
+    if (!user.lname?.trim()) errs.lname = "Last Name is required";
+    if (!user.email?.trim()) errs.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(user.email))
+      errs.email = "Invalid email format";
+    if (!user.mobile?.trim()) errs.mobile = "Mobile is required";
+    else if (!/^[6-9]\d{9}$/.test(user.mobile))
+      errs.mobile = "Invalid mobile number";
+    if (!selectedState) errs.state = "State is required";
+    if (!selectedCity) errs.city = "City is required";
+    if (!user.zipcode?.trim()) errs.zipcode = "Pincode is required";
+    else if (!/^\d{5,6}$/.test(user.zipcode))
+      errs.zipcode = "Invalid pincode format";
+    if (!user.address?.trim()) errs.address = "Address is required";
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+    const maxSize = 2 * 1024 * 1024;
     if (file) {
-      formData.append("file", file);
+      if (!allowedImageTypes.includes(file.type)) {
+        errs.file = "Invalid image format (only JPG/PNG allowed)";
+      } else if (file.size > maxSize) {
+        errs.file = "Image size must be under 2MB";
+      }
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setSubmitting(true);
+    const token = localStorage.getItem("user_token");
+    if (!token) {
+      navigate("/login");
+      return;
     }
 
-    // (optional) If in the future you also support company_logo upload:
-    // if (companyLogoFile) formData.append("company_logo", companyLogoFile);
+    try {
+      const formData = new FormData();
 
-    await axios.post(`${API_BASE_URL}/signup/update-profile`, formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
+      // append all user fields
+      formData.append("fname", user.fname || "");
+      formData.append("lname", user.lname || "");
+      formData.append("email", user.email || "");
+      formData.append("mobile", user.mobile || "");
+      formData.append("state", selectedState || "");
+      formData.append("city", selectedCity || "");
+      formData.append("zipcode", user.zipcode || "");
+      formData.append("address", user.address || "");
 
-    showNotification("Profile updated successfully!", "success");
-    navigate("/profile");
-  } catch (err) {
-    console.error("Update failed", err);
-    showNotification("Error updating profile", "error");
-  }
-};
+      // designation (from company_info)
+      formData.append("designation", user.company_info?.designation || "");
 
-  if (!user) return <div className="text-center mt-5">Loading profile...</div>;
+      // append image file (field name must be 'file' because backend expects it)
+      if (file) {
+        formData.append("file", file);
+      }
+
+      // (optional) If in the future you also support company_logo upload:
+      // if (companyLogoFile) formData.append("company_logo", companyLogoFile);
+
+      await axios.post(`${API_BASE_URL}/signup/update-profile`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      showNotification("Profile updated successfully!", "success");
+      navigate("/profile");
+    } catch (err) {
+      console.error("Update failed", err);
+      showNotification("Error updating profile", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) return <p>Loading...</p>;
 
   return (
     <div className="page-wrapper">
@@ -255,7 +291,7 @@ const ProfileEdit = () => {
                     <div className="col-md-6">
                       <label className="form-label">Designation</label>
                       <input
-  className={`form-control ${errors.designation ? 'is-invalid' : ''}`}
+  className="form-control"
   list="browsers"
   name="designation"
   placeholder="Designation"
@@ -274,7 +310,6 @@ const ProfileEdit = () => {
                           <option value={d.name} if="" key={index}></option>
                         ))}
                       </datalist>
-                      {errors.designation && <div className="invalid-feedback">{errors.designation}</div>}
                     </div>
                     <div className="col-md-6 mb-3">
                       <label htmlFor="state" className="form-label required">State</label>
@@ -361,8 +396,8 @@ const ProfileEdit = () => {
                     {/*end row*/}
                   </div>
                   <div className="text-end">
-                    <button type="submit" className="btn btn-primary mt-3">
-                      Save
+                    <button type="submit" className="btn btn-primary mt-3" disabled={submitting}>
+                      {submitting ? "Saving..." : "Save"}
                     </button>
                   </div>
                 </div>

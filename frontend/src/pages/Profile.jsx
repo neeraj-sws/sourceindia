@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import ImageWithFallback from "../admin/common/ImageWithFallback";
@@ -7,31 +7,11 @@ import { useAlert } from '../context/AlertContext';
 import UseAuth from '../sections/UseAuth';
 
 const Profile = () => {
-  const navigate = useNavigate();
   const { showNotification } = useAlert();
   const {user, loading} = UseAuth();
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem('user_token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-    const fetchProfile = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/signup/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser(response.data.user);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchProfile();
-  }, [navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -68,7 +48,7 @@ const Profile = () => {
     }
   };
 
-  if (!user) return <div className="text-center mt-5">Loading profile...</div>;
+  if (loading) return <p>Loading...</p>;
 
   return (
     <div className="page-wrapper">

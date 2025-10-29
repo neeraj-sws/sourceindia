@@ -391,3 +391,25 @@ exports.getOpenEnquiriesById = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getOpenEnquiriesCountByUser = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId, 10);
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user_id' });
+    }
+    const totalOpenEnquiries = await OpenEnquiries.count({
+      where: {
+        user_id: userId,
+        is_delete: 0
+      }
+    });
+    res.json({
+      user_id: userId,
+      totalOpenEnquiries
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

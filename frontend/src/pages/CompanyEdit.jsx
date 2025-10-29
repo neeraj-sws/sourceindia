@@ -38,6 +38,7 @@ const CompanyEdit = () => {
   const [file, setFile] = useState(null);
   const [companyFile, setCompanyFile] = useState(null);
   const [companyBrochure, setCompanyBrochure] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchCoreActivities = async () => {
@@ -194,10 +195,14 @@ const CompanyEdit = () => {
     });
 
     return () => {
-        $('#category_sell').off("change").select2('destroy');
-      $('#sub_category').off("change").select2('destroy');
-      $('#core_activity').off("change").select2('destroy');
-      $('#activity').off("change").select2('destroy');
+      const $category_sell = $('#category_sell');
+      const $sub_category = $('#sub_category');
+      const $core_activity = $('#core_activity');
+      const $activity = $('#activity');
+      if ($category_sell.data('select2')) { $category_sell.off("change").select2('destroy'); }
+      if ($sub_category.data('select2')) { $sub_category.off("change").select2('destroy'); }
+      if ($core_activity.data('select2')) { $core_activity.select2('destroy'); }
+      if ($activity.data('select2')) { $activity.select2('destroy'); }
     };
   }, [categories, subCategories, selectedSubCategory, subCategoryMap, coreActivities, activities]);
 
@@ -286,8 +291,92 @@ const CompanyEdit = () => {
   }
 };
 
+const validateForm = () => {
+  const errs = {};
+
+  // Organization Name
+  if (!user.company_info?.organization_name?.trim())
+    errs.organization_name = "Organization name is required";
+
+  // Company Email
+  if (!user.company_info?.company_email?.trim())
+    errs.company_email = "Company email is required";
+  else if (!/\S+@\S+\.\S+/.test(user.company_info.company_email))
+    errs.company_email = "Invalid email format";
+
+  // Company Location
+  if (!user.company_info?.company_location?.trim())
+    errs.company_location = "Company location is required";
+
+  // Company Website
+  if (!user.company_info?.company_website?.trim())
+    errs.company_website = "Company website is required";
+  else if (
+    !/^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/[^\s]*)?$/.test(
+      user.company_info.company_website
+    )
+  )
+    errs.company_website = "Invalid website URL";
+
+  // Core Activity
+  if (!selectedCoreActivity)
+    errs.core_activity = "Core activity is required";
+
+  // Activity
+  if (!selectedActivity)
+    errs.activity = "Activity is required";
+
+  // Category Sell
+  if (!selectedCategory.length)
+    errs.category_sell = "At least one category is required";
+
+  // Company Introduction
+  if (!user.company_info?.brief_company?.trim())
+    errs.brief_company = "Company introduction is required";
+  else if (user.company_info.brief_company.length > 1500)
+    errs.brief_company = "Company introduction must not exceed 1500 characters";
+
+  // File validation (optional)
+  const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+  const maxSize = 2 * 1024 * 1024; // 2MB
+  if (file) {
+    if (!allowedImageTypes.includes(file.type))
+      errs.file = "Invalid image format (only JPG/PNG allowed)";
+    else if (file.size > maxSize)
+      errs.file = "Image size must be under 2MB";
+  }
+
+  // Company Brochure (PDF)
+  const allowedPdfType = ["application/pdf"];
+  const maxPdfSize = 10 * 1024 * 1024; // 10MB
+  if (companyBrochure) {
+    if (!allowedPdfType.includes(companyBrochure.type))
+      errs.sample_file_id = "Invalid file format (only PDF allowed)";
+    else if (companyBrochure.size > maxPdfSize)
+      errs.sample_file_id = "Brochure size must be under 10MB";
+  }
+
+  // Company Sample PPT
+  const allowedPptTypes = [
+    "application/vnd.ms-powerpoint", // .ppt
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation", // .pptx
+  ];
+  const maxPptSize = 12 * 1024 * 1024; // 12MB
+  if (companyFile) {
+    if (!allowedPptTypes.includes(companyFile.type))
+      errs.company_sample_ppt_file = "Invalid file format (only PPT/PPTX allowed)";
+    else if (companyFile.size > maxPptSize)
+      errs.company_sample_ppt_file = "PPT file size must be under 12MB";
+  }
+
+  setErrors(errs);
+  return Object.keys(errs).length === 0; // ✅ returns true if valid
+};
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
+    setSubmitting(true);
     const token = localStorage.getItem("user_token");
     try {
         const formData = new FormData();
@@ -314,10 +403,12 @@ if (companyFile) formData.append("company_sample_ppt_file", companyFile);
     } catch (err) {
       console.error("Update failed", err);
       showNotification("Error updating profile", 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (!user) return <div className="text-center mt-5">Loading profile...</div>;
+  if (loading) return <p>Loading...</p>;
 
   return (
     <div className="page-wrapper">
@@ -475,6 +566,7 @@ if (companyFile) formData.append("company_sample_ppt_file", companyFile);
                             <textarea
                                 className="form-control"
                                 id="brief_company"
+                                name="brief_company"
                                 placeholder="Company Introduction"
                                 rows={5}
                                 value={user.company_info?.brief_company || ""}
@@ -520,43 +612,31 @@ if (companyFile) formData.append("company_sample_ppt_file", companyFile);
                             </div>
                             </div>
                             <div className="col-md-12">
-                            <label className="form-label">Company Brochure</label>
-                            <input
-                      className={`form-control ${errors.sample_file_id ? "is-invalid" : ""}`}
-                      type="file"
+<label className="form-label">Company Brochure</label>
+<input
+                      type="file" className={`form-control ${errors.sample_file_id ? "is-invalid" : ""}`}
                       id="sample_file_id"
                       onChange={handleCompanyBrochureChange}
                     />
-                    {errors.sample_file_id && (<div className="invalid-feedback">{errors.sample_file_id}</div>)}
-                    {companyBrochure ? (
-  <img
-    src={URL.createObjectURL(companyBrochure)}
-    className="img-preview mt-3"
-    width={150}
-    height={150}
-    alt="Preview"
-  />
-) : user.company_info?.companySampleFile?.file ? (
-  <ImageWithFallback
-    src={`${ROOT_URL}/${user.company_info.companySampleFile.file}`}
-    width={150}
-    height={150}
-    showFallback={false}
-  />
-) : null}
+                    {user.company_info?.companySampleFile?.file && (
+  <a
+    href={`${ROOT_URL}/${user.company_info.companySampleFile.file}`}
+    target="_blank"
+    rel="noreferrer"
+  >
+    View PDF
+  </a>
+)}
+{errors.sample_file_id && (<div className="invalid-feedback">{errors.sample_file_id}</div>)}
                             </div>
                         </div>
                         </div>
                     </div>
                     </div>
                     <div className="text-end">
-                    <button type="submit" className="btn btn-primary mt-3">
-                        Save{" "}
-                        <i
-                        className="st_loader spinner-border spinner-border-sm"
-                        style={{ display: "none" }}
-                        />
-                    </button>
+                      <button type="submit" className="btn btn-primary mt-3" disabled={submitting}>
+                        {submitting ? "Saving..." : "Save"}
+                      </button>
                     </div>
                 </div>
                 </div>

@@ -11,6 +11,7 @@ const Dashboard = () => {
   const { user, updateUser, loading } = UseAuth(); // Assuming UseAuth now provides loading
   const navigate = useNavigate();
   const [todayRegisterSeller, setTodayRegisterSeller] = useState(0);
+  const [openEnquiryCountData, setOpenEnquiryCountData] = useState(0);
   const [error, setError] = useState(null);
   const [interestData, setInterestData] = useState({ categories: [], subCategories: {} });
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,6 +47,9 @@ const Dashboard = () => {
           headers: { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' },
         });
         setInterestData(interestResponse.data || { categories: [], subCategories: {} });
+
+        const openEnquiryCountResponse = await axios.get(`${API_BASE_URL}/open_enquiries/count/${user.id}`);
+        setOpenEnquiryCountData(openEnquiryCountResponse.data.totalOpenEnquiries);
 
         if (user.is_intrest === 0 && user.is_seller === 0) {
           setIsModalOpen(true);
@@ -198,7 +202,7 @@ const Dashboard = () => {
                   <div className="d-flex align-items-center">
                     <div>
                       <p className="mb-0 text-secondary">Total My Open Enquiry (created)</p>
-                      <h4 className="my-1">{todayRegisterSeller}</h4>
+                      <h4 className="my-1">{openEnquiryCountData}</h4>
                     </div>
                     <div className="widgets-icons-2 rounded-circle bg-gradient-bloody text-white ms-auto">
                       <i className="bx bxs-group"></i>

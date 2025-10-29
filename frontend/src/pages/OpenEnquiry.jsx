@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import Breadcrumb from "../admin/common/Breadcrumb";
 import API_BASE_URL from "./../config";
 import DataTable from "../admin/common/DataTable";
 import { formatDateTime } from "./../utils/formatDate";
 import UseAuth from '../sections/UseAuth';
+import ExcelExport from "../admin/common/ExcelExport";
+import 'react-date-range/dist/styles.css'; 
+import 'react-date-range/dist/theme/default.css'; 
 
-const EnquiryTable = ({ showAll = false }) => {
+const OpenEnquiry = ({ showAll = false }) => {
   const navigate = useNavigate();
   const { user, loading } = UseAuth();
-
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -19,25 +22,15 @@ const EnquiryTable = ({ showAll = false }) => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [openEnquiryData, setOpenEnquiryData] = useState([]);
+  const excelExportRef = useRef();
 
   const fetchData = async () => {
     if (!user) return;
     setIsLoading(true);
-
     try {
-      const params = {
-        page,
-        limit,
-        search,
-        sortBy,
-        sort: sortDirection,
-      };
-
-      // If not showing all, filter by user
-      if (!showAll) {
-        params.user_id = user.id;
-      }
-
+      const params = { page, limit, search, sortBy, sort: sortDirection };
+      if (!showAll) { params.user_id = user.id; }
       const response = await axios.get(`${API_BASE_URL}/open_enquiries/server-side`, { params });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -68,20 +61,39 @@ const EnquiryTable = ({ showAll = false }) => {
         ? `Showing 0 to 0 of 0 entries (filtered from ${totalRecords} total entries)`
         : "Showing 0 to 0 of 0 entries";
     }
-
     const start = (page - 1) * limit + 1;
     const end = Math.min(page * limit, filteredRecords);
-
     return search.trim()
       ? `Showing ${start} to ${end} of ${filteredRecords} entries (filtered from ${totalRecords} total entries)`
       : `Showing ${start} to ${end} of ${totalRecords} entries`;
   };
 
+  useEffect(() => {
+    if (!user) return;
+    const url = showAll ? `${API_BASE_URL}/open_enquiries` : `${API_BASE_URL}/open_enquiries?user_id=${user.id}`;
+    axios.get(url).then((res) => {
+      const filtered = res.data.filter((c) => c.is_delete === 0);
+      setOpenEnquiryData(filtered);
+    });
+  }, [user, showAll]);
+  
+  const handleDownload = () => {
+    if (excelExportRef.current) {
+      excelExportRef.current.exportToExcel();
+    }
+  };
+
   if (loading) return <p>Loading...</p>;
 
   return (
+    <>
     <div className="page-wrapper">
       <div className="page-content">
+        <Breadcrumb page="Settings" title="My Open Enquiries"
+          actions={
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+          }
+        />
         <div className="card">
           <div className="card-body">
             <DataTable
@@ -136,10 +148,7 @@ const EnquiryTable = ({ showAll = false }) => {
                       </button>
                       <ul className="dropdown-menu">
                         <li>
-                          <button
-                            className="dropdown-item"
-                            onClick={() => navigate(`/Inbox/${row.id}`)}
-                          >
+                          <button className="dropdown-item" onClick={() => navigate(`/Inbox/${row.id}`)}>
                             <i className="bx bx-eye me-2"></i> View
                           </button>
                         </li>
@@ -153,7 +162,23 @@ const EnquiryTable = ({ showAll = false }) => {
         </div>
       </div>
     </div>
+    <ExcelExport
+      ref={excelExportRef}
+      columnWidth={34.29}
+      fileName={!showAll ? "My Open Enquiry List Export.xlsx" : "Open Enquiry List Export.xlsx"}
+      data={openEnquiryData}
+      columns={[
+        {label: "User Name", key: "name", format: (val, row) => {
+          const fname = row.fname || "";
+          const lname = row.lname || "";
+          return `${fname} ${lname}`;
+        }},
+        { label: "Title", key: "title" },
+        { label: "Description", key: "description" },
+      ]}
+    />
+    </>
   );
 };
 
-export default EnquiryTable;
+export default OpenEnquiry;
