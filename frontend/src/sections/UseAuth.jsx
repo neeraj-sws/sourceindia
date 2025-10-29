@@ -10,10 +10,10 @@ const UseAuth = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('user_token');
-    // if (!token) {
-    //   navigate('/login');
-    //   return;
-    // }
+    if (!token) {
+      navigate('/login');
+      return;
+    }
 
     const fetchProfile = async () => {
       try {

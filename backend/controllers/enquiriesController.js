@@ -528,20 +528,19 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
 exports.getEnquiriesByUserServerSide = async (req, res) => {
   try {
     const {
-      page = 1,
-      limit = 10,
+      page,
+      limit,
       search = '',
       sortBy = 'id',
       sort = 'DESC',
-      user_id
+      user_id,
+      all = false // optional query param ?all=true to get all data
     } = req.query;
 
     if (!user_id) {
       return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    const limitValue = parseInt(limit);
     const sortDirection = sort.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     let order = [[sortBy, sortDirection]];
@@ -554,14 +553,12 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
       is_delete: 0
     };
 
-    // Find user's company
-    const user = await Users.findByPk(user_id, {
-      include: { model: CompanyInfo, as: 'company_info' },
+    const user = await Users.findByPk(user_id, { 
+      include: { model: CompanyInfo, as: 'company_info' } 
     });
 
     const companyId = user?.company_info?.id;
 
-    // ---- INCLUDE RELATIONS ----
     const include = [
       {
         model: EnquiryUsers,
@@ -593,34 +590,36 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
       },
     ];
 
-    // ---- SEARCH ----
     if (search) {
       where[Op.or] = [
         { enquiry_number: { [Op.like]: `%${search}%` } },
         { category_name: { [Op.like]: `%${search}%` } },
         literal(`EXISTS (
-          SELECT 1 FROM users AS u
-          WHERE u.id = enquiries.user_id
+          SELECT 1 FROM users AS u 
+          WHERE u.id = enquiries.user_id 
           AND CONCAT(u.fname, ' ', u.lname) LIKE '%${search}%'
         )`)
       ];
     }
 
-    // ---- FETCH DATA ----
+    // If ?all=true, skip pagination
+    const isAll = all === 'true' || all === true;
+    const limitValue = isAll ? null : parseInt(limit) || 10;
+    const offset = isAll ? null : ((parseInt(page) || 1) - 1) * limitValue;
+
     const { count: filteredRecords, rows } = await Enquiries.findAndCountAll({
       subQuery: false,
       where,
       order,
-      limit: limitValue,
-      offset,
-      include,
+      ...(isAll ? {} : { limit: limitValue, offset }),
+      include
     });
 
-    // ---- RESPONSE ----
     res.json({
       data: rows,
       filteredRecords,
       totalRecords: filteredRecords,
+      isAll
     });
 
   } catch (err) {

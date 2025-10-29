@@ -143,7 +143,7 @@ const UserSidebar = () => {
     {
       title: "My Open Enquiries",
       icon: "bx bx-list-ul",
-      link: "/my-open-enquiries",
+      link: "/my-open-enquiry-dashboard",
       show:
         (user?.is_approve === 1 && user?.is_seller === 1) ||
         user?.is_seller === 0,
