@@ -15,7 +15,7 @@ import "react-date-range/dist/theme/default.css";
 import { format } from "date-fns";
 import UseAuth from '../sections/UseAuth';
 
-const LeadsList = ({ user_id }) => {
+const EnquiryList = ({ user_id }) => {
   const navigate = useNavigate();
   const { user, loading } = UseAuth();
   const [data, setData] = useState([]);
@@ -114,7 +114,7 @@ const LeadsList = ({ user_id }) => {
     if (!user) return;
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/enquiries/by-user`, {
+      const response = await axios.get(`${API_BASE_URL}/enquiries/by-enquiry`, {
         params: {
           page, limit, search, sortBy, sort: sortDirection, user_id: user?.id || null,
         },
@@ -177,7 +177,7 @@ const LeadsList = ({ user_id }) => {
     if (!user?.id || !user?.company_id) return; // wait until user info is ready
 
     // Fetch user's enquiries
-    axios.get(`${API_BASE_URL}/enquiries/by-user?user_id=${user.id}&all=true`)
+    axios.get(`${API_BASE_URL}/enquiries/by-enquiry?user_id=${user.id}&all=true`)
       .then((res) => {
         const filtered = res.data.data.filter((c) => c.is_approve === 1 && c.is_delete === 0);
         setEnquiriesData(filtered);
@@ -221,7 +221,7 @@ const LeadsList = ({ user_id }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Lead List"
+          <Breadcrumb page="Settings" title="Enquiry List"
             actions={
               <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
             }
@@ -233,8 +233,8 @@ const LeadsList = ({ user_id }) => {
                 <div className="card-body ps-4 py-4">
                   <div className="d-flex align-items-center">
                     <div className="labeltitle">
-                      <p className="mb-2">No. of Leads</p>
-                      <h2 className="mb-0">{counterCount?.total || 0}</h2>
+                      <p className="mb-2">No. of Enquiries</p>
+                      <h2 className="mb-0">{counterCount?.enquirytotal || 0}</h2>
                     </div>
                     <div className="ms-auto dashicon avatar avatar-md rounded-circle bg-soft-success border border-success text-success"><i className="bx bxs-user-plus"></i></div>
                   </div>
@@ -247,10 +247,12 @@ const LeadsList = ({ user_id }) => {
                 <div className="card-body ps-4 py-4">
                   <div className="d-flex align-items-center">
                     <div className="labeltitle">
-                      <p className="mb-2">Open Leads
+                      <p className="mb-2">Open Enquiries
+
+
 
                       </p>
-                      <h2 className="mb-0">{counterCount?.open || 0}</h2>
+                      <h2 className="mb-0">{counterCount?.enquiryopen || 0}</h2>
                     </div>
                     <div className="ms-auto dashicon avatar avatar-md rounded-circle bg-soft-warning border border-warning text-warning"><i className="bx bxs-user-plus"></i></div>
                   </div>
@@ -263,10 +265,10 @@ const LeadsList = ({ user_id }) => {
                 <div className="card-body ps-4 py-4">
                   <div className="d-flex align-items-center">
                     <div className="labeltitle">
-                      <p className="mb-2">Closed Leads
+                      <p className="mb-2">Closed Enquiries
 
                       </p>
-                      <h2 className="mb-0">{counterCount?.closed || 0}</h2>
+                      <h2 className="mb-0">{counterCount?.enquiryclosed || 0}</h2>
                     </div>
                     <div className="ms-auto dashicon avatar avatar-md rounded-circle bg-soft-primary border border-primary text-primary"><i className="bx bxs-user-plus"></i></div>
                   </div>
@@ -281,9 +283,9 @@ const LeadsList = ({ user_id }) => {
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "enquiry_number", label: "Enquiry No", sortable: true },
-                  { key: "name", label: "Name", sortable: true },
                   { key: "product_name", label: "Product Name", sortable: true },
                   { key: "category_name", label: "Category", sortable: true },
+                  { key: "sub_category_name", label: "Sub Category", sortable: true },
                   { key: "quantity", label: "Quantity", sortable: true },
                   { key: "created_at", label: "Created", sortable: true },
                   { key: "status", label: "Status", sortable: false },
@@ -306,12 +308,11 @@ const LeadsList = ({ user_id }) => {
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     <td>{(page - 1) * limit + index + 1}</td>
-                    <td><Link to={`/lead-detail/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
-                    <td>{row.from_user.full_name}<br />
-                      <b>Email:</b> {row.from_user.email}
-                    </td>
+                    <td><Link to={`/lead-detail/${row.enquiry_number}?my-enquiry=true`}>{row.enquiry_number}</Link></td>
+
                     <td>{row.enquiry_users[0].product_name}</td>
                     <td>{row.category_name}</td>
+                    <td>{row.sub_category_name}</td>
                     <td>{row.quantity}</td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{row.enquiry_users &&
@@ -352,13 +353,7 @@ const LeadsList = ({ user_id }) => {
         data={enquiriesData}
         columns={[
           { label: "Enquiry Number", key: "enquiry_number" },
-          {
-            label: "Name", key: "name", format: (val, row) => {
-              const name = row.from_user.full_name || "";
-              const email = row.from_user.email || "";
-              return `${name} ${email}`;
-            }
-          },
+
           {
             label: "Product Name", key: "product_name", format: (val, row) => {
               const product_name = row.enquiry_users[0].product_name || "";
@@ -375,4 +370,4 @@ const LeadsList = ({ user_id }) => {
   );
 };
 
-export default LeadsList;
+export default EnquiryList;

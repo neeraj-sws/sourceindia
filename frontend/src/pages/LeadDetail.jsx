@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, Link, useParams } from "react-router-dom";
+import { useNavigate, Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../admin/common/Breadcrumb";
@@ -14,9 +14,19 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { format } from "date-fns";
 import UseAuth from '../sections/UseAuth';
+import MyEnquiry from '../pages/EnquiryParts/MyEnquiry';
+import MyLead from '../pages/EnquiryParts/MyLead';
 
 const LeadDetail = () => {
   const { enquiry_number } = useParams();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const myEnquiry = queryParams.get("my-enquiry");
+  const [counterCount, setcounterCount] = useState(null);
+  const { user, loading } = UseAuth();
+  const [awardedList, setAwardedList] = useState([]);
+  const [acceptList, setAcceptList] = useState([]);
+  const [shortList, setShortList] = useState([]);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     enquiry_number: '', from_full_name: '', from_email: '', from_mobile: '',
@@ -38,11 +48,90 @@ const LeadDetail = () => {
     fetchNewsletter();
   }, [enquiry_number]);
 
+  let status = "Pending";
+  let color = "warning";
+
+  if (formData?.status === 3) {
+    status = "Closed";
+    color = "danger";
+  } else if (formData?.enquiry_status === 1) {
+    status = "Open";
+    color = "success";
+  } else if (formData?.enquiry_status === 2) {
+    status = "Closed";
+    color = "danger";
+  }
+
+
+  useEffect(() => {
+    if (!user?.company_id || !formData?.id) return;
+
+    // 🟢 Lead count
+    axios
+      .get(`${API_BASE_URL}/enquiries/lead-count?companyId=${user.company_id}&enquiryId=${formData.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+      .then((res) => {
+
+        const counts = res.data || { total: 0, open: 0, closed: 0 };
+
+        setcounterCount(counts);
+      })
+      .catch((err) => {
+        console.error("Error fetching lead count:", err);
+        setcounterCount({ total: 0, open: 0, closed: 0 });
+      });
+
+    // 🟣 Awarded companies
+    axios
+      .get(`${API_BASE_URL}/enquiries/awarded?enq_id=${formData.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+      .then((res) => {
+        const data = res.data?.data || [];
+
+        setAwardedList(data);
+      })
+      .catch((err) => {
+        console.error("Error fetching awarded companies:", err);
+        setAwardedList([]); // fallback
+      });
+    // 🟣 accept companies
+    axios
+      .get(`${API_BASE_URL}/enquiries/accept?enq_id=${formData.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+      .then((res) => {
+        const data = res.data?.data || [];
+
+        setAcceptList(data);
+      })
+      .catch((err) => {
+        console.error("Error fetching awarded companies:", err);
+        setAcceptList([]); // fallback
+      });
+    // 🟣 shortlist companies
+    axios
+      .get(`${API_BASE_URL}/enquiries/shortlisted?enq_id=${formData.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+      .then((res) => {
+        const data = res.data?.data || [];
+
+        setShortList(data);
+      })
+      .catch((err) => {
+        console.error("Error fetching awarded companies:", err);
+        setShortList([]); // fallback
+      });
+  }, [user?.company_id, formData?.id]);
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb page="Settings" title="View Enquiry" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
+          {myEnquiry ? <MyEnquiry formData={formData} /> : <MyLead formData={formData} />}
           <div className="card mb-3">
             <div className="card-body">
               <div className="d-flex align-items-center justify-content-between flex-wrap">
@@ -66,25 +155,6 @@ const LeadDetail = () => {
                     {formData.from_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.from_email}</p>}
                     {formData.from_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.from_mobile}</p>}
                     {formData.from_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.from_organization_name}</p>}
-                  </div>
-                </div>
-                <div className="d-flex align-items-center flex-wrap gap-2">
-                  {formData.enquiryUser?.enquiry_status === 1 ? (<span className="badge bg-success">Open</span>) :
-                    formData.enquiryUser?.enquiry_status === 2 ? (<span className="badge bg-danger">Closed</span>) :
-                      formData.enquiryUser?.enquiry_status === 3 ? (<span className="badge bg-danger">Closed</span>) :
-                        (<span className="badge bg-soft-warning text-warning">Pending</span>)}
-
-                  <div className="dropdown d-none">
-                    <a href="#" className="btn btn-xs btn-success fs-12 py-1 px-2 fw-medium d-inline-flex align-items-center" data-bs-toggle="dropdown" aria-expanded="false"> <i className="ti ti-thumb-up me-1"></i>Closed<i className="ti ti-chevron-down ms-1"></i> </a>
-                    <div className="dropdown-menu dropdown-menu-right">
-
-
-
-
-
-                      <a className="dropdown-item" href=""><span>Closed</span></a>
-                      <a className="dropdown-item" href=""><span>Lost</span></a>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -124,21 +194,21 @@ const LeadDetail = () => {
                   </div>
                   <h6 className="mb-3 fw-semibold">Enquiry Detail</h6>
                   <div className="border-bottom mb-3 pb-3">
-                    <div className="d-flex align-items-center justify-content-between mb-2">
+                    <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                       <p className="mb-0 text-secondary">Category</p>
                       <p className="mb-0 text-dark">
                         {formData.category_name}
                       </p>
                     </div>
                     {formData.sub_category_name &&
-                      <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Sub Category</p>
                         <p className="mb-0 text-dark">
                           {formData.sub_category_name}
                         </p>
                       </div>
                     }
-                    <div className="d-flex align-items-center justify-content-between mb-2">
+                    <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                       <p className="mb-0 text-dark">
                         {formData.description}
                       </p>
@@ -147,14 +217,14 @@ const LeadDetail = () => {
                   </div>
                   <h6 className="mb-3 fw-semibold">Product Detail</h6>
                   <div className="border-bottom mb-3 pb-3">
-                    <div className="d-flex align-items-center justify-content-between mb-2">
+                    <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                       <p className="mb-0 text-secondary">Product Name</p>
                       <p className="mb-0 text-dark">
                         {formData.product_details?.title}
                       </p>
                     </div>
                     {formData.product_details?.Categories &&
-                      <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Category</p>
                         <p className="mb-0 text-dark">
                           {formData.product_details?.Categories?.name}
@@ -162,7 +232,7 @@ const LeadDetail = () => {
                       </div>}
 
                     {formData.product_details?.SubCategories &&
-                      <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Sub Category</p>
                         <p className="mb-0 text-dark">
                           {formData.product_details?.SubCategories.name}
@@ -170,7 +240,7 @@ const LeadDetail = () => {
                       </div>
                     }
                     {formData.product_details?.company_info &&
-                      <div className="d-flex align-items-center justify-content-between mb-2">
+                      <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Company Name</p>
                         <p className="mb-0 text-dark">
                           {formData.product_details?.company_info.organization_name}
@@ -196,17 +266,17 @@ const LeadDetail = () => {
                   <ul className="nav nav-pills nav-justified mb-3" role="tablist">
                     <li className="nav-item" role="presentation">
                       <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-system" role="tab" aria-selected="true">
-                        Awarded
+                        Awarded <span className="badge btn-primary ms-2">{counterCount?.awerded}</span>
                       </a>
                     </li>
                     <li className="nav-item" role="presentation">
                       <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-password" role="tab" aria-selected="false">
-                        Accept
+                        Accept <span className="badge btn-primary ms-2">{counterCount?.acceptCount}</span>
                       </a>
                     </li>
                     <li className="nav-item" role="presentation">
                       <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-meta" role="tab" aria-selected="false">
-                        Shortlisted
+                        Shortlisted <span className="badge btn-primary ms-2">{counterCount?.shortlisted}</span>
                       </a>
                     </li>
                     <li className="nav-item" role="presentation">
@@ -217,22 +287,86 @@ const LeadDetail = () => {
                   </ul>
                   <div className="tab-content" id="pills-tabContent">
                     <div className="tab-pane fade show active" id="primary-pills-system" role="tabpanel">
-                      <div className="text-center">
-                        <i className="font-30 bx bxs-group" /><br />
-                        <p>- No Enquiry Awarded -</p>
-                      </div>
+                      {awardedList.length > 0 ? (
+                        <table className="table table-striped table-bordered w-100">
+                          <thead>
+                            <tr>
+                              <th>S.No.</th>
+                              <th>Company Name</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {awardedList.map((company, index) => (
+                              <tr key={company.id || index}>
+                                <td>{index + 1}</td>
+                                <td>{company.company_name}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className="text-center bg-white py-4">
+                          <span><i className="bx bxs-group me-3 font-20"></i></span>
+                          <p>- No Enquiry Awarded. -</p>
+                        </div>
+                      )}
                     </div>
                     <div className="tab-pane fade" id="primary-pills-password" role="tabpanel">
-                      <div className="text-center">
-                        <i className="font-30 bx bxs-user-check" /><br />
-                        <p>- No Enquiry Accepted -</p>
-                      </div>
+                      {acceptList.length > 0 ? (
+                        <table className="table table-striped table-bordered w-100">
+                          <thead>
+                            <tr>
+                              <th>S.No.</th>
+                              <th>Company Name</th>
+                              <th>Status</th>
+                              <th>Shortlist</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {acceptList.map((company, index) => (
+                              <tr key={company.id || index}>
+                                <td>{index + 1}</td>
+                                <td>{company.name}</td>
+                                <td dangerouslySetInnerHTML={{ __html: company.status }}></td>
+                                <td dangerouslySetInnerHTML={{ __html: company.shortlist }}></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className="text-center bg-white py-4">
+                          <span><i className="bx bxs-group me-3 font-20"></i></span>
+                          <p>- No Enquiry Accepted. -</p>
+                        </div>
+                      )}
                     </div>
                     <div className="tab-pane fade" id="primary-pills-meta" role="tabpanel">
-                      <div className="text-center">
-                        <i className="font-30 bx bx-list-check" /><br />
-                        <p>- No Enquiry Shortlisted -</p>
-                      </div>
+
+
+                      {shortList.length > 0 ? (
+                        <table className="table table-striped table-bordered w-100">
+                          <thead>
+                            <tr>
+                              <th>S.No.</th>
+                              <th>Company Name</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {shortList.map((company, index) => (
+                              <tr key={company.id || index}>
+                                <td>{index + 1}</td>
+                                <td>{company.name}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className="text-center bg-white py-4">
+                          <span><i className="bx bxs-group me-3 font-20"></i></span>
+                          <p>- No Enquiry Shortlisted. -</p>
+                        </div>
+                      )}
+
                     </div>
                     <div className="tab-pane fade" id="primary-pills-email" role="tabpanel">
                       <div className="text-center">

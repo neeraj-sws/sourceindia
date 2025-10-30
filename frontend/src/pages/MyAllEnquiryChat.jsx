@@ -15,7 +15,7 @@ import "react-date-range/dist/theme/default.css";
 import { format } from "date-fns";
 import UseAuth from '../sections/UseAuth';
 
-const LeadsList = ({ user_id }) => {
+const MyAllEnquiryChat = ({ user_id }) => {
   const navigate = useNavigate();
   const { user, loading } = UseAuth();
   const [data, setData] = useState([]);
@@ -114,7 +114,7 @@ const LeadsList = ({ user_id }) => {
     if (!user) return;
     setIsLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/enquiries/by-user`, {
+      const response = await axios.get(`${API_BASE_URL}/enquiries/by-enquiry`, {
         params: {
           page, limit, search, sortBy, sort: sortDirection, user_id: user?.id || null,
         },
@@ -177,7 +177,7 @@ const LeadsList = ({ user_id }) => {
     if (!user?.id || !user?.company_id) return; // wait until user info is ready
 
     // Fetch user's enquiries
-    axios.get(`${API_BASE_URL}/enquiries/by-user?user_id=${user.id}&all=true`)
+    axios.get(`${API_BASE_URL}/enquiries/by-enquiry?user_id=${user.id}&all=true`)
       .then((res) => {
         const filtered = res.data.data.filter((c) => c.is_approve === 1 && c.is_delete === 0);
         setEnquiriesData(filtered);
@@ -221,158 +221,15 @@ const LeadsList = ({ user_id }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Lead List"
-            actions={
-              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
-            }
+          <Breadcrumb page="Settings" title="Enquiry Chat"
           />
 
-          <div className="row row-cols-1 row-cols-md-2 row-cols-xl-4">
-            <div className="col mb-4">
-              <div className="card radius-2 overflow-hidden position-relative h-100 card-border">
-                <div className="card-body ps-4 py-4">
-                  <div className="d-flex align-items-center">
-                    <div className="labeltitle">
-                      <p className="mb-2">No. of Leads</p>
-                      <h2 className="mb-0">{counterCount?.total || 0}</h2>
-                    </div>
-                    <div className="ms-auto dashicon avatar avatar-md rounded-circle bg-soft-success border border-success text-success"><i className="bx bxs-user-plus"></i></div>
-                  </div>
-                </div>
-                <img src="/element-02.svg" className="img-fluid position-absolute top-0 start-0" alt="logo icon" />
-              </div>
-            </div>
-            <div className="col mb-4">
-              <div className="card radius-2 overflow-hidden position-relative h-100 card-border">
-                <div className="card-body ps-4 py-4">
-                  <div className="d-flex align-items-center">
-                    <div className="labeltitle">
-                      <p className="mb-2">Open Leads
 
-                      </p>
-                      <h2 className="mb-0">{counterCount?.open || 0}</h2>
-                    </div>
-                    <div className="ms-auto dashicon avatar avatar-md rounded-circle bg-soft-warning border border-warning text-warning"><i className="bx bxs-user-plus"></i></div>
-                  </div>
-                </div>
-                <img src="/element-04.svg" className="img-fluid position-absolute top-0 start-0" alt="logo icon" />
-              </div>
-            </div>
-            <div className="col mb-4">
-              <div className="card radius-2 overflow-hidden position-relative h-100 card-border">
-                <div className="card-body ps-4 py-4">
-                  <div className="d-flex align-items-center">
-                    <div className="labeltitle">
-                      <p className="mb-2">Closed Leads
-
-                      </p>
-                      <h2 className="mb-0">{counterCount?.closed || 0}</h2>
-                    </div>
-                    <div className="ms-auto dashicon avatar avatar-md rounded-circle bg-soft-primary border border-primary text-primary"><i className="bx bxs-user-plus"></i></div>
-                  </div>
-                </div>
-                <img src="/element-01.svg" className="img-fluid position-absolute top-0 start-0" alt="logo icon" />
-              </div>
-            </div>
-          </div>
-          <div className="card">
-            <div className="card-body">
-              <DataTable
-                columns={[
-                  { key: "id", label: "S.No.", sortable: true },
-                  { key: "enquiry_number", label: "Enquiry No", sortable: true },
-                  { key: "name", label: "Name", sortable: true },
-                  { key: "product_name", label: "Product Name", sortable: true },
-                  { key: "category_name", label: "Category", sortable: true },
-                  { key: "quantity", label: "Quantity", sortable: true },
-                  { key: "created_at", label: "Created", sortable: true },
-                  { key: "status", label: "Status", sortable: false },
-                  { key: "action", label: "Action", sortable: false },
-                ]}
-                data={data}
-                loading={isLoading}
-                page={page}
-                totalRecords={totalRecords}
-                filteredRecords={filteredRecords}
-                limit={limit}
-                sortBy={sortBy}
-                sortDirection={sortDirection}
-                onPageChange={(newPage) => setPage(newPage)}
-                onSortChange={handleSortChange}
-                onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                search={search}
-                onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                getRangeText={getRangeText}
-                renderRow={(row, index) => (
-                  <tr key={row.id}>
-                    <td>{(page - 1) * limit + index + 1}</td>
-                    <td><Link to={`/lead-detail/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
-                    <td>{row.from_user.full_name}<br />
-                      <b>Email:</b> {row.from_user.email}
-                    </td>
-                    <td>{row.enquiry_users[0].product_name}</td>
-                    <td>{row.category_name}</td>
-                    <td>{row.quantity}</td>
-                    <td>{formatDateTime(row.created_at)}</td>
-                    <td>{row.enquiry_users &&
-                      row.enquiry_users[0].enquiry_status == 1 ? (<span className="badge bg-success">Open</span>) :
-                      row.enquiry_users[0].enquiry_status == 2 ? (<span className="badge bg-danger">Closed</span>) :
-                        row.enquiry_users[0].enquiry_status == 3 ? (<span className="badge bg-danger">Closed</span>) :
-                          (<span className="badge bg-soft-warning text-warning">Pending</span>)}</td>
-                    <td>
-                      <div className="dropdown">
-                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i className="bx bx-dots-vertical-rounded"></i>
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              />
-            </div>
-          </div>
         </div>
       </div>
-      <LeadsModals
-        showDeleteModal={showDeleteModal}
-        closeDeleteModal={closeDeleteModal}
-        handleDeleteConfirm={handleDeleteConfirm}
-      />
-      <ExcelExport
-        ref={excelExportRef}
-        columnWidth={34.29}
-        fileName="Seller Product Enquiry List Export.xlsx"
-        data={enquiriesData}
-        columns={[
-          { label: "Enquiry Number", key: "enquiry_number" },
-          {
-            label: "Name", key: "name", format: (val, row) => {
-              const name = row.from_user.full_name || "";
-              const email = row.from_user.email || "";
-              return `${name} ${email}`;
-            }
-          },
-          {
-            label: "Product Name", key: "product_name", format: (val, row) => {
-              const product_name = row.enquiry_users[0].product_name || "";
-              return `${product_name}`;
-            }
-          },
-          { label: "Category", key: "category_name" },
-          { label: "Sub Category", key: "sub_category_name" },
-          { label: "Quantity", key: "quantity" },
-          { label: "Created At", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
-        ]}
-      />
+
     </>
   );
 };
 
-export default LeadsList;
+export default MyAllEnquiryChat;
