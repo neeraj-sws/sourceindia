@@ -553,8 +553,8 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
       is_delete: 0
     };
 
-    const user = await Users.findByPk(user_id, { 
-      include: { model: CompanyInfo, as: 'company_info' } 
+    const user = await Users.findByPk(user_id, {
+      include: { model: CompanyInfo, as: 'company_info' }
     });
 
     const companyId = user?.company_info?.id;
@@ -565,6 +565,109 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
         as: 'enquiry_users',
         required: true,
         where: { company_id: companyId },
+      },
+      {
+        model: Users,
+        as: 'from_user',
+        attributes: [
+          'id',
+          'fname',
+          'lname',
+          'email',
+          [Sequelize.literal("CONCAT(from_user.fname, ' ', from_user.lname)"), 'full_name']
+        ],
+      },
+      {
+        model: Users,
+        as: 'to_user',
+        attributes: [
+          'id',
+          'fname',
+          'lname',
+          'email',
+          [Sequelize.literal("CONCAT(to_user.fname, ' ', to_user.lname)"), 'full_name']
+        ],
+      },
+    ];
+
+    if (search) {
+      where[Op.or] = [
+        { enquiry_number: { [Op.like]: `%${search}%` } },
+        { category_name: { [Op.like]: `%${search}%` } },
+        literal(`EXISTS (
+          SELECT 1 FROM users AS u 
+          WHERE u.id = enquiries.user_id 
+          AND CONCAT(u.fname, ' ', u.lname) LIKE '%${search}%'
+        )`)
+      ];
+    }
+
+    // If ?all=true, skip pagination
+    const isAll = all === 'true' || all === true;
+    const limitValue = isAll ? null : parseInt(limit) || 10;
+    const offset = isAll ? null : ((parseInt(page) || 1) - 1) * limitValue;
+
+    const { count: filteredRecords, rows } = await Enquiries.findAndCountAll({
+      subQuery: false,
+      where,
+      order,
+      ...(isAll ? {} : { limit: limitValue, offset }),
+      include
+    });
+
+    res.json({
+      data: rows,
+      filteredRecords,
+      totalRecords: filteredRecords,
+      isAll
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getEnquiriesByEnquiryServerSide = async (req, res) => {
+  try {
+    const {
+      page,
+      limit,
+      search = '',
+      sortBy = 'id',
+      sort = 'DESC',
+      user_id,
+      all = false // optional query param ?all=true to get all data
+    } = req.query;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    const sortDirection = sort.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    let order = [[sortBy, sortDirection]];
+    if (sortBy === 'enquiry_product') {
+      order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
+    }
+
+    const where = {
+      is_approve: 1,
+      user_id: user_id,
+      is_delete: 0
+    };
+
+    const user = await Users.findByPk(user_id, {
+      include: { model: CompanyInfo, as: 'company_info' }
+    });
+
+    const companyId = user?.company_info?.id;
+
+    const include = [
+      {
+        model: EnquiryUsers,
+        as: 'enquiry_users',
+        required: true,
       },
       {
         model: Users,
@@ -760,13 +863,13 @@ exports.storeEnquiry = async (req, res) => {
 
           if (sub_cat) {
             sub_cat_data_arr.push(sub_cat.id);
-            sub_cat_name_arr.push(sub_cat.name);
+            sub_cat_name_arr.push(sub_cat.name.trim());
           }
         }
       }
 
-      subcategory_ids = sub_cat_data_arr.join(", ");
-      subcategory_names = sub_cat_name_arr.join(", ");
+      subcategory_ids = sub_cat_data_arr.filter(Boolean).join(", ");
+      subcategory_names = sub_cat_name_arr.filter(Boolean).join(", ");
 
     }
 
@@ -985,6 +1088,387 @@ exports.submitEnquiry = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Server error. Please try again later.',
+    });
+  }
+};
+
+exports.getLeadsCount = async (req, res) => {
+  try {
+    const { companyId, enquiryId } = req.query;
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Missing companyId parameter' });
+    }
+
+    const user = await Users.findOne({
+      where: { company_id: companyId }
+    });
+    const whereAwarded = { is_delete: 0 };
+    const whereShortlisted = { shortlist: 1 };
+    const whereAccepted = {
+      is_delete: 0, enquiry_status: 1,
+      ...(enquiryId ? { enquiry_id: enquiryId } : {}),
+    };
+
+    // only add enquiry_id if provided
+    if (enquiryId) {
+      whereAwarded.enquiry_id = enquiryId;
+      whereAccepted.enquiry_id = enquiryId;;
+      whereShortlisted.enquiry_id = enquiryId;;
+    }
+
+
+    // Run all 3 queries in parallel for speed
+    const [totalResult, openResult, closedResult, noEnquiry, openEnquiry, closeEnquiry, enquiryFloated, enquirySeen, awerded, acceptCount, shortlisted] = await Promise.all([
+      Enquiries.findAndCountAll({
+        include: [{
+          model: EnquiryUsers,
+          as: 'enquiry_users', // ✅ must match alias
+          where: { company_id: companyId },
+          required: true,
+        }],
+        where: { is_delete: 0, is_approve: 1 },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        include: [{
+          model: EnquiryUsers,
+          as: 'enquiry_users',
+          where: { company_id: companyId },
+          required: true,
+        }],
+        where: { is_delete: 0, is_approve: 1, status: 1 },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        include: [{
+          model: EnquiryUsers,
+          as: 'enquiry_users',
+          where: { company_id: companyId },
+          required: true,
+        }],
+        where: { is_delete: 0, is_approve: 1, status: 0 },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        where: { is_delete: 0, is_approve: 1, user_id: user.id },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        where: { is_delete: 0, is_approve: 1, status: 1, user_id: user.id },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        where: { is_delete: 0, is_approve: 1, status: 0, user_id: user.id },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        col: 'id',
+      }),
+
+      EnquiryUsers.findAndCountAll({
+        where: { enquiry_status: 1 },
+        col: 'id',
+      }),
+
+      EnquiryUsers.findAndCountAll({
+        where: whereAwarded,
+        col: 'id',
+      }),
+      EnquiryUsers.findAndCountAll({
+        where: whereAccepted,
+        col: 'id',
+      }),
+      EnquiryUsers.findAndCountAll({
+        where: whereShortlisted,
+        col: 'id',
+      }),
+
+    ]);
+
+    res.json({
+      total: Number(totalResult.count),
+      open: Number(openResult.count),
+      closed: Number(closedResult.count),
+      enquirytotal: Number(noEnquiry.count),
+      enquiryopen: Number(openEnquiry.count),
+      enquiryclosed: Number(closeEnquiry.count),
+      enquiryFloated: Number(enquiryFloated.count),
+      enquirySeen: Number(enquirySeen.count),
+      awerded: Number(awerded.count),
+      acceptCount: Number(acceptCount.count),
+      shortlisted: Number(shortlisted.count),
+    });
+  } catch (err) {
+    console.error('Lead stats error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.dashboardEnquiryProve = async (req, res) => {
+  try {
+    const { enq_id, type, id } = req.body;
+
+    if (!type || (!id && !enq_id)) {
+      return res.status(400).json({ success: 0, message: "Missing required fields" });
+    }
+
+    if (type == 1 || type == 2) {
+      const enquiryUser = await EnquiryUsers.findOne({ where: { id } });
+      if (!enquiryUser) {
+        return res.status(404).json({ success: 0, message: "Enquiry user not found" });
+      }
+
+      enquiryUser.enquiry_status = type;
+      await enquiryUser.save();
+
+      return res.json({ success: 1, message: "Enquiry user status updated successfully" });
+    }
+
+    if (enq_id) {
+      const enquiry = await Enquiries.findOne({ where: { id: enq_id } });
+      if (!enquiry) {
+        return res.status(404).json({ success: 0, message: "Enquiry not found" });
+      }
+      enquiry.status = type;
+      await enquiry.save();
+      return res.json({ success: 1, message: "Enquiry closed successfully" });
+    }
+
+    return res.status(400).json({ success: 0, message: "Invalid request" });
+
+  } catch (error) {
+    console.error("Error in dashboardEnquiryProve:", error);
+    res.status(500).json({ success: 0, message: "Server error", error: error.message });
+  }
+};
+
+exports.getAwardedEnquiries = async (req, res) => {
+  try {
+    const { enq_id } = req.query;
+
+    if (!enq_id) {
+      return res.status(400).json({ success: 0, message: "enq_id is required" });
+    }
+
+    // ✅ Fetch awarded companies where enquiry_status = 1 OR 3
+    const awarded = await EnquiryUsers.findAll({
+      where: {
+        enquiry_id: enq_id,
+        is_delete: 0
+      },
+      include: [
+        {
+          model: CompanyInfo,
+          as: "CompanyInfo", // must match your association alias
+          attributes: ["organization_name"],
+        },
+      ],
+      attributes: ["id", "company_id", "enquiry_id", "enquiry_status"],
+      order: [["id", "ASC"]],
+    });
+
+    const count = awarded.length;
+
+    if (count > 0) {
+      return res.status(200).json({
+        success: 1,
+        count,
+        data: awarded.map((item, index) => ({
+          sno: index + 1,
+          company_name: item.CompanyInfo?.organization_name || "-",
+          enquiry_status: item.enquiry_status,
+        })),
+      });
+    } else {
+      return res.status(200).json({
+        success: 1,
+        count: 0,
+        data: [],
+        message: "No Enquiry Awarded.",
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching awarded enquiries:", error);
+    return res.status(500).json({
+      success: 0,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
+
+
+
+exports.getAcceptEnquiries = async (req, res) => {
+  try {
+    const { enq_id } = req.query;
+
+    if (!enq_id) {
+      return res.status(400).json({ success: 0, message: "enq_id is required" });
+    }
+    const mainenquiry = await Enquiries.findByPk(enq_id);
+
+    // ✅ Fetch accepted enquiries
+    const enquiries = await EnquiryUsers.findAll({
+      where: {
+        enquiry_id: enq_id,
+        is_delete: 0,
+
+        [Op.or]: [
+          { enquiry_status: 1 },
+          { enquiry_status: 3 },
+        ],
+      },
+      include: [
+        {
+          model: CompanyInfo,
+          as: "CompanyInfo", // must match association alias
+          attributes: ["organization_name"],
+        },
+      ],
+      attributes: ["id", "company_id", "enquiry_id", "enquiry_status", "shortlist"],
+      order: [["id", "ASC"]],
+    });
+
+    const count = enquiries.length;
+
+    if (count === 0) {
+      return res.status(200).json({
+        success: 1,
+        count: 0,
+        data: [],
+        message: "No Enquiry Found.",
+      });
+    }
+
+    // ✅ Transform result
+    const data = enquiries.map((enquiry, index) => {
+      let status = "";
+      let color = "";
+
+      // 🟢 Status and Color
+      switch (enquiry.enquiry_status) {
+        case 1:
+          status = "Open";
+          color = "success";
+          break;
+        case 2:
+        case 3:
+          status = "Closed";
+          color = "danger";
+          break;
+        default:
+          status = "Pending";
+          color = "warning";
+      }
+
+      // 🔒 Disable checkbox if status == 3
+      const disabled = mainenquiry.status === 3 ? "disabled" : "";
+
+      // ✅ Checkbox logic (shortlist)
+      const checked =
+        enquiry.shortlist === 1
+          ? `<input class="form-check-input me-3 filed_check" checked ${disabled} name="check[]" type="checkbox" value="1" onchange="shortlist(${enquiry.id},0)">`
+          : `<input class="form-check-input me-3 filed_check" name="check[]" ${disabled} type="checkbox" value="0" onchange="shortlist(${enquiry.id},1)">`;
+
+      // ✅ Badge HTML
+      const statusHTML = `<div class="badge rounded-pill text-${color} bg-light-${color} p-2 px-3" style="font-size:10px;">${status}</div>`;
+
+      return {
+        sno: index + 1,
+        name: enquiry.CompanyInfo?.organization_name || "-",
+        status: statusHTML,
+        shortlist: checked,
+      };
+    });
+
+    // ✅ Response
+    return res.status(200).json({
+      success: 1,
+      count,
+      data,
+    });
+  } catch (error) {
+    console.error("Error fetching accepted enquiries:", error);
+    return res.status(500).json({
+      success: 0,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
+
+
+exports.getShortlistedenquiries = async (req, res) => {
+  try {
+    const { enq_id } = req.query;
+
+    if (!enq_id) {
+      return res.status(400).json({ success: 0, message: "enq_id is required" });
+    }
+
+    // ✅ Fetch shortlisted enquiries + print query
+    const enquiries = await EnquiryUsers.findAll({
+      where: {
+        enquiry_id: enq_id,
+        shortlist: 1,
+        enquiry_status: 1,
+        is_delete: 0,
+      },
+      include: [
+        {
+          model: CompanyInfo,
+          as: "CompanyInfo", // must match association alias
+          attributes: ["organization_name"],
+        },
+      ],
+      attributes: ["id", "company_id", "enquiry_id"],
+      order: [["id", "ASC"]],
+
+    });
+
+    const count = enquiries.length;
+
+    if (count === 0) {
+      return res.status(200).json({
+        success: 1,
+        count: 0,
+        data: [],
+        message: "No shortlisted enquiries found.",
+      });
+    }
+
+    // ✅ Format only sno & name
+    const data = enquiries.map((enquiry, index) => ({
+      sno: index + 1,
+      name: enquiry.CompanyInfo?.organization_name || "-",
+    }));
+
+    return res.status(200).json({
+      success: 1,
+      count,
+      data,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching shortlisted enquiries:", error);
+    return res.status(500).json({
+      success: 0,
+      message: "Something went wrong",
+      error: error.message,
     });
   }
 };

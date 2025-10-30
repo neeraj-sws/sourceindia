@@ -41,19 +41,34 @@ exports.login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
+
     const user = await Users.findOne({
       where: { email: email, is_delete: 0 },
     });
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    const isMatch = await bcrypt.compare(password, user.password);
+
+    console.log("Plain password:", password);
+    console.log("Stored hash:", user.password);
+
+    // Fix for PHP-style bcrypt hashes
+    let hash = user.password.replace(/^\$2y\$/, '$2a$');
+    const isMatch = await bcrypt.compare(password, hash);
+
+    console.log("Match result:", isMatch);
+
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
-    const token = jwt.sign({ id: user.id, email: user.email, is_seller: user.is_seller }, 'your_jwt_secret_key', {
-      expiresIn: '1h',
-    });
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, is_seller: user.is_seller },
+      'your_jwt_secret_key',
+      { expiresIn: '1h' }
+    );
+
     res.json({
       message: 'Login successful',
       token,
@@ -616,12 +631,12 @@ exports.updateProfile = async (req, res) => {
       }
       await user.update(updatedUserData);
 
-      /*const adminemailTemplate = await Emails.findByPk(32);
+      const adminemailTemplate = await Emails.findByPk(32);
       if (!adminemailTemplate) {
         return res.status(404).json({ message: "Email template not found" });
       }
       const msgStr = adminemailTemplate.message.toString("utf8");
-      const user_type = '';
+      let user_type = '';
       if (user.is_seller === 1) {
         user_type = 'Seller';
       } else {
@@ -661,7 +676,7 @@ exports.updateProfile = async (req, res) => {
         to: user.email,
         subject: subject,
         html: userMessage,
-      });*/
+      })
 
       if (companyInfo) {
         const companyLogo = req.files?.company_logo?.[0];

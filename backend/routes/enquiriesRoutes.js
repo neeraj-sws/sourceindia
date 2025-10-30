@@ -4,10 +4,16 @@ const enquiriesController = require('../controllers/enquiriesController');
 const usersController = require('../controllers/usersController');
 
 router.get('/count', enquiriesController.getEnquiriesCount);
+router.get('/lead-count', enquiriesController.getLeadsCount);
 router.get('/user-count', usersController.getuserEnquiriesCount);
 router.get('/', enquiriesController.getAllEnquiries);
 router.get('/server-side', enquiriesController.getAllEnquiriesServerSide);
 router.get('/by-user', enquiriesController.getEnquiriesByUserServerSide);
+router.get('/by-enquiry', enquiriesController.getEnquiriesByEnquiryServerSide);
+router.post('/prove-enquiry', enquiriesController.dashboardEnquiryProve);
+router.get('/awarded', enquiriesController.getAwardedEnquiries);
+router.get('/accept', enquiriesController.getAcceptEnquiries);
+router.get('/shortlisted', enquiriesController.getShortlistedenquiries);
 router.delete('/delete-selected', enquiriesController.deleteSelectedEnquiries);
 router.get('/:enquiry_number', enquiriesController.getEnquiriesByNumber);
 router.delete('/:id', enquiriesController.deleteEnquiries);
