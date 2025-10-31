@@ -2,7 +2,7 @@ const Sequelize = require('sequelize');
 const { Op } = Sequelize;
 const path = require('path');
 const fs = require('fs');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const Users = require('../models/Users');
 const Countries = require('../models/Countries');
 const OpenEnquriy = require('../models/OpenEnquiries');
@@ -88,41 +88,42 @@ exports.login = async (req, res) => {
 
 // Send OTP
 exports.sendOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
+  // try {
+  const { email } = req.body;
 
-    const existingUser = await Users.findOne({ where: { email } });
-    if (existingUser) return res.status(400).json({ error: "Email already taken" });
+  const existingUser = await Users.findOne({ where: { email } });
+  if (existingUser) return res.status(400).json({ error: "Email already taken" });
 
-    const otp = Math.floor(1000 + Math.random() * 9000);
+  const otp = Math.floor(1000 + Math.random() * 9000);
 
-    let emailRecord = await EmailVerification.findOne({ where: { email } });
-    if (emailRecord) {
-      emailRecord.otp = otp;
-      emailRecord.is_verify = 0;
-      await emailRecord.save();
-    } else {
-      emailRecord = await EmailVerification.create({ email, otp, is_verify: 0 });
-    }
-
-    const emailTemplate = await Emails.findByPk(99);
-    const msgStr = emailTemplate.message.toString('utf8');
-    let userMessage = msgStr.replace("{{ USER_PASSWORD }}", otp);
-
-
-    const { transporter, siteConfig } = await getTransporter();
-    await transporter.sendMail({
-      from: `"OTP Verification" <info@sourceindia-electronics.com>`,
-      to: email,
-      subject: emailTemplate?.subject || "Verify your email",
-      html: userMessage,
-    });
-
-    return res.json({ message: "OTP sent successfully", user_id: emailRecord.id });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Failed to send OTP" });
+  let emailRecord = await EmailVerification.findOne({ where: { email } });
+  if (emailRecord) {
+    emailRecord.otp = otp;
+    emailRecord.is_verify = 0;
+    await emailRecord.save();
+  } else {
+    emailRecord = await EmailVerification.create({ email, otp, is_verify: 0 });
   }
+
+  const emailTemplate = await Emails.findByPk(99);
+  const msgStr = emailTemplate.message.toString('utf8');
+  let userMessage = msgStr.replace("{{ USER_PASSWORD }}", otp);
+
+
+  const { transporter, siteConfig } = await getTransporter();
+  console.log(siteConfig);
+  await transporter.sendMail({
+    from: `"OTP Verification" <info@sourceindia-electronics.com>`,
+    to: email,
+    subject: emailTemplate?.subject || "Verify your email",
+    html: userMessage,
+  });
+
+  return res.json({ message: "OTP sent successfully", user_id: emailRecord.id });
+  // } catch (err) {
+  //   console.error(err);
+  //   return res.status(500).json({ error: "Failed to send OTP" });
+  // }
 };
 
 // Verify OTP

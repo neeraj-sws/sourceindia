@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const { Op } = Sequelize;
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const Users = require('../models/Users');
 const Countries = require('../models/Countries');
 const OpenEnquriy = require('../models/OpenEnquiries');
