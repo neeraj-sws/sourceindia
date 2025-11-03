@@ -15,6 +15,7 @@ import "react-date-range/dist/theme/default.css";
 import { format } from "date-fns";
 import UseAuth from '../sections/UseAuth';
 
+
 const LeadsList = ({ user_id }) => {
   const navigate = useNavigate();
   const { user, loading } = UseAuth();
@@ -162,7 +163,7 @@ const LeadsList = ({ user_id }) => {
 
   const handleDeleteConfirm = async () => {
     try {
-      await axios.delete(`${API_BASE_URL}/enquiries/${enquiriesToDelete}`);
+      await axios.patch(`${API_BASE_URL}/enquiries/${enquiriesToDelete}/delete_status`);
       setData((prevData) => prevData.filter((item) => item.id !== enquiriesToDelete));
       setTotalRecords((prev) => prev - 1);
       setFilteredRecords((prev) => prev - 1);

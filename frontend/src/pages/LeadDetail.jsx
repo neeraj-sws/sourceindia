@@ -131,7 +131,9 @@ const LeadDetail = () => {
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb page="Settings" title="View Enquiry" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
-          {myEnquiry ? <MyEnquiry formData={formData} /> : <MyLead formData={formData} />}
+          {user?.is_seller == 1 &&
+            (myEnquiry ? <MyEnquiry formData={formData} /> : <MyLead formData={formData} />)
+          }
           <div className="card mb-3">
             <div className="card-body">
               <div className="d-flex align-items-center justify-content-between flex-wrap">
@@ -193,18 +195,21 @@ const LeadDetail = () => {
                     </div>
                   </div>
                   <h6 className="mb-3 fw-semibold">Enquiry Detail</h6>
+
                   <div className="border-bottom mb-3 pb-3">
-                    <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
-                      <p className="mb-0 text-secondary">Category</p>
-                      <p className="mb-0 text-dark">
-                        {formData.category_name}
-                      </p>
-                    </div>
-                    {formData.sub_category_name &&
+                    {formData.seller_category_names &&
+                      <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Category</p>
+                        <p className="mb-0 text-dark">
+                          {formData.seller_category_names}
+                        </p>
+                      </div>
+                    }
+                    {formData.seller_subcategory_names &&
                       <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Sub Category</p>
                         <p className="mb-0 text-dark">
-                          {formData.sub_category_name}
+                          {formData.seller_subcategory_names}
                         </p>
                       </div>
                     }
