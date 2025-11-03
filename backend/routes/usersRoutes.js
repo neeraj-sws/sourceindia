@@ -15,5 +15,6 @@ router.post('/update-profile', authMiddleware, usersController.updateProfile);
 router.get('/countries', usersController.getCountries);
 router.get('/states', usersController.getStates);
 router.get('/cities', usersController.getCities);
+router.get('/insert-from-company', usersController.insertFromCompany);
 
 module.exports = router;
