@@ -25,6 +25,7 @@ router.post('/resend-otp', enquiriesController.resendOtp);
 router.post('/submit-otp', enquiriesController.submitOtp);
 router.post('/store', enquiriesController.storeEnquiry);
 router.post('/submit-enquiry', enquiriesController.submitEnquiry);
+router.post('/user-submit-enquiry', enquiriesController.submitEnquiryuser);
 
 
 module.exports = router;

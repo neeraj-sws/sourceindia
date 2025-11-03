@@ -13,6 +13,7 @@ const States = require('../models/States');
 const ReviewRating = require('../models/ReviewRating');
 const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
+const SellerCategory = require('../models/SellerCategory');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
@@ -555,7 +556,7 @@ exports.deleteSelectedProducts = async (req, res) => {
   }
 };
 
-exports.getAllCompanyInfo = async (req, res) => {
+exports.getAllCompanyInfoOLd = async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const page = req.query.page ? parseInt(req.query.page) : null;
@@ -586,6 +587,7 @@ exports.getAllCompanyInfo = async (req, res) => {
     if (title) {
       whereClause.organization_name = { [Op.like]: `%${title}%` };
     }
+
 
     if (category) {
       const catIds = parseCsv(category).map(x => parseInt(x)).filter(x => !isNaN(x));
@@ -788,6 +790,216 @@ exports.getAllCompanyInfo = async (req, res) => {
       companies: modified,
       counts_by_seller: sellerMap,
       counts_by_trading: tradingMap
+    });
+
+  } catch (err) {
+    console.error('getAllCompanyInfo error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.getAllCompanyInfo = async (req, res) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const page = req.query.page ? parseInt(req.query.page) : null;
+    const offset = limit && page ? (page - 1) * limit : null;
+
+    const {
+      user_state,
+      sort_by,
+      title,
+      category,
+      sub_category,
+      is_delete,
+      is_seller,
+      is_trading
+    } = req.query;
+
+    // ✅ Sorting
+    let order = [['id', 'ASC']];
+    if (sort_by === 'newest') order = [['created_at', 'DESC']];
+    else if (sort_by === 'a_to_z') order = [['organization_name', 'ASC']];
+    else if (sort_by === 'z_to_a') order = [['organization_name', 'DESC']];
+
+    // ✅ Base where clause
+    const whereClause = {};
+    if (typeof is_delete !== 'undefined') whereClause.is_delete = parseInt(is_delete);
+    if (title) whereClause.organization_name = { [Op.like]: `%${title}%` };
+
+    // ✅ Category/Subcategory filter through SellerCategory relation
+    if (category || sub_category) {
+      const catIds = category ? parseCsv(category).map(x => parseInt(x)).filter(x => !isNaN(x)) : [];
+      const subIds = sub_category ? parseCsv(sub_category).map(x => parseInt(x)).filter(x => !isNaN(x)) : [];
+
+      let sellerWhere = [];
+      if (catIds.length) sellerWhere.push(`sc.category_id IN (${catIds.join(',')})`);
+      if (subIds.length) sellerWhere.push(`sc.subcategory_id IN (${subIds.join(',')})`);
+
+      if (sellerWhere.length) {
+        whereClause[Op.and] = whereClause[Op.and] || [];
+        whereClause[Op.and].push(
+          literal(`
+            EXISTS (
+              SELECT 1 FROM users u 
+              INNER JOIN seller_categories sc ON sc.user_id = u.id
+              WHERE u.company_id = CompanyInfo.id
+              AND u.is_delete = 0 AND u.status = 1
+              AND (${sellerWhere.join(' OR ')})
+            )
+          `)
+        );
+      }
+    }
+
+    // ✅ User filters
+    const userFilters = [`u.is_delete = 0`, `u.status = 1`];
+    if (user_state) {
+      const stateIds = parseCsv(user_state).map(x => parseInt(x)).filter(x => !isNaN(x));
+      if (stateIds.length) userFilters.push(`u.state IN (${stateIds.join(',')})`);
+    }
+    if (typeof is_seller !== 'undefined') userFilters.push(`u.is_seller = ${parseInt(is_seller)}`);
+    if (typeof is_trading !== 'undefined') userFilters.push(`u.is_trading = ${parseInt(is_trading)}`);
+
+    whereClause[Op.and] = whereClause[Op.and] || [];
+    whereClause[Op.and].push(
+      literal(`EXISTS (SELECT 1 FROM users u WHERE u.company_id = CompanyInfo.id AND ${userFilters.join(' AND ')})`)
+    );
+
+    // ✅ Total count
+    const total = await CompanyInfo.count({ where: whereClause });
+
+    // ✅ Fetch company list
+    const companies = await CompanyInfo.findAll({
+      where: whereClause,
+      order,
+      ...(limit && offset !== null ? { limit, offset } : {}),
+      include: [
+        { model: UploadImage, as: 'companyLogo', attributes: ['file'] },
+        { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
+        { model: Activity, as: 'Activity', attributes: ['name'] }
+      ]
+    });
+
+    const companyIds = companies.map(c => c.id);
+
+    // ✅ Product counts
+    const productCounts = await Products.findAll({
+      attributes: ['company_id', [fn('COUNT', col('id')), 'count']],
+      where: { company_id: { [Op.in]: companyIds }, is_delete: 0, is_approve: 1, status: 1 },
+      group: ['company_id'],
+      raw: true
+    });
+
+    const countMap = {};
+    productCounts.forEach(item => (countMap[item.company_id] = parseInt(item.count)));
+
+    // ✅ Product list
+    const allProducts = await Products.findAll({
+      where: { company_id: { [Op.in]: companyIds }, is_delete: 0, is_approve: 1, status: 1 },
+      attributes: ['id', 'title', 'slug', 'company_id'],
+      raw: true
+    });
+
+    const productMap = {};
+    allProducts.forEach(p => {
+      if (!productMap[p.company_id]) productMap[p.company_id] = [];
+      productMap[p.company_id].push({ id: p.id, title: p.title, slug: p.slug });
+    });
+
+    // ✅ Fetch users of all companies
+    const users = await Users.findAll({
+      where: { company_id: { [Op.in]: companyIds }, is_delete: 0, status: 1 },
+      attributes: ['id', 'company_id'],
+      raw: true
+    });
+
+    const companyUsersMap = {};
+    users.forEach(u => {
+      if (!companyUsersMap[u.company_id]) companyUsersMap[u.company_id] = [];
+      companyUsersMap[u.company_id].push(u.id);
+    });
+
+    // ✅ Fetch SellerCategory (for all users)
+    const sellerCats = await SellerCategory.findAll({
+      attributes: ['user_id', 'category_id', 'subcategory_id'],
+      raw: true
+    });
+
+    const userSellerMap = {};
+    sellerCats.forEach(sc => {
+      if (!userSellerMap[sc.user_id]) userSellerMap[sc.user_id] = [];
+      userSellerMap[sc.user_id].push(sc);
+    });
+
+    // ✅ Gather unique category & subcategory IDs
+    const allCategoryIds = new Set();
+    const allSubCategoryIds = new Set();
+
+    sellerCats.forEach(sc => {
+      if (sc.category_id) allCategoryIds.add(sc.category_id);
+      if (sc.subcategory_id) allSubCategoryIds.add(sc.subcategory_id);
+    });
+
+    // ✅ Fetch category/subcategory names
+    const [categoriesList, subCategoriesList] = await Promise.all([
+      Categories.findAll({
+        where: { id: [...allCategoryIds] },
+        attributes: ['id', 'name'],
+        raw: true
+      }),
+      SubCategories.findAll({
+        where: { id: [...allSubCategoryIds] },
+        attributes: ['id', 'name'],
+        raw: true
+      })
+    ]);
+
+    const categoryMap = Object.fromEntries(categoriesList.map(c => [c.id, c.name]));
+    const subCategoryMap = Object.fromEntries(subCategoriesList.map(s => [s.id, s.name]));
+
+    // ✅ Final data formatting
+    const modified = companies.map(c => {
+      const cd = c.toJSON();
+      const file = cd.companyLogo?.file || null;
+      const coreActivityName = cd.CoreActivity?.name || null;
+      const activityName = cd.Activity?.name || null;
+
+      const userIds = companyUsersMap[cd.id] || [];
+      const catSet = new Set();
+      const subSet = new Set();
+
+      userIds.forEach(uid => {
+        const entries = userSellerMap[uid] || [];
+        entries.forEach(e => {
+          if (e.category_id) catSet.add(e.category_id);
+          if (e.subcategory_id) subSet.add(e.subcategory_id);
+        });
+      });
+
+      const categoryNames = [...catSet].map(id => categoryMap[id]).filter(Boolean).join(', ');
+      const subCategoryNames = [...subSet].map(id => subCategoryMap[id]).filter(Boolean).join(', ');
+
+      delete cd.companyLogo;
+      delete cd.CoreActivity;
+      delete cd.Activity;
+
+      return {
+        ...cd,
+        company_logo_file: file,
+        core_activity_name: coreActivityName,
+        activity_name: activityName,
+        product_count: countMap[cd.id] || 0,
+        category_name: categoryNames,
+        sub_category_name: subCategoryNames,
+        products: productMap[cd.id] || []
+      };
+    });
+
+    // ✅ Final response
+    res.json({
+      total,
+      companies: modified
     });
 
   } catch (err) {
