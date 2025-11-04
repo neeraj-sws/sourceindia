@@ -51,6 +51,7 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
   const [appliedSubCategory, setAppliedSubCategory] = useState("");
   const [enquiryNo, setEnquiryNo] = useState("");
   const [tempEnquiryNo, setTempEnquiryNo] = useState("");
+  const [enquiriesCount, setEnquiriesCount] = useState("");
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -100,8 +101,14 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
       handleSubCategoryChange({ target: { value: $(this).val() } });
     });
     return () => {
-      $("#category").off("change").select2("destroy");
-      $("#sub_category").off("change").select2("destroy");
+      const $category = $("#category");
+      const $subCategory = $("#sub_category");
+      if ($category.data('select2')) {
+        $category.off("change").select2("destroy");
+      }
+      if ($subCategory.data('select2')) {
+        $subCategory.off("change").select2("destroy");
+      }
     };
   }, [categories, subCategories]);
 
@@ -109,8 +116,8 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/enquiries/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, 
-        getPublic: getPublic ? 'true' : 'false', getApprove: getApprove ? 'true' : 'false', getNotApprove: getNotApprove ? 'true' : 'false', viewType: 'leads',
+        params: { page, limit, search, sortBy, sort: sortDirection, getPublic: getPublic ? 'true' : 'false',
+        getApprove: getApprove ? 'true' : 'false', getNotApprove: getNotApprove ? 'true' : 'false', viewType: 'leads',
         dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "", enquiry_no: enquiryNo || ""
       },
       });
@@ -225,6 +232,12 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
     }
   };
 
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/enquiries/count`).then((res) => {
+      setEnquiriesCount(res.data);
+    });
+  }, []);
+
   const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggleInfo({ id, currentStatus, field, valueKey }); setShowStatusModal(true); };
 
   const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
@@ -286,6 +299,70 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
     <>
       <div className="page-wrapper">
         <div className="page-content">
+          { !getPublic && (
+          <div className="row pb-3 pt-3">
+            <div className="col-sm-3">
+              <div className="card radius-10 mb-3">
+                <div className="card-body bg-light shadow-sm rounded h-100">
+                  <div className="d-flex align-items-center">
+                    <div>
+                      <p className="mb-0 text-secondary">No. of Leads</p>
+                      <h4 className="my-1">{enquiriesCount.all}</h4>
+                    </div>
+                    <div className="widgets-icons bg-light-primary text-primary ms-auto">
+                      <i className="bx bx-cart" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="col-sm-3">
+              <div className="card radius-10 mb-3">
+                <div className="card-body bg-light shadow-sm rounded">
+                  <div className="d-flex align-items-center">
+                    <div>
+                      <p className="mb-0 text-secondary">Open Leads</p>
+                      <h4 className="my-1">{enquiriesCount.status1}</h4>
+                    </div>
+                    <div className="widgets-icons bg-light-primary text-primary ms-auto">
+                      <i className="bx bx-cart" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="col-sm-3">
+              <div className="card radius-10 mb-3">
+                <div className="card-body bg-light shadow-sm rounded">
+                  <div className="d-flex align-items-center">
+                    <div>
+                      <p className="mb-0 text-secondary">Closed Leads</p>
+                      <h4 className="my-1">{enquiriesCount.status2}</h4>
+                    </div>
+                    <div className="widgets-icons bg-light-primary text-primary ms-auto">
+                      <i className="bx bx-cart" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="col-sm-3">
+              <div className="card radius-10 mb-3">
+                <div className="card-body bg-light shadow-sm rounded">
+                  <div className="d-flex align-items-center">
+                    <div>
+                      <p className="mb-0 text-secondary">Pending Leads</p>
+                      <h4 className="my-1">{enquiriesCount.status0}</h4>
+                    </div>
+                    <div className="widgets-icons bg-light-primary text-primary ms-auto">
+                      <i className="bx bx-cart" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          )}
           <Breadcrumb page="Settings" title={ getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : getNotApprove ? "Pending Leads" : "Leads" }
           actions={
             <>
@@ -511,7 +588,7 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName={getDeleted ? "Enquiries Remove Export.xlsx" : "Enquiry List.xlsx"}
+        fileName={getDeleted ? "Enquiries Remove Export.xlsx" : getNotApprove ? `Pending Leads-${new Date().toISOString().split("T")[0]}.xlsx` : `Approve Leads-${new Date().toISOString().split("T")[0]}.xlsx`}
         data={enquiriesData}
         columns={[
           { label: "Enquiry Number", key: "enquiry_number" },

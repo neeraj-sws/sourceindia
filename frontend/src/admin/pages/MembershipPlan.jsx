@@ -481,7 +481,7 @@ const MembershipPlan = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Member Ship Plan Export.xlsx"
+        fileName={getDeleted ? "Member Ship Plan Remove Export.xlsx" : "Member Ship Plan Export.xlsx"}
         data={membershipPlanData}
         columns={[
           { label: "Name", key: "name" },

@@ -437,6 +437,7 @@ const ApplicationList = ({ getDeleted }) => {
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
+                      { key: "product_count", label: "Product", sortable: true },
                       { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "category_status", label: "Top", sortable: false },
@@ -471,6 +472,7 @@ const ApplicationList = ({ getDeleted }) => {
                           showFallback={true}
                         /></td>
                         <td>{row.name}</td>
+                        <td>{row.product_count}</td>
                         <td>{formatDateTime(row.created_at)}</td>
                         <td>
                           {!getDeleted ? (
@@ -573,7 +575,7 @@ const ApplicationList = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Application Export.xlsx"
+        fileName={getDeleted ? "Application Remove Export.xlsx" : "Application Export.xlsx"}
         data={applicationData}
         columns={[
           { label: "Name", key: "name" },

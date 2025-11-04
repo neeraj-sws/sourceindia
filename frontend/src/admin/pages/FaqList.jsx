@@ -10,13 +10,15 @@ import { formatDateTime } from '../../utils/formatDate';
 import FaqModals from "./modal/FaqModals";
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
-import SearchDropdown from "../common/SearchDropdown";
 const initialForm = { id: null, title: "", category: "", status: "1" };
 import ExcelExport from "../common/ExcelExport";
 import { DateRangePicker } from 'react-date-range';
 import 'react-date-range/dist/styles.css'; 
 import 'react-date-range/dist/theme/default.css'; 
 import { format } from 'date-fns';
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const FaqList = ({ getDeleted }) => {
   const navigate = useNavigate();
@@ -34,6 +36,7 @@ const FaqList = ({ getDeleted }) => {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [faqToDelete, setFaqToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -101,17 +104,29 @@ const FaqList = ({ getDeleted }) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
+      const categoryId = editData.category ? String(editData.category) : "";
       setFormData({ ...editData, status: String(editData.status) });
+      setSelectedCategory(categoryId);
+      setTimeout(() => {
+        if ($("#category").data("select2")) {
+          $("#category").val(categoryId).trigger("change");
+        }
+      }, 100);
     } else {
-      setFormData(initialForm);
+      resetForm();
     }
-    setShowModal(true);
   };
 
   const resetForm = () => {
     setFormData(initialForm);
     setIsEditing(false);
     setErrors({});
+    setSelectedCategory('');
+    setTimeout(() => {
+    if ($("#category").data("select2")) {
+      $("#category").val(null).trigger("change");
+    }
+  }, 100);
   };
 
   const handleChange = (e) => {
@@ -119,17 +134,10 @@ const FaqList = ({ getDeleted }) => {
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
   };
 
-  const handleSelectChange = (fieldName) => (selectedOption) => {
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: selectedOption ? selectedOption.value : "",
-    }));
-  };
-
   const validateForm = () => {
     const errs = {};
     if (!formData.title) errs.title = "Title is required";
-    if (!formData.category) errs.category = "Category is required";
+    if (!selectedCategory) errs.category = "Category is required";
     if (!formData.description) errs.description = "Description is required";
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
     setErrors(errs);
@@ -140,15 +148,15 @@ const FaqList = ({ getDeleted }) => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    const selectedCategory = categories.find((c) => c.id.toString() === formData.category.toString());
-    const payload = { ...formData, category_name: selectedCategory?.name || "" };
+    const sCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
+    const payload = { ...formData, category: selectedCategory, category_name: sCategory?.name || "" };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/faqs/${formData.id}`, payload);
         setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/faqs`, payload);
-        const payload1 = { ...res.data.faq, category_name: selectedCategory?.name || "" };
+        const payload1 = { ...res.data.faq, category_name: sCategory?.name || "" };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
@@ -174,6 +182,25 @@ const FaqList = ({ getDeleted }) => {
     };
     fetchCategories();
   }, []);
+
+  const handleCategoryChange = (event) => {
+    setSelectedCategory(event.target.value);
+  };
+
+  useEffect(() => {
+        $('#category').select2({
+          theme: "bootstrap",
+          width: '100%',
+          placeholder: "Select Category"
+        }).on("change", function () {
+          const categoryId = $(this).val();
+          handleCategoryChange({ target: { value: categoryId } });
+        });
+    
+        return () => {
+          if ($('#category').data('select2')) {$('#category').select2('destroy') };
+        };
+      }, [categories]);
 
   const openDeleteModal = (faqId) => { setFaqToDelete(faqId); setIsBulkDelete(false); setShowDeleteModal(true); };
   const openBulkDeleteModal = () => { setFaqToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
@@ -347,14 +374,19 @@ const FaqList = ({ getDeleted }) => {
                     </div>
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="category" className="form-label required">Category</label>
-                      <SearchDropdown
-                        id="category"
-                        options={categories?.map(cat => ({ value: cat.id, label: cat.name }))}
-                        value={formData.category}
-                        onChange={handleSelectChange("category")}
-                        placeholder="Select Category"
+                      <select
                         className={`form-control ${errors.category ? "is-invalid" : ""}`}
-                      />
+                        id="category"
+                        value={selectedCategory}
+                        onChange={handleCategoryChange}
+                      >
+                        <option value="">Select Category</option>
+                        {categories?.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
                       {errors.category && (<div className="text-danger small mt-1">{errors.category} </div>
                       )}
                     </div>
@@ -552,7 +584,7 @@ const FaqList = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Faq Export.xlsx"
+        fileName={getDeleted ? "Faq Remove Export.xlsx" : "Faq Export.xlsx"}
         data={faqData}
         columns={[
           { label: "Name", key: "title" },

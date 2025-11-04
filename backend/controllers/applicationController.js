@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
@@ -324,6 +324,18 @@ exports.getAllApplicationsServerSide = async (req, res) => {
       include: [
         { model: UploadImage, attributes: ['file'] },
       ],
+      attributes: {
+        include: [
+          [
+            Sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM products AS p
+              WHERE p.application = Applications.id
+            )`),
+            'product_count'
+          ]
+        ]
+      }
     });
     const mappedRows = rows.map(row => ({
       id: row.id,
@@ -335,6 +347,7 @@ exports.getAllApplicationsServerSide = async (req, res) => {
       is_delete: row.is_delete,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      product_count: row.getDataValue('product_count'),
     }));
     res.json({
       data: mappedRows,

@@ -28,6 +28,7 @@ function createSlug(inputString) {
 
 exports.createSeller = async (req, res) => {
   const upload = getMulterUpload();
+
   upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'company_logo', maxCount: 1 },
@@ -36,6 +37,7 @@ exports.createSeller = async (req, res) => {
     { name: 'company_video', maxCount: 1 },
   ])(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
+
     const deleteUploadedFiles = () => {
       const files = [];
       if (req.files?.file) files.push(req.files.file[0].path);
@@ -43,12 +45,11 @@ exports.createSeller = async (req, res) => {
       if (req.files?.sample_file_id) files.push(req.files.sample_file_id[0].path);
       if (req.files?.company_sample_ppt_file) files.push(req.files.company_sample_ppt_file[0].path);
       if (req.files?.company_video) files.push(req.files.company_video[0].path);
-      files.forEach(filePath => {
-        fs.unlink(filePath, (err) => {
-          if (err) console.error(`Error deleting file ${filePath}:`, err.message);
-        });
-      });
+      files.forEach(filePath => fs.unlink(filePath, err => {
+        if (err) console.error(`Error deleting file ${filePath}:`, err.message);
+      }));
     };
+
     try {
       const {
         fname, lname, email, password, mobile, country, state, city, zipcode,
@@ -59,25 +60,36 @@ exports.createSeller = async (req, res) => {
         company_meta_title, company_video_second, brief_company,
         organizations_product_description, designation
       } = req.body;
+
+      // Validate required fields
       if (!fname || !lname || !email || !password || !mobile || !country || !state || !city || !zipcode || !address) {
         deleteUploadedFiles();
         return res.status(400).json({ message: 'Missing required user fields.' });
       }
+
       if (!validator.isEmail(email)) {
         deleteUploadedFiles();
         return res.status(400).json({ error: 'Invalid email format' });
       }
+
       if (!req.files?.file || !req.files?.company_logo) {
         deleteUploadedFiles();
         return res.status(400).json({ message: 'All required files must be uploaded' });
       }
+
+      // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Upload files
       const profileImage = await UploadImage.create({ file: `upload/users/${req.files.file[0].filename}` });
       const companyLogoImage = await UploadImage.create({ file: `upload/users/${req.files.company_logo[0].filename}` });
-      const companySampleFile = await UploadImage.create({ file: `upload/users/${req.files.sample_file_id[0].filename}` });
-      const companyPptFile = await UploadImage.create({ file: `upload/users/${req.files.company_sample_ppt_file[0].filename}` });
-      const companyVideoFile = await UploadImage.create({ file: `upload/users/video/${req.files.company_video[0].filename}` });
+      const companySampleFile = req.files?.sample_file_id ? await UploadImage.create({ file: `upload/users/${req.files.sample_file_id[0].filename}` }) : null;
+      const companyPptFile = req.files?.company_sample_ppt_file ? await UploadImage.create({ file: `upload/users/${req.files.company_sample_ppt_file[0].filename}` }) : null;
+      const companyVideoFile = req.files?.company_video ? await UploadImage.create({ file: `upload/users/video/${req.files.company_video[0].filename}` }) : null;
+
       const organization_slug = createSlug(user_company);
+
+      // Create user
       const user = await Users.create({
         fname,
         lname,
@@ -107,6 +119,8 @@ exports.createSeller = async (req, res) => {
         file_id: profileImage.id,
         company_file_id: companyLogoImage.id,
       });
+
+      // Create company info
       const companyInfo = await CompanyInfo.create({
         organization_name: user_company,
         organization_slug,
@@ -114,8 +128,6 @@ exports.createSeller = async (req, res) => {
         user_type,
         core_activity,
         activity,
-        category_sell,
-        sub_category,
         company_website: website,
         company_location,
         is_star_seller: is_star_seller || 0,
@@ -127,19 +139,41 @@ exports.createSeller = async (req, res) => {
         designation,
         featured_company: featured_company || 0,
         company_logo: companyLogoImage.id,
-        sample_file_id: companySampleFile.id,
-        company_sample_ppt_file: companyPptFile.id,
-        company_video: companyVideoFile.id,
+        sample_file_id: companySampleFile?.id || null,
+        company_sample_ppt_file: companyPptFile?.id || null,
+        company_video: companyVideoFile?.id || null,
         is_delete: 0,
       });
-      await user.update({
-        company_id: companyInfo.id
-      });
+
+      // Update user with company_id
+      await user.update({ company_id: companyInfo.id });
+
+      // Insert or update seller categories
+      if (category_sell && sub_category) {
+        const categoryArray = Array.isArray(category_sell) ? category_sell : [category_sell];
+        const subCategoryArray = Array.isArray(sub_category) ? sub_category : [sub_category];
+
+        for (let i = 0; i < categoryArray.length; i++) {
+          const category_id = categoryArray[i];
+          const subcategory_id = subCategoryArray[i] || null;
+
+          await SellerCategory.upsert({
+            user_id: user.id,
+            category_id,
+            subcategory_id,
+            updated_at: new Date(),
+          }, {
+            fields: ['user_id', 'category_id', 'subcategory_id', 'updated_at']
+          });
+        }
+      }
+
       res.status(201).json({
         message: 'Seller created successfully',
         user,
         companyInfo
       });
+
     } catch (error) {
       deleteUploadedFiles();
       return res.status(500).json({ error: error.message });
@@ -159,83 +193,74 @@ exports.getAllSeller = async (req, res) => {
         {
           model: CompanyInfo,
           as: 'company_info',
-          attributes: ['id', 'organization_name', 'category_sell', 'sub_category', 'designation', 
-          'company_website', 'company_email', 'organization_quality_certification'],
+          attributes: ['id', 'organization_name', 'designation', 'company_website', 'company_email', 'organization_quality_certification'],
           include: [
             { model: MembershipPlan, as: 'MembershipPlan', attributes: ['id', 'name'] },
             { model: CoreActivity, as: 'CoreActivity', attributes: ['id', 'name'] },
             { model: Activity, as: 'Activity', attributes: ['id', 'name'] },
           ]
         },
-      ],
+        {
+          model: require('../models/SellerCategory'),
+          as: 'seller_categories',
+          attributes: ['id'],
+          include: [
+            { model: require('../models/Categories'), as: 'category', attributes: ['id', 'name'] },
+            { model: require('../models/SubCategories'), as: 'subcategory', attributes: ['id', 'name'] },
+          ]
+        }
+      ]
     });
+
     const productCounts = await Products.findAll({
       attributes: ['user_id', [sequelize.fn('COUNT', sequelize.col('user_id')), 'product_count']],
       where: {
-        user_id: {
-          [Sequelize.Op.in]: sellers.map(seller => seller.id)
-        },
+        user_id: { [Sequelize.Op.in]: sellers.map(s => s.id) },
         is_delete: 0,
       },
       group: ['user_id'],
     });
-    const productCountMap = productCounts.reduce((acc, productCount) => {
-      acc[productCount.user_id] = productCount.dataValues.product_count;
+
+    const productCountMap = productCounts.reduce((acc, item) => {
+      acc[item.user_id] = item.dataValues.product_count;
       return acc;
     }, {});
-    const categorySellValues = Array.from(new Set(
-      sellers.flatMap(seller => seller.company_info?.category_sell ? seller.company_info.category_sell.split(',') : [])
-    ));
-    const categories = await Categories.findAll({
-      where: {
-        id: categorySellValues
-      },
-      attributes: ['id', 'name']
-    });
-    const categoryMap = categories.reduce((acc, category) => {
-      acc[category.id] = category.name;
-      return acc;
-    }, {});
-    const subCategorySellValues = Array.from(new Set(
-      sellers.flatMap(seller => seller.company_info?.sub_category ? seller.company_info.sub_category.split(',') : [])
-    ));
-    const sub_categories = await SubCategories.findAll({
-      where: {
-        id: subCategorySellValues
-      },
-      attributes: ['id', 'name']
-    });
-    const subCategoryMap = sub_categories.reduce((acc, subCategory) => {
-      acc[subCategory.id] = subCategory.name;
-      return acc;
-    }, {});
+
     const modifiedSellers = sellers.map(seller => {
-      const sellersData = seller.toJSON();
-      const categoryNames = sellersData.company_info?.category_sell?.split(',').map(id => categoryMap[id]).join(', ') || 'NA';
-      const subCategoryNames = sellersData.company_info?.sub_category?.split(',').map(id => subCategoryMap[id]).join(', ') || 'NA';
-      sellersData.getStatus = sellersData.status === 1 ? 'Active' : 'Inactive';
-      sellersData.getApproved = sellersData.is_approve === 1 ? 'Approved' : 'Not Approved';
-      sellersData.country_name = sellersData.country_data?.name || 'NA';
-      sellersData.state_name = sellersData.state_data?.name || 'NA';
-      sellersData.city_name = sellersData.city_data?.name || 'NA';
-      sellersData.company_name = sellersData.company_info?.organization_name || null;
-      sellersData.designation = sellersData.company_info?.designation || null;
-      sellersData.company_website = sellersData.company_info?.company_website || null;
-      sellersData.company_email = sellersData.company_info?.company_email || null;
-      sellersData.membership_plan_name = sellersData.company_info?.MembershipPlan?.name || 'NA';
-      sellersData.coreactivity_name = sellersData.company_info?.CoreActivity?.name || 'NA';
-      sellersData.activity_name = sellersData.company_info?.Activity?.name || 'NA';
-      sellersData.quality_certification = sellersData.company_info?.organization_quality_certification || null;
-      sellersData.category_names = categoryNames;
-      sellersData.sub_category_names = subCategoryNames;
-      sellersData.user_count = productCountMap[sellersData.id] || 0;
-      delete sellersData.country_data;
-      delete sellersData.state_data;
-      delete sellersData.city_data;
-      delete sellersData.company_info;
-      return sellersData;
+      const s = seller.toJSON();
+
+      // Map categories & subcategories
+      const categoryNames = s.seller_categories
+        ? Array.from(new Set(s.seller_categories.map(sc => sc.category?.name).filter(Boolean))).join(', ')
+        : 'NA';
+
+      const subCategoryNames = s.seller_categories
+        ? Array.from(new Set(s.seller_categories.map(sc => sc.subcategory?.name).filter(Boolean))).join(', ')
+        : 'NA';
+
+      return {
+        ...s,
+        getStatus: s.status === 1 ? 'Active' : 'Inactive',
+        getApproved: s.is_approve === 1 ? 'Approved' : 'Not Approved',
+        country_name: s.country_data?.name || 'NA',
+        state_name: s.state_data?.name || 'NA',
+        city_name: s.city_data?.name || 'NA',
+        company_name: s.company_info?.organization_name || null,
+        designation: s.company_info?.designation || null,
+        company_website: s.company_info?.company_website || null,
+        company_email: s.company_info?.company_email || null,
+        membership_plan_name: s.company_info?.MembershipPlan?.name || 'NA',
+        coreactivity_name: s.company_info?.CoreActivity?.name || 'NA',
+        activity_name: s.company_info?.Activity?.name || 'NA',
+        quality_certification: s.company_info?.organization_quality_certification || null,
+        category_names: categoryNames,
+        sub_category_names: subCategoryNames,
+        user_count: productCountMap[s.id] || 0,
+      };
     });
+
     res.json(modifiedSellers);
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -245,29 +270,48 @@ exports.getSellerById = async (req, res) => {
   try {
     const seller = await Users.findByPk(req.params.id, {
       include: [
-        {model: UploadImage, as: 'file', attributes: ['file']},
-        {model: UploadImage, as: 'company_file', attributes: ['file']},
-        {model: Countries, as: 'country_data', attributes: ['name']},
-        {model: States, as: 'state_data', attributes: ['name']},
-        {model: Cities, as: 'city_data', attributes: ['name']}
+        { model: UploadImage, as: 'file', attributes: ['file'] },
+        { model: UploadImage, as: 'company_file', attributes: ['file'] },
+        { model: Countries, as: 'country_data', attributes: ['name'] },
+        { model: States, as: 'state_data', attributes: ['name'] },
+        { model: Cities, as: 'city_data', attributes: ['name'] },
       ],
     });
+
     if (!seller) {
       return res.status(404).json({ message: 'Seller not found' });
     }
+
     const companyInfo = await CompanyInfo.findByPk(seller.company_id, {
       include: [
-        {model: UploadImage, as: 'companySamplePptFile', attributes: ['file']},
-        {model: UploadImage, as: 'companySampleFile', attributes: ['file']},
-        {model: UploadImage, as: 'companyVideo', attributes: ['file']},
-        {model: CoreActivity, as: 'CoreActivity', attributes: ['name']},
-        {model: Activity, as: 'Activity', attributes: ['name']},
-        {model: Categories, as: 'Categories', attributes: ['name']},
-        {model: MembershipPlan, as: 'MembershipPlan', attributes: ['name']}
+        { model: UploadImage, as: 'companySamplePptFile', attributes: ['file'] },
+        { model: UploadImage, as: 'companySampleFile', attributes: ['file'] },
+        { model: UploadImage, as: 'companyVideo', attributes: ['file'] },
+        { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
+        { model: Activity, as: 'Activity', attributes: ['name'] },
+        { model: MembershipPlan, as: 'MembershipPlan', attributes: ['name'] },
       ],
     });
+
+    // Fetch all categories & subcategories from SellerCategory
+    const sellerCategories = await SellerCategory.findAll({
+      where: { user_id: seller.id },
+      include: [
+        { model: Categories, as: 'Category', attributes: ['name'] },
+        { model: SubCategories, as: 'SubCategory', attributes: ['name'] },
+      ],
+    });
+
+    const categories = sellerCategories.map(sc => ({
+      category_id: sc.category_id,
+      category_name: sc.Category ? sc.Category.name : null,
+      subcategory_id: sc.subcategory_id,
+      subcategory_name: sc.SubCategory ? sc.SubCategory.name : null,
+    }));
+
     const response = {
-      ...seller.toJSON(), ...companyInfo.toJSON(),
+      ...seller.toJSON(),
+      ...companyInfo.toJSON(),
       file_name: seller.file ? seller.file.file : null,
       company_file_name: seller.company_file ? seller.company_file.file : null,
       country_name: seller.country_data ? seller.country_data.name : null,
@@ -275,13 +319,15 @@ exports.getSellerById = async (req, res) => {
       city_name: seller.city_data ? seller.city_data.name : null,
       coreactivity_name: companyInfo && companyInfo.CoreActivity ? companyInfo.CoreActivity.name : null,
       activity_name: companyInfo && companyInfo.Activity ? companyInfo.Activity.name : null,
-      category_name: companyInfo && companyInfo.Categories ? companyInfo.Categories.name : null,
       company_sample_ppt_file_name: companyInfo.companySamplePptFile ? companyInfo.companySamplePptFile.file : null,
       company_sample_file_name: companyInfo.companySampleFile ? companyInfo.companySampleFile.file : null,
       company_video_file_name: companyInfo.companyVideo ? companyInfo.companyVideo.file : null,
       plan_name: companyInfo && companyInfo.MembershipPlan ? companyInfo.MembershipPlan.name : null,
+      categories, // <-- return array of categories & subcategories
     };
+
     res.json(response);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -292,28 +338,134 @@ exports.getSellerCount = async (req, res) => {
   try {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
+
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
-    const [total, addedToday, statusActive, statusInactive, notApproved] = await Promise.all([
-      Users.count({ where: { is_seller: 1 } }),
-      Users.count({
-        where: {
-          created_at: {
-            [Op.between]: [todayStart, todayEnd],
-          },
-        },
-      }),
-      Users.count({ where: { is_seller: 1, status: 1 } }),
-      Users.count({ where: { is_seller: 1, status: 0 } }),
-      Users.count({ where: { is_seller: 1, is_approve: 0 } }),
-      Users.count({ where: { is_seller: 1, is_complete: 0 } }),
-    ]);
+
+    // 👇 Define a small logger for clean output
+    const logSQL = (sql) => {
+      // console.log("\n🧠 Executing SQL Query:\n", sql, "\n");
+    };
+
+   const [total, addedToday, statusActive, statusInactive, notApproved, notCompleted] = await Promise.all([
+  // Total sellers
+  Users.count({
+    where: { is_seller: 1 },
+    include: [
+      {
+        model: CompanyInfo,
+        as: 'company_info',
+        required: true,
+        
+      },
+     
+    ],
+    logging: logSQL,
+  }),
+
+  // Sellers added today
+  Users.count({
+    where: {
+      created_at: { [Op.between]: [todayStart, todayEnd] },
+    },
+    include: [
+      {
+        model: CompanyInfo,
+        as: 'company_info',
+        required: true,
+        
+      },
+    
+    ],
+    logging: logSQL,
+  }),
+
+  // Active sellers
+  Users.count({
+    where: {
+      is_seller: 1,
+      status: 1,
+      is_delete: 0,
+      is_approve: 1,
+      member_role: 1,
+    },
+    include: [
+      {
+        model: CompanyInfo,
+        as: 'company_info',
+        required: true,
+       
+      },
+    
+    ],
+    logging: logSQL,
+  }),
+
+  // Inactive sellers
+  Users.count({
+    where: { is_seller: 1, status: 0, is_delete: 0 },
+    include: [
+      {
+        model: CompanyInfo,
+        as: 'company_info',
+        required: true,
+        
+      },
+     
+    ],
+    logging: logSQL,
+  }),
+
+  // Not approved sellers
+  Users.count({
+    where: {
+      is_seller: 1,
+      is_approve: 0,
+      is_delete: 0,
+      is_complete: 1,
+      status: 1,
+    },
+    include: [
+      {
+        model: CompanyInfo,
+        as: 'company_info',
+        required: true,
+       
+      },
+    
+    ],
+    logging: logSQL,
+  }),
+
+  // Not approved sellers
+  Users.count({
+    where: {
+      is_seller: 1,
+      is_approve: 0,
+      is_delete: 0,
+      is_complete: 0,
+      status: 1,
+    },
+    include: [
+      {
+        model: CompanyInfo,
+        as: 'company_info',
+        required: true,
+       
+      },
+    
+    ],
+    logging: logSQL,
+  }),
+]);
+
     res.json({
       total,
       addedToday,
       statusActive,
       statusInactive,
       notApproved,
+      notCompleted
     });
   } catch (err) {
     console.error(err);
@@ -333,11 +485,15 @@ exports.updateSeller = async (req, res) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
+
     try {
       const sellerId = req.params.id;
       const user = await Users.findByPk(sellerId);
       if (!user) return res.status(404).json({ error: 'User not found' });
-      const companyInfo = await CompanyInfo.findOne({ where: { id: user.company_id } });
+
+      const companyInfo = await CompanyInfo.findByPk(user.company_id);
+
+      // Update basic user info
       const updatedData = {
         fname: req.body.fname,
         lname: req.body.lname,
@@ -356,87 +512,40 @@ exports.updateSeller = async (req, res) => {
         featured_company: req.body.featured_company,
         products: req.body.products,
       };
-      const profileImage = req.files?.file?.[0];
-      if (profileImage) {
-        const existingImage = await UploadImage.findByPk(user.file_id);
-        if (existingImage) {
-          const oldPath = path.resolve(existingImage.file);
-          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-          existingImage.file = `upload/users/${profileImage.filename}`;
-          existingImage.updated_at = new Date();
-          await existingImage.save();
-        } else {
-          const newImage = await UploadImage.create({
-            file: `upload/users/${profileImage.filename}`
-          });
-          updatedData.file_id = newImage.id;
+
+      // Handle file uploads (profile, company logo, sample, ppt, video)
+      const fileFields = [
+        { field: 'file', idField: 'file_id', folder: 'users' },
+        { field: 'company_logo', idField: 'company_file_id', folder: 'users' },
+        { field: 'sample_file_id', idField: 'sample_file_id', folder: 'users' },
+        { field: 'company_sample_ppt_file', idField: 'company_sample_ppt_file', folder: 'users' },
+        { field: 'company_video', idField: 'company_video', folder: 'users/video' }
+      ];
+
+      for (const f of fileFields) {
+        const uploadedFile = req.files?.[f.field]?.[0];
+        if (uploadedFile) {
+          const existing = await UploadImage.findByPk(user[f.idField] || companyInfo?.[f.idField]);
+          if (existing) {
+            const oldPath = path.resolve(existing.file);
+            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            existing.file = `upload/${f.folder}/${uploadedFile.filename}`;
+            existing.updated_at = new Date();
+            await existing.save();
+          } else {
+            const newImage = await UploadImage.create({ file: `upload/${f.folder}/${uploadedFile.filename}` });
+            if (f.idField in updatedData) {
+              updatedData[f.idField] = newImage.id;
+            } else if (companyInfo) {
+              await companyInfo.update({ [f.idField]: newImage.id });
+            }
+          }
         }
       }
-      const companyLogo = req.files?.company_logo?.[0];
-      if (companyLogo) {
-        const existingLogo = await UploadImage.findByPk(user.company_file_id);
-        if (existingLogo) {
-          const oldPath = path.resolve(existingLogo.file);
-          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-          existingLogo.file = `upload/users/${companyLogo.filename}`;
-          existingLogo.updated_at = new Date();
-          await existingLogo.save();
-        } else {
-          const newLogo = await UploadImage.create({
-            file: `upload/users/${companyLogo.filename}`
-          });
-          updatedData.company_file_id = newLogo.id;
-        }
-      }
-      const sampleFile = req.files?.sample_file_id?.[0];
-      if (sampleFile && companyInfo) {
-        const existingSample = await UploadImage.findByPk(companyInfo.sample_file_id);
-        if (existingSample) {
-          const oldPath = path.resolve(existingSample.file);
-          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-          existingSample.file = `upload/users/${sampleFile.filename}`;
-          existingSample.updated_at = new Date();
-          await existingSample.save();
-        } else {
-          const newPpt = await UploadImage.create({
-            file: `upload/users/${sampleFile.filename}`
-          });
-          await companyInfo.update({ sample_file_id: newPpt.id });
-        }
-      }
-      const pptFile = req.files?.company_sample_ppt_file?.[0];
-      if (pptFile && companyInfo) {
-        const existingPpt = await UploadImage.findByPk(companyInfo.company_sample_ppt_file);
-        if (existingPpt) {
-          const oldPath = path.resolve(existingPpt.file);
-          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-          existingPpt.file = `upload/users/${pptFile.filename}`;
-          existingPpt.updated_at = new Date();
-          await existingPpt.save();
-        } else {
-          const newPpt = await UploadImage.create({
-            file: `upload/users/${pptFile.filename}`
-          });
-          await companyInfo.update({ company_sample_ppt_file: newPpt.id });
-        }
-      }
-      const videoFile = req.files?.company_video?.[0];
-      if (videoFile && companyInfo) {
-        const existingVideo = await UploadImage.findByPk(companyInfo.company_video);
-        if (existingVideo) {
-          const oldPath = path.resolve(existingVideo.file);
-          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-          existingVideo.file = `upload/users/video/${videoFile.filename}`;
-          existingVideo.updated_at = new Date();
-          await existingVideo.save();
-        } else {
-          const newVideo = await UploadImage.create({
-            file: `upload/users/video/${videoFile.filename}`
-          });
-          await companyInfo.update({ company_video: newVideo.id });
-        }
-      }
+
       await user.update(updatedData);
+
+      // Update company info
       if (companyInfo) {
         await companyInfo.update({
           organization_name: req.body.user_company,
@@ -445,8 +554,6 @@ exports.updateSeller = async (req, res) => {
           user_type: req.body.user_type,
           core_activity: req.body.core_activity,
           activity: req.body.activity,
-          category_sell: req.body.category_sell,
-          sub_category: req.body.sub_category,
           company_location: req.body.company_location,
           company_website: req.body.website,
           company_meta_title: req.body.company_meta_title,
@@ -459,7 +566,24 @@ exports.updateSeller = async (req, res) => {
           featured_company: req.body.featured_company || 0
         });
       }
+
+      // Update SellerCategory
+      if (req.body.categories && Array.isArray(req.body.categories)) {
+        // Remove existing categories
+        await SellerCategory.destroy({ where: { user_id: sellerId } });
+
+        // Add new categories
+        for (const cat of req.body.categories) {
+          await SellerCategory.create({
+            user_id: sellerId,
+            category_id: cat.category_id,
+            subcategory_id: cat.subcategory_id
+          });
+        }
+      }
+
       res.status(200).json({ message: 'Seller updated successfully', user });
+
     } catch (err) {
       console.error('Error in updateSeller:', err);
       res.status(500).json({ error: err.message });
@@ -654,6 +778,15 @@ exports.getAllSellerServerSide = async (req, res) => {
     const where = {};
     where.is_seller = 1;
     where.is_delete = 0;
+    if (req.query.getDeleted !== 'true') {
+      where.status = 1;
+      where.member_role = 1;
+      // where.step >= 3;
+      where.is_complete = 1;
+    }
+    if (req.query.getNotCompleted !== 'true') {
+      where.is_approve = 1;
+    }
     if (req.query.getInactive === 'true') {
       where.status = 0;
     }
@@ -662,6 +795,7 @@ exports.getAllSellerServerSide = async (req, res) => {
     }
     if (req.query.getNotCompleted === 'true') {
       where.is_complete = 0;
+      where.is_approve = 0;
     }
     if (req.query.getDeleted === 'true') {
       where.is_delete = 1;

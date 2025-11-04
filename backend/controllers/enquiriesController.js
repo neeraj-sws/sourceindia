@@ -153,8 +153,20 @@ exports.getEnquiriesByNumber = async (req, res) => {
 
 exports.getEnquiriesCount = async (req, res) => {
   try {
-    const total = await Enquiries.count();
-    res.json({ total });
+    const [total, all, status1, status2, status0] = await Promise.all([
+      Enquiries.count({ where: { is_delete: 0 } }),
+      Enquiries.count(),
+      Enquiries.count({ where: { status: 1 } }),
+      Enquiries.count({ where: { status: 2 } }),
+      Enquiries.count({ where: { status: 0 } })
+    ]);
+    res.json({
+      total,
+      all,
+      status1,
+      status2,
+      status0
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -272,10 +284,10 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
       order = [['id', 'DESC']];
     }
     const where = {};
-    if (req.query.getPublic === 'true') { where.user_id = null; }
-    if (req.query.user_id) { where.user_id = req.query.user_id; }
-    if (req.query.getApprove === 'true') { where.is_approve = 1; }
-    if (req.query.getNotApprove === 'true') { where.is_approve = 0; }
+    if (req.query.getPublic === 'true') { where.user_id = null; where.is_delete = 0; }
+    if (req.query.user_id) { where.user_id = req.query.user_id; where.is_delete = 0; }
+    if (req.query.getApprove === 'true') { where.is_approve = 1; where.is_delete = 0; }
+    if (req.query.getNotApprove === 'true') { where.is_approve = 0; where.is_delete = 0; }
     if (req.query.getDeleted === 'true') { baseWhere.is_delete = 1; }
     const searchWhere = { ...where };
     if (search) {
@@ -493,6 +505,7 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
       sortBy = 'id',
       sort = 'DESC',
       user_id,
+      isAdmin,
       all = false // optional query param ?all=true to get all data
     } = req.query;
 
@@ -506,10 +519,10 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
       order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
     }
 
-    const where = {
-      is_approve: 1,
-      is_delete: 0
-    };
+    const where = { is_delete: 0 };
+    if(!isAdmin){
+      where: { is_approve: 1 };
+    }
 
     const user = await Users.findByPk(user_id, { 
       include: { model: CompanyInfo, as: 'company_info' } 

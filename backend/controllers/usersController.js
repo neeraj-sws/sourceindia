@@ -778,3 +778,251 @@ exports.getuserEnquiriesCount = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const sellers = await Users.findAll({
+      where: {},
+      order: [['id', 'ASC']],
+      include: [
+        { model: Countries, as: 'country_data', attributes: ['id', 'name'] },
+        { model: States, as: 'state_data', attributes: ['id', 'name'] },
+        { model: Cities, as: 'city_data', attributes: ['id', 'name'] },
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['id', 'organization_name', 'designation', 'company_website', 'company_email', 'organization_quality_certification'],
+          include: [
+            { model: MembershipPlan, as: 'MembershipPlan', attributes: ['id', 'name'] },
+            { model: CoreActivity, as: 'CoreActivity', attributes: ['id', 'name'] },
+            { model: Activity, as: 'Activity', attributes: ['id', 'name'] },
+          ]
+        }
+      ]
+    });
+
+    const modifiedSellers = sellers.map(seller => {
+      const s = seller.toJSON();
+
+      // Map categories & subcategories
+      const categoryNames = s.seller_categories
+        ? Array.from(new Set(s.seller_categories.map(sc => sc.category?.name).filter(Boolean))).join(', ')
+        : 'NA';
+
+      const subCategoryNames = s.seller_categories
+        ? Array.from(new Set(s.seller_categories.map(sc => sc.subcategory?.name).filter(Boolean))).join(', ')
+        : 'NA';
+
+      return {
+        ...s,
+        getStatus: s.status === 1 ? 'Active' : 'Inactive',
+        getApproved: s.is_approve === 1 ? 'Approved' : 'Not Approved',
+        getUserStatus: s.is_seller === 1 ? 'Seller' : 'Buyer',
+        country_name: s.country_data?.name || 'NA',
+        state_name: s.state_data?.name || 'NA',
+        city_name: s.city_data?.name || 'NA',
+        company_name: s.company_info?.organization_name || null,
+        designation: s.company_info?.designation || null,
+        company_website: s.company_info?.company_website || null,
+        company_email: s.company_info?.company_email || null,
+        membership_plan_name: s.company_info?.MembershipPlan?.name || 'NA',
+        coreactivity_name: s.company_info?.CoreActivity?.name || 'NA',
+        activity_name: s.company_info?.Activity?.name || 'NA',
+        quality_certification: s.company_info?.organization_quality_certification || null,
+        category_names: categoryNames,
+        sub_category_names: subCategoryNames,
+      };
+    });
+
+    res.json(modifiedSellers);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllUsersHistoriesServerSide = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      sortBy = 'id',
+      sort = 'DESC',
+      dateRange = '',
+      startDate,
+      endDate,
+      customerId,
+      firstName,
+      lastName,
+      mobile,
+      step,
+      country,
+      state,
+      city,
+      organizationName,
+      email
+    } = req.query;
+
+    // ✅ Valid sortable columns
+    const validColumns = [
+      'id', 'created_at', 'updated_at', 'organization_name', 'fname', 'lname',
+      'email', 'mobile', 'status', 'is_seller', 'elcina_member', 'country', 'state', 'city', 'country_name', 'state_name', 'city_name'
+    ];
+
+    const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitValue = parseInt(limit);
+
+    // ✅ Sorting logic
+    let order = [];
+    if (sortBy === 'full_name') {
+      order = [[fn('concat', col('fname'), ' ', col('lname')), sortDirection]];
+    } else if (sortBy === 'country_name') {
+      order = [[{ model: Countries, as: 'country_data' }, 'name', sortDirection]];
+    } else if (sortBy === 'state_name') {
+      order = [[{ model: States, as: 'state_data' }, 'name', sortDirection]];
+    } else if (sortBy === 'city_name') {
+      order = [[{ model: Cities, as: 'city_data' }, 'name', sortDirection]];
+    } else if (validColumns.includes(sortBy)) {
+      order = [[sortBy, sortDirection]];
+    } else {
+      order = [['id', 'DESC']];
+    }
+
+    // ✅ Base where filter
+    const where = {};
+
+    if (customerId) where.id = { [Op.like]: `%${customerId}%` };
+    if (firstName) where.fname = { [Op.like]: `%${firstName}%` };
+    if (lastName) where.lname = { [Op.like]: `%${lastName}%` };
+    if (mobile) where.mobile = { [Op.like]: `%${mobile}%` };
+    if (step) where.step = step;
+    if (country) where.country = country;
+    if (state) where.state = state;
+    if (city) where.city = city;
+    if (organizationName) where['$company_info.organization_name$'] = { [Op.like]: `%${organizationName}%` };
+    if (email) where.email = { [Op.like]: `%${email}%` };
+
+    // ✅ Search filter (on flattened fields)
+    if (search) {
+      where[Op.or] = [
+        Sequelize.where(fn('concat', col('fname'), ' ', col('lname')), { [Op.like]: `%${search}%` }),
+        { email: { [Op.like]: `%${search}%` } },
+        { mobile: { [Op.like]: `%${search}%` } },
+        { '$company_info.organization_name$': { [Op.like]: `%${search}%` } },
+        { country: { [Op.like]: `%${search}%` } },
+        { state: { [Op.like]: `%${search}%` } },
+        { city: { [Op.like]: `%${search}%` } },
+        { '$country_data.name$': { [Op.like]: `%${search}%` } },
+        { '$state_data.name$': { [Op.like]: `%${search}%` } },
+        { '$city_data.name$': { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    // ✅ Date filtering
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+
+      if (range === 'today') {
+        dateCondition = { [Op.gte]: today.toDate(), [Op.lte]: now.toDate() };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = { [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(), [Op.lte]: now.toDate() };
+      } else if (range === 'last30days') {
+        dateCondition = { [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(), [Op.lte]: now.toDate() };
+      } else if (range === 'thismonth') {
+        dateCondition = { [Op.gte]: moment().startOf('month').toDate(), [Op.lte]: now.toDate() };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = { [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(), [Op.lte]: now.toDate() };
+      }
+    }
+
+    if (dateCondition) where.created_at = dateCondition;
+
+    // ✅ Query the Users table directly
+    const totalRecords = await Users.count();
+
+    const { count: filteredRecords, rows } = await Users.findAndCountAll({
+      where,
+      order,
+      limit: limitValue,
+      offset,
+      include: [
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['organization_name'],
+          required: false,
+        },
+        { model: Countries, as: 'country_data', attributes: ['id', 'name'] },
+        { model: States, as: 'state_data', attributes: ['id', 'name'] },
+        { model: Cities, as: 'city_data', attributes: ['id', 'name'] },
+      ],
+    });
+
+    // ✅ Map rows for cleaner frontend response
+    const mappedRows = rows.map((row) => ({
+      id: row.id,
+      full_name: `${row.fname} ${row.lname}`,
+      email: row.email,
+      mobile: row.mobile,
+      organization_name: row.company_info?.organization_name || null,
+      country: row.country,
+      state: row.state,
+      city: row.city,
+      country_name: row.country_data ? row.country_data.name : null,
+      state_name: row.state_data ? row.state_data.name : null,
+      city_name: row.city_data ? row.city_data.name : null,
+      elcina_member: row.elcina_member,
+      is_seller: row.is_seller,
+      step: row.step,
+      status: row.status,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    }));
+
+    res.json({
+      data: mappedRows,
+      totalRecords,
+      filteredRecords,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateUsersStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (status !== 0 && status !== 1) {
+      return res.status(400).json({ message: 'Invalid status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const users = await Users.findByPk(req.params.id);
+    if (!users) return res.status(404).json({ message: 'Users not found' });
+    users.status = status;
+    await users.save();
+    res.json({ message: 'Status updated', users });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

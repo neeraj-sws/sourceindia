@@ -619,10 +619,12 @@ const HomeBanners = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Home Banner Export.xlsx"
+        fileName={getDeleted ? "Home Banner Remove Export.xlsx" : "Home Banner Export.xlsx"}
         data={homeBannerData}
         columns={[
-          { label: "Name", key: "name" },
+          { label: "Title", key: "title" },
+          { label: "Image", key: "file_id" },
+          { label: "Button Text", key: "button_text" },
           { label: "Status", key: "getStatus" },
           { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
           { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },

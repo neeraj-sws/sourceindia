@@ -136,6 +136,13 @@ exports.getAllTicketsServerSide = async (req, res) => {
       search = '',
       sortBy = 'id',
       sort = 'DESC',
+      dateRange = '',
+      startDate,
+      endDate,
+      title,
+      status,
+      priority,
+      category,
     } = req.query;
     const validColumns = ['id', 'title', 'ticket_id', 'message', 'priority', 'created_at', 'updated_at', 'category_name', 'user_name'];
     const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
@@ -151,18 +158,85 @@ exports.getAllTicketsServerSide = async (req, res) => {
     } else {
       order = [['id', 'DESC']];
     }
-    const where = {};
+    const baseWhere = {};
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      baseWhere.created_at = dateCondition;
+    }
+    if (status) {
+      baseWhere.status = status;
+    }
+    if (priority) {
+      baseWhere.priority = priority;
+    }
+    if (category) {
+      baseWhere.category = category;
+    }
+    if (title) {
+      baseWhere.title = {
+        [Op.like]: `%${title}%`
+      };
+    }
     if (search) {
-      where[Op.or] = [
+      baseWhere[Op.or] = [
         { title: { [Op.like]: `%${search}%` } },
         { ticket_id: { [Op.like]: `%${search}%` } },
         { priority: { [Op.like]: `%${search}%` } },
         { '$TicketCategory.name$': { [Op.like]: `%${search}%` } }
       ];
     }
-    const totalRecords = await Tickets.count();
+    const totalRecords = await Tickets.count({
+      where: { ...baseWhere },
+    });
     const { count: filteredRecords, rows } = await Tickets.findAndCountAll({
-      where,
+      where: baseWhere,
       order,
       limit: limitValue,
       offset,

@@ -333,9 +333,9 @@ exports.getProductsCount = async (req, res) => {
     const now = new Date();
 
     const [total, statusPublic, statusDraft, addedThisMonth] = await Promise.all([
-      Products.count(),
-      Products.count({ where: { status: 1 } }),
-      Products.count({ where: { status: 0 } }),
+      Products.count({ where: { is_delete: 0 } }),
+      Products.count({ where: { status: 1, is_delete: 0 } }),
+      Products.count({ where: { status: 0, is_delete: 0 } }),
       Products.count({
         where: {
           created_at: {
@@ -931,7 +931,8 @@ exports.getAllProductsServerSide = async (req, res) => {
       category,
       sub_category,
       company,
-      product_status
+      product_status,
+      is_approve
     } = req.query;
     const validColumns = ['id', 'title', 'article_number', 'created_at', 'updated_at', 'category_name', 'subcategory_name'];
     const viewType = req.query.viewType || '';
@@ -951,6 +952,9 @@ exports.getAllProductsServerSide = async (req, res) => {
     const baseWhere = { is_delete: 0 };
     if (user_id) {
       baseWhere.user_id = user_id;
+    }
+    if (is_approve) {
+      baseWhere.is_approve = is_approve;
     }
     if (req.query.getDeleted === 'true') {
       baseWhere.is_delete = 1;

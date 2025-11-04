@@ -5,8 +5,10 @@ import Breadcrumb from '../common/Breadcrumb';
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import JoditEditor from "jodit-react";
-import SearchDropdown from "../common/SearchDropdown";
 import EmailCircularModals from "./modal/EmailCircularModals";
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const AddEmailCircular = () => {
   const { showNotification } = useAlert();
@@ -14,6 +16,7 @@ const AddEmailCircular = () => {
   const isEditing = Boolean(newsletterId);
   const navigate = useNavigate();
   const [userType, setUserType] = useState([]);
+  const [selectedUserType, setSelectedUserType] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [imageToDelete, setImageToDelete] = useState(null);
   const [formData, setFormData] = useState({ user_type: '', title: '', subject: '', description: '' });
@@ -35,6 +38,26 @@ const AddEmailCircular = () => {
     fetchUserType();
   }, []);
 
+    const handleUserTypeChange = async (event) => {
+    const userTypeId = event.target.value;
+    setSelectedUserType(userTypeId);
+  };
+
+  useEffect(() => {  
+      $('#user_type').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select Activity"
+      }).on("change", function () {
+        const userTypeId = $(this).val();
+        handleUserTypeChange({ target: { value: userTypeId } });
+      });
+  
+      return () => {
+        $('#user_type').off("change").select2('destroy');
+      };
+    }, [userType]);
+
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
@@ -46,7 +69,7 @@ const AddEmailCircular = () => {
 
   const validateForm = () => {
     const errs = {};
-    if (!formData.user_type) errs.user_type = 'User type is required';
+    if (!selectedUserType) errs.user_type = "User Type is required";
     if (!formData.title.trim()) errs.title = 'Title is required';
     if (!formData.subject.trim()) errs.subject = 'Subject is required';
     if (!formData.description) errs.description = 'Description is required';
@@ -76,12 +99,12 @@ const AddEmailCircular = () => {
         const res = await axios.get(`${API_BASE_URL}/newsletters/${newsletterId}`);
         const data = res.data;
         setFormData({
-          user_type: data.user_type || '',
           title: data.title || '',
           subject: data.subject || '',
           description: data.description || '',
           images: data.images || [],
         });
+        setSelectedUserType(data.user_type || "");
       } catch (error) {
         console.error('Error fetching Newsletter:', error);
       }
@@ -98,7 +121,7 @@ const AddEmailCircular = () => {
       if (isEditing) {
         endpoint = `${API_BASE_URL}/newsletters/${newsletterId}`;
         method = "put";
-        payload = { ...formData };
+        payload = { ...formData, user_type: selectedUserType };
         headers = { "Content-Type": "application/json" };
         await axios[method](endpoint, payload, { headers });
         if (files.length > 0) {
@@ -108,6 +131,7 @@ const AddEmailCircular = () => {
         endpoint = `${API_BASE_URL}/newsletters`;
         method = "post";
         const data = new FormData();
+        data.append("user_type", selectedUserType);
         Object.entries(formData).forEach(([key, value]) => {
           if (key !== "images") data.append(key, value);
         });
@@ -126,10 +150,6 @@ const AddEmailCircular = () => {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleSelectChange = (fieldName) => (selectedOption) => {
-    setFormData((prev) => ({ ...prev, [fieldName]: selectedOption ? selectedOption.value : "" }));
   };
 
   const handleAddImages = async () => {
@@ -189,13 +209,16 @@ const AddEmailCircular = () => {
                     <div className="row">
                       <div className="col-md-6 mb-3">
                         <label htmlFor="user_type" className="form-label required">User</label>
-                        <SearchDropdown
-                          id="user_type"
-                          options={userType?.map((user) => ({ value: user.id, label: user.name.charAt(0).toUpperCase() + user.name.slice(1) }))}
-                          value={formData.user_type}
-                          onChange={handleSelectChange("user_type")}
-                          placeholder="Select here"
-                        />
+                        <select
+                      id="user_type" className={`form-control ${errors.user_type ? "is-invalid" : ""}`}
+                      value={selectedUserType}
+                      onChange={handleUserTypeChange}
+                    >
+                      <option value="">Select user type</option>
+                      {userType?.map((user) => (
+                        <option key={user.id} value={user.id}>{user.name.charAt(0).toUpperCase() + user.name.slice(1)}</option>
+                      ))}
+                    </select>
                         {errors.user_type && (<div className="invalid-feedback">{errors.user_type}</div>)}
                       </div>
                     </div>

@@ -195,10 +195,15 @@ const EmailCircular = () => {
                         </button>
                         <ul className="dropdown-menu">
                           <li>
+                            <button className="dropdown-item" onClick={(e) => navigate(`/admin/email_circular_details/${row.id}`)}>
+                              <i className="bx bx-show me-2"></i> View
+                            </button>
+                          </li>
+                          {/* <li>
                             <button className="dropdown-item" onClick={(e) => navigate(`/admin/edit_email_circular/${row.id}`)}>
                               <i className="bx bx-edit me-2"></i> Edit
                             </button>
-                          </li>
+                          </li> */}
                           <li>
                             <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete

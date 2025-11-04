@@ -22,7 +22,7 @@ const AddBuyer = () => {
   const [selectedCity, setSelectedCity] = useState('');
   const [formData, setFormData] = useState({
     fname: '', lname: '', email: '', password: '', mobile: '', zipcode: '', user_company: '', website: '', is_trading: '',
-    elcina_member: '', address: '', products: '', file: null, company_file: null
+    elcina_member: '', user_category: '', address: '', products: '', file: null, company_file: null
   });
   const [file, setFile] = useState(null);
   const [companyFile, setCompanyFile] = useState(null);
@@ -142,6 +142,7 @@ const AddBuyer = () => {
     if (!formData.website) errs.website = 'Website is required';
     if (!formData.is_trading) errs.is_trading = 'Trader is required';
     if (!formData.elcina_member) errs.elcina_member = 'ELCINA Member is required';
+    if (!formData.user_category) errs.user_category = 'User Category is required';
     if (!formData.address) errs.address = 'Address is required';
     if (!formData.products) errs.products = 'Products is required';
 
@@ -188,6 +189,7 @@ const AddBuyer = () => {
           website: data.website || '',
           is_trading: String(data.is_trading),
           elcina_member: String(data.elcina_member),
+          user_category: data.user_category || '',
           address: data.address || '',
           products: data.products || '',
           file_name: data.file_name || '',
@@ -366,10 +368,24 @@ const AddBuyer = () => {
                         />
                       ) : null}
                     </div>
+                    <div className="col-md-6">
+                      <label htmlFor="user_category" className="form-label required">User Category</label>
+                      <select
+                        id="user_category" className={`form-control ${errors.user_category ? "is-invalid" : ""}`}
+                        value={formData.user_category}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select User Category</option>
+                        <option value="brand" selected="">Brand</option>
+                        <option value="ems">EMS</option>
+                        <option value="oem">OEM</option>
+                        <option value="component manufacturer">Component Manufacturer</option>
+                      </select>
+                      {errors.user_category && (<div className="invalid-feedback">{errors.user_category}</div>)}
+                    </div>
                   </div>
                 </div>
               </div>
-
 
               <div className="card">
                 <div className='card-header py-3 px-2 bg-white'>

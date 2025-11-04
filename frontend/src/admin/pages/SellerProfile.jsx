@@ -7,6 +7,7 @@ import ImageWithFallback from "../common/ImageWithFallback";
 import UserProducts from '../profile/UserProducts';
 import UserEnquiry from '../profile/UserEnquiry';
 import UserOpenLeads from '../profile/UserOpenLeads';
+import MyLeads from '../profile/MyLeads';
 import { formatDateTime } from "../../utils/formatDate";
 
 const SellerProfile = () => {
@@ -203,9 +204,7 @@ const SellerProfile = () => {
                       <UserOpenLeads />
                     </div>
                     <div className="tab-pane fade" id="primary-pills-my-leads" role="tabpanel">
-                      <div className="text-center">
-                        <i className="font-30 bx bx-list-check" /><br /><p>- No My Leads -</p>
-                      </div>
+                      <MyLeads />
                     </div>
                   </div>
                 </div>

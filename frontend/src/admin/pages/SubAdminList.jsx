@@ -3,13 +3,15 @@ import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
-import SearchDropdown from "../common/SearchDropdown";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import SubAdminModals from "./modal/SubAdminModals";
 import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, name: "", email: "", mobile: "", role: "", status: "1" };
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const SubAdminList = () => {
   const [data, setData] = useState([]);
@@ -26,6 +28,7 @@ const SubAdminList = () => {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [roles, setRoles] = useState([]);
+  const [selectedRoles, setSelectedRoles] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [subAdminToDelete, setSubAdminToDelete] = useState(null);
   const [selectedSubAdmin, setSelectedSubAdmin] = useState([]);
@@ -84,29 +87,34 @@ const SubAdminList = () => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
+      const roleId = editData.role ? String(editData.role) : "";
       setFormData({ ...editData, status: String(editData.status) });
+      setSelectedRoles(roleId);
+      setTimeout(() => {
+        if ($("#role").data("select2")) {
+          $("#role").val(roleId).trigger("change");
+        }
+      }, 100);
     } else {
-      setFormData(initialForm);
+      resetForm();
     }
-    setShowModal(true);
   };
 
   const resetForm = () => {
     setFormData(initialForm);
     setIsEditing(false);
     setErrors({});
+    setSelectedRoles('');
+    setTimeout(() => {
+    if ($("#role").data("select2")) {
+      $("#role").val(null).trigger("change");
+    }
+  }, 100);
   };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
-  };
-
-  const handleSelectChange = (fieldName) => (selectedOption) => {
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: selectedOption ? selectedOption.value : "",
-    }));
   };
 
   const validateForm = () => {
@@ -118,7 +126,7 @@ const SubAdminList = () => {
     else if (!emailRegex.test(formData.email)) errs.email = "Email is invalid";
     if (!formData.mobile) errs.mobile = "Mobile Number is required";
     else if (!mobileRegex.test(formData.mobile)) errs.mobile = "Mobile Number is invalid";
-    if (!formData.role) errs.role = "Role is required";
+    if (!selectedRoles) errs.role = "Role is required";
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
     if (!isEditing) {
       if (!formData.password || formData.password.trim().length < 6) {
@@ -133,15 +141,15 @@ const SubAdminList = () => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    const selectedRole = roles.find((c) => c.id.toString() === formData.role.toString());
-    const payload = { ...formData, role_name: selectedRole?.name || "" };
+    const sRole = roles.find((c) => c.id.toString() === selectedRoles.toString());
+    const payload = { ...formData, role: selectedRoles, role_name: sRole?.name || "" };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/sub_admin/${formData.id}`, payload);
         setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/sub_admin`, payload);
-        const payload1 = { ...res.data.subAdmin, role_name: selectedRole?.name || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const payload1 = { ...res.data.subAdmin, role_name: sRole?.name || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
@@ -167,6 +175,25 @@ const SubAdminList = () => {
     };
     fetchRoles();
   }, []);
+
+  const handleRolesChange = (event) => {
+    setSelectedRoles(event.target.value);
+  };
+
+  useEffect(() => {
+        $('#role').select2({
+          theme: "bootstrap",
+          width: '100%',
+          placeholder: "Select Role"
+        }).on("change", function () {
+          const roleId = $(this).val();
+          handleRolesChange({ target: { value: roleId } });
+        });
+    
+        return () => {
+          if ($('#role').data('select2')) {$('#role').select2('destroy') };
+        };
+      }, [roles]);
 
   const openDeleteModal = (subAdminId) => { setSubAdminToDelete(subAdminId); setIsBulkDelete(false); setShowDeleteModal(true); };
   const openBulkDeleteModal = () => { setSubAdminToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
@@ -324,14 +351,19 @@ const SubAdminList = () => {
                     }
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="role" className="form-label required">Role</label>
-                      <SearchDropdown
-                        id="role"
-                        options={roles?.map(role => ({ value: role.id, label: role.name }))}
-                        value={formData.role}
-                        onChange={handleSelectChange("role")}
-                        placeholder="Select role"
+                      <select
                         className={`form-control ${errors.role ? "is-invalid" : ""}`}
-                      />
+                        id="role"
+                        value={selectedRoles}
+                        onChange={handleRolesChange}
+                      >
+                        <option value="">Select Role</option>
+                        {roles?.map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
                       {errors.role && <div className="text-danger small mt-1">{errors.role}</div>}
                     </div>
                     <div className="form-group mb-3 col-md-12">

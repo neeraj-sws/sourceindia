@@ -66,6 +66,7 @@ const Dashboard = () => {
             statusActive: sellers.data.statusActive,
             statusInactive: sellers.data.statusInactive,
             notApproved: sellers.data.notApproved,
+            notCompleted: sellers.data.notCompleted,
           },
           buyers: {
             total: buyers.data.total,
@@ -98,7 +99,7 @@ const Dashboard = () => {
     { label: "Active Seller Members", value: counts.sellers?.statusActive, icon: "bx bxs-user-check" },
     { label: "Inactive Seller Members", value: counts.sellers?.statusInactive, icon: "bx bxs-user-x" },
     { label: "Not Approved Seller Members", value: counts.sellers?.notApproved, icon: "bx bxs-user-minus" },
-    // { label: "Not Complete Seller", value: "", icon: "bx bxs-user-x" },
+    { label: "Not Complete Seller", value: counts.sellers?.notCompleted, icon: "bx bxs-user-x" },
     { label: "Total Buyer Members", value: counts.buyers?.total, icon: "bx bxs-group" },
     { label: "Active Buyer Members", value: counts.buyers?.statusActive, icon: "bx bxs-user-check" },
     { label: "Inactive Buyer Members", value: counts.buyers?.statusInactive, icon: "bx bxs-user-x" },

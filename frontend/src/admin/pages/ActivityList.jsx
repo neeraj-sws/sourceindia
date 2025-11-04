@@ -15,6 +15,9 @@ import { DateRangePicker } from 'react-date-range';
 import 'react-date-range/dist/styles.css'; 
 import 'react-date-range/dist/theme/default.css'; 
 import { format } from 'date-fns';
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const ActivityList = ({ getDeleted }) => {
   const navigate = useNavigate();
@@ -32,6 +35,7 @@ const ActivityList = ({ getDeleted }) => {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [coreActivities, setCoreActivities] = useState([]);
+  const [selectedCoreActivities, setSelectedCoreActivities] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -96,17 +100,29 @@ const ActivityList = ({ getDeleted }) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
+      const coreactivityId = editData.coreactivity ? String(editData.coreactivity) : "";
       setFormData({ ...editData, status: String(editData.status) });
+      setSelectedCoreActivities(coreactivityId);
+      setTimeout(() => {
+        if ($("#coreactivity").data("select2")) {
+          $("#coreactivity").val(coreactivityId).trigger("change");
+        }
+      }, 100);
     } else {
-      setFormData(initialForm);
-    }    
-    setShowModal(true);
+      resetForm();
+    }
   };
 
   const resetForm = () => {
     setFormData(initialForm);
     setIsEditing(false);
     setErrors({});
+    setSelectedCoreActivities('');
+    setTimeout(() => {
+    if ($("#coreactivity").data("select2")) {
+      $("#coreactivity").val(null).trigger("change");
+    }
+  }, 100);
   };
 
   const handleChange = (e) => {
@@ -124,7 +140,7 @@ const ActivityList = ({ getDeleted }) => {
   const validateForm = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = "Name is required";
-    if (!formData.coreactivity) errs.coreactivity = "Core Activity is required";
+    if (!selectedCoreActivities) errs.coreactivity = "Core Activity is required";
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -134,15 +150,15 @@ const ActivityList = ({ getDeleted }) => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    const selectedCoreActivity = coreActivities.find((c) => c.id.toString() === formData.coreactivity.toString());
-    const payload = { ...formData, coreactivity_name: selectedCoreActivity?.name || "" };
+    const sCoreActivity = coreActivities.find((c) => c.id.toString() === selectedCoreActivities.toString());
+    const payload = { ...formData, coreactivity: selectedCoreActivities, coreactivity_name: sCoreActivity?.name || "" };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/activities/${formData.id}`, payload);
         setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/activities`, payload);
-        const payload1 = { ...res.data.activity, coreactivity_name: selectedCoreActivity?.name || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const payload1 = { ...res.data.activity, coreactivity_name: sCoreActivity?.name || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
@@ -168,6 +184,25 @@ const ActivityList = ({ getDeleted }) => {
     };
     fetchCoreActivities();
   }, []);
+
+  const handleCoreActivitiesChange = (event) => {
+    setSelectedCoreActivities(event.target.value);
+  };
+
+  useEffect(() => {
+          $('#coreactivity').select2({
+            theme: "bootstrap",
+            width: '100%',
+            placeholder: "Select coreactivity"
+          }).on("change", function () {
+            const coreactivityId = $(this).val();
+            handleCoreActivitiesChange({ target: { value: coreactivityId } });
+          });
+      
+          return () => {
+            if ($('#coreactivity').data('select2')) {$('#coreactivity').select2('destroy') };
+          };
+        }, [coreActivities]);
 
   const openDeleteModal = (activityId) => { setActivityToDelete(activityId); setIsBulkDelete(false); setShowDeleteModal(true); };
   const openBulkDeleteModal = () => { setActivityToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
@@ -329,14 +364,27 @@ const ActivityList = ({ getDeleted }) => {
                     </div>
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="coreactivity" className="form-label required">Core Activity</label>
-                      <SearchDropdown
+                      {/* <SearchDropdown
                         options={coreActivities?.map(cat => ({ value: String(cat.id), label: cat.name }))}
                         value={formData.coreactivity}
                         onChange={handleSelectChange("coreactivity")}
                         placeholder="Select Core Activity"
                         id="coreactivity"
                         className={`form-control ${errors.coreactivity ? "is-invalid" : ""}`}
-                      />
+                      /> */}
+                      <select
+                        className={`form-control ${errors.coreactivity ? "is-invalid" : ""}`}
+                        id="coreactivity"
+                        value={selectedCoreActivities}
+                        onChange={handleCoreActivitiesChange}
+                      >
+                        <option value="">Select coreactivity</option>
+                        {coreActivities?.map((coreactivity) => (
+                          <option key={coreactivity.id} value={coreactivity.id}>
+                            {coreactivity.name}
+                          </option>
+                        ))}
+                      </select>
                       {errors.coreactivity && (<div className="text-danger small mt-1">{errors.coreactivity} </div>
                       )}
                     </div>
@@ -534,7 +582,7 @@ const ActivityList = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Activity Export.xlsx"
+        fileName={getDeleted ? "Activity Remove Export.xlsx" : "Activity Export.xlsx"}
         data={activityData}
         columns={[
           { label: "Name", key: "name" },

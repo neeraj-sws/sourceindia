@@ -34,7 +34,7 @@ const menuData = [
     title: 'Leads Master',
     icon: 'bx bx-user',
     subMenu: [
-      { title: 'Leads', link: '/admin/leads' },
+      // { title: 'Leads', link: '/admin/leads' },
       { title: 'Approve Leads', link: '/admin/approve_leads' },
       { title: 'Pending Leads', link: '/admin/enquiries-list' },
       { title: 'Public Enquiries', link: '/admin/public_enquiries' },
@@ -65,6 +65,8 @@ const menuData = [
     icon: 'bx bx-cart',
     subMenu: [
       { title: 'Product List', link: '/admin/products' },
+      { title: 'Approve Products', link: '/admin/approve-product-list' },
+      { title: 'Not Approve Products', link: '/admin/notapprove-product-list' },
       { title: 'Add Product', link: '/admin/add_product' },
     ],
   },
@@ -115,6 +117,14 @@ const menuData = [
     subMenu: [
       { title: 'Email Circular', link: '/admin/email_circular' },
       { title: 'Add Email Circular', link: '/admin/add_email_circular' },
+    ],
+  },
+  {
+    title: 'Event 2024 Registrations',
+    icon: 'bx bx-envelope',
+    subMenu: [
+      { title: 'Registrations', link: '/admin/registrations-list' },
+      { title: 'Deleted Registrations', link: '/admin/registrations-remove-list' },
     ],
   },
   {

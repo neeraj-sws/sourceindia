@@ -332,6 +332,16 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
           add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Buyer</>)} add_link="/admin/add_buyer"
           actions={
             <>
+              {!getDeleted && !getInactive && !getNotApproved && (
+                <button className="btn btn-sm btn-primary mb-2 me-2">
+                  Mail to Selected User
+                </button>
+              )}
+              {!getDeleted && (
+              <button className="btn btn-sm btn-primary mb-2 me-2">
+                All Mail
+              </button>
+              )}
               <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}>
                 <i className="bx bx-download" /> Excel
               </button>
@@ -445,13 +455,13 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                   { key: "user_company", label: "Company Name", sortable: true },
                   { key: "address", label: "Location", sortable: true },
                   ...(!getDeleted ? [
-                  { key: "status", label: "Status", sortable: false },
+                  { key: "status", label: "User Status", sortable: false },
                   { key: "account_status", label: "Account Status", sortable: false },
-                  { key: "seller_status", label: "Manage Seller", sortable: false },
-                  ] : [
+                  { key: "seller_status", label: "Make Seller", sortable: false },
+                  { key: "user_category", label: "User Category", sortable: false },
+                  ]:[]),
                   { key: "created_at", label: "Created", sortable: true },
-                  { key: "updated_at", label: "Last Update", sortable: true },
-                  ]),
+                  { key: "updated_at", label: "Last Update", sortable: true },                  
                   { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}
@@ -476,10 +486,10 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                       </td>
                     )}
                     <td><Link to={`/admin/buyer/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
-                    <td>{row.full_name}<br />{row.email}<br />{row.mobile}</td>
+                    <td>{row.full_name}<br />{row.email}<br />{row.mobile}<br />{row.is_trading == 1 ? (<span className="badge bg-success">Trader</span>) : ("")}</td>
                     <td>{row.user_company}<br />{row.walkin_buyer == 1 ? (<span className="badge bg-primary">Walk-In Buyer</span>) : ("")}</td>
                     <td>{row.address}</td>
-                    {!getDeleted ? (
+                    {!getDeleted && (
                       <>
                         <td>
                           <div className="form-check form-switch">
@@ -514,13 +524,11 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                             />
                           </div>
                         </td>
-                      </>
-                    ) : (
-                      <>
-                        <td>{formatDateTime(row.created_at)}</td>
-                        <td>{formatDateTime(row.updated_at)}</td>
+                        <td>{row.user_category}</td>                        
                       </>
                     )}
+                    <td>{formatDateTime(row.created_at)}</td>
+                    <td>{formatDateTime(row.updated_at)}</td>
                     <td>
                       <div className="dropdown">
                         <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -529,6 +537,11 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                         <ul className="dropdown-menu">
                           {!getDeleted ? (
                             <>
+                              <li>
+                                <button className="dropdown-item">
+                                  <i className="bx bx-log-in me-2"></i> Login
+                                </button>
+                              </li>
                               <li>
                                 <button className="dropdown-item" onClick={() => navigate(`/admin/edit_buyer/${row.id}`)}>
                                   <i className="bx bx-edit me-2"></i> Edit

@@ -45,6 +45,7 @@ exports.getAllHomeBanners = async (req, res) => {
     const modifiedHomeBanners = homeBanners.map(home_banner => {
       const homeBannersData = home_banner.toJSON();
       homeBannersData.file_name = homeBannersData.UploadImage?.file || null;
+      homeBannersData.getStatus = homeBannersData.status === 1 ? 'Active' : 'Inactive';
       delete homeBannersData.UploadImage;
       return homeBannersData;
     });

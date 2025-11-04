@@ -3,9 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
+import ImageWithFallback from "../common/ImageWithFallback";
 import DataTable from "../common/DataTable";
-import SearchDropdown from "../common/SearchDropdown";
-import API_BASE_URL from "../../config";
+import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import CoreActivityModals from "./modal/CoreActivityModals";
@@ -15,6 +15,9 @@ import { DateRangePicker } from 'react-date-range';
 import 'react-date-range/dist/styles.css'; 
 import 'react-date-range/dist/theme/default.css'; 
 import { format } from 'date-fns';
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const CoreActivityList = ({ getDeleted }) => {
   const navigate = useNavigate();
@@ -32,6 +35,7 @@ const CoreActivityList = ({ getDeleted }) => {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [colors, setColors] = useState([]);
+  const [selectedColors, setSelectedColors] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [coreActivityToDelete, setCoreActivityToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -97,9 +101,16 @@ const CoreActivityList = ({ getDeleted }) => {
     setErrors({});
     if (editData) {
       const res = await axios.get(`${API_BASE_URL}/core_activities/${editData.id}`);
+      const colorId = editData.color ? String(editData.color) : "";
       setFormData({ ...editData, status: String(editData.status), file_name: res.data.file_name, file: null });
+      setSelectedColors(colorId);
+      setTimeout(() => {
+        if ($("#color").data("select2")) {
+          $("#color").val(colorId).trigger("change");
+        }
+      }, 100);
     } else {
-      setFormData(initialForm);
+      resetForm();
     }
   };
 
@@ -107,18 +118,17 @@ const CoreActivityList = ({ getDeleted }) => {
     setFormData(initialForm);
     setIsEditing(false);
     setErrors({});
+    setSelectedColors('');
+    setTimeout(() => {
+    if ($("#color").data("select2")) {
+      $("#color").val(null).trigger("change");
+    }
+  }, 100);
   };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
-  };
-
-  const handleSelectChange = (fieldName) => (selectedOption) => {
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: selectedOption ? selectedOption.value : "",
-    }));
   };
 
   const allowedImageTypes = ["image/jpeg", "image/png", "image/gif"];
@@ -138,7 +148,7 @@ const CoreActivityList = ({ getDeleted }) => {
   const validateForm = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = "Name is required";
-    if (!formData.color) errs.color = "Color is required";
+    if (!selectedColors) errs.color = "Color is required";
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
     if (!formData.file && !isEditing) {
       errs.file = "Image is required";
@@ -151,8 +161,8 @@ const CoreActivityList = ({ getDeleted }) => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    const selectedColor = colors.find((c) => c.id.toString() === formData.color.toString());
-    const payload = { ...formData, color_name: selectedColor?.title || "" };
+    const sColor = colors.find((c) => c.id.toString() === selectedColors.toString());
+    const payload = { ...formData, color: selectedColors, color_name: sColor?.title || "" };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/core_activities/${formData.id}`, payload, {
@@ -163,7 +173,7 @@ const CoreActivityList = ({ getDeleted }) => {
         const res = await axios.post(`${API_BASE_URL}/core_activities`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        const payload1 = { ...res.data.coreActivity, color_name: selectedColor?.title || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const payload1 = { ...res.data.coreActivity, color_name: sColor?.title || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
@@ -189,6 +199,26 @@ const CoreActivityList = ({ getDeleted }) => {
     };
     fetchColors();
   }, []);
+
+  const handleColorsChange = async (event) => {
+    const colorsId = event.target.value;
+    setSelectedColors(colorsId);
+  };
+
+  useEffect(() => {
+          $('#color').select2({
+            theme: "bootstrap",
+            width: '100%',
+            placeholder: "Select Color"
+          }).on("change", function () {
+            const colorId = $(this).val();
+            handleColorsChange({ target: { value: colorId } });
+          });
+      
+          return () => {
+            if ($('#color').data('select2')) {$('#color').select2('destroy') };
+          };
+        }, [colors]);
 
   const openDeleteModal = (coreActivityId) => { setCoreActivityToDelete(coreActivityId); setIsBulkDelete(false); setShowDeleteModal(true); };
   const openBulkDeleteModal = () => { setCoreActivityToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
@@ -350,14 +380,19 @@ const CoreActivityList = ({ getDeleted }) => {
                     </div>
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="color" className="form-label required">Color</label>
-                      <SearchDropdown
-                          options={colors?.map(color => ({ value: String(color.id), label: color.title }))}
-                          value={formData.color}
-                          onChange={handleSelectChange("color")}
-                          placeholder="Select Core Activity"
-                          id="color"
-                          className={`form-control ${errors.color ? "is-invalid" : ""}`}
-                        />
+                        <select
+                        className={`form-control ${errors.color ? "is-invalid" : ""}`}
+                        id="color"
+                        value={selectedColors}
+                        onChange={handleColorsChange}
+                      >
+                        <option value="">Select color</option>
+                        {colors?.map((color) => (
+                          <option key={color.id} value={color.id}>
+                            {color.title}
+                          </option>
+                        ))}
+                      </select>
                       </div>
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="status" className="form-label required">Status</label>
@@ -463,8 +498,8 @@ const CoreActivityList = ({ getDeleted }) => {
                     columns={[
                       ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),
                       { key: "id", label: "S.No.", sortable: true },
+                      { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
-                      { key: "color_name", label: "Color", sortable: true },
                       { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "action", label: "Action", sortable: false },
@@ -491,8 +526,13 @@ const CoreActivityList = ({ getDeleted }) => {
                         </td>
                         )}
                         <td>{(page - 1) * limit + index + 1}</td>
+                        <td><ImageWithFallback
+                          src={`${ROOT_URL}/${row.file_name}`}
+                          width={50}
+                          height={50}
+                          showFallback={true}
+                        /></td>
                         <td>{row.name}</td>
-                        <td>{row.color_name}</td>
                         <td>{formatDateTime(row.created_at)}</td>
                         <td>
                           {!getDeleted ? (
@@ -578,7 +618,7 @@ const CoreActivityList = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Core Activity Export.xlsx"
+        fileName={getDeleted ? "Core Activity Remove Export.xlsx" : "Core Activity Export.xlsx"}
         data={coreActivityData}
         columns={[
           { label: "Name", key: "name" },

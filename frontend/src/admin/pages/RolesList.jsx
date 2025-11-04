@@ -3,13 +3,15 @@ import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
-import SearchDropdown from "../common/SearchDropdown";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import RoleModals from "./modal/RoleModals";
 import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, name: "", ticket_category: "", status: "1" };
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const RolesList = () => {
   const [data, setData] = useState([]);
@@ -26,6 +28,7 @@ const RolesList = () => {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState(null);
   const [selectedRoles, setSelectedRoles] = useState([]);
@@ -84,29 +87,34 @@ const RolesList = () => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
+      const categoryId = editData.ticket_category ? String(editData.ticket_category) : "";
       setFormData({ ...editData, status: String(editData.status) });
+      setSelectedCategory(categoryId);
+      setTimeout(() => {
+        if ($("#ticket_category").data("select2")) {
+          $("#ticket_category").val(categoryId).trigger("change");
+        }
+      }, 100);
     } else {
-      setFormData(initialForm);
+      resetForm();
     }
-    setShowModal(true);
   };
 
   const resetForm = () => {
     setFormData(initialForm);
     setIsEditing(false);
     setErrors({});
+    setSelectedCategory('');
+    setTimeout(() => {
+    if ($("#ticket_category").data("select2")) {
+      $("#ticket_category").val(null).trigger("change");
+    }
+  }, 100);
   };
 
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
-  };
-
-  const handleSelectChange = (fieldName) => (selectedOption) => {
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: selectedOption ? selectedOption.value : "",
-    }));
   };
 
   const validateForm = () => {
@@ -121,15 +129,15 @@ const RolesList = () => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    const selectedCategory = categories.find((c) => c.id.toString() === formData.ticket_category.toString());
-    const payload = { ...formData, category_name: selectedCategory?.name || "" };
+    const sCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
+    const payload = { ...formData, ticket_category: selectedCategory, category_name: sCategory?.name || "" };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/roles/${formData.id}`, payload);
         setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/roles`, payload);
-        const payload1 = { ...res.data.roles, category_name: selectedCategory?.name || "" };
+        const payload1 = { ...res.data.roles, category_name: sCategory?.name || "" };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
@@ -155,6 +163,25 @@ const RolesList = () => {
     };
     fetchCategories();
   }, []);
+
+  const handleCategoryChange = (event) => {
+    setSelectedCategory(event.target.value);
+  };
+
+  useEffect(() => {
+        $('#ticket_category').select2({
+          theme: "bootstrap",
+          width: '100%',
+          placeholder: "Select Category"
+        }).on("change", function () {
+          const categoryId = $(this).val();
+          handleCategoryChange({ target: { value: categoryId } });
+        });
+    
+        return () => {
+          if ($('#ticket_category').data('select2')) {$('#ticket_category').select2('destroy') };
+        };
+      }, [categories]);
 
   const openStatusModal = (id, currentStatus) => { setStatusToggleInfo({ id, currentStatus }); setShowStatusModal(true); };
 
@@ -275,13 +302,19 @@ const RolesList = () => {
                   </div>
                   <div className="form-group mb-3 col-md-12">
                     <label htmlFor="ticket_category" className="form-label">Ticket Category</label>
-                    <SearchDropdown
-                      id="ticket_category"
-                      options={categories?.map(cat => ({ value: cat.id, label: cat.name }))}
-                      value={formData.ticket_category}
-                      onChange={handleSelectChange("ticket_category")}
-                      placeholder="Select Ticket Category"
-                    />
+                    <select
+                        className={`form-control ${errors.category ? "is-invalid" : ""}`}
+                        id="ticket_category"
+                        value={selectedCategory}
+                        onChange={handleCategoryChange}
+                      >
+                        <option value="">Select Category</option>
+                        {categories?.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
                   </div>
                   <div className="form-group mb-3 col-md-12">
                     <label htmlFor="status" className="form-label required">Status</label>
