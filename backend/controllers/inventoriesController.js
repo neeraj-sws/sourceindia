@@ -98,3 +98,12 @@ exports.getAllInventoriesServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getAllInventories = async (req, res) => {
+  try {
+    const inventories = await Inventories.findAll({ order: [['id', 'ASC']] });
+    res.json(inventories);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

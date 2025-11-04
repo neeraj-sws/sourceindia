@@ -499,7 +499,7 @@ const ItemList = ({ getDeleted }) => {
                     columns={[
                       ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),
                       { key: "id", label: "S.No.", sortable: true },
-                      { key: "name", label: "Name", sortable: true },
+                      { key: "name", label: "Item Name", sortable: true },
                       { key: "category_name", label: "Category", sortable: true },
                       { key: "sub_category_name", label: "Sub Category", sortable: true },
                       { key: "created_at", label: "Created At", sortable: true },
@@ -616,9 +616,10 @@ const ItemList = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Sub Sub Export.xlsx"
+        fileName={getDeleted ? "Sub Sub Ctegories Remove Export.xlsx" : "Sub Sub Categories Export.xlsx"}
         data={itemData}
         columns={[
+          { label: "Id", key: "id" },
           { label: "Item Name", key: "name" },
           { label: "Category", key: "category_name" },
           { label: "Sub Category", key: "sub_category_name" },

@@ -34,7 +34,7 @@ const SellerCategory = sequelize.define("SellerCategory", {
   timestamps: false,
 });
 
-//  Relations
+// 🔹 Relations
 SellerCategory.belongsTo(Categories, {
   foreignKey: "category_id",
   as: "category",

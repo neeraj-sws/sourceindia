@@ -148,7 +148,7 @@ exports.getSubCategoriesByCategories = async (req, res) => {
 
 exports.getSubCategoriesCount = async (req, res) => {
   try {
-    const total = await SubCategories.count();
+    const total = await SubCategories.count({where: { is_delete: 0 }});
     res.json({ total });
   } catch (err) {
     console.error(err);

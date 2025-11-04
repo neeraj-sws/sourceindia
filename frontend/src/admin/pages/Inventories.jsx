@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
@@ -6,6 +6,7 @@ import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import InventoriesModals from "./modal/InventoriesModals";
+import ExcelExport from "../common/ExcelExport";
 import 'react-date-range/dist/styles.css'; 
 import 'react-date-range/dist/theme/default.css'; 
 
@@ -24,6 +25,8 @@ const Inventories = () => {
   const [inventoriesToDelete, setInventoriesToDelete] = useState(null);
   const [selectedInventories, setSelectedInventories] = useState([]);
   const [isBulkDelete, setIsBulkDelete] = useState(false);
+  const [inventoriesData, setInventoriesData] = useState([]);
+  const excelExportRef = useRef();
 
   const fetchData = async () => {
     setLoading(true);
@@ -121,15 +124,30 @@ const Inventories = () => {
     );
   };
 
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/inventories`).then((res) => {
+      setInventoriesData(res.data);
+    });
+  }, []);
+
+  const handleDownload = () => {
+    if (excelExportRef.current) {
+      excelExportRef.current.exportToExcel();
+    }
+  };
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb page="Settings" title="Inventories"
             actions={(
-                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedInventories.length === 0}>
-                    <i className="bx bx-trash"></i> Delete Selected
-                </button>
+              <>
+              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+              <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedInventories.length === 0}>
+                <i className="bx bx-trash"></i> Delete Selected
+              </button>
+              </>
             )}
           />
           <div className="card">
@@ -196,6 +214,17 @@ const Inventories = () => {
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}
         isBulkDelete={isBulkDelete}
+      />
+      <ExcelExport
+        ref={excelExportRef}
+        columnWidth={34.29}
+        fileName="semple-invantory.xlsx"
+        data={inventoriesData}
+        columns={[
+          { label: "P/N", key: "pno" },
+          { label: "Brand", key: "brand" },
+          { label: "QTY", key: "qty" },
+        ]}
       />
     </>
   );

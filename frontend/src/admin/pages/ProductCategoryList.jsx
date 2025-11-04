@@ -592,7 +592,7 @@ const ProductCategoryList = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Category Export.xlsx"
+        fileName={getDeleted ? "Category Remove Export.xlsx" : "Category.xlsx"}
         data={categoryData}
         columns={[
           { label: "Name", key: "name" },

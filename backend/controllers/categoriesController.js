@@ -142,7 +142,7 @@ exports.getCategoriesById = async (req, res) => {
 
 exports.getCategoriesCount = async (req, res) => {
   try {
-    const total = await Categories.count();
+    const total = await Categories.count({where: { is_delete: 0 }});
     res.json({ total });
   } catch (err) {
     console.error(err);

@@ -103,7 +103,6 @@ const ProductSubCategoryList = ({ getDeleted }) => {
     } else {
       setFormData(initialForm);
     }
-    setShowModal(true);
   };
 
   const resetForm = () => {
@@ -536,7 +535,7 @@ const ProductSubCategoryList = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Sub Category Export.xlsx"
+        fileName={getDeleted ? "Sub Category Remove Export.xlsx" : "Sub Category.xlsx"}
         data={subCategoryData}
         columns={[
           { label: "Sub Category", key: "name" },

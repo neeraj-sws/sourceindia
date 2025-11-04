@@ -481,6 +481,16 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
           add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Seller</>)} add_link="/admin/add_seller"
           actions={
             <>
+              {!getDeleted && !getInactive && !getNotApproved && (
+                <>
+                <button className="btn btn-sm btn-primary mb-2 me-2">
+                  Selected Mail
+                </button>
+                <button className="btn btn-sm btn-primary mb-2 me-2">
+                  All Mail
+                </button>
+                </>
+              )}
               <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}>
                 <i className="bx bx-download" /> Excel
               </button>
@@ -741,6 +751,25 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
                               <i className="bx bx-trash me-2"></i> Delete
                             </button>
                           </li>
+                          {!getInactive && !getNotApproved && (
+                          <li>
+                            <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
+                              <i className="bx bx-envelope me-2"></i> Mail
+                            </button>
+                          </li>
+                          )}
+                          <li>
+                            <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
+                              <i className="bx bx-log-in me-2"></i> Login
+                            </button>
+                          </li>
+                          {!getInactive && !getNotCompleted && !getNotApproved && (
+                          <li>
+                            <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
+                              <i className="bx bx-envelope me-2"></i> Mail History
+                            </button>
+                          </li>
+                          )}
                           </>                          
                           ) : (
                           <>

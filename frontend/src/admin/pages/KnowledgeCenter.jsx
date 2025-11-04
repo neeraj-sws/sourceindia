@@ -578,7 +578,7 @@ const KnowledgeCenter = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Knowledge Center Export.xlsx"
+        fileName={getDeleted ? "Knowledge Center Remove Export.xlsx" : "Knowledge Center Export.xlsx"}
         data={knowledgeCenterData}
         columns={[
           { label: "Name", key: "name" },

@@ -7,6 +7,7 @@ const States = require('./States');
 const Cities = require('./Cities');
 const CoreActivity = require('./CoreActivity');
 const Activity = require('./Activity');
+const SellerCategory = require('./SellerCategory');
 
 const Users = sequelize.define('Users', {
   company_id: { type: DataTypes.INTEGER, allowNull: true, },
@@ -70,5 +71,6 @@ Users.belongsTo(CompanyInfo, { foreignKey: 'company_id', targetKey: 'id', as: 'c
 Users.belongsTo(Countries, { foreignKey: 'country', targetKey: 'id', as: 'country_data', constraints: false });
 Users.belongsTo(States, { foreignKey: 'state', targetKey: 'id', as: 'state_data', constraints: false });
 Users.belongsTo(Cities, { foreignKey: 'city', targetKey: 'id', as: 'city_data', constraints: false });
+Users.hasMany(SellerCategory, { foreignKey: 'user_id', as: 'seller_categories' });
 
 module.exports = Users;

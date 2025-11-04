@@ -1,15 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, use } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
-import SearchDropdown from "../common/SearchDropdown";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import TicketModals from "./modal/TicketModals";
 import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, user_id: "", title: "", message: "", priority: "", category: "", status: "", attachment: null };
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
+import { DateRangePicker } from 'react-date-range';
+import { format } from 'date-fns';
 
 const TicketList = () => {
   const [data, setData] = useState([]);
@@ -26,19 +30,40 @@ const TicketList = () => {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [users, setUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState('');
   const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState(null);
   const listStatus = ["Pending", "In Progress", "Resolved", "Cancel"];
   const [ticketData, setTicketData] = useState([]);
   const excelExportRef = useRef();
   const [submitting, setSubmitting] = useState(false);
+  const [dateRange, setDateRange] = useState('');
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [tempStartDate, setTempStartDate] = useState(null);
+  const [tempEndDate, setTempEndDate] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [range, setRange] = useState([
+    {startDate: new Date(), endDate: new Date(), key: 'selection'}
+  ]);
+  const [ticketTitle, setTicketTitle] = useState("");
+  const [tempTicketTitle, setTempTicketTitle] = useState("");
+  const [statusFilter, setStatusFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
+  const [appliedStatusFilter, setAppliedStatusFilter] = useState('');
+  const [appliedPriorityFilter, setAppliedPriorityFilter] = useState('');
+  const [filterCategories, setFilterCategories] = useState([]);
+  const [selectedFilterCategories, setSelectedFilterCategories] = useState("");
+  const [appliedFilterCategories, setAppliedFilterCategories] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/tickets/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection },
+        params: { page, limit, search, sortBy, sort: sortDirection, dateRange, startDate, endDate, 
+        title: ticketTitle || "", status: appliedStatusFilter || "", priority: appliedPriorityFilter || "", category: appliedFilterCategories },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -50,7 +75,8 @@ const TicketList = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, dateRange, startDate, endDate, 
+    ticketTitle, appliedStatusFilter, appliedPriorityFilter, appliedFilterCategories]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -82,10 +108,23 @@ const TicketList = () => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
+      console.log(editData)
       const res = await axios.get(`${API_BASE_URL}/tickets/${editData.id}`);
+      const categoryId = editData.category ? String(editData.category) : "";
+      const userId = editData.user_id ? String(editData.user_id) : "";
       setFormData({ ...editData, status: String(editData.status), attachment: res.data.attachment });
+      setSelectedCategory(categoryId);
+      setSelectedUsers(userId);
+      setTimeout(() => {
+        if ($("#category").data("select2")) {
+          $("#category").val(categoryId).trigger("change");
+        }
+        if ($("#user_id").data("select2")) {
+          $("#user_id").val(userId).trigger("change");
+        }
+      }, 100);
     } else {
-      setFormData(initialForm);
+      resetForm();
     }
   };
 
@@ -93,6 +132,16 @@ const TicketList = () => {
     setFormData(initialForm);
     setIsEditing(false);
     setErrors({});
+    setSelectedCategory('');
+    setSelectedUsers('');
+    setTimeout(() => {
+    if ($("#category").data("select2")) {
+      $("#category").val(null).trigger("change");
+    }
+    if ($("#user_id").data("select2")) {
+      $("#user_id").val(userId).trigger("change");
+    }
+  }, 100);
   };
 
   const handleChange = (e) => {
@@ -104,20 +153,13 @@ const TicketList = () => {
     }
   };
 
-  const handleSelectChange = (fieldName) => (selectedOption) => {
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: selectedOption ? selectedOption.value : "",
-    }));
-  };
-
   const validateForm = () => {
     const errs = {};
     if (!formData.title.trim()) errs.title = "Title is required";
-    if (!formData.user_id) errs.user_id = "User is required";
+    if (!selectedUsers) errs.user_id = "User is required";
     if (!formData.message.trim()) errs.message = "Message is required";
     if (!formData.priority.trim()) errs.priority = "Priority is required";
-    if (!formData.category) errs.category = "Category is required";
+    if (!selectedCategory) errs.category = "Category is required";
     if (!formData.status) errs.status = "Invalid status";
     if (!formData.attachment && !isEditing) {
       errs.attachment = "Attachment is required";
@@ -130,9 +172,9 @@ const TicketList = () => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    const selectedCategory = categories.find((c) => c.id.toString() === formData.category.toString());
-    const selectedUser = users.find((u) => u.id.toString() === formData.user_id.toString());
-    const payload = { ...formData, category_name: selectedCategory?.name || "", user_name: selectedUser?.fname + " " + selectedUser?.lname };
+    const sCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
+    const sUser = users.find((u) => u.id.toString() === formData.user_id.toString());
+    const payload = { ...formData, category: selectedCategory, category_name: sCategory?.name || "", user_id: selectedUsers, user_name: sUser?.fname + " " + sUser?.lname };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/tickets/${formData.id}`, payload, {
@@ -143,7 +185,7 @@ const TicketList = () => {
         const res = await axios.post(`${API_BASE_URL}/tickets`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        const payload1 = { ...res.data.ticket, category_name: selectedCategory?.name || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const payload1 = { ...res.data.ticket, category_name: sCategory?.name || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
@@ -170,6 +212,10 @@ const TicketList = () => {
     fetchUsers();
   }, []);
 
+  const handleUsersChange = (event) => {
+    setSelectedUsers(event.target.value);
+  };
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -181,6 +227,58 @@ const TicketList = () => {
     };
     fetchCategories();
   }, []);
+
+  const handleCategoryChange = (event) => {
+    setSelectedCategory(event.target.value);
+  };
+
+  useEffect(() => {
+    const fetchFilterCategories = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/ticket_categories`);
+        setFilterCategories(res.data);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+    fetchFilterCategories();
+  }, []);
+
+  const handleFilterCategoriesChange = (event) => { setSelectedFilterCategories(event.target.value); };
+
+  useEffect(() => {
+      $("#filter_categories").select2({
+        theme: "bootstrap",
+        width: "100%",
+        placeholder: "Select categories",
+      })
+      .on("change", function () {
+        handleFilterCategoriesChange({ target: { value: $(this).val() } });
+      });
+      $('#category').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select Category"
+      }).on("change", function () {
+        const categoryId = $(this).val();
+        handleCategoryChange({ target: { value: categoryId } });
+      });
+
+      $('#user_id').select2({
+        theme: "bootstrap",
+        width: '100%',
+        placeholder: "Select User"
+      }).on("change", function () {
+        const userId = $(this).val();
+        handleUsersChange({ target: { value: userId } });
+      });
+  
+      return () => {
+        if ($('#filter_categories').data('select2')) {$("#filter_categories").select2("destroy") };
+        if ($('#category').data('select2')) {$('#category').select2('destroy') };
+        if ($('#user_id').data('select2')) {$('#user_id').select2('destroy') };
+      };
+    }, [filterCategories, categories, users]);
 
   const openDeleteModal = (ticketId) => { setTicketToDelete(ticketId); setShowDeleteModal(true); };
 
@@ -212,6 +310,33 @@ const TicketList = () => {
     }
   };
 
+  const clearFilters = () => {
+    setTempStartDate(null);
+    setTempEndDate(null);
+    setDateRange('');
+    setStartDate(null);
+    setEndDate(null);
+    setTicketTitle("");
+    setTempTicketTitle("");
+    setStatusFilter('');
+setPriorityFilter('');
+setAppliedStatusFilter('');
+setAppliedPriorityFilter('');
+    setSelectedFilterCategories("");
+    setAppliedFilterCategories("");
+    setPage(1);
+    $("#filter_categories").val("").trigger("change");
+  };
+
+  const handleRangeChange = (item) => {
+    const start = item.selection.startDate;
+    const end = item.selection.endDate;
+    setRange([item.selection]);
+    setTempStartDate(format(start, 'yyyy-MM-dd'));
+    setTempEndDate(format(end, 'yyyy-MM-dd'));
+    setShowPicker(false);
+  };
+
   return (
     <>
       <div className="page-wrapper">
@@ -227,14 +352,19 @@ const TicketList = () => {
                   <form className="row" onSubmit={handleSubmit} noValidate>
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="user_id" className="form-label required">On Behalf Of</label>
-                      <SearchDropdown
-                        id="user_id"
-                        options={users?.map(user => ({ value: user.id, label: user.fname + " " + user.lname }))}
-                        value={formData.user_id}
-                        onChange={handleSelectChange("user_id")}
-                        placeholder="Select here"
+                      <select
                         className={`form-control ${errors.user_id ? "is-invalid" : ""}`}
-                      />
+                        id="user_id"
+                        value={selectedUsers}
+                        onChange={handleUsersChange}
+                      >
+                        <option value="">Select here</option>
+                        {users?.map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.fname + " " + user.lname}
+                          </option>
+                        ))}
+                      </select>
                       {errors.user_id && <div className="text-danger small mt-1">{errors.user_id}</div>}
                     </div>
                     <div className="form-group mb-3 col-md-12">
@@ -265,14 +395,19 @@ const TicketList = () => {
                     </div>
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="category" className="form-label required">Category</label>
-                      <SearchDropdown
-                        id="category"
-                        options={categories?.map(cat => ({ value: String(cat.id), label: cat.name }))}
-                        value={formData.category}
-                        onChange={handleSelectChange("category")}
-                        placeholder="Select category"
+                      <select
                         className={`form-control ${errors.category ? "is-invalid" : ""}`}
-                      />
+                        id="category"
+                        value={selectedCategory}
+                        onChange={handleCategoryChange}
+                      >
+                        <option value="">Select Category</option>
+                        {categories?.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
                       {errors.category && <div className="text-danger small mt-1">{errors.category}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
@@ -332,6 +467,93 @@ const TicketList = () => {
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title mb-3">Ticket List</h5>
+                  <div className="row mb-3">
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label">Title</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter Title"
+                        value={tempTicketTitle}
+                        onChange={(e) => setTempTicketTitle(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label">Status</label>
+                      <select
+                        className="form-select"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                      >
+                        <option value="">--Status--</option>
+                        <option value="0">Pending</option>
+                        <option value="1">Open</option>
+                        <option value="2">Resolved</option>
+                        <option value="3">Cancel</option>
+                      </select>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label">Priority</label>
+                      <select
+                        className="form-select"
+                        value={priorityFilter}
+                        onChange={(e) => setPriorityFilter(e.target.value)}
+                      >
+                        <option value="">--Priority--</option>
+                        <option value="normal">Normal</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label">Categories</label>
+                      <select id="filter_categories" className="form-control select2" value={selectedFilterCategories} onChange={handleFilterCategoriesChange}>
+                        <option value="">All</option>
+                        {filterCategories.map((d) => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-8">
+                      <label className="form-label mb-0">Date Filter:</label>
+                      <div className="position-relative">
+                        <button className="form-control text-start" onClick={() => setShowPicker(!showPicker)}>
+                          <i className="bx bx-calendar me-2"></i>
+                          {format(range[0].startDate, 'MMMM dd, yyyy')} - {format(range[0].endDate, 'MMMM dd, yyyy')}
+                        </button>
+                        {showPicker && (
+                          <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: '100%', left: 0 }}>
+                            <DateRangePicker
+                              ranges={range}
+                              onChange={handleRangeChange}
+                              showSelectionPreview={true}
+                              moveRangeOnFirstSelection={false}
+                              editableDateInputs={true}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="col-md-12 mt-2 d-flex justify-content-end gap-2">
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => {
+                          setStartDate(tempStartDate);
+                          setEndDate(tempEndDate);
+                          setDateRange('customrange');
+                          setTicketTitle(tempTicketTitle);
+                          setAppliedStatusFilter(statusFilter);
+                          setAppliedPriorityFilter(priorityFilter);
+                          setAppliedFilterCategories(selectedFilterCategories);
+                          setPage(1);
+                        }}
+                      >
+                        Apply
+                      </button>
+                      <button className="btn btn-secondary" onClick={() => { clearFilters(); }}>Clear</button>
+                    </div>
+                  </div>
                   <DataTable
                     columns={[
                       { key: "id", label: "S.No.", sortable: true },

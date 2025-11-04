@@ -426,6 +426,8 @@ button.nav-link:hover {
 .comapnycardlogo img {
     min-height: 90px;
     min-width: 90px;
+    max-width: 148px;
+    max-height: 148px;
 }
 
 .comapnycardlogo h5 {

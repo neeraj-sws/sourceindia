@@ -55,11 +55,13 @@ import OpenEnquiry from '../admin/pages/OpenEnquiry';
 import SeoPages from '../admin/pages/SeoPages';
 import UserActivities from '../admin/pages/UserActivities';
 import UserActivityDetails from '../admin/pages/UserActivityDetails';
-import UsersHistory from '../admin/pages/UsersHistory';
+import MailHistory from '../admin/pages/MailHistory';
 import EmailsList from '../admin/pages/EmailsList';
 import AddEmail from '../admin/pages/AddEmail';
 import ContactsList from '../admin/pages/ContactsList';
 import Inventories from '../admin/pages/Inventories';
+import RegistrationsList from '../admin/pages/RegistrationsList';
+import UsersHistory from '../admin/pages/UsersHistory';
 
 function AdminLayout() {
   const location = useLocation();
@@ -98,6 +100,8 @@ function AdminLayout() {
           <Route path="/edit_seller/:sellerId" element={<ProtectedRoute><AddSeller /></ProtectedRoute>} />
           <Route path="/seller/user-profile/:sellerId" element={<ProtectedRoute><SellerProfile /></ProtectedRoute>} />
           <Route path="/products" element={<ProtectedRoute><ProductList /></ProtectedRoute>} />
+          <Route path="/approve-product-list" element={<ProtectedRoute><ProductList isApprove={1} /></ProtectedRoute>} />
+          <Route path="/notapprove-product-list" element={<ProtectedRoute><ProductList isApprove={0} /></ProtectedRoute>} />
           <Route path="/product-remove" element={<ProtectedRoute><ProductList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/add_product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
           <Route path="/edit_product/:productId" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
@@ -148,13 +152,17 @@ function AdminLayout() {
           <Route path="/seo_pages" element={<ProtectedRoute><SeoPages /></ProtectedRoute>} />
           <Route path="/user_activity" element={<ProtectedRoute><UserActivities /></ProtectedRoute>} />
           <Route path="/user-activity-details/:userId" element={<ProtectedRoute><UserActivityDetails /></ProtectedRoute>} />
-          <Route path="/user_history" element={<ProtectedRoute><UsersHistory /></ProtectedRoute>} />
+          <Route path="/mail_history" element={<ProtectedRoute><MailHistory /></ProtectedRoute>} />
+          <Route path="/mail-history-remove-list" element={<ProtectedRoute><MailHistory getDeleted={true} /></ProtectedRoute>} />
           <Route path="/emails-list" element={<ProtectedRoute><EmailsList /></ProtectedRoute>} />
           <Route path="/add_email" element={<ProtectedRoute><AddEmail /></ProtectedRoute>} />
           <Route path="/email-edit/:emailId" element={<ProtectedRoute><AddEmail /></ProtectedRoute>} />
           <Route path="/contacts-list" element={<ProtectedRoute><ContactsList /></ProtectedRoute>} />
           <Route path="/contact-remove-list" element={<ProtectedRoute><ContactsList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/inventory-list" element={<ProtectedRoute><Inventories /></ProtectedRoute>} />
+          <Route path="/registrations-list" element={<ProtectedRoute><RegistrationsList /></ProtectedRoute>} />
+          <Route path="/registrations-remove-list" element={<ProtectedRoute><RegistrationsList getDeleted={true} /></ProtectedRoute>} />
+          <Route path="/user_history" element={<ProtectedRoute><UsersHistory /></ProtectedRoute>} />
         </Routes>
       </div>
       {showLayout && <Footer />}

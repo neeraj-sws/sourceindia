@@ -5,7 +5,6 @@ import Breadcrumb from "../common/Breadcrumb";
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
-import SearchDropdown from "../common/SearchDropdown";
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
@@ -30,6 +29,7 @@ const AddSeller = () => {
   const [selectedCoreActivity, setSelectedCoreActivity] = useState("");
   const [selectedActivity, setSelectedActivity] = useState("");
   const [roles, setRoles] = useState([]);
+  const [selectedRoles, setSelectedRoles] = useState('');
   const [formData, setFormData] = useState({
     fname: "", lname: "", email: "", password: "", mobile: "", zipcode: "", website: "", is_trading: "", elcina_member: "",
     address: "", file: null, company_logo: null, user_company: "", user_type: "", company_location: "",
@@ -43,6 +43,7 @@ const AddSeller = () => {
   const [submitting, setSubmitting] = useState(false);
   const previousSelectedCategoriesRef = useRef([]);
   const [subCategoryMap, setSubCategoryMap] = useState({}); 
+  const [designations, setDesignations] = useState([]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -195,6 +196,15 @@ const AddSeller = () => {
       handleActivityChange({ target: { value: activityId } });
     });
 
+    $('#user_type').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Activity"
+    }).on("change", function () {
+      const rolesId = $(this).val();
+      handleRolesChange({ target: { value: rolesId } });
+    });
+
     return () => {
       $('#country').off("change").select2('destroy');
       $('#state').off("change").select2('destroy');
@@ -203,8 +213,9 @@ const AddSeller = () => {
       $('#sub_category').off("change").select2('destroy');
       $('#core_activity').off("change").select2('destroy');
       $('#activity').off("change").select2('destroy');
+      $('#user_type').off("change").select2('destroy');
     };
-  }, [countries, states, cities, categories, subCategories, selectedSubCategory, subCategoryMap, coreactivities, activities]);
+  }, [countries, states, cities, categories, subCategories, selectedSubCategory, subCategoryMap, coreactivities, activities, roles]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -272,6 +283,18 @@ const AddSeller = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchDesignations = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/sellers/designations?status=1`);
+        setDesignations(res.data);
+      } catch (error) {
+        console.error("Error fetching states:", error);
+      }
+    };
+    fetchDesignations();
+  }, []);
+
   const handleActivityChange = (event) => { setSelectedActivity(event.target.value); };
 
   const handleInputChange = (e) => {
@@ -314,7 +337,7 @@ const AddSeller = () => {
     if (!formData.company_location?.trim()) errs.company_location = "Company Location is required";
     if (!formData.company_video_second?.trim()) errs.company_video_second = "Video URL is required";
     if (!formData.brief_company?.trim()) errs.brief_company = "Brief Company Description is required";
-    if (!formData.user_type) errs.user_type = "User Type is required";
+    if (!selectedRoles) errs.user_type = "User Type is required";
     if (!formData.is_star_seller) errs.is_star_seller = "Star Seller status is required";
     if (!formData.is_verified) errs.is_verified = "Verification status is required";
     if (!formData.elcina_member) errs.elcina_member = "ELCINA Member is required";
@@ -408,7 +431,7 @@ const AddSeller = () => {
           company_video_second: data.company_video_second || "",
           products: data.products || "",
           brief_company: data.brief_company || "",
-          user_type: data.user_type || "",
+          // user_type: data.user_type || "",
           featured_company: String(data.featured_company) || "",
           company_sample_file_name: data.company_sample_file_name || "",
           is_star_seller: String(data.is_star_seller) || "",
@@ -421,6 +444,7 @@ const AddSeller = () => {
         setSelectedSubCategory(data.sub_category ? data.sub_category.split(',') : []);
         setSelectedCoreActivity(data.core_activity || "");
         setSelectedActivity(data.activity || "");
+        setSelectedRoles(data.user_type || "");
         if (data.country) {
           const stRes = await axios.get(`${API_BASE_URL}/location/states/${data.country}`); setStates(stRes.data);
         }
@@ -460,6 +484,7 @@ const AddSeller = () => {
     data.append("sub_category", selectedSubCategory.join(","));
     data.append("core_activity", selectedCoreActivity);
     data.append("activity", selectedActivity);
+    data.append("user_type", selectedRoles);
     if (file) data.append("file", file);
     if (companyFile) data.append("company_logo", companyFile);
     if (companyBrochure) data.append("sample_file_id", companyBrochure);
@@ -485,14 +510,15 @@ const AddSeller = () => {
         const res = await axios.get(`${API_BASE_URL}/roles`);
         setRoles(res.data);
       } catch (error) {
-        console.error("Error fetching roles:", error);
+        console.error("Error fetching core activities:", error);
       }
     };
     fetchRoles();
   }, []);
 
-  const handleSelectChange = (fieldName) => (selectedOption) => {
-    setFormData((prev) => ({ ...prev, [fieldName]: selectedOption ? selectedOption.value : "", }));
+  const handleRolesChange = async (event) => {
+    const rolesId = event.target.value;
+    setSelectedRoles(rolesId);
   };
 
   return (
@@ -518,13 +544,16 @@ const AddSeller = () => {
                   </div>
                   <div className="col-md-4">
                     <label htmlFor="user_type" className="form-label required">User Type</label>
-                    <SearchDropdown
-                      id="user_type"
-                      options={roles?.map((role) => ({ value: role.id, label: role.name, }))}
-                      value={formData.user_type}
-                      onChange={handleSelectChange("user_type")}
-                      placeholder="Select here"
-                    />
+                    <select
+                      id="user_type" className={`form-control ${errors.user_type ? "is-invalid" : ""}`}
+                      value={selectedRoles}
+                      onChange={handleRolesChange}
+                    >
+                      <option value="">Select user type</option>
+                      {roles?.map((role) => (
+                        <option key={role.id} value={role.id}>{role.name}</option>
+                      ))}
+                    </select>
                     {errors.user_type && (<div className="invalid-feedback">{errors.user_type}</div>)}
                   </div>
                   <div className="col-md-4">
@@ -910,14 +939,20 @@ const AddSeller = () => {
                       {errors.zipcode && (<div className="invalid-feedback">{errors.zipcode}</div>)}
                     </div>
                     <div className="col-md-6 mb-3">
-                      <label htmlFor="designation" className="form-label required">Designation</label>
+                      <label htmlFor="browser" className="form-label required">Designation</label>
                       <input
                         type="text" className={`form-control ${errors.designation ? "is-invalid" : ""}`}
-                        id="designation"
+                        list="browsers"
+                        id="browser"
                         placeholder="Designation"
                         value={formData.designation}
                         onChange={handleInputChange}
                       />
+                      <datalist id="browsers">
+                        {designations.map((d, index) => (
+                          <option value={d.name} if="" key={index}></option>
+                        ))}
+                      </datalist>
                       {errors.designation && (<div className="invalid-feedback">{errors.designation}</div>)}
                     </div>
                     <div className="col-md-6 mb-3">

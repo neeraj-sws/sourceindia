@@ -348,7 +348,7 @@ const OpenEnquiry = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Open Enquiry Export.xlsx"
+        fileName={getDeleted ? "Open Enquiry Remove Export.xlsx" : "Open Enquiry Export.xlsx" }
         data={openEnquiryData}
         columns={[
           {label: "From", key: "name", format: (val, row) => {

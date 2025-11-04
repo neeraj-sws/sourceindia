@@ -44,7 +44,7 @@ exports.createBuyer = async (req, res) => {
       const {
         fname, lname, email, password, mobile, country, state, city, zipcode,
         user_company, website, is_trading, elcina_member, address, status, is_approve, step, products, is_seller,
-        mode, real_password, remember_token, payment_status, is_email_verify, featured_company,        
+        mode, real_password, remember_token, payment_status, is_email_verify, featured_company, user_category,
         organization_name, company_website, organizations_product_description, is_star_seller, is_verified
       } = req.body;
       if (!fname || !lname || !email || !password || !mobile || !country || !state || !city || !zipcode ||
@@ -103,6 +103,7 @@ exports.createBuyer = async (req, res) => {
         featured_company: featured_company || 0,
         company_logo: companyLogoImage.id,
         is_delete: 0,
+        user_category,
       });
       await user.update({
         company_id: companyInfo.id
@@ -136,14 +137,14 @@ exports.getAllBuyer = async (req, res) => {
             { model: MembershipPlan, as: 'MembershipPlan', attributes: ['id', 'name'] },
           ]
         },
-        {
+        /*{
           model: BuyerInterests,
           as: 'buyer_interests',
           attributes: ['activity_id'],
           include: [
             { model: InterestSubCategories, as: 'activity', attributes: ['name'] }
           ]
-        }
+        }*/
       ],
     });
     const modifiedBuyers = buyers.map(buyer => {
@@ -155,12 +156,12 @@ exports.getAllBuyer = async (req, res) => {
       buyersData.city_name = buyersData.city_data?.name || 'NA';
       buyersData.company_name = buyersData.company_info?.organization_name || null;
       buyersData.membership_plan_name = buyersData.company_info?.MembershipPlan?.name || 'NA';
-      buyersData.interest_names = buyersData.buyer_interests?.map(bi => bi.activity?.name).filter(Boolean).join(', ') || '';
+      // buyersData.interest_names = buyersData.buyer_interests?.map(bi => bi.activity?.name).filter(Boolean).join(', ') || '';
       delete buyersData.country_data;
       delete buyersData.state_data;
       delete buyersData.city_data;
       delete buyersData.company_info;
-      delete buyersData.buyer_interests;
+      // delete buyersData.buyer_interests;
       return buyersData;
     });
     res.json(modifiedBuyers);
@@ -220,25 +221,38 @@ exports.getBuyerCount = async (req, res) => {
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
-    const [total, addedToday, statusActive, statusInactive, notApproved] = await Promise.all([
-      Users.count({ where: { is_seller: 0 } }),
-      Users.count({
-        where: {
-          created_at: {
-            [Op.between]: [todayStart, todayEnd],
-          },
-        },
-      }),
-      Users.count({ where: { is_seller: 0, status: 1 } }),
-      Users.count({ where: { is_seller: 0, status: 0 } }),
-      Users.count({ where: { is_seller: 0, is_approve: 0 } }),
-    ]);
+   const [total, addedToday, statusActive, statusInactive, notApproved] = await Promise.all([
+  Users.count({
+    where: { is_seller: 0 },
+  }),
+
+  // Sellers added today
+  Users.count({
+    where: { created_at: { [Op.between]: [todayStart, todayEnd] } },
+  }),
+
+  // Active sellers
+  Users.count({
+    where: { is_seller: 0, status: 1, is_delete: 0, is_approve: 1 },
+  }),
+
+  // Inactive sellers
+  Users.count({
+    where: { is_seller: 0, status: 0, is_delete: 0 },
+  }),
+
+  // Not approved sellers
+  Users.count({
+    where: { is_seller: 0, is_approve: 0, is_delete: 0, is_complete: 1, status: 1 },
+  }),
+]);
+
     res.json({
-        total,
-        addedToday,
-        statusActive,
-        statusInactive,
-        notApproved,
+      total,
+      addedToday,
+      statusActive,
+      statusInactive,
+      notApproved,
     });
   } catch (err) {
     console.error(err);
@@ -316,6 +330,7 @@ exports.updateBuyer = async (req, res) => {
           organization_slug: createSlug(req.body.user_company),
           company_website: req.body.website,
           organizations_product_description: req.body.products,
+          user_category: req.body.user_category,
         });
       }
       res.status(200).json({ message: 'Buyer updated successfully', user });
@@ -480,7 +495,7 @@ exports.getAllBuyerServerSide = async (req, res) => {
     } = req.query;
     const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'mobile', 'country_name', 'state_name', 
       'city_name', 'zipcode', 'user_company', 'website', 'is_trading', 'elcina_member', 'address', 'products', 
-      'status', 'is_approve', 'is_seller', 'walkin_buyer', 'created_at', 'updated_at'];
+      'status', 'is_approve', 'is_seller', 'walkin_buyer', 'user_category', 'created_at', 'updated_at'];
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitValue = parseInt(limit);
@@ -493,6 +508,8 @@ exports.getAllBuyerServerSide = async (req, res) => {
       order = [[{ model: Cities, as: 'Cities' }, 'name', sortDirection]];
     } else if (sortBy === 'full_name') {
       order = [[fn('concat', col('fname'), ' ', col('lname')), sortDirection]];
+    } else if (sortBy === 'user_category') {
+      order = [[{ model: CompanyInfo, as: 'company_info' }, 'user_category', sortDirection]];
     } else if (validColumns.includes(sortBy)) {
       order = [[sortBy, sortDirection]];
     } else {
@@ -501,6 +518,13 @@ exports.getAllBuyerServerSide = async (req, res) => {
     const where = {};
     where.is_seller = 0;
     where.is_delete = 0;
+    if (req.query.getInactive !== 'true' && req.query.getDeleted !== 'true') {
+      where.is_approve = 1;
+      where.status = 1;
+      where.member_role = 1;
+      // where.step >= 3;
+      where.is_complete = 1;
+    }
     if (req.query.todayOnly === 'true') {
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
@@ -535,6 +559,7 @@ exports.getAllBuyerServerSide = async (req, res) => {
         { email: { [Op.like]: `%${search}%` } },
         { mobile: { [Op.like]: `%${search}%` } },
         { user_company: { [Op.like]: `%${search}%` } },
+        { '$company_info.user_category$': { [Op.like]: `%${search}%` } },
       ];
     }
     if (customerId) {
@@ -613,6 +638,7 @@ exports.getAllBuyerServerSide = async (req, res) => {
       include: [
         { model: UploadImage, as: 'file', attributes: ['file'] },
         { model: UploadImage, as: 'company_file', attributes: ['file'] },
+        { model: CompanyInfo, as: 'company_info', attributes: ['user_category'] },
       ],
     });
     const mappedRows = rows.map(row => ({
@@ -623,6 +649,7 @@ exports.getAllBuyerServerSide = async (req, res) => {
       file_name: row.file ? row.file.file : null,
       company_file_id: row.company_file_id,
       company_file_name: row.company_file ? row.company_file.file : null,
+      user_category: row.company_info ? row.company_info.user_category : null,
       mobile: row.mobile,
       country: row.country,
       state: row.state,

@@ -309,8 +309,20 @@ exports.getEnquiriesByNumber = async (req, res) => {
 
 exports.getEnquiriesCount = async (req, res) => {
   try {
-    const total = await Enquiries.count();
-    res.json({ total });
+    const [total, all, status1, status2, status0] = await Promise.all([
+      Enquiries.count({ where: { is_delete: 0 } }),
+      Enquiries.count(),
+      Enquiries.count({ where: { status: 1 } }),
+      Enquiries.count({ where: { status: 2 } }),
+      Enquiries.count({ where: { status: 0 } })
+    ]);
+    res.json({
+      total,
+      all,
+      status1,
+      status2,
+      status0
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -477,10 +489,10 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
       order = [['id', 'DESC']];
     }
     const where = {};
-    if (req.query.getPublic === 'true') { where.user_id = null; }
-    if (req.query.user_id) { where.user_id = req.query.user_id; }
-    if (req.query.getApprove === 'true') { where.is_approve = 1; }
-    if (req.query.getNotApprove === 'true') { where.is_approve = 0; }
+    if (req.query.getPublic === 'true') { where.user_id = null; where.is_delete = 0; }
+    if (req.query.user_id) { where.user_id = req.query.user_id; where.is_delete = 0; }
+    if (req.query.getApprove === 'true') { where.is_approve = 1; where.is_delete = 0; }
+    if (req.query.getNotApprove === 'true') { where.is_approve = 0; where.is_delete = 0; }
     if (req.query.getDeleted === 'true') { baseWhere.is_delete = 1; }
     const searchWhere = { ...where };
     if (search) {
@@ -697,125 +709,7 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
       sortBy = 'id',
       sort = 'DESC',
       user_id,
-      all = false
-    } = req.query;
-
-    if (!user_id) {
-      return res.status(400).json({ error: 'user_id is required' });
-    }
-
-    const sortDirection = sort.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-    let order = [[sortBy, sortDirection]];
-    if (sortBy === 'enquiry_product') {
-      order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
-    }
-
-    const where = { is_approve: 1, is_delete: 0 };
-
-    const user = await Users.findByPk(user_id, {
-      include: { model: CompanyInfo, as: 'company_info' }
-    });
-
-    const companyId = user?.company_info?.id;
-
-    const include = [
-      {
-        model: EnquiryUsers,
-        as: 'enquiry_users',
-        required: true,
-        where: { company_id: companyId },
-      },
-      {
-        model: Users,
-        as: 'from_user',
-        include: [{ model: CompanyInfo, as: 'company_info' }],
-        attributes: [
-          'id',
-          'fname',
-          'lname',
-          'email',
-          [Sequelize.literal("CONCAT(from_user.fname, ' ', from_user.lname)"), 'full_name']
-        ],
-      },
-      {
-        model: Users,
-        as: 'to_user',
-        attributes: [
-          'id',
-          'fname',
-          'lname',
-          'email',
-          [Sequelize.literal("CONCAT(to_user.fname, ' ', to_user.lname)"), 'full_name']
-        ],
-      },
-    ];
-
-    if (search) {
-      where[Op.or] = [
-        { enquiry_number: { [Op.like]: `%${search}%` } },
-        { category_name: { [Op.like]: `%${search}%` } },
-        literal(`EXISTS (
-          SELECT 1 FROM users AS u 
-          WHERE u.id = enquiries.user_id 
-          AND CONCAT(u.fname, ' ', u.lname) LIKE '%${search}%'
-        )`)
-      ];
-    }
-
-    const isAll = all === 'true' || all === true;
-    const limitValue = isAll ? null : parseInt(limit) || 10;
-    const offset = isAll ? null : ((parseInt(page) || 1) - 1) * limitValue;
-
-    const { count: filteredRecords, rows } = await Enquiries.findAndCountAll({
-      subQuery: false,
-      where,
-      order,
-      ...(isAll ? {} : { limit: limitValue, offset }),
-      include
-    });
-
-    // 🔁 Enrich each enquiry with its seller’s (from_user) categories
-    const enrichedRows = [];
-    for (const enq of rows) {
-      const enquiryJSON = enq.toJSON();
-      const sellerUser = await Users.findOne({
-        where: { company_id: enquiryJSON.company_id },
-        include: { model: CompanyInfo, as: 'company_info' }
-      });
-
-      // get that seller’s category info
-      const { category_sell_names, sub_category_names } = await getCategoryNames(sellerUser);
-
-      enrichedRows.push({
-        ...enquiryJSON,
-        category_name: category_sell_names || '',
-        sub_category_name: sub_category_names || '',
-      });
-    }
-
-    res.json({
-      data: enrichedRows,
-      filteredRecords,
-      totalRecords: filteredRecords,
-      isAll
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
-
-exports.getEnquiriesByEnquiryServerSide = async (req, res) => {
-  try {
-    const {
-      page,
-      limit,
-      search = '',
-      sortBy = 'id',
-      sort = 'DESC',
-      user_id,
+      isAdmin,
       all = false // optional query param ?all=true to get all data
     } = req.query;
 
@@ -830,11 +724,11 @@ exports.getEnquiriesByEnquiryServerSide = async (req, res) => {
       order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
     }
 
-    const where = {
-      is_approve: 1,
-      user_id: user_id,
-      is_delete: 0
-    };
+    const where = { is_delete: 0 };
+    if (!isAdmin) {
+      where.is_approve = 1;
+      where.user_id = user_id;
+    }
 
     const user = await Users.findByPk(user_id, {
       include: { model: CompanyInfo, as: 'company_info' }

@@ -15,7 +15,7 @@ import 'react-date-range/dist/styles.css';
 import 'react-date-range/dist/theme/default.css'; 
 import { format } from 'date-fns';
 
-const ProductList = ({ getDeleted }) => {
+const ProductList = ({ getDeleted, isApprove }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -91,7 +91,7 @@ const ProductList = ({ getDeleted }) => {
     const fetchCompanies = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/products/companies`);
-        setCompanies(res.data);
+        setCompanies(res.data.companies);
       } catch (err) {
         console.error("Error fetching companies:", err);
       }
@@ -154,7 +154,7 @@ const ProductList = ({ getDeleted }) => {
       const response = await axios.get(`${API_BASE_URL}/products/server-side`, {
         params: { page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false',
         dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "",
-        company: appliedCompanies || "", product_status: appliedProductStatus
+        company: appliedCompanies || "", product_status: appliedProductStatus, is_approve: isApprove
       },
       });
       setData(response.data.data);
@@ -168,7 +168,7 @@ const ProductList = ({ getDeleted }) => {
   };
 
   useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted,
-    dateRange, startDate, endDate, appliedCategory, appliedSubCategory, appliedCompanies, appliedProductStatus]);
+    dateRange, startDate, endDate, appliedCategory, appliedSubCategory, appliedCompanies, appliedProductStatus, isApprove]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -247,7 +247,16 @@ const ProductList = ({ getDeleted }) => {
 
   useEffect(() => {
     axios.get(`${API_BASE_URL}/products`).then((res) => {
-      const filtered = res.data.products.filter((c) => c.is_delete=== (getDeleted ? 1 : 0));
+      let filtered = res.data.products;
+      if (getDeleted) {
+        filtered = filtered.filter((c) => c.is_delete === 1);
+      } else if (isApprove==1) {
+        filtered = filtered.filter((c) => c.is_approve === 1 && c.is_delete === 0);
+      } else if (isApprove==0) {
+        filtered = filtered.filter((c) => c.is_approve === 0 && c.is_delete === 0);
+      } else {
+        filtered = filtered.filter((c) => c.is_delete === 0);
+      }
       setProductsData(filtered);
     });
   }, []);
@@ -552,7 +561,7 @@ const ProductList = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName={`${getDeleted ? "Product Remove List" : "Products"} Export.xlsx`}
+        fileName={`${getDeleted ? "Product Remove List" : isApprove==1 ? "Approve Product" : isApprove==0 ? "Not Approve Product" : "Products"} Export.xlsx`}
         data={productsData}
         columns={[
           { label: "Title", key: "title" },

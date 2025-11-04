@@ -60,7 +60,7 @@ const AboutStatusForm = () => {
             onChange={handleInputChange}>
             <option value="">Select here</option>
             <option value="1">Active</option>
-            <option value="0">Deactive</option>
+            <option value="0">InActive</option>
           </select>
           {errors.about_status && <div className="invalid-feedback">{errors.about_status}</div>}
         </div>

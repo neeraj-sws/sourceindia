@@ -3,13 +3,15 @@ import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
-import SearchDropdown from "../common/SearchDropdown";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from '../../utils/formatDate';
 import SourceInterestCategoriesModals from "./modal/SourceInterestCategoriesModals";
 import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, name: "", interest_category_id: "", status: "1" };
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const SourceInterestCategories = () => {
   const [data, setData] = useState([]);
@@ -26,6 +28,7 @@ const SourceInterestCategories = () => {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [sourceInterestCategoryToDelete, setSourceInterestCategoryToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -84,17 +87,29 @@ const SourceInterestCategories = () => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
+      const icId = editData.interest_category_id ? String(editData.interest_category_id) : "";
       setFormData({ ...editData, status: String(editData.status) });
+      setSelectedCategories(icId);
+      setTimeout(() => {
+        if ($("#interest_category_id").data("select2")) {
+          $("#interest_category_id").val(icId).trigger("change");
+        }
+      }, 100);
     } else {
-      setFormData(initialForm);
+      resetForm();
     }
-    setShowModal(true);
   };
 
   const resetForm = () => {
     setFormData(initialForm);
     setIsEditing(false);
     setErrors({});
+    setSelectedCategories('');
+    setTimeout(() => {
+    if ($("#interest_category_id").data("select2")) {
+      $("#interest_category_id").val(null).trigger("change");
+    }
+  }, 100);
   };
 
   const handleChange = (e) => {
@@ -102,17 +117,10 @@ const SourceInterestCategories = () => {
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
   };
 
-  const handleSelectChange = (fieldName) => (selectedOption) => {
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: selectedOption ? selectedOption.value : "",
-    }));
-  };
-
   const validateForm = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = "Name is required";
-    if (!formData.interest_category_id) errs.interest_category_id = "Interest Category is required";
+    if (!selectedCategories) errs.interest_category_id = "Interest Category is required";
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -122,15 +130,15 @@ const SourceInterestCategories = () => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    const selectedCategory = categories.find((c) => c.id.toString() === formData.interest_category_id.toString());
-    const payload = { ...formData, category_name: selectedCategory?.name || "" };
+    const sCategory = categories.find((c) => c.id.toString() === formData.interest_category_id.toString());
+    const payload = { ...formData, interest_category_id: selectedCategories, category_name: sCategory?.name || "" };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/interest_sub_categories/${formData.id}`, payload);
         setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/interest_sub_categories`, payload);
-        const payload1 = { ...res.data.interestSubCategories, category_name: selectedCategory?.name || "" };
+        const payload1 = { ...res.data.interestSubCategories, category_name: sCategory?.name || "" };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
@@ -156,6 +164,25 @@ const SourceInterestCategories = () => {
     };
     fetchCategories();
   }, []);
+
+  const handleCategoriesChange = (event) => {
+    setSelectedCategories(event.target.value);
+  };
+
+  useEffect(() => {
+          $('#interest_category_id').select2({
+            theme: "bootstrap",
+            width: '100%',
+            placeholder: "Select Role"
+          }).on("change", function () {
+            const icId = $(this).val();
+            handleCategoriesChange({ target: { value: icId } });
+          });
+      
+          return () => {
+            if ($('#interest_category_id').data('select2')) {$('#interest_category_id').select2('destroy') };
+          };
+        }, [categories]);
 
   const openDeleteModal = (interestSubCategoriesId) => { setSourceInterestCategoryToDelete(interestSubCategoriesId); setIsBulkDelete(false); setShowDeleteModal(true); };
   const openBulkDeleteModal = () => { setSourceInterestCategoryToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
@@ -275,13 +302,19 @@ const SourceInterestCategories = () => {
                     </div>
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="interest_category_id" className="form-label required">Interest Category</label>
-                      <SearchDropdown
+                      <select
+                        className={`form-control ${errors.interest_category_id ? "is-invalid" : ""}`}
                         id="interest_category_id"
-                        options={categories?.map(cat => ({ value: cat.id, label: cat.name }))}
-                        value={formData.interest_category_id}
-                        onChange={handleSelectChange("interest_category_id")}
-                        placeholder="Select Category"
-                      />
+                        value={selectedCategories}
+                        onChange={handleCategoriesChange}
+                      >
+                        <option value="">Select Category</option>
+                        {categories?.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
                       {errors.interest_category_id && (<div className="invalid-feedback">{errors.interest_category_id} </div>
                       )}
                     </div>
@@ -327,7 +360,7 @@ const SourceInterestCategories = () => {
                       ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "name", label: "Name", sortable: true },
-                      { key: "category_name", label: "Category", sortable: true },
+                      { key: "category_name", label: "Interest Category", sortable: true },
                       { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "action", label: "Action", sortable: false },
@@ -414,8 +447,8 @@ const SourceInterestCategories = () => {
           { label: "Name", key: "name" },
           { label: "Interest Category", key: "category_name" },
           { label: "Status", key: "getStatus" },
-          { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
-          { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Created At", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
+          { label: "Updated At", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
         ]}
       />
     </>
