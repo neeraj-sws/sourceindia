@@ -1632,3 +1632,129 @@ exports.getShortlistedenquiries = async (req, res) => {
     });
   }
 };
+
+exports.getEnquiriesByEnquiryServerSide = async (req, res) => {
+  try {
+    const {
+      page,
+      limit,
+      search = '',
+      sortBy = 'id',
+      sort = 'DESC',
+      user_id,
+      all = false // optional query param ?all=true to get all data
+    } = req.query;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    const sortDirection = sort.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    let order = [[sortBy, sortDirection]];
+    if (sortBy === 'enquiry_product') {
+      order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
+    }
+
+    const where = {
+      is_approve: 1,
+      user_id: user_id,
+      is_delete: 0
+    };
+
+    const user = await Users.findByPk(user_id, {
+      include: { model: CompanyInfo, as: 'company_info' }
+    });
+
+    const companyId = user?.company_info?.id;
+
+    const include = [
+      {
+        model: EnquiryUsers,
+        as: 'enquiry_users',
+        required: true,
+      },
+      {
+        model: Users,
+        as: 'from_user',
+        attributes: [
+          'id',
+          'fname',
+          'lname',
+          'email',
+          [Sequelize.literal("CONCAT(from_user.fname, ' ', from_user.lname)"), 'full_name']
+        ],
+      },
+      {
+        model: Users,
+        as: 'to_user',
+        attributes: [
+          'id',
+          'fname',
+          'lname',
+          'email',
+          [Sequelize.literal("CONCAT(to_user.fname, ' ', to_user.lname)"), 'full_name']
+        ],
+      },
+    ];
+
+    if (search) {
+      where[Op.or] = [
+        { enquiry_number: { [Op.like]: `%${search}%` } },
+        { category_name: { [Op.like]: `%${search}%` } },
+        literal(`EXISTS (
+          SELECT 1 FROM users AS u 
+          WHERE u.id = enquiries.user_id 
+          AND CONCAT(u.fname, ' ', u.lname) LIKE '%${search}%'
+        )`)
+      ];
+    }
+
+    // If ?all=true, skip pagination
+    const isAll = all === 'true' || all === true;
+    const limitValue = isAll ? null : parseInt(limit) || 10;
+    const offset = isAll ? null : ((parseInt(page) || 1) - 1) * limitValue;
+
+    const { count: filteredRecords, rows } = await Enquiries.findAndCountAll({
+      subQuery: false,
+      where,
+      order,
+      ...(isAll ? {} : { limit: limitValue, offset }),
+      include
+    });
+
+
+
+    const enrichedRows = [];
+    for (const enq of rows) {
+      const enquiryJSON = enq.toJSON();
+      const sellerUser = await Users.findOne({
+        where: { company_id: enquiryJSON.company_id },
+        include: { model: CompanyInfo, as: 'company_info' }
+      });
+
+      // get that seller’s category info
+      const { category_sell_names, sub_category_names } = await getCategoryNames(sellerUser);
+
+      enrichedRows.push({
+        ...enquiryJSON,
+        category_name: category_sell_names || '',
+        sub_category_name: sub_category_names || '',
+      });
+    }
+
+    res.json({
+      data: enrichedRows,
+      filteredRecords,
+      totalRecords: filteredRecords,
+      isAll
+    });
+
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
