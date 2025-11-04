@@ -12,7 +12,45 @@ const FrontHeader = () => {
   const token = localStorage.getItem('user_token');
   const navigate = useNavigate();
   const [searchType, setSearchType] = useState('product'); // Default to 'product'
-  const [searchQuery, setSearchQuery] = useState(''); // Store search input value
+  const [searchQuery, setSearchQuery] = useState('');
+  const [logoUrl, setLogoUrl] = useState('/logo.png');
+  const [mobile, setMobile] = useState('+91-11-41615985');
+
+  useEffect(() => {
+    const fetchSiteSettings = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/settings/site`);
+        const data = response.data;
+        if (data?.logo_file) {
+          setLogoUrl(`${ROOT_URL}/${data.logo_file}`);
+        } else {
+          setLogoUrl('/logo.png');
+        }
+        if (data?.mobile) {
+          setMobile(data.mobile);
+        }
+        const faviconLink = document.querySelector("link[rel='icon']");
+        if (faviconLink) {
+          faviconLink.href = data?.favicon_file
+            ? `${ROOT_URL}/${data.favicon_file}`
+            : "/favicon.png";
+          const testImg = new Image();
+          testImg.src = faviconLink.href;
+          testImg.onerror = () => {
+            faviconLink.href = "/favicon.png";
+          };
+        }
+      } catch (err) {
+        console.error("Error fetching site settings:", err);
+        setLogoUrl("/logo.png");
+        setMobile("+91-11-41615985");
+        const faviconLink = document.querySelector("link[rel='icon']");
+        if (faviconLink) faviconLink.href = "/favicon.png";
+      }
+    };
+
+    fetchSiteSettings();
+  }, []);
 
   useEffect(() => {
     const checkToken = () => {
@@ -26,8 +64,6 @@ const FrontHeader = () => {
 
   const handleLogout = (e) => {
     e.preventDefault();
-    // localStorage.removeItem('user_token');
-    // setIsLoggedIn(false);
     logout();
     navigate('/login');
   };
@@ -70,7 +106,7 @@ const FrontHeader = () => {
                 <span>Welcome User!</span>
               )}
               <div className="text-center text-md-start d-none d-md-block">
-                <span className="ms-3">Support: +91-11-41615985</span>
+                <span className="ms-3">Support: {mobile}</span>
               </div>
             </div>
             <div className="middleBox">
@@ -148,7 +184,16 @@ const FrontHeader = () => {
             <div className="d-flex flex-wrap justify-content-between align-items-center">
               <div>
                 <Link to="/" className="d-flex align-items-center text-decoration-none">
-                  <img src="/logo.png" alt="Logo" height="40" className="me-2" />
+                  <img
+                    src={logoUrl}
+                    alt="Site Logo"
+                    height="40"
+                    className="me-2"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/logo.png";
+                    }}
+                  />
                 </Link>
               </div>
               <div className="centerMenu">

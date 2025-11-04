@@ -60,6 +60,28 @@ const UserSidebar = () => {
   const currentPath = location.pathname;
   const [openIndex, setOpenIndex] = useState(null);
   const { user } = UseAuth();
+  const [logoUrl, setLogoUrl] = useState('/logo.png'); // state to store logo URL
+  const [siteData, setSiteData] = useState(null); // state to store site settings data
+
+  useEffect(() => {
+    const fetchSiteSettings = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/settings/site`);
+        const data = response.data;
+        setSiteData(data);
+        if (data?.logo_file) {
+          setLogoUrl(ROOT_URL+'/'+data.logo_file);
+        } else {
+          setLogoUrl("/logo.png");
+        }
+      } catch (error) {
+        console.error('Error fetching site settings:', error);
+        setLogoUrl("/logo.png");
+      }
+    };
+
+    fetchSiteSettings();
+  }, []);
 
   const handleToggle = (index) => {
     setOpenIndex((prev) => (prev === index ? null : index));
@@ -164,7 +186,10 @@ const UserSidebar = () => {
       <div className="simplebar-content" style={{ padding: 0 }}>
         <div className="sidebar-header">
           <div>
-            <img src="/logo.png" className="logo-icon" alt="logo icon" />
+            <img src={logoUrl} className="logo-icon" alt="logo icon" onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/logo.png";
+                    }} />
           </div>
           <div className="toggle-icon ms-auto">
             <i className="bx bx-arrow-to-left" />

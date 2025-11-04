@@ -1,7 +1,27 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
+import API_BASE_URL from '../config';
 
 const FrontFooter = () => {
+  const [footerData, setFooterData] = useState(null);
+
+  useEffect(() => {
+    const fetchFooterData = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/settings/home`);
+        setFooterData(response.data);
+      } catch (error) {
+        console.error('Error fetching footer data:', error);
+      }
+    };
+    fetchFooterData();
+  }, []);
+
+  if (!footerData) {
+    return null; // or a small loader if needed
+  }
+
   return (
     <footer>
       <div className='mainFooter'>
@@ -13,14 +33,18 @@ const FrontFooter = () => {
                 <img src="/footer_new_img.jpeg" alt="ELCINA Logo" />
               </div>
             </div>
+
             <div className="col-md-6 pe-lg-5">
               <div className='electronicpart pe-lg-5'>
-                <p className="fw-semibold mb-1">ELECTRONIC INDUSTRIES ASSOCIATION OF INDIA (ELCINA)</p>
+                <p className="fw-semibold mb-1">
+                  {footerData.footer_heading}
+                </p>
                 <p className="small mb-0">
-                  Our focus is to support the value chain for Consumer Electronics, Telecom and Computers / IT correlating their common interest with that of equipment, material and machinery producers for expansion of manufacturing.
+                  {footerData.footershort_description}
                 </p>
               </div>
             </div>
+
             <div className="col-md-3 text-md-start text-center">
               <div className='supportclass'>
                 <p className="fw-semibold mb-1">Supporting Associations</p>
@@ -70,22 +94,29 @@ const FrontFooter = () => {
 
             <div className="col-md-4 footer-border">
               <p className="footer-section-title">Contact Us</p>
-              <p className="mb-1"><i className="bi bi-telephone"></i> +91-11-41615985 / +91-11-41011291</p>
-              <p className="mb-1"><i className="bi bi-envelope"></i> support@sourceindia-electronics.com</p>
-              <p className="mb-2">
-                Elcina House, 422, Okhla Industrial Estate, Phase-III, New Delhi, Delhi 110020
+              <p className="mb-1">
+                <i className="bi bi-telephone"></i> {footerData.contactphone_1} / {footerData.contactphone_2}
               </p>
+              <p className="mb-1">
+                <i className="bi bi-envelope"></i> {footerData.contactemail}
+              </p>
+              <div
+                className="mb-2"
+                dangerouslySetInnerHTML={{ __html: footerData.contactaddress }}
+              ></div>
+
               <div className="social-icons">
-                <a href="#"><i className="bi bi-facebook"></i></a>
-                <a href="#"><i className="bi bi-twitter-x"></i></a>
-                <a href="#"><i className="bi bi-linkedin"></i></a>
-                <a href="#"><i className="bi bi-youtube"></i></a>
-                <a href="#"><i className="bi bi-instagram"></i></a>
+                <a href={footerData.facebook_url} target="_blank" rel="noopener noreferrer"><i className="bi bi-facebook"></i></a>
+                <a href={footerData.twitter_url} target="_blank" rel="noopener noreferrer"><i className="bi bi-twitter-x"></i></a>
+                <a href={footerData.linkedin_url} target="_blank" rel="noopener noreferrer"><i className="bi bi-linkedin"></i></a>
+                <a href={footerData.youtube_url} target="_blank" rel="noopener noreferrer"><i className="bi bi-youtube"></i></a>
+                <a href={footerData.instagram_url} target="_blank" rel="noopener noreferrer"><i className="bi bi-instagram"></i></a>
               </div>
             </div>
           </div>
         </div>
       </div>
+
       <div className='copyrightsection bg-white'>
         <div className='container'>
           <div className="footer-bottom py-2 mt-0">
@@ -93,8 +124,8 @@ const FrontFooter = () => {
           </div>
         </div>
       </div>
-    </footer >
-  )
-}
+    </footer>
+  );
+};
 
-export default FrontFooter
+export default FrontFooter;

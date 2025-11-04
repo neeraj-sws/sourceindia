@@ -18,6 +18,23 @@ const ContactUs = () => {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [responseMsg, setResponseMsg] = useState("");
+  const [footerData, setFooterData] = useState(null);
+
+  useEffect(() => {
+    const fetchFooterData = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/settings/home`);
+        setFooterData(response.data);
+      } catch (error) {
+        console.error('Error fetching footer data:', error);
+      }
+    };
+    fetchFooterData();
+  }, []);
+
+  if (!footerData) {
+    return null; // or a small loader if needed
+  }
 
   // Handle input change
   const handleChange = (e) => {
@@ -97,7 +114,7 @@ const ContactUs = () => {
               <div className="row">
                 <div className="col-lg-4">
                   <div className="iframeBox h-100">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1752.2983465082036!2d77.26948655793018!3d28.55183975162639!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390ce1599cb27a7d%3A0xbc4341a9e27b4c70!2sElectronic%20Industries%20Association%20Of%20India%20(Elcina)!5e0!3m2!1sen!2sin!4v1616479735028!5m2!1sen!2sin" allowfullscreen className="w-100 h-100"></iframe>
+                    <iframe src={footerData.contact_map_url} allowfullscreen className="w-100 h-100"></iframe>
                   </div>
                 </div>
                 <div className="col-lg-3">
@@ -107,10 +124,10 @@ const ContactUs = () => {
                       <i className="bi bi-telephone-fill"></i>
                       <div>
                         <h6 className="text-orange">Call Us Now</h6>
-                        <p className="d-flex align-items-center gap-2"><i className="lni lni-phone"></i> <a href="tel:+91-11-41615985" className="nav-link">
-                          +91-11-41615985, </a>
-                          <a href="tel:+91-11-41615985" className="nav-link">
-                            +91-11-41011291</a>
+                        <p className="d-flex align-items-center gap-2"><i className="lni lni-phone"></i> <a href={`tel:${footerData.contactphone_1}`} className="nav-link">
+                          {footerData.contactphone_1}, </a>
+                          <a href={`tel:${footerData.contactphone_2}`} className="nav-link">
+                            {footerData.contactphone_2}</a>
                         </p>
                       </div>
                     </div>
@@ -119,7 +136,10 @@ const ContactUs = () => {
                       <i className="bi bi-geo-alt-fill"></i>
                       <div>
                         <h6 className="text-orange">Our Location</h6>
-                        <p className="d-flex align-items-center gap-2"><i className="lni lni-map-marker"></i> Elcina House, 422, Okhla Industrial Estate, Phase-III, New Delhi, Delhi 110020</p>
+                        <p
+                          className="d-flex align-items-center gap-2"
+                          dangerouslySetInnerHTML={{ __html: `<i class="lni lni-map-marker"></i> ${footerData.contactaddress}` }}
+                        ></p>
                       </div>
                     </div>
 
@@ -127,7 +147,7 @@ const ContactUs = () => {
                       <i className="bi bi-envelope-fill"></i>
                       <div>
                         <h6 className="text-orange">Write Us Now</h6>
-                        <p className="d-flex align-items-center gap-2"><i className="fadeIn animated bx bx-comment-detail"></i> support@sourceindia-electronics.com</p>
+                        <p className="d-flex align-items-center gap-2"><i className="fadeIn animated bx bx-comment-detail"></i> {footerData.contactemail}</p>
                       </div>
                     </div>
                   </div>
