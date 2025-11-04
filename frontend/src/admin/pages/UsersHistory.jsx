@@ -215,8 +215,7 @@ const UsersHistory = () => {
 
   useEffect(() => {
       axios.get(`${API_BASE_URL}/signup/all_users`).then((res) => {
-        const filtered = res.data.filter((c) => c.is_delete === (getDeleted ? 1 : 0));
-        setMailHistoryData(filtered);
+        setMailHistoryData(res.data);
       });
     }, []);
   

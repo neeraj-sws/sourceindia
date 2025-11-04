@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import API_BASE_URL, { ROOT_URL } from "../../config";
 
 const menuData = [
   {
@@ -229,6 +231,26 @@ const Sidebar = () => {
   const location = useLocation();
   const currentPath = location.pathname;
   const [openIndex, setOpenIndex] = useState(null);
+  const [logoUrl, setLogoUrl] = useState('/logo.png');
+
+  useEffect(() => {
+    const fetchSiteSettings = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/settings/site`);
+        const data = response.data;
+        if (data?.logo_file) {
+          setLogoUrl(ROOT_URL+'/'+data.logo_file);
+        } else {
+          setLogoUrl("/logo.png");
+        }
+      } catch (error) {
+        console.error('Error fetching site settings:', error);
+        setLogoUrl("/logo.png");
+      }
+    };
+
+    fetchSiteSettings();
+  }, []);
 
   const handleToggle = (index) => {
     setOpenIndex((prev) => (prev === index ? null : index));
@@ -249,7 +271,10 @@ const Sidebar = () => {
               <div className="simplebar-content mm-active" style={{ padding: 0 }}>
                 <div className="sidebar-header">
                   <div>
-                    <img src="/logo.png" className="logo-icon" alt="logo icon" />
+                    <img src={logoUrl} className="logo-icon" alt="logo icon" onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/logo.png";
+                    }} />
                   </div>
 
                   <div className="toggle-icon ms-auto">
