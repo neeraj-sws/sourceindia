@@ -10,6 +10,8 @@ const UserMessage = require('../models/UserMessage');
 const EnquiryMessage = require('../models/EnquiryMessage');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
+const SellerCategory = require('../models/SellerCategory');
+
 const UserActivity = require('../models/UserActivity');
 const Emails = require('../models/Emails');
 const { getTransporter } = require('../helpers/mailHelper');
@@ -438,8 +440,6 @@ exports.updateEnquiriesDeleteStatus = async (req, res) => {
 };
 
 
-
-
 exports.getAllEnquiriesServerSide = async (req, res) => {
   try {
     const {
@@ -456,44 +456,44 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
       sub_category,
       user_id
     } = req.query;
+
     const validColumns = [
-      'id', 'enquiry_number', 'created_at', 'updated_at', 'name', 'email', 'phone', 'category_name', 'sub_category_name',
-      'company', 'from_email', 'from_organization_name', 'to_organization_name', 'enquiry_product', 'quantity', 'is_approve'
+      'id', 'enquiry_number', 'created_at', 'updated_at', 'name', 'email', 'phone',
+      'category_name', 'sub_category_name', 'company', 'from_email',
+      'from_organization_name', 'to_organization_name', 'enquiry_product',
+      'quantity', 'is_approve'
     ];
+
     const viewType = req.query.viewType || 'dashboard';
     const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitValue = parseInt(limit);
+
+    // Sorting logic
     let order = [];
     if (sortBy === 'from_full_name') {
-      order = [[
-        literal(`CONCAT(from_user.fname, ' ', from_user.lname)`), sortDirection
-      ]];
+      order = [[literal(`CONCAT(from_user.fname, ' ', from_user.lname)`), sortDirection]];
     } else if (sortBy === 'from_organization_name') {
-      order = [[
-        { model: Users, as: 'from_user' },
-        { model: CompanyInfo, as: 'company_info' }, 'organization_name', sortDirection
-      ]];
+      order = [[{ model: Users, as: 'from_user' }, { model: CompanyInfo, as: 'company_info' }, 'organization_name', sortDirection]];
     } else if (sortBy === 'to_organization_name') {
-      order = [[
-        { model: Users, as: 'to_user' },
-        { model: CompanyInfo, as: 'company_info' }, 'organization_name', sortDirection
-      ]];
+      order = [[{ model: Users, as: 'to_user' }, { model: CompanyInfo, as: 'company_info' }, 'organization_name', sortDirection]];
     } else if (sortBy === 'enquiry_product') {
-      order = [[
-        { model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection
-      ]];
+      order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
     } else if (validColumns.includes(sortBy)) {
       order = [[sortBy, sortDirection]];
     } else {
       order = [['id', 'DESC']];
     }
+
+    // Filtering conditions
     const where = {};
     if (req.query.getPublic === 'true') { where.user_id = null; where.is_delete = 0; }
     if (req.query.user_id) { where.user_id = req.query.user_id; where.is_delete = 0; }
     if (req.query.getApprove === 'true') { where.is_approve = 1; where.is_delete = 0; }
     if (req.query.getNotApprove === 'true') { where.is_approve = 0; where.is_delete = 0; }
-    if (req.query.getDeleted === 'true') { baseWhere.is_delete = 1; }
+    if (req.query.getDeleted === 'true') { where.is_delete = 1; }
+
+    // Search conditions
     const searchWhere = { ...where };
     if (search) {
       searchWhere[Op.or] = [];
@@ -522,75 +522,35 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
         );
       }
     }
-    if (enquiry_no) {
-      searchWhere.enquiry_number = {
-        [Op.like]: `%${enquiry_no}%`
-      };
-    }
-    if (category) {
-      searchWhere.category_name = {
-        [Op.like]: `%${category}%`
-      };
-    }
-    if (sub_category) {
-      searchWhere.sub_category_name = {
-        [Op.like]: `%${sub_category}%`
-      };
-    }
-    if (user_id) {
-      searchWhere.user_id = user_id;
-    }
+
+    // Extra filters
+    if (enquiry_no) searchWhere.enquiry_number = { [Op.like]: `%${enquiry_no}%` };
+    if (category) searchWhere.category_name = { [Op.like]: `%${category}%` };
+    if (sub_category) searchWhere.sub_category_name = { [Op.like]: `%${sub_category}%` };
+    if (user_id) searchWhere.user_id = user_id;
+
+    // Date filter
     let dateCondition = null;
     if (dateRange) {
       const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
       const today = moment().startOf('day');
       const now = moment();
-      if (range === 'today') {
-        dateCondition = {
-          [Op.gte]: today.toDate(),
-          [Op.lte]: now.toDate(),
-        };
-      } else if (range === 'yesterday') {
-        dateCondition = {
-          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
-          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
-        };
-      } else if (range === 'last7days') {
-        dateCondition = {
-          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
-          [Op.lte]: now.toDate(),
-        };
-      } else if (range === 'last30days') {
-        dateCondition = {
-          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
-          [Op.lte]: now.toDate(),
-        };
-      } else if (range === 'thismonth') {
-        dateCondition = {
-          [Op.gte]: moment().startOf('month').toDate(),
-          [Op.lte]: now.toDate(),
-        };
-      } else if (range === 'lastmonth') {
-        dateCondition = {
-          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
-          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
-        };
-      } else if (range === 'customrange' && startDate && endDate) {
-        dateCondition = {
-          [Op.gte]: moment(startDate).startOf('day').toDate(),
-          [Op.lte]: moment(endDate).endOf('day').toDate(),
-        };
-      } else if (!isNaN(range)) {
+      if (range === 'today') dateCondition = { [Op.gte]: today.toDate(), [Op.lte]: now.toDate() };
+      else if (range === 'yesterday') dateCondition = { [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(), [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate() };
+      else if (range === 'last7days') dateCondition = { [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(), [Op.lte]: now.toDate() };
+      else if (range === 'last30days') dateCondition = { [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(), [Op.lte]: now.toDate() };
+      else if (range === 'thismonth') dateCondition = { [Op.gte]: moment().startOf('month').toDate(), [Op.lte]: now.toDate() };
+      else if (range === 'lastmonth') dateCondition = { [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(), [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate() };
+      else if (range === 'customrange' && startDate && endDate)
+        dateCondition = { [Op.gte]: moment(startDate).startOf('day').toDate(), [Op.lte]: moment(endDate).endOf('day').toDate() };
+      else if (!isNaN(range)) {
         const days = parseInt(range);
-        dateCondition = {
-          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
-          [Op.lte]: now.toDate(),
-        };
+        dateCondition = { [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(), [Op.lte]: now.toDate() };
       }
     }
-    if (dateCondition) {
-      searchWhere.created_at = dateCondition;
-    }
+    if (dateCondition) searchWhere.created_at = dateCondition;
+
+    // Fetch main data
     const totalRecords = await Enquiries.count({ where });
     const { count: filteredRecords, rows } = await Enquiries.findAndCountAll({
       subQuery: false,
@@ -602,47 +562,18 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
         {
           model: Users,
           as: 'from_user',
-          attributes: [
-            'id',
-            'email',
-            'mobile',
-            'company_id',
-            'is_seller',
-            'fname',
-            'lname',
-            [fn('CONCAT', col('from_user.fname'), ' ', col('from_user.lname')), 'full_name']
-          ],
-          include: [
-            {
-              model: CompanyInfo,
-              as: 'company_info',
-              attributes: [['organization_name', 'organization_name']],
-              required: false,
-            }
-          ],
+          attributes: ['id', 'email', 'mobile', 'company_id', 'is_seller', 'fname', 'lname',
+            [fn('CONCAT', col('from_user.fname'), ' ', col('from_user.lname')), 'full_name']],
+          include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name']], required: false }],
           required: false,
         },
         {
           model: Users,
           as: 'to_user',
-          attributes: [
-            ['id', 'id'],
-            ['email', 'to_email'],
-            ['mobile', 'to_mobile'],
-            ['company_id', 'to_company_id'],
-            'is_seller',
-            'fname',
-            'lname',
-            [fn('CONCAT', col('to_user.fname'), ' ', col('to_user.lname')), 'to_full_name']
-          ],
-          include: [
-            {
-              model: CompanyInfo,
-              as: 'company_info',
-              attributes: [['organization_name', 'organization_name']],
-              required: false,
-            }
-          ],
+          attributes: [['id', 'id'], ['email', 'to_email'], ['mobile', 'to_mobile'],
+          ['company_id', 'to_company_id'], 'is_seller', 'fname', 'lname',
+          [fn('CONCAT', col('to_user.fname'), ' ', col('to_user.lname')), 'to_full_name']],
+          include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name']], required: false }],
           required: false,
         },
         {
@@ -653,13 +584,42 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
         }
       ]
     });
-    const mappedRows = rows.map(row => {
+
+    // Enrich with seller category/subcategory info
+    const enrichedRows = [];
+    for (const enq of rows) {
+      const enquiryJSON = enq.toJSON();
+      let category_sell_names = '';
+      let sub_category_names = '';
+
+      if (enquiryJSON.company_id) {
+        const sellerUser = await Users.findOne({
+          where: { company_id: enquiryJSON.company_id },
+          include: { model: CompanyInfo, as: 'company_info' },
+        });
+        if (sellerUser) {
+          const names = await getCategoryNames(sellerUser);
+          category_sell_names = names?.category_sell_names || '';
+          sub_category_names = names?.sub_category_names || '';
+        }
+      }
+
+      enrichedRows.push({
+        ...enquiryJSON,
+        category_name: category_sell_names,
+        sub_category_name: sub_category_names,
+      });
+    }
+
+    // Final mapped response
+    const mappedRows = enrichedRows.map(row => {
       const base = {
         id: row.id,
         user_id: row.user_id,
         enquiry_number: row.enquiry_number,
         quantity: row.quantity,
         category_name: row.category_name,
+        sub_category_name: row.sub_category_name,
         is_delete: row.is_delete,
         created_at: row.created_at,
         updated_at: row.updated_at,
@@ -667,6 +627,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
         from_full_name: row.from_user ? `${row.from_user.fname} ${row.from_user.lname}` : null,
         from_email: row.from_user?.email || null,
       };
+
       if (viewType === 'dashboard') {
         return {
           ...base,
@@ -674,6 +635,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           to_organization_name: row.to_user?.company_info?.organization_name || null,
         };
       }
+
       if (viewType === 'leads') {
         return {
           ...base,
@@ -688,8 +650,10 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           to_user_type: row.to_user?.is_seller ?? null,
         };
       }
+
       return base;
     });
+
     res.json({
       data: mappedRows,
       totalRecords,
@@ -700,6 +664,8 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
 exports.getEnquiriesByUserServerSide = async (req, res) => {
   try {
     const {
