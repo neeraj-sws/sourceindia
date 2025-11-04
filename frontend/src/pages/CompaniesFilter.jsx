@@ -251,64 +251,96 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
               />
             </div>
           </div>
-          {isSeller==1 && (
-          <>
-          <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-            <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Category</h3>
-            <div className="d-flex flex-column gap-2">
-              <div className="input-group flex-nowrap ps-2 pe-4">
-                <i className="bx bx-search input-group-text" />
-                <input
-                  type="text"
-                  placeholder="Search categories..."
-                  onChange={(e) => setCategorySearchTerm(e.target.value.toLowerCase())}
-                  className="form-control"
-                />
-              </div>
-              <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredCategories.length >= 5 ? 'auto' : 'visible' }}>
-                {filteredCategories.map(cat => (
-                  <div className="form-check mb-2" key={cat.id}>
-                    <input
-                      type="checkbox"
-                      id={`cat-${cat.id}`}
-                      className="form-check-input"
-                      checked={selectedCategories.includes(cat.id)}
-                      onChange={() => handleCategoryCheckboxChange(cat.id)}
-                    />
-                    <label htmlFor={`cat-${cat.id}`} className="form-check-label text-capitalize">
-                      {cat.name} ({cat.company_count})
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          {filteredSubCategories.length > 0 && (
+          {isSeller == 1 && (
             <>
               <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Sub Category</h3>
+                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Category</h3>
                 <div className="d-flex flex-column gap-2">
                   <div className="input-group flex-nowrap ps-2 pe-4">
                     <i className="bx bx-search input-group-text" />
                     <input
                       type="text"
-                      placeholder="Search sub-categories..."
-                      onChange={(e) => setSubCategorySearchTerm(e.target.value.toLowerCase())}
+                      placeholder="Search categories..."
+                      onChange={(e) => setCategorySearchTerm(e.target.value.toLowerCase())}
                       className="form-control"
                     />
                   </div>
-                  <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSubCategories.length >= 5 ? 'auto' : 'visible' }}>
-                    {filteredSubCategories.map(sub => (
-                      <div className="form-check mb-2" key={sub.id}>
+                  <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredCategories.length >= 5 ? 'auto' : 'visible' }}>
+                    {filteredCategories.map(cat => (
+                      <div className="form-check mb-2" key={cat.id}>
                         <input
                           type="checkbox"
-                          id={`subcat-${sub.id}`}
+                          id={`cat-${cat.id}`}
                           className="form-check-input"
-                          checked={selectedSubCategories.includes(sub.id)}
-                          onChange={() => handleSubCategoryCheckboxChange(sub.id)}
+                          checked={selectedCategories.includes(cat.id)}
+                          onChange={() => handleCategoryCheckboxChange(cat.id)}
                         />
-                        <label htmlFor={`subcat-${sub.id}`} className="form-check-label text-capitalize">
-                          {sub.name} ({sub.company_count})
+                        <label htmlFor={`cat-${cat.id}`} className="form-check-label text-capitalize">
+                          {cat.name} ({cat.company_count})
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {filteredSubCategories.length > 0 && (
+                <>
+                  <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                    <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Sub Category</h3>
+                    <div className="d-flex flex-column gap-2">
+                      <div className="input-group flex-nowrap ps-2 pe-4">
+                        <i className="bx bx-search input-group-text" />
+                        <input
+                          type="text"
+                          placeholder="Search sub-categories..."
+                          onChange={(e) => setSubCategorySearchTerm(e.target.value.toLowerCase())}
+                          className="form-control"
+                        />
+                      </div>
+                      <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSubCategories.length >= 5 ? 'auto' : 'visible' }}>
+                        {filteredSubCategories.map(sub => (
+                          <div className="form-check mb-2" key={sub.id}>
+                            <input
+                              type="checkbox"
+                              id={`subcat-${sub.id}`}
+                              className="form-check-input"
+                              checked={selectedSubCategories.includes(sub.id)}
+                              onChange={() => handleSubCategoryCheckboxChange(sub.id)}
+                            />
+                            <label htmlFor={`subcat-${sub.id}`} className="form-check-label text-capitalize">
+                              {sub.name} ({sub.company_count})
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">State</h3>
+                <div className="d-flex flex-column gap-2">
+                  <div className="input-group flex-nowrap ps-2 pe-4">
+                    <i className="bx bx-search input-group-text" />
+                    <input
+                      type="text"
+                      placeholder="Search states..."
+                      onChange={(e) => setStatesSearchTerm(e.target.value.toLowerCase())}
+                      className="form-control"
+                    />
+                  </div>
+                  <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredStates.length >= 5 ? 'auto' : 'visible' }}>
+                    {filteredStates.map(state => (
+                      <div className="form-check mb-2" key={state.id}>
+                        <input
+                          type="checkbox"
+                          id={`state-${state.id}`}
+                          className="form-check-input"
+                          checked={selectedStates.includes(state.id)}
+                          onChange={() => handleStatesCheckboxChange(state.id)}
+                        />
+                        <label htmlFor={`state-${state.id}`} className="form-check-label text-capitalize">
+                          {state.name} ({state.company_count})
                         </label>
                       </div>
                     ))}
@@ -317,69 +349,37 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
               </div>
             </>
           )}
-          <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-            <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">State</h3>
-            <div className="d-flex flex-column gap-2">
-              <div className="input-group flex-nowrap ps-2 pe-4">
-                <i className="bx bx-search input-group-text" />
-                <input
-                  type="text"
-                  placeholder="Search states..."
-                  onChange={(e) => setStatesSearchTerm(e.target.value.toLowerCase())}
-                  className="form-control"
-                />
-              </div>
-              <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredStates.length >= 5 ? 'auto' : 'visible' }}>
-                {filteredStates.map(state => (
-                  <div className="form-check mb-2" key={state.id}>
-                    <input
-                      type="checkbox"
-                      id={`state-${state.id}`}
-                      className="form-check-input"
-                      checked={selectedStates.includes(state.id)}
-                      onChange={() => handleStatesCheckboxChange(state.id)}
-                    />
-                    <label htmlFor={`state-${state.id}`} className="form-check-label text-capitalize">
-                      {state.name} ({state.company_count})
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          </>
-          )}
-          {isSeller==0 && (
+          {isSeller == 0 && (
             <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-            <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Sourcing Interest</h3>
-            <div className="d-flex flex-column gap-2">
-              <div className="input-group flex-nowrap ps-2 pe-4">
-                <i className="bx bx-search input-group-text" />
-                <input
-                  type="text"
-                  placeholder="Search sourcing interest..."
-                  onChange={(e) => setSourcingInterestSearchTerm(e.target.value.toLowerCase())}
-                  className="form-control"
-                />
-              </div>
-              <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSourcingInterest.length >= 5 ? 'auto' : 'visible' }}>
-                {filteredSourcingInterest.map(sic => (
-                  <div className="form-check mb-2" key={sic.id}>
-                    <input
-                      type="checkbox"
-                      id={`sic-${sic.id}`}
-                      className="form-check-input"
-                      checked={selectedSourcingInterest.includes(sic.id)}
-                      onChange={() => handleSourcingInterestCheckboxChange(sic.id)}
-                    />
-                    <label htmlFor={`sic-${sic.id}`} className="form-check-label text-capitalize">
-                      {sic.category_name} ({sic.product_count})
-                    </label>
-                  </div>
-                ))}
+              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Sourcing Interest</h3>
+              <div className="d-flex flex-column gap-2">
+                <div className="input-group flex-nowrap ps-2 pe-4">
+                  <i className="bx bx-search input-group-text" />
+                  <input
+                    type="text"
+                    placeholder="Search sourcing interest..."
+                    onChange={(e) => setSourcingInterestSearchTerm(e.target.value.toLowerCase())}
+                    className="form-control"
+                  />
+                </div>
+                <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSourcingInterest.length >= 5 ? 'auto' : 'visible' }}>
+                  {filteredSourcingInterest.map(sic => (
+                    <div className="form-check mb-2" key={sic.id}>
+                      <input
+                        type="checkbox"
+                        id={`sic-${sic.id}`}
+                        className="form-check-input"
+                        checked={selectedSourcingInterest.includes(sic.id)}
+                        onChange={() => handleSourcingInterestCheckboxChange(sic.id)}
+                      />
+                      <label htmlFor={`sic-${sic.id}`} className="form-check-label text-capitalize">
+                        {sic.category_name} ({sic.product_count})
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
           )}
         </aside>
 
@@ -438,7 +438,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
             </div>
 
             <div className="ms-auto d-flex gap-2 align-items-center">
-              <p className="mb-0">{companiesTotal} Products</p>
+              <p className="mb-0">{companiesTotal} Companies</p>
 
               <button
                 className={`btn btn-sm text-nowrap ${viewMode === 'grid' ? 'btn-orange' : 'btn-outline-white text-white'}`}
@@ -685,18 +685,18 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                         <div className="featuredCompaniesPara d-flex align-items-center gap-1 flex-wrap">
                           {company.products && company.products.map((product, idx) => (
                             <Link
-                            key={product.id || product.slug || idx}
-                            to={`/products/${product.slug}`}
-                            className="small badge text-decoration-none text-white btn-orange text-start"
-                            style={{
-                              whiteSpace: "pre-wrap",
-                              lineHeight: "17px",
-                              padding: "2px 6px",
-                              fontSize: "10px"
-                            }}
-                          >
-                            {product.title}
-                          </Link>
+                              key={product.id || product.slug || idx}
+                              to={`/products/${product.slug}`}
+                              className="small badge text-decoration-none text-white btn-orange text-start"
+                              style={{
+                                whiteSpace: "pre-wrap",
+                                lineHeight: "17px",
+                                padding: "2px 6px",
+                                fontSize: "10px"
+                              }}
+                            >
+                              {product.title}
+                            </Link>
                           ))}
                         </div>
 

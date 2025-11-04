@@ -18,5 +18,6 @@ router.get('/countries', usersController.getCountries);
 router.get('/states', usersController.getStates);
 router.get('/cities', usersController.getCities);
 router.patch('/:id/status', usersController.updateUsersStatus);
+router.get('/insert-from-company', usersController.insertFromCompany);
 
 module.exports = router;

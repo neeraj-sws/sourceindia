@@ -1,8 +1,9 @@
 const Sequelize = require('sequelize');
 const { Op } = Sequelize;
+const sequelize = require('../config/database');
 const path = require('path');
 const fs = require('fs');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const Users = require('../models/Users');
 const Countries = require('../models/Countries');
 const OpenEnquriy = require('../models/OpenEnquiries');
@@ -18,12 +19,93 @@ const Activity = require('../models/Activity');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
+const SellerCategory = require('../models/SellerCategory');
 const { getTransporter } = require('../helpers/mailHelper');
 const { generateUniqueSlug } = require('../helpers/mailHelper');
 const getMulterUpload = require('../utils/upload');
 const nodemailer = require('nodemailer');
 const secretKey = 'your_secret_key';
 const jwt = require('jsonwebtoken');
+const { insertSellerCategoriesFromCompany } = require('../helpers/mailHelper');
+
+
+exports.insertFromCompany = async (req, res) => {
+  try {
+    const [companies] = await sequelize.query(`
+      SELECT 
+        u.id AS user_id,
+        ci.category_sell,
+        ci.sub_category
+      FROM company_info ci
+      INNER JOIN users u ON u.company_id = ci.id
+      WHERE ci.category_sell IS NOT NULL
+    `);
+
+    if (!companies.length) {
+      console.log('⚠️ No company records found.');
+      return res.json({ success: false, message: 'No company records found.' });
+    }
+
+    for (const company of companies) {
+      const category_sell = company.category_sell?.split(',').map(c => c.trim()).filter(Boolean) || [];
+      const sub_category = company.sub_category?.split(',').map(g => g.trim()).filter(Boolean) || [];
+
+      // 🧹 Step 1: Remove all existing entries for this user
+      await SellerCategory.destroy({
+        where: { user_id: company.user_id },
+      });
+
+      // 2️⃣ Fetch all subcategories (with category_id)
+      const subCategories = await SubCategories.findAll({
+        where: { id: sub_category },
+        attributes: ['id', 'category'],
+      });
+
+      // 3️⃣ Prepare entries where subcategory exists
+      const sellerCategoryData = subCategories.map((sub) => ({
+        user_id: company.user_id,
+        category_id: sub.category,
+        subcategory_id: sub.id,
+      }));
+
+      // 4️⃣ Get categories that already have subcategories
+      const categoriesWithSub = [...new Set(subCategories.map((sub) => sub.category))];
+
+      // 5️⃣ Exclude those categories from null entries
+      const categoriesWithoutSub = category_sell.filter(
+        (catId) => !categoriesWithSub.includes(Number(catId))
+      );
+
+      // 6️⃣ Add entries for categories without subcategory (subcategory_id = null)
+      categoriesWithoutSub.forEach((catId) => {
+        sellerCategoryData.push({
+          user_id: company.user_id,
+          category_id: Number(catId),
+          subcategory_id: null,
+        });
+      });
+
+      // 7️⃣ Insert all new data
+      if (sellerCategoryData.length) {
+        await SellerCategory.bulkCreate(sellerCategoryData);
+      }
+    }
+
+    console.log('🎯 All company seller categories processed successfully.');
+    res.json({
+      success: true,
+      message: 'Seller categories inserted successfully (old removed, no duplicate null category).',
+    });
+
+  } catch (error) {
+    console.error('❌ Error inserting seller categories:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+
+
 
 function createSlug(inputString) {
   if (!inputString) return ''; // Return empty string or handle as needed
@@ -41,19 +123,34 @@ exports.login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
+
     const user = await Users.findOne({
       where: { email: email, is_delete: 0 },
     });
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    const isMatch = await bcrypt.compare(password, user.password);
+
+    console.log("Plain password:", password);
+    console.log("Stored hash:", user.password);
+
+    // Fix for PHP-style bcrypt hashes
+    let hash = user.password.replace(/^\$2y\$/, '$2a$');
+    const isMatch = await bcrypt.compare(password, hash);
+
+    console.log("Match result:", isMatch);
+
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
-    const token = jwt.sign({ id: user.id, email: user.email, is_seller: user.is_seller }, 'your_jwt_secret_key', {
-      expiresIn: '1h',
-    });
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, is_seller: user.is_seller },
+      'your_jwt_secret_key',
+      { expiresIn: '1h' }
+    );
+
     res.json({
       message: 'Login successful',
       token,
@@ -73,41 +170,42 @@ exports.login = async (req, res) => {
 
 // Send OTP
 exports.sendOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
+  // try {
+  const { email } = req.body;
 
-    const existingUser = await Users.findOne({ where: { email } });
-    if (existingUser) return res.status(400).json({ error: "Email already taken" });
+  const existingUser = await Users.findOne({ where: { email } });
+  if (existingUser) return res.status(400).json({ error: "Email already taken" });
 
-    const otp = Math.floor(1000 + Math.random() * 9000);
+  const otp = Math.floor(1000 + Math.random() * 9000);
 
-    let emailRecord = await EmailVerification.findOne({ where: { email } });
-    if (emailRecord) {
-      emailRecord.otp = otp;
-      emailRecord.is_verify = 0;
-      await emailRecord.save();
-    } else {
-      emailRecord = await EmailVerification.create({ email, otp, is_verify: 0 });
-    }
-
-    const emailTemplate = await Emails.findByPk(99);
-    const msgStr = emailTemplate.message.toString('utf8');
-    let userMessage = msgStr.replace("{{ USER_PASSWORD }}", otp);
-
-
-    const { transporter, siteConfig } = await getTransporter();
-    await transporter.sendMail({
-      from: `"OTP Verification" <info@sourceindia-electronics.com>`,
-      to: email,
-      subject: emailTemplate?.subject || "Verify your email",
-      html: userMessage,
-    });
-
-    return res.json({ message: "OTP sent successfully", user_id: emailRecord.id });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Failed to send OTP" });
+  let emailRecord = await EmailVerification.findOne({ where: { email } });
+  if (emailRecord) {
+    emailRecord.otp = otp;
+    emailRecord.is_verify = 0;
+    await emailRecord.save();
+  } else {
+    emailRecord = await EmailVerification.create({ email, otp, is_verify: 0 });
   }
+
+  const emailTemplate = await Emails.findByPk(99);
+  const msgStr = emailTemplate.message.toString('utf8');
+  let userMessage = msgStr.replace("{{ USER_PASSWORD }}", otp);
+
+
+  const { transporter, siteConfig } = await getTransporter();
+  console.log(siteConfig);
+  await transporter.sendMail({
+    from: `"OTP Verification" <info@sourceindia-electronics.com>`,
+    to: email,
+    subject: emailTemplate?.subject || "Verify your email",
+    html: userMessage,
+  });
+
+  return res.json({ message: "OTP sent successfully", user_id: emailRecord.id });
+  // } catch (err) {
+  //   console.error(err);
+  //   return res.status(500).json({ error: "Failed to send OTP" });
+  // }
 };
 
 // Verify OTP
@@ -556,15 +654,43 @@ exports.getProfile = async (req, res) => {
     }
     if (user.company_info) {
       const { category_sell, sub_category } = user.company_info;
+
+      const sellerCategories = await SellerCategory.findAll({
+        where: { user_id: user.id },
+        attributes: ['category_id', 'subcategory_id'],
+        raw: true, // return plain objects instead of Sequelize instances
+      });
+
+      // Extract all category_ids (unique)
+      const categoryIds = [
+        ...new Set(sellerCategories.map((item) => item.category_id).filter(Boolean))
+      ];
+
+      // Extract all subcategory_ids (unique, ignoring null)
+      const subCategoryIds = [
+        ...new Set(sellerCategories.map((item) => item.subcategory_id).filter(Boolean))
+      ];
+
+      // console.log('subCategoryIds ' + subCategoryIds);
+
       const parseIds = str => str ? str.split(',').map(id => parseInt(id.trim())).filter(Boolean) : [];
-      const categoryIds = parseIds(category_sell);
-      const subCategoryIds = parseIds(sub_category);
+
       const [categories, subCategories] = await Promise.all([
         categoryIds.length ? Categories.findAll({ where: { id: { [Op.in]: categoryIds } }, attributes: ['name'] }) : [],
         subCategoryIds.length ? SubCategories.findAll({ where: { id: { [Op.in]: subCategoryIds } }, attributes: ['name'] }) : []
       ]);
+
+
+
+
       user.company_info.dataValues.category_sell_names = categories.map(c => c.name).join(', ');
       user.company_info.dataValues.sub_category_names = subCategories.map(sc => sc.name).join(', ');
+      const categoryIdsString = categoryIds.join(',');
+      const subCategoryIdsString = subCategoryIds.join(',');
+
+      // Assign to user.company_info.dataValues
+      user.company_info.dataValues.sellerCategoryIds = categoryIdsString;
+      user.company_info.dataValues.sellerSubCategoryIds = subCategoryIdsString;
     }
     res.json({ user });
   } catch (error) {
@@ -573,7 +699,7 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-exports.updateProfile = async (req, res) => {
+exports.updateProfileold = async (req, res) => {
   const upload = getMulterUpload('users');
   upload.fields([
     { name: 'file', maxCount: 1 },
@@ -616,12 +742,12 @@ exports.updateProfile = async (req, res) => {
       }
       await user.update(updatedUserData);
 
-      /*const adminemailTemplate = await Emails.findByPk(32);
+      const adminemailTemplate = await Emails.findByPk(32);
       if (!adminemailTemplate) {
         return res.status(404).json({ message: "Email template not found" });
       }
       const msgStr = adminemailTemplate.message.toString("utf8");
-      const user_type = '';
+      let user_type = '';
       if (user.is_seller === 1) {
         user_type = 'Seller';
       } else {
@@ -661,7 +787,7 @@ exports.updateProfile = async (req, res) => {
         to: user.email,
         subject: subject,
         html: userMessage,
-      });*/
+      })
 
       if (companyInfo) {
         const companyLogo = req.files?.company_logo?.[0];
@@ -712,13 +838,16 @@ exports.updateProfile = async (req, res) => {
             await companyInfo.update({ company_sample_ppt_file: newPpt.id });
           }
         }
+
+        // console.log(req.body.category_sell);
+        // console.log(req.body.sub_category);
         await companyInfo.update({
           organization_name: req.body.organization_name,
           organization_slug: createSlug(req.body.organization_name),
           core_activity: req.body.core_activity,
           activity: req.body.activity,
-          category_sell: req.body.category_sell,
-          sub_category: req.body.sub_category,
+          // category_sell: req.body.category_sell,
+          // sub_category: req.body.sub_category,
           company_email: req.body.company_email,
           company_website: req.body.company_website,
           company_location: req.body.company_location,
@@ -729,6 +858,48 @@ exports.updateProfile = async (req, res) => {
           company_sample_ppt_file: req.body.company_sample_ppt_file,
           company_video_second: req.body.company_video_second
         });
+        let { category_sell, sub_category } = req.body;
+
+        if (typeof category_sell === 'string') {
+          category_sell = category_sell.split(',').map(Number);
+        }
+        if (typeof sub_category === 'string') {
+          sub_category = sub_category.split(',').map(Number);
+        }
+
+        // 1️⃣ Fetch all subcategories (with category_id)
+        const subCategories = await SubCategories.findAll({
+          where: { id: sub_category },
+          attributes: ['id', 'category']
+        });
+
+        // 2️⃣ Prepare entries where subcategory exists
+        const sellerCategoryData = subCategories.map((sub) => ({
+          user_id: user.id,
+          category_id: sub.category,
+          subcategory_id: sub.id,
+        }));
+
+        // 3️⃣ Find categories that didn’t have any matching subcategory
+        const categoriesWithSub = subCategories.map((sub) => sub.category_id);
+        const categoriesWithoutSub = category_sell.filter(
+          (catId) => !categoriesWithSub.includes(catId)
+        );
+
+        // 4️⃣ Add entries for categories without subcategory (subcategory_id = null)
+        categoriesWithoutSub.forEach((catId) => {
+          sellerCategoryData.push({
+            user_id: user.id,
+            category_id: catId,
+            subcategory_id: null,
+          });
+        });
+
+        // 5️⃣ Insert all data
+        await SellerCategory.bulkCreate(sellerCategoryData, {
+          ignoreDuplicates: true,
+        });
+
       }
       return res.status(200).json({
         message: 'Profile updated successfully',
@@ -740,6 +911,192 @@ exports.updateProfile = async (req, res) => {
     }
   });
 };
+
+
+exports.updateProfile = async (req, res) => {
+  const upload = getMulterUpload('users');
+  upload.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'company_logo', maxCount: 1 },
+    { name: 'sample_file_id', maxCount: 1 },
+    { name: 'company_sample_ppt_file', maxCount: 1 },
+  ])(req, res, async (err) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    try {
+      const userId = req.user.id;
+      const user = await Users.findByPk(userId);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+
+      const companyInfo = await CompanyInfo.findOne({ where: { id: user.company_id } });
+
+      const updatedUserData = {
+        fname: req.body.fname,
+        lname: req.body.lname,
+        email: req.body.email,
+        mobile: req.body.mobile,
+        state: req.body.state,
+        city: req.body.city,
+        zipcode: req.body.zipcode,
+        address: req.body.address,
+        website: req.body.website,
+      };
+
+      // Handle profile image update
+      const profileImage = req.files?.file?.[0];
+      if (profileImage) {
+        const existingImage = await UploadImage.findByPk(user.file_id);
+        if (existingImage) {
+          const oldPath = path.resolve(existingImage.file);
+          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+          existingImage.file = `upload/users/${profileImage.filename}`;
+          existingImage.updated_at = new Date();
+          await existingImage.save();
+        } else {
+          const newImage = await UploadImage.create({
+            file: `upload/users/${profileImage.filename}`,
+          });
+          updatedUserData.file_id = newImage.id;
+        }
+      }
+
+      await user.update(updatedUserData);
+
+      // Email notifications (admin + user)
+      const adminemailTemplate = await Emails.findByPk(32);
+      if (adminemailTemplate) {
+        const msgStr = adminemailTemplate.message.toString('utf8');
+        const { transporter, siteConfig } = await getTransporter();
+        const user_type = user.is_seller === 1 ? 'Seller' : 'Buyer';
+        const adminMessage = msgStr
+          .replace('{{ ADMIN_NAME }}', siteConfig['title'])
+          .replace('{{ USER_FNAME }}', user.fname)
+          .replace('{{ USER_LNAME }}', user.lname)
+          .replace('{{ USER_EMAIL }}', user.email)
+          .replace('{{ USER_MOBILE }}', user.mobile)
+          .replace('{{ USER_ADDRESS }}', user.address)
+          .replace('{{ USER_TYPE }}', user_type);
+
+        await transporter.sendMail({
+          from: `"Support Team" <info@sourceindia-electronics.com>`,
+          to: siteConfig['site_email'],
+          subject: adminemailTemplate.subject,
+          html: adminMessage,
+        });
+      }
+
+      const emailTemplate = await Emails.findByPk(33);
+      if (emailTemplate) {
+        const { transporter } = await getTransporter();
+        const usermsgStr = emailTemplate.message.toString('utf8');
+        const subject = emailTemplate.subject.replace('{{ USER_FNAME }}', user.fname);
+        const userMessage = usermsgStr
+          .replace('{{ USER_FNAME }}', user.fname)
+          .replace('{{ USER_LNAME }}', user.lname);
+
+        await transporter.sendMail({
+          from: `"Support Team" <info@sourceindia-electronics.com>`,
+          to: user.email,
+          subject: subject,
+          html: userMessage,
+        });
+      }
+
+      // 🏢 Company info + category handling
+      if (companyInfo) {
+        // Handle company logo, sample, ppt
+        const companyLogo = req.files?.company_logo?.[0];
+        const sampleFile = req.files?.sample_file_id?.[0];
+        const pptFile = req.files?.company_sample_ppt_file?.[0];
+
+        const handleFileUpdate = async (existingId, newFile, fieldName) => {
+          if (!newFile) return null;
+          const existingFile = existingId ? await UploadImage.findByPk(existingId) : null;
+          if (existingFile) {
+            const oldPath = path.resolve(existingFile.file);
+            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            existingFile.file = `upload/users/${newFile.filename}`;
+            existingFile.updated_at = new Date();
+            await existingFile.save();
+            return existingFile.id;
+          } else {
+            const created = await UploadImage.create({
+              file: `upload/users/${newFile.filename}`,
+            });
+            await companyInfo.update({ [fieldName]: created.id });
+            return created.id;
+          }
+        };
+
+        await handleFileUpdate(companyInfo.company_logo, companyLogo, 'company_logo');
+        await handleFileUpdate(companyInfo.sample_file_id, sampleFile, 'sample_file_id');
+        await handleFileUpdate(companyInfo.company_sample_ppt_file, pptFile, 'company_sample_ppt_file');
+
+        // 🧾 Update company info
+        await companyInfo.update({
+          organization_name: req.body.organization_name,
+          organization_slug: createSlug(req.body.organization_name),
+          core_activity: req.body.core_activity,
+          activity: req.body.activity,
+          company_email: req.body.company_email,
+          company_website: req.body.company_website,
+          company_location: req.body.company_location,
+          brief_company: req.body.brief_company,
+          designation: req.body.designation,
+          company_video_second: req.body.company_video_second,
+          organizations_product_description: req.body.organizations_product_description,
+        });
+
+        // 🧩 Category/Subcategory Handling
+        let { category_sell, sub_category } = req.body;
+
+        if (typeof category_sell === 'string') category_sell = category_sell.split(',').map(Number);
+        if (typeof sub_category === 'string') sub_category = sub_category.split(',').map(Number);
+
+        // 1️⃣ Fetch all subcategories (with category_id)
+        const subCategories = await SubCategories.findAll({
+          where: { id: sub_category },
+          attributes: ['id', 'category'],
+        });
+
+        // 2️⃣ Prepare entries where subcategory exists
+        const sellerCategoryData = subCategories.map((sub) => ({
+          user_id: user.id,
+          category_id: sub.category,
+          subcategory_id: sub.id,
+        }));
+
+        // 3️⃣ Find categories that didn’t have subcategory
+        const categoriesWithSub = subCategories.map((sub) => sub.category);
+        const categoriesWithoutSub = category_sell.filter(
+          (catId) => !categoriesWithSub.includes(catId)
+        );
+
+        // 4️⃣ Add entries with null subcategory
+        categoriesWithoutSub.forEach((catId) => {
+          sellerCategoryData.push({
+            user_id: user.id,
+            category_id: catId,
+            subcategory_id: null,
+          });
+        });
+
+        // 5️⃣ Remove existing entries for this user, insert fresh clean data
+        await SellerCategory.destroy({ where: { user_id: user.id } });
+        await SellerCategory.bulkCreate(sellerCategoryData);
+      }
+
+      return res.status(200).json({
+        message: 'Profile updated successfully',
+        user,
+      });
+    } catch (error) {
+      console.error('Error in updateProfile:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+};
+
 
 exports.changePassword = async (req, res) => {
   const { oldPassword, newPassword, confirmPassword } = req.body;

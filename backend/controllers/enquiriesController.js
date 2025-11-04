@@ -1,4 +1,4 @@
-const { Op, fn, col, literal } = require('sequelize');
+const { Op, fn, col, literal, Sequelize } = require('sequelize');
 const moment = require('moment');
 const Enquiries = require('../models/Enquiries');
 const OpenEnquriy = require('../models/OpenEnquiries');
@@ -13,6 +13,7 @@ const SubCategories = require('../models/SubCategories');
 const UserActivity = require('../models/UserActivity');
 const Emails = require('../models/Emails');
 const { getTransporter } = require('../helpers/mailHelper');
+const { getCategoryNames } = require('../helpers/mailHelper');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
@@ -95,6 +96,101 @@ exports.getAllEnquiries = async (req, res) => {
   }
 };
 
+exports.getEnquiriesByNumberold = async (req, res) => {
+  try {
+    const enquiry = await Enquiries.findOne({
+      where: { enquiry_number: req.params.enquiry_number },
+      include: [
+        {
+          model: Users,
+          as: 'from_user',
+          attributes: ['id', 'email', 'mobile', 'company_id', 'fname', 'lname'],
+          include: [{
+            model: CompanyInfo,
+            as: 'company_info',
+            attributes: ['organization_name'],
+          }],
+        },
+        {
+          model: Users,
+          as: 'to_user',
+          attributes: ['id', 'email', 'mobile', 'company_id', 'fname', 'lname'],
+          include: [{
+            model: CompanyInfo,
+            as: 'company_info',
+            attributes: ['organization_name'],
+          }],
+        },
+        {
+          model: EnquiryUsers,
+          as: 'enquiry_users',
+          attributes: ['id', 'product_name', 'product_id', 'company_id', 'enquiry_status'],
+          include: [
+            {
+              model: Products,
+              as: 'Products',
+              attributes: ['id', 'title', 'description', 'user_id', 'category', 'sub_category'],
+              include: [
+                { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+                { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+                { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+              ],
+              required: false,
+            },
+          ],
+          required: false,
+        },
+      ],
+    });
+
+    if (!enquiry) return res.status(404).json({ message: 'Enquiry not found' });
+
+    // Fix: AWAIT findByPk
+    const eu = enquiry.enquiry_users[0];
+    let single_product = null;
+
+    if (eu?.product_id) {
+      single_product = await Products.findByPk(eu.product_id, {
+        attributes: ['id', 'title', 'description', 'user_id', 'category', 'sub_category'],
+        include: [
+          { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+          { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+          { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+        ],
+      });
+    }
+
+
+
+    res.json({
+      ...enquiry.toJSON(),
+      from_full_name: enquiry.from_user ? `${enquiry.from_user.fname} ${enquiry.from_user.lname}`.trim() : null,
+      from_email: enquiry.from_user?.email || null,
+      from_mobile: enquiry.from_user?.mobile || null,
+      from_company_id: enquiry.from_user?.company_id || null,
+      from_organization_name: enquiry.from_user?.company_info?.organization_name || null,
+
+      to_full_name: enquiry.to_user ? `${enquiry.to_user.fname} ${enquiry.to_user.lname}`.trim() : null,
+      to_email: enquiry.to_user?.email || null,
+      to_mobile: enquiry.to_user?.mobile || null,
+      to_company_id: enquiry.to_user?.company_id || null,
+      to_organization_name: enquiry.to_user?.company_info?.organization_name || null,
+
+      enquiry_product: eu?.product_name || null,
+      enquiryUser: eu || null,
+      product_details: single_product || eu?.Products || null, // Dono se best try karo
+
+      // Debug
+      product_source: single_product ? 'from_findByPk' : (eu?.Products ? 'from_include' : 'not_found'),
+    });
+
+  } catch (err) {
+    console.error('Error in getEnquiriesByNumber:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 exports.getEnquiriesByNumber = async (req, res) => {
   try {
     const enquiry = await Enquiries.findOne({
@@ -108,9 +204,7 @@ exports.getEnquiriesByNumber = async (req, res) => {
             model: CompanyInfo,
             as: 'company_info',
             attributes: ['organization_name'],
-            required: false,
           }],
-          required: false,
         },
         {
           model: Users,
@@ -120,36 +214,98 @@ exports.getEnquiriesByNumber = async (req, res) => {
             model: CompanyInfo,
             as: 'company_info',
             attributes: ['organization_name'],
-            required: false,
           }],
-          required: false,
         },
         {
           model: EnquiryUsers,
           as: 'enquiry_users',
-          attributes: ['id', 'product_name']
-        }
-      ]
+          attributes: ['id', 'product_name', 'product_id', 'company_id', 'enquiry_status'],
+          include: [
+            {
+              model: Products,
+              as: 'Products',
+              attributes: ['id', 'title', 'description', 'user_id', 'category', 'sub_category'],
+              include: [
+                { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+                { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+                { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+              ],
+              required: false,
+            },
+          ],
+          required: false,
+        },
+      ],
     });
+
     if (!enquiry) return res.status(404).json({ message: 'Enquiry not found' });
+
+    const eu = enquiry.enquiry_users?.[0];
+    let single_product = null;
+
+    if (eu?.product_id) {
+      single_product = await Products.findByPk(eu.product_id, {
+        attributes: ['id', 'title', 'description', 'user_id', 'category', 'sub_category'],
+        include: [
+          { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+          { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+          { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+        ],
+      });
+    }
+
+    // ✅ Fetch seller (the user whose company_id matches the enquiry company)
+    let sellerUser = null;
+    if (eu?.company_id) {
+      sellerUser = await Users.findOne({
+        where: { company_id: enquiry.company_id },
+        include: { model: CompanyInfo, as: 'company_info' },
+      });
+    }
+
+
+    // ✅ Get category & subcategory names for seller
+    let category_sell_names = '';
+    let sub_category_names = '';
+    if (sellerUser) {
+      const catData = await getCategoryNames(sellerUser);
+      category_sell_names = catData.category_sell_names || '';
+      sub_category_names = catData.sub_category_names || '';
+    }
+
     res.json({
       ...enquiry.toJSON(),
-      from_full_name: enquiry.from_user ? `${enquiry.from_user.fname} ${enquiry.from_user.lname}` : null,
+      from_full_name: enquiry.from_user ? `${enquiry.from_user.fname} ${enquiry.from_user.lname}`.trim() : null,
       from_email: enquiry.from_user?.email || null,
       from_mobile: enquiry.from_user?.mobile || null,
       from_company_id: enquiry.from_user?.company_id || null,
       from_organization_name: enquiry.from_user?.company_info?.organization_name || null,
-      to_full_name: enquiry.to_user ? `${enquiry.to_user.fname} ${enquiry.to_user.lname}` : null,
+
+      to_full_name: enquiry.to_user ? `${enquiry.to_user.fname} ${enquiry.to_user.lname}`.trim() : null,
       to_email: enquiry.to_user?.email || null,
       to_mobile: enquiry.to_user?.mobile || null,
       to_company_id: enquiry.to_user?.company_id || null,
       to_organization_name: enquiry.to_user?.company_info?.organization_name || null,
-      enquiry_product: enquiry.enquiry_users[0]?.product_name || null,
+
+      enquiry_product: eu?.product_name || null,
+      enquiryUser: eu || null,
+      product_details: single_product || eu?.Products || null,
+
+      // ✅ New fields
+      seller_category_names: category_sell_names,
+      seller_subcategory_names: sub_category_names,
+
+      product_source: single_product ? 'from_findByPk' : (eu?.Products ? 'from_include' : 'not_found'),
     });
+
   } catch (err) {
+    console.error('Error in getEnquiriesByNumber:', err);
     res.status(500).json({ error: err.message });
   }
 };
+
+
+
 
 exports.getEnquiriesCount = async (req, res) => {
   try {
@@ -219,7 +375,7 @@ exports.deleteSelectedEnquiries = async (req, res) => {
   }
 };
 
-exports.updateEnquiriesDeleteStatus = async (req, res) => {
+exports.updateEnquiriesDeleteStatusold = async (req, res) => {
   try {
     const { is_delete } = req.body;
     if (is_delete !== 0 && is_delete !== 1) {
@@ -234,6 +390,55 @@ exports.updateEnquiriesDeleteStatus = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+exports.updateEnquiriesDeleteStatus = async (req, res) => {
+  try {
+    const is_delete = 1;
+    const { id } = req.params;
+
+    if (is_delete !== 0 && is_delete !== 1) {
+      return res.status(400).json({ message: 'Invalid delete status. Use 1 (Active) or 0 (Deactive).' });
+    }
+
+    const enquiry = await Enquiries.findByPk(id);
+    if (!enquiry) return res.status(404).json({ message: 'Enquiry not found' });
+
+    enquiry.is_delete = is_delete;
+    await enquiry.save();
+    const userInfo = await EnquiryUsers.findOne({ where: { enquiry_id: id } });
+
+    let messageInfo = null;
+    if (userInfo) {
+      messageInfo = await UserMessage.findOne({ where: { message_id: userInfo.id } });
+    }
+
+    const enquiryMessage = await EnquiryMessage.findOne({ where: { enquiry_id: id } });
+    if (enquiryMessage) {
+      enquiryMessage.is_delete = is_delete;
+      await enquiryMessage.save();
+    }
+
+    if (userInfo) {
+      userInfo.is_delete = is_delete;
+      await userInfo.save();
+    }
+
+    if (messageInfo) {
+      messageInfo.is_delete = is_delete;
+      await messageInfo.save();
+    }
+    res.json({
+      message: is_delete === 1 ? 'Enquiry and related data marked as deleted' : 'Enquiry restored successfully',
+      enquiry,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
 
 exports.getAllEnquiriesServerSide = async (req, res) => {
   try {
@@ -495,7 +700,6 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 exports.getEnquiriesByUserServerSide = async (req, res) => {
   try {
     const {
@@ -514,18 +718,20 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
     }
 
     const sortDirection = sort.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
     let order = [[sortBy, sortDirection]];
     if (sortBy === 'enquiry_product') {
       order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
     }
 
     const where = { is_delete: 0 };
-    if(!isAdmin){
-      where: { is_approve: 1 };
+    if (!isAdmin) {
+      where.is_approve = 1;
+      where.user_id = user_id;
     }
 
-    const user = await Users.findByPk(user_id, { 
-      include: { model: CompanyInfo, as: 'company_info' } 
+    const user = await Users.findByPk(user_id, {
+      include: { model: CompanyInfo, as: 'company_info' }
     });
 
     const companyId = user?.company_info?.id;
@@ -535,7 +741,28 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
         model: EnquiryUsers,
         as: 'enquiry_users',
         required: true,
-        where: { company_id: companyId },
+      },
+      {
+        model: Users,
+        as: 'from_user',
+        attributes: [
+          'id',
+          'fname',
+          'lname',
+          'email',
+          [Sequelize.literal("CONCAT(from_user.fname, ' ', from_user.lname)"), 'full_name']
+        ],
+      },
+      {
+        model: Users,
+        as: 'to_user',
+        attributes: [
+          'id',
+          'fname',
+          'lname',
+          'email',
+          [Sequelize.literal("CONCAT(to_user.fname, ' ', to_user.lname)"), 'full_name']
+        ],
       },
     ];
 
@@ -564,12 +791,33 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
       include
     });
 
+
+
+    const enrichedRows = [];
+    for (const enq of rows) {
+      const enquiryJSON = enq.toJSON();
+      const sellerUser = await Users.findOne({
+        where: { company_id: enquiryJSON.company_id },
+        include: { model: CompanyInfo, as: 'company_info' }
+      });
+
+      // get that seller’s category info
+      const { category_sell_names, sub_category_names } = await getCategoryNames(sellerUser);
+
+      enrichedRows.push({
+        ...enquiryJSON,
+        category_name: category_sell_names || '',
+        sub_category_name: sub_category_names || '',
+      });
+    }
+
     res.json({
-      data: rows,
+      data: enrichedRows,
       filteredRecords,
       totalRecords: filteredRecords,
       isAll
     });
+
 
   } catch (err) {
     console.error(err);
@@ -606,11 +854,15 @@ const sendEnquiryConfirmation = async (to, name) => {
   });
 };
 
+const productEnquirymail = async (enquiry, enquiryuser) => {
+
+}
+
 exports.verifyEmail = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await Users.findOne({ where: { email } });
-    console.log(user);
+
     if (user) {
       return res.status(200).json({ exists: true, message: 'User exists, please login' });
     }
@@ -691,7 +943,6 @@ exports.storeEnquiry = async (req, res) => {
           categoryNameArr.push(category.name);
         }
       }
-
       category_ids = categoryDataArr.join(", ");
       category_names = categoryNameArr.join(", ");
 
@@ -710,13 +961,13 @@ exports.storeEnquiry = async (req, res) => {
 
           if (sub_cat) {
             sub_cat_data_arr.push(sub_cat.id);
-            sub_cat_name_arr.push(sub_cat.name);
+            sub_cat_name_arr.push(sub_cat.name.trim());
           }
         }
       }
 
-      subcategory_ids = sub_cat_data_arr.join(", ");
-      subcategory_names = sub_cat_name_arr.join(", ");
+      subcategory_ids = sub_cat_data_arr.filter(Boolean).join(", ");
+      subcategory_names = sub_cat_name_arr.filter(Boolean).join(", ");
 
     }
 
@@ -724,7 +975,7 @@ exports.storeEnquiry = async (req, res) => {
     await newCompany.save();
 
     const user = await Users.findByPk(userId);
-    // console.log('storeEnquiry' + user);
+
     user.fname = name;
     user.company_id = newCompany.id;
     user.mobile = phone;
@@ -741,10 +992,10 @@ exports.storeEnquiry = async (req, res) => {
       company_id: enq_company_id,
       user_id: user.id,
       description,
-      category: category_ids,  // Fetch real data as needed
-      sub_category: subcategory_ids,
-      category_name: category_names,
-      sub_category_name: subcategory_names,
+      // category: category_ids,  // Fetch real data as needed
+      // sub_category: subcategory_ids,
+      // category_name: category_names,
+      // sub_category_name: subcategory_names,
     });
     await enquiry.save();
 
@@ -772,6 +1023,70 @@ exports.storeEnquiry = async (req, res) => {
     await userMessage.save();
 
     await sendEnquiryConfirmation(user.email, name);
+    res.status(200).json({ message: 'Enquiry submitted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.submitEnquiryuser = async (req, res) => {
+  try {
+    const { userId, quantity, description, product_id, enq_company_id } = req.body;
+
+    const product = await Products.findByPk(product_id);
+
+    const user = await Users.findByPk(userId);
+    console.log(user);
+
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    let is_approve = 1;
+
+    if (user.walkin_buyer == 1) {
+      is_approve = 0;
+    }
+    const enquiry_number = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const enquiry = new Enquiries({
+      enquiry_number,
+      company_id: enq_company_id,
+      user_id: user.id,
+      type: 1,
+      quantity: quantity,
+      is_approve: is_approve,
+      description,
+    });
+    await enquiry.save();
+
+    const enquiryUser = new EnquiryUsers({
+      enquiry_id: enquiry.id,
+      company_id: enq_company_id,
+      product_id,
+      product_name: product.title,
+    });
+    await enquiryUser.save();
+
+    const enquiryMessage = new EnquiryMessage({
+      seller_company_id: enq_company_id,
+      enquiry_id: enquiry.id,
+      buyer_company_id: user.company_id,
+    });
+    await enquiryMessage.save();
+
+    const userMessage = new UserMessage({
+      user_id: user.id,
+      message: description,
+      message_id: enquiryMessage.id,
+      company_id: user.company_id,
+    });
+    await userMessage.save();
+
+    if (user.walkin_buyer == 1) {
+      // await productEnquirymail(enquiry, enquiryUser);
+    } else {
+
+    }
+
+    // await sendEnquiryConfirmation(user.email, name);
     res.status(200).json({ message: 'Enquiry submitted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -814,8 +1129,6 @@ exports.submitEnquiry = async (req, res) => {
   const clientIp = getClientIp(req);
   const errors = {};
 
-  console.log('isAuthenticated:', isAuthenticated);
-  console.log('Client IP:', clientIp);
 
   try {
     // ========== VALIDATION ==========
@@ -935,6 +1248,387 @@ exports.submitEnquiry = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Server error. Please try again later.',
+    });
+  }
+};
+
+exports.getLeadsCount = async (req, res) => {
+  try {
+    const { companyId, enquiryId } = req.query;
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Missing companyId parameter' });
+    }
+
+    const user = await Users.findOne({
+      where: { company_id: companyId }
+    });
+    const whereAwarded = { is_delete: 0 };
+    const whereShortlisted = { shortlist: 1 };
+    const whereAccepted = {
+      is_delete: 0, enquiry_status: 1,
+      ...(enquiryId ? { enquiry_id: enquiryId } : {}),
+    };
+
+    // only add enquiry_id if provided
+    if (enquiryId) {
+      whereAwarded.enquiry_id = enquiryId;
+      whereAccepted.enquiry_id = enquiryId;;
+      whereShortlisted.enquiry_id = enquiryId;;
+    }
+
+
+    // Run all 3 queries in parallel for speed
+    const [totalResult, openResult, closedResult, noEnquiry, openEnquiry, closeEnquiry, enquiryFloated, enquirySeen, awerded, acceptCount, shortlisted] = await Promise.all([
+      Enquiries.findAndCountAll({
+        include: [{
+          model: EnquiryUsers,
+          as: 'enquiry_users', // ✅ must match alias
+          where: { company_id: companyId },
+          required: true,
+        }],
+        where: { is_delete: 0, is_approve: 1 },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        include: [{
+          model: EnquiryUsers,
+          as: 'enquiry_users',
+          where: { company_id: companyId },
+          required: true,
+        }],
+        where: { is_delete: 0, is_approve: 1, status: 1 },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        include: [{
+          model: EnquiryUsers,
+          as: 'enquiry_users',
+          where: { company_id: companyId },
+          required: true,
+        }],
+        where: { is_delete: 0, is_approve: 1, status: 0 },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        where: { is_delete: 0, is_approve: 1, user_id: user.id },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        where: { is_delete: 0, is_approve: 1, status: 1, user_id: user.id },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        where: { is_delete: 0, is_approve: 1, status: 0, user_id: user.id },
+        distinct: true,
+        col: 'id',
+      }),
+
+      Enquiries.findAndCountAll({
+        col: 'id',
+      }),
+
+      EnquiryUsers.findAndCountAll({
+        where: { enquiry_status: 1 },
+        col: 'id',
+      }),
+
+      EnquiryUsers.findAndCountAll({
+        where: whereAwarded,
+        col: 'id',
+      }),
+      EnquiryUsers.findAndCountAll({
+        where: whereAccepted,
+        col: 'id',
+      }),
+      EnquiryUsers.findAndCountAll({
+        where: whereShortlisted,
+        col: 'id',
+      }),
+
+    ]);
+
+    res.json({
+      total: Number(totalResult.count),
+      open: Number(openResult.count),
+      closed: Number(closedResult.count),
+      enquirytotal: Number(noEnquiry.count),
+      enquiryopen: Number(openEnquiry.count),
+      enquiryclosed: Number(closeEnquiry.count),
+      enquiryFloated: Number(enquiryFloated.count),
+      enquirySeen: Number(enquirySeen.count),
+      awerded: Number(awerded.count),
+      acceptCount: Number(acceptCount.count),
+      shortlisted: Number(shortlisted.count),
+    });
+  } catch (err) {
+    console.error('Lead stats error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.dashboardEnquiryProve = async (req, res) => {
+  try {
+    const { enq_id, type, id } = req.body;
+
+    if (!type || (!id && !enq_id)) {
+      return res.status(400).json({ success: 0, message: "Missing required fields" });
+    }
+
+    if (type == 1 || type == 2) {
+      const enquiryUser = await EnquiryUsers.findOne({ where: { id } });
+      if (!enquiryUser) {
+        return res.status(404).json({ success: 0, message: "Enquiry user not found" });
+      }
+
+      enquiryUser.enquiry_status = type;
+      await enquiryUser.save();
+
+      return res.json({ success: 1, message: "Enquiry user status updated successfully" });
+    }
+
+    if (enq_id) {
+      const enquiry = await Enquiries.findOne({ where: { id: enq_id } });
+      if (!enquiry) {
+        return res.status(404).json({ success: 0, message: "Enquiry not found" });
+      }
+      enquiry.status = type;
+      await enquiry.save();
+      return res.json({ success: 1, message: "Enquiry closed successfully" });
+    }
+
+    return res.status(400).json({ success: 0, message: "Invalid request" });
+
+  } catch (error) {
+    console.error("Error in dashboardEnquiryProve:", error);
+    res.status(500).json({ success: 0, message: "Server error", error: error.message });
+  }
+};
+
+exports.getAwardedEnquiries = async (req, res) => {
+  try {
+    const { enq_id } = req.query;
+
+    if (!enq_id) {
+      return res.status(400).json({ success: 0, message: "enq_id is required" });
+    }
+
+    // ✅ Fetch awarded companies where enquiry_status = 1 OR 3
+    const awarded = await EnquiryUsers.findAll({
+      where: {
+        enquiry_id: enq_id,
+        is_delete: 0
+      },
+      include: [
+        {
+          model: CompanyInfo,
+          as: "CompanyInfo", // must match your association alias
+          attributes: ["organization_name"],
+        },
+      ],
+      attributes: ["id", "company_id", "enquiry_id", "enquiry_status"],
+      order: [["id", "ASC"]],
+    });
+
+    const count = awarded.length;
+
+    if (count > 0) {
+      return res.status(200).json({
+        success: 1,
+        count,
+        data: awarded.map((item, index) => ({
+          sno: index + 1,
+          company_name: item.CompanyInfo?.organization_name || "-",
+          enquiry_status: item.enquiry_status,
+        })),
+      });
+    } else {
+      return res.status(200).json({
+        success: 1,
+        count: 0,
+        data: [],
+        message: "No Enquiry Awarded.",
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching awarded enquiries:", error);
+    return res.status(500).json({
+      success: 0,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
+
+
+
+exports.getAcceptEnquiries = async (req, res) => {
+  try {
+    const { enq_id } = req.query;
+
+    if (!enq_id) {
+      return res.status(400).json({ success: 0, message: "enq_id is required" });
+    }
+    const mainenquiry = await Enquiries.findByPk(enq_id);
+
+    // ✅ Fetch accepted enquiries
+    const enquiries = await EnquiryUsers.findAll({
+      where: {
+        enquiry_id: enq_id,
+        is_delete: 0,
+
+        [Op.or]: [
+          { enquiry_status: 1 },
+          { enquiry_status: 3 },
+        ],
+      },
+      include: [
+        {
+          model: CompanyInfo,
+          as: "CompanyInfo", // must match association alias
+          attributes: ["organization_name"],
+        },
+      ],
+      attributes: ["id", "company_id", "enquiry_id", "enquiry_status", "shortlist"],
+      order: [["id", "ASC"]],
+    });
+
+    const count = enquiries.length;
+
+    if (count === 0) {
+      return res.status(200).json({
+        success: 1,
+        count: 0,
+        data: [],
+        message: "No Enquiry Found.",
+      });
+    }
+
+    // ✅ Transform result
+    const data = enquiries.map((enquiry, index) => {
+      let status = "";
+      let color = "";
+
+      // 🟢 Status and Color
+      switch (enquiry.enquiry_status) {
+        case 1:
+          status = "Open";
+          color = "success";
+          break;
+        case 2:
+        case 3:
+          status = "Closed";
+          color = "danger";
+          break;
+        default:
+          status = "Pending";
+          color = "warning";
+      }
+
+      // 🔒 Disable checkbox if status == 3
+      const disabled = mainenquiry.status === 3 ? "disabled" : "";
+
+      // ✅ Checkbox logic (shortlist)
+      const checked =
+        enquiry.shortlist === 1
+          ? `<input class="form-check-input me-3 filed_check" checked ${disabled} name="check[]" type="checkbox" value="1" onchange="shortlist(${enquiry.id},0)">`
+          : `<input class="form-check-input me-3 filed_check" name="check[]" ${disabled} type="checkbox" value="0" onchange="shortlist(${enquiry.id},1)">`;
+
+      // ✅ Badge HTML
+      const statusHTML = `<div class="badge rounded-pill text-${color} bg-light-${color} p-2 px-3" style="font-size:10px;">${status}</div>`;
+
+      return {
+        sno: index + 1,
+        name: enquiry.CompanyInfo?.organization_name || "-",
+        status: statusHTML,
+        shortlist: checked,
+      };
+    });
+
+    // ✅ Response
+    return res.status(200).json({
+      success: 1,
+      count,
+      data,
+    });
+  } catch (error) {
+    console.error("Error fetching accepted enquiries:", error);
+    return res.status(500).json({
+      success: 0,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
+
+
+exports.getShortlistedenquiries = async (req, res) => {
+  try {
+    const { enq_id } = req.query;
+
+    if (!enq_id) {
+      return res.status(400).json({ success: 0, message: "enq_id is required" });
+    }
+
+    // ✅ Fetch shortlisted enquiries + print query
+    const enquiries = await EnquiryUsers.findAll({
+      where: {
+        enquiry_id: enq_id,
+        shortlist: 1,
+        enquiry_status: 1,
+        is_delete: 0,
+      },
+      include: [
+        {
+          model: CompanyInfo,
+          as: "CompanyInfo", // must match association alias
+          attributes: ["organization_name"],
+        },
+      ],
+      attributes: ["id", "company_id", "enquiry_id"],
+      order: [["id", "ASC"]],
+
+    });
+
+    const count = enquiries.length;
+
+    if (count === 0) {
+      return res.status(200).json({
+        success: 1,
+        count: 0,
+        data: [],
+        message: "No shortlisted enquiries found.",
+      });
+    }
+
+    // ✅ Format only sno & name
+    const data = enquiries.map((enquiry, index) => ({
+      sno: index + 1,
+      name: enquiry.CompanyInfo?.organization_name || "-",
+    }));
+
+    return res.status(200).json({
+      success: 1,
+      count,
+      data,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching shortlisted enquiries:", error);
+    return res.status(500).json({
+      success: 0,
+      message: "Something went wrong",
+      error: error.message,
     });
   }
 };

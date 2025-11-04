@@ -97,7 +97,7 @@ const UserSidebar = () => {
     {
       title: "Lead Messages",
       icon: "bx bx-chat",
-      link: "/lead-messages",
+      link: "/my-all-enquiries-chats",
       show:
         (user?.member_role === 1 || user?.member_role === 3) &&
         user?.is_seller === 1 &&
@@ -120,7 +120,7 @@ const UserSidebar = () => {
     {
       title: "Enquiry Messages",
       icon: "bx bx-chat",
-      link: "/enquiry-messages",
+      link: "/my-all-enquiries-chats",
       show:
         user?.member_role !== 3 &&
         user?.is_complete === 1 &&
@@ -131,7 +131,7 @@ const UserSidebar = () => {
     {
       title: "Open Enquiries",
       icon: "bx bx-folder-open",
-      link: "/open-enquiries",
+      link: "/open-enquiry-dashboard",
       show:
         (user?.member_role === 1 || user?.member_role === 3) &&
         user?.is_seller === 1 &&
@@ -150,7 +150,7 @@ const UserSidebar = () => {
     },
 
     // ✅ Always visible (common)
-    { title: "Add Open Enquiries", icon: "bx bx-plus", link: "/add-open-enquiries" },
+    { title: "Add Open Enquiries", icon: "bx bx-plus", link: "/open-enquiry" },
     { title: "My All Enquiries Chats", icon: "bx bx-message", link: "/my-all-enquiries-chats" },
   ];
 
