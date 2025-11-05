@@ -155,6 +155,7 @@ const menuData = [
       { title: 'Site Settings', link: '/admin/site_settings' },
       { title: 'About Settings', link: '/admin/about_settings' },
       { title: 'Home Settings', link: '/admin/home_settings' },
+      { title: 'ShortCut menu', link: '/admin/shortcut-page' },
     ],
   },
   {
@@ -239,7 +240,7 @@ const Sidebar = () => {
         const response = await axios.get(`${API_BASE_URL}/settings/site`);
         const data = response.data;
         if (data?.logo_file) {
-          setLogoUrl(ROOT_URL+'/'+data.logo_file);
+          setLogoUrl(ROOT_URL + '/' + data.logo_file);
         } else {
           setLogoUrl("/logo.png");
         }

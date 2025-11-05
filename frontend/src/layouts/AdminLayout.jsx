@@ -62,6 +62,7 @@ import ContactsList from '../admin/pages/ContactsList';
 import Inventories from '../admin/pages/Inventories';
 import RegistrationsList from '../admin/pages/RegistrationsList';
 import UsersHistory from '../admin/pages/UsersHistory';
+import ShortcutPage from '../admin/pages/ShortcutPage';
 
 function AdminLayout() {
   const location = useLocation();
@@ -127,6 +128,7 @@ function AdminLayout() {
           <Route path="/edit_email_circular/:newsletterId" element={<ProtectedRoute><AddEmailCircular /></ProtectedRoute>} />
           <Route path="/email_circular_details/:newsletterId" element={<ProtectedRoute><EmailCircularDetails /></ProtectedRoute>} />
           <Route path="/home_settings" element={<ProtectedRoute><HomeSettings /></ProtectedRoute>} />
+          <Route path="/shortcut-page" element={<ProtectedRoute><ShortcutPage /></ProtectedRoute>} />
           <Route path="/sub_admin" element={<ProtectedRoute><SubAdminList /></ProtectedRoute>} />
           <Route path="/roles" element={<ProtectedRoute><RolesList /></ProtectedRoute>} />
           <Route path="/core_activity" element={<ProtectedRoute><CoreActivityList /></ProtectedRoute>} />

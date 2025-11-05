@@ -2132,7 +2132,7 @@ input::placeholder {
 .search-control {
 	background-color: #f7f7ff;
 	border: 1px solid #e9e9f6;
-	padding-left: 15x;
+	padding-left: 15px;
 	background: transparent;
 	height: 38px;
 	font-size: 14px;
@@ -3131,4 +3131,17 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 .swiper-button-next svg {
 	height: 20px !important;
 	color: var(--color-orange);
+}
+
+.grid-alt {
+	width: 38px;
+	height: 38px;
+	border-radius: 0.3125rem;
+	border: 0 solid #e5e5e5;
+	background: #cfe9e6;
+	align-items: center;
+	color: #0E9384;
+	justify-content: center;
+	display: flex;
+	font-size: 16px;
 }

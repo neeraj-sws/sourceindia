@@ -41,6 +41,7 @@ const inventoriesRoutes = require('./routes/inventoriesRoutes');
 const usersRoutes = require('./routes/usersRoutes');
 const usersDashboardRoutes = require('./routes/usersDashboardRoutes');
 const registrationsRoutes = require('./routes/registrationsRoutes');
+const shortcutRoutes = require('./routes/shortcutRoutes');
 
 const app = express();
 const basePath = '/v2'; // All APIs will start with /v2
@@ -95,6 +96,7 @@ app.use(basePath + '/api/inventories', inventoriesRoutes);
 app.use(basePath + '/api/signup', usersRoutes);
 app.use(basePath + '/api/dashboard', usersDashboardRoutes);
 app.use(basePath + '/api/registrations', registrationsRoutes);
+app.use(basePath + '/api/shortcut', shortcutRoutes);
 
 sequelize
   .sync()
