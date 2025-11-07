@@ -94,8 +94,8 @@ const MyProducts = ({user_id}) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Shop" title="Products"
-          add_button={(<><i className="bx bxs-plus-square"></i> Add Product</>)} add_link="/add_product"
+          <Breadcrumb mainhead="Products" maincount={totalRecords} page="Shop" title="Products"
+          add_button={(<><i className="bx bxs-plus-square me-1" /> Add Product</>)} add_link="/add_product"
           />
           <div className="card">
             <div className="card-body">
@@ -104,7 +104,7 @@ const MyProducts = ({user_id}) => {
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "image", label: "Image", sortable: false },
                   { key: "title", label: "Title", sortable: true },
-                  { key: "category_name", label: "Category Name", sortable: true },
+                  { key: "category_name", label: "Category", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },
                   { key: "updated_at", label: "Updated At", sortable: true },
                   { key: "action", label: "Action", sortable: false },

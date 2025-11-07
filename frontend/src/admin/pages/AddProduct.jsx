@@ -6,7 +6,6 @@ import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
-import SearchDropdown from "../common/SearchDropdown";
 import ProductModals from "./modal/ProductModals";
 import "select2/dist/css/select2.min.css";
 import "select2";
@@ -18,7 +17,9 @@ const AddProduct = () => {
   const isEditing = Boolean(productId);
   const navigate = useNavigate();
   const [sellers, setSellers] = useState([]);
+  const [selectedSellers, setSelectedSellers] = useState("");
   const [applications, setApplications] = useState([]);
+  const [selectedApplications, setSelectedApplications] = useState("");
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -27,12 +28,61 @@ const AddProduct = () => {
   const [imageToDelete, setImageToDelete] = useState(null);
   const [formData, setFormData] = useState({
     user_id: '', title: '', code: '', article_number: '', is_gold: '', is_featured: '', is_recommended: '', best_product: '',
-    status: '', application: '', short_description: '', description: ''
+    status: '', application: '', short_description: '', description: '', item_category_id: '', item_subcategory_id: '', item_id: ''
   });
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
+  const [itemCategories, setItemCategories] = useState([]);
+  const [itemSubCategories, setItemSubCategories] = useState([]);
+  const [selectedItemCategory, setSelectedItemCategory] = useState('');
+  const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
+  const [items, setItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState('');
+
+  useEffect(() => {
+    if (selectedCategory && selectedSubCategory) {
+      axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${selectedSubCategory}`)
+        .then(res => setItemCategories(res.data))
+        .catch(err => {
+          console.error("Error fetching item categories:", err);
+          setItemCategories([]);
+        });
+    } else {
+      setItemCategories([]);
+    }
+  }, [selectedCategory, selectedSubCategory]);
+  
+  useEffect(() => {
+    if (selectedCategory && selectedSubCategory && selectedItemCategory) {
+      axios.get(
+        `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}`
+      )
+      .then(res => setItemSubCategories(res.data))
+      .catch(err => {
+        console.error("Error fetching item sub categories:", err);
+        setItemSubCategories([]);
+      });
+    } else {
+      setItemSubCategories([]);
+    }
+  }, [selectedCategory, selectedSubCategory, selectedItemCategory]);
+  
+  useEffect(() => {
+    if (selectedCategory && selectedSubCategory && selectedItemCategory && selectedItemSubCategory) {
+      axios.get(
+        `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${selectedItemSubCategory}`
+      )
+      .then(res => setItems(res.data))
+      .catch(err => {
+        console.error("Error fetching items:", err);
+        setItems([]);
+      });
+    } else {
+      setItems([]);
+    }
+  }, [selectedCategory, selectedSubCategory, selectedItemCategory, selectedItemSubCategory]);
 
   useEffect(() => {
     const fetchSellers = async () => {
@@ -46,6 +96,8 @@ const AddProduct = () => {
     fetchSellers();
   }, []);
 
+  const handleSellersChange = (event) => { setSelectedSellers(event.target.value); };
+
   useEffect(() => {
     const fetchApplications = async () => {
       try {
@@ -57,6 +109,8 @@ const AddProduct = () => {
     };
     fetchApplications();
   }, []);
+
+  const handleApplicationsChange = (event) => { setSelectedApplications(event.target.value); };
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -87,6 +141,24 @@ const AddProduct = () => {
   const handleSubCategoryChange = (event) => { setSelectedSubCategory(event.target.value); };
 
   useEffect(() => {
+    $('#user_id').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Seller"
+    }).on("change", function () {
+      const userId = $(this).val();
+      handleSellersChange({ target: { value: userId } });
+    });
+
+    $('#application').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select application"
+    }).on("change", function () {
+      const applicationId = $(this).val();
+      handleApplicationsChange({ target: { value: applicationId } });
+    });
+
     $('#category').select2({
       theme: "bootstrap",
       width: '100%',
@@ -104,12 +176,40 @@ const AddProduct = () => {
       const subCategoryId = $(this).val();
       handleSubCategoryChange({ target: { value: subCategoryId } });
     });
+     $('#item_category_id')
+  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
+  .on("change", function () {
+    const val = $(this).val();
+    setSelectedItemCategory(val);
+    setSelectedItemSubCategory('');
+    setSelectedItems('');
+  });
+
+$('#item_sub_category_id')
+  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
+  .on("change", function () {
+    const val = $(this).val();
+    setSelectedItemSubCategory(val);
+    setSelectedItems('');
+  });
+
+$('#item_id')
+  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
+  .on("change", function () {
+    const val = $(this).val();
+    setSelectedItems(val);
+  });
 
     return () => {
+      $('#user_id').off("change").select2('destroy');
+      $('#application').off("change").select2('destroy');
       $('#category').off("change").select2('destroy');
       $('#sub_category').off("change").select2('destroy');
+      if ($('#item_category_id').data('select2')) $('#item_category_id').select2('destroy');
+      if ($('#item_sub_category_id').data('select2')) $('#item_sub_category_id').select2('destroy');
+      if ($('#item_id').data('select2')) $('#item_id').select2('destroy');
     };
-  }, [categories, subCategories]);
+  }, [sellers, applications, categories, subCategories]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -122,7 +222,7 @@ const AddProduct = () => {
 
   const validateForm = () => {
     const errs = {};
-    if (!formData.user_id) errs.user_id = 'User is required';
+    if (!selectedSellers) errs.user_id = 'User is required';
     if (!formData.title.trim()) errs.title = 'Title is required';
     if (!selectedCategory) errs.category = "Category is required";
     if (!formData.status) errs.status = 'Status is required';
@@ -154,7 +254,6 @@ const AddProduct = () => {
         const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
         const data = res.data;
         setFormData({
-          user_id: data.user_id || '',
           title: data.title || '',
           code: data.code || '',
           article_number: data.article_number || '',
@@ -163,11 +262,12 @@ const AddProduct = () => {
           is_recommended: data.is_recommended || '',
           best_product: data.best_product,
           status: String(data.status),
-          application: data.application || '',
           short_description: data.short_description || '',
           description: data.description || '',
           images: data.images || [],
         });
+        setSelectedSellers(data.user_id || '');
+        setSelectedApplications(data.application || '');
         setSelectedCategory(data.category || "");
         setSelectedSubCategory(data.sub_category || "");
         if (data.category) {
@@ -193,8 +293,13 @@ const AddProduct = () => {
         method = "put";
         payload = {
           ...formData,
+          user_id: selectedSellers,
+          application: selectedApplications,
           category: selectedCategory,
           sub_category: selectedSubCategory,
+          item_category_id: selectedItemCategory,
+          item_subcategory_id: selectedItemSubCategory,
+          item_id: selectedItems,
         };
         headers = { "Content-Type": "application/json" };
         await axios[method](endpoint, payload, { headers });
@@ -208,8 +313,13 @@ const AddProduct = () => {
         Object.entries(formData).forEach(([key, value]) => {
           if (key !== "images") data.append(key, value);
         });
+        data.append("user_id", selectedSellers);
+        data.append("application", selectedApplications);
         data.append("category", selectedCategory);
         data.append("sub_category", selectedSubCategory);
+        data.append("item_category_id", selectedItemCategory);
+        data.append("item_subcategory_id", selectedItemSubCategory);
+        data.append("item_id", selectedItems);
         files.forEach((file) => {
           data.append("files", file);
         });
@@ -225,10 +335,6 @@ const AddProduct = () => {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleSelectChange = (fieldName) => (selectedOption) => {
-    setFormData((prev) => ({ ...prev, [fieldName]: selectedOption ? selectedOption.value : "" }));
   };
 
   const handleCheckboxChange = (key, checked) => {
@@ -286,215 +392,291 @@ const AddProduct = () => {
           <Breadcrumb  page="Product" title={isEditing ? "Edit Product" : "Add Product"} add_button="Back" add_link="/admin/products" />
           <div className="row">
             <div className="col-xl-12 mx-auto">
-              <div className="card">
-                <div className="card-body p-4">
+              
                   <form className="row g-3" onSubmit={handleSubmit}>
-                    <div className="col-md-6">
-                      <label htmlFor="user_id" className="form-label required">User</label>
-                      <SearchDropdown
-                        id="user_id"
-                        options={sellers?.map((user) => ({ value: user.id, label: user.fname + " " + user.lname, }))}
-                        value={formData.user_id}
-                        onChange={handleSelectChange("user_id")}
-                        placeholder="Select here"
-                      />
-                      {errors.user_id && (<div className="invalid-feedback">{errors.user_id}</div>)}
-                    </div>
-                    <div className="col-md-6">
-                      <label htmlFor="title" className="form-label required">Product Name</label>
-                      <input
-                        type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
-                        id="title"
-                        placeholder="Product Name"
-                        value={formData.title}
-                        onChange={handleInputChange}
-                      />
-                      {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
-                    </div>
-                    <div className="col-md-6">
-                      <label htmlFor="code" className="form-label">Sku</label>
-                      <input
-                        type="text" className="form-control"
-                        id="code"
-                        placeholder="Sku"
-                        value={formData.code}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label htmlFor="article_number" className="form-label">Part Number</label>
-                      <input
-                        type="number" className="form-control"
-                        id="article_number"
-                        placeholder="Part Number"
-                        value={formData.article_number}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label htmlFor="category" className="form-label required">Category</label>
-                      <select
-                        id="category" className={`form-control ${errors.category ? "is-invalid" : ""}`}
-                        value={selectedCategory}
-                        onChange={handleCategoryChange}
-                      >
-                        <option value="">Select Category</option>
-                        {categories?.map((category) => (
-                          <option key={category.id} value={category.id}>{category.name}</option>
-                        ))}
-                      </select>
-                      {errors.category && (<div className="invalid-feedback">{errors.category}</div>)}
-                    </div>
-                    <div className="col-md-6">
-                      <label htmlFor="sub_category" className="form-label">Sub Category</label>
-                      <select
-                        id="sub_category" className="form-control"
-                        value={selectedSubCategory}
-                        onChange={handleSubCategoryChange}
-                        disabled={!selectedCategory}
-                      >
-                        <option value="">Select Sub Category</option>
-                        {subCategories?.map((sub_category) => (
-                          <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-md-12">
-                      <div className="form-check form-check-inline">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id="is_gold"
-                          checked={formData.is_gold === 1}
-                          onChange={(e) => handleCheckboxChange('is_gold', e.target.checked)}
-                        />
-                        <label className="form-check-label" htmlFor="is_gold">Gold</label>
-                      </div>
-                      <div className="form-check form-check-inline">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id="is_recommended"
-                          checked={formData.is_recommended === 1}
-                          onChange={(e) => handleCheckboxChange('is_recommended', e.target.checked)}
-                        />
-                        <label className="form-check-label" htmlFor="is_recommended">Recommended</label>
-                      </div>
-                      <div className="form-check form-check-inline">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id="best_product"
-                          checked={formData.best_product === 1}
-                          onChange={(e) => handleCheckboxChange('best_product', e.target.checked)}
-                        />
-                        <label className="form-check-label" htmlFor="best_product">Best Product</label>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <label htmlFor="status" className="form-label required">Status</label>
-                      <select
-                        id="status" className={`form-control ${errors.status ? "is-invalid" : ""}`}
-                        value={formData.status}
-                        onChange={handleInputChange}
-                      >
-                        <option value="">Select here</option>
-                        <option value="1">Public</option>
-                        <option value="0">Draft</option>
-                      </select>
-                      {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
-                    </div>
-                    <div className="col-md-6">
-                      <label htmlFor="application" className="form-label required">Applications</label>
-                      <SearchDropdown
-                        id="application"
-                        options={applications?.map((application) => ({ value: String(application.id), label: application.name, }))}
-                        value={formData.application}
-                        onChange={handleSelectChange("application")}
-                        placeholder="Select here"
-                      />
-                    </div>
-                    <div className="col-md-12">
-                      <label htmlFor="short_description" className="form-label required">Short Description</label>
-                      <textarea
-                        className={`form-control ${errors.brief_company ? "is-invalid" : ""}`}
-                        id="short_description"
-                        placeholder="Short Description"
-                        rows={3}
-                        value={formData.short_description}
-                        onChange={handleInputChange}
-                      />
-                      {errors.short_description && (<div className="invalid-feedback">{errors.short_description}</div>)}
-                    </div>
-                    <div className="col-md-12">
-                      <label htmlFor="description" className="form-label required">Long Description</label>
-                      <CKEditor
-                        editor={ClassicEditor}
-                        data={formData.description || ''}
-                        onChange={(event, editor) => {
-                          const data = editor.getData();
-                          setFormData(prev => ({ ...prev, description: data }));
-                        }}
-                      />
-                    </div>
-                    <div className="col-md-12">
-                      <label htmlFor="file" className="form-label required">Product Images</label><br />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        style={{ display: "none" }}
-                        onChange={handleFileChange}
-                        multiple
-                        accept="image/png, image/jpeg"
-                      />
-                      <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
-                        <i className="bx bxs-plus-square" />Add Image
-                      </button>
-                      {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
-                    </div>
-                    <div className="col-md-12">
-                      <div className="mt-3 d-flex flex-wrap">
-                        {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
-                          <div key={index} className="position-relative m-2">
-                            <img
-                              src={`${ROOT_URL}/${image.file}`}
-                              alt={`Preview ${index}`}
-                              className="object-fit-cover m-3"
-                              width={80}
-                              height={80}
+                    <div className="col-md-8">
+                      <div className="card">
+                        <div className="card-body p-4">
+                <div className="row">
+                        <div className="form-group mb-3 col-md-6">
+                          <label htmlFor="user_id" className="form-label required">User</label>
+                          <select
+                            id="user_id" className={`form-control ${errors.user_id ? "is-invalid" : ""}`}
+                            value={selectedSellers}
+                            onChange={handleSellersChange}
+                          >
+                            <option value="">Select user</option>
+                            {sellers?.map((user) => (
+                              <option key={user.id} value={user.id}>{user.fname + " " + user.lname}</option>
+                            ))}
+                          </select>
+                          {errors.user_id && (<div className="invalid-feedback">{errors.user_id}</div>)}
+                        </div>
+                        <div className="form-group mb-3 col-md-6">
+                          <label htmlFor="title" className="form-label required">Product Name</label>
+                          <input
+                            type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
+                            id="title"
+                            placeholder="Product Name"
+                            value={formData.title}
+                            onChange={handleInputChange}
+                          />
+                          {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
+                        </div>
+                        <div className="form-group mb-3 col-md-6">
+                          <label htmlFor="code" className="form-label">Sku</label>
+                          <input
+                            type="text" className="form-control"
+                            id="code"
+                            placeholder="Sku"
+                            value={formData.code}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="form-group mb-3 col-md-6">
+                          <label htmlFor="article_number" className="form-label">Part Number</label>
+                          <input
+                            type="number" className="form-control"
+                            id="article_number"
+                            placeholder="Part Number"
+                            value={formData.article_number}
+                            onChange={handleInputChange}
+                          />
+                        </div>                        
+                        <div className="col-md-12">
+                          <div className="form-check form-check-inline">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id="is_gold"
+                              checked={formData.is_gold === 1}
+                              onChange={(e) => handleCheckboxChange('is_gold', e.target.checked)}
                             />
-                            <button
-                              type="button"
-                              className="btn btn-danger btn-remove-image"
-                              style={{ width: '1.5rem', height: '1.5rem' }}
-                              onClick={() => openDeleteModal(image.id)}
-                            >
-                              <i className="bx bx-x me-0" />
-                            </button>
+                            <label className="form-check-label" htmlFor="is_gold">Gold</label>
                           </div>
-                        ))}
-                        {files.length > 0 && files?.map((file, index) => (
-                          <div key={index} className="position-relative m-2">
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={`New Preview ${index}`}
-                              className="object-fit-cover m-3"
-                              width={80}
-                              height={80}
+                          <div className="form-check form-check-inline">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id="is_recommended"
+                              checked={formData.is_recommended === 1}
+                              onChange={(e) => handleCheckboxChange('is_recommended', e.target.checked)}
                             />
-                            <button
-                              variant="danger"
-                              size="sm"
-                              className="btn btn-danger btn-remove-image"
-                              style={{ width: '1.5rem', height: '1.5rem' }}
-                              onClick={() => {
-                                setFiles(prev => prev.filter((_, i) => i !== index));
-                              }}
-                            >
-                              <i className="bx bx-x me-0" />
-                            </button>
+                            <label className="form-check-label" htmlFor="is_recommended">Recommended</label>
                           </div>
-                        ))}
+                          <div className="form-check form-check-inline">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id="best_product"
+                              checked={formData.best_product === 1}
+                              onChange={(e) => handleCheckboxChange('best_product', e.target.checked)}
+                            />
+                            <label className="form-check-label" htmlFor="best_product">Best Product</label>
+                          </div>
+                        </div>
+                        <div className="form-group mb-3 col-md-6">
+                          <label htmlFor="status" className="form-label required">Status</label>
+                          <select
+                            id="status" className={`form-control ${errors.status ? "is-invalid" : ""}`}
+                            value={formData.status}
+                            onChange={handleInputChange}
+                          >
+                            <option value="">Select here</option>
+                            <option value="1">Public</option>
+                            <option value="0">Draft</option>
+                          </select>
+                          {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
+                        </div>
+                        <div className="form-group mb-3 col-md-6">
+                          <label htmlFor="application" className="form-label required">Applications</label>
+                          <select
+                            id="application" className="form-control"
+                            value={selectedApplications}
+                            onChange={handleApplicationsChange}
+                          >
+                            <option value="">Select application</option>
+                            {applications?.map((application) => (
+                              <option key={application.id} value={application.id}>{application.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="short_description" className="form-label required">Short Description</label>
+                          <textarea
+                            className={`form-control ${errors.brief_company ? "is-invalid" : ""}`}
+                            id="short_description"
+                            placeholder="Short Description"
+                            rows={3}
+                            value={formData.short_description}
+                            onChange={handleInputChange}
+                          />
+                          {errors.short_description && (<div className="invalid-feedback">{errors.short_description}</div>)}
+                        </div>
+                        <div className="col-md-12">
+                          <label htmlFor="description" className="form-label required">Long Description</label>
+                          <CKEditor
+                            editor={ClassicEditor}
+                            data={formData.description || ''}
+                            onChange={(event, editor) => {
+                              const data = editor.getData();
+                              setFormData(prev => ({ ...prev, description: data }));
+                            }}
+                          />
+                        </div>
+                        
+                        </div>
+            </div>
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="card">
+                        <div className="card-body p-4">
+                      <div className="row">
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="category" className="form-label required">Category</label>
+                          <select
+                            id="category" className={`form-control ${errors.category ? "is-invalid" : ""}`}
+                            value={selectedCategory}
+                            onChange={handleCategoryChange}
+                          >
+                            <option value="">Select Category</option>
+                            {categories?.map((category) => (
+                              <option key={category.id} value={category.id}>{category.name}</option>
+                            ))}
+                          </select>
+                          {errors.category && (<div className="invalid-feedback">{errors.category}</div>)}
+                        </div>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="sub_category" className="form-label">Sub Category</label>
+                          <select
+                            id="sub_category" className="form-control"
+                            value={selectedSubCategory}
+                            onChange={handleSubCategoryChange}
+                            disabled={!selectedCategory}
+                          >
+                            <option value="">Select Sub Category</option>
+                            {subCategories?.map((sub_category) => (
+                              <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="item_category_id" className="form-label required">Item Category</label>
+                          <select
+                            className={`form-control ${errors.item_category_id ? "is-invalid" : ""}`}
+                            id="item_category_id"
+                            value={selectedItemCategory}
+                            onChange={(e) => {
+                              setSelectedItemCategory(e.target.value);
+                              setSelectedItemSubCategory(''); // reset subcategory when category changes
+                            }}
+                            disabled={!selectedCategory || !selectedSubCategory}
+                          >
+                            <option value="">Select Item Category</option>
+                            {itemCategories.map(ic => (
+                              <option key={ic.id} value={ic.id}>
+                                {ic.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="item_sub_category_id" className="form-label required">Item Sub Category</label>
+                          <select
+                            className={`form-control ${errors.item_sub_category_id ? "is-invalid" : ""}`}
+                            id="item_sub_category_id"
+                            value={selectedItemSubCategory}
+                            onChange={(e) => setSelectedItemSubCategory(e.target.value)}
+                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
+                          >
+                            <option value="">Select Item Sub Category</option>
+                            {itemSubCategories.map(isc => (
+                              <option key={isc.id} value={isc.id}>
+                                {isc.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="item_id" className="form-label required">Items</label>
+                          <select
+                            className={`form-control ${errors.item_id ? "is-invalid" : ""}`}
+                            id="item_id"
+                            value={selectedItems}
+                            onChange={(e) => setSelectedItems(e.target.value)}
+                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory || !selectedItemSubCategory}
+                          >
+                            <option value="">Select Items</option>
+                            {items.map(i => (
+                              <option key={i.id} value={i.id}>
+                                {i.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-md-12">
+                          <label htmlFor="file" className="form-label required">Thumbnail</label><br />
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            style={{ display: "none" }}
+                            onChange={handleFileChange}
+                            multiple
+                            accept="image/png, image/jpeg"
+                          />
+                          <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
+                            <i className="bx bxs-plus-square me-1" />Add Image
+                          </button>
+                          {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
+                        </div>
+                        <div className="col-md-12">
+                          <div className="mt-3 d-flex flex-wrap">
+                            {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
+                              <div key={index} className="position-relative m-2">
+                                <img
+                                  src={`${ROOT_URL}/${image.file}`}
+                                  alt={`Preview ${index}`}
+                                  className="object-fit-cover m-3"
+                                  width={80}
+                                  height={80}
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-remove-image"
+                                  style={{ width: '1.5rem', height: '1.5rem' }}
+                                  onClick={() => openDeleteModal(image.id)}
+                                >
+                                  <i className="bx bx-x me-0" />
+                                </button>
+                              </div>
+                            ))}
+                            {files.length > 0 && files?.map((file, index) => (
+                              <div key={index} className="position-relative m-2">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`New Preview ${index}`}
+                                  className="object-fit-cover m-3"
+                                  width={80}
+                                  height={80}
+                                />
+                                <button
+                                  variant="danger"
+                                  size="sm"
+                                  className="btn btn-danger btn-remove-image"
+                                  style={{ width: '1.5rem', height: '1.5rem' }}
+                                  onClick={() => {
+                                    setFiles(prev => prev.filter((_, i) => i !== index));
+                                  }}
+                                >
+                                  <i className="bx bx-x me-0" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      </div>
                       </div>
                     </div>
                     <div className="col-12 text-end mt-2">
@@ -511,8 +693,7 @@ const AddProduct = () => {
                     </div>
                   </form>
                 </div>
-              </div>
-            </div>
+              
           </div>
           {/*end row*/}
         </div>

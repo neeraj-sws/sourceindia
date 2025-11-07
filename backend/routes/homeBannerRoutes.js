@@ -3,6 +3,7 @@ const router = express.Router();
 const homeBannerController = require('../controllers/homeBannerController');
 
 router.post('/', homeBannerController.createHomeBanners);
+router.get('/count', homeBannerController.getHomeBannersCount);
 router.get('/', homeBannerController.getAllHomeBanners);
 router.get('/server-side', homeBannerController.getAllHomeBannersServerSide);
 router.delete('/delete-selected', homeBannerController.deleteSelectedHomeBanners);

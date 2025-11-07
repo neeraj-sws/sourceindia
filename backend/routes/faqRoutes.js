@@ -3,6 +3,7 @@ const router = express.Router();
 const faqController = require('../controllers/faqController');
 
 router.post('/', faqController.createFaq);
+router.get('/count', faqController.getFaqCount);
 router.get('/', faqController.getAllFaqs);
 router.get('/server-side', faqController.getAllFaqsServerSide);
 router.delete('/delete-selected', faqController.deleteSelectedFaq);

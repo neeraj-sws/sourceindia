@@ -363,7 +363,7 @@ const AddProduct = () => {
                         accept="image/png, image/jpeg"
                       />
                       <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
-                        <i className="bx bxs-plus-square" />Add Image
+                        <i className="bx bxs-plus-square me-1" />Add Image
                       </button>
                       {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
                     </div>

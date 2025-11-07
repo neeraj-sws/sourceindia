@@ -5,7 +5,6 @@ import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
-import { formatDateTime } from '../../utils/formatDate';
 import SubAdminModals from "./modal/SubAdminModals";
 import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, name: "", email: "", mobile: "", role: "", status: "1" };
@@ -283,12 +282,12 @@ const SubAdminList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Sub Admin" add_button={<><i className="bx bxs-plus-square"></i> Add Sub Admin</>} add_link="#" onClick={() => openForm()}
+          <Breadcrumb mainhead="Sub Admin" maincount={totalRecords} page="Settings" title="Sub Admin" add_button={<><i className="bx bxs-plus-square me-1" /> Add Sub Admin</>} add_link="#" onClick={() => openForm()}
           actions={
             <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedSubAdmin.length === 0}>
-              <i className="bx bx-trash"></i> Delete Selected
+              <i className="bx bx-trash me-1" /> Delete Selected
             </button>
             </>
           }
@@ -402,14 +401,13 @@ const SubAdminList = () => {
             <div className="col-md-7">
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">Sub Admin List</h5>
+                  {/* <h5 className="card-title mb-3">Sub Admin List</h5> */}
                   <DataTable
                     columns={[
                       ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "name", label: "Name", sortable: true },
                       { key: "role_name", label: "Role", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "action", label: "Action", sortable: false },
                     ]}
@@ -435,7 +433,6 @@ const SubAdminList = () => {
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td>{row.name}</td>
                         <td>{row.role_name}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
                         <td>
                           <div className="form-check form-switch">
                             <input

@@ -4,6 +4,7 @@ const contactsController = require('../controllers/contactsController');
 
 router.post('/', contactsController.contactStore);
 router.delete('/delete-selected', contactsController.deleteSelectedContacts);
+router.get('/count', contactsController.getContactsCount);
 router.get('/', contactsController.getAllContacts);
 router.get('/server-side', contactsController.getAllContactsServerSide);
 router.delete('/:id', contactsController.deleteContacts);

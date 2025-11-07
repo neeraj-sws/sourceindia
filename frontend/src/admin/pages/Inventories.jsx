@@ -140,12 +140,12 @@ const Inventories = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Inventories"
+          <Breadcrumb mainhead="Inventories" maincount={totalRecords} page="Settings" title="Inventories"
             actions={(
               <>
-              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
               <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedInventories.length === 0}>
-                <i className="bx bx-trash"></i> Delete Selected
+                <i className="bx bx-trash me-1" /> Delete Selected
               </button>
               </>
             )}

@@ -650,3 +650,13 @@ exports.ticketReplystore = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+exports.getTicketsCount = async (req, res) => {
+  try {
+    const total = await Tickets.count();
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

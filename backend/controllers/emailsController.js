@@ -152,3 +152,13 @@ exports.getAllEmailsServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getEmailsCount = async (req, res) => {
+  try {
+    const total = await Emails.count();
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

@@ -281,3 +281,13 @@ exports.getAllActivitiesServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getActivityCount = async (req, res) => {
+  try {
+    const total = await Activity.count({where: { is_delete: 0 }});
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

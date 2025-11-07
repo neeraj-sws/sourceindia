@@ -282,18 +282,18 @@ const MembershipPlan = ({ getDeleted }) => {
       <div className="page-wrapper">
         <div className="page-content">
 
-          <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Membership Plan" : "Membership Plan"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Membership Plan</>)} add_link="#" onClick={openAddModal}
+          <Breadcrumb mainhead="Membership Plan" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Membership Plan" : "Membership Plan"}
+          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Membership Plan</>)} add_link="#" onClick={openAddModal}
           actions={
             <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             {!getDeleted ? (
               <>
                 <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedMembershipPlan.length === 0}>
-                  <i className="bx bx-trash"></i> Delete Selected
+                  <i className="bx bx-trash me-1" /> Delete Selected
                 </button>
                 <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/membership-plan-remove-list">
-                  Recently Deleted Contact
+                  Recently Deleted Membership Plan
                 </Link>
               </>
             ) : (

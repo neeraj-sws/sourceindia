@@ -221,7 +221,7 @@ exports.getBuyerCount = async (req, res) => {
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
-   const [total, addedToday, statusActive, statusInactive, notApproved] = await Promise.all([
+   const [total, addedToday, statusActive, statusInactive, notApproved, deleted] = await Promise.all([
   Users.count({
     where: { is_seller: 0 },
   }),
@@ -245,6 +245,10 @@ exports.getBuyerCount = async (req, res) => {
   Users.count({
     where: { is_seller: 0, is_approve: 0, is_delete: 0, is_complete: 1, status: 1 },
   }),
+
+  Users.count({
+    where: { is_seller: 0, is_delete: 1 }
+  }),
 ]);
 
     res.json({
@@ -253,6 +257,7 @@ exports.getBuyerCount = async (req, res) => {
       statusActive,
       statusInactive,
       notApproved,
+      deleted
     });
   } catch (err) {
     console.error(err);

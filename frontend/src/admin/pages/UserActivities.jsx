@@ -134,8 +134,8 @@ const UserActivities = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="User Activities" actions={
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+          <Breadcrumb mainhead="User Activities" maincount={totalRecords} page="Settings" title="User Activities" actions={
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
           } />
           <div className="row mb-3">
             <div className="col-md-6">

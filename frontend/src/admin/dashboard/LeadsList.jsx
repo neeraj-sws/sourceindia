@@ -68,10 +68,10 @@ const LeadsList = ({viewType}) => {
             <DataTable
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },
-                  { key: "enquiry_number", label: "Enquiries (created) No", sortable: true },
+                  { key: "enquiry_number", label: "Enquiries No", sortable: true },
                   { key: "from_full_name", label: "Name", sortable: true },
-                  { key: "enquiry_product", label: "Product Name", sortable: true },
-                  { key: "to_organization_name", label: "Company Name", sortable: true },
+                  { key: "enquiry_product", label: "Product", sortable: true },
+                  { key: "to_organization_name", label: "Company", sortable: true },
                   { key: "category_name", label: "Category", sortable: true },
                 ]}
                 data={data}
@@ -93,8 +93,8 @@ const LeadsList = ({viewType}) => {
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td><Link to={`/admin/admin-view-enquiry/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
                     <td>{row.from_full_name}<br />{row.from_email}</td>
-                    <td>{row.enquiry_product}</td>
-                    <td>{row.to_organization_name}</td>
+                    <td><a href={`/products/${row.product_slug}`} target="_blank">{row.enquiry_product}</a></td>
+                    <td><a href={`/companies/${row.to_organization_slug}`} target="_blank">{row.to_organization_name}</a></td>
                     <td>{row.category_name}</td>
                   </tr>
                 )}

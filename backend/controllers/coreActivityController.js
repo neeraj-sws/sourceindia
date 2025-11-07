@@ -347,3 +347,13 @@ exports.getAllCoreActivitiesServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getCoreActivityCount = async (req, res) => {
+  try {
+    const total = await CoreActivity.count({where: { is_delete: 0 }});
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

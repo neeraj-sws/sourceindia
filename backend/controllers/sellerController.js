@@ -334,7 +334,6 @@ exports.getSellerById = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 exports.getSellerCount = async (req, res) => {
   try {
     const todayStart = new Date();
@@ -343,12 +342,20 @@ exports.getSellerCount = async (req, res) => {
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    // 👇 Define a small logger for clean output
+    // Optional SQL logger
     const logSQL = (sql) => {
       // console.log("\n🧠 Executing SQL Query:\n", sql, "\n");
     };
 
-    const [total, addedToday, statusActive, statusInactive, notApproved, notCompleted] = await Promise.all([
+    const [
+      total,
+      addedToday,
+      statusActive,
+      statusInactive,
+      notApproved,
+      notCompleted,
+      deleted
+    ] = await Promise.all([
       // Total sellers
       Users.count({
         where: { is_seller: 1 },
@@ -357,9 +364,7 @@ exports.getSellerCount = async (req, res) => {
             model: CompanyInfo,
             as: 'company_info',
             required: true,
-
           },
-
         ],
         logging: logSQL,
       }),
@@ -367,6 +372,7 @@ exports.getSellerCount = async (req, res) => {
       // Sellers added today
       Users.count({
         where: {
+          is_seller: 1,
           created_at: { [Op.between]: [todayStart, todayEnd] },
         },
         include: [
@@ -374,9 +380,7 @@ exports.getSellerCount = async (req, res) => {
             model: CompanyInfo,
             as: 'company_info',
             required: true,
-
           },
-
         ],
         logging: logSQL,
       }),
@@ -387,53 +391,30 @@ exports.getSellerCount = async (req, res) => {
           is_seller: 1,
           status: 1,
           is_delete: 0,
-          is_approve: 1,
-          member_role: 1,
         },
         include: [
           {
             model: CompanyInfo,
             as: 'company_info',
             required: true,
-
           },
-
         ],
         logging: logSQL,
       }),
 
       // Inactive sellers
       Users.count({
-        where: { is_seller: 1, status: 0, is_delete: 0 },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-
-          },
-
-        ],
-        logging: logSQL,
-      }),
-
-      // Not approved sellers
-      Users.count({
         where: {
           is_seller: 1,
-          is_approve: 0,
+          status: 0,
           is_delete: 0,
-          is_complete: 1,
-          status: 1,
         },
         include: [
           {
             model: CompanyInfo,
             as: 'company_info',
             required: true,
-
           },
-
         ],
         logging: logSQL,
       }),
@@ -444,33 +425,57 @@ exports.getSellerCount = async (req, res) => {
           is_seller: 1,
           is_approve: 0,
           is_delete: 0,
+        },
+        include: [
+          {
+            model: CompanyInfo,
+            as: 'company_info',
+            required: true,
+          },
+        ],
+        logging: logSQL,
+      }),
+
+      // Not completed sellers
+      Users.count({
+        where: {
+          is_seller: 1,
           is_complete: 0,
-          status: 1,
+          is_delete: 0,
         },
         include: [
           {
             model: CompanyInfo,
             as: 'company_info',
             required: true,
-
           },
-
         ],
+        logging: logSQL,
+      }),
+
+      // Deleted sellers
+      Users.count({
+        where: {
+          is_seller: 1,
+          is_delete: 1,
+        },
         logging: logSQL,
       }),
     ]);
 
-    res.json({
+    return res.json({
       total,
       addedToday,
       statusActive,
       statusInactive,
       notApproved,
-      notCompleted
+      notCompleted,
+      deleted,
     });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
 

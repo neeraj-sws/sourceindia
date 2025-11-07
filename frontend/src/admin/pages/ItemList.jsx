@@ -6,7 +6,6 @@ import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
-import { formatDateTime } from '../../utils/formatDate';
 import ItemModals from "./modal/ItemModals";
 const initialForm = { id: null, name: "", category: "", sub_category: "", status: "1" };
 import "select2/dist/css/select2.min.css";
@@ -343,17 +342,17 @@ const ItemList = ({ getDeleted }) => {
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Item" : "Item"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Item</>)} add_link="#" onClick={() => openForm()}
+          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Item</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             {!getDeleted ? (
               <>
                 <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItem.length === 0}>
-                  <i className="bx bx-trash"></i> Delete Selected
+                  <i className="bx bx-trash me-1" /> Delete Selected
                 </button>
                 <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/item-remove-list">
-                  Recently Deleted Contact
+                  Recently Deleted Item
                 </Link>
               </>
             ) : (
@@ -457,8 +456,9 @@ const ItemList = ({ getDeleted }) => {
             <div className={!getDeleted ? "col-md-7" : "col-md-12"}>
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">{!getDeleted ? "Item List" : "Recently Deleted Item List"}</h5>
                   {getDeleted && (
+                    <>
+                    <h5 className="card-title mb-3">Recently Deleted Item List</h5>
                     <div className="row mb-3">
                       <div className="col-md-8">
                         <div className="d-flex align-items-center gap-2">
@@ -494,15 +494,15 @@ const ItemList = ({ getDeleted }) => {
                         <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                       </div>
                     </div>
+                    </>
                   )}
                   <DataTable
                     columns={[
                       ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),
                       { key: "id", label: "S.No.", sortable: true },
-                      { key: "name", label: "Item Name", sortable: true },
+                      { key: "name", label: "Item", sortable: true },
                       { key: "category_name", label: "Category", sortable: true },
                       { key: "sub_category_name", label: "Sub Category", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "action", label: "Action", sortable: false },
                     ]}
@@ -531,7 +531,6 @@ const ItemList = ({ getDeleted }) => {
                         <td>{row.name}</td>
                         <td>{row.category_name}</td>
                         <td>{row.sub_category_name}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
                         <td>
                           {!getDeleted ? (
                           <div className="form-check form-switch">

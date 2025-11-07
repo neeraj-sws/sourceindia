@@ -221,9 +221,9 @@ const EnquiryList = ({ user_id }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Enquiry List"
+          <Breadcrumb mainhead="Enquiry" maincount={totalRecords} page="Settings" title="Enquiry List"
             actions={
-              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             }
           />
 
@@ -283,7 +283,7 @@ const EnquiryList = ({ user_id }) => {
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "enquiry_number", label: "Enquiry No", sortable: true },
-                  { key: "product_name", label: "Product Name", sortable: true },
+                  { key: "product_name", label: "Product", sortable: true },
                   { key: "category_name", label: "Category", sortable: true },
                   { key: "sub_category_name", label: "Sub Category", sortable: true },
                   { key: "quantity", label: "Quantity", sortable: true },

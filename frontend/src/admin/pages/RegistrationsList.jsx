@@ -310,7 +310,7 @@ const RegistrationsList = ({ getDeleted }) => {
                 {!getDeleted ? (
                   <>
                     <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedRegistrations.length === 0}>
-                      <i className="bx bx-trash"></i> Delete Selected
+                      <i className="bx bx-trash me-1" /> Delete Selected
                     </button>
                     <Link className="btn  btn-primary mb-2" to="/admin/registrations-remove-list">
                       Recently Deleted Registration

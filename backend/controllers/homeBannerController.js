@@ -347,3 +347,13 @@ exports.getAllHomeBannersServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getHomeBannersCount = async (req, res) => {
+  try {
+    const total = await HomeBanners.count({where: { is_delete: 0 }});
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

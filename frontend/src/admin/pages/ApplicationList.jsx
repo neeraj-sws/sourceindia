@@ -7,7 +7,6 @@ import DataTable from "../common/DataTable";
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
-import { formatDateTime } from '../../utils/formatDate';
 import ApplicationModals from "./modal/ApplicationModals";
 const initialForm = { id: null, name: "", top_category: "", status: "1", file: null };
 import ExcelExport from "../common/ExcelExport";
@@ -293,18 +292,18 @@ const ApplicationList = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Application" : "Application"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Application</>)} add_link="#" onClick={() => openForm()}
+          <Breadcrumb mainhead="Application" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Application" : "Application"}
+          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Application</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             {!getDeleted ? (
               <>
                 <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedApplication.length === 0}>
-                  <i className="bx bx-trash"></i> Delete Selected
+                  <i className="bx bx-trash me-1" /> Delete Selected
                 </button>
                 <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/application-remove-list">
-                  Recently Deleted Contact
+                  Recently Deleted Application
                 </Link>
               </>
             ) : (
@@ -393,8 +392,9 @@ const ApplicationList = ({ getDeleted }) => {
             <div className={!getDeleted ? "col-md-7" : "col-md-12"}>
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">{!getDeleted ? "Application List" : "Recently Deleted Application List"}</h5>
                   {getDeleted && (
+                    <>
+                    <h5 className="card-title mb-3">Recently Deleted Application List</h5>
                     <div className="row mb-3">
                       <div className="col-md-8">
                         <div className="d-flex align-items-center gap-2">
@@ -430,6 +430,7 @@ const ApplicationList = ({ getDeleted }) => {
                         <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                       </div>
                     </div>
+                    </>
                   )}
                   <DataTable
                     columns={[
@@ -438,7 +439,6 @@ const ApplicationList = ({ getDeleted }) => {
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
                       { key: "product_count", label: "Product", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "category_status", label: "Top", sortable: false },
                       { key: "action", label: "Action", sortable: false },
@@ -473,7 +473,6 @@ const ApplicationList = ({ getDeleted }) => {
                         /></td>
                         <td>{row.name}</td>
                         <td>{row.product_count}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
                         <td>
                           {!getDeleted ? (
                           <div className="form-check form-switch">

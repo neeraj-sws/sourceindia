@@ -311,19 +311,18 @@ exports.getEnquiriesByNumber = async (req, res) => {
 
 exports.getEnquiriesCount = async (req, res) => {
   try {
-    const [total, all, status1, status2, status0] = await Promise.all([
+    const [total, all, status1, status2, status0, getPublic, getApprove, getNotApprove] = await Promise.all([
       Enquiries.count({ where: { is_delete: 0 } }),
       Enquiries.count(),
       Enquiries.count({ where: { status: 1 } }),
       Enquiries.count({ where: { status: 2 } }),
-      Enquiries.count({ where: { status: 0 } })
+      Enquiries.count({ where: { status: 0 } }),
+      Enquiries.count({ where: {user_id: null, is_delete: 0} }),
+      Enquiries.count({ where: {is_approve: 1, is_delete: 0} }),
+      Enquiries.count({ where: {is_approve: 0, is_delete: 0} }),
     ]);
     res.json({
-      total,
-      all,
-      status1,
-      status2,
-      status0
+      total, all, status1, status2, status0, getPublic, getApprove, getNotApprove
     });
   } catch (err) {
     console.error(err);
@@ -438,7 +437,6 @@ exports.updateEnquiriesDeleteStatus = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 exports.getAllEnquiriesServerSide = async (req, res) => {
   try {
@@ -580,6 +578,14 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           model: EnquiryUsers,
           as: 'enquiry_users',
           attributes: ['id', 'product_name'],
+          include: [
+            {
+              model: Products,
+              as: 'Products',
+              attributes: ['id', 'slug'],
+              required: false,
+            }
+          ],
           required: false,
         }
       ]
@@ -633,6 +639,8 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           ...base,
           enquiry_product: row.enquiry_users?.[0]?.product_name || null,
           to_organization_name: row.to_user?.company_info?.organization_name || null,
+          to_organization_slug: row.to_user?.company_info?.organization_slug || null,
+          product_slug: row.enquiry_users?.[0]?.Products?.slug || null,
         };
       }
 
@@ -664,7 +672,6 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 exports.getEnquiriesByUserServerSide = async (req, res) => {
   try {
@@ -820,9 +827,6 @@ const sendEnquiryConfirmation = async (to, name) => {
   });
 };
 
-const productEnquirymail = async (enquiry, enquiryuser) => {
-
-}
 
 exports.verifyEmail = async (req, res) => {
   try {

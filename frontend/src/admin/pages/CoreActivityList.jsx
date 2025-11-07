@@ -7,7 +7,6 @@ import ImageWithFallback from "../common/ImageWithFallback";
 import DataTable from "../common/DataTable";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
-import { formatDateTime } from '../../utils/formatDate';
 import CoreActivityModals from "./modal/CoreActivityModals";
 const initialForm = { id: null, name: "", color: "", status: "1", file: null };
 import ExcelExport from "../common/ExcelExport";
@@ -337,15 +336,15 @@ const CoreActivityList = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Core Activity" : "Core Activity"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Core Activity</>)} add_link="#" onClick={() => openForm()}
+          <Breadcrumb mainhead="Core Activity" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Core Activity" : "Core Activity"}
+          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Core Activity</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             {!getDeleted ? (
               <>
                 <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedCoreActivity.length === 0}>
-                  <i className="bx bx-trash"></i> Delete Selected
+                  <i className="bx bx-trash me-1" /> Delete Selected
                 </button>
                 <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/coreactivity-remove-list">
                   Recently Deleted Core Activity
@@ -455,9 +454,10 @@ const CoreActivityList = ({ getDeleted }) => {
             )}
             <div className={!getDeleted ? "col-md-7" : "col-md-12"}>
               <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">{!getDeleted ? "Core Activity List" : "Recently Deleted Core Activity List"}</h5>
+                <div className="card-body">                  
                   {getDeleted && (
+                    <>
+                    <h5 className="card-title mb-3">Recently Deleted Core Activity List</h5>
                     <div className="row mb-3">
                       <div className="col-md-8">
                         <div className="d-flex align-items-center gap-2">
@@ -493,6 +493,7 @@ const CoreActivityList = ({ getDeleted }) => {
                         <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                       </div>
                     </div>
+                    </>
                   )}
                   <DataTable
                     columns={[
@@ -500,7 +501,6 @@ const CoreActivityList = ({ getDeleted }) => {
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "action", label: "Action", sortable: false },
                     ]}
@@ -533,7 +533,6 @@ const CoreActivityList = ({ getDeleted }) => {
                           showFallback={true}
                         /></td>
                         <td>{row.name}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
                         <td>
                           {!getDeleted ? (
                           <div className="form-check form-switch">

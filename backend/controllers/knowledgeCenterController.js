@@ -329,3 +329,13 @@ exports.getAllKnowledgeCenterServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getKnowledgeCenterCount = async (req, res) => {
+  try {
+    const total = await KnowledgeCenter.count({where: { is_delete: 0 }});
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

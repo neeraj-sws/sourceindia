@@ -5,7 +5,6 @@ import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
-import { formatDateTime } from '../../utils/formatDate';
 import TicketModals from "./modal/TicketModals";
 import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, user_id: "", title: "", message: "", priority: "", category: "", status: "", attachment: null };
@@ -341,8 +340,8 @@ setAppliedPriorityFilter('');
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Ticket" add_button={<><i className="bx bxs-plus-square"></i> Add Ticket</>} add_link="#" onClick={() => openForm()}
-          actions={<button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>}
+          <Breadcrumb mainhead="Ticket" maincount={totalRecords} page="Settings" title="Ticket" add_button={<><i className="bx bxs-plus-square me-1" /> Add Ticket</>} add_link="#" onClick={() => openForm()}
+          actions={<button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>}
           />
           <div className="row">
             <div className="col-md-5">
@@ -466,7 +465,7 @@ setAppliedPriorityFilter('');
             <div className="col-md-7">
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">Ticket List</h5>
+                  {/* <h5 className="card-title mb-3">Ticket List</h5> */}
                   <div className="row mb-3">
                     <div className="col-md-6 mb-3">
                       <label className="form-label">Title</label>
@@ -560,7 +559,6 @@ setAppliedPriorityFilter('');
                       { key: "title", label: "Title", sortable: true },
                       { key: "priority", label: "Priority", sortable: true },
                       { key: "category_name", label: "Ticket Category", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "action", label: "Action", sortable: false },
                     ]}
@@ -584,7 +582,6 @@ setAppliedPriorityFilter('');
                         <td>{row.title}</td>
                         <td>{row.priority}</td>
                         <td>{row.category_name}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
                         <td>{listStatus.map((s, i) => (row.status == i ? s : ""))}</td>
                         <td>
                           <div className="dropdown">

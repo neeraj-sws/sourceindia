@@ -3,6 +3,7 @@ const router = express.Router();
 const ticketCategoryController = require('../controllers/ticketCategoryController');
 
 router.post('/', ticketCategoryController.createTicketCategory);
+router.get('/count', ticketCategoryController.getTicketCategoryCount);
 router.get('/', ticketCategoryController.getAllTicketCategories);
 router.get('/server-side', ticketCategoryController.getAllTicketCategoriesServerSide);
 router.delete('/delete-selected', ticketCategoryController.deleteSelectedTicketCategory);

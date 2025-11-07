@@ -3,6 +3,7 @@ const router = express.Router();
 const activityController = require('../controllers/activityController');
 
 router.post('/', activityController.createActivity);
+router.get('/count', activityController.getActivityCount);
 router.get('/', activityController.getAllActivities);
 router.get('/server-side', activityController.getAllActivitiesServerSide);
 router.delete('/delete-selected', activityController.deleteSelectedActivity);

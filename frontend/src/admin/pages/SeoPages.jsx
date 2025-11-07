@@ -259,7 +259,7 @@ const SeoPages = () => {
             <div className="col-md-7">
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">Seo Pages List</h5>
+                  {/* <h5 className="card-title mb-3">Seo Pages List</h5> */}
                   <DataTable
                     columns={[
                       { key: "id", label: "S.No.", sortable: true },

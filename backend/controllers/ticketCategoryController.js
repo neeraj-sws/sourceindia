@@ -175,3 +175,13 @@ exports.getAllTicketCategoriesServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getTicketCategoryCount = async (req, res) => {
+  try {
+    const total = await TicketCategory.count();
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
