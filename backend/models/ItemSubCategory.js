@@ -6,6 +6,18 @@ const SubCategories = require('./SubCategories');
 const UploadImage = require('./UploadImage');
 
 const ItemSubCategory = sequelize.define('ItemSubCategory', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'item_subcategory_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: { type: DataTypes.STRING, allowNull: false },
   file_id: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
   item_category_id: { type: DataTypes.INTEGER, allowNull: false },
