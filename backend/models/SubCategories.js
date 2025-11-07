@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const Categories = require('./Categories');
 
 const SubCategories = sequelize.define('SubCategories', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'sub_category_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false

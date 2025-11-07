@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const Users = require('./Users');
 
 const OpenEnquiriesChats = sequelize.define('OpenEnquiriesChats', {
+   id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'open_enquriy_chat_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   message: { type: DataTypes.TEXT('long'), allowNull: false },
   user_id: { type: DataTypes.INTEGER, allowNull: true },
   enquiry_id: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },

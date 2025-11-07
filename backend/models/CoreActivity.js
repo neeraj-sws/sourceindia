@@ -4,6 +4,18 @@ const Color = require('./Color');
 const UploadImage = require('./UploadImage');
 
 const CoreActivity = sequelize.define('CoreActivity', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'core_activity_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false

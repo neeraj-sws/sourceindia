@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const Users = require('./Users');
 
 const OpenEnquiries = sequelize.define('OpenEnquiries', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'open_enquriy_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   title: { type: DataTypes.STRING, allowNull: false },
   description: { type: DataTypes.TEXT('long'), allowNull: false },
   user_id: { type: DataTypes.INTEGER, allowNull: true },

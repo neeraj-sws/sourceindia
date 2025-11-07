@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const UploadImage = require('./UploadImage');
 
 const HomeBanners = sequelize.define('HomeBanners', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'home_banner_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   title: {
     type: DataTypes.STRING,
     allowNull: true

@@ -4,6 +4,18 @@ const Users = require('./Users');
 const CompanyInfo = require('./CompanyInfo');
 
 const Enquiries = sequelize.define('Enquiries', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'enquiry_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   enquiry_number: { type: DataTypes.STRING, allowNull: true },
   type: { type: DataTypes.INTEGER, allowNull: true, comment: "0 = public,1 = product,2 = company,3 = admin" },
   company_id: { type: DataTypes.INTEGER, allowNull: false },
@@ -29,12 +41,17 @@ const Enquiries = sequelize.define('Enquiries', {
   updatedAt: 'updated_at'
 });
 
-Enquiries.belongsTo(Users, { foreignKey: 'user_id', targetKey: 'id', as: 'from_user', constraints: false });
-Enquiries.belongsTo(Users, { foreignKey: 'company_id', targetKey: 'company_id', as: 'to_user', constraints: false });
+Enquiries.belongsTo(Users, { foreignKey: 'user_id', as: 'from_user', constraints: false });
+Enquiries.belongsTo(Users, {
+  foreignKey: 'company_id',
+  as: 'to_user',
+  constraints: false
+});
+
 Enquiries.hasMany(require('./EnquiryUsers'), {
   foreignKey: 'enquiry_id',
   sourceKey: 'id',
-  as: 'enquiry_users', // Use a meaningful alias
+  as: 'enquiry_users',
   constraints: false
 });
 

@@ -4,6 +4,18 @@ const Users = require('./Users');
 const InterestSubCategories = require('./InterestSubCategories');
 
 const BuyerInterests = sequelize.define('BuyerInterests', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'buyerinterest_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   buyer_id: { type: DataTypes.INTEGER, allowNull: false },
   core_activity_id: { type: DataTypes.INTEGER, allowNull: false },
   activity_id: { type: DataTypes.INTEGER, allowNull: false },

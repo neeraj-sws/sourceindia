@@ -33,7 +33,7 @@ exports.createApplications = async (req, res) => {
 
 exports.getAllApplications = async (req, res) => {
   try {
-    const applications = await Applications.findAll({ order: [['id', 'ASC']] });
+    const applications = await Applications.findAll({ order: [['application_id', 'ASC']] });
     const modifiedApplications = applications.map(application => {
       const applicationsData = application.toJSON();
       applicationsData.getStatus = applicationsData.status === 1 ? 'Active' : 'Inactive';
@@ -135,7 +135,7 @@ exports.deleteApplications = async (req, res) => {
     if (fileId) {
       const uploadImage = await UploadImage.findByPk(fileId);
       if (uploadImage) {
-        const oldImagePath = path.resolve(uploadImage.file);        
+        const oldImagePath = path.resolve(uploadImage.file);
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }
@@ -244,7 +244,7 @@ exports.getAllApplicationsServerSide = async (req, res) => {
       startDate,
       endDate,
     } = req.query;
-    const validColumns = ['id', 'name', 'top_category', 'created_at', 'updated_at'];
+    const validColumns = ['application_id', 'name', 'top_category', 'created_at', 'updated_at'];
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitValue = parseInt(limit);
@@ -252,7 +252,7 @@ exports.getAllApplicationsServerSide = async (req, res) => {
     if (validColumns.includes(sortBy)) {
       order = [[sortBy, sortDirection]];
     } else {
-      order = [['id', 'DESC']];
+      order = [['application_id', 'DESC']];
     }
     const where = { is_delete: 0 };
     if (req.query.getDeleted === 'true') {
@@ -330,7 +330,7 @@ exports.getAllApplicationsServerSide = async (req, res) => {
             Sequelize.literal(`(
               SELECT COUNT(*)
               FROM products AS p
-              WHERE p.application = Applications.id
+              WHERE p.application = Applications.application_id
             )`),
             'product_count'
           ]

@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const CoreActivity = require('./CoreActivity');
 
 const Activity = sequelize.define('Activity', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'activity_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false

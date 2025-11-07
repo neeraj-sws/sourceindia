@@ -4,6 +4,18 @@ const TicketCategory = require('./TicketCategory');
 const Users = require('./Users');
 
 const Tickets = sequelize.define('Tickets', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'tickets_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   fname: { type: DataTypes.STRING, allowNull: true },
   lname: { type: DataTypes.STRING, allowNull: true },
   phone: { type: DataTypes.STRING, allowNull: true },

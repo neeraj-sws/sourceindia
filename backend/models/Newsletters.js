@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const UserCategory = require('./UserCategory');
 
 const Newsletters = sequelize.define('Newsletters', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'newsletter_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   title: { type: DataTypes.STRING, allowNull: false },
   subject: { type: DataTypes.STRING, allowNull: false },
   description: { type: DataTypes.TEXT('long'), allowNull: false },

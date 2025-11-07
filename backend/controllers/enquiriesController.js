@@ -45,7 +45,7 @@ exports.getAllEnquiries = async (req, res) => {
           model: Users,
           as: 'to_user',
           attributes: [
-            ['id', 'id'],
+            ['user_id', 'id'],
             ['email', 'to_email'],
             ['mobile', 'to_mobile'],
             ['company_id', 'to_company_id'],
@@ -570,7 +570,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
         {
           model: Users,
           as: 'to_user',
-          attributes: [['id', 'id'], ['email', 'to_email'], ['mobile', 'to_mobile'],
+          attributes: [['user_id', 'id'], ['email', 'to_email'], ['mobile', 'to_mobile'],
           ['company_id', 'to_company_id'], 'is_seller', 'fname', 'lname',
           [fn('CONCAT', col('to_user.fname'), ' ', col('to_user.lname')), 'to_full_name']],
           include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name']], required: false }],
@@ -1255,7 +1255,7 @@ exports.getLeadsCount = async (req, res) => {
         }],
         where: { is_delete: 0, is_approve: 1 },
         distinct: true,
-        col: 'id',
+        col: 'enquiry_id',
       }),
 
       Enquiries.findAndCountAll({
@@ -1267,7 +1267,7 @@ exports.getLeadsCount = async (req, res) => {
         }],
         where: { is_delete: 0, is_approve: 1, status: 1 },
         distinct: true,
-        col: 'id',
+        col: 'enquiry_id',
       }),
 
       Enquiries.findAndCountAll({
@@ -1279,47 +1279,47 @@ exports.getLeadsCount = async (req, res) => {
         }],
         where: { is_delete: 0, is_approve: 1, status: 0 },
         distinct: true,
-        col: 'id',
+        col: 'enquiry_id',
       }),
 
       Enquiries.findAndCountAll({
         where: { is_delete: 0, is_approve: 1, user_id: user.id },
         distinct: true,
-        col: 'id',
+        col: 'enquiry_id',
       }),
 
       Enquiries.findAndCountAll({
         where: { is_delete: 0, is_approve: 1, status: 1, user_id: user.id },
         distinct: true,
-        col: 'id',
+        col: 'enquiry_id',
       }),
 
       Enquiries.findAndCountAll({
         where: { is_delete: 0, is_approve: 1, status: 0, user_id: user.id },
         distinct: true,
-        col: 'id',
+        col: 'enquiry_id',
       }),
 
       Enquiries.findAndCountAll({
-        col: 'id',
+        col: 'enquiry_id',
       }),
 
       EnquiryUsers.findAndCountAll({
         where: { enquiry_status: 1 },
-        col: 'id',
+        col: 'enquiry_id',
       }),
 
       EnquiryUsers.findAndCountAll({
         where: whereAwarded,
-        col: 'id',
+        col: 'enquiry_id',
       }),
       EnquiryUsers.findAndCountAll({
         where: whereAccepted,
-        col: 'id',
+        col: 'enquiry_id',
       }),
       EnquiryUsers.findAndCountAll({
         where: whereShortlisted,
-        col: 'id',
+        col: 'enquiry_id',
       }),
 
     ]);

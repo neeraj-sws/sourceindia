@@ -2,6 +2,18 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const MembershipPlan = sequelize.define('MembershipPlan', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'membership_plan_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: { type: DataTypes.STRING, allowNull: false },
   sub_title: { type: DataTypes.STRING, allowNull: true },
   status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: '1 = Active, 0 = Inactive' },

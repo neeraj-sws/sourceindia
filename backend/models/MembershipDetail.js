@@ -6,6 +6,18 @@ const MembershipDetail = sequelize.define('MembershipDetail', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    field: 'membership_detail_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
   },
   company_id: {
     type: DataTypes.INTEGER,

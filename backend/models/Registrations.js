@@ -4,6 +4,18 @@ const States = require('./States');
 const Cities = require('./Cities');
 
 const Registrations = sequelize.define('Registrations', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'registration_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   category: { type: DataTypes.STRING, allowNull: false },
   name: { type: DataTypes.STRING, allowNull: true },
   designation: { type: DataTypes.STRING, allowNull: false },
