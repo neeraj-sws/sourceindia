@@ -14,6 +14,18 @@ const ItemSubCategory = require('./ItemSubCategory');
 const Items = require('./Items');
 
 const Products = sequelize.define('Products', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'product_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   user_id: { type: DataTypes.INTEGER, allowNull: false },
   company_id: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   slug: { type: DataTypes.STRING, allowNull: false },
@@ -66,7 +78,7 @@ Products.belongsTo(UploadImage, {
 });
 Products.belongsTo(CompanyInfo, { foreignKey: 'company_id', targetKey: 'id', as: 'company_info', constraints: false });
 Products.belongsTo(Users, { foreignKey: 'user_id', targetKey: 'id', as: 'Users', constraints: false });
-Products.belongsTo(Categories, { foreignKey: 'category', targetKey: 'id', as: 'Categories', constraints: false });
+Products.belongsTo(Categories, { foreignKey: 'category', as: 'Categories', constraints: false });
 Products.belongsTo(SubCategories, { foreignKey: 'sub_category', targetKey: 'id', as: 'SubCategories', constraints: false });
 Products.belongsTo(Applications, { foreignKey: 'application', targetKey: 'id', as: 'Applications', constraints: false });
 Products.belongsTo(Color, { foreignKey: 'color', targetKey: 'id', as: 'Color', constraints: false });

@@ -4,6 +4,18 @@ const Color = require('./Color');
 const UploadImage = require('./UploadImage');
 
 const InterestCategories = sequelize.define('InterestCategories', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'interest_category_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false

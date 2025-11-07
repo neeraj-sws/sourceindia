@@ -6,8 +6,15 @@ const TicketReply = sequelize.define(
   {
     id: {
       type: DataTypes.INTEGER,
-      autoIncrement: true,
       primaryKey: true,
+      autoIncrement: true,
+      field: 'ticket_reply_id',
+    },
+    uuid: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      allowNull: false,
+      unique: true,
     },
 
     user_id: {
@@ -39,7 +46,7 @@ const TicketReply = sequelize.define(
     media_type: {
       type: DataTypes.STRING(50),
       allowNull: true,
-      defaultValue: "text", 
+      defaultValue: "text",
     },
 
     created_at: {
@@ -55,7 +62,7 @@ const TicketReply = sequelize.define(
   },
   {
     tableName: "ticket_replies",
-    timestamps: false, 
+    timestamps: false,
   }
 );
 

@@ -2,6 +2,18 @@ const { DataTypes, Sequelize } = require('sequelize');
 const sequelize = require('../config/database');
 
 const FaqCategory = sequelize.define('FaqCategory', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'faqcategory_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false

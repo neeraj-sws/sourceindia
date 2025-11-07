@@ -49,7 +49,7 @@ exports.getAllCategories = async (req, res) => {
     }
 
     const categories = await Categories.findAll({
-      order: [['id', 'ASC']],
+      order: [['id', 'ASC']], // ✅ fixed
       include: [
         {
           model: UploadImage,
@@ -57,39 +57,35 @@ exports.getAllCategories = async (req, res) => {
         },
       ],
       where: whereCondition,
-      ...(limit && { limit })
+      ...(limit && { limit }),
     });
 
-    // product count per category (unchanged)
+    // product count per category
     const productCounts = await Products.findAll({
-      attributes: ['category', [fn('COUNT', col('id')), 'count']],
+      attributes: ['category', [fn('COUNT', col('product_id')), 'count']],
       where: { is_delete: 0, is_approve: 1, status: 1 },
       group: ['category'],
       raw: true,
     });
+
     const productCountMap = {};
     productCounts.forEach(item => {
       productCountMap[item.category] = parseInt(item.count);
     });
 
-    // company count per category using FIND_IN_SET
-    // We do a raw query or use sequelize.where + fn
+    // company count per category (simplified for now)
     const companyCounts = await CompanyInfo.findAll({
       attributes: [
-        [fn('COUNT', col('id')), 'count'],
+        [fn('COUNT', col('company_id')), 'count'],
         'category_sell'
       ],
-      where: {
-        is_delete: 0
-      },
+      where: { is_delete: 0 },
       group: ['category_sell'],
       raw: true,
     });
 
     const companyCountMap = {};
     companyCounts.forEach(item => {
-      // item.category_sell is something like "1,2,3" — this is grouping by the exact string,
-      // but we need to break it down
       const csv = item.category_sell || '';
       const count = parseInt(item.count) || 0;
       csv.split(',').forEach(catIdStr => {
@@ -106,8 +102,8 @@ exports.getAllCategories = async (req, res) => {
       return {
         ...rest,
         file_name: UploadImage?.file || null,
-        product_count: productCountMap[category.id] || 0,
-        company_count: companyCountMap[category.id] || 0,
+        product_count: productCountMap[category.id] || 0, // ✅ fixed
+        company_count: companyCountMap[category.id] || 0, // ✅ fixed
       };
     });
 
@@ -142,7 +138,7 @@ exports.getCategoriesById = async (req, res) => {
 
 exports.getCategoriesCount = async (req, res) => {
   try {
-    const total = await Categories.count({where: { is_delete: 0 }});
+    const total = await Categories.count({ where: { is_delete: 0 } });
     res.json({ total });
   } catch (err) {
     console.error(err);
@@ -216,7 +212,7 @@ exports.deleteCategories = async (req, res) => {
     if (categories.cat_file_id) {
       const uploadImage = await UploadImage.findByPk(categories.cat_file_id);
       if (uploadImage) {
-        const oldImagePath = path.resolve(uploadImage.file);        
+        const oldImagePath = path.resolve(uploadImage.file);
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }

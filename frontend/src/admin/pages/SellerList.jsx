@@ -14,7 +14,7 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { format } from "date-fns";
 
-const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) => {
+const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -179,7 +179,7 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
   const handleNatureBusinessChange = (event) => { setSelectedNatureBusiness(event.target.value); };
 
   useEffect(() => {
-    setElcinaMember([{id:1,name:"Yes"}, {id:2,name:"No"}, {id:3,name:"Not Sure"}]);
+    setElcinaMember([{ id: 1, name: "Yes" }, { id: 2, name: "No" }, { id: 3, name: "Not Sure" }]);
   }, []);
 
   const handleElcinaMemberChange = (event) => { setSelectedElcinaMember(event.target.value); };
@@ -190,65 +190,65 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
       width: "100%",
       placeholder: "Select State",
     })
-    .on("change", function () {
-      handleStateChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleStateChange({ target: { value: $(this).val() } });
+      });
     $("#city").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select City",
     })
-    .on("change", function () {
-      handleCityChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleCityChange({ target: { value: $(this).val() } });
+      });
     $("#coreactivity").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select Coreactivity",
     })
-    .on("change", function () {
-      handleCoreactivityChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleCoreactivityChange({ target: { value: $(this).val() } });
+      });
     $("#activity").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select Activity",
     })
-    .on("change", function () {
-      handleActivityChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleActivityChange({ target: { value: $(this).val() } });
+      });
     $("#designation").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select Designation",
     })
-    .on("change", function () {
-      handleDesignationChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleDesignationChange({ target: { value: $(this).val() } });
+      });
     $("#categories").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select Categories",
     })
-    .on("change", function () {
-      handleCategoriesChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleCategoriesChange({ target: { value: $(this).val() } });
+      });
     $("#nature_business").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select nature business",
     })
-    .on("change", function () {
-      handleNatureBusinessChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleNatureBusinessChange({ target: { value: $(this).val() } });
+      });
     $("#elcina_member").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select elcina member",
     })
-    .on("change", function () {
-      handleElcinaMemberChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleElcinaMemberChange({ target: { value: $(this).val() } });
+      });
     return () => {
       $("#state").off("change").select2("destroy");
       $("#city").off("change").select2("destroy");
@@ -265,7 +265,8 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/sellers/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, getInactive: getInactive ? 'true' : 'false',
+        params: {
+          page, limit, search, sortBy, sort: sortDirection, getInactive: getInactive ? 'true' : 'false',
           getNotApproved: getNotApproved ? 'true' : 'false', getNotCompleted: getNotCompleted ? 'true' : 'false', getDeleted: getDeleted ? 'true' : 'false',
           dateRange, startDate, endDate, state: appliedState || "", city: appliedCity || "",
           customerId: customerId || "", firstName: firstName || "", lastName: lastName || "",
@@ -284,11 +285,11 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
   };
 
   useEffect(() => {
-      fetchData();
-    }, [ page, limit, search, sortBy, sortDirection, getInactive, getNotApproved, getNotCompleted, getDeleted, dateRange, startDate, endDate,
-      appliedState, appliedCity, customerId, firstName, lastName, appliedCoreActivity, appliedActivity, organizationName,
-      appliedDesignation, appliedCategories, appliedNatureBusiness, appliedElcinaMember
-    ]);
+    fetchData();
+  }, [page, limit, search, sortBy, sortDirection, getInactive, getNotApproved, getNotCompleted, getDeleted, dateRange, startDate, endDate,
+    appliedState, appliedCity, customerId, firstName, lastName, appliedCoreActivity, appliedActivity, organizationName,
+    appliedDesignation, appliedCategories, appliedNatureBusiness, appliedElcinaMember
+  ]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -320,7 +321,7 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
   const handleDeleteConfirm = async () => {
     if (isBulkDelete) {
       try {
-        const res = await axios.delete(`${API_BASE_URL}/sellers/delete-selected`, {data: {ids: selectedSeller}});
+        const res = await axios.delete(`${API_BASE_URL}/sellers/delete-selected`, { data: { ids: selectedSeller } });
         setData((prevData) => prevData.filter((item) => !selectedSeller.includes(item.id)));
         setTotalRecords((prev) => prev - selectedSeller.length);
         setFilteredRecords((prev) => prev - selectedSeller.length);
@@ -346,7 +347,7 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
       }
     }
   };
-  
+
   const handleSelectAll = (event) => {
     if (event.target.checked) {
       setSelectedSeller(data?.map((item) => item.id));
@@ -372,7 +373,7 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
         filtered = filtered.filter((c) => c.status === 0 && c.is_delete === 0);
       } else if (getNotApproved) {
         filtered = filtered.filter((c) => c.is_approve === 0 && c.is_delete === 0);
-      }  else if (getNotCompleted) {
+      } else if (getNotCompleted) {
         filtered = filtered.filter((c) => c.is_complete === 0 && c.is_delete === 0);
       } else {
         filtered = filtered.filter((c) => c.is_delete === 0 && c.status === 1 && c.is_approve === 1);
@@ -506,121 +507,121 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
             <div className="card-body">
               <div className="row mb-3">
                 {!getDeleted && (
-                <>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Customer ID</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter Customer ID"
-                    value={tempCustomerId}
-                    onChange={(e) => setTempCustomerId(e.target.value)}
-                  />
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">First Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter First Name"
-                    value={tempFirstName}
-                    onChange={(e) => setTempFirstName(e.target.value)}
-                  />
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Last Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter Last Name"
-                    value={tempLastName}
-                    onChange={(e) => setTempLastName(e.target.value)}
-                  />
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Company</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter Company"
-                    value={tempOrganizationName}
-                    onChange={(e) => setTempOrganizationName(e.target.value)}
-                  />
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Core Activities</label>
-                  <select id="coreactivity" className="form-control select2" value={selectedCoreActivity} onChange={handleCoreactivityChange}>
-                    <option value="">All</option>
-                    {coreActivities.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Activities</label>
-                  <select id="activity" className="form-control select2" value={selectedActivity} onChange={handleActivityChange}>
-                    <option value="">All</option>
-                    {activities.map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Categories</label>
-                  <select id="categories" className="form-control select2" value={selectedCategories} onChange={handleCategoriesChange}>
-                    <option value="">All</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Nature of Business</label>
-                  <select id="nature_business" className="form-control select2" value={selectedNatureBusiness} onChange={handleNatureBusinessChange}>
-                    <option value="">All</option>
-                    {natureBusiness.map((n) => (
-                      <option key={n.id} value={n.id}>{n.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">State</label>
-                  <select id="state" className="form-control select2" value={selectedState} onChange={handleStateChange}>
-                    <option value="">All</option>
-                    {states.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">City</label>
-                  <select id="city" className="form-control select2" value={selectedCity} onChange={handleCityChange}>
-                    <option value="">All</option>
-                    {cities.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Designations</label>
-                  <select id="designation" className="form-control select2" value={selectedDesignation} onChange={handleDesignationChange}>
-                    <option value="">All</option>
-                    {designations.map((d) => (
-                      <option key={d.id} value={d.name}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Elcina Member</label>
-                  <select id="elcina_member" className="form-control select2">
-                    <option value="">-- Select --</option>
-                    {elcinaMember.map((item) => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
-                    ))}
-                  </select>
-                </div>
-                </>
-                )}                
+                  <>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Customer ID</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter Customer ID"
+                        value={tempCustomerId}
+                        onChange={(e) => setTempCustomerId(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">First Name</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter First Name"
+                        value={tempFirstName}
+                        onChange={(e) => setTempFirstName(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Last Name</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter Last Name"
+                        value={tempLastName}
+                        onChange={(e) => setTempLastName(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Company</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter Company"
+                        value={tempOrganizationName}
+                        onChange={(e) => setTempOrganizationName(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Core Activities</label>
+                      <select id="coreactivity" className="form-control select2" value={selectedCoreActivity} onChange={handleCoreactivityChange}>
+                        <option value="">All</option>
+                        {coreActivities.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Activities</label>
+                      <select id="activity" className="form-control select2" value={selectedActivity} onChange={handleActivityChange}>
+                        <option value="">All</option>
+                        {activities.map((a) => (
+                          <option key={a.id} value={a.id}>{a.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Categories</label>
+                      <select id="categories" className="form-control select2" value={selectedCategories} onChange={handleCategoriesChange}>
+                        <option value="">All</option>
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Nature of Business</label>
+                      <select id="nature_business" className="form-control select2" value={selectedNatureBusiness} onChange={handleNatureBusinessChange}>
+                        <option value="">All</option>
+                        {natureBusiness.map((n) => (
+                          <option key={n.id} value={n.id}>{n.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">State</label>
+                      <select id="state" className="form-control select2" value={selectedState} onChange={handleStateChange}>
+                        <option value="">All</option>
+                        {states.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">City</label>
+                      <select id="city" className="form-control select2" value={selectedCity} onChange={handleCityChange}>
+                        <option value="">All</option>
+                        {cities.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Designations</label>
+                      <select id="designation" className="form-control select2" value={selectedDesignation} onChange={handleDesignationChange}>
+                        <option value="">All</option>
+                        {designations.map((d) => (
+                          <option key={d.id} value={d.name}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Elcina Member</label>
+                      <select id="elcina_member" className="form-control select2">
+                        <option value="">-- Select --</option>
+                        {elcinaMember.map((item) => (
+                          <option key={item.id} value={item.id}>{item.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
                 <div className={!getDeleted ? "col-md-6 mb-3" : "col-md-8 d-flex align-items-center gap-2"}>
                   <label className="form-label">Date Filter:</label>
                   <div className="position-relative">
@@ -670,7 +671,7 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
               </div>
               <DataTable
                 columns={[
-                  ...(!getDeleted ? [{key: "select", label: (<input type="checkbox" onChange={handleSelectAll} />)}] : []),
+                  ...(!getDeleted ? [{ key: "select", label: (<input type="checkbox" onChange={handleSelectAll} />) }] : []),
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "organization_name", label: "Company", sortable: true },
                   { key: "coreactivity_name", label: "Coreactivity / Category / Segment / Sub Segment", sortable: true },
@@ -698,23 +699,23 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
                   <tr key={row.id}>
                     {!getDeleted && (
                       <td>
-                        <input type="checkbox" checked={selectedSeller.includes(row.id)} onChange={() => handleSelectSeller(row.id)}/>
+                        <input type="checkbox" checked={selectedSeller.includes(row.id)} onChange={() => handleSelectSeller(row.id)} />
                       </td>
                     )}
                     <td><Link to={`/admin/seller/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
                     <td>
-                      {row.organization_name && ( <><strong>{row.organization_name}</strong><br /></> )}
-                      {row.elcina_member == 1 && ( <><span className="badge bg-primary mb-1">Elcina Member</span><br /></> )}
-                      {row.is_trading == 1 && ( <><span className="badge bg-success mb-1">Trader</span><br /></> )}
-                      {row.full_name && ( <><i className="bx bx-user me-1" />{row.full_name}<br /></> )}
-                      {row.email && ( <><i className="bx bx-user me-1" />{row.email}<br /></> )}
-                      {row.mobile && ( <><i className="bx bx-mobile me-1" />{row.mobile}<br /></> )}
-                      {row.state_name && ( <><i className="bx bx-map me-1" />{row.state_name}<br /></> )}
-                      {row.city_name && ( <><i className="bx bx-map me-1" />{row.city_name}<br /></> )}
+                      {row.organization_name && (<><strong>{row.organization_name}</strong><br /></>)}
+                      {row.elcina_member == 1 && (<><span className="badge bg-primary mb-1">Elcina Member</span><br /></>)}
+                      {row.is_trading == 1 && (<><span className="badge bg-success mb-1">Trader</span><br /></>)}
+                      {row.full_name && (<><i className="bx bx-user me-1" />{row.full_name}<br /></>)}
+                      {row.email && (<><i className="bx bx-user me-1" />{row.email}<br /></>)}
+                      {row.mobile && (<><i className="bx bx-mobile me-1" />{row.mobile}<br /></>)}
+                      {row.state_name && (<><i className="bx bx-map me-1" />{row.state_name}<br /></>)}
+                      {row.city_name && (<><i className="bx bx-map me-1" />{row.city_name}<br /></>)}
                       <strong>Products:</strong> <span className="badge bg-primary mb-1">{row.user_count}</span>
                     </td>
                     <td>{row.coreactivity_name}<br />{row.activity_name}<br />{row.category_name}<br />{row.sub_category_name}</td>
-                    <td>{row.designation}<br />{row.website}</td>                    
+                    <td>{row.designation}<br />{row.website}</td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     {!getDeleted && (
@@ -737,56 +738,56 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
                         </button>
                         <ul className="dropdown-menu">
                           {!getDeleted ? (
-                          <>
-                          <li>
-                            <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
-                              <i className="bx bx-edit me-2"></i> Edit
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={(e) => {
-                              e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                            }}
-                            >
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                          {!getInactive && !getNotApproved && (
-                          <li>
-                            <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
-                              <i className="bx bx-envelope me-2"></i> Mail
-                            </button>
-                          </li>
-                          )}
-                          <li>
-                            <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
-                              <i className="bx bx-log-in me-2"></i> Login
-                            </button>
-                          </li>
-                          {!getInactive && !getNotCompleted && !getNotApproved && (
-                          <li>
-                            <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
-                              <i className="bx bx-envelope me-2"></i> Mail History
-                            </button>
-                          </li>
-                          )}
-                          </>                          
+                            <>
+                              <li>
+                                <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
+                                  <i className="bx bx-edit me-2"></i> Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={(e) => {
+                                  e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                }}
+                                >
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                              {!getInactive && !getNotApproved && (
+                                <li>
+                                  <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
+                                    <i className="bx bx-envelope me-2"></i> Mail
+                                  </button>
+                                </li>
+                              )}
+                              <li>
+                                <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
+                                  <i className="bx bx-log-in me-2"></i> Login
+                                </button>
+                              </li>
+                              {!getInactive && !getNotCompleted && !getNotApproved && (
+                                <li>
+                                  <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
+                                    <i className="bx bx-envelope me-2"></i> Mail History
+                                  </button>
+                                </li>
+                              )}
+                            </>
                           ) : (
-                          <>
-                          <li>
-                            <button className="dropdown-item" onClick={(e) => {
-                              e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                            }}
-                            >
-                              <i className="bx bx-windows me-2"></i> Restore
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                          </>
+                            <>
+                              <li>
+                                <button className="dropdown-item" onClick={(e) => {
+                                  e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                }}
+                                >
+                                  <i className="bx bx-windows me-2"></i> Restore
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </>
                           )}
                         </ul>
                       </div>

@@ -4,6 +4,18 @@ const CompanyInfo = require('./CompanyInfo');
 const Products = require('./Products');
 
 const EnquiryUsers = sequelize.define('EnquiryUsers', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'enquiry_user_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   company_id: { type: DataTypes.INTEGER, allowNull: false },
   product_id: { type: DataTypes.INTEGER, allowNull: true },
   enquiry_id: { type: DataTypes.INTEGER, allowNull: true },

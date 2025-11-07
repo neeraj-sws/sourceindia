@@ -224,9 +224,10 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
   };
 
   // Filter companies by search term
-  const filteredCompanies = companies.filter(company =>
-    company.organization_name.toLowerCase().includes(searchTerm)
+  const filteredCompanies = (companies || []).filter(company =>
+    (company?.organization_name || '').toLowerCase().includes((searchTerm || '').toLowerCase())
   );
+
 
   const getNameById = (array, id) => {
     const item = array.find(el => el.id === id);
@@ -267,7 +268,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                   </div>
                   <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredCategories.length >= 5 ? 'auto' : 'visible' }}>
                     {filteredCategories.map(cat => (
-                      <div className="form-check mb-2" key={cat.id}>
+                      <div className="form-check mb-2">
                         <input
                           type="checkbox"
                           id={`cat-${cat.id}`}
@@ -299,7 +300,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                       </div>
                       <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSubCategories.length >= 5 ? 'auto' : 'visible' }}>
                         {filteredSubCategories.map(sub => (
-                          <div className="form-check mb-2" key={sub.id}>
+                          <div className="form-check mb-2">
                             <input
                               type="checkbox"
                               id={`subcat-${sub.id}`}
@@ -331,7 +332,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                   </div>
                   <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredStates.length >= 5 ? 'auto' : 'visible' }}>
                     {filteredStates.map(state => (
-                      <div className="form-check mb-2" key={state.id}>
+                      <div className="form-check mb-2">
                         <input
                           type="checkbox"
                           id={`state-${state.id}`}
@@ -364,7 +365,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 </div>
                 <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSourcingInterest.length >= 5 ? 'auto' : 'visible' }}>
                   {filteredSourcingInterest.map(sic => (
-                    <div className="form-check mb-2" key={sic.id}>
+                    <div className="form-check mb-2" >
                       <input
                         type="checkbox"
                         id={`sic-${sic.id}`}
@@ -467,7 +468,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 <div className="d-flex align-items-baseline justify-content-between gap-2 mb-2">
                   <div className="d-flex align-items-center gap-2 flex-wrap">
                     {selectedCategories.map(id => (
-                      <span key={`cat-${id}`} className="badge bg-primary text-white d-flex align-items-center">
+                      <span className="badge bg-primary text-white d-flex align-items-center">
                         {getNameById(categories, id)}
                         <button
                           onClick={() => handleCategoryCheckboxChange(id)}
@@ -478,7 +479,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                       </span>
                     ))}
                     {selectedSubCategories.map(id => (
-                      <span key={`sub-${id}`} className="badge bg-secondary text-white d-flex align-items-center">
+                      <span className="badge bg-secondary text-white d-flex align-items-center">
                         {getNameById(subCategories, id)}
                         <button
                           onClick={() => handleSubCategoryCheckboxChange(id)}
@@ -489,7 +490,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                       </span>
                     ))}
                     {selectedStates.map(id => (
-                      <span key={`state-${id}`} className="badge bg-success text-white d-flex align-items-center">
+                      <span className="badge bg-success text-white d-flex align-items-center">
                         {getNameById(states, id)}
                         <button
                           onClick={() => handleStatesCheckboxChange(id)}
@@ -525,7 +526,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
               filteredCompanies.map((company) => (
                 <div
                   className={viewMode === 'grid' ? 'col-12 col-sm-6' : 'col-12'}
-                  key={company.id}
+
                 >
                   <div
                     className={`card shadow-sm border p-3 ${viewMode === 'list' ? 'list-view-card' : 'h-100'
@@ -620,7 +621,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
               filteredCompanies.map(company => (
                 <div
                   className={viewMode === 'grid' ? 'col-12 col-sm-6' : 'col-12'}
-                  key={company.id}
+
                 >
                   <div className={`card shadow-sm border comapnycardlogo h-100 ${viewMode === 'list' ? 'flex-row p-2' : ''}`}>
                     <div className={`card-header border-0 ${viewMode === 'list' ? 'p-0 ps-2 bg-white' : ''}`}>
@@ -657,35 +658,50 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                             </p>
                           </div>
                         </div>
-                        <div className="companyitems companywebsite mb-2 d-flex gap-2">
-                          <b className="fw-semibold">Website:</b>
-                          <p className="mb-0">{company.company_website}</p>
-                        </div>
+                        {isSeller == 1 ? (
+                          <>
+                            <div className="companyitems companywebsite mb-2 d-flex gap-2">
+                              <b className="fw-semibold">Website:</b>
+                              <p className="mb-0">{company.company_website}</p>
+                            </div>
 
-                        <div className="companyitems companycoreactivity mb-2 d-flex gap-2">
-                          <b className="fw-semibold">Core Activity:</b>
-                          <p className="mb-0">{company.core_activity_name}</p>
-                        </div>
+                            <div className="companyitems companycoreactivity mb-2 d-flex gap-2">
+                              <b className="fw-semibold">Core Activity:</b>
+                              <p className="mb-0">{company.core_activity_name}</p>
+                            </div>
 
-                        <div className="companyitems companactivity mb-2 d-flex gap-2">
-                          <b className="fw-semibold">Activity:</b>
-                          <p className="mb-0">{company.activity_name}</p>
-                        </div>
+                            <div className="companyitems companactivity mb-2 d-flex gap-2">
+                              <b className="fw-semibold">Activity:</b>
+                              <p className="mb-0">{company.activity_name}</p>
+                            </div>
 
-                        <div className="companyitems compancatrgory mb-2 d-flex gap-2">
-                          <b className="fw-semibold">Category:</b>
-                          <p className="mb-0">{company.category_name}</p>
-                        </div>
+                            <div className="companyitems compancatrgory mb-2 d-flex gap-2">
+                              <b className="fw-semibold">Category:</b>
+                              <p className="mb-0">{company.category_name}</p>
+                            </div>
 
-                        <div className="companyitems compansubcatrgory mb-2 d-flex gap-2">
-                          <b className="fw-semibold">Sub Category:</b>
-                          <p className="mb-0">{company.sub_category_name}</p>
-                        </div>
+                            <div className="companyitems compansubcatrgory mb-2 d-flex gap-2">
+                              <b className="fw-semibold">Sub Category:</b>
+                              <p className="mb-0">{company.sub_category_name}</p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="companyitems companybuyer mb-2 d-flex gap-2">
+                              <b className="fw-semibold">Buyer Type:</b>
+                              <p className="mb-0"></p>
+                            </div>
+
+                          </>
+                        )}
+
+
+
 
                         <div className="featuredCompaniesPara d-flex align-items-center gap-1 flex-wrap">
                           {company.products && company.products.map((product, idx) => (
                             <Link
-                              key={product.id || product.slug || idx}
+
                               to={`/products/${product.slug}`}
                               className="small badge text-decoration-none text-white btn-orange text-start"
                               style={{
@@ -717,7 +733,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 </div>
               ))
             ) : (
-              <div className="col-12"><p className="text-center">No products found.</p></div>
+              <div className="col-12"><p className="text-center">No companies found.</p></div>
             )}
             {!loading && scrollLoading && (
               <div className="text-center my-4">

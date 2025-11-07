@@ -1,13 +1,12 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const UploadImage = require('./UploadImage');
 
-const Testimonials = sequelize.define('Testimonials', {
+const Shortcut = sequelize.define('Shortcut', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
-    field: 'testimonial_id',
+    field: 'shortcut_id',
   },
   uuid: {
     type: DataTypes.UUID,
@@ -19,32 +18,27 @@ const Testimonials = sequelize.define('Testimonials', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  description: {
-    type: DataTypes.TEXT,
+  link: {
+    type: DataTypes.STRING,
     allowNull: false
   },
+  is_delete: {
+    type: DataTypes.TINYINT,
+    allowNull: false,
+    defaultValue: 0,
+    comment: '0 = Active, 1 = Deleted'
+  },
   status: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.TINYINT,
     allowNull: false,
     defaultValue: 1,
     comment: '1 = Active, 0 = Inactive'
   },
-  file_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  is_delete: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0,
-  },
 }, {
-  tableName: 'testimonials',
+  tableName: 'shortcut_menus',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at'
 });
 
-Testimonials.belongsTo(UploadImage, { foreignKey: 'file_id', targetKey: 'id', onDelete: 'CASCADE' });
-
-module.exports = Testimonials;
+module.exports = Shortcut;

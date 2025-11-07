@@ -15,8 +15,8 @@ exports.createInterestSubCategories = async (req, res) => {
   try {
     const { name, interest_category_id, status } = req.body;
     if (!name || !interest_category_id || !status) {
-        return res.status(400).json({ message: 'All fields (name, interest_category_id, status) are required' });
-      }
+      return res.status(400).json({ message: 'All fields (name, interest_category_id, status) are required' });
+    }
     const interestSubCategories = await InterestSubCategories.create({ name, interest_category_id, status });
     res.status(201).json({ message: 'Interest sub category created', interestSubCategories });
   } catch (err) {
@@ -54,7 +54,7 @@ exports.getBuyerInterestsWithProductCount = async (req, res) => {
     // Raw SQL query
     const sql = `
       SELECT 
-        bi.id,
+        bi.buyerinterest_id,
         bi.buyer_id,
         bi.activity_id,
         isc.name AS category_name,
@@ -62,14 +62,14 @@ exports.getBuyerInterestsWithProductCount = async (req, res) => {
         u.status,
         CASE WHEN u.status = 1 THEN 'Active' ELSE 'Inactive' END AS getStatus
       FROM buyerinterests bi
-      INNER JOIN users u ON u.id = bi.buyer_id
-      INNER JOIN company_info ci ON ci.id = u.company_id AND ci.is_delete = 0
-      INNER JOIN interest_sub_categories isc ON isc.id = bi.activity_id
+      INNER JOIN users u ON u.user_id = bi.buyer_id
+      INNER JOIN company_info ci ON ci.company_id = u.company_id AND ci.is_delete = 0
+      INNER JOIN interest_sub_categories isc ON isc.interest_sub_category_id = bi.activity_id
       WHERE 
         u.status = 1
         AND u.is_approve = 1
         AND u.is_seller = 0
-      GROUP BY isc.name, bi.activity_id, bi.id, bi.buyer_id, u.status
+      GROUP BY isc.name, bi.activity_id, bi.buyerinterest_id, bi.buyer_id, u.status
       ORDER BY product_count DESC
       LIMIT 5;
     `;

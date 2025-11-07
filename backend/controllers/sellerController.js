@@ -18,6 +18,7 @@ const MembershipPlan = require('../models/MembershipPlan');
 const Designations = require('../models/Designations');
 const NatureBusinesses = require('../models/NatureBusinesses');
 const Products = require('../models/Products');
+const SellerCategory = require('../models/SellerCategory');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
@@ -333,7 +334,6 @@ exports.getSellerById = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 exports.getSellerCount = async (req, res) => {
   try {
     const todayStart = new Date();
@@ -342,132 +342,12 @@ exports.getSellerCount = async (req, res) => {
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    // 👇 Define a small logger for clean output
+    // Optional SQL logger
     const logSQL = (sql) => {
       // console.log("\n🧠 Executing SQL Query:\n", sql, "\n");
     };
 
-   const [total, addedToday, statusActive, statusInactive, notApproved, notCompleted, deleted] = await Promise.all([
-  // Total sellers
-  Users.count({
-    where: { is_seller: 1 },
-    include: [
-      {
-        model: CompanyInfo,
-        as: 'company_info',
-        required: true,
-        
-      },
-     
-    ],
-    logging: logSQL,
-  }),
-
-  // Sellers added today
-  Users.count({
-    where: {
-      created_at: { [Op.between]: [todayStart, todayEnd] },
-    },
-    include: [
-      {
-        model: CompanyInfo,
-        as: 'company_info',
-        required: true,
-        
-      },
-    
-    ],
-    logging: logSQL,
-  }),
-
-  // Active sellers
-  Users.count({
-    where: {
-      is_seller: 1,
-      status: 1,
-      is_delete: 0,
-      is_approve: 1,
-      member_role: 1,
-    },
-    include: [
-      {
-        model: CompanyInfo,
-        as: 'company_info',
-        required: true,
-       
-      },
-    
-    ],
-    logging: logSQL,
-  }),
-
-  // Inactive sellers
-  Users.count({
-    where: { is_seller: 1, status: 0, is_delete: 0 },
-    include: [
-      {
-        model: CompanyInfo,
-        as: 'company_info',
-        required: true,
-        
-      },
-     
-    ],
-    logging: logSQL,
-  }),
-
-  // Not approved sellers
-  Users.count({
-    where: {
-      is_seller: 1,
-      is_approve: 0,
-      is_delete: 0,
-      is_complete: 1,
-      status: 1,
-    },
-    include: [
-      {
-        model: CompanyInfo,
-        as: 'company_info',
-        required: true,
-       
-      },
-    
-    ],
-    logging: logSQL,
-  }),
-
-  // Not approved sellers
-  Users.count({
-    where: {
-      is_seller: 1,
-      is_approve: 0,
-      is_delete: 0,
-      is_complete: 0,
-      status: 1,
-    },
-    include: [
-      {
-        model: CompanyInfo,
-        as: 'company_info',
-        required: true,
-       
-      },
-    
-    ],
-    logging: logSQL,
-  }),
-
-  // Not approved sellers
-  Users.count({
-    where: {
-      is_seller: 1, is_delete: 1,
-    },
-    logging: logSQL,
-  }),
-]);
-
-    res.json({
+    const [
       total,
       addedToday,
       statusActive,
@@ -475,10 +355,127 @@ exports.getSellerCount = async (req, res) => {
       notApproved,
       notCompleted,
       deleted
+    ] = await Promise.all([
+      // Total sellers
+      Users.count({
+        where: { is_seller: 1 },
+        include: [
+          {
+            model: CompanyInfo,
+            as: 'company_info',
+            required: true,
+          },
+        ],
+        logging: logSQL,
+      }),
+
+      // Sellers added today
+      Users.count({
+        where: {
+          is_seller: 1,
+          created_at: { [Op.between]: [todayStart, todayEnd] },
+        },
+        include: [
+          {
+            model: CompanyInfo,
+            as: 'company_info',
+            required: true,
+          },
+        ],
+        logging: logSQL,
+      }),
+
+      // Active sellers
+      Users.count({
+        where: {
+          is_seller: 1,
+          status: 1,
+          is_delete: 0,
+        },
+        include: [
+          {
+            model: CompanyInfo,
+            as: 'company_info',
+            required: true,
+          },
+        ],
+        logging: logSQL,
+      }),
+
+      // Inactive sellers
+      Users.count({
+        where: {
+          is_seller: 1,
+          status: 0,
+          is_delete: 0,
+        },
+        include: [
+          {
+            model: CompanyInfo,
+            as: 'company_info',
+            required: true,
+          },
+        ],
+        logging: logSQL,
+      }),
+
+      // Not approved sellers
+      Users.count({
+        where: {
+          is_seller: 1,
+          is_approve: 0,
+          is_delete: 0,
+        },
+        include: [
+          {
+            model: CompanyInfo,
+            as: 'company_info',
+            required: true,
+          },
+        ],
+        logging: logSQL,
+      }),
+
+      // Not completed sellers
+      Users.count({
+        where: {
+          is_seller: 1,
+          is_complete: 0,
+          is_delete: 0,
+        },
+        include: [
+          {
+            model: CompanyInfo,
+            as: 'company_info',
+            required: true,
+          },
+        ],
+        logging: logSQL,
+      }),
+
+      // Deleted sellers
+      Users.count({
+        where: {
+          is_seller: 1,
+          is_delete: 1,
+        },
+        logging: logSQL,
+      }),
+    ]);
+
+    return res.json({
+      total,
+      addedToday,
+      statusActive,
+      statusInactive,
+      notApproved,
+      notCompleted,
+      deleted,
     });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
 
@@ -749,20 +746,30 @@ exports.getAllSellerServerSide = async (req, res) => {
       organizationName,
       designation,
       categoryId,
+      subCategoryId,
       nature_business,
       elcina_member
     } = req.query;
-    const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'mobile', 'country_name', 'state_name', 'city_name',
-      'zipcode', 'user_company', 'website', 'is_trading', 'elcina_member', 'address', 'products', 'category_name', 'sub_category_name',
-      'designation', 'coreactivity_name', 'activity_name', 'status', 'is_approve', 'is_complete', 'is_seller', 'walkin_buyer', 'created_at', 'updated_at'];
+
+    const validColumns = [
+      'id', 'fname', 'lname', 'full_name', 'email', 'mobile', 'country_name',
+      'state_name', 'city_name', 'zipcode', 'user_company', 'website',
+      'is_trading', 'elcina_member', 'address', 'products', 'category_name',
+      'sub_category_name', 'designation', 'coreactivity_name', 'activity_name',
+      'status', 'is_approve', 'is_complete', 'is_seller', 'walkin_buyer',
+      'created_at', 'updated_at'
+    ];
+
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitValue = parseInt(limit);
+
+    // 🧭 Dynamic Sorting Logic
     let order = [];
     if (sortBy === 'category_name') {
-      order = [[{ model: CompanyInfo, as: 'company_info' }, { model: Categories, as: 'Categories' }, 'name', sortDirection]];
+      order = [[{ model: SellerCategory, as: 'seller_categories' }, { model: Categories, as: 'category' }, 'name', sortDirection]];
     } else if (sortBy === 'sub_category_name') {
-      order = [[{ model: CompanyInfo, as: 'company_info' }, { model: SubCategories, as: 'SubCategories' }, 'name', sortDirection]];
+      order = [[{ model: SellerCategory, as: 'seller_categories' }, { model: SubCategories, as: 'subcategory' }, 'name', sortDirection]];
     } else if (sortBy === 'coreactivity_name') {
       order = [[{ model: CompanyInfo, as: 'company_info' }, { model: CoreActivity, as: 'CoreActivity' }, 'name', sortDirection]];
     } else if (sortBy === 'activity_name') {
@@ -784,53 +791,36 @@ exports.getAllSellerServerSide = async (req, res) => {
     } else {
       order = [['id', 'DESC']];
     }
-    const where = {};
-    where.is_seller = 1;
-    where.is_delete = 0;
+
+    // 🧾 WHERE Clauses
+    const where = { is_seller: 1, is_delete: 0 };
+
     if (req.query.getDeleted !== 'true') {
       where.status = 1;
       where.member_role = 1;
-      // where.step >= 3;
       where.is_complete = 1;
     }
-    if (req.query.getNotCompleted !== 'true') {
-      where.is_approve = 1;
-    }
-    if (req.query.getInactive === 'true') {
-      where.status = 0;
-    }
-    if (req.query.getNotApproved === 'true') {
-      where.is_approve = 0;
-    }
+
+    if (req.query.getNotCompleted !== 'true') where.is_approve = 1;
+    if (req.query.getInactive === 'true') where.status = 0;
+    if (req.query.getNotApproved === 'true') where.is_approve = 0;
     if (req.query.getNotCompleted === 'true') {
       where.is_complete = 0;
       where.is_approve = 0;
     }
-    if (req.query.getDeleted === 'true') {
-      where.is_delete = 1;
-    }
+    if (req.query.getDeleted === 'true') where.is_delete = 1;
+
     const searchWhere = { ...where };
-    if (country) {
-      searchWhere.country = country;
-    }
-    if (state) {
-      searchWhere.state = state;
-    }
-    if (city) {
-      searchWhere.city = city;
-    }
-    if (elcina_member) {
-      searchWhere.elcina_member = elcina_member;
-    }
-    if (core_activity) {
-      searchWhere['$company_info.CoreActivity.id$'] = core_activity;
-    }
-    if (activity) {
-      searchWhere['$company_info.Activity.id$'] = activity;
-    }
-    if (nature_business) {
-      searchWhere['$company_info.NatureBusinesses.id$'] = nature_business;
-    }
+
+    if (country) searchWhere.country = country;
+    if (state) searchWhere.state = state;
+    if (city) searchWhere.city = city;
+    if (elcina_member) searchWhere.elcina_member = elcina_member;
+    if (core_activity) searchWhere['$company_info.CoreActivity.id$'] = core_activity;
+    if (activity) searchWhere['$company_info.Activity.id$'] = activity;
+    if (nature_business) searchWhere['$company_info.NatureBusinesses.id$'] = nature_business;
+
+    // 🔍 Search
     if (search) {
       searchWhere[Op.or] = [
         Sequelize.where(fn('concat', col('fname'), ' ', col('lname')), { [Op.like]: `%${search}%` }),
@@ -839,122 +829,86 @@ exports.getAllSellerServerSide = async (req, res) => {
         { website: { [Op.like]: `%${search}%` } },
         { '$company_info.organization_name$': { [Op.like]: `%${search}%` } },
         { '$company_info.designation$': { [Op.like]: `%${search}%` } },
-        { '$company_info.Categories.name$': { [Op.like]: `%${search}%` } },
-        { '$company_info.CoreActivity.name$': { [Op.like]: `%${search}%` } },
-        { '$state_data.name$': { [Op.like]: `%${search}%` } },
+        { '$seller_categories.category.name$': { [Op.like]: `%${search}%` } },
+        { '$seller_categories.subcategory.name$': { [Op.like]: `%${search}%` } },
         { '$city_data.name$': { [Op.like]: `%${search}%` } },
-        { '$company_info.SubCategories.name$': { [Op.like]: `%${search}%` } }
+        { '$state_data.name$': { [Op.like]: `%${search}%` } }
       ];
     }
-    if (customerId) {
-      searchWhere.id = {
-        [Op.like]: `%${customerId}%`
-      };
-    }
-    if (firstName) {
-      searchWhere.fname = {
-        [Op.like]: `%${firstName}%`
-      };
-    }
-    if (lastName) {
-      searchWhere.lname = {
-        [Op.like]: `%${lastName}%`
-      };
-    }
-    if (organizationName) {
-      searchWhere['$company_info.organization_name$'] = {
-        [Op.like]: `%${organizationName}%`
-      };
-    }
-    if (designation) {
-      searchWhere['$company_info.designation$'] = {
-        [Op.like]: `%${designation}%`
-      };
-    }
-    if (categoryId) {
-      searchWhere['$company_info.Categories.name$'] = {
-        [Op.like]: `%${categoryId}%`
-      };
-    }
+
+    if (customerId) searchWhere.id = { [Op.like]: `%${customerId}%` };
+    if (firstName) searchWhere.fname = { [Op.like]: `%${firstName}%` };
+    if (lastName) searchWhere.lname = { [Op.like]: `%${lastName}%` };
+    if (organizationName) searchWhere['$company_info.organization_name$'] = { [Op.like]: `%${organizationName}%` };
+    if (designation) searchWhere['$company_info.designation$'] = { [Op.like]: `%${designation}%` };
+
+    // 📅 Date Range Filter
     let dateCondition = null;
     if (dateRange) {
       const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
       const today = moment().startOf('day');
       const now = moment();
-      if (range === 'today') {
-        dateCondition = {
-          [Op.gte]: today.toDate(),
-          [Op.lte]: now.toDate(),
-        };
-      } else if (range === 'yesterday') {
-        dateCondition = {
-          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
-          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
-        };
-      } else if (range === 'last7days') {
-        dateCondition = {
-          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
-          [Op.lte]: now.toDate(),
-        };
-      } else if (range === 'last30days') {
-        dateCondition = {
-          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
-          [Op.lte]: now.toDate(),
-        };
-      } else if (range === 'thismonth') {
-        dateCondition = {
-          [Op.gte]: moment().startOf('month').toDate(),
-          [Op.lte]: now.toDate(),
-        };
-      } else if (range === 'lastmonth') {
-        dateCondition = {
-          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
-          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
-        };
+      const dateMap = {
+        today: [today, now],
+        yesterday: [moment().subtract(1, 'day').startOf('day'), moment().subtract(1, 'day').endOf('day')],
+        last7days: [moment().subtract(6, 'days').startOf('day'), now],
+        last30days: [moment().subtract(29, 'days').startOf('day'), now],
+        thismonth: [moment().startOf('month'), now],
+        lastmonth: [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+      };
+      if (dateMap[range]) {
+        dateCondition = { [Op.gte]: dateMap[range][0].toDate(), [Op.lte]: dateMap[range][1].toDate() };
       } else if (range === 'customrange' && startDate && endDate) {
         dateCondition = {
           [Op.gte]: moment(startDate).startOf('day').toDate(),
-          [Op.lte]: moment(endDate).endOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate()
         };
       } else if (!isNaN(range)) {
         const days = parseInt(range);
         dateCondition = {
           [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
-          [Op.lte]: now.toDate(),
+          [Op.lte]: now.toDate()
         };
       }
     }
-    if (dateCondition) {
-      searchWhere.created_at = dateCondition;
+    if (dateCondition) searchWhere.created_at = dateCondition;
+
+    // 🏢 Include Relationships (with category/subcategory filter fix)
+    const sellerCategoryInclude = {
+      model: SellerCategory,
+      as: 'seller_categories',
+      attributes: ['category_id', 'subcategory_id'],
+      include: [
+        { model: Categories, as: 'category', attributes: ['id', 'name'] },
+        { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'] },
+      ],
+      required: false,
+    };
+
+    // ✅ apply category/subcategory filters inside include (correct SQL alias)
+    if (categoryId || subCategoryId) {
+      sellerCategoryInclude.required = true;
+      sellerCategoryInclude.where = {};
+      if (categoryId) sellerCategoryInclude.where.category_id = categoryId;
+      if (subCategoryId) sellerCategoryInclude.where.subcategory_id = subCategoryId;
     }
+
     const companyInfoInclude = {
       model: CompanyInfo,
       as: 'company_info',
-      attributes: ['organization_name', 'company_location', 'designation', 'category_sell', 'sub_category'],
+      attributes: ['organization_name', 'company_location', 'designation'],
       include: [
         { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
         { model: Activity, as: 'Activity', attributes: ['name'] },
-        { model: Categories, as: 'Categories', attributes: ['name'] },
-        { model: SubCategories, as: 'SubCategories', attributes: ['name'] },
-        { model: NatureBusinesses, as: 'NatureBusinesses', attributes: ['name'] },
-      ],
+        { model: NatureBusinesses, as: 'NatureBusinesses', attributes: ['name'] }
+      ]
     };
+
     const totalRecords = await Users.count({
       where,
-      include: [
-        {
-          ...companyInfoInclude,
-          attributes: [],
-          include: [
-            { model: CoreActivity, as: 'CoreActivity', attributes: [] },
-            { model: Categories, as: 'Categories', attributes: [] },
-          ],
-        },
-        { model: Countries, as: 'country_data', attributes: [] },
-        { model: States, as: 'state_data', attributes: [] },
-        { model: Cities, as: 'city_data', attributes: [] },
-      ],
+      include: [sellerCategoryInclude],
     });
+
     const { count: filteredRecords, rows } = await Users.findAndCountAll({
       where: searchWhere,
       order,
@@ -967,64 +921,49 @@ exports.getAllSellerServerSide = async (req, res) => {
         { model: Countries, as: 'country_data', attributes: ['name'] },
         { model: States, as: 'state_data', attributes: ['name'] },
         { model: Cities, as: 'city_data', attributes: ['name'] },
+        sellerCategoryInclude,
       ],
+      distinct: true,
     });
-    const mappedRows = await Promise.all(
-      rows.map(async (row) => {
-        const productCount = await Products.count({ where: { user_id: row.id } });
-        const categoryNames = await getNamesByIds(Categories, row.company_info?.category_sell);
-        const subCategoryNames = await getNamesByIds(SubCategories, row.company_info?.sub_category);
-        return {
-          id: row.id,
-          full_name: `${row.fname} ${row.lname}`,
-          email: row.email,
-          file_id: row.file_id,
-          file_name: row.file ? row.file.file : null,
-          company_file_id: row.company_file_id,
-          company_file_name: row.company_file ? row.company_file.file : null,
-          mobile: row.mobile,
-          country: row.country,
-          state: row.state,
-          city: row.city,
-          zipcode: row.zipcode,
-          user_company: row.user_company,
-          website: row.website,
-          is_trading: row.is_trading,
-          elcina_member: row.elcina_member,
-          address: row.address,
-          products: row.products,
-          status: row.status,
-          is_approve: row.is_approve,
-          is_seller: row.is_seller,
-          is_complete: row.is_complete,
-          is_delete: row.is_delete,
-          walkin_buyer: row.walkin_buyer,
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-          organization_name: row.company_info ? row.company_info.organization_name : null,
-          company_location: row.company_info ? row.company_info.company_location : null,
-          designation: row.company_info ? row.company_info.designation : null,
-          category_name: categoryNames,
-          sub_category_name: subCategoryNames,
-          coreactivity_name: row.company_info?.CoreActivity?.name || null,
-          activity_name: row.company_info?.Activity?.name || null,
-          country_name: row.country_data?.name || null,
-          state_name: row.state_data?.name || null,
-          city_name: row.city_data?.name || null,
-          user_count: productCount
-        };
-      })
-    );
-    res.json({
-      data: mappedRows,
-      totalRecords,
-      filteredRecords,
-    });
+
+    // 🧠 Map Result
+    const mappedRows = await Promise.all(rows.map(async (row) => {
+      const s = row.toJSON();
+      const categoryNames = s.seller_categories?.length
+        ? [...new Set(s.seller_categories.map(sc => sc.category?.name).filter(Boolean))].join(', ')
+        : 'NA';
+      const subCategoryNames = s.seller_categories?.length
+        ? [...new Set(s.seller_categories.map(sc => sc.subcategory?.name).filter(Boolean))].join(', ')
+        : 'NA';
+      const productCount = await Products.count({ where: { user_id: row.id } });
+
+      return {
+        id: row.id,
+        full_name: `${row.fname} ${row.lname}`,
+        email: row.email,
+        mobile: row.mobile,
+        organization_name: row.company_info?.organization_name || null,
+        designation: row.company_info?.designation || null,
+        category_name: categoryNames,
+        sub_category_name: subCategoryNames,
+        coreactivity_name: row.company_info?.CoreActivity?.name || null,
+        activity_name: row.company_info?.Activity?.name || null,
+        country_name: row.country_data?.name || null,
+        state_name: row.state_data?.name || null,
+        city_name: row.city_data?.name || null,
+        user_count: productCount,
+        created_at: row.created_at
+      };
+    }));
+
+    res.json({ data: mappedRows, totalRecords, filteredRecords });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 async function getNamesByIds(Model, idsString) {
   if (!idsString) return null;

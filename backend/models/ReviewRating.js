@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const Users = require('./Users');
 
 const ReviewRating = sequelize.define('ReviewRating', {
+   id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'review_rating_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   user_id: { type: DataTypes.INTEGER, allowNull: true },
   product_id: { type: DataTypes.INTEGER, allowNull: true },
   company_id: { type: DataTypes.INTEGER, allowNull: true },

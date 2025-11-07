@@ -6,8 +6,15 @@ const SubCategories = require('./SubCategories');
 const SellerCategory = sequelize.define("SellerCategory", {
   id: {
     type: DataTypes.INTEGER,
-    autoIncrement: true,
     primaryKey: true,
+    autoIncrement: true,
+    field: 'seller_category_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
   },
   user_id: {
     type: DataTypes.INTEGER,

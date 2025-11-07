@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const Users = require('./Users');
 
 const Contacts = sequelize.define('Contacts', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'contact_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   fname: { type: DataTypes.STRING, allowNull: false },
   lname: { type: DataTypes.STRING, allowNull: true },
   email: { type: DataTypes.STRING, allowNull: true },

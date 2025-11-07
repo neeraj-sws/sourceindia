@@ -4,6 +4,18 @@ const InterestCategories = require('./InterestCategories');
 const InterestSubCategories = require('./InterestSubCategories');
 
 const SubSubCategories = sequelize.define('SubSubCategories', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'sub_sub_category_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false

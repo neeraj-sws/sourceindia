@@ -111,7 +111,7 @@ const FrontHeader = () => {
             </div>
             <div className="middleBox">
               <form className="d-flex align-items-center flex-grow-1" onSubmit={handleSubmit}>
-                <div className="search-bar d-flex w-100">
+                <div className="search-bar-front d-flex w-100">
                   <select
                     className="form-select w-auto px-3"
                     value={searchType}

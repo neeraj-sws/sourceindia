@@ -70,7 +70,7 @@ const UserSidebar = () => {
         const data = response.data;
         setSiteData(data);
         if (data?.logo_file) {
-          setLogoUrl(ROOT_URL+'/'+data.logo_file);
+          setLogoUrl(ROOT_URL + '/' + data.logo_file);
         } else {
           setLogoUrl("/logo.png");
         }
@@ -187,9 +187,9 @@ const UserSidebar = () => {
         <div className="sidebar-header">
           <div>
             <img src={logoUrl} className="logo-icon" alt="logo icon" onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "/logo.png";
-                    }} />
+              e.target.onerror = null;
+              e.target.src = "/logo.png";
+            }} />
           </div>
           <div className="toggle-icon ms-auto">
             <i className="bx bx-arrow-to-left" />

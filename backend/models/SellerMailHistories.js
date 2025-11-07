@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const Users = require('./Users');
 
 const SellerMailHistories = sequelize.define('SellerMailHistories', {
+    id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'seller_mail_history_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   mail_type: { type: DataTypes.INTEGER, allowNull: false, comment: "0='direct',1='selected',3='all'" },
   mail_template_id: { type: DataTypes.INTEGER, allowNull: false },
   mail: { type: DataTypes.STRING, allowNull: false },

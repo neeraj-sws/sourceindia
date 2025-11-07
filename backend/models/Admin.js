@@ -4,6 +4,18 @@ const Roles = require('./Roles');
 const TicketCategory = require('./TicketCategory');
 
 const Admin = sequelize.define('Admin', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'admin_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: { type: DataTypes.STRING, allowNull: false },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   email_verified_at: { type: DataTypes.DATE, allowNull: true, defaultValue: null },

@@ -83,7 +83,7 @@ body {
     padding: 5px 0;
 }
 
-.search-bar {
+.search-bar-front {
     border: 1px solid var(--primary-color);
     border-radius: 30px;
     overflow: hidden;
@@ -96,13 +96,13 @@ body {
     color: var(--color-white);
 }
 
-.search-bar select,
-.search-bar input {
+.search-bar-front select,
+.search-bar-front input {
     border: none;
     box-shadow: none;
 }
 
-.search-bar input:focus {
+.search-bar-front input:focus {
     outline: none;
     box-shadow: none;
 }

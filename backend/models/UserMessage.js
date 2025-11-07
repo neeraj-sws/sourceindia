@@ -5,6 +5,18 @@ const CompanyInfo = require('./CompanyInfo');
 const EnquiryMessage = require('./EnquiryMessage');
 
 const UserMessage = sequelize.define('UserMessage', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'user_message_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   message_id: {
     type: DataTypes.INTEGER,
     allowNull: true, // Nullable as per schema
