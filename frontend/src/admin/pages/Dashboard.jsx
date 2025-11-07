@@ -51,13 +51,14 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const [sellers, buyers, categories, subCats, products, enquiries] = await Promise.all([
+        const [sellers, buyers, categories, subCats, products, enquiries, registrations] = await Promise.all([
           axios.get(`${API_BASE_URL}/sellers/count`),
           axios.get(`${API_BASE_URL}/buyers/count`),
           axios.get(`${API_BASE_URL}/categories/count`),
           axios.get(`${API_BASE_URL}/sub_categories/count`),
           axios.get(`${API_BASE_URL}/products/count`),
           axios.get(`${API_BASE_URL}/enquiries/count`),
+          axios.get(`${API_BASE_URL}/registrations/count`),
         ]);
         setCounts({
           sellers: {
@@ -84,6 +85,7 @@ const Dashboard = () => {
             addedThisMonth: products.data.addedThisMonth,
           },
           enquiries: enquiries.data.total,
+          registrations: registrations.data.total,
         });
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -112,7 +114,7 @@ const Dashboard = () => {
     { label: "Enquiries Generated", value: counts.enquiries, icon: "bx bx-search" },
     { label: "Product added this month", value: counts.products?.addedThisMonth, icon: "bx bxs-shopping-bags" },
     // { label: "Today Mail Send", value: "", icon: "bx bx-mail-send" },
-    // { label: "2024 Registration", value: "", icon: "bx bxs-user-plus" },
+    { label: "2024 Registration", value: counts.registrations, icon: "bx bxs-user-plus" },
   ];
 
   return (

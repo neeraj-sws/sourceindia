@@ -3,6 +3,7 @@ const router = express.Router();
 const emailsController = require('../controllers/emailsController');
 
 router.post('/', emailsController.createEmails);
+router.get('/count', emailsController.getEmailsCount);
 router.get('/', emailsController.getAllEmails);
 router.get('/server-side', emailsController.getAllEmailsServerSide);
 router.get('/:id', emailsController.getEmailsById);

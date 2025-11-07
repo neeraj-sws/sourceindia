@@ -335,15 +335,15 @@ const ProductList = ({ getDeleted, isApprove }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Shop" title={getDeleted ? "Recently Deleted Product" : "Products"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Product</>)} add_link="/admin/add_product"
+          <Breadcrumb mainhead="Products" maincount={totalRecords} page="Shop" title={getDeleted ? "Recently Deleted Product" : "Products"}
+          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Product</>)} add_link="/admin/add_product"
           actions={
             <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             {!getDeleted ? (
               <>
                 <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedProducts.length === 0}>
-                  <i className="bx bx-trash"></i> Delete Selected
+                  <i className="bx bx-trash me-1" /> Delete Selected
                 </button>
                 <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/product-remove">
                   Recently Deleted Product
@@ -445,7 +445,8 @@ const ProductList = ({ getDeleted, isApprove }) => {
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "image", label: "Image", sortable: false },
                   { key: "title", label: "Title", sortable: true },
-                  { key: "category_name", label: "Category Name", sortable: true },
+                  { key: "category_name", label: "Category", sortable: true },
+                  { key: "company_name", label: "Company", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },
                   { key: "updated_at", label: "Updated At", sortable: true },
                   { key: "status", label: "Status", sortable: false },
@@ -481,6 +482,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
                     /></td>
                     <td>{row.title}</td>
                     <td>{row.category_name}</td>
+                    <td>{row.company_name}</td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>

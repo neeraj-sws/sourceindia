@@ -14,6 +14,9 @@ const ReviewRating = require('../models/ReviewRating');
 const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
 const SellerCategory = require('../models/SellerCategory');
+const ItemCategory = require('../models/ItemCategory');
+const ItemSubCategory = require('../models/ItemSubCategory');
+const Items = require('../models/Items');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
@@ -52,11 +55,31 @@ exports.createProducts = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
 
     try {
-      const {
-        user_id, title, code, article_number, category, sub_category,
-        is_gold, is_featured, is_recommended, best_product, status,
-        application, short_description, description, slug, core_activity, activity, segment, product_service
-      } = req.body;
+    let {
+  user_id, title, code, article_number, category, sub_category,
+  item_category_id, item_subcategory_id, item_id,
+  is_gold, is_featured, is_recommended, best_product, status,
+  application, short_description, description, slug,
+  core_activity, activity, segment, product_service
+} = req.body;
+
+// Inline clean for all values
+[
+  user_id, category, sub_category, item_category_id,
+  item_subcategory_id, item_id, application, core_activity,
+  activity, segment, product_service
+] = [
+  user_id, category, sub_category, item_category_id,
+  item_subcategory_id, item_id, application, core_activity,
+  activity, segment, product_service
+].map(v =>
+  Array.isArray(v)
+    ? v.map(x => String(x).trim().replace(/^,/, '')).filter(Boolean)
+    : v != null
+      ? String(v).trim().replace(/^,/, '')
+      : v
+);
+
 
       if (!user_id || !title || !category || !status || !short_description || !req.files || req.files.length === 0) {
         return res.status(400).json({ message: 'All fields (user_id, title, category, short_description, files) are required' });
@@ -92,6 +115,9 @@ exports.createProducts = async (req, res) => {
         product_service: product_service || 0,
         file_id: uploadImages[0].id,
         file_ids: fileIds,
+        item_category_id,
+        item_subcategory_id,
+        item_id,
       });
 
       res.status(201).json({ message: 'Product created', products });
@@ -375,6 +401,9 @@ exports.updateProducts = async (req, res) => {
       application,
       short_description,
       description,
+      item_category_id,
+      item_subcategory_id,
+      item_id,
     } = req.body;
 
     const product = await Products.findByPk(req.params.id);
@@ -397,6 +426,9 @@ exports.updateProducts = async (req, res) => {
       application,
       short_description,
       description,
+      item_category_id,
+      item_subcategory_id,
+      item_id,
     });
 
     res.status(200).json({
@@ -587,7 +619,6 @@ exports.getAllCompanyInfoOLd = async (req, res) => {
     if (title) {
       whereClause.organization_name = { [Op.like]: `%${title}%` };
     }
-
 
     if (category) {
       const catIds = parseCsv(category).map(x => parseInt(x)).filter(x => !isNaN(x));
@@ -1146,7 +1177,7 @@ exports.getAllProductsServerSide = async (req, res) => {
       product_status,
       is_approve
     } = req.query;
-    const validColumns = ['id', 'title', 'article_number', 'created_at', 'updated_at', 'category_name', 'subcategory_name'];
+    const validColumns = ['id', 'title', 'article_number', 'created_at', 'updated_at', 'category_name', 'subcategory_name', 'company_name'];
     const viewType = req.query.viewType || '';
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -1156,6 +1187,8 @@ exports.getAllProductsServerSide = async (req, res) => {
       order = [[{ model: Categories, as: 'Categories' }, 'name', sortDirection]];
     } else if (sortBy === 'subcategory_name') {
       order = [[{ model: SubCategories, as: 'SubCategories' }, 'name', sortDirection]];
+    } else if (sortBy === 'company_name') {
+      order = [[{ model: CompanyInfo, as: 'company_info' }, 'organization_name', sortDirection]];
     } else if (validColumns.includes(sortBy)) {
       order = [[sortBy, sortDirection]];
     } else {
@@ -1249,6 +1282,7 @@ exports.getAllProductsServerSide = async (req, res) => {
           { article_number: { [Op.like]: `%${search}%` } },
           { '$Categories.name$': { [Op.like]: `%${search}%` } },
           { '$SubCategories.name$': { [Op.like]: `%${search}%` } },
+          { '$company_info.organization_name$': { [Op.like]: `%${search}%` } },
         ];
       }
     }
@@ -1260,6 +1294,7 @@ exports.getAllProductsServerSide = async (req, res) => {
       include: [
         { model: Categories, attributes: ['name'], as: 'Categories' },
         { model: SubCategories, attributes: ['name'], as: 'SubCategories' },
+        { model: CompanyInfo, attributes: ['organization_name'], as: 'company_info' },
         { model: UploadImage, attributes: ['file'], as: 'file' },
       ],
     });
@@ -1271,6 +1306,8 @@ exports.getAllProductsServerSide = async (req, res) => {
       category_name: row.Categories ? row.Categories.name : null,
       sub_category: row.sub_category,
       subcategory_name: row.SubCategories ? row.SubCategories.name : null,
+      company_id: row.company_id,
+      company_name: row.company_info ? row.company_info.organization_name : null,
       file_id: row.file_id,
       file_name: row.file ? row.file.file : null,
       status: row.status,
@@ -1322,5 +1359,21 @@ exports.companyReview = async (req, res) => {
       success: 0,
       message: "Server error while submitting review.",
     });
+  }
+};
+
+exports.updateProductsDeleteStatus = async (req, res) => {
+  try {
+    const { is_delete } = req.body;
+    if (is_delete !== 0 && is_delete !== 1) {
+      return res.status(400).json({ message: 'Invalid delete status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const openEnquiries = await Products.findByPk(req.params.id);
+    if (!openEnquiries) return res.status(404).json({ message: 'Products not found' });
+    openEnquiries.is_delete = is_delete;
+    await openEnquiries.save();
+    res.json({ message: 'Products is removed', openEnquiries });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };

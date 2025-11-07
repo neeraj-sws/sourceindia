@@ -62,6 +62,9 @@ import ContactsList from '../admin/pages/ContactsList';
 import Inventories from '../admin/pages/Inventories';
 import RegistrationsList from '../admin/pages/RegistrationsList';
 import UsersHistory from '../admin/pages/UsersHistory';
+import ItemCategory from '../admin/pages/ItemCategory';
+import ItemSubCategory from '../admin/pages/ItemSubCategory';
+import NewItems from '../admin/pages/NewItems';
 
 function AdminLayout() {
   const location = useLocation();
@@ -163,6 +166,9 @@ function AdminLayout() {
           <Route path="/registrations-list" element={<ProtectedRoute><RegistrationsList /></ProtectedRoute>} />
           <Route path="/registrations-remove-list" element={<ProtectedRoute><RegistrationsList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/user_history" element={<ProtectedRoute><UsersHistory /></ProtectedRoute>} />
+          <Route path="/item_category" element={<ProtectedRoute><ItemCategory /></ProtectedRoute>} />
+          <Route path="/item_sub_category" element={<ProtectedRoute><ItemSubCategory /></ProtectedRoute>} />
+          <Route path="/new_items" element={<ProtectedRoute><NewItems /></ProtectedRoute>} />
         </Routes>
       </div>
       {showLayout && <Footer />}

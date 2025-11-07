@@ -64,10 +64,10 @@ const UserEnquiry = ({ user_id }) => {
     <DataTable
       columns={[
         { key: "id", label: "S.No.", sortable: true },
-        { key: "enquiry_number", label: "Enquiries (created) No", sortable: true },
+        { key: "enquiry_number", label: "Enquiries No", sortable: true },
         { key: "from_full_name", label: "Name", sortable: true },
-        { key: "enquiry_product", label: "Product Name", sortable: true },
-        { key: "to_organization_name", label: "Company Name", sortable: true },
+        { key: "enquiry_product", label: "Product", sortable: true },
+        { key: "to_organization_name", label: "Company", sortable: true },
         { key: "category_name", label: "Category", sortable: true },
       ]}
       data={data}

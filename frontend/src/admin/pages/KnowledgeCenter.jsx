@@ -7,7 +7,6 @@ import DataTable from "../common/DataTable";
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
-import { formatDateTime } from '../../utils/formatDate';
 import KnowledgeCenterModals from "./modal/KnowledgeCenterModals";
 const initialForm = { id: null, name: "", video_url: "", status: "1", file: null };
 import ExcelExport from "../common/ExcelExport";
@@ -301,18 +300,18 @@ const KnowledgeCenter = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Knowledge Center" : "Knowledge Center"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Knowledge Center</>)} add_link="#" onClick={() => openForm()}
+          <Breadcrumb mainhead="Knowledge Center" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Knowledge Center" : "Knowledge Center"}
+          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Knowledge Center</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             {!getDeleted ? (
               <>
                 <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedKnowledgeCenter.length === 0}>
-                  <i className="bx bx-trash"></i> Delete Selected
+                  <i className="bx bx-trash me-1" /> Delete Selected
                 </button>
                 <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/KnowledgeCenter-remove-list">
-                  Recently Deleted Contact
+                  Recently Deleted Knowledge Center
                 </Link>
               </>
             ) : (
@@ -416,8 +415,9 @@ const KnowledgeCenter = ({ getDeleted }) => {
             <div className={!getDeleted ? "col-md-7" : "col-md-12"}>
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">{!getDeleted ? "Knowledge Center List" : "Recently Deleted Knowledge Center List"}</h5>
                   {getDeleted && (
+                    <>
+                    <h5 className="card-title mb-3">Recently Deleted Knowledge Center List</h5>
                     <div className="row mb-3">
                       <div className="col-md-8">
                         <div className="d-flex align-items-center gap-2">
@@ -453,6 +453,7 @@ const KnowledgeCenter = ({ getDeleted }) => {
                         <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                       </div>
                     </div>
+                    </>
                   )}
                   <DataTable
                     columns={[
@@ -460,7 +461,6 @@ const KnowledgeCenter = ({ getDeleted }) => {
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "action", label: "Action", sortable: false },
                     ]}
@@ -493,7 +493,6 @@ const KnowledgeCenter = ({ getDeleted }) => {
                           showFallback={true}
                         /></td>
                         <td>{row.name}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
                         <td>
                           {!getDeleted ? (
                           <div className="form-check form-switch">

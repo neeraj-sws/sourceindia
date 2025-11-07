@@ -3,6 +3,7 @@ const router = express.Router();
 const newsletterController = require('../controllers/newsletterController');
 
 router.post('/', newsletterController.createNewsletters);
+router.get('/count', newsletterController.getNewslettersCount);
 router.get('/', newsletterController.getAllNewsletters);
 router.get('/server-side', newsletterController.getAllNewslettersServerSide);
 router.get('/user_type', newsletterController.getAllUserCategory);

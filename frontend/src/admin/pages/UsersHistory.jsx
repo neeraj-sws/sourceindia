@@ -387,7 +387,7 @@ const UsersHistory = () => {
               <DataTable
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },
-                  { key: "organization_name", label: "Company Name", sortable: true },
+                  { key: "organization_name", label: "Company", sortable: true },
                   { key: "steps", label: "Steps", sortable: true },
                   { key: "is_seller", label: "Is Seller", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },

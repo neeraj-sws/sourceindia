@@ -7,7 +7,6 @@ import DataTable from "../common/DataTable";
 import SearchDropdown from "../common/SearchDropdown";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
-import { formatDateTime } from '../../utils/formatDate';
 import ActivityModals from "./modal/ActivityModals";
 import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, name: "", coreactivity: "", status: "1" };
@@ -321,18 +320,18 @@ const ActivityList = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Activity" : "Activity"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Activity</>)} add_link="#" onClick={() => openForm()}
+          <Breadcrumb mainhead="Activity" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Activity" : "Activity"}
+          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Activity</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             {!getDeleted ? (
               <>
                 <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedActivity.length === 0}>
-                  <i className="bx bx-trash"></i> Delete Selected
+                  <i className="bx bx-trash me-1" /> Delete Selected
                 </button>
                 <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/activity-remove-list">
-                  Recently Deleted Contact
+                  Recently Deleted Activity
                 </Link>
               </>
             ) : (
@@ -424,9 +423,10 @@ const ActivityList = ({ getDeleted }) => {
             )}
             <div className={!getDeleted ? "col-md-7" : "col-md-12"}>
               <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">{!getDeleted ? "Activity List" : "Recently Deleted Activity List"}</h5>
+                <div className="card-body">                  
                   {getDeleted && (
+                    <>
+                    <h5 className="card-title mb-3">Recently Deleted Activity List</h5>
                     <div className="row mb-3">
                       <div className="col-md-8">
                         <div className="d-flex align-items-center gap-2">
@@ -462,6 +462,7 @@ const ActivityList = ({ getDeleted }) => {
                         <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                       </div>
                     </div>
+                    </>
                   )}
                   <DataTable
                     columns={[
@@ -469,7 +470,6 @@ const ActivityList = ({ getDeleted }) => {
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "name", label: "Name", sortable: true },
                       { key: "coreactivity_name", label: "Core Activity", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "action", label: "Action", sortable: false },
                     ]}
@@ -497,7 +497,6 @@ const ActivityList = ({ getDeleted }) => {
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td>{row.name}</td>
                         <td>{row.coreactivity_name}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
                         <td>
                           {!getDeleted ? (
                           <div className="form-check form-switch">

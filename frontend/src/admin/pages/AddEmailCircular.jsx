@@ -251,7 +251,7 @@ const AddEmailCircular = () => {
                       accept="image/png, image/jpeg"
                     />
                     <button type="button" className="btn btn-primary btn-sm" onClick={() => fileInputRef.current.click()}>
-                      <i className="bx bxs-plus-square" />Add Attachment
+                      <i className="bx bxs-plus-square me-1" />Add Attachment
                     </button>
                     {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
                     <div className="col-md-12">

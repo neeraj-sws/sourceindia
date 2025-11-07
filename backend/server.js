@@ -41,6 +41,9 @@ const inventoriesRoutes = require('./routes/inventoriesRoutes');
 const usersRoutes = require('./routes/usersRoutes');
 const usersDashboardRoutes = require('./routes/usersDashboardRoutes');
 const registrationsRoutes = require('./routes/registrationsRoutes');
+const itemCategoryRoutes = require('./routes/itemCategoryRoutes');
+const itemSubCategoryRoutes = require('./routes/itemSubCategoryRoutes');
+const itemsRoutes = require('./routes/itemsRoutes');
 
 const app = express();
 const basePath = '/v2'; // All APIs will start with /v2
@@ -95,6 +98,9 @@ app.use(basePath + '/api/inventories', inventoriesRoutes);
 app.use(basePath + '/api/signup', usersRoutes);
 app.use(basePath + '/api/dashboard', usersDashboardRoutes);
 app.use(basePath + '/api/registrations', registrationsRoutes);
+app.use(basePath + '/api/item_category', itemCategoryRoutes);
+app.use(basePath + '/api/item_sub_category', itemSubCategoryRoutes);
+app.use(basePath + '/api/items', itemsRoutes);
 
 sequelize
   .sync()

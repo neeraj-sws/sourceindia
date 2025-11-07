@@ -88,6 +88,8 @@ const TotalRegisterBuyers = () => {
 
   return (
     <>
+    {totalRecords > 0 && (
+      <>
       <h6 className="mb-0 text-uppercase">Today Register Buyer</h6>
       <hr />
       <div className="card">
@@ -141,6 +143,8 @@ const TotalRegisterBuyers = () => {
         handleDeleteConfirm={handleDeleteConfirm}
       />
     </>
+    )}
+  </>
   );
 };
 

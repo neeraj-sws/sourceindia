@@ -153,8 +153,7 @@ const DataTable = ({
                         {col.sortable && (
                           <span
                             className="dt-column-order"
-                            aria-label={`${col.label}: Activate to ${isSorted ? isAsc ? "invert sorting" : isDesc ? "remove sorting" : "sort" : "sort"
-                              }`}
+                            aria-label={`${col.label}: Activate to ${isSorted ? isAsc ? "invert sorting" : isDesc ? "remove sorting" : "sort" : "sort"}`}
                           />
                         )}
                       </div>

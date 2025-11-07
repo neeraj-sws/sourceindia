@@ -309,7 +309,7 @@ const Dashboard = () => {
                           { key: "id", label: "S.No.", sortable: true },
                           { key: "enquiry_number", label: "Enquiry No", sortable: true },
                           { key: "name", label: "Name", sortable: true },
-                          { key: "product_name", label: "Product Name", sortable: true },
+                          { key: "product_name", label: "Product", sortable: true },
                           { key: "category_name", label: "Category", sortable: true },
                           { key: "sub_category_name", label: "Sub Category", sortable: true },
                           { key: "quantity", label: "Quantity", sortable: true },

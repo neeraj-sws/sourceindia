@@ -264,7 +264,7 @@ const MailHistory = ({getDeleted}) => {
                 {!getDeleted ? (
                   <>
                     <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedMailHistory.length === 0}>
-                      <i className="bx bx-trash"></i> Delete Selected
+                      <i className="bx bx-trash me-1" /> Delete Selected
                     </button>
                     <Link className="btn  btn-primary mb-2" to="/admin/mail-history-remove-list">
                       Recently Deleted Mail History
@@ -339,7 +339,7 @@ const MailHistory = ({getDeleted}) => {
                 columns={[
                   ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                   { key: "id", label: "S.No.", sortable: true },
-                  { key: "user_name", label: "Company Name", sortable: true },
+                  { key: "user_name", label: "Company", sortable: true },
                   { key: "mail_type", label: "Mail type", sortable: true },
                   { key: "user_is_seller", label: "Is Seller", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },

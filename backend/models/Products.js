@@ -9,6 +9,9 @@ const Applications = require('./Applications');
 const Color = require('./Color');
 const States = require('./States');
 const ReviewRating = require('./ReviewRating');
+const ItemCategory = require('./ItemCategory');
+const ItemSubCategory = require('./ItemSubCategory');
+const Items = require('./Items');
 
 const Products = sequelize.define('Products', {
   user_id: { type: DataTypes.INTEGER, allowNull: false },
@@ -41,6 +44,9 @@ const Products = sequelize.define('Products', {
   is_approve: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   application: { type: DataTypes.STRING, allowNull: true },
   is_delete: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  item_category_id: { type: DataTypes.INTEGER, allowNull: true },
+  item_subcategory_id: { type: DataTypes.INTEGER, allowNull: true },
+  item_id: { type: DataTypes.INTEGER, allowNull: true },
 }, {
   tableName: 'products',
   timestamps: true,
@@ -64,5 +70,8 @@ Products.belongsTo(Categories, { foreignKey: 'category', targetKey: 'id', as: 'C
 Products.belongsTo(SubCategories, { foreignKey: 'sub_category', targetKey: 'id', as: 'SubCategories', constraints: false });
 Products.belongsTo(Applications, { foreignKey: 'application', targetKey: 'id', as: 'Applications', constraints: false });
 Products.belongsTo(Color, { foreignKey: 'color', targetKey: 'id', as: 'Color', constraints: false });
+Products.belongsTo(ItemCategory, { foreignKey: 'item_category_id', targetKey: 'id', as: 'ItemCategory', constraints: false });
+Products.belongsTo(ItemSubCategory, { foreignKey: 'item_subcategory_id', targetKey: 'id', as: 'ItemSubCategory', constraints: false });
+Products.belongsTo(Items, { foreignKey: 'item_id', targetKey: 'id', as: 'Items', constraints: false });
 
 module.exports = Products;

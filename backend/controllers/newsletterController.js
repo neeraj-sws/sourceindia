@@ -271,3 +271,13 @@ exports.getAllNewslettersServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getNewslettersCount = async (req, res) => {
+  try {
+    const total = await Newsletters.count({where: { is_delete: 0 }});
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

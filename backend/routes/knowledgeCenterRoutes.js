@@ -3,6 +3,7 @@ const router = express.Router();
 const knowledgeCenterController = require('../controllers/knowledgeCenterController');
 
 router.post('/', knowledgeCenterController.createKnowledgeCenter);
+router.get('/count', knowledgeCenterController.getKnowledgeCenterCount);
 router.get('/', knowledgeCenterController.getAllKnowledgeCenter);
 router.get('/server-side', knowledgeCenterController.getAllKnowledgeCenterServerSide);
 router.delete('/delete-selected', knowledgeCenterController.deleteSelectedKnowledgeCenter);

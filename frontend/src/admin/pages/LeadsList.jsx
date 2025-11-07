@@ -363,17 +363,17 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
             </div>
           </div>
           )}
-          <Breadcrumb page="Settings" title={ getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : getNotApprove ? "Pending Leads" : "Leads" }
+          <Breadcrumb mainhead="Enquiry" maincount={totalRecords} page="Settings" title={ getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : getNotApprove ? "Pending Leads" : "Leads" }
           actions={
             <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             {!getDeleted ? (
               <>
                 <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedEnquiries.length === 0}>
-                  <i className="bx bx-trash"></i> Delete Selected
+                  <i className="bx bx-trash me-1" /> Delete Selected
                 </button>
                 <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/enquiry-remove-list">
-                  Recently Deleted Contact
+                  Recently Deleted Enquiry
                 </Link>
               </>
             ) : (

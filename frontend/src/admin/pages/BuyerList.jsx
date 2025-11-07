@@ -329,7 +329,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
         <div className="page-content">
           <Breadcrumb mainhead="Buyers" maincount={totalRecords} page="" 
           title={getInactive ? "Inactive Buyers" : getNotApproved ? "Not Approved Buyers" : getDeleted ? "Recently Deleted Buyers" : "Buyers"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Buyer</>)} add_link="/admin/add_buyer"
+          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Buyer</>)} add_link="/admin/add_buyer"
           actions={
             <>
               {!getDeleted && !getInactive && !getNotApproved && (
@@ -343,11 +343,11 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
               </button>
               )}
               <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}>
-                <i className="bx bx-download" /> Excel
+                <i className="bx bx-download me-1" /> Excel
               </button>
               {!getDeleted && (
                 <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedBuyer.length === 0}>
-                  <i className="bx bx-trash"></i> Delete Selected
+                  <i className="bx bx-trash me-1" /> Delete Selected
                 </button>
               )}
             </>
@@ -452,7 +452,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                   ...(!getDeleted ? [{key: "select", label: (<input type="checkbox" onChange={handleSelectAll} />)}] : []),
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "full_name", label: "Name", sortable: true },
-                  { key: "user_company", label: "Company Name", sortable: true },
+                  { key: "user_company", label: "Company", sortable: true },
                   { key: "address", label: "Location", sortable: true },
                   ...(!getDeleted ? [
                   { key: "status", label: "User Status", sortable: false },

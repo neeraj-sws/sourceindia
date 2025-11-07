@@ -5,7 +5,6 @@ import DataTable from "../common/DataTable";
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
-import { formatDateTime } from '../../utils/formatDate';
 import TestimonialModals from "./modal/TestimonialModals";
 const initialForm = { id: null, name: "", description: "", status: "1", file: null };
 
@@ -197,7 +196,7 @@ const TestimonialList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Testimonials" maincount={totalRecords} page=""  title="Testimonial" add_button="Add Testimonial" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb mainhead="Testimonials" maincount={totalRecords} page=""  title="Testimonial" add_button={(<><i className="bx bxs-plus-square me-1" /> Add Testimonial</>)} add_link="#" onClick={() => openForm()} />
           <div className="row">
             <div className="col-md-5">
               <div className="card">
@@ -288,14 +287,13 @@ const TestimonialList = () => {
             <div className="col-md-7">
               <div className="card">
                 <div className="card-body">
-                  <h5 className="card-title mb-3">Testimonial List</h5>
+                  {/* <h5 className="card-title mb-3">Testimonial List</h5> */}
                   <DataTable
                     columns={[
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
                       { key: "description", label: "Description", sortable: true },
-                      { key: "created_at", label: "Created At", sortable: true },
                       { key: "status", label: "Status", sortable: false },
                       { key: "action", label: "Action", sortable: false },
                     ]}
@@ -324,7 +322,6 @@ const TestimonialList = () => {
                         /></td>
                         <td>{row.name}</td>
                         <td>{row.description.length > 25 ? row.description.slice(0, 25) + '...' : row.description}</td>
-                        <td>{formatDateTime(row.created_at)}</td>
                         <td>
                             <div className="form-check form-switch">
                             <input

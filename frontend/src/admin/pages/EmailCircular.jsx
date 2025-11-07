@@ -142,12 +142,12 @@ const EmailCircular = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Email Circular" add_button={<><i className="bx bxs-plus-square"></i> Add Email Circular</>} add_link="/admin/add_email_circular"
+          <Breadcrumb mainhead="Email Circular" maincount={totalRecords} page="Settings" title="Email Circular" add_button={<><i className="bx bxs-plus-square me-1" /> Add Email Circular</>} add_link="/admin/add_email_circular"
           actions={
             <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download" /> Excel</button>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedEmailCircular.length === 0}>
-              <i className="bx bx-trash"></i> Delete Selected
+              <i className="bx bx-trash me-1" /> Delete Selected
             </button>
             </>
           }

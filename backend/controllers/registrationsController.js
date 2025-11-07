@@ -260,3 +260,18 @@ exports.getAllRegistrationsServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getRegistrationsCount = async (req, res) => {
+  try {
+    const [total, deleted] = await Promise.all([
+      Registrations.count({ where: { is_delete: 0 } }),
+      Registrations.count({ where: {is_delete: 1} }),
+    ]);
+    res.json({
+      total, deleted
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

@@ -3,6 +3,7 @@ const router = express.Router();
 const membershipPlanController = require('../controllers/membershipPlanController');
 
 router.post('/', membershipPlanController.createMembershipPlan);
+router.get('/count', membershipPlanController.getMembershipPlanCount);
 router.get('/', membershipPlanController.getAllMembershipPlan);
 router.get('/server-side', membershipPlanController.getAllMembershipPlanServerSide);
 router.delete('/delete-selected', membershipPlanController.deleteSelectedMembershipPlan);

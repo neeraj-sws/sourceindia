@@ -347,7 +347,7 @@ exports.getSellerCount = async (req, res) => {
       // console.log("\n🧠 Executing SQL Query:\n", sql, "\n");
     };
 
-   const [total, addedToday, statusActive, statusInactive, notApproved, notCompleted] = await Promise.all([
+   const [total, addedToday, statusActive, statusInactive, notApproved, notCompleted, deleted] = await Promise.all([
   // Total sellers
   Users.count({
     where: { is_seller: 1 },
@@ -457,6 +457,14 @@ exports.getSellerCount = async (req, res) => {
     ],
     logging: logSQL,
   }),
+
+  // Not approved sellers
+  Users.count({
+    where: {
+      is_seller: 1, is_delete: 1,
+    },
+    logging: logSQL,
+  }),
 ]);
 
     res.json({
@@ -465,7 +473,8 @@ exports.getSellerCount = async (req, res) => {
       statusActive,
       statusInactive,
       notApproved,
-      notCompleted
+      notCompleted,
+      deleted
     });
   } catch (err) {
     console.error(err);

@@ -476,9 +476,9 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Users" 
+          <Breadcrumb mainhead="Sellers" maincount={totalRecords} page="Users" 
           title={ getInactive ? "Inactive Sellers" : getNotApproved ? "Not Approved Sellers" : getNotCompleted ? "Not Completed Sellers" : getDeleted ? "Recently Deleted Sellers" : "Sellers" }
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square"></i> Add Seller</>)} add_link="/admin/add_seller"
+          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Seller</>)} add_link="/admin/add_seller"
           actions={
             <>
               {!getDeleted && !getInactive && !getNotApproved && (
@@ -492,11 +492,11 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
                 </>
               )}
               <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}>
-                <i className="bx bx-download" /> Excel
+                <i className="bx bx-download me-1" /> Excel
               </button>
               {!getDeleted && (
                 <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedSeller.length === 0}>
-                  <i className="bx bx-trash"></i> Delete Selected
+                  <i className="bx bx-trash me-1" /> Delete Selected
                 </button>
               )}
             </>
@@ -672,7 +672,7 @@ const SellerList = ({getInactive, getNotApproved, getNotCompleted, getDeleted}) 
                 columns={[
                   ...(!getDeleted ? [{key: "select", label: (<input type="checkbox" onChange={handleSelectAll} />)}] : []),
                   { key: "id", label: "S.No.", sortable: true },
-                  { key: "organization_name", label: "Company Name", sortable: true },
+                  { key: "organization_name", label: "Company", sortable: true },
                   { key: "coreactivity_name", label: "Coreactivity / Category / Segment / Sub Segment", sortable: true },
                   { key: "designation", label: "Designation / Website / Quality Certification", sortable: true },
                   { key: "created_at", label: "Created", sortable: true },
