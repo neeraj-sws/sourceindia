@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const UploadImage = require('./UploadImage');
 
 const Testimonials = sequelize.define('Testimonials', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'testimonial_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false

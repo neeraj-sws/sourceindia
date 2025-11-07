@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const UploadImage = require('./UploadImage');
 
 const Categories = sequelize.define('Categories', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'category_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: { type: DataTypes.STRING, allowNull: false },
   cat_file_id: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
   stock_file_id: { type: DataTypes.INTEGER, allowNull: true, },
@@ -17,6 +29,6 @@ const Categories = sequelize.define('Categories', {
   updatedAt: 'updated_at'
 });
 
-Categories.belongsTo(UploadImage, { foreignKey: 'cat_file_id', targetKey: 'id', onDelete: 'CASCADE' });
+Categories.belongsTo(UploadImage, { foreignKey: 'cat_file_id', onDelete: 'CASCADE' });
 
 module.exports = Categories;

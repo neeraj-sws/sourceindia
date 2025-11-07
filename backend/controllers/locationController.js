@@ -51,7 +51,7 @@ exports.getStatesByCountry = async (req, res) => {
     const productCounts = await Products.findAll({
       attributes: [
         [col('Users.state'), 'state_id'],
-        [fn('COUNT', col('Products.id')), 'count'],
+        [fn('COUNT', col('Products.product_id')), 'count'],
       ],
       include: [
         {

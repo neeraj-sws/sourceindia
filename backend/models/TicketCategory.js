@@ -2,6 +2,18 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const TicketCategory = sequelize.define('TicketCategory', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'ticket_category_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false

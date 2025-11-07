@@ -3,6 +3,18 @@ const sequelize = require('../config/database');
 const UploadImage = require('./UploadImage');
 
 const Applications = sequelize.define('Applications', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'application_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
   name: { type: DataTypes.STRING, allowNull: false },
   cat_file_id: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   stock_file_id: { type: DataTypes.INTEGER, allowNull: true },

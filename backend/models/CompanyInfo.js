@@ -9,6 +9,18 @@ const MembershipPlan = require('./MembershipPlan');
 const NatureBusinesses = require('./NatureBusinesses');
 
 const CompanyInfo = sequelize.define('CompanyInfo', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'company_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4, // auto generate UUID (v4)
+    allowNull: false,
+    unique: true,
+  },
   organization_name: { type: DataTypes.STRING, allowNull: true },
   organization_slug: { type: DataTypes.STRING, allowNull: true },
   email_verified_at: { type: DataTypes.DATE, allowNull: true, defaultValue: DataTypes.NOW },

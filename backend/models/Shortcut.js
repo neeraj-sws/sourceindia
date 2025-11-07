@@ -3,9 +3,16 @@ const sequelize = require('../config/database');
 
 const Shortcut = sequelize.define('Shortcut', {
   id: {
-    type: DataTypes.BIGINT.UNSIGNED,
+    type: DataTypes.INTEGER,
     primaryKey: true,
-    autoIncrement: true
+    autoIncrement: true,
+    field: 'shortcut_id',
+  },
+  uuid: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
   },
   name: {
     type: DataTypes.STRING,

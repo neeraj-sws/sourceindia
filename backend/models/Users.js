@@ -10,6 +10,13 @@ const Activity = require('./Activity');
 const SellerCategory = require('./SellerCategory');
 
 const Users = sequelize.define('Users', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    field: 'user_id',
+  },
+
   company_id: { type: DataTypes.INTEGER, allowNull: true, },
   elcina_member: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: '1="elcina member",2="not",3="not sure"' },
   fname: { type: DataTypes.STRING, allowNull: true },
@@ -67,7 +74,7 @@ const Users = sequelize.define('Users', {
 
 Users.belongsTo(UploadImage, { foreignKey: 'file_id', targetKey: 'id', as: 'file', onDelete: 'CASCADE' });
 Users.belongsTo(UploadImage, { foreignKey: 'company_file_id', targetKey: 'id', as: 'company_file', onDelete: 'CASCADE' });
-Users.belongsTo(CompanyInfo, { foreignKey: 'company_id', targetKey: 'id', as: 'company_info', constraints: false });
+Users.belongsTo(CompanyInfo, { foreignKey: 'company_id', as: 'company_info', constraints: false });
 Users.belongsTo(Countries, { foreignKey: 'country', targetKey: 'id', as: 'country_data', constraints: false });
 Users.belongsTo(States, { foreignKey: 'state', targetKey: 'id', as: 'state_data', constraints: false });
 Users.belongsTo(Cities, { foreignKey: 'city', targetKey: 'id', as: 'city_data', constraints: false });
