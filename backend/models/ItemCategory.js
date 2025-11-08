@@ -18,6 +18,7 @@ const ItemCategory = sequelize.define('ItemCategory', {
     unique: true,
   },
   name: { type: DataTypes.STRING, allowNull: false },
+  slug: { type: DataTypes.STRING, allowNull: false },
   file_id: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
   category_id: { type: DataTypes.INTEGER, allowNull: false },
   subcategory_id: { type: DataTypes.INTEGER, allowNull: false },

@@ -704,3 +704,33 @@ button.nav-link:hover {
     color: var(--white);
     font-weight: 500;
 }
+
+.overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    padding: 1rem;
+}
+
+.overlay a {
+    color: #fff;
+    text-decoration: none;
+    display: block;
+}
+
+.overlay a:hover {
+    text-decoration: underline;
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    transition: 0.3s;
+}
+
+.card-img-small {
+    max-width: 80px;
+    border-radius: 8px;
+}

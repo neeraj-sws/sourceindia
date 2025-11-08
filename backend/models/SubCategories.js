@@ -19,6 +19,10 @@ const SubCategories = sequelize.define('SubCategories', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  slug: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
   category: {
     type: DataTypes.INTEGER,
     allowNull: false,
