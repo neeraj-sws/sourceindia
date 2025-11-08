@@ -489,7 +489,7 @@ $('#item_id')
                           {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
                         </div>
                         <div className="form-group mb-3 col-md-6">
-                          <label htmlFor="application" className="form-label required">Applications</label>
+                          <label htmlFor="application" className="form-label">Applications</label>
                           <select
                             id="application" className="form-control"
                             value={selectedApplications}
@@ -514,7 +514,7 @@ $('#item_id')
                           {errors.short_description && (<div className="invalid-feedback">{errors.short_description}</div>)}
                         </div>
                         <div className="col-md-12">
-                          <label htmlFor="description" className="form-label required">Long Description</label>
+                          <label htmlFor="description" className="form-label">Long Description</label>
                           <CKEditor
                             editor={ClassicEditor}
                             data={formData.description || ''}
@@ -562,9 +562,9 @@ $('#item_id')
                           </select>
                         </div>
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="item_category_id" className="form-label required">Item Category</label>
+                          <label htmlFor="item_category_id" className="form-label">Item Category</label>
                           <select
-                            className={`form-control ${errors.item_category_id ? "is-invalid" : ""}`}
+                            className="form-control"
                             id="item_category_id"
                             value={selectedItemCategory}
                             onChange={(e) => {
@@ -582,9 +582,9 @@ $('#item_id')
                           </select>
                         </div>
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="item_sub_category_id" className="form-label required">Item Sub Category</label>
+                          <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
                           <select
-                            className={`form-control ${errors.item_sub_category_id ? "is-invalid" : ""}`}
+                            className="form-control"
                             id="item_sub_category_id"
                             value={selectedItemSubCategory}
                             onChange={(e) => setSelectedItemSubCategory(e.target.value)}
@@ -599,9 +599,9 @@ $('#item_id')
                           </select>
                         </div>
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="item_id" className="form-label required">Items</label>
+                          <label htmlFor="item_id" className="form-label">Items</label>
                           <select
-                            className={`form-control ${errors.item_id ? "is-invalid" : ""}`}
+                            className="form-control"
                             id="item_id"
                             value={selectedItems}
                             onChange={(e) => setSelectedItems(e.target.value)}

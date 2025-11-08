@@ -12,9 +12,9 @@ exports.createKnowledgeCenter = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
       const { name, video_url, status } = req.body;
-      if (!name || !video_url || !status || !req.file) {
+      /*if (!name || !video_url || !status || !req.file) {
         return res.status(400).json({ message: 'All fields (name, video_url, status, file) are required' });
-      }
+      }*/
       const uploadImage = await UploadImage.create({
         file: `upload/knowledge_center/${req.file.filename}`,
       });
@@ -75,9 +75,9 @@ exports.updateKnowledgeCenter = async (req, res) => {
     }
     try {
       const { name, video_url, status } = req.body;
-      if (!name || !video_url || !status) {
+      /*if (!name || !video_url || !status) {
         return res.status(400).json({ message: 'All fields (name, video_url, status) are required' });
-      }
+      }*/
       const knowledgeCenter = await KnowledgeCenter.findByPk(req.params.id);
       if (!knowledgeCenter) {
         return res.status(404).json({ message: 'Knowledge Center not found' });

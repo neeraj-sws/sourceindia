@@ -495,7 +495,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
     const searchWhere = { ...where };
     if (search) {
       searchWhere[Op.or] = [];
-      if (viewType === 'leads') {
+      /*if (viewType === 'leads') {*/
         searchWhere[Op.or].push(
           { enquiry_number: { [Op.like]: `%${search}%` } },
           { quantity: { [Op.like]: `%${search}%` } },
@@ -509,7 +509,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           { '$to_user.mobile$': { [Op.like]: `%${search}%` } },
           { '$to_user.company_info.organization_name$': { [Op.like]: `%${search}%` } }
         );
-      } else {
+      /*} else {
         searchWhere[Op.or].push(
           { enquiry_number: { [Op.like]: `%${search}%` } },
           { category_name: { [Op.like]: `%${search}%` } },
@@ -518,7 +518,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           { '$to_user.company_info.organization_name$': { [Op.like]: `%${search}%` } },
           { '$enquiry_users.product_name$': { [Op.like]: `%${search}%` } }
         );
-      }
+      }*/
     }
 
     // Extra filters
@@ -562,7 +562,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           as: 'from_user',
           attributes: ['id', 'email', 'mobile', 'company_id', 'is_seller', 'fname', 'lname',
             [fn('CONCAT', col('from_user.fname'), ' ', col('from_user.lname')), 'full_name']],
-          include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name']], required: false }],
+          include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name'],['organization_slug', 'organization_slug']], required: false }],
           required: false,
         },
         {
@@ -571,7 +571,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           attributes: [['user_id', 'id'], ['email', 'to_email'], ['mobile', 'to_mobile'],
           ['company_id', 'to_company_id'], 'is_seller', 'fname', 'lname',
           [fn('CONCAT', col('to_user.fname'), ' ', col('to_user.lname')), 'to_full_name']],
-          include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name']], required: false }],
+          include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name'],['organization_slug', 'organization_slug']], required: false }],
           required: false,
         },
         {
@@ -649,12 +649,14 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           ...base,
           from_mobile: row.from_user?.mobile || null,
           from_organization_name: row.from_user?.company_info?.organization_name || null,
+          from_organization_slug: row.from_user?.company_info?.organization_slug || null,
           from_user_type: row.from_user?.is_seller ?? null,
           to_full_name: row.to_user ? `${row.to_user.fname} ${row.to_user.lname}` : null,
           to_email: row.to_user?.to_email || null,
           to_mobile: row.to_user?.to_mobile || null,
           to_company_id: row.to_user?.to_company_id || null,
           to_organization_name: row.to_user?.company_info?.organization_name || null,
+          to_organization_slug: row.to_user?.company_info?.organization_slug || null,
           to_user_type: row.to_user?.is_seller ?? null,
         };
       }

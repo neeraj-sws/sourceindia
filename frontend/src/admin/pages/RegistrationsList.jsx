@@ -44,20 +44,37 @@ const RegistrationsList = ({ getDeleted }) => {
     {startDate: new Date(), endDate: new Date(), key: 'selection'}
   ]);
   const [states, setStates] = useState([]);
-    const [cities, setCities] = useState([]);
-    const [selectedState, setSelectedState] = useState("");
-    const [selectedCity, setSelectedCity] = useState("");
-    const [appliedState, setAppliedState] = useState("");
-    const [appliedCity, setAppliedCity] = useState("");
-    const [registrationName, setRegistrationName] = useState("");
-    const [tempRegistrationName, setTempRegistrationName] = useState("");
-    const [registrationEmail, setRegistrationEmail] = useState("");
-    const [tempRegistrationEmail, setTempRegistrationEmail] = useState("");
-    const [registrationMobile, setRegistrationMobile] = useState("");
-    const [tempRegistrationMobile, setTempRegistrationMobile] = useState("");
-    const [registrationCategory, setRegistrationCategory] = useState([]);
-    const [selectedRegistrationCategory, setSelectedRegistrationCategory] = useState("");
-    const [appliedRegistrationCategory, setAppliedRegistrationCategory] = useState("");
+  const [cities, setCities] = useState([]);
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [appliedState, setAppliedState] = useState("");
+  const [appliedCity, setAppliedCity] = useState("");
+  const [registrationName, setRegistrationName] = useState("");
+  const [tempRegistrationName, setTempRegistrationName] = useState("");
+  const [registrationEmail, setRegistrationEmail] = useState("");
+  const [tempRegistrationEmail, setTempRegistrationEmail] = useState("");
+  const [registrationMobile, setRegistrationMobile] = useState("");
+  const [tempRegistrationMobile, setTempRegistrationMobile] = useState("");
+  const [registrationCategory, setRegistrationCategory] = useState([]);
+  const [selectedRegistrationCategory, setSelectedRegistrationCategory] = useState("");
+  const [appliedRegistrationCategory, setAppliedRegistrationCategory] = useState("");
+  const datePickerRef = useRef(null);
+        
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setShowPicker(false);
+      }
+    };
+    if (showPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showPicker]);
 
   useEffect(() => {
       const fetchStates = async () => {
@@ -324,9 +341,9 @@ const RegistrationsList = ({ getDeleted }) => {
               </>
             }
           />
-          <div className="card">
+          <div className="card mb-3">
             <div className="card-body">
-              <div className="row mb-3">
+              <div className="row">
                 {!getDeleted ? (
                 <>
                 <div className="col-md-4 mb-3">
@@ -396,15 +413,37 @@ const RegistrationsList = ({ getDeleted }) => {
                     {format(range[0].startDate, "MMMM dd, yyyy")} - {format(range[0].endDate, "MMMM dd, yyyy")}
                     </button>
                     {showPicker && (
-                    <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: "100%", left: 0 }}>
+                      <div
+                        ref={datePickerRef}
+                        className="position-absolute z-3 bg-white shadow p-3 rounded"
+                        style={{ top: '100%', left: 0, minWidth: '300px' }}
+                      >
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <h6 className="mb-0">Select Date Range</h6>
+                          <button
+                            type="button"
+                            className="btn-close"
+                            aria-label="Close"
+                            onClick={() => setShowPicker(false)}
+                          ></button>
+                        </div>
                         <DateRangePicker
-                        ranges={range}
-                        onChange={handleRangeChange}
-                        showSelectionPreview={true}
-                        moveRangeOnFirstSelection={false}
-                        editableDateInputs={true}
+                          ranges={range}
+                          onChange={handleRangeChange}
+                          showSelectionPreview={true}
+                          moveRangeOnFirstSelection={false}
+                          editableDateInputs={true}
                         />
-                    </div>
+                        <div className="text-end mt-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-secondary"
+                            onClick={() => setShowPicker(false)}
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </div>
                     )}
                 </div>
                 </div>
@@ -430,6 +469,10 @@ const RegistrationsList = ({ getDeleted }) => {
                 <button className="btn btn-secondary" onClick={() => { clearFilters(); }}>Clear</button>
                 </div>
             </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
               <DataTable
                 columns={[
                   ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
@@ -438,6 +481,7 @@ const RegistrationsList = ({ getDeleted }) => {
                   { key: "name", label: "Info", sortable: true },
                   { key: "state_name", label: "Location", sortable: true },
                   { key: "designation", label: "Designation", sortable: true },
+                  { key: "organization", label: "Organization", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },
                   { key: "updated_at", label: "Updated At", sortable: true },
                   { key: "action", label: "Action", sortable: false },

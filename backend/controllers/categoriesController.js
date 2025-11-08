@@ -15,9 +15,9 @@ exports.createCategories = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
       const { name, top_category, status } = req.body;
-      if (!name || !top_category || !status || !req.file) {
+      /*if (!name || !top_category || !status || !req.file) {
         return res.status(400).json({ message: 'All fields (name, top_category, status, file) are required' });
-      }
+      }*/
       const uploadImage = await UploadImage.create({
         file: `upload/category/${req.file.filename}`,
       });
@@ -154,9 +154,9 @@ exports.updateCategories = async (req, res) => {
     }
     try {
       const { name, top_category, status } = req.body;
-      if (!name || !top_category || !status) {
+      /*if (!name || !top_category || !status) {
         return res.status(400).json({ message: 'All fields (name, top_category, status) are required' });
-      }
+      }*/
       const categories = await Categories.findByPk(req.params.id);
       if (!categories) {
         return res.status(404).json({ message: 'Categories not found' });

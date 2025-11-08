@@ -1327,7 +1327,7 @@ exports.getAllUsersHistoriesServerSide = async (req, res) => {
         {
           model: CompanyInfo,
           as: 'company_info',
-          attributes: ['organization_name'],
+          attributes: ['organization_name','organization_slug'],
           required: false,
         },
         { model: Countries, as: 'country_data', attributes: ['id', 'name'] },
@@ -1343,6 +1343,7 @@ exports.getAllUsersHistoriesServerSide = async (req, res) => {
       email: row.email,
       mobile: row.mobile,
       organization_name: row.company_info?.organization_name || null,
+      organization_slug: row.company_info?.organization_slug || null,
       country: row.country,
       state: row.state,
       city: row.city,

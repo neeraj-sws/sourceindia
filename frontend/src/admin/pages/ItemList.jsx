@@ -54,6 +54,23 @@ const ItemList = ({ getDeleted }) => {
   const [range, setRange] = useState([
     {startDate: new Date(), endDate: new Date(), key: 'selection'}
   ]);
+  const datePickerRef = useRef(null);
+        
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+          setShowPicker(false);
+        }
+      };
+      if (showPicker) {
+        document.addEventListener("mousedown", handleClickOutside);
+      } else {
+        document.removeEventListener("mousedown", handleClickOutside);
+      }
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [showPicker]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -365,7 +382,7 @@ const ItemList = ({ getDeleted }) => {
           />
           <div className="row">
             {!getDeleted && (
-            <div className="col-md-5">
+            <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title mb-3">{isEditing ? "Edit Item" : "Add Item"}</h5>
@@ -453,11 +470,12 @@ const ItemList = ({ getDeleted }) => {
               </div>
             </div>
             )}
-            <div className={!getDeleted ? "col-md-7" : "col-md-12"}>
-              <div className="card">
-                <div className="card-body">
+            <div className={!getDeleted ? "col-md-8" : "col-md-12"}>
+              
                   {getDeleted && (
                     <>
+                    <div className="card mb-3">
+                <div className="card-body">
                     <h5 className="card-title mb-3">Recently Deleted Item List</h5>
                     <div className="row mb-3">
                       <div className="col-md-8">
@@ -469,7 +487,20 @@ const ItemList = ({ getDeleted }) => {
                               {format(range[0].startDate, 'MMMM dd, yyyy')} - {format(range[0].endDate, 'MMMM dd, yyyy')}
                             </button>
                             {showPicker && (
-                              <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: '100%', left: 0 }}>
+                              <div
+                                ref={datePickerRef}
+                                className="position-absolute z-3 bg-white shadow p-3 rounded"
+                                style={{ top: '100%', left: 0, minWidth: '300px' }}
+                              >
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                  <h6 className="mb-0">Select Date Range</h6>
+                                  <button
+                                    type="button"
+                                    className="btn-close"
+                                    aria-label="Close"
+                                    onClick={() => setShowPicker(false)}
+                                  ></button>
+                                </div>
                                 <DateRangePicker
                                   ranges={range}
                                   onChange={handleRangeChange}
@@ -477,6 +508,15 @@ const ItemList = ({ getDeleted }) => {
                                   moveRangeOnFirstSelection={false}
                                   editableDateInputs={true}
                                 />
+                                <div className="text-end mt-2">
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-secondary"
+                                    onClick={() => setShowPicker(false)}
+                                  >
+                                    Close
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -494,8 +534,12 @@ const ItemList = ({ getDeleted }) => {
                         <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                       </div>
                     </div>
+                    </div>
+                    </div>
                     </>
                   )}
+                  <div className="card">
+                <div className="card-body">
                   <DataTable
                     columns={[
                       ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),

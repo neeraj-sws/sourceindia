@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from "axios";
 import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
+import { formatDateTime } from '../../utils/formatDate';
 
 const LeadsList = ({viewType}) => {
   const [data, setData] = useState([]);
@@ -68,11 +69,14 @@ const LeadsList = ({viewType}) => {
             <DataTable
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },
-                  { key: "enquiry_number", label: "Enquiries No", sortable: true },
+                  { key: "enquiry_number", label: "Lead Number", sortable: true },
                   { key: "from_full_name", label: "Name", sortable: true },
-                  { key: "enquiry_product", label: "Product", sortable: true },
-                  { key: "to_organization_name", label: "Company", sortable: true },
+                  { key: "to_organization_name", label: "To", sortable: true },
+                  { key: "from_organization_name", label: "From", sortable: true },
                   { key: "category_name", label: "Category", sortable: true },
+                  { key: "quantity", label: "Quantity", sortable: true },
+                  { key: "created_at", label: "Created At", sortable: true },
+                  { key: "updated_at", label: "Updated At", sortable: true },
                 ]}
                 data={data}
                 loading={loading}
@@ -91,11 +95,26 @@ const LeadsList = ({viewType}) => {
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     <td>{(page - 1) * limit + index + 1}</td>
-                    <td><Link to={`/admin/admin-view-enquiry/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
-                    <td>{row.from_full_name}<br />{row.from_email}</td>
-                    <td><a href={`/products/${row.product_slug}`} target="_blank">{row.enquiry_product}</a></td>
-                    <td><a href={`/companies/${row.to_organization_slug}`} target="_blank">{row.to_organization_name}</a></td>
-                    <td>{row.category_name}</td>
+                                        <td><Link to={`/admin/admin-view-enquiry/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
+                                        <td>{row.from_full_name}<br />{row.from_email}</td>
+                                        <td>
+                                          {row.to_organization_name && (<><a href={`/companies/${row.to_organization_slug}`} target="_blank">{row.to_organization_name}</a><br /></>)}
+                                          {row.to_full_name && (<>{row.to_full_name}<br /></>)}
+                                          {row.to_email && (<>{row.to_email}<br /></>)}
+                                          {row.to_mobile && (<>{row.to_mobile}<br /></>)}
+                                          <span className="badge bg-primary">{row.to_user_type == 1 ? "Seller" : row.to_user_type == 0 ? "Buyer" : ""}</span>
+                                        </td>
+                                        <td>
+                                          {row.from_organization_name && (<><a href={`/companies/${row.from_organization_slug}`} target="_blank">{row.from_organization_name}</a><br /></>)}
+                                          {row.from_full_name && (<>{row.from_full_name}<br /></>)}
+                                          {row.from_email && (<>{row.from_email}<br /></>)}
+                                          {row.from_mobile && (<>{row.from_mobile}<br /></>)}
+                                          <span className="badge bg-primary">{row.from_user_type == 1 ? "Seller" : row.from_user_type == 0 ? "Buyer" : ""}</span>
+                                        </td>
+                                        <td>{row.category_name}</td>
+                                        <td>{row.quantity}</td>
+                                        <td>{formatDateTime(row.created_at)}</td>
+                                        <td>{formatDateTime(row.updated_at)}</td>
                   </tr>
                 )}
               />

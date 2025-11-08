@@ -79,9 +79,9 @@ exports.updateCoreActivity = async (req, res) => {
     }
     try {
       const { name, color, status } = req.body;
-      if (!name || !color || !status) {
+      /*if (!name || !color || !status) {
         return res.status(400).json({ message: 'All fields (name, color, status) are required' });
-      }
+      }*/
       const coreActivity = await CoreActivity.findByPk(req.params.id);
       if (!coreActivity) {
         return res.status(404).json({ message: 'Core activity not found' });

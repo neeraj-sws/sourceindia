@@ -6,9 +6,9 @@ const FaqCategory = require('../models/FaqCategory');
 exports.createFaq = async (req, res) => {
   try {
     const { title, description, category, status } = req.body;
-    if (!title || !description || !category || !status) {
+    /*if (!title || !description || !category || !status) {
         return res.status(400).json({ message: 'All fields (title, description, category, status) are required' });
-      }
+      }*/
     const faq = await Faq.create({ title, description, category, status });
     res.status(201).json({ message: 'Faq created', faq });
   } catch (err) {

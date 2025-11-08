@@ -263,9 +263,9 @@ const UsersHistory = () => {
           actions={
               <button className="btn  btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
           } />
-          <div className="card">
+          <div className="card mb-3">
             <div className="card-body">
-              <div className="row mb-3">
+              <div className="row">
                 <div className="col-md-3 mb-3">
                   <label className="form-label">Customer ID</label>
                   <input
@@ -384,6 +384,10 @@ const UsersHistory = () => {
                   <button className="btn btn-secondary" onClick={() => { clearFilters(); }}>Clear</button>
                 </div>
               </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
               <DataTable
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },
@@ -411,7 +415,7 @@ const UsersHistory = () => {
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     <td>{(page - 1) * limit + index + 1}</td>
-                    <td>{row.organization_name && (<h6 className="username">{row.organization_name}</h6>)}
+                    <td>{row.organization_name && (<h6 className="username"><a href={`/companies/${row.organization_slug}`} target="_blank">{row.organization_name}</a></h6>)}
                       {row.elcina_member == 1 ? (<><span className="badge bg-primary">Elcina Member</span><br /></>) : ("")}
                       {row.full_name && (<><i className='bx bx-user' /> {row.full_name}<br /></>)}
                       {row.email && (<><i className='bx bx-envelope' /> {row.email}<br /></>)}

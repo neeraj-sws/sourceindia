@@ -7,9 +7,9 @@ const InterestSubCategories = require('../models/InterestSubCategories');
 exports.createSubSubCategories = async (req, res) => {
   try {
     const { name, category, sub_category, status } = req.body;
-    if (!name || !category || !sub_category || !status) {
+    /*if (!name || !category || !sub_category || !status) {
         return res.status(400).json({ message: 'All fields (name, category, sub_category, status) are required' });
-      }
+      }*/
     const subSubCategories = await SubSubCategories.create({ name, category, sub_category, status });
     res.status(201).json({ message: 'Sub Sub Categories created', subSubCategories });
   } catch (err) {

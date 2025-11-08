@@ -198,7 +198,7 @@ const TestimonialList = () => {
         <div className="page-content">
           <Breadcrumb mainhead="Testimonials" maincount={totalRecords} page=""  title="Testimonial" add_button={(<><i className="bx bxs-plus-square me-1" /> Add Testimonial</>)} add_link="#" onClick={() => openForm()} />
           <div className="row">
-            <div className="col-md-5">
+            <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title mb-3">{isEditing ? "Edit Testimonial" : "Add Testimonial"}</h5>
@@ -284,10 +284,9 @@ const TestimonialList = () => {
                 </div>
               </div>
             </div>
-            <div className="col-md-7">
+            <div className="col-md-8">
               <div className="card">
                 <div className="card-body">
-                  {/* <h5 className="card-title mb-3">Testimonial List</h5> */}
                   <DataTable
                     columns={[
                       { key: "id", label: "S.No.", sortable: true },

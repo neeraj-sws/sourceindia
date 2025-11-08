@@ -9,9 +9,9 @@ const CompanyInfo = require('../models/CompanyInfo');
 exports.createSubCategories = async (req, res) => {
   try {
     const { name, category, status } = req.body;
-    if (!name || !category || !status) {
+    /*if (!name || !category || !status) {
         return res.status(400).json({ message: 'All fields (name, category, status) are required' });
-      }
+      }*/
     const subCategories = await SubCategories.create({ name, category, status });
     res.status(201).json({ message: 'Sub Category created', subCategories });
   } catch (err) {
@@ -56,9 +56,9 @@ exports.getSubCategoriesById = async (req, res) => {
 exports.getSubCategoriesByCategory = async (req, res) => {
   try {
     const { category } = req.params;
-    if (!category) {
+    /*if (!category) {
       return res.status(400).json({ error: 'category is required' });
-    }
+    }*/
     const interestSubCategories = await SubCategories.findAll({
       where: { category },
       order: [['id', 'ASC']],

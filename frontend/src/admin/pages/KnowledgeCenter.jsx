@@ -48,6 +48,23 @@ const KnowledgeCenter = ({ getDeleted }) => {
   const [range, setRange] = useState([
     {startDate: new Date(), endDate: new Date(), key: 'selection'}
   ]);
+  const datePickerRef = useRef(null);
+          
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setShowPicker(false);
+      }
+    };
+    if (showPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showPicker]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -142,9 +159,9 @@ const KnowledgeCenter = ({ getDeleted }) => {
       }
     }
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
-    if (!formData.file && !isEditing) {
-      errs.file = "Image is required";
-    }
+    // if (!formData.file && !isEditing) {
+    //   errs.file = "Image is required";
+    // }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -324,7 +341,7 @@ const KnowledgeCenter = ({ getDeleted }) => {
           />
           <div className="row">
             {!getDeleted && (
-            <div className="col-md-5">
+            <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title mb-3">{isEditing ? "Edit Knowledge Center" : "Add Knowledge Center"}</h5>
@@ -367,14 +384,14 @@ const KnowledgeCenter = ({ getDeleted }) => {
                       {errors.status && <div className="invalid-feedback">{errors.status}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="file" className="form-label required">Home Banner Image</label>
+                      <label htmlFor="file" className="form-label">Image</label>
                       <input
                         type="file"
-                        className={`form-control ${errors.file ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="file"
                         onChange={handleFileChange}
                       />
-                      {errors.file && <div className="invalid-feedback">{errors.file}</div>}
+                      {/* {errors.file && <div className="invalid-feedback">{errors.file}</div>} */}
                       {formData.file ? (
                         <img
                           src={URL.createObjectURL(formData.file)}
@@ -412,13 +429,14 @@ const KnowledgeCenter = ({ getDeleted }) => {
               </div>
             </div>
             )}
-            <div className={!getDeleted ? "col-md-7" : "col-md-12"}>
-              <div className="card">
-                <div className="card-body">
+            <div className={!getDeleted ? "col-md-8" : "col-md-12"}>
+              
                   {getDeleted && (
                     <>
+                    <div className="card mb-3">
+                <div className="card-body">
                     <h5 className="card-title mb-3">Recently Deleted Knowledge Center List</h5>
-                    <div className="row mb-3">
+                    <div className="row">
                       <div className="col-md-8">
                         <div className="d-flex align-items-center gap-2">
                           <label className="form-label mb-0">Date Filter:</label>
@@ -428,7 +446,20 @@ const KnowledgeCenter = ({ getDeleted }) => {
                               {format(range[0].startDate, 'MMMM dd, yyyy')} - {format(range[0].endDate, 'MMMM dd, yyyy')}
                             </button>
                             {showPicker && (
-                              <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: '100%', left: 0 }}>
+                              <div
+                                ref={datePickerRef}
+                                className="position-absolute z-3 bg-white shadow p-3 rounded"
+                                style={{ top: '100%', left: 0, minWidth: '300px' }}
+                              >
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                  <h6 className="mb-0">Select Date Range</h6>
+                                  <button
+                                    type="button"
+                                    className="btn-close"
+                                    aria-label="Close"
+                                    onClick={() => setShowPicker(false)}
+                                  ></button>
+                                </div>
                                 <DateRangePicker
                                   ranges={range}
                                   onChange={handleRangeChange}
@@ -436,6 +467,15 @@ const KnowledgeCenter = ({ getDeleted }) => {
                                   moveRangeOnFirstSelection={false}
                                   editableDateInputs={true}
                                 />
+                                <div className="text-end mt-2">
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-secondary"
+                                    onClick={() => setShowPicker(false)}
+                                  >
+                                    Close
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -453,8 +493,12 @@ const KnowledgeCenter = ({ getDeleted }) => {
                         <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                       </div>
                     </div>
+                    </div>
+                    </div>
                     </>
                   )}
+                  <div className="card">
+                <div className="card-body">
                   <DataTable
                     columns={[
                       ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),

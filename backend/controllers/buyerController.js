@@ -515,6 +515,8 @@ exports.getAllBuyerServerSide = async (req, res) => {
       order = [[fn('concat', col('fname'), ' ', col('lname')), sortDirection]];
     } else if (sortBy === 'user_category') {
       order = [[{ model: CompanyInfo, as: 'company_info' }, 'user_category', sortDirection]];
+    } else if (sortBy === 'user_company') {
+      order = [[{ model: CompanyInfo, as: 'company_info' }, 'organization_name', sortDirection]];
     } else if (validColumns.includes(sortBy)) {
       order = [[sortBy, sortDirection]];
     } else {
@@ -563,8 +565,8 @@ exports.getAllBuyerServerSide = async (req, res) => {
         Sequelize.where(fn('concat', col('fname'), ' ', col('lname')), { [Op.like]: `%${search}%` }),
         { email: { [Op.like]: `%${search}%` } },
         { mobile: { [Op.like]: `%${search}%` } },
-        { user_company: { [Op.like]: `%${search}%` } },
-        { '$company_info.user_category$': { [Op.like]: `%${search}%` } },
+        { '$company_info.organization_name$': { [Op.like]: `%${search}%` } },
+        // { '$company_info.user_category$': { [Op.like]: `%${search}%` } },
       ];
     }
     if (customerId) {
@@ -643,7 +645,7 @@ exports.getAllBuyerServerSide = async (req, res) => {
       include: [
         { model: UploadImage, as: 'file', attributes: ['file'] },
         { model: UploadImage, as: 'company_file', attributes: ['file'] },
-        { model: CompanyInfo, as: 'company_info', attributes: ['user_category'] },
+        { model: CompanyInfo, as: 'company_info', attributes: ['organization_name', 'organization_slug', 'user_category'] },
       ],
     });
     const mappedRows = rows.map(row => ({
@@ -660,7 +662,8 @@ exports.getAllBuyerServerSide = async (req, res) => {
       state: row.state,
       city: row.city,
       zipcode: row.zipcode,
-      user_company: row.user_company,
+      user_company: row.company_info ? row.company_info.organization_name : null,
+      company_slug: row.company_info ? row.company_info.organization_slug : null,
       website: row.website,
       is_trading: row.is_trading,
       elcina_member: row.elcina_member,

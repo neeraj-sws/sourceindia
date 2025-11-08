@@ -235,7 +235,7 @@ const TicketCategoryList = () => {
           }
           />
           <div className="row">
-            <div className="col-md-5">
+            <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title mb-3">{isEditing ? "Edit Ticket Category" : "Add Ticket Category"}</h5>
@@ -296,10 +296,9 @@ const TicketCategoryList = () => {
                 </div>
               </div>
             </div>
-            <div className="col-md-7">
+            <div className="col-md-8">
               <div className="card">
                 <div className="card-body">
-                  {/* <h5 className="card-title mb-3">Ticket Category List</h5> */}
                   <DataTable
                     columns={[
                       ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),

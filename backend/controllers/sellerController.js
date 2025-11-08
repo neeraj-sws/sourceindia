@@ -826,9 +826,9 @@ exports.getAllSellerServerSide = async (req, res) => {
         Sequelize.where(fn('concat', col('fname'), ' ', col('lname')), { [Op.like]: `%${search}%` }),
         { email: { [Op.like]: `%${search}%` } },
         { mobile: { [Op.like]: `%${search}%` } },
-        { website: { [Op.like]: `%${search}%` } },
+        // { website: { [Op.like]: `%${search}%` } },
         { '$company_info.organization_name$': { [Op.like]: `%${search}%` } },
-        { '$company_info.designation$': { [Op.like]: `%${search}%` } },
+        // { '$company_info.designation$': { [Op.like]: `%${search}%` } },
         { '$seller_categories.category.name$': { [Op.like]: `%${search}%` } },
         { '$seller_categories.subcategory.name$': { [Op.like]: `%${search}%` } },
         { '$city_data.name$': { [Op.like]: `%${search}%` } },
@@ -896,7 +896,7 @@ exports.getAllSellerServerSide = async (req, res) => {
     const companyInfoInclude = {
       model: CompanyInfo,
       as: 'company_info',
-      attributes: ['organization_name', 'company_location', 'designation'],
+      attributes: ['organization_name', 'organization_slug', 'company_location', 'designation'],
       include: [
         { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
         { model: Activity, as: 'Activity', attributes: ['name'] },
@@ -943,6 +943,7 @@ exports.getAllSellerServerSide = async (req, res) => {
         email: row.email,
         mobile: row.mobile,
         organization_name: row.company_info?.organization_name || null,
+        organization_slug: row.company_info?.organization_slug || null,
         designation: row.company_info?.designation || null,
         category_name: categoryNames,
         sub_category_name: subCategoryNames,
@@ -952,7 +953,9 @@ exports.getAllSellerServerSide = async (req, res) => {
         state_name: row.state_data?.name || null,
         city_name: row.city_data?.name || null,
         user_count: productCount,
-        created_at: row.created_at
+        status: row.status,
+        created_at: row.created_at,
+        updated_at: row.updated_at
       };
     }));
 

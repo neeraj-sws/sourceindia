@@ -36,18 +36,14 @@ const VisionForm = () => {
 
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     const maxSize = 2 * 1024 * 1024;
-    if (!visionFile && !formData.vision_file) {
-      errs.vision_file = 'Logo image is required';
-    } else if (visionFile) {
+    if (visionFile) {
       if (!allowedImageTypes.includes(visionFile.type)) {
         errs.vision_file = 'Invalid image format (only JPG/PNG allowed)';
       } else if (visionFile.size > maxSize) {
         errs.vision_file = 'Image size must be under 2MB';
       }
     }
-    if (!visionIcon && !formData.vision_icon) {
-      errs.vision_icon = 'Icon image is required';
-    } else if (visionIcon) {
+    if (visionIcon) {
       if (!allowedImageTypes.includes(visionIcon.type)) {
         errs.vision_icon = 'Invalid image format (only JPG/PNG allowed)';
       } else if (visionIcon.size > maxSize) {
@@ -93,9 +89,9 @@ const VisionForm = () => {
         </div>
 
         <div className="col-md-6">
-          <label htmlFor="vision_file" className="form-label required">Logo</label>
-          <input className={`form-control ${errors.vision_file ? 'is-invalid' : ''}`} type="file" id="vision_file" onChange={handleVisionFileChange} />
-          {errors.vision_file && <div className="invalid-feedback">{errors.vision_file}</div>}
+          <label htmlFor="vision_file" className="form-label">Logo</label>
+          <input className="form-control" type="file" id="vision_file" onChange={handleVisionFileChange} />
+          {/* {errors.vision_file && <div className="invalid-feedback">{errors.vision_file}</div>} */}
           {visionFile ? (
             <img
               src={URL.createObjectURL(visionFile)}
@@ -114,9 +110,9 @@ const VisionForm = () => {
           ) : null}
         </div>
         <div className="col-md-6">
-          <label htmlFor="vision_icon" className="form-label required">Icon</label>
-          <input className={`form-control ${errors.vision_icon ? 'is-invalid' : ''}`} type="file" id="vision_icon" onChange={handleVisionIconChange} />
-          {errors.vision_icon && <div className="invalid-feedback">{errors.vision_icon}</div>}
+          <label htmlFor="vision_icon" className="form-label">Icon</label>
+          <input className="form-control" type="file" id="vision_icon" onChange={handleVisionIconChange} />
+          {/* {errors.vision_icon && <div className="invalid-feedback">{errors.vision_icon}</div>} */}
           {visionIcon ? (
             <img
               src={URL.createObjectURL(visionIcon)}

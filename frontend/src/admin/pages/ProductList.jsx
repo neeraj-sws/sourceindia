@@ -56,6 +56,23 @@ const ProductList = ({ getDeleted, isApprove }) => {
   const [productStatus, setProductStatus] = useState([]);
   const [selectedProductStatus, setSelectedProductStatus] = useState("");
   const [appliedProductStatus, setAppliedProductStatus] = useState("");
+  const datePickerRef = useRef(null);
+        
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setShowPicker(false);
+      }
+    };
+    if (showPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showPicker]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -357,9 +374,9 @@ const ProductList = ({ getDeleted, isApprove }) => {
             </>
           }
           />
-          <div className="card">
+          <div className="card mb-3">
             <div className="card-body">
-              <div className="row mb-3">
+              <div className="row">
                 {!getDeleted && (
                 <>
                 <div className="col-md-3 mb-3">
@@ -408,7 +425,20 @@ const ProductList = ({ getDeleted, isApprove }) => {
                       {format(range[0].startDate, "MMMM dd, yyyy")} - {format(range[0].endDate, "MMMM dd, yyyy")}
                     </button>
                     {showPicker && (
-                      <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: "100%", left: 0 }}>
+                      <div
+                        ref={datePickerRef}
+                        className="position-absolute z-3 bg-white shadow p-3 rounded"
+                        style={{ top: '100%', left: 0, minWidth: '300px' }}
+                      >
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <h6 className="mb-0">Select Date Range</h6>
+                          <button
+                            type="button"
+                            className="btn-close"
+                            aria-label="Close"
+                            onClick={() => setShowPicker(false)}
+                          ></button>
+                        </div>
                         <DateRangePicker
                           ranges={range}
                           onChange={handleRangeChange}
@@ -416,6 +446,15 @@ const ProductList = ({ getDeleted, isApprove }) => {
                           moveRangeOnFirstSelection={false}
                           editableDateInputs={true}
                         />
+                        <div className="text-end mt-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-secondary"
+                            onClick={() => setShowPicker(false)}
+                          >
+                            Close
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -439,12 +478,16 @@ const ProductList = ({ getDeleted, isApprove }) => {
                   <button className="btn btn-secondary" onClick={() => { clearFilters(); }}>Clear</button>
                 </div>
               </div>
+              </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
               <DataTable
                 columns={[
                   ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "image", label: "Image", sortable: false },
-                  { key: "title", label: "Title", sortable: true },
+                  { key: "title", label: "Product", sortable: true },
                   { key: "category_name", label: "Category", sortable: true },
                   { key: "company_name", label: "Company", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },
@@ -480,9 +523,9 @@ const ProductList = ({ getDeleted, isApprove }) => {
                       height={40}
                       showFallback={true}
                     /></td>
-                    <td>{row.title}</td>
+                    <td><a href={`/products/${row.slug}`} target="_blank">{row.title}</a></td>
                     <td>{row.category_name}</td>
-                    <td>{row.company_name}</td>
+                    <td><a href={`/companies/${row.company_slug}`} target="_blank">{row.company_name}</a></td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>
