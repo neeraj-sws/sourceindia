@@ -733,6 +733,110 @@ exports.getItemCategory = async (req, res) => {
 };
 
 
+exports.getItemSubcategory = async (req, res) => {
+  try {
+    const slug = req.query.slug || null;
+    const limit = parseInt(req.query.limit) || 8;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
+
+    // 1️⃣ Find subcategory
+    const subcategory = await ItemCategory.findOne({
+      where: { slug: slug, status: 1 },
+      attributes: ["id", "name", "category_id", "slug"],
+      raw: true,
+    });
+
+    if (!subcategory) {
+      return res.status(404).json({ message: "Subcategory not found" });
+    }
+
+    // 2️⃣ Fetch paginated item categories
+    const { count: totalItems, rows: itemcategories } = await ItemSubCategory.findAndCountAll({
+      where: { status: 1, item_category_id: subcategory.id },
+      attributes: ["id", "name", "subcategory_id", "slug", "file_id"],
+      offset,
+      limit,
+      raw: true,
+    });
+
+    // 3️⃣ Fetch all images
+    const uploadImages = await UploadImage.findAll({
+      attributes: ["id", "file"],
+      raw: true,
+    });
+    const imageMap = {};
+    uploadImages.forEach((img) => (imageMap[img.id] = img.file));
+
+    // 4️⃣ Fetch items
+    const itemData = await Items.findAll({
+      attributes: ["id", "name", "slug", "file_id", "item_category_id"],
+      where: { status: 1 },
+      raw: true,
+    });
+
+    // 5️⃣ Fetch real product count from products table
+    const productCounts = await Products.findAll({
+      attributes: [
+        "item_id",
+        [sequelize.fn("COUNT", sequelize.col("product_id")), "product_count"],
+      ],
+      where: { status: 1 },
+      group: ["item_id"],
+      raw: true,
+    });
+
+    const productCountMap = {};
+    productCounts.forEach((row) => {
+      productCountMap[row.item_id] = row.product_count;
+    });
+
+    // 6️⃣ Group items by item_category_id
+    const itemsByCategory = {};
+    itemData.forEach((itm) => {
+      if (!itemsByCategory[itm.item_category_id]) {
+        itemsByCategory[itm.item_category_id] = [];
+      }
+      itemsByCategory[itm.item_category_id].push({
+        id: itm.id,
+        name: itm.name,
+        slug: itm.slug,
+        file_name: imageMap[itm.file_id] || null,
+        product_count: productCountMap[itm.id] || 0, // ✅ Real product count
+      });
+    });
+
+    // 7️⃣ Final list
+    const items = itemcategories.map((item) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      file_name: imageMap[item.file_id] || null,
+      product_count: (itemsByCategory[item.id] || []).length,
+      items: itemsByCategory[item.id] || [],
+    }));
+
+    // 8️⃣ Response
+    res.json({
+      subcategory: {
+        id: subcategory.id,
+        name: subcategory.name,
+        slug: subcategory.slug,
+        item_categories: items,
+      },
+      pagination: {
+        total: totalItems,
+        page,
+        limit,
+        hasMore: offset + limit < totalItems,
+      },
+    });
+  } catch (err) {
+    console.error("getItemCategory error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getItem = async (req, res) => {
   try {
     const slug = req.query.slug || null;

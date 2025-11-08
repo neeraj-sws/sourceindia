@@ -72,20 +72,23 @@ const SubCategory = () => {
                         </div>
                       </a>
                       <div className="d-flex justify-content-between align-items-center">
-                        <ul className="list-unstyled mb-0">
-                          {(sub.item_categories || [])
-                            .slice(0, 2)
-                            .map((item, i) => (
-                              <li key={i}>
-                                <a
-                                  href="#"
-                                  className="text-decoration-none text-primary small"
-                                >
-                                  {item.name}
-                                </a>
-                              </li>
-                            ))}
-                        </ul>
+                        <div>
+                          <ul className="list-unstyled ps-3 mb-0">
+                            {(sub.item_categories || [])
+                              .slice(0, 4)
+                              .map((item, i) => (
+                                <li key={i}>
+                                  <a
+                                    href={`/item-subcategory/${item.slug}`}
+                                    className="text-decoration-none text-primary small d-inline-block"
+                                  >
+                                    {item.name}
+                                  </a>
+                                </li>
+                              ))}
+
+                          </ul>
+                        </div>
                         <img
                           src="https://www.glossyjewels.com/uploads/dummy.jpg"
                           className="img-fluid rounded"

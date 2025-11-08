@@ -58,16 +58,16 @@ const CategoryMain = ({ isHome, limit }) => {
                               <div key={sub.id} className="col-sm-6 col-lg-4">
                                 <div className="card card-hover h-100 shadow-sm border-0">
                                   <div className="card-body">
-                                    <a href='' className='d-block'>
+                                    <a href={`/item-categories/${sub.slug}`} className='d-block'>
                                       <div className="d-flex justify-content-between align-items-start">
                                         <h6 className="fw-semibold mb-3">{sub.name}</h6>
                                         <span>→</span>
                                       </div></a>
                                     <div className='d-flex justify-content-between align-items-center'>
                                       <ul className="list-unstyled mb-0">
-                                        {(sub.item_categories || []).slice(0, 2).map((item, i) => (
+                                        {(sub.item_categories || []).slice(0, 4).map((item, i) => (
                                           <li key={i}>
-                                            <a href="#" className="text-decoration-none text-primary small">
+                                            <a href={`/item-categories/${item.slug}`} className="text-decoration-none text-primary small">
                                               {item.name}
                                             </a>
                                           </li>

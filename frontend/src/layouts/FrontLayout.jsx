@@ -14,6 +14,7 @@ import Categories from '../pages/Categories';
 import SubCategories from '../pages/SubCategories';
 import ItemCategories from '../pages/ItemCategories';
 import Items from '../pages/Item';
+import ItemSubcategory from '../pages/ItemSubCategory';
 import ProductsList from '../pages/ProductsList';
 import KnowledgeCenter from '../pages/KnowledgeCenter';
 import ContactUs from '../pages/ContactUs';
@@ -75,6 +76,7 @@ function FrontLayout() {
               <Route path="/sub-categories/:slug" element={<SubCategories />} />
               <Route path="/item-categories/:slug" element={<ItemCategories />} />
               <Route path="/items/:slug" element={<Items />} />
+              <Route path="/item-subcategory/:slug" element={<ItemSubcategory />} />
               <Route path="/products" element={<ProductsList />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/knowledge-center" element={<KnowledgeCenter />} />

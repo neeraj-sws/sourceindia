@@ -19,6 +19,7 @@
     "multer": "^2.0.2",
     "mysql2": "^3.14.3",
     "nodemailer": "^7.0.9",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "slugify": "^1.6.6"
   }
 }

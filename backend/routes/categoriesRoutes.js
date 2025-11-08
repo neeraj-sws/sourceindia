@@ -8,6 +8,7 @@ router.get('/', categoriesController.getAllCategories);
 router.get('/category-item', categoriesController.getItemCategories);
 router.get('/sub-category-item', categoriesController.getItemSubCategories);
 router.get('/item-category', categoriesController.getItemCategory);
+router.get('/sub-items', categoriesController.getItemSubcategory);
 router.get('/items', categoriesController.getItem);
 router.get('/server-side', categoriesController.getAllCategoriesServerSide);
 router.delete('/delete-selected', categoriesController.deleteSelectedCategories);

@@ -4,6 +4,7 @@ const ItemCategory = require('./ItemCategory');
 const Categories = require('./Categories');
 const SubCategories = require('./SubCategories');
 const UploadImage = require('./UploadImage');
+const slugify = require('slugify'); // 🟢 import slugify
 
 const ItemSubCategory = sequelize.define('ItemSubCategory', {
   id: {
@@ -18,12 +19,37 @@ const ItemSubCategory = sequelize.define('ItemSubCategory', {
     allowNull: false,
     unique: true,
   },
-  name: { type: DataTypes.STRING, allowNull: false },
-  file_id: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
-  item_category_id: { type: DataTypes.INTEGER, allowNull: false },
-  category_id: { type: DataTypes.INTEGER, allowNull: false },
-  subcategory_id: { type: DataTypes.INTEGER, allowNull: false },
-  status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, comment: '1 = Active, 0 = Inactive' },
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  slug: {
+    type: DataTypes.STRING,
+    allowNull: true // 🟢 auto-generated slug
+  },
+  file_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
+  },
+  item_category_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  category_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  subcategory_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  status: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1,
+    comment: '1 = Active, 0 = Inactive'
+  },
 }, {
   tableName: 'item_subcategory',
   timestamps: true,
@@ -31,9 +57,54 @@ const ItemSubCategory = sequelize.define('ItemSubCategory', {
   updatedAt: 'updated_at'
 });
 
-ItemSubCategory.belongsTo(ItemCategory, { foreignKey: 'item_category_id', targetKey: 'id', as: 'ItemCategory', constraints: false });
-ItemSubCategory.belongsTo(Categories, { foreignKey: 'category_id', targetKey: 'id', as: 'Categories', constraints: false });
-ItemSubCategory.belongsTo(SubCategories, { foreignKey: 'subcategory_id', targetKey: 'id', as: 'SubCategories', constraints: false });
-ItemSubCategory.belongsTo(UploadImage, { foreignKey: 'file_id', targetKey: 'id', onDelete: 'CASCADE' });
+// 🟢 Associations
+ItemSubCategory.belongsTo(ItemCategory, {
+  foreignKey: 'item_category_id',
+  targetKey: 'id',
+  as: 'ItemCategory',
+  constraints: false
+});
+
+ItemSubCategory.belongsTo(Categories, {
+  foreignKey: 'category_id',
+  targetKey: 'id',
+  as: 'Categories',
+  constraints: false
+});
+
+ItemSubCategory.belongsTo(SubCategories, {
+  foreignKey: 'subcategory_id',
+  targetKey: 'id',
+  as: 'SubCategories',
+  constraints: false
+});
+
+ItemSubCategory.belongsTo(UploadImage, {
+  foreignKey: 'file_id',
+  targetKey: 'id',
+  onDelete: 'CASCADE'
+});
+
+// 🟢 Hook: Auto-generate slug before create
+ItemSubCategory.beforeCreate((itemSubCategory, options) => {
+  if (!itemSubCategory.slug && itemSubCategory.name) {
+    itemSubCategory.slug = slugify(itemSubCategory.name, {
+      lower: true,
+      strict: true, // removes special characters
+      remove: /[*+~.()'"!:@]/g,
+    });
+  }
+});
+
+// 🟢 Hook: Auto-update slug if name changes
+ItemSubCategory.beforeUpdate((itemSubCategory, options) => {
+  if (itemSubCategory.changed('name')) {
+    itemSubCategory.slug = slugify(itemSubCategory.name, {
+      lower: true,
+      strict: true,
+      remove: /[*+~.()'"!:@]/g,
+    });
+  }
+});
 
 module.exports = ItemSubCategory;

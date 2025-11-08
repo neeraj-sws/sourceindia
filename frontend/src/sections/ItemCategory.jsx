@@ -61,57 +61,61 @@ const ItemCategory = () => {
           {subcategory.name}
         </h4>
 
-        <div className='card mb-3 card-border'>
-          <div className='card-body'>
-            {/* 🟢 Item Categories */}
-            {subcategory.item_categories?.length > 0 ? (
-              subcategory.item_categories.map((cat) => (
-                <div key={cat.id} className="pb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-3">
 
-                    <h5 className="fw-semibold mb-0">{cat.name}</h5>
+        {/* 🟢 Item Categories */}
+        <div className="row g-3">
+          {subcategory.item_categories?.length > 0 ? (
+            subcategory.item_categories.map((cat) => (
 
-                  </div>
-
-                  {/* 🟢 Items Grid */}
-                  <div className="row g-3">
-                    {(cat.items || []).length > 0 ? (
-                      cat.items.map((item) => (
-                        <div key={item.id} className="col-6 col-sm-4 col-md-3 col-lg-2 text-center">
-                          <div className="card border-0 shadow-sm h-100">
-                            <div className="card-body p-2">
-                              <img
-                                src={
-                                  item.file_name
-                                    ? `${ROOT_URL}/${item.file_name}`
-                                    : "https://www.glossyjewels.com/uploads/dummy.jpg"
-                                }
-                                className="img-fluid rounded mb-2"
-                                alt={item.name}
-                              />
-                              <a href={`/items/${item.slug}`} >
-                                <h6 className="small fw-semibold mb-1">{item.name}</h6>
+              <div key={cat.id} className="col-6 col-sm-4 col-md-3 text-center">
+                <div className='card'>
+                  <div className='card-body'>
+                    <a href={`/item-subcategory/${cat.slug}`} className="d-block text-decoration-none text-dark">
+                      <div className="d-flex justify-content-between align-items-start">
+                        <h6 className="fw-semibold mb-3">{cat.name}</h6>
+                        <span>→</span>
+                      </div>
+                    </a>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <ul className="list-unstyled mb-0">
+                        {(cat.items || []).length > 0 ? (
+                          cat.items.map((item) => (
+                            <li>
+                              <a
+                                href={`/item-subcategory/${cat.slug}`}
+                                className="text-decoration-none text-primary small"
+                              >
+                                {item.name}
                               </a>
-                              {item.product_count && (
-                                <div className="text-success small">
-                                  ({item.product_count})
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-muted small">No items found.</p>
-                    )}
+                            </li>
+                          ))
+                        ) : (
+                          <p className="text-muted small">No items found.</p>
+                        )}
+                      </ul>
+                      {cat.file_name && (
+                        <img
+                          src={`${ROOT_URL}/${cat.file_name}`}
+                          width="150px"
+                          className="img-fluid"
+                          alt={cat.name || "Category"}
+                          onError={(e) => {
+                            e.target.onerror = null; 
+                            e.target.src = "https://learn-attachment.microsoft.com/api/attachments/8954256a-cc48-4d73-a863-5c8ebe3c426c?platform=QnA"; 
+                          }}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-center text-muted">No item categories found.</p>
-            )}
-          </div>
+              </div>
+
+            ))
+          ) : (
+            <p className="text-center text-muted">No item categories found.</p>
+          )}
         </div>
+
         {/* 🟢 Load More Button */}
         {hasMore && (
           <div className="text-center mt-4">

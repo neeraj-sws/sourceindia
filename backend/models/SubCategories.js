@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const Categories = require('./Categories');
+const slugify = require('slugify'); // 🟢 import slugify
 
 const SubCategories = sequelize.define('SubCategories', {
   id: {
@@ -21,7 +22,7 @@ const SubCategories = sequelize.define('SubCategories', {
   },
   slug: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true // allowNull true because it’ll be auto-generated
   },
   category: {
     type: DataTypes.INTEGER,
@@ -46,6 +47,34 @@ const SubCategories = sequelize.define('SubCategories', {
   updatedAt: 'updated_at'
 });
 
-SubCategories.belongsTo(Categories, { foreignKey: 'category', targetKey: 'id', as: 'Categories', constraints: false });
+// 🟢 Relation: SubCategory belongs to Category
+SubCategories.belongsTo(Categories, {
+  foreignKey: 'category',
+  targetKey: 'id',
+  as: 'Categories',
+  constraints: false
+});
+
+// 🟢 Hook: Auto-generate slug before create
+SubCategories.beforeCreate((subCategory, options) => {
+  if (!subCategory.slug && subCategory.name) {
+    subCategory.slug = slugify(subCategory.name, {
+      lower: true,
+      strict: true, // removes special characters
+      remove: /[*+~.()'"!:@]/g,
+    });
+  }
+});
+
+// 🟢 Hook: Auto-update slug if name changes
+SubCategories.beforeUpdate((subCategory, options) => {
+  if (subCategory.changed('name')) {
+    subCategory.slug = slugify(subCategory.name, {
+      lower: true,
+      strict: true,
+      remove: /[*+~.()'"!:@]/g,
+    });
+  }
+});
 
 module.exports = SubCategories;

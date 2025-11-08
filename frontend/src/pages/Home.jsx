@@ -11,10 +11,10 @@ const Home = () => {
     <>
       {/* Hero Section */}
       <Banner />
-      <Category limit={12} isHome={true} />
+      {/* <Category limit={12} isHome={true} /> */}
       <Product />
-      <Company limit={11} />
       <CategoryMain limit={6} />
+      <Company limit={11} />
     </>
   )
 }
