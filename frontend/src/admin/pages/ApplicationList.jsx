@@ -48,6 +48,23 @@ const ApplicationList = ({ getDeleted }) => {
   const [range, setRange] = useState([
     {startDate: new Date(), endDate: new Date(), key: 'selection'}
   ]);
+  const datePickerRef = useRef(null);
+  
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+          setShowPicker(false);
+        }
+      };
+      if (showPicker) {
+        document.addEventListener("mousedown", handleClickOutside);
+      } else {
+        document.removeEventListener("mousedown", handleClickOutside);
+      }
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [showPicker]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -130,10 +147,10 @@ const ApplicationList = ({ getDeleted }) => {
     const errs = {};
     if (!formData.name?.trim()) errs.name = "Name is required";
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
-    if (!["0", "1"].includes(formData.top_category)) errs.top_category = "Invalid top category status";
-    if (!formData.file && !isEditing) {
-      errs.file = "Image is required";
-    }
+    // if (!["0", "1"].includes(formData.top_category)) errs.top_category = "Invalid top category status";
+    // if (!formData.file && !isEditing) {
+    //   errs.file = "Image is required";
+    // }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -316,7 +333,7 @@ const ApplicationList = ({ getDeleted }) => {
           />
           <div className="row">
             {!getDeleted && (
-            <div className="col-md-5">
+            <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title mb-3">{isEditing ? "Edit Application" : "Add Application"}</h5>
@@ -347,27 +364,27 @@ const ApplicationList = ({ getDeleted }) => {
                       {errors.status && <div className="invalid-feedback">{errors.status}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="top_category" className="form-label required">Top Application</label>
+                      <label htmlFor="top_category" className="form-label">Top Application</label>
                       <select
                         id="top_category"
-                        className={`form-select ${errors.top_category ? "is-invalid" : ""}`}
+                        className="form-select"
                         value={formData.top_category}
                         onChange={handleChange}
                       >
                         <option value="1">Yes</option>
                         <option value="0">No</option>
                       </select>
-                      {errors.top_category && <div className="invalid-feedback">{errors.top_category}</div>}
+                      {/* {errors.top_category && <div className="invalid-feedback">{errors.top_category}</div>} */}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="file" className="form-label required">Application Image</label>
+                      <label htmlFor="file" className="form-label">Application Image</label>
                       <input
                         type="file"
-                        className={`form-control ${errors.file ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="file"
                         onChange={handleFileChange}
                       />
-                      {errors.file && <div className="invalid-feedback">{errors.file}</div>}
+                      {/* {errors.file && <div className="invalid-feedback">{errors.file}</div>} */}
                     </div>
                     <div className="d-flex justify-content-between">
                       <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
@@ -389,13 +406,13 @@ const ApplicationList = ({ getDeleted }) => {
               </div>
             </div>
             )}
-            <div className={!getDeleted ? "col-md-7" : "col-md-12"}>
-              <div className="card">
-                <div className="card-body">
+            <div className={!getDeleted ? "col-md-8" : "col-md-12"}>
                   {getDeleted && (
                     <>
+                    <div className="card mb-3">
+                <div className="card-body">
                     <h5 className="card-title mb-3">Recently Deleted Application List</h5>
-                    <div className="row mb-3">
+                    <div className="row">
                       <div className="col-md-8">
                         <div className="d-flex align-items-center gap-2">
                           <label className="form-label mb-0">Date Filter:</label>
@@ -405,7 +422,20 @@ const ApplicationList = ({ getDeleted }) => {
                               {format(range[0].startDate, 'MMMM dd, yyyy')} - {format(range[0].endDate, 'MMMM dd, yyyy')}
                             </button>
                             {showPicker && (
-                              <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: '100%', left: 0 }}>
+                              <div
+                                ref={datePickerRef}
+                                className="position-absolute z-3 bg-white shadow p-3 rounded"
+                                style={{ top: '100%', left: 0, minWidth: '300px' }}
+                              >
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                  <h6 className="mb-0">Select Date Range</h6>
+                                  <button
+                                    type="button"
+                                    className="btn-close"
+                                    aria-label="Close"
+                                    onClick={() => setShowPicker(false)}
+                                  ></button>
+                                </div>
                                 <DateRangePicker
                                   ranges={range}
                                   onChange={handleRangeChange}
@@ -413,6 +443,15 @@ const ApplicationList = ({ getDeleted }) => {
                                   moveRangeOnFirstSelection={false}
                                   editableDateInputs={true}
                                 />
+                                <div className="text-end mt-2">
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-secondary"
+                                    onClick={() => setShowPicker(false)}
+                                  >
+                                    Close
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -430,8 +469,12 @@ const ApplicationList = ({ getDeleted }) => {
                         <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                       </div>
                     </div>
+                    </div>
+                    </div>
                     </>
                   )}
+                  <div className="card">
+                <div className="card-body">
                   <DataTable
                     columns={[
                       ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),

@@ -14,9 +14,9 @@ const Countries = require('../models/Countries');
 exports.createInterestSubCategories = async (req, res) => {
   try {
     const { name, interest_category_id, status } = req.body;
-    if (!name || !interest_category_id || !status) {
+    /*if (!name || !interest_category_id || !status) {
       return res.status(400).json({ message: 'All fields (name, interest_category_id, status) are required' });
-    }
+    }*/
     const interestSubCategories = await InterestSubCategories.create({ name, interest_category_id, status });
     res.status(201).json({ message: 'Interest sub category created', interestSubCategories });
   } catch (err) {
@@ -98,9 +98,9 @@ exports.getInterestSubCategoriesById = async (req, res) => {
 exports.getInterestSubCategoriesByCategory = async (req, res) => {
   try {
     const { interest_category_id } = req.params;
-    if (!interest_category_id) {
+    /*if (!interest_category_id) {
       return res.status(400).json({ error: 'interest_category_id is required' });
-    }
+    }*/
     const interestSubCategories = await InterestSubCategories.findAll({
       where: { interest_category_id },
       order: [['id', 'ASC']],

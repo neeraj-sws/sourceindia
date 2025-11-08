@@ -11,9 +11,9 @@ exports.createTestimonials = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
       const { name, description, status } = req.body;
-      if (!name || !description || !status || !req.file) {
+      /*if (!name || !description || !status || !req.file) {
         return res.status(400).json({ message: 'All fields (name, description, status, file) are required' });
-      }
+      }*/
       const uploadImage = await UploadImage.create({
         file: `upload/testimonials/${req.file.filename}`,
       });
@@ -69,9 +69,9 @@ exports.updateTestimonials = async (req, res) => {
     }
     try {
       const { name, description, status } = req.body;
-      if (!name || !description || !status) {
+      /*if (!name || !description || !status) {
         return res.status(400).json({ message: 'All fields (name, description, status) are required' });
-      }
+      }*/
       const testimonials = await Testimonials.findByPk(req.params.id);
       if (!testimonials) {
         return res.status(404).json({ message: 'Testimonials not found' });

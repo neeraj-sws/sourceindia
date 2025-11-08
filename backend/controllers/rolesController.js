@@ -5,9 +5,9 @@ const TicketCategory = require('../models/TicketCategory');
 exports.createRoles = async (req, res) => {
   try {
     const { name, ticket_category, status } = req.body;
-    if (!name || !ticket_category || !status) {
+    /*if (!name || !ticket_category || !status) {
         return res.status(400).json({ message: 'All fields (name, ticket_category, status) are required' });
-      }
+      }*/
     const roles = await Roles.create({ name, ticket_category, status });
     res.status(201).json({ message: 'Roles created', roles });
   } catch (err) {

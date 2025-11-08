@@ -273,7 +273,7 @@ const UserActivities = () => {
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     <td><Link to={`/admin/user-activity-details/${row.user_id}`}>{(page - 1) * limit + index + 1}</Link></td>
-                    <td>{row.user_company_name && (<h6 className="username">{row.user_company_name}</h6>)}
+                    <td>{row.user_company_name && (<h6 className="username"><a href={`/companies/${row.user_company_slug}`} target="_blank">{row.user_company_name}</a></h6>)}
                       {row.user_name && (<><i className='bx bx-user' /> {row.user_name}<br /></>)}
                       {row.user_email && (<><i className='bx bx-envelope' /> {row.user_email}<br /></>)}
                       {row.user_mobile && (<><i className='bx bx-mobile' /> {row.user_mobile}<br /></>)}

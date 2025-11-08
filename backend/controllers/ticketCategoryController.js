@@ -5,9 +5,9 @@ const TicketCategory = require('../models/TicketCategory');
 exports.createTicketCategory = async (req, res) => {
   try {
     const { name, email, status } = req.body;
-    if (!validator.isEmail(email)) {
+    /*if (!validator.isEmail(email)) {
       return res.status(400).json({ error: 'Invalid email format' });
-    }
+    }*/
     const ticketCategory = await TicketCategory.create({ name, email, status });
     res.status(201).json({ message: 'Ticket Category created', ticketCategory });
   } catch (err) {
@@ -42,9 +42,9 @@ exports.getTicketCategoryById = async (req, res) => {
 exports.updateTicketCategory = async (req, res) => {
   try {
     const { name, email, status } = req.body;
-    if (email && !validator.isEmail(email)) {
+    /*if (email && !validator.isEmail(email)) {
       return res.status(400).json({ error: 'Invalid email format' });
-    }
+    }*/
     const ticketCategory = await TicketCategory.findByPk(req.params.id);
     if (!ticketCategory) return res.status(404).json({ message: 'Ticket Category not found' });
 

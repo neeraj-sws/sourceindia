@@ -12,9 +12,9 @@ exports.createHomeBanners = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
       const { title, sub_title, description, button_text, button_url, status } = req.body;
-      if (!status || !req.file) {
+      /*if (!status || !req.file) {
         return res.status(400).json({ message: 'All fields (title, sub_title, description, button_text, button_url, status, file) are required' });
-      }
+      }*/
       const uploadImage = await UploadImage.create({
         file: `upload/home_banners/${req.file.filename}`,
       });

@@ -52,6 +52,23 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
   const [enquiryNo, setEnquiryNo] = useState("");
   const [tempEnquiryNo, setTempEnquiryNo] = useState("");
   const [enquiriesCount, setEnquiriesCount] = useState("");
+  const datePickerRef = useRef(null);
+        
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setShowPicker(false);
+      }
+    };
+    if (showPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showPicker]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -299,8 +316,29 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
     <>
       <div className="page-wrapper">
         <div className="page-content">
+          <Breadcrumb mainhead="Enquiry" maincount={totalRecords} page="Settings" title={ getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : getNotApprove ? "Pending Leads" : "Leads" }
+          actions={
+            <>
+            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+            {!getDeleted ? (
+              <>
+                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedEnquiries.length === 0}>
+                  <i className="bx bx-trash me-1" /> Delete Selected
+                </button>
+                <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/enquiry-remove-list">
+                  Recently Deleted Enquiry
+                </Link>
+              </>
+            ) : (
+              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                Back
+              </button>
+            )}
+            </>
+          }
+          />
           { !getPublic && (
-          <div className="row pb-3 pt-3">
+          <div className="row pb-3 pt-3 mb-3">
             <div className="col-sm-3">
               <div className="card radius-10 mb-3">
                 <div className="card-body bg-light shadow-sm rounded h-100">
@@ -363,30 +401,9 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
             </div>
           </div>
           )}
-          <Breadcrumb mainhead="Enquiry" maincount={totalRecords} page="Settings" title={ getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : getNotApprove ? "Pending Leads" : "Leads" }
-          actions={
-            <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-            {!getDeleted ? (
-              <>
-                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedEnquiries.length === 0}>
-                  <i className="bx bx-trash me-1" /> Delete Selected
-                </button>
-                <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/enquiry-remove-list">
-                  Recently Deleted Enquiry
-                </Link>
-              </>
-            ) : (
-              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
-                Back
-              </button>
-            )}
-            </>
-          }
-          />
-          <div className="card">
+          <div className="card mb-3">
             <div className="card-body">
-              <div className="row mb-3">
+              <div className="row">
                 {!getDeleted && (
                 <>
                 <div className="col-md-4 mb-3">
@@ -431,7 +448,20 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
                       {format(range[0].startDate, "MMMM dd, yyyy")} - {format(range[0].endDate, "MMMM dd, yyyy")}
                     </button>
                     {showPicker && (
-                      <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: "100%", left: 0 }}>
+                      <div
+                        ref={datePickerRef}
+                        className="position-absolute z-3 bg-white shadow p-3 rounded"
+                        style={{ top: '100%', left: 0, minWidth: '300px' }}
+                      >
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <h6 className="mb-0">Select Date Range</h6>
+                          <button
+                            type="button"
+                            className="btn-close"
+                            aria-label="Close"
+                            onClick={() => setShowPicker(false)}
+                          ></button>
+                        </div>
                         <DateRangePicker
                           ranges={range}
                           onChange={handleRangeChange}
@@ -439,6 +469,15 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
                           moveRangeOnFirstSelection={false}
                           editableDateInputs={true}
                         />
+                        <div className="text-end mt-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-secondary"
+                            onClick={() => setShowPicker(false)}
+                          >
+                            Close
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -461,6 +500,10 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
                   <button className={`${getPublic && "my-auto"} btn btn-secondary`} onClick={() => { clearFilters(); }}>Clear</button>
                 </div>
               </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
               <DataTable
                 columns={[
                   ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),
@@ -501,14 +544,14 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
                     <td><Link to={`/admin/admin-view-enquiry/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
                     <td>{row.from_full_name}<br />{row.from_email}</td>
                     <td>
-                      {row.to_organization_name && (<>{row.to_organization_name}<br /></>)}
+                      {row.to_organization_name && (<><a href={`/companies/${row.to_organization_slug}`} target="_blank">{row.to_organization_name}</a><br /></>)}
                       {row.to_full_name && (<>{row.to_full_name}<br /></>)}
                       {row.to_email && (<>{row.to_email}<br /></>)}
                       {row.to_mobile && (<>{row.to_mobile}<br /></>)}
                       <span className="badge bg-primary">{row.to_user_type == 1 ? "Seller" : row.to_user_type == 0 ? "Buyer" : ""}</span>
                     </td>
                     <td>
-                      {row.from_organization_name && (<>{row.from_organization_name}<br /></>)}
+                      {row.from_organization_name && (<><a href={`/companies/${row.from_organization_slug}`} target="_blank">{row.from_organization_name}</a><br /></>)}
                       {row.from_full_name && (<>{row.from_full_name}<br /></>)}
                       {row.from_email && (<>{row.from_email}<br /></>)}
                       {row.from_mobile && (<>{row.from_mobile}<br /></>)}

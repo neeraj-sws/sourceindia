@@ -7,11 +7,11 @@ const bcrypt = require('bcryptjs');
 exports.createSubAdmin = async (req, res) => {
   try {
     const { name, email, password, mobile, role, status, postcode, address, state, is_seller, about } = req.body;
-    if (!name || !email || !password || !mobile || !role || !status) {
+    /*if (!name || !email || !password || !mobile || !role || !status) {
         return res.status(400).json({ message: 'All fields (name, email, password, mobile, role, status) are required' });
       }else if (!validator.isEmail(email)) {
       return res.status(400).json({ error: 'Invalid email format' });
-    }
+    }*/
     const hashedPassword = await bcrypt.hash(password, 10);
     const subAdmin = await Admin.create({ name, email, password: hashedPassword, mobile, role, status,
     postcode: postcode || "", address: address || "", state: state || 0, 

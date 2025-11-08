@@ -5,9 +5,9 @@ const Emails = require('../models/Emails');
 exports.createEmails = async (req, res) => {
   try {
     const { title, email_for, subject, description, is_seller_direct, message, status } = req.body;
-    if (!title || !email_for || !subject || !description || !is_seller_direct || !message || !status) {
+    /*if (!title || !email_for || !subject || !description || !is_seller_direct || !message || !status) {
       return res.status(400).json({ message: 'All fields (title, email_for, subject, description, is_seller_direct, message, status) are required' });
-    }
+    }*/
     const emails = await Emails.create({ title, email_for, subject, description, is_seller_direct, message, status });
     res.status(201).json({ message: 'Email created', emails });
   } catch (err) {

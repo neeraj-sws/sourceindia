@@ -333,9 +333,9 @@ const AddSeller = () => {
     if (!formData.zipcode?.trim()) errs.zipcode = "Post Code is required";
     if (!formData.address?.trim()) errs.address = "Address is required";
     if (!formData.user_company?.trim()) errs.user_company = "Organization Name is required";
-    if (!formData.designation?.trim()) errs.designation = "Designation is required";
+    // if (!formData.designation?.trim()) errs.designation = "Designation is required";
     if (!formData.company_location?.trim()) errs.company_location = "Company Location is required";
-    if (!formData.company_video_second?.trim()) errs.company_video_second = "Video URL is required";
+    // if (!formData.company_video_second?.trim()) errs.company_video_second = "Video URL is required";
     if (!formData.brief_company?.trim()) errs.brief_company = "Brief Company Description is required";
     if (!selectedRoles) errs.user_type = "User Type is required";
     if (!formData.is_star_seller) errs.is_star_seller = "Star Seller status is required";
@@ -369,9 +369,7 @@ const AddSeller = () => {
       }
     }
 
-    if (!companyBrochure && !isEditing) {
-      errs.sample_file_id = "Company Brochure is required";
-    } else if (companyBrochure) {
+    if (companyBrochure) {
       if (!allowedFileTypes.includes(companyBrochure.type)) {
         errs.sample_file_id =
           "Invalid Brochure format (only JPG/PNG/PDF/PPT allowed)";
@@ -380,9 +378,7 @@ const AddSeller = () => {
       }
     }
 
-    if (!formData.company_sample_ppt_file && !isEditing) {
-      errs.company_sample_ppt_file = "Company Sample PPT is required";
-    } else if (formData.company_sample_ppt_file) {
+    if (formData.company_sample_ppt_file) {
       if (!allowedFileTypes.includes(formData.company_sample_ppt_file.type)) {
         errs.company_sample_ppt_file = "Invalid file format for PPT";
       } else if (formData.company_sample_ppt_file.size > maxSize) {
@@ -390,9 +386,7 @@ const AddSeller = () => {
       }
     }
 
-    if (!formData.company_video && !isEditing) {
-      errs.company_video = "Company Video is required";
-    } else if (formData.company_video) {
+    if (formData.company_video) {
       if (!allowedImageTypes.includes(formData.company_video.type)) {
         errs.company_video =
           "Invalid video format (only JPG/PNG allowed as placeholder)";
@@ -725,18 +719,18 @@ const AddSeller = () => {
                     ) : null}
                   </div>
                   <div className="col-md-6">
-                    <label htmlFor="company_sample_ppt_file" className="form-label required">Ppt File</label>
+                    <label htmlFor="company_sample_ppt_file" className="form-label">Ppt File</label>
                     <input
-                      type="file" className={`form-control ${errors.company_sample_ppt_file ? "is-invalid" : ""}`}
+                      type="file" className="form-control"
                       id="company_sample_ppt_file"
                       onChange={handleInputChange}
                     />
                     {errors.company_sample_ppt_file && (<div className="invalid-feedback">{errors.company_sample_ppt_file}</div>)}
                   </div>
                   <div className="col-md-6">
-                    <label htmlFor="sample_file_id" className="form-label required">Company Brochure</label>
+                    <label htmlFor="sample_file_id" className="form-label">Company Brochure</label>
                     <input
-                      className={`form-control ${errors.sample_file_id ? "is-invalid" : ""}`}
+                      className="form-control"
                       type="file"
                       id="sample_file_id"
                       onChange={handleCompanyBrochureChange}
@@ -774,24 +768,24 @@ const AddSeller = () => {
                     {errors.elcina_member && (<div className="invalid-feedback">{errors.elcina_member}</div>)}
                   </div>
                   <div className="col-md-6">
-                    <label htmlFor="company_video" className="form-label required">Upload Video</label>
+                    <label htmlFor="company_video" className="form-label">Upload Video</label>
                     <input
-                      type="file" className={`form-control ${errors.company_video ? "is-invalid" : ""}`}
+                      type="file" className="form-control"
                       id="company_video"
                       onChange={handleInputChange}
                     />
                     {errors.company_video && (<div className="invalid-feedback">{errors.company_video}</div>)}
                   </div>
                   <div className="col-md-6">
-                    <label htmlFor="uploadVideoUrl" className="form-label required">Upload Video Url</label>
+                    <label htmlFor="uploadVideoUrl" className="form-label">Upload Video Url</label>
                     <input
-                      type="text" className={`form-control ${errors.company_video_second ? "is-invalid" : ""}`}
+                      type="text" className="form-control"
                       id="company_video_second"
                       placeholder="Upload Video Url"
                       value={formData.company_video_second}
                       onChange={handleInputChange}
                     />
-                    {errors.company_video_second && (<div className="invalid-feedback">{errors.company_video_second}</div>)}
+                    {/* {errors.company_video_second && (<div className="invalid-feedback">{errors.company_video_second}</div>)} */}
                   </div>
                   <div className="col-md-12">
                     <label htmlFor="brief_company" className="form-label required">Brief Company Profile</label>
@@ -939,9 +933,9 @@ const AddSeller = () => {
                       {errors.zipcode && (<div className="invalid-feedback">{errors.zipcode}</div>)}
                     </div>
                     <div className="col-md-6 mb-3">
-                      <label htmlFor="browser" className="form-label required">Designation</label>
+                      <label htmlFor="browser" className="form-label">Designation</label>
                       <input
-                        type="text" className={`form-control ${errors.designation ? "is-invalid" : ""}`}
+                        type="text" className="form-control"
                         list="browsers"
                         id="browser"
                         placeholder="Designation"
@@ -953,7 +947,7 @@ const AddSeller = () => {
                           <option value={d.name} if="" key={index}></option>
                         ))}
                       </datalist>
-                      {errors.designation && (<div className="invalid-feedback">{errors.designation}</div>)}
+                      {/* {errors.designation && (<div className="invalid-feedback">{errors.designation}</div>)} */}
                     </div>
                     <div className="col-md-6 mb-3">
                       <label htmlFor="file" className="form-label required">

@@ -75,6 +75,23 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
   const [elcinaMember, setElcinaMember] = useState([]);
   const [selectedElcinaMember, setSelectedElcinaMember] = useState("");
   const [appliedElcinaMember, setAppliedElcinaMember] = useState("");
+  const datePickerRef = useRef(null);
+        
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setShowPicker(false);
+      }
+    };
+    if (showPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showPicker]);
 
   useEffect(() => {
     const fetchStates = async () => {
@@ -503,9 +520,9 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
             </>
           }
           />
-          <div className="card">
+          <div className="card mb-3">
             <div className="card-body">
-              <div className="row mb-3">
+              <div className="row">
                 {!getDeleted && (
                   <>
                     <div className="col-md-3 mb-3">
@@ -630,7 +647,20 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                       {format(range[0].startDate, "MMMM dd, yyyy")} - {format(range[0].endDate, "MMMM dd, yyyy")}
                     </button>
                     {showPicker && (
-                      <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: "100%", left: 0 }}>
+                      <div
+                        ref={datePickerRef}
+                        className="position-absolute z-3 bg-white shadow p-3 rounded"
+                        style={{ top: '100%', left: 0, minWidth: '300px' }}
+                      >
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <h6 className="mb-0">Select Date Range</h6>
+                          <button
+                            type="button"
+                            className="btn-close"
+                            aria-label="Close"
+                            onClick={() => setShowPicker(false)}
+                          ></button>
+                        </div>
                         <DateRangePicker
                           ranges={range}
                           onChange={handleRangeChange}
@@ -638,6 +668,15 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                           moveRangeOnFirstSelection={false}
                           editableDateInputs={true}
                         />
+                        <div className="text-end mt-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-secondary"
+                            onClick={() => setShowPicker(false)}
+                          >
+                            Close
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -669,13 +708,17 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                   <button className="btn btn-secondary" onClick={() => { clearFilters(); }}>Clear</button>
                 </div>
               </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
               <DataTable
                 columns={[
                   ...(!getDeleted ? [{ key: "select", label: (<input type="checkbox" onChange={handleSelectAll} />) }] : []),
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "organization_name", label: "Company", sortable: true },
                   { key: "coreactivity_name", label: "Coreactivity / Category / Segment / Sub Segment", sortable: true },
-                  { key: "designation", label: "Designation / Website / Quality Certification", sortable: true },
+                  // { key: "designation", label: "Designation / Website / Quality Certification", sortable: true },
                   { key: "created_at", label: "Created", sortable: true },
                   { key: "updated_at", label: "Last Update", sortable: true },
                   ...(!getDeleted ? [{ key: "status", label: "Status", sortable: false }] : []),
@@ -704,7 +747,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                     )}
                     <td><Link to={`/admin/seller/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
                     <td>
-                      {row.organization_name && (<><strong>{row.organization_name}</strong><br /></>)}
+                      {row.organization_name && (<><strong><a href={`/companies/${row.organization_slug}`} target="_blank">{row.organization_name}</a></strong><br /></>)}
                       {row.elcina_member == 1 && (<><span className="badge bg-primary mb-1">Elcina Member</span><br /></>)}
                       {row.is_trading == 1 && (<><span className="badge bg-success mb-1">Trader</span><br /></>)}
                       {row.full_name && (<><i className="bx bx-user me-1" />{row.full_name}<br /></>)}
@@ -715,7 +758,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                       <strong>Products:</strong> <span className="badge bg-primary mb-1">{row.user_count}</span>
                     </td>
                     <td>{row.coreactivity_name}<br />{row.activity_name}<br />{row.category_name}<br />{row.sub_category_name}</td>
-                    <td>{row.designation}<br />{row.website}</td>
+                    {/* <td>{row.designation}<br />{row.website}</td> */}
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     {!getDeleted && (

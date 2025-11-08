@@ -36,18 +36,14 @@ const MissionStatementForm = () => {
 
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     const maxSize = 2 * 1024 * 1024;
-    if (!missionFile && !formData.mission_file) {
-      errs.mission_file = 'Logo image is required';
-    } else if (missionFile) {
+    if (missionFile) {
       if (!allowedImageTypes.includes(missionFile.type)) {
         errs.mission_file = 'Invalid image format (only JPG/PNG allowed)';
       } else if (missionFile.size > maxSize) {
         errs.mission_file = 'Image size must be under 2MB';
       }
     }
-    if (!missionIcon && !formData.mission_icon) {
-      errs.mission_icon = 'Icon image is required';
-    } else if (missionIcon) {
+    if (missionIcon) {
       if (!allowedImageTypes.includes(missionIcon.type)) {
         errs.mission_icon = 'Invalid image format (only JPG/PNG allowed)';
       } else if (missionIcon.size > maxSize) {
@@ -93,9 +89,9 @@ const MissionStatementForm = () => {
         </div>
         
         <div className="col-md-6">
-          <label htmlFor="mission_file" className="form-label required">Logo</label>
-          <input className={`form-control ${errors.mission_file ? 'is-invalid' : ''}`} type="file" id="mission_file" onChange={handleMissionFileChange} />
-          {errors.mission_file && <div className="invalid-feedback">{errors.mission_file}</div>}
+          <label htmlFor="mission_file" className="form-label">Logo</label>
+          <input className="form-control" type="file" id="mission_file" onChange={handleMissionFileChange} />
+          {/* {errors.mission_file && <div className="invalid-feedback">{errors.mission_file}</div>} */}
           {missionFile ? (
             <img
               src={URL.createObjectURL(missionFile)}
@@ -114,9 +110,9 @@ const MissionStatementForm = () => {
           ) : null}
         </div>
         <div className="col-md-6">
-          <label htmlFor="mission_icon" className="form-label required">Icon</label>
-          <input className={`form-control ${errors.mission_icon ? 'is-invalid' : ''}`} type="file" id="mission_icon" onChange={handleMissionIconChange} />
-          {errors.mission_icon && <div className="invalid-feedback">{errors.mission_icon}</div>}
+          <label htmlFor="mission_icon" className="form-label">Icon</label>
+          <input className="form-control" type="file" id="mission_icon" onChange={handleMissionIconChange} />
+          {/* {errors.mission_icon && <div className="invalid-feedback">{errors.mission_icon}</div>} */}
           {missionIcon ? (
             <img
               src={URL.createObjectURL(missionIcon)}

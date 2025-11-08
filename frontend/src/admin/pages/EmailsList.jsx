@@ -116,9 +116,9 @@ const EmailsList = () => {
               <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             }
           />
-          <div className="card">
+          <div className="card mb-3">
             <div className="card-body">
-              <div className="row mb-3">
+              <div className="row">
                 <div className="col-md-8">
                   <div className="d-flex align-items-center gap-2">
                     <label htmlFor="emailForInput" className="form-label">Filter:</label>
@@ -142,6 +142,10 @@ const EmailsList = () => {
                   <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                 </div>
               </div>
+              </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
               <DataTable
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },

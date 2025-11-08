@@ -407,7 +407,7 @@ const ItemSubCategory = () => {
           }
           />
           <div className="row">
-            <div className="col-md-5">
+            <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title mb-3">{isEditing ? "Edit Item Sub Category" : "Add Item Sub Category"}</h5>
@@ -540,10 +540,9 @@ const ItemSubCategory = () => {
                 </div>
               </div>
             </div>
-            <div className="col-md-7">
+            <div className="col-md-8">
               <div className="card">
                 <div className="card-body">
-                  {/* <h5 className="card-title mb-3">Item Sub Category list</h5> */}
                   <DataTable
                     columns={[
                       ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),

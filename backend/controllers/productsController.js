@@ -937,7 +937,7 @@ exports.getAllProductsServerSide = async (req, res) => {
       product_status,
       is_approve
     } = req.query;
-    const validColumns = ['id', 'title', 'article_number', 'created_at', 'updated_at', 'category_name', 'subcategory_name', 'company_name'];
+    const validColumns = ['id', 'title', 'article_number', 'created_at', 'updated_at', 'category_name', 'subcategory_name', 'company_name', 'company_slug'];
     const viewType = req.query.viewType || '';
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -1054,13 +1054,14 @@ exports.getAllProductsServerSide = async (req, res) => {
       include: [
         { model: Categories, attributes: ['name'], as: 'Categories' },
         { model: SubCategories, attributes: ['name'], as: 'SubCategories' },
-        { model: CompanyInfo, attributes: ['organization_name'], as: 'company_info' },
+        { model: CompanyInfo, attributes: ['organization_name', 'organization_slug'], as: 'company_info' },
         { model: UploadImage, attributes: ['file'], as: 'file' },
       ],
     });
     const mappedRows = rows.map(row => ({
       id: row.id,
       title: row.title,
+      slug: row.slug,
       article_number: row.article_number,
       category: row.category,
       category_name: row.Categories ? row.Categories.name : null,
@@ -1068,6 +1069,7 @@ exports.getAllProductsServerSide = async (req, res) => {
       subcategory_name: row.SubCategories ? row.SubCategories.name : null,
       company_id: row.company_id,
       company_name: row.company_info ? row.company_info.organization_name : null,
+      company_slug: row.company_info ? row.company_info.organization_slug : null,
       file_id: row.file_id,
       file_name: row.file ? row.file.file : null,
       status: row.status,

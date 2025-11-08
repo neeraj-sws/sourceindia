@@ -293,7 +293,7 @@ const SubAdminList = () => {
           }
           />          
           <div className="row">
-            <div className="col-md-5">
+            <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title mb-3">{isEditing ? "Edit Sub Admin" : "Add Sub Admin"}</h5>
@@ -398,10 +398,9 @@ const SubAdminList = () => {
                 </div>
               </div>
             </div>
-            <div className="col-md-7">
+            <div className="col-md-8">
               <div className="card">
                 <div className="card-body">
-                  {/* <h5 className="card-title mb-3">Sub Admin List</h5> */}
                   <DataTable
                     columns={[
                       ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),

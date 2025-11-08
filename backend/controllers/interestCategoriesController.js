@@ -12,9 +12,9 @@ exports.createInterestCategories = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
       const { name, color, status } = req.body;
-      if (!name || !color || !status || !req.file) {
+      /*if (!name || !color || !status || !req.file) {
         return res.status(400).json({ message: 'All fields (name, color, status, file) are required' });
-      }
+      }*/
       const uploadImage = await UploadImage.create({
         file: `upload/interest_category/${req.file.filename}`,
       });
@@ -70,9 +70,9 @@ exports.updateInterestCategories = async (req, res) => {
     }
     try {
       const { name, color, status } = req.body;
-      if (!name || !color || !status) {
+      /*if (!name || !color || !status) {
         return res.status(400).json({ message: 'All fields (name, color, status) are required' });
-      }
+      }*/
       const interestCategory = await InterestCategories.findByPk(req.params.id);
       if (!interestCategory) {
         return res.status(404).json({ message: 'Interest Category not found' });

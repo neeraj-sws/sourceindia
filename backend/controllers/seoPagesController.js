@@ -15,9 +15,9 @@ exports.createSeoPages = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
       const { title, meta_title, meta_description } = req.body;
-      if (!title || !meta_title || !meta_description || !req.file) {
+      /*if (!title || !meta_title || !meta_description || !req.file) {
         return res.status(400).json({ message: 'All fields (title, meta_title, meta_description, file) are required' });
-      }
+      }*/
       const meta_image = req.file ? `upload/seo/${req.file.filename}` : null;
       const slug = createSlug(title);
       const seoPages = await SeoPages.create({
@@ -63,9 +63,9 @@ exports.updateSeoPages = async (req, res) => {
     }
     try {
       const { title, meta_title, meta_description } = req.body;
-      if (!title || !meta_title || !meta_description) {
+      /*if (!title || !meta_title || !meta_description) {
         return res.status(400).json({ message: 'All fields (title, meta_title, meta_description) are required' });
-      }
+      }*/
       const seoPages = await SeoPages.findByPk(req.params.id);
       if (!seoPages) {
         return res.status(404).json({ message: 'Seo Pagess not found' });

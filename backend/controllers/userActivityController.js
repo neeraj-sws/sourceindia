@@ -175,7 +175,7 @@ exports.getAllUserActivitiesServerSide = async (req, res) => {
             {
               model: CompanyInfo,
               as: 'company_info',
-              attributes: [['organization_name', 'organization_name']],
+              attributes: [['organization_name', 'organization_name'],['organization_slug', 'organization_slug']],
               required: false,
             }
           ],
@@ -187,6 +187,7 @@ exports.getAllUserActivitiesServerSide = async (req, res) => {
       id: row.id,
       user_id: row.user_id,
       user_company_name: row.Users?.company_info?.organization_name || null,
+      user_company_slug: row.Users?.company_info?.organization_slug || null,
       user_name: row.Users ? `${row.Users.fname} ${row.Users.lname}` : null,
       user_email: row.Users ? row.Users.email : null,
       user_mobile: row.Users ? row.Users.mobile : null,

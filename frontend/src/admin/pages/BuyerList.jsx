@@ -56,6 +56,23 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
   const [tempCustomerId, setTempCustomerId] = useState("");
   const [fullName, setFullName] = useState("");
   const [tempFullName, setTempFullName] = useState("");
+  const datePickerRef = useRef(null);
+  
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+          setShowPicker(false);
+        }
+      };
+      if (showPicker) {
+        document.addEventListener("mousedown", handleClickOutside);
+      } else {
+        document.removeEventListener("mousedown", handleClickOutside);
+      }
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [showPicker]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -353,9 +370,9 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
             </>
           }
           />
-          <div className="card">
+          <div className="card mb-3">
             <div className="card-body">
-              <div className="row mb-3">
+              <div className="row">
                 <div className={!getDeleted ? "col-md-6 mb-3" : "col-md-8 d-flex align-items-center gap-2"}>
                   <label className="form-label">Date Filter:</label>
                   <div className="position-relative">
@@ -364,7 +381,20 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                       {format(range[0].startDate, "MMMM dd, yyyy")} - {format(range[0].endDate, "MMMM dd, yyyy")}
                     </button>
                     {showPicker && (
-                      <div className="position-absolute z-3 bg-white shadow p-2" style={{ top: "100%", left: 0 }}>
+                      <div
+                        ref={datePickerRef}
+                        className="position-absolute z-3 bg-white shadow p-3 rounded"
+                        style={{ top: '100%', left: 0, minWidth: '300px' }}
+                      >
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <h6 className="mb-0">Select Date Range</h6>
+                          <button
+                            type="button"
+                            className="btn-close"
+                            aria-label="Close"
+                            onClick={() => setShowPicker(false)}
+                          ></button>
+                        </div>
                         <DateRangePicker
                           ranges={range}
                           onChange={handleRangeChange}
@@ -372,6 +402,15 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                           moveRangeOnFirstSelection={false}
                           editableDateInputs={true}
                         />
+                        <div className="text-end mt-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-secondary"
+                            onClick={() => setShowPicker(false)}
+                          >
+                            Close
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -446,7 +485,11 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                   </button>
                   <button className="btn btn-secondary" onClick={() => { clearFilters(); }}>Clear</button>
                 </div>
-              </div>              
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-body">
               <DataTable
                 columns={[
                   ...(!getDeleted ? [{key: "select", label: (<input type="checkbox" onChange={handleSelectAll} />)}] : []),
@@ -458,7 +501,6 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                   { key: "status", label: "User Status", sortable: false },
                   { key: "account_status", label: "Account Status", sortable: false },
                   { key: "seller_status", label: "Make Seller", sortable: false },
-                  { key: "user_category", label: "User Category", sortable: false },
                   ]:[]),
                   { key: "created_at", label: "Created", sortable: true },
                   { key: "updated_at", label: "Last Update", sortable: true },                  
@@ -487,7 +529,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                     )}
                     <td><Link to={`/admin/buyer/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
                     <td>{row.full_name}<br />{row.email}<br />{row.mobile}<br />{row.is_trading == 1 ? (<span className="badge bg-success">Trader</span>) : ("")}</td>
-                    <td>{row.user_company}<br />{row.walkin_buyer == 1 ? (<span className="badge bg-primary">Walk-In Buyer</span>) : ("")}</td>
+                    <td><a href={`/companies/${row.company_slug}`} target="_blank">{row.user_company}</a><br />{row.walkin_buyer == 1 ? (<span className="badge bg-primary">Walk-In Buyer</span>) : ("")}</td>
                     <td>{row.address}</td>
                     {!getDeleted && (
                       <>
@@ -524,7 +566,6 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                             />
                           </div>
                         </td>
-                        <td>{row.user_category}</td>                        
                       </>
                     )}
                     <td>{formatDateTime(row.created_at)}</td>

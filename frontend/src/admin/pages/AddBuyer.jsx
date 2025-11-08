@@ -139,12 +139,12 @@ const AddBuyer = () => {
     if (!selectedCity) errs.city = 'City is required';
     if (!formData.zipcode) errs.zipcode = 'Post Code is required';
     if (!formData.user_company) errs.user_company = 'Company Name is required';
-    if (!formData.website) errs.website = 'Website is required';
-    if (!formData.is_trading) errs.is_trading = 'Trader is required';
+    // if (!formData.website) errs.website = 'Website is required';
+    // if (!formData.is_trading) errs.is_trading = 'Trader is required';
     if (!formData.elcina_member) errs.elcina_member = 'ELCINA Member is required';
-    if (!formData.user_category) errs.user_category = 'User Category is required';
+    // if (!formData.user_category) errs.user_category = 'User Category is required';
     if (!formData.address) errs.address = 'Address is required';
-    if (!formData.products) errs.products = 'Products is required';
+    // if (!formData.products) errs.products = 'Products is required';
 
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     const maxSize = 2 * 1024 * 1024;
@@ -369,9 +369,9 @@ const AddBuyer = () => {
                       ) : null}
                     </div>
                     <div className="col-md-6">
-                      <label htmlFor="user_category" className="form-label required">User Category</label>
+                      <label htmlFor="user_category" className="form-label">User Category</label>
                       <select
-                        id="user_category" className={`form-control ${errors.user_category ? "is-invalid" : ""}`}
+                        id="user_category" className="form-control"
                         value={formData.user_category}
                         onChange={handleInputChange}
                       >
@@ -381,7 +381,7 @@ const AddBuyer = () => {
                         <option value="oem">OEM</option>
                         <option value="component manufacturer">Component Manufacturer</option>
                       </select>
-                      {errors.user_category && (<div className="invalid-feedback">{errors.user_category}</div>)}
+                      {/* {errors.user_category && (<div className="invalid-feedback">{errors.user_category}</div>)} */}
                     </div>
                   </div>
                 </div>
@@ -400,21 +400,21 @@ const AddBuyer = () => {
                       {errors.user_company && <div className="invalid-feedback">{errors.user_company}</div>}
                     </div>
                     <div className="col-md-6 mb-3">
-                      <label htmlFor="website" className="form-label required">Website</label>
-                      <input type="url" className={`form-control ${errors.website ? 'is-invalid' : ''}`} id="website"
+                      <label htmlFor="website" className="form-label">Website</label>
+                      <input type="url" className="form-control" id="website"
                         placeholder="Website" value={formData.website} onChange={handleInputChange} />
-                      {errors.website && <div className="invalid-feedback">{errors.website}</div>}
+                      {/* {errors.website && <div className="invalid-feedback">{errors.website}</div>} */}
                     </div>
 
                     <div className="col-md-3 mb-3">
-                      <label htmlFor="is_trading" className="form-label required">Trader</label>
-                      <select id="is_trading" className={`form-select ${errors.is_trading ? 'is-invalid' : ''}`}
+                      <label htmlFor="is_trading" className="form-label">Trader</label>
+                      <select id="is_trading" className="form-control"
                         value={formData.is_trading} onChange={handleInputChange}>
                         <option value="">Select Trader</option>
                         <option value="1">Yes</option>
                         <option value="0">No</option>
                       </select>
-                      {errors.is_trading && <div className="invalid-feedback">{errors.is_trading}</div>}
+                      {/* {errors.is_trading && <div className="invalid-feedback">{errors.is_trading}</div>} */}
                     </div>
                     <div className="col-md-3 mb-3">
                       <label htmlFor="elcina_member" className="form-label required">ELCINA Member</label>
@@ -468,16 +468,16 @@ const AddBuyer = () => {
                       {errors.address && <div className="invalid-feedback">{errors.address}</div>}
                     </div>
                     <div className="col-md-6">
-                      <label htmlFor="products" className="form-label required">Products</label>
+                      <label htmlFor="products" className="form-label">Products</label>
                       <textarea
-                        className={`form-control ${errors.products ? 'is-invalid' : ''}`}
+                        className="form-control"
                         id="products"
                         placeholder="Products"
                         rows={3}
                         defaultValue={formData.products}
                         onChange={handleInputChange}
                       />
-                      {errors.products && <div className="invalid-feedback">{errors.products}</div>}
+                      {/* {errors.products && <div className="invalid-feedback">{errors.products}</div>} */}
                     </div>
                     <div className="col-md-12 text-end">
                       <button type="submit" className="btn btn-primary px-4 mt-4">

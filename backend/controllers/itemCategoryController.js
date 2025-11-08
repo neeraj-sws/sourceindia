@@ -14,9 +14,9 @@ exports.createItemCategory = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
   try {
     const { name, category_id, subcategory_id, status } = req.body;
-    if (!name || !category_id || !subcategory_id || status === undefined) {
+    /*if (!name || !category_id || !subcategory_id || status === undefined) {
       return res.status(400).json({ message: 'All fields (name, category_id, subcategory_id, status) are required' });
-    }
+    }*/
     const uploadImage = await UploadImage.create({
       file: `upload/items/${req.file.filename}`,
     });

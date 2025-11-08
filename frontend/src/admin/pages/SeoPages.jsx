@@ -171,7 +171,7 @@ const SeoPages = () => {
         <div className="page-content">
           <Breadcrumb mainhead="Seo Pages" maincount={totalRecords}  page="" title="Seo Pages" add_button="Add Seo Pages" add_link="#" onClick={() => openForm()} />
           <div className="row">
-            <div className="col-md-5">
+            <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
                   <h5 className="card-title mb-3">{isEditing ? "Edit Seo Pages" : "Add Seo Pages"}</h5>
@@ -256,10 +256,9 @@ const SeoPages = () => {
                 </div>
               </div>
             </div>
-            <div className="col-md-7">
+            <div className="col-md-8">
               <div className="card">
                 <div className="card-body">
-                  {/* <h5 className="card-title mb-3">Seo Pages List</h5> */}
                   <DataTable
                     columns={[
                       { key: "id", label: "S.No.", sortable: true },
