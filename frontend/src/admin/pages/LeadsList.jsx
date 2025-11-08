@@ -512,6 +512,7 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
                   { key: "from_full_name", label: "Name", sortable: true },
                   { key: "to_organization_name", label: "To", sortable: true },
                   { key: "from_organization_name", label: "From", sortable: true },
+                  ...(getPublic ? [{ key: "enquiry_product", label: "Product", sortable: false }]:[]),
                   { key: "category_name", label: "Category", sortable: true },
                   { key: "quantity", label: "Quantity", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },
@@ -557,6 +558,9 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
                       {row.from_mobile && (<>{row.from_mobile}<br /></>)}
                       <span className="badge bg-primary">{row.from_user_type == 1 ? "Seller" : row.from_user_type == 0 ? "Buyer" : ""}</span>
                     </td>
+                    {!getPublic && (
+                    <td><a href={`/products/${row.product_slug}`} target="_blank">{row.enquiry_product}</a></td>
+                    )}
                     <td>{row.category_name}</td>
                     <td>{row.quantity}</td>
                     <td>{formatDateTime(row.created_at)}</td>

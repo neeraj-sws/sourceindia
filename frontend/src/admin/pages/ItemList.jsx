@@ -217,29 +217,45 @@ const ItemList = ({ getDeleted }) => {
   };
 
   useEffect(() => {
-    $('#category').select2({
-      theme: "bootstrap",
-      width: '100%',
-      placeholder: "Select Category"
-    }).on("change", function () {
-      const categoryId = $(this).val();
-      handleCategoryChange({ target: { value: categoryId } });
-    });
+  const $category = $('#category');
 
-    $('#sub_category').select2({
-      theme: "bootstrap",
-      width: '100%',
-      placeholder: "Select Sub Category"
-    }).on("change", function () {
-      const subCategoryId = $(this).val();
-      handleSubCategoryChange({ target: { value: subCategoryId } });
-    });
+  if ($category.data('select2')) {
+    $category.select2('destroy'); // destroy old instance first
+  }
 
-    return () => {
-      if ($('#category').data('select2')) {$('#category').select2('destroy') };
-      if ($('#sub_category').data('select2')) {$('#sub_category').select2('destroy')};
-    };
-  }, [categories, subcategories]);
+  $category.select2({
+    theme: "bootstrap",
+    width: '100%',
+    placeholder: "Select Category"
+  }).on("change", function () {
+    const categoryId = $(this).val();
+    handleCategoryChange({ target: { value: categoryId } });
+  });
+
+  const $sub_category = $('#sub_category');
+
+  if ($sub_category.data('select2')) {
+    $sub_category.select2('destroy'); // destroy old instance first
+  }
+
+  $sub_category.select2({
+    theme: "bootstrap",
+    width: '100%',
+    placeholder: "Select Category"
+  }).on("change", function () {
+    const subCategoryId = $(this).val();
+    handleSubCategoryChange({ target: { value: subCategoryId } });
+  });
+
+  return () => {
+    if ($category.data('select2')) {
+      $category.select2('destroy');
+    }
+    if ($sub_category.data('select2')) {
+      $sub_category.select2('destroy');
+    }
+  };
+}, [categories, subcategories]); 
 
   const openDeleteModal = (subSubCategoriesId) => { setItemToDelete(subSubCategoriesId); setIsBulkDelete(false); setShowDeleteModal(true); };
   const openBulkDeleteModal = () => { setItemToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
