@@ -11,6 +11,9 @@ import Login from '../pages/Login';
 import Companies from '../pages/Companies';
 import CompaniesFilter from '../pages/CompaniesFilter';
 import Categories from '../pages/Categories';
+import SubCategories from '../pages/SubCategories';
+import ItemCategories from '../pages/ItemCategories';
+import Items from '../pages/Item';
 import ProductsList from '../pages/ProductsList';
 import KnowledgeCenter from '../pages/KnowledgeCenter';
 import ContactUs from '../pages/ContactUs';
@@ -69,6 +72,9 @@ function FrontLayout() {
               <Route path="/buyer-list" element={<CompaniesFilter isSeller="0" />} />
               <Route path="/trading-list" element={<CompaniesFilter isTrading="1" />} />
               <Route path="/categories" element={<Categories />} />
+              <Route path="/sub-categories/:slug" element={<SubCategories />} />
+              <Route path="/item-categories/:slug" element={<ItemCategories />} />
+              <Route path="/items/:slug" element={<Items />} />
               <Route path="/products" element={<ProductsList />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/knowledge-center" element={<KnowledgeCenter />} />

@@ -1,14 +1,14 @@
 import React from 'react'
 import Category from '../sections/Category';
-import CategoryMain from '../sections/CategoryMain';
+import SubCategory from '../sections/SubCategory';
 
-const Categories = () => {
+const SubCategories = () => {
   return (
     <>
       {/* <Category /> */}
-      <CategoryMain />
+      <SubCategory />
     </>
   )
 }
 
-export default Categories
+export default SubCategories
