@@ -67,7 +67,7 @@ const CategoryMain = ({ isHome, limit }) => {
                                       <ul className="list-unstyled mb-0">
                                         {(sub.item_categories || []).slice(0, 4).map((item, i) => (
                                           <li key={i}>
-                                            <a href={`/item-categories/${item.slug}`} className="text-decoration-none text-primary small">
+                                            <a href={`/item-subcategory/${item.slug}`} className="text-decoration-none text-primary small">
                                               {item.name}
                                             </a>
                                           </li>

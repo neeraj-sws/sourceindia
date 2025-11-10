@@ -517,7 +517,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
               </div>
             )}
 
-          <div className={`row g-3 ${viewMode === 'list' ? 'flex-column' : ''}`} style={{ display: 'none' }}>
+          <div className={`row g-3 mt-3 ${viewMode === 'list' ? 'flex-column' : ''}`} style={{ display: 'none' }}>
             {loading ? (
               <div className="text-center">
                 <img src="/producfilter.gif" height={80} />
@@ -561,6 +561,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                           </p>
                         </div>
 
+
                         <div className="d-flex flex-wrap gap-3">
                           <div className="d-flex gap-2">
                             <b className="fw-semibold">Website:</b>
@@ -600,7 +601,26 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                       {/* Buttons */}
                       <div className="d-flex flex-column gap-2 ms-md-auto w-100 w-md-auto mt-3 mt-md-0">
                         <Link className="btn btn-sm btn-primary w-100">View Details</Link>
-                        <Link className="btn btn-sm btn-orange w-100">Enquiry</Link>
+                        {isSeller == 1 || isTrading == 1
+                          ? (
+                            <Link
+                              to={`/companies/${company.organization_slug}`}
+                              className="d-block w-100 pt-2 btn btn-primary text-nowrap px-5"
+                            >
+                              View Details
+                            </Link>
+                          )
+                          : (
+                            <Link
+                              to="/login"  // or whatever your login/connect route is
+                              className="d-block w-100 pt-2 btn btn-orange text-nowrap px-5"
+                            >
+                              Connect
+                            </Link>
+                          )
+                        }
+
+                        {/* <Link className="btn btn-sm btn-orange w-100">Enquiry</Link> */}
                       </div>
                     </div>
                   </div>
@@ -614,7 +634,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
           </div>
 
 
-          <div className={`row g-3 ${viewMode === 'list' ? 'flex-column' : ''}`}>
+          <div className={`row g-3 mt-1 ${viewMode === 'list' ? 'flex-column' : ''}`}>
             {loading ? (
               <div className="text-center"><img src="/producfilter.gif" height={80} /></div>
             ) : filteredCompanies.length > 0 ? (
@@ -636,30 +656,40 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                         </div>
                         <div className={viewMode === 'list' ? 'd-none' : ''}>
                           <h5 className="card-title mb-1">{company.organization_name}</h5>
-                          <div className="companyitems companylocation mb-2 d-flex gap-2">
-                            <b className="fw-semibold">Location:</b>
-                            <p className="mb-0">
-                              {company.company_location}
-                            </p>
-                          </div>
+                          {isSeller == 1 || isTrading == 1 ? (
+                            <div className="companyitems companylocation mb-2 d-flex gap-2">
+                              <b className="fw-semibold">Location:</b>
+                              <p className="mb-0">
+                                {company.company_location}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="companyitems companylocation d-flex gap-2">
+                              <b className="fw-semibold">Location:</b>
+                              <p className="mb-0">
+                                {company.user.address}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className={`card-body ${viewMode === 'list' ? 'pt-2' : ''}`}>
                       <div>
-                        <div className={viewMode === 'list' ? 'd-block' : 'd-none'}>
 
-                          <h5 className="card-title mb-1">{company.organization_name}</h5>
-                          <div className="companyitems companylocation companylocationlist mb-2 d-flex gap-2">
-                            <b className="fw-semibold">Location:</b>
-                            <p className="mb-0">
-                              {company.company_location}
-                            </p>
-                          </div>
-                        </div>
-                        {isSeller == 1 ? (
+                        {isSeller == 1 || isTrading == 1 ? (
                           <>
+                            <div className={viewMode === 'list' ? 'd-block' : 'd-none'}>
+
+                              <h5 className="card-title mb-1">{company.organization_name}</h5>
+                              <div className="companyitems companylocation companylocationlist mb-2 d-flex gap-2">
+                                <b className="fw-semibold">Location:</b>
+                                <p className="mb-0">
+                                  {company.company_location}
+                                </p>
+                              </div>
+                            </div>
                             <div className="companyitems companywebsite mb-2 d-flex gap-2">
                               <b className="fw-semibold">Website:</b>
                               <p className="mb-0">{company.company_website}</p>
@@ -687,9 +717,19 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                           </>
                         ) : (
                           <>
-                            <div className="companyitems companybuyer mb-2 d-flex gap-2">
-                              <b className="fw-semibold">Buyer Type:</b>
-                              <p className="mb-0"></p>
+                            <div className={viewMode === 'list' ? 'd-block' : 'd-none'}>
+
+                              <h5 className="card-title mb-1">{company.organization_name}</h5>
+                              <div className="companyitems companylocation companylocationlist mb-1 d-flex gap-2">
+                                <b className="fw-semibold">Location:</b>
+                                <p className="mb-0">
+                                  {company.user.address}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="companyitems companybuyer d-flex gap-2">
+                              <b className="fw-semibold">Product: </b>
+                              <p className="mb-0">{company.user.products}</p>
                             </div>
 
                           </>
@@ -720,13 +760,29 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                     </div>
 
                     <div className={`card-footer ${viewMode === 'list' ? 'bg-white border-0 pe-2 pt-0' : ''}`}>
-                      <div className={`d-flex gap-2 ${viewMode === 'list' ? 'flex-column' : 'flex-row'}`}>
-                        <Link to={`/companies/${company.organization_slug}`} className="d-block w-100 pt-2 btn btn-primary text-nowrap px-5">
-                          <span className="">View Details</span>
-                        </Link>
-                        <Link className="d-block w-100 pt-2 btn btn-orange text-nowrap px-5">
+                      <div className={`d-flex gap-2 ${viewMode === 'list' ? 'align-items-center h-100' : 'flex-row'}`}>
+                        {isSeller == 1 || isTrading == 1
+                          ? (
+                            <Link
+                              to={`/companies/${company.organization_slug}`}
+                              className="d-block w-100 pt-2 btn btn-primary text-nowrap px-5"
+                            >
+                              View Details
+                            </Link>
+                          )
+                          : (
+                            <Link
+                              to="/login"  // or whatever your login/connect route is
+                              className="d-block w-100 pt-2 btn btn-orange text-nowrap px-5"
+                            >
+                              Connect
+                            </Link>
+                          )
+                        }
+
+                        {/* <Link className="d-block w-100 pt-2 btn btn-orange text-nowrap px-5">
                           <span className="">Enquiry</span>
-                        </Link>
+                        </Link> */}
                       </div>
                     </div>
                   </div>

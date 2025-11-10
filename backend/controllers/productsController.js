@@ -55,30 +55,30 @@ exports.createProducts = async (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
 
     try {
-    let {
-  user_id, title, code, article_number, category, sub_category,
-  item_category_id, item_subcategory_id, item_id,
-  is_gold, is_featured, is_recommended, best_product, status,
-  application, short_description, description, slug,
-  core_activity, activity, segment, product_service
-} = req.body;
+      let {
+        user_id, title, code, article_number, category, sub_category,
+        item_category_id, item_subcategory_id, item_id,
+        is_gold, is_featured, is_recommended, best_product, status,
+        application, short_description, description, slug,
+        core_activity, activity, segment, product_service
+      } = req.body;
 
-// Inline clean for all values
-[
-  user_id, category, sub_category, item_category_id,
-  item_subcategory_id, item_id, application, core_activity,
-  activity, segment, product_service
-] = [
-  user_id, category, sub_category, item_category_id,
-  item_subcategory_id, item_id, application, core_activity,
-  activity, segment, product_service
-].map(v =>
-  Array.isArray(v)
-    ? v.map(x => String(x).trim().replace(/^,/, '')).filter(Boolean)
-    : v != null
-      ? String(v).trim().replace(/^,/, '')
-      : v
-);
+      // Inline clean for all values
+      [
+        user_id, category, sub_category, item_category_id,
+        item_subcategory_id, item_id, application, core_activity,
+        activity, segment, product_service
+      ] = [
+        user_id, category, sub_category, item_category_id,
+        item_subcategory_id, item_id, application, core_activity,
+        activity, segment, product_service
+      ].map(v =>
+        Array.isArray(v)
+          ? v.map(x => String(x).trim().replace(/^,/, '')).filter(Boolean)
+          : v != null
+            ? String(v).trim().replace(/^,/, '')
+            : v
+      );
 
 
       if (!user_id || !title || !category || !status || !short_description || !req.files || req.files.length === 0) {
@@ -589,7 +589,6 @@ exports.deleteSelectedProducts = async (req, res) => {
 };
 
 
-
 exports.getAllCompanyInfo = async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
@@ -698,20 +697,19 @@ exports.getAllCompanyInfo = async (req, res) => {
       productMap[p.company_id].push({ id: p.id, title: p.title, slug: p.slug });
     });
 
-    // ✅ Fetch users of all companies
+    // ✅ Fetch users (single user per company)
     const users = await Users.findAll({
       where: { company_id: { [Op.in]: companyIds }, is_delete: 0, status: 1 },
-      attributes: ['id', 'company_id'],
+      order: [['id', 'ASC']], // to pick first user if multiple exist
       raw: true
     });
 
     const companyUsersMap = {};
     users.forEach(u => {
-      if (!companyUsersMap[u.company_id]) companyUsersMap[u.company_id] = [];
-      companyUsersMap[u.company_id].push(u.id);
+      if (!companyUsersMap[u.company_id]) companyUsersMap[u.company_id] = u;
     });
 
-    // ✅ Fetch SellerCategory (for all users)
+    // ✅ Fetch SellerCategory
     const sellerCats = await SellerCategory.findAll({
       attributes: ['user_id', 'category_id', 'subcategory_id'],
       raw: true
@@ -756,7 +754,9 @@ exports.getAllCompanyInfo = async (req, res) => {
       const coreActivityName = cd.CoreActivity?.name || null;
       const activityName = cd.Activity?.name || null;
 
-      const userIds = companyUsersMap[cd.id] || [];
+      const companyUser = companyUsersMap[cd.id] || null;
+      const userIds = companyUser ? [companyUser.id] : [];
+
       const catSet = new Set();
       const subSet = new Set();
 
@@ -783,7 +783,8 @@ exports.getAllCompanyInfo = async (req, res) => {
         product_count: countMap[cd.id] || 0,
         category_name: categoryNames,
         sub_category_name: subCategoryNames,
-        products: productMap[cd.id] || []
+        products: productMap[cd.id] || [],
+        user: companyUser // ✅ single user info
       };
     });
 
