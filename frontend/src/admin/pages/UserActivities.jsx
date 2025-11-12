@@ -20,7 +20,7 @@ const UserActivities = () => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const [userStats, setUserStats] = useState(null);
   const [chartLoading, setChartLoading] = useState(false);
   const [userActivityData, setUserActivityData] = useState([]);

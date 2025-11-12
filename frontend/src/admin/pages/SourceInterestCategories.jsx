@@ -21,7 +21,7 @@ const SourceInterestCategories = () => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
@@ -302,7 +302,7 @@ const SourceInterestCategories = () => {
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="interest_category_id" className="form-label required">Interest Category</label>
                       <select
-                        className={`form-control ${errors.interest_category_id ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="interest_category_id"
                         value={selectedCategories}
                         onChange={handleCategoriesChange}
@@ -314,7 +314,7 @@ const SourceInterestCategories = () => {
                           </option>
                         ))}
                       </select>
-                      {errors.interest_category_id && (<div className="invalid-feedback">{errors.interest_category_id} </div>
+                      {errors.interest_category_id && (<div className="text-danger small mt-1">{errors.interest_category_id} </div>
                       )}
                     </div>
                     <div className="form-group mb-3 col-md-12">

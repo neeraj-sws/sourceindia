@@ -21,7 +21,7 @@ const SubAdminList = () => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
@@ -351,7 +351,7 @@ const SubAdminList = () => {
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="role" className="form-label required">Role</label>
                       <select
-                        className={`form-control ${errors.role ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="role"
                         value={selectedRoles}
                         onChange={handleRolesChange}
@@ -430,7 +430,7 @@ const SubAdminList = () => {
                           <input type="checkbox" checked={selectedSubAdmin.includes(row.id)} onChange={() => handleSelectSubAdmin(row.id)} />
                         </td>
                         <td>{(page - 1) * limit + index + 1}</td>
-                        <td>{row.name}</td>
+                        <td>{row.name}<br />{row.email}<br />{row.mobile}</td>
                         <td>{row.role_name}</td>
                         <td>
                           <div className="form-check form-switch">

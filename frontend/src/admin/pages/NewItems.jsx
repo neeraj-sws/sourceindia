@@ -22,7 +22,7 @@ const NewItems = () => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
@@ -448,7 +448,7 @@ $('#item_sub_category_id')
                       <label htmlFor="name" className="form-label required">Name</label>
                       <input
                         type="text"
-                        className={`form-control ${errors.name ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="name"
                         value={formData.name}
                         onChange={handleChange}
@@ -459,7 +459,7 @@ $('#item_sub_category_id')
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="category_id" className="form-label required">Category</label>
                       <select
-                        className={`form-control ${errors.category_id ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="category_id"
                         value={selectedCategory}
                         onChange={handleCategoryChange}
@@ -471,13 +471,13 @@ $('#item_sub_category_id')
                           </option>
                         ))}
                       </select>
-                      {errors.category_id && (<div className="invalid-feedback">{errors.category_id} </div>
+                      {errors.category_id && (<div className="text-danger small">{errors.category_id} </div>
                       )}
                     </div>
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="subcategory_id" className="form-label required">Sub Category</label>
                       <select
-                        className={`form-control ${errors.subcategory_id ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="subcategory_id"
                         value={selectedSubCategory}
                         onChange={handleSubCategoryChange}
@@ -490,13 +490,13 @@ $('#item_sub_category_id')
                           </option>
                         ))}
                       </select>
-                      {errors.subcategory_id && (<div className="invalid-feedback">{errors.subcategory_id} </div>
+                      {errors.subcategory_id && (<div className="text-danger small">{errors.subcategory_id} </div>
                       )}
                     </div>
                     <div className="form-group mb-3 col-md-12">
   <label htmlFor="item_category_id" className="form-label required">Item Category</label>
   <select
-    className={`form-control ${errors.item_category_id ? "is-invalid" : ""}`}
+    className="form-control"
     id="item_category_id"
     value={selectedItemCategory}
     onChange={(e) => {
@@ -513,13 +513,13 @@ $('#item_sub_category_id')
     ))}
   </select>
   {errors.item_category_id && (
-    <div className="invalid-feedback">{errors.item_category_id}</div>
+    <div className="text-danger small">{errors.item_category_id}</div>
   )}
 </div>
                     <div className="form-group mb-3 col-md-12">
   <label htmlFor="item_sub_category_id" className="form-label required">Item Sub Category</label>
   <select
-    className={`form-control ${errors.item_sub_category_id ? "is-invalid" : ""}`}
+    className="form-control"
     id="item_sub_category_id"
     value={selectedItemSubCategory}
     onChange={(e) => setSelectedItemSubCategory(e.target.value)}
@@ -533,7 +533,7 @@ $('#item_sub_category_id')
     ))}
   </select>
   {errors.item_sub_category_id && (
-    <div className="invalid-feedback">{errors.item_sub_category_id}</div>
+    <div className="text-danger small">{errors.item_sub_category_id}</div>
   )}
 </div>
 <div className="form-group col-md-12 mb-3">

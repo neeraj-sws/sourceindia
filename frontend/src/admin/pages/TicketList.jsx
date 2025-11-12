@@ -23,7 +23,7 @@ const TicketList = () => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
@@ -369,7 +369,7 @@ setAppliedPriorityFilter('');
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="user_id" className="form-label required">On Behalf Of</label>
                       <select
-                        className={`form-control ${errors.user_id ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="user_id"
                         value={selectedUsers}
                         onChange={handleUsersChange}
@@ -412,7 +412,7 @@ setAppliedPriorityFilter('');
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="category" className="form-label required">Category</label>
                       <select
-                        className={`form-control ${errors.category ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="category"
                         value={selectedCategory}
                         onChange={handleCategoryChange}

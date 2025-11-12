@@ -45,6 +45,7 @@ const itemCategoryRoutes = require('./routes/itemCategoryRoutes');
 const itemSubCategoryRoutes = require('./routes/itemSubCategoryRoutes');
 const itemsRoutes = require('./routes/itemsRoutes');
 const shortcutRoutes = require('./routes/shortcutRoutes');
+const pagesRoutes = require('./routes/pagesRoutes');
 
 const app = express();
 const basePath = '/v2'; // All APIs will start with /v2
@@ -103,6 +104,7 @@ app.use(basePath + '/api/item_category', itemCategoryRoutes);
 app.use(basePath + '/api/item_sub_category', itemSubCategoryRoutes);
 app.use(basePath + '/api/items', itemsRoutes);
 app.use(basePath + '/api/shortcut', shortcutRoutes);
+app.use(basePath + '/api/pages', pagesRoutes);
 
 sequelize
   .sync()

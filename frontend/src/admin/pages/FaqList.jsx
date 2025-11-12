@@ -29,7 +29,7 @@ const FaqList = ({ getDeleted }) => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
@@ -391,7 +391,7 @@ const FaqList = ({ getDeleted }) => {
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="category" className="form-label required">Category</label>
                       <select
-                        className={`form-control ${errors.category ? "is-invalid" : ""}`}
+                        className="form-control select2"
                         id="category"
                         value={selectedCategory}
                         onChange={handleCategoryChange}

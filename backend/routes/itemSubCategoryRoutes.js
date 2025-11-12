@@ -10,6 +10,10 @@ router.get(
   '/by-category-subcategory-itemcategory/:category_id/:subcategory_id/:item_category_id',
   itemSubCategoryController.getItemSubCategoriesByCategorySubCategoryItemCategory
 );
+router.post(
+  '/by-selected-category-subcategory-itemcategory',
+  itemSubCategoryController.getItemSubCategoriesBySelectedCategorySubCategoryItemCategory
+);
 router.get('/:id', itemSubCategoryController.getItemSubCategoryById);
 router.put('/:id', itemSubCategoryController.updateItemSubCategory);
 router.delete('/:id', itemSubCategoryController.deleteItemSubCategory);

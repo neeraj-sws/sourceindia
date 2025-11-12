@@ -315,7 +315,7 @@ const ProfileEdit = () => {
                       <label htmlFor="state" className="form-label required">State</label>
                       <select
                         id="state"
-                        className={`form-control select2 ${errors.state ? "is-invalid" : ""}`}
+                        className="form-control select2"
                         value={selectedState}
                         onChange={handleStateChange}
                       >
@@ -324,13 +324,13 @@ const ProfileEdit = () => {
                           <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
                       </select>
-                      {errors.state && <div className="invalid-feedback">{errors.state}</div>}
+                      {errors.state && <div className="text-danger small">{errors.state}</div>}
                     </div>
                     <div className="col-md-6 mb-3">
                       <label htmlFor="city" className="form-label required">City</label>
                       <select
                         id="city"
-                        className={`form-control select2 ${errors.city ? "is-invalid" : ""}`}
+                        className="form-control select2"
                         value={selectedCity}
                         onChange={handleCityChange}
                       >
@@ -339,7 +339,7 @@ const ProfileEdit = () => {
                           <option key={city.id} value={city.id}>{city.name}</option>
                         ))}
                       </select>
-                      {errors.city && <div className="invalid-feedback">{errors.city}</div>}
+                      {errors.city && <div className="text-danger small">{errors.city}</div>}
                     </div>
                     <div className="col-md-6 mt-3">
                       <label className="form-label">

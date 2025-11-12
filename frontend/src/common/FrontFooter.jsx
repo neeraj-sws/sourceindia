@@ -62,9 +62,9 @@ const FrontFooter = () => {
             <div className="col-md-2">
               <p className="footer-section-title">Need Help?</p>
               <ul className="list-unstyled mb-0">
-                <li><a href="#">Terms & Conditions</a></li>
+                <li><Link to="/terms_conditions">Terms & Conditions</Link></li>
                 <li><a href="#">FAQ</a></li>
-                <li><a href="#">Privacy Policy</a></li>
+                <li><Link to="/privacy_policy">Privacy Policy</Link></li>
                 <li><Link to="/get-support">Support</Link></li>
                 <li><Link to="/knowledge-center">Knowledge Center</Link></li>
                 <li><Link to="/contact-us">Contact Us</Link></li>
