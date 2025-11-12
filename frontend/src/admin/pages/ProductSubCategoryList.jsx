@@ -25,7 +25,7 @@ const ProductSubCategoryList = ({ getDeleted }) => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);

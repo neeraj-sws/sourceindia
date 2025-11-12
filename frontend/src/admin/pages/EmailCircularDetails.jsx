@@ -16,7 +16,7 @@ const EmailCircularDetails = ({newsLatter_id}) => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const { newsletterId } = useParams();
   const [counts, setCounts] = useState({all: 0, mailSent: 0, mailUnSent: 0, mailOpen: 0, mailNotOpen: 0});
   const [formData, setFormData] = useState({ user_type: '', title: '', subject: '', description: '' });

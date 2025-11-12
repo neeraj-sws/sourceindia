@@ -198,14 +198,7 @@ const ShortcutPage = () => {
                               value={menu.status}
                               onChange={(e) =>
                                 setMenus((prev) =>
-                                  prev.map((m) =>
-                                    m.id === menu.id
-                                      ? {
-                                        ...m,
-                                        status: parseInt(e.target.value),
-                                      }
-                                      : m
-                                  )
+                                  prev.map((m) => m.id === menu.id ? {...m, status: parseInt(e.target.value)} : m)
                                 )
                               }
                             >

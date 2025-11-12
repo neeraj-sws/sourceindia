@@ -28,7 +28,7 @@ const CoreActivityList = ({ getDeleted }) => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
@@ -164,11 +164,11 @@ const CoreActivityList = ({ getDeleted }) => {
   const validateForm = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = "Name is required";
-    if (!selectedColors) errs.color = "Color is required";
+    // if (!selectedColors) errs.color = "Color is required";
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
-    if (!formData.file && !isEditing) {
-      errs.file = "Image is required";
-    }
+    // if (!formData.file && !isEditing) {
+    //   errs.file = "Image is required";
+    // }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -395,9 +395,9 @@ const CoreActivityList = ({ getDeleted }) => {
                       {errors.name && <div className="invalid-feedback">{errors.name}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="color" className="form-label required">Color</label>
+                      <label htmlFor="color" className="form-label">Color</label>
                         <select
-                        className={`form-control ${errors.color ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="color"
                         value={selectedColors}
                         onChange={handleColorsChange}
@@ -424,7 +424,7 @@ const CoreActivityList = ({ getDeleted }) => {
                       {errors.status && <div className="invalid-feedback">{errors.status}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="file" className="form-label required">Core Activity Image</label>
+                      <label htmlFor="file" className="form-label">Core Activity Image</label>
                       <input
                         type="file"
                         className={`form-control ${errors.file ? "is-invalid" : ""}`}

@@ -21,7 +21,7 @@ const OpenEnquiry = ({ showAll = false }) => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const [openEnquiryData, setOpenEnquiryData] = useState([]);
   const excelExportRef = useRef();
 

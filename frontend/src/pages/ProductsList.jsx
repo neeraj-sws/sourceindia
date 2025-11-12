@@ -16,6 +16,19 @@ const ProductsList = () => {
   const [subCategories, setSubCategories] = useState([]);
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
   const [subCategorySearchTerm, setSubCategorySearchTerm] = useState('');
+  const [itemCategories, setItemCategories] = useState([]);
+const [selectedItemCategories, setSelectedItemCategories] = useState([]);
+const [itemCategorySearchTerm, setItemCategorySearchTerm] = useState('');
+
+// Item sub-category filters
+const [itemSubCategories, setItemSubCategories] = useState([]);
+const [selectedItemSubCategories, setSelectedItemSubCategories] = useState([]);
+const [itemSubCategorySearchTerm, setItemSubCategorySearchTerm] = useState('');
+
+// Items filters
+const [items, setItems] = useState([]);
+const [selectedItems, setSelectedItems] = useState([]);
+const [itemSearchTerm, setItemSearchTerm] = useState('');
   const [states, setStates] = useState([]);
   const [selectedStates, setSelectedStates] = useState([]);
   const [statesSearchTerm, setStatesSearchTerm] = useState('');
@@ -32,6 +45,30 @@ const ProductsList = () => {
 
 
   const location = useLocation();
+
+  useEffect(() => {
+  const queryParams = new URLSearchParams(location.search);
+  const itemIdParam = queryParams.get("item_id");
+
+  if (itemIdParam) {
+    const itemId = parseInt(itemIdParam, 10);
+    (async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/products/item-hierarchy/${itemId}`);
+        const data = res.data;
+
+        // Set all parent selections
+        setSelectedCategories(data.category_id ? [data.category_id] : []);
+        setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
+        setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
+        setSelectedItemSubCategories(data.item_subcategory_id ? [data.item_subcategory_id] : []);
+        setSelectedItems(data.item_id ? [data.item_id] : []);
+      } catch (err) {
+        console.error("Error fetching item hierarchy:", err);
+      }
+    })();
+  }
+}, [location.search]);
 
   useEffect(() => {
     const searchValue = searchParams.get('search');
@@ -102,6 +139,96 @@ const ProductsList = () => {
     fetchSubCategoriesByCategories();
   }, [selectedCategories]);
 
+  // Fetch Item Categories by selected Category & SubCategory
+useEffect(() => {
+  const fetchItemCategories = async () => {
+    try {
+      if (selectedCategories.length === 0 || selectedSubCategories.length === 0) {
+        setItemCategories([]);
+        setSelectedItemCategories([]);
+        return;
+      }
+      const res = await axios.post(`${API_BASE_URL}/item_category/by-selected-category-subcategory`, {
+        categories: selectedCategories,
+        subcategories: selectedSubCategories,
+      });
+      const data = res.data || [];
+      setItemCategories(data);
+      // Filter out unselected
+      setSelectedItemCategories(prev =>
+        prev.filter(id => data.some(cat => cat.id === id))
+      );
+    } catch (err) {
+      console.error("Error fetching item categories:", err);
+    }
+  };
+  fetchItemCategories();
+}, [selectedCategories, selectedSubCategories]);
+
+
+// Fetch Item SubCategories by selected Item Categories
+useEffect(() => {
+  const fetchItemSubCategories = async () => {
+    try {
+      if (
+        selectedCategories.length === 0 ||
+        selectedSubCategories.length === 0 ||
+        selectedItemCategories.length === 0
+      ) {
+        setItemSubCategories([]);
+        setSelectedItemSubCategories([]);
+        return;
+      }
+      const res = await axios.post(`${API_BASE_URL}/item_sub_category/by-selected-category-subcategory-itemcategory`, {
+        categories: selectedCategories,
+        subcategories: selectedSubCategories,
+        itemCategories: selectedItemCategories,
+      });
+      const data = res.data || [];
+      setItemSubCategories(data);
+      setSelectedItemSubCategories(prev =>
+        prev.filter(id => data.some(sub => sub.id === id))
+      );
+    } catch (err) {
+      console.error("Error fetching item subcategories:", err);
+    }
+  };
+  fetchItemSubCategories();
+}, [selectedCategories, selectedSubCategories, selectedItemCategories]);
+
+
+// Fetch Items by selected Item SubCategories
+useEffect(() => {
+  const fetchItems = async () => {
+    try {
+      if (
+        selectedCategories.length === 0 ||
+        selectedSubCategories.length === 0 ||
+        selectedItemCategories.length === 0 ||
+        selectedItemSubCategories.length === 0
+      ) {
+        setItems([]);
+        setSelectedItems([]);
+        return;
+      }
+      const res = await axios.post(`${API_BASE_URL}/items/by-selected-category-subcategory-itemcategory-itemsubcategory`, {
+        categories: selectedCategories,
+        subcategories: selectedSubCategories,
+        itemCategories: selectedItemCategories,
+        itemSubCategories: selectedItemSubCategories,
+      });
+      const data = res.data || [];
+      setItems(data);
+      setSelectedItems(prev =>
+        prev.filter(id => data.some(item => item.id === id))
+      );
+    } catch (err) {
+      console.error("Error fetching items:", err);
+    }
+  };
+  fetchItems();
+}, [selectedCategories, selectedSubCategories, selectedItemCategories, selectedItemSubCategories]);
+
   useEffect(() => {
     const fetchStates = async () => {
       try {
@@ -120,7 +247,7 @@ const ProductsList = () => {
     const fetchCompanies = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/products/companies?is_delete=0`);
-        const cats = res.data || [];
+        const cats = res.data.companies || [];
         const filtered = cats.filter(company => company.product_count > 0);
         setCompanies(filtered);
       } catch (err) {
@@ -145,6 +272,15 @@ const ProductsList = () => {
       if (selectedSubCategories.length > 0) {
         url += `&sub_category=${selectedSubCategories.join(',')}`;
       }
+      if (selectedItemCategories.length > 0) {
+  url += `&item_category_id=${selectedItemCategories.join(',')}`;
+}
+if (selectedItemSubCategories.length > 0) {
+  url += `&item_subcategory_id=${selectedItemSubCategories.join(',')}`;
+}
+if (selectedItems.length > 0) {
+  url += `&item_id=${selectedItems.join(',')}`;
+}
       if (selectedStates.length > 0) {
         url += `&user_state=${selectedStates.join(',')}`;
       }
@@ -183,10 +319,19 @@ const ProductsList = () => {
   };
 
   useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchProducts(1, false);
-  }, [selectedCategories, selectedSubCategories, selectedStates, selectedCompanies, sortBy]);
+  setPage(1);
+  setHasMore(true);
+  fetchProducts(1, false);
+}, [
+  selectedCategories,
+  selectedSubCategories,
+  selectedItemCategories,
+  selectedItemSubCategories,
+  selectedItems,
+  selectedStates,
+  selectedCompanies,
+  sortBy
+]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -324,6 +469,125 @@ const ProductsList = () => {
               </div>
             </>
           )}
+          {/* Item Category Filter */}
+{itemCategories.length > 0 && (
+  <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+    <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Item Category</h3>
+    <div className="input-group flex-nowrap ps-2 pe-4">
+      <i className="bx bx-search input-group-text" />
+      <input
+        type="text"
+        placeholder="Search item categories..."
+        onChange={(e) => setItemCategorySearchTerm(e.target.value.toLowerCase())}
+        className="form-control"
+      />
+    </div>
+    <div className="px-2" style={{ maxHeight: '190px', overflowY: itemCategories.length >= 5 ? 'auto' : 'visible' }}>
+      {itemCategories
+        .filter(itemCat => itemCat.name.toLowerCase().includes(itemCategorySearchTerm))
+        .map(itemCat => (
+          <div className="form-check mb-2" key={itemCat.id}>
+            <input
+              type="checkbox"
+              id={`itemCat-${itemCat.id}`}
+              className="form-check-input"
+              checked={selectedItemCategories.includes(itemCat.id)}
+              onChange={() =>
+                setSelectedItemCategories(prev =>
+                  prev.includes(itemCat.id)
+                    ? prev.filter(id => id !== itemCat.id)
+                    : [...prev, itemCat.id]
+                )
+              }
+            />
+            <label htmlFor={`itemCat-${itemCat.id}`} className="form-check-label text-capitalize">
+              {itemCat.name}  ({itemCat.product_count || 0})
+            </label>
+          </div>
+        ))}
+    </div>
+  </div>
+)}
+
+{/* Item Sub Category Filter */}
+{itemSubCategories.length > 0 && (
+  <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+    <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Item Sub Category</h3>
+    <div className="input-group flex-nowrap ps-2 pe-4">
+      <i className="bx bx-search input-group-text" />
+      <input
+        type="text"
+        placeholder="Search item sub-categories..."
+        onChange={(e) => setItemSubCategorySearchTerm(e.target.value.toLowerCase())}
+        className="form-control"
+      />
+    </div>
+    <div className="px-2" style={{ maxHeight: '190px', overflowY: itemSubCategories.length >= 5 ? 'auto' : 'visible' }}>
+      {itemSubCategories
+        .filter(itemSub => itemSub.name.toLowerCase().includes(itemSubCategorySearchTerm))
+        .map(itemSub => (
+          <div className="form-check mb-2" key={itemSub.id}>
+            <input
+              type="checkbox"
+              id={`itemSub-${itemSub.id}`}
+              className="form-check-input"
+              checked={selectedItemSubCategories.includes(itemSub.id)}
+              onChange={() =>
+                setSelectedItemSubCategories(prev =>
+                  prev.includes(itemSub.id)
+                    ? prev.filter(id => id !== itemSub.id)
+                    : [...prev, itemSub.id]
+                )
+              }
+            />
+            <label htmlFor={`itemSub-${itemSub.id}`} className="form-check-label text-capitalize">
+              {itemSub.name} ({itemSub.product_count || 0})
+            </label>
+          </div>
+        ))}
+    </div>
+  </div>
+)}
+
+{/* Items Filter */}
+{items.length > 0 && (
+  <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+    <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Items</h3>
+    <div className="input-group flex-nowrap ps-2 pe-4">
+      <i className="bx bx-search input-group-text" />
+      <input
+        type="text"
+        placeholder="Search items..."
+        onChange={(e) => setItemSearchTerm(e.target.value.toLowerCase())}
+        className="form-control"
+      />
+    </div>
+    <div className="px-2" style={{ maxHeight: '190px', overflowY: items.length >= 5 ? 'auto' : 'visible' }}>
+      {items
+        .filter(item => item.name.toLowerCase().includes(itemSearchTerm))
+        .map(item => (
+          <div className="form-check mb-2" key={item.id}>
+            <input
+              type="checkbox"
+              id={`item-${item.id}`}
+              className="form-check-input"
+              checked={selectedItems.includes(item.id)}
+              onChange={() =>
+                setSelectedItems(prev =>
+                  prev.includes(item.id)
+                    ? prev.filter(id => id !== item.id)
+                    : [...prev, item.id]
+                )
+              }
+            />
+            <label htmlFor={`item-${item.id}`} className="form-check-label text-capitalize">
+              {item.name} ({item.product_count || 0})
+            </label>
+          </div>
+        ))}
+    </div>
+  </div>
+)}
           <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
             <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">State</h3>
             <div className="d-flex flex-column gap-2">
@@ -489,6 +753,39 @@ const ProductsList = () => {
                         />
                       </span>
                     ))}
+                    {selectedItemCategories.map(id => (
+  <span key={`itemcat-${id}`} className="badge bg-warning text-dark d-flex align-items-center">
+    {getNameById(itemCategories, id)}
+    <button
+      onClick={() => setSelectedItemCategories(prev => prev.filter(cid => cid !== id))}
+      className="btn-close btn-close-white ms-2"
+      style={{ fontSize: '0.6em' }}
+      aria-label="Remove"
+    />
+  </span>
+))}
+{selectedItemSubCategories.map(id => (
+  <span key={`itemsub-${id}`} className="badge bg-secondary text-white d-flex align-items-center">
+    {getNameById(itemSubCategories, id)}
+    <button
+      onClick={() => setSelectedItemSubCategories(prev => prev.filter(cid => cid !== id))}
+      className="btn-close btn-close-white ms-2"
+      style={{ fontSize: '0.6em' }}
+      aria-label="Remove"
+    />
+  </span>
+))}
+{selectedItems.map(id => (
+  <span key={`itm-${id}`} className="badge bg-dark text-white d-flex align-items-center">
+    {getNameById(items, id)}
+    <button
+      onClick={() => setSelectedItems(prev => prev.filter(cid => cid !== id))}
+      className="btn-close btn-close-white ms-2"
+      style={{ fontSize: '0.6em' }}
+      aria-label="Remove"
+    />
+  </span>
+))}
                     {selectedStates.map(id => (
                       <span key={`state-${id}`} className="badge bg-success text-white d-flex align-items-center">
                         {getNameById(states, id)}
@@ -517,6 +814,9 @@ const ProductsList = () => {
                     onClick={() => {
                       setSelectedCategories([]);
                       setSelectedSubCategories([]);
+                      setSelectedItemCategories([]);
+  setSelectedItemSubCategories([]);
+  setSelectedItems([]);
                       setSelectedStates([]);
                       setSelectedCompanies([]);
                     }}

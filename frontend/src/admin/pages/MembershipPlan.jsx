@@ -33,7 +33,7 @@ const MembershipPlan = ({ getDeleted }) => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const openAddModal = () => openModal();
   const { showNotification } = useAlert();
   const [showModal, setShowModal] = useState(false);

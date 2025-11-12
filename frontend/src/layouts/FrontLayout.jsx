@@ -40,6 +40,8 @@ import Enquiry from '../pages/Enquiry';
 import TicketView from '../pages/TicketView';
 import EnquiryList from '../pages/EnquiryList';
 import MyAllEnquiryChat from '../pages/MyAllEnquiryChat';
+import TermsConditions from '../pages/TermsConditions';
+import PrivacyPolicy from '../pages/PrivacyPolicy';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -52,7 +54,8 @@ import PublicRoute from '../routes/PublicRoute';
 function FrontLayout() {
   const location = useLocation();
   const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit', '/my-product',
-    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/inbox', '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', 'open-enquiry-dashboard'];
+    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/inbox',
+    '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', 'open-enquiry-dashboard'];
   const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -101,6 +104,8 @@ function FrontLayout() {
               <Route path="/get-support/trackticket" element={<TrackTicket />} />
               <Route path="/open-enquiry" element={<Enquiry />} />
               <Route path="/ticket/view/:number" element={<TicketView />} />
+              <Route path="/terms_conditions" element={<TermsConditions />} />
+              <Route path="/privacy_policy" element={<PrivacyPolicy />} />
             </Routes>
           </main>
           {isUserLayout ? <UserFooter /> : <FrontFooter />}

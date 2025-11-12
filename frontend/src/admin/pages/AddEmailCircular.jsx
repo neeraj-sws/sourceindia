@@ -210,7 +210,7 @@ const AddEmailCircular = () => {
                       <div className="col-md-6 mb-3">
                         <label htmlFor="user_type" className="form-label required">User</label>
                         <select
-                      id="user_type" className={`form-control ${errors.user_type ? "is-invalid" : ""}`}
+                      id="user_type" className="form-control"
                       value={selectedUserType}
                       onChange={handleUserTypeChange}
                     >
@@ -219,7 +219,7 @@ const AddEmailCircular = () => {
                         <option key={user.id} value={user.id}>{user.name.charAt(0).toUpperCase() + user.name.slice(1)}</option>
                       ))}
                     </select>
-                        {errors.user_type && (<div className="invalid-feedback">{errors.user_type}</div>)}
+                        {errors.user_type && (<div className="text-danger small mt-1">{errors.user_type}</div>)}
                       </div>
                     </div>
                     <JoditEditor

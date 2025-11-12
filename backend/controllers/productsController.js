@@ -133,7 +133,8 @@ exports.getAllProducts = async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const page = req.query.page ? parseInt(req.query.page) : null;
     const offset = limit && page ? (page - 1) * limit : null;
-    const { user_state, sort_by, title, category, sub_category, company_id, is_delete, status, is_approve } = req.query;
+    const { user_state, sort_by, title, category, sub_category, company_id, is_delete, status, is_approve,
+      item_category_id, item_subcategory_id, item_id } = req.query;
     let order = [['id', 'ASC']];
     if (sort_by === 'newest') order = [['created_at', 'DESC']];
     else if (sort_by === 'a_to_z') order = [['title', 'ASC']];
@@ -151,6 +152,18 @@ exports.getAllProducts = async (req, res) => {
     if (company_id) {
       const companyArray = parseCsv(company_id);
       productWhereClause.company_id = { [Op.in]: companyArray };
+    }
+    if (item_category_id) {
+      const arr = parseCsv(item_category_id);
+      productWhereClause.item_category_id = { [Op.in]: arr };
+    }
+    if (item_subcategory_id) {
+      const arr = parseCsv(item_subcategory_id);
+      productWhereClause.item_subcategory_id = { [Op.in]: arr };
+    }
+    if (item_id) {
+      const arr = parseCsv(item_id);
+      productWhereClause.item_id = { [Op.in]: arr };
     }
     if (is_delete) {
       productWhereClause.is_delete = is_delete;
@@ -173,6 +186,9 @@ exports.getAllProducts = async (req, res) => {
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+        { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
+        { model: Items, as: 'Items', attributes: ['id', 'name'] },
         { model: Color, as: 'Color', attributes: ['id', 'title'] },
         { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
         { model: UploadImage, as: 'file', attributes: ['file'] },
@@ -190,6 +206,9 @@ exports.getAllProducts = async (req, res) => {
       productsData.getStatus = productsData.status === 1 ? 'Public' : 'Draft';
       productsData.category_name = productsData.Categories?.name || null;
       productsData.sub_category_name = productsData.SubCategories?.name || null;
+      productsData.item_category_name = productsData.ItemCategory?.name || null;
+      productsData.item_subcategory_name = productsData.ItemSubCategory?.name || null;
+      productsData.item_name = productsData.Items?.name || null;
       productsData.color_name = productsData.Color?.title || null;
       productsData.company_name = productsData.company_info?.organization_name || null;
       productsData.file_name = productsData.file?.file || null;
@@ -197,6 +216,9 @@ exports.getAllProducts = async (req, res) => {
       productsData.user_full_name = productsData.Users ? `${productsData.Users.fname} ${productsData.Users.lname}` : null;
       delete productsData.Categories;
       delete productsData.SubCategories;
+      delete productsData.ItemCategory;
+      delete productsData.ItemSubCategory;
+      delete productsData.Items;
       delete productsData.Color;
       delete productsData.company_info;
       delete productsData.file;
@@ -1136,6 +1158,34 @@ exports.updateProductsDeleteStatus = async (req, res) => {
     openEnquiries.is_delete = is_delete;
     await openEnquiries.save();
     res.json({ message: 'Products is removed', openEnquiries });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getItemHierarchy = async (req, res) => {
+  try {
+    const itemId = req.params.item_id;
+    const product = await Products.findOne({
+      where: { item_id: itemId },
+      include: [
+        { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+        { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
+        { model: Items, as: 'Items', attributes: ['id', 'name'] },
+      ]
+    });
+
+    if (!product) return res.status(404).json({ message: 'Not found' });
+
+    res.json({
+      category_id: product.category,
+      sub_category_id: product.sub_category,
+      item_category_id: product.item_category_id,
+      item_subcategory_id: product.item_subcategory_id,
+      item_id: product.item_id,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

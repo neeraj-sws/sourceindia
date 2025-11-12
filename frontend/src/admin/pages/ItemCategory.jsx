@@ -22,7 +22,7 @@ const ItemCategory = () => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
@@ -360,7 +360,7 @@ const ItemCategory = () => {
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="category_id" className="form-label required">Category</label>
                       <select
-                        className={`form-control ${errors.category_id ? "is-invalid" : ""}`}
+                        className="form-control select2"
                         id="category_id"
                         value={selectedCategory}
                         onChange={handleCategoryChange}
@@ -372,13 +372,13 @@ const ItemCategory = () => {
                           </option>
                         ))}
                       </select>
-                      {errors.category_id && (<div className="invalid-feedback">{errors.category_id} </div>
+                      {errors.category_id && (<div className="text-danger small mt-1">{errors.category_id} </div>
                       )}
                     </div>
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="subcategory_id" className="form-label required">Sub Category</label>
                       <select
-                        className={`form-control ${errors.subcategory_id ? "is-invalid" : ""}`}
+                        className="form-control select2"
                         id="subcategory_id"
                         value={selectedSubCategory}
                         onChange={handleSubCategoryChange}
@@ -391,7 +391,7 @@ const ItemCategory = () => {
                           </option>
                         ))}
                       </select>
-                      {errors.subcategory_id && (<div className="invalid-feedback">{errors.subcategory_id} </div>
+                      {errors.subcategory_id && (<div className="text-danger small mt-1">{errors.subcategory_id} </div>
                       )}
                     </div>
                     <div className="form-group mb-3 col-md-12">

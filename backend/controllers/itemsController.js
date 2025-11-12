@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 const validator = require('validator');
@@ -7,6 +7,7 @@ const ItemCategory = require('../models/ItemCategory');
 const ItemSubCategory = require('../models/ItemSubCategory');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
+const Products = require('../models/Products');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
 
@@ -255,6 +256,85 @@ exports.getItemSubCategoriesByCategorySubCategoryItemCategoryItemSubCategory = a
     res.json(items);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getItemsBySelectedCategorySubCategoryItemCategoryItemSubCategory = async (req, res) => {
+  try {
+    const { categories, subcategories, itemCategories, itemSubCategories } = req.body;
+
+    // 🧩 Validate request body
+    if (
+      !categories || !Array.isArray(categories) || categories.length === 0 ||
+      !subcategories || !Array.isArray(subcategories) || subcategories.length === 0 ||
+      !itemCategories || !Array.isArray(itemCategories) || itemCategories.length === 0 ||
+      !itemSubCategories || !Array.isArray(itemSubCategories) || itemSubCategories.length === 0
+    ) {
+      return res.status(400).json({
+        error: 'categories[], subcategories[], itemCategories[], and itemSubCategories[] arrays are required and cannot be empty.'
+      });
+    }
+
+    // 🟢 Fetch Items matching all filters
+    const items = await Items.findAll({
+      where: {
+        category_id: { [Op.in]: categories },
+        subcategory_id: { [Op.in]: subcategories },
+        item_category_id: { [Op.in]: itemCategories },
+        item_sub_category_id: { [Op.in]: itemSubCategories },
+        status: 1
+      },
+      include: [
+        { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+        { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
+      ],
+      order: [['id', 'ASC']],
+    });
+
+    // 🟢 Count how many Products use each Item (via item_id)
+    const productCounts = await Products.findAll({
+      attributes: ['item_id', [fn('COUNT', col('product_id')), 'count']],
+      where: {
+        is_delete: 0,
+        is_approve: 1,
+        status: 1,
+      },
+      group: ['item_id'],
+      raw: true,
+    });
+
+    const productCountMap = {};
+    productCounts.forEach(item => {
+      productCountMap[item.item_id] = parseInt(item.count);
+    });
+
+    // 🧩 Format final output
+    const modifiedItems = items.map(item => {
+      const itemData = item.toJSON();
+      return {
+        ...itemData,
+        getStatus: itemData.status === 1 ? 'Active' : 'Inactive',
+        category_name: itemData.Categories?.name || null,
+        subcategory_name: itemData.SubCategories?.name || null,
+        item_category_name: itemData.ItemCategory?.name || null,
+        item_subcategory_name: itemData.ItemSubCategory?.name || null,
+        product_count: productCountMap[itemData.id] || 0
+      };
+    });
+
+    if (modifiedItems.length === 0) {
+      return res.status(404).json({
+        message: 'No items found for the given category, subcategory, item category, and item subcategory filters.'
+      });
+    }
+
+    res.json(modifiedItems);
+
+  } catch (err) {
+    console.error('getItemsBySelectedCategorySubCategoryItemCategoryItemSubCategory error:', err);
     res.status(500).json({ error: err.message });
   }
 };

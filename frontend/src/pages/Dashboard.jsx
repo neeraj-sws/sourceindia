@@ -27,7 +27,7 @@ const Dashboard = () => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("ASC");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(25);
   const [dateRange, setDateRange] = useState('');
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);

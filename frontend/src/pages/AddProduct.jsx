@@ -25,12 +25,64 @@ const AddProduct = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [imageToDelete, setImageToDelete] = useState(null);
   const [formData, setFormData] = useState({
-    user_id: '', title: '', code: '', article_number: '', status: '', short_description: '', description: ''
+    user_id: '', title: '', code: '', article_number: '', status: '', short_description: '', description: '', item_category_id: '', item_subcategory_id: '', item_id: ''
   });
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
+  const [itemCategories, setItemCategories] = useState([]);
+  const [itemSubCategories, setItemSubCategories] = useState([]);
+  const [selectedItemCategory, setSelectedItemCategory] = useState('');
+  const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
+  const [items, setItems] = useState([]);
+  const [selectedItem, setSelectedItem] = useState('');
+
+  useEffect(() => {
+      if (selectedCategory && selectedSubCategory) {
+        axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${selectedSubCategory}`)
+          .then(res => setItemCategories(res.data))
+          .catch(err => {
+            console.error("Error fetching item categories:", err);
+            setItemCategories([]);
+          });
+      } else {
+        setItemCategories([]);
+      }
+    }, [selectedCategory, selectedSubCategory]);
+    
+    useEffect(() => {
+      if (selectedCategory && selectedSubCategory && selectedItemCategory) {
+        axios.get(
+          `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}`
+        )
+        .then(res => setItemSubCategories(res.data))
+        .catch(err => {
+          if (err.response && err.response.status === 404) {
+    setItemSubCategories([]); // No data found, not fatal
+  } else {
+    console.error("Error fetching item subcategories:", err);
+  }
+        });
+      } else {
+        setItemSubCategories([]);
+      }
+    }, [selectedCategory, selectedSubCategory, selectedItemCategory]);
+    
+    useEffect(() => {
+      if (selectedCategory && selectedSubCategory && selectedItemCategory && selectedItemSubCategory) {
+        axios.get(
+          `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${selectedItemSubCategory}`
+        )
+        .then(res => setItems(res.data))
+        .catch(err => {
+          console.error("Error fetching items:", err);
+          setItems([]);
+        });
+      } else {
+        setItems([]);
+      }
+    }, [selectedCategory, selectedSubCategory, selectedItemCategory, selectedItemSubCategory]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -45,20 +97,111 @@ const AddProduct = () => {
   }, []);
 
   const handleCategoryChange = async (event) => {
-    const categoryId = event.target.value;
-    setSelectedCategory(categoryId);
+  const categoryId = event.target.value;
+  setSelectedCategory(categoryId);
+
+  // Reset all dependent dropdowns to blank
+  setSelectedSubCategory('');
+  setSelectedItemCategory('');
+  setSelectedItemSubCategory('');
+  setSelectedItem('');
+
+  setSubCategories([]);
+  setItemCategories([]);
+  setItemSubCategories([]);
+  setItems([]);
+
+  try {
+    if (categoryId) {
+      const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
+      setSubCategories(res.data);
+    } else {
+      setSubCategories([]);
+    }
+  } catch (error) {
+    console.error("Error fetching sub categories:", error);
+    setSubCategories([]);
+  }
+};
+
+const handleSubCategoryChange = async (event) => {
+  const subCategoryId = event.target.value;
+  setSelectedSubCategory(subCategoryId);
+
+  // Reset all dependent dropdowns to blank
+  setSelectedItemCategory('');
+  setSelectedItemSubCategory('');
+  setSelectedItem('');
+  setItemCategories([]);
+  setItemSubCategories([]);
+  setItems([]);
+
+  if (selectedCategory && subCategoryId) {
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/sub_categories/category/${categoryId}`
+        `${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${subCategoryId}`
       );
-      setSubCategories(res.data);
-      setSelectedSubCategory("");
+      setItemCategories(res.data);
     } catch (error) {
-      console.error("Error fetching sub categories:", error);
+      console.error("Error fetching item categories:", error);
+      setItemCategories([]);
     }
-  };
+  }
+};
 
-  const handleSubCategoryChange = (event) => { setSelectedSubCategory(event.target.value); };
+// Handle Item Category Change
+const handleItemCategoryChange = async (event) => {
+  const itemCategoryId = event.target.value;
+  setSelectedItemCategory(itemCategoryId);
+
+  // Reset lower dropdowns
+  setSelectedItemSubCategory('');
+  setSelectedItem('');
+  setItemSubCategories([]);
+  setItems([]);
+
+  if (selectedCategory && selectedSubCategory && itemCategoryId) {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
+      );
+      setItemSubCategories(res.data);
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+    setItemSubCategories([]); // No data found, not fatal
+  } else {
+    console.error("Error fetching item subcategories:", error);
+  }
+    }
+  }
+};
+
+// Handle Item Sub Category Change
+const handleItemSubCategoryChange = async (event) => {
+  const itemSubCategoryId = event.target.value;
+  setSelectedItemSubCategory(itemSubCategoryId);
+
+  // Reset lower dropdown
+  setSelectedItem('');
+  setItems([]);
+
+  if (selectedCategory && selectedSubCategory && selectedItemCategory && itemSubCategoryId) {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
+      );
+      setItems(res.data);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+      setItems([]);
+    }
+  }
+};
+
+// Handle Item Change
+const handleItemChange = (event) => {
+  setSelectedItem(event.target.value);
+};
 
   useEffect(() => {
     $('#category').select2({
@@ -78,6 +221,23 @@ const AddProduct = () => {
       const subCategoryId = $(this).val();
       handleSubCategoryChange({ target: { value: subCategoryId } });
     });
+     $('#item_category_id')
+  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
+  .on("change", function () {
+    handleItemCategoryChange({ target: { value: $(this).val() } });
+  });
+
+$('#item_sub_category_id')
+  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
+  .on("change", function () {
+    handleItemSubCategoryChange({ target: { value: $(this).val() } });
+  });
+
+$('#item_id')
+  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item" })
+  .on("change", function () {
+    handleItemChange({ target: { value: $(this).val() } });
+  });
 
     return () => {
       if ($('#category').data('select2')) {
@@ -86,8 +246,11 @@ const AddProduct = () => {
       if ($('#sub_category').data('select2')) {
         $('#sub_category').off("change").select2('destroy');
       }
+      if ($('#item_category_id').data('select2')) $('#item_category_id').select2('destroy');
+      if ($('#item_sub_category_id').data('select2')) $('#item_sub_category_id').select2('destroy');
+      if ($('#item_id').data('select2')) $('#item_id').select2('destroy');
     };
-  }, [categories, subCategories]);
+  }, [categories, subCategories, itemCategories, itemSubCategories, items]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -124,34 +287,79 @@ const AddProduct = () => {
   };
 
   useEffect(() => {
-    if (!isEditing) return;
+  if (!isEditing) return;
 
-    const fetchProduct = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
-        const data = res.data;
-        setFormData({
-          title: data.title || '',
-          code: data.code || '',
-          article_number: data.article_number || '',
-          status: String(data.status),
-          short_description: data.short_description || '',
-          description: data.description || '',
-          images: data.images || [],
-        });
-        setSelectedCategory(data.category || "");
-        setSelectedSubCategory(data.sub_category || "");
-        if (data.category) {
-          const cRes = await axios.get(`${API_BASE_URL}/sub_categories/category/${data.category}`); setSubCategories(cRes.data);
-        }
+  const fetchProduct = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
+      const data = res.data;
 
-      } catch (error) {
-        console.error('Error fetching Product:', error);
+      setFormData({
+        title: data.title || '',
+        code: data.code || '',
+        article_number: data.article_number || '',
+        status: String(data.status),
+        short_description: data.short_description || '',
+        description: data.description || '',
+        images: data.images || [],
+      });
+
+      // Set category & subcategory first
+      setSelectedCategory(data.category || "");
+      setSelectedSubCategory(data.sub_category || "");
+
+      // Fetch dependent dropdowns sequentially in correct order
+      if (data.category) {
+        const cRes = await axios.get(`${API_BASE_URL}/sub_categories/category/${data.category}`);
+        setSubCategories(cRes.data);
       }
-    };
 
-    fetchProduct();
-  }, [productId]);
+      let itemCatRes = [];
+      if (data.category && data.sub_category) {
+        const resIC = await axios.get(
+          `${API_BASE_URL}/item_category/by-category-subcategory/${data.category}/${data.sub_category}`
+        );
+        itemCatRes = resIC.data;
+        setItemCategories(itemCatRes);
+      }
+
+      // ✅ Now only set selectedItemCategory AFTER data is available
+      setSelectedItemCategory(data.item_category_id || '');
+
+      let itemSubCatRes = [];
+      if (data.category && data.sub_category && data.item_category_id) {
+        try {
+          const resISC = await axios.get(
+            `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${data.category}/${data.sub_category}/${data.item_category_id}`
+          );
+          itemSubCatRes = resISC.data;
+          setItemSubCategories(itemSubCatRes);
+        } catch (err) {
+          if (err.response && err.response.status === 404) {
+    setItemSubCategories([]); // No data found, not fatal
+  } else {
+    console.error("Error fetching item subcategories:", err);
+  }
+        }
+      }
+
+      setSelectedItemSubCategory(data.item_subcategory_id || '');
+
+      if (data.category && data.sub_category && data.item_category_id && data.item_subcategory_id) {
+        const itemsRes = await axios.get(
+          `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${data.category}/${data.sub_category}/${data.item_category_id}/${data.item_subcategory_id}`
+        );
+        setItems(itemsRes.data);
+      }
+
+      setSelectedItem(data.item_id || '');
+    } catch (error) {
+      console.error('Error fetching Product:', error);
+    }
+  };
+
+  fetchProduct();
+}, [productId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -168,6 +376,9 @@ const AddProduct = () => {
           user_id: userId,
           category: selectedCategory,
           sub_category: selectedSubCategory,
+          item_category_id: selectedItemCategory,
+          item_subcategory_id: selectedItemSubCategory,
+          item_id: selectedItem,
         };
         headers = { "Content-Type": "application/json" };
         await axios[method](endpoint, payload, { headers });
@@ -184,6 +395,9 @@ const AddProduct = () => {
         data.append("user_id", userId);
         data.append("category", selectedCategory);
         data.append("sub_category", selectedSubCategory);
+        data.append("item_category_id", selectedItemCategory);
+        data.append("item_subcategory_id", selectedItemSubCategory);
+        data.append("item_id", selectedItem);
         files.forEach((file) => {
           data.append("files", file);
         });
@@ -253,11 +467,13 @@ const AddProduct = () => {
         <div className="page-content">
           <Breadcrumb  page="Product" title={isEditing ? "Edit Product" : "Add Product"} />
           <div className="row">
-            <div className="col-xl-12 mx-auto">
-              <div className="card">
-                <div className="card-body p-4">
+            <div className="col-xl-12 mx-auto">              
                   <form className="row g-3" onSubmit={handleSubmit}>
-                    <div className="col-md-6">
+                    <div className="col-md-8">
+                    <div className="card">
+                <div className="card-body p-4">
+                  <div className="row">
+                    <div className="form-group mb-3 col-md-6">
                       <label htmlFor="title" className="form-label required">Product Name</label>
                       <input
                         type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
@@ -268,7 +484,7 @@ const AddProduct = () => {
                       />
                       {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
                     </div>
-                    <div className="col-md-6">
+                    <div className="form-group mb-3 col-md-6">
                       <label htmlFor="code" className="form-label">Sku</label>
                       <input
                         type="text" className="form-control"
@@ -278,7 +494,7 @@ const AddProduct = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                    <div className="col-md-6">
+                    <div className="form-group mb-3 col-md-6">
                       <label htmlFor="article_number" className="form-label">Part Number</label>
                       <input
                         type="number" className="form-control"
@@ -287,11 +503,56 @@ const AddProduct = () => {
                         value={formData.article_number}
                         onChange={handleInputChange}
                       />
+                    </div>                    
+                    <div className="form-group mb-3 col-md-6">
+                      <label htmlFor="status" className="form-label required">Status</label>
+                      <select
+                        id="status" className={`form-control ${errors.status ? "is-invalid" : ""}`}
+                        value={formData.status}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select here</option>
+                        <option value="1">Public</option>
+                        <option value="0">Draft</option>
+                      </select>
+                      {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
                     </div>
-                    <div className="col-md-6">
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="short_description" className="form-label required">Short Description</label>
+                      <textarea
+                        className={`form-control ${errors.brief_company ? "is-invalid" : ""}`}
+                        id="short_description"
+                        placeholder="Short Description"
+                        rows={3}
+                        value={formData.short_description}
+                        onChange={handleInputChange}
+                      />
+                      {errors.short_description && (<div className="invalid-feedback">{errors.short_description}</div>)}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="description" className="form-label required">Long Description</label>
+                      <CKEditor
+                        editor={ClassicEditor}
+                        data={formData.description || ''}
+                        onChange={(event, editor) => {
+                          const data = editor.getData();
+                          setFormData(prev => ({ ...prev, description: data }));
+                        }}
+                      />
+                    </div>
+                    
+                    </div>
+                    </div>
+              </div>
+              </div>
+              <div className="col-md-4">
+                <div className="card">
+                    <div className="card-body p-4">
+                  <div className="row">
+                      <div className="form-group mb-3 col-md-12">
                       <label htmlFor="category" className="form-label required">Category</label>
                       <select
-                        id="category" className={`form-control ${errors.category ? "is-invalid" : ""}`}
+                        id="category" className="form-control select2"
                         value={selectedCategory}
                         onChange={handleCategoryChange}
                       >
@@ -300,9 +561,9 @@ const AddProduct = () => {
                           <option key={category.id} value={category.id}>{category.name}</option>
                         ))}
                       </select>
-                      {errors.category && (<div className="invalid-feedback">{errors.category}</div>)}
+                      {errors.category && (<div className="text-danger small">{errors.category}</div>)}
                     </div>
-                    <div className="col-md-6">
+                    <div className="form-group mb-3 col-md-12">
                       <label htmlFor="sub_category" className="form-label">Sub Category</label>
                       <select
                         id="sub_category" className="form-control"
@@ -316,42 +577,54 @@ const AddProduct = () => {
                         ))}
                       </select>
                     </div>
-                    <div className="col-md-6">
-                      <label htmlFor="status" className="form-label required">Status</label>
-                      <select
-                        id="status" className={`form-control ${errors.status ? "is-invalid" : ""}`}
-                        value={formData.status}
-                        onChange={handleInputChange}
-                      >
-                        <option value="">Select here</option>
-                        <option value="1">Public</option>
-                        <option value="0">Draft</option>
-                      </select>
-                      {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
-                    </div>
-                    <div className="col-md-12">
-                      <label htmlFor="short_description" className="form-label required">Short Description</label>
-                      <textarea
-                        className={`form-control ${errors.brief_company ? "is-invalid" : ""}`}
-                        id="short_description"
-                        placeholder="Short Description"
-                        rows={3}
-                        value={formData.short_description}
-                        onChange={handleInputChange}
-                      />
-                      {errors.short_description && (<div className="invalid-feedback">{errors.short_description}</div>)}
-                    </div>
-                    <div className="col-md-12">
-                      <label htmlFor="description" className="form-label required">Long Description</label>
-                      <CKEditor
-                        editor={ClassicEditor}
-                        data={formData.description || ''}
-                        onChange={(event, editor) => {
-                          const data = editor.getData();
-                          setFormData(prev => ({ ...prev, description: data }));
-                        }}
-                      />
-                    </div>
+                    <div className="form-group mb-3 col-md-12">
+  <label htmlFor="item_category_id" className="form-label">Item Category</label>
+  <select
+    id="item_category_id"
+    className="form-control"
+    value={selectedItemCategory}
+    onChange={handleItemCategoryChange}
+    disabled={!selectedCategory || !selectedSubCategory}
+  >
+    <option value="">Select Item Category</option>
+    {itemCategories.map((ic) => (
+      <option key={ic.id} value={ic.id}>{ic.name}</option>
+    ))}
+  </select>
+</div>
+
+<div className="form-group mb-3 col-md-12">
+  <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
+  <select
+    id="item_sub_category_id"
+    className="form-control"
+    value={selectedItemSubCategory}
+    onChange={handleItemSubCategoryChange}
+    disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
+  >
+    <option value="">Select Item Sub Category</option>
+    {itemSubCategories.map((isc) => (
+      <option key={isc.id} value={isc.id}>{isc.name}</option>
+    ))}
+  </select>
+</div>
+
+<div className="form-group mb-3 col-md-12">
+  <label htmlFor="item_id" className="form-label">Items</label>
+  <select
+    id="item_id"
+    className="form-control"
+    value={selectedItem}
+    onChange={handleItemChange}
+    disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory || !selectedItemSubCategory}
+  >
+    <option value="">Select Item</option>
+    {items.map((i) => (
+      <option key={i.id} value={i.id}>{i.name}</option>
+    ))}
+  </select>
+</div>
+
                     <div className="col-md-12">
                       <label htmlFor="file" className="form-label required">Product Images</label><br />
                       <input
@@ -412,7 +685,11 @@ const AddProduct = () => {
                         ))}
                       </div>
                     </div>
-                    <div className="col-12 text-end mt-2">
+                  </div>
+                  </div>
+                  </div>
+              </div>
+              <div className="col-12 text-end mt-2">
                       <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
                       {submitting ? (
                         <>
@@ -425,8 +702,7 @@ const AddProduct = () => {
                     </button>
                     </div>
                   </form>
-                </div>
-              </div>
+                
             </div>
           </div>
           {/*end row*/}

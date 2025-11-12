@@ -43,7 +43,7 @@ const DataTable = ({
             value={limit}
             onChange={(e) => onLimitChange(Number(e.target.value))}
           >
-            {[10, 20, 50, 100].map((n) => (
+            {[25, 50, 100].map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>

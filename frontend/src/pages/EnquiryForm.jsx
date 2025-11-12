@@ -261,7 +261,6 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                               </option>
                             )}
                           </select>
-                          {console.log('Products in dropdown:', products, 'selectedProductId:', selectedProductId)}
                         </div>
                       )}
                       <div className="form-group mb-3">

@@ -481,7 +481,7 @@ const CompanyEdit = () => {
                           <label htmlFor="core_activity" className="form-label required">Core Activity</label>
                           <select
                             id="core_activity"
-                            className={`form-control select2 ${errors.core_activity ? "is-invalid" : ""}`}
+                            className="form-control select2"
                             value={selectedCoreActivity}
                             onChange={handleCoreActivityChange}
                           >
@@ -490,13 +490,13 @@ const CompanyEdit = () => {
                               <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                           </select>
-                          {errors.core_activity && <div className="invalid-feedback">{errors.core_activity}</div>}
+                          {errors.core_activity && <div className="text-danger small mt-1">{errors.core_activity}</div>}
                         </div>
                         <div className="col-md-6 mb-3">
                           <label htmlFor="activity" className="form-label required">Activity</label>
                           <select
                             id="activity"
-                            className={`form-control select2 ${errors.activity ? "is-invalid" : ""}`}
+                            className="form-control select2"
                             value={selectedActivity}
                             onChange={handleActivityChange}
                           >
@@ -505,12 +505,12 @@ const CompanyEdit = () => {
                               <option key={activity.id} value={activity.id}>{activity.name}</option>
                             ))}
                           </select>
-                          {errors.activity && <div className="invalid-feedback">{errors.activity}</div>}
+                          {errors.activity && <div className="text-danger small mt-1">{errors.activity}</div>}
                         </div>
                         <div className="col-md-6">
                           <label htmlFor="category_sell" className="form-label required">Category</label>
                           <select
-                            id="category_sell" className={`form-control select2 ${errors.category_sell ? "is-invalid" : ""}`}
+                            id="category_sell" className="form-control select2"
                             value={selectedCategory}
                             onChange={handleCategoryChange}
                             multiple
@@ -520,7 +520,7 @@ const CompanyEdit = () => {
                               <option key={category.id} value={category.id}>{category.name}</option>
                             ))}
                           </select>
-                          {errors.category_sell && (<div className="invalid-feedback">{errors.category_sell}</div>)}
+                          {errors.category_sell && (<div className="text-danger small">{errors.category_sell}</div>)}
                         </div>
                         <div className="col-md-6">
                           <label htmlFor="sub_category" className="form-label">Sub Category</label>

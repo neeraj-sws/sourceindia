@@ -39,7 +39,7 @@ const AddProduct = () => {
   const [selectedItemCategory, setSelectedItemCategory] = useState('');
   const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
   const [items, setItems] = useState([]);
-  const [selectedItems, setSelectedItems] = useState('');
+  const [selectedItem, setSelectedItem] = useState('');
 
   useEffect(() => {
     if (selectedCategory && selectedSubCategory) {
@@ -125,20 +125,108 @@ const AddProduct = () => {
   }, []);
 
   const handleCategoryChange = async (event) => {
-    const categoryId = event.target.value;
-    setSelectedCategory(categoryId);
+  const categoryId = event.target.value;
+  setSelectedCategory(categoryId);
+
+  // Reset all dependent dropdowns to blank
+  setSelectedSubCategory('');
+  setSelectedItemCategory('');
+  setSelectedItemSubCategory('');
+  setSelectedItem('');
+
+  setSubCategories([]);
+  setItemCategories([]);
+  setItemSubCategories([]);
+  setItems([]);
+
+  try {
+    if (categoryId) {
+      const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
+      setSubCategories(res.data);
+    } else {
+      setSubCategories([]);
+    }
+  } catch (error) {
+    console.error("Error fetching sub categories:", error);
+    setSubCategories([]);
+  }
+};
+
+const handleSubCategoryChange = async (event) => {
+  const subCategoryId = event.target.value;
+  setSelectedSubCategory(subCategoryId);
+
+  // Reset all dependent dropdowns to blank
+  setSelectedItemCategory('');
+  setSelectedItemSubCategory('');
+  setSelectedItem('');
+  setItemCategories([]);
+  setItemSubCategories([]);
+  setItems([]);
+
+  if (selectedCategory && subCategoryId) {
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/sub_categories/category/${categoryId}`
+        `${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${subCategoryId}`
       );
-      setSubCategories(res.data);
-      setSelectedSubCategory("");
+      setItemCategories(res.data);
     } catch (error) {
-      console.error("Error fetching sub categories:", error);
+      console.error("Error fetching item categories:", error);
+      setItemCategories([]);
     }
-  };
+  }
+};
 
-  const handleSubCategoryChange = (event) => { setSelectedSubCategory(event.target.value); };
+// Handle Item Category Change
+const handleItemCategoryChange = async (event) => {
+  const itemCategoryId = event.target.value;
+  setSelectedItemCategory(itemCategoryId);
+
+  // Reset lower dropdowns
+  setSelectedItemSubCategory('');
+  setSelectedItem('');
+  setItemSubCategories([]);
+  setItems([]);
+
+  if (selectedCategory && selectedSubCategory && itemCategoryId) {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
+      );
+      setItemSubCategories(res.data);
+    } catch (error) {
+      console.error("Error fetching item sub categories:", error);
+      setItemSubCategories([]);
+    }
+  }
+};
+
+// Handle Item Sub Category Change
+const handleItemSubCategoryChange = async (event) => {
+  const itemSubCategoryId = event.target.value;
+  setSelectedItemSubCategory(itemSubCategoryId);
+
+  // Reset lower dropdown
+  setSelectedItem('');
+  setItems([]);
+
+  if (selectedCategory && selectedSubCategory && selectedItemCategory && itemSubCategoryId) {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
+      );
+      setItems(res.data);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+      setItems([]);
+    }
+  }
+};
+
+// Handle Item Change
+const handleItemChange = (event) => {
+  setSelectedItem(event.target.value);
+};
 
   useEffect(() => {
     $('#user_id').select2({
@@ -179,25 +267,19 @@ const AddProduct = () => {
      $('#item_category_id')
   .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
   .on("change", function () {
-    const val = $(this).val();
-    setSelectedItemCategory(val);
-    setSelectedItemSubCategory('');
-    setSelectedItems('');
+    handleItemCategoryChange({ target: { value: $(this).val() } });
   });
 
 $('#item_sub_category_id')
   .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
   .on("change", function () {
-    const val = $(this).val();
-    setSelectedItemSubCategory(val);
-    setSelectedItems('');
+    handleItemSubCategoryChange({ target: { value: $(this).val() } });
   });
 
 $('#item_id')
-  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
+  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item" })
   .on("change", function () {
-    const val = $(this).val();
-    setSelectedItems(val);
+    handleItemChange({ target: { value: $(this).val() } });
   });
 
     return () => {
@@ -247,40 +329,76 @@ $('#item_id')
   };
 
   useEffect(() => {
-    if (!isEditing) return;
+  if (!isEditing) return;
 
-    const fetchProduct = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
-        const data = res.data;
-        setFormData({
-          title: data.title || '',
-          code: data.code || '',
-          article_number: data.article_number || '',
-          is_gold: data.is_gold || '',
-          is_featured: data.is_featured || '',
-          is_recommended: data.is_recommended || '',
-          best_product: data.best_product,
-          status: String(data.status),
-          short_description: data.short_description || '',
-          description: data.description || '',
-          images: data.images || [],
-        });
-        setSelectedSellers(data.user_id || '');
-        setSelectedApplications(data.application || '');
-        setSelectedCategory(data.category || "");
-        setSelectedSubCategory(data.sub_category || "");
-        if (data.category) {
-          const cRes = await axios.get(`${API_BASE_URL}/sub_categories/category/${data.category}`); setSubCategories(cRes.data);
-        }
+  const fetchProduct = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
+      const data = res.data;
 
-      } catch (error) {
-        console.error('Error fetching Product:', error);
+      setFormData({
+        title: data.title || '',
+        code: data.code || '',
+        article_number: data.article_number || '',
+        status: String(data.status),
+        short_description: data.short_description || '',
+        description: data.description || '',
+        images: data.images || [],
+      });
+
+      // Set category & subcategory first
+      setSelectedCategory(data.category || "");
+      setSelectedSubCategory(data.sub_category || "");
+
+      // Fetch dependent dropdowns sequentially in correct order
+      if (data.category) {
+        const cRes = await axios.get(`${API_BASE_URL}/sub_categories/category/${data.category}`);
+        setSubCategories(cRes.data);
       }
-    };
 
-    fetchProduct();
-  }, [productId]);
+      let itemCatRes = [];
+      if (data.category && data.sub_category) {
+        const resIC = await axios.get(
+          `${API_BASE_URL}/item_category/by-category-subcategory/${data.category}/${data.sub_category}`
+        );
+        itemCatRes = resIC.data;
+        setItemCategories(itemCatRes);
+      }
+
+      // ✅ Now only set selectedItemCategory AFTER data is available
+      setSelectedItemCategory(data.item_category_id || '');
+
+      let itemSubCatRes = [];
+      if (data.category && data.sub_category && data.item_category_id) {
+        try {
+          const resISC = await axios.get(
+            `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${data.category}/${data.sub_category}/${data.item_category_id}`
+          );
+          itemSubCatRes = resISC.data;
+          setItemSubCategories(itemSubCatRes);
+        } catch (err) {
+          console.warn("No item subcategories found (404 likely):", err);
+          setItemSubCategories([]);
+        }
+      }
+
+      setSelectedItemSubCategory(data.item_subcategory_id || '');
+
+      if (data.category && data.sub_category && data.item_category_id && data.item_subcategory_id) {
+        const itemsRes = await axios.get(
+          `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${data.category}/${data.sub_category}/${data.item_category_id}/${data.item_subcategory_id}`
+        );
+        setItems(itemsRes.data);
+      }
+
+      setSelectedItem(data.item_id || '');
+    } catch (error) {
+      console.error('Error fetching Product:', error);
+    }
+  };
+
+  fetchProduct();
+}, [productId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -299,7 +417,7 @@ $('#item_id')
           sub_category: selectedSubCategory,
           item_category_id: selectedItemCategory,
           item_subcategory_id: selectedItemSubCategory,
-          item_id: selectedItems,
+          item_id: selectedItem,
         };
         headers = { "Content-Type": "application/json" };
         await axios[method](endpoint, payload, { headers });
@@ -319,7 +437,7 @@ $('#item_id')
         data.append("sub_category", selectedSubCategory);
         data.append("item_category_id", selectedItemCategory);
         data.append("item_subcategory_id", selectedItemSubCategory);
-        data.append("item_id", selectedItems);
+        data.append("item_id", selectedItem);
         files.forEach((file) => {
           data.append("files", file);
         });
@@ -392,16 +510,15 @@ $('#item_id')
           <Breadcrumb  page="Product" title={isEditing ? "Edit Product" : "Add Product"} add_button="Back" add_link="/admin/products" />
           <div className="row">
             <div className="col-xl-12 mx-auto">
-              
-                  <form className="row g-3" onSubmit={handleSubmit}>
-                    <div className="col-md-8">
-                      <div className="card">
-                        <div className="card-body p-4">
-                <div className="row">
+              <form className="row g-3" onSubmit={handleSubmit}>
+                <div className="col-md-8">
+                  <div className="card">
+                    <div className="card-body p-4">
+                      <div className="row">
                         <div className="form-group mb-3 col-md-6">
                           <label htmlFor="user_id" className="form-label required">User</label>
                           <select
-                            id="user_id" className={`form-control ${errors.user_id ? "is-invalid" : ""}`}
+                            id="user_id" className="form-control select2"
                             value={selectedSellers}
                             onChange={handleSellersChange}
                           >
@@ -410,7 +527,7 @@ $('#item_id')
                               <option key={user.id} value={user.id}>{user.fname + " " + user.lname}</option>
                             ))}
                           </select>
-                          {errors.user_id && (<div className="invalid-feedback">{errors.user_id}</div>)}
+                          {errors.user_id && (<div className="text-danger small">{errors.user_id}</div>)}
                         </div>
                         <div className="form-group mb-3 col-md-6">
                           <label htmlFor="title" className="form-label required">Product Name</label>
@@ -524,176 +641,167 @@ $('#item_id')
                             }}
                           />
                         </div>
-                        
-                        </div>
-            </div>
                       </div>
                     </div>
-                    <div className="col-md-4">
-                      <div className="card">
-                        <div className="card-body p-4">
-                      <div className="row">
-                        <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="category" className="form-label required">Category</label>
-                          <select
-                            id="category" className={`form-control ${errors.category ? "is-invalid" : ""}`}
-                            value={selectedCategory}
-                            onChange={handleCategoryChange}
-                          >
-                            <option value="">Select Category</option>
-                            {categories?.map((category) => (
-                              <option key={category.id} value={category.id}>{category.name}</option>
-                            ))}
-                          </select>
-                          {errors.category && (<div className="invalid-feedback">{errors.category}</div>)}
-                        </div>
-                        <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="sub_category" className="form-label">Sub Category</label>
-                          <select
-                            id="sub_category" className="form-control"
-                            value={selectedSubCategory}
-                            onChange={handleSubCategoryChange}
-                            disabled={!selectedCategory}
-                          >
-                            <option value="">Select Sub Category</option>
-                            {subCategories?.map((sub_category) => (
-                              <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="item_category_id" className="form-label">Item Category</label>
-                          <select
-                            className="form-control"
-                            id="item_category_id"
-                            value={selectedItemCategory}
-                            onChange={(e) => {
-                              setSelectedItemCategory(e.target.value);
-                              setSelectedItemSubCategory(''); // reset subcategory when category changes
-                            }}
-                            disabled={!selectedCategory || !selectedSubCategory}
-                          >
-                            <option value="">Select Item Category</option>
-                            {itemCategories.map(ic => (
-                              <option key={ic.id} value={ic.id}>
-                                {ic.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
-                          <select
-                            className="form-control"
-                            id="item_sub_category_id"
-                            value={selectedItemSubCategory}
-                            onChange={(e) => setSelectedItemSubCategory(e.target.value)}
-                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
-                          >
-                            <option value="">Select Item Sub Category</option>
-                            {itemSubCategories.map(isc => (
-                              <option key={isc.id} value={isc.id}>
-                                {isc.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="item_id" className="form-label">Items</label>
-                          <select
-                            className="form-control"
-                            id="item_id"
-                            value={selectedItems}
-                            onChange={(e) => setSelectedItems(e.target.value)}
-                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory || !selectedItemSubCategory}
-                          >
-                            <option value="">Select Items</option>
-                            {items.map(i => (
-                              <option key={i.id} value={i.id}>
-                                {i.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="col-md-12">
-                          <label htmlFor="file" className="form-label required">Thumbnail</label><br />
-                          <input
-                            ref={fileInputRef}
-                            type="file"
-                            style={{ display: "none" }}
-                            onChange={handleFileChange}
-                            multiple
-                            accept="image/png, image/jpeg"
-                          />
-                          <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
-                            <i className="bx bxs-plus-square me-1" />Add Image
-                          </button>
-                          {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
-                        </div>
-                        <div className="col-md-12">
-                          <div className="mt-3 d-flex flex-wrap">
-                            {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
-                              <div key={index} className="position-relative m-2">
-                                <img
-                                  src={`${ROOT_URL}/${image.file}`}
-                                  alt={`Preview ${index}`}
-                                  className="object-fit-cover m-3"
-                                  width={80}
-                                  height={80}
-                                />
-                                <button
-                                  type="button"
-                                  className="btn btn-danger btn-remove-image"
-                                  style={{ width: '1.5rem', height: '1.5rem' }}
-                                  onClick={() => openDeleteModal(image.id)}
-                                >
-                                  <i className="bx bx-x me-0" />
-                                </button>
-                              </div>
-                            ))}
-                            {files.length > 0 && files?.map((file, index) => (
-                              <div key={index} className="position-relative m-2">
-                                <img
-                                  src={URL.createObjectURL(file)}
-                                  alt={`New Preview ${index}`}
-                                  className="object-fit-cover m-3"
-                                  width={80}
-                                  height={80}
-                                />
-                                <button
-                                  variant="danger"
-                                  size="sm"
-                                  className="btn btn-danger btn-remove-image"
-                                  style={{ width: '1.5rem', height: '1.5rem' }}
-                                  onClick={() => {
-                                    setFiles(prev => prev.filter((_, i) => i !== index));
-                                  }}
-                                >
-                                  <i className="bx bx-x me-0" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      </div>
-                      </div>
-                    </div>
-                    <div className="col-12 text-end mt-2">
-                      <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
-                      {submitting ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                          {isEditing ? "Updating..." : "Saving..."}
-                        </>
-                      ) : (
-                        isEditing ? "Update" : "Save"
-                      )}
-                    </button>
-                    </div>
-                  </form>
+                  </div>
                 </div>
-              
+                <div className="col-md-4">
+                  <div className="card">
+                    <div className="card-body p-4">
+                  <div className="row">
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="category" className="form-label required">Category</label>
+                      <select
+                        id="category" className="form-control select2"
+                        value={selectedCategory}
+                        onChange={handleCategoryChange}
+                      >
+                        <option value="">Select Category</option>
+                        {categories?.map((category) => (
+                          <option key={category.id} value={category.id}>{category.name}</option>
+                        ))}
+                      </select>
+                      {errors.category && (<div className="text-danger small">{errors.category}</div>)}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="sub_category" className="form-label">Sub Category</label>
+                      <select
+                        id="sub_category" className="form-control"
+                        value={selectedSubCategory}
+                        onChange={handleSubCategoryChange}
+                        disabled={!selectedCategory}
+                      >
+                        <option value="">Select Sub Category</option>
+                        {subCategories?.map((sub_category) => (
+                          <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+  <label htmlFor="item_category_id" className="form-label">Item Category</label>
+  <select
+    id="item_category_id"
+    className="form-control"
+    value={selectedItemCategory}
+    onChange={handleItemCategoryChange}
+    disabled={!selectedCategory || !selectedSubCategory}
+  >
+    <option value="">Select Item Category</option>
+    {itemCategories.map((ic) => (
+      <option key={ic.id} value={ic.id}>{ic.name}</option>
+    ))}
+  </select>
+</div>
+
+<div className="form-group mb-3 col-md-12">
+  <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
+  <select
+    id="item_sub_category_id"
+    className="form-control"
+    value={selectedItemSubCategory}
+    onChange={handleItemSubCategoryChange}
+    disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
+  >
+    <option value="">Select Item Sub Category</option>
+    {itemSubCategories.map((isc) => (
+      <option key={isc.id} value={isc.id}>{isc.name}</option>
+    ))}
+  </select>
+</div>
+
+<div className="form-group mb-3 col-md-12">
+  <label htmlFor="item_id" className="form-label">Items</label>
+  <select
+    id="item_id"
+    className="form-control"
+    value={selectedItem}
+    onChange={handleItemChange}
+    disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory || !selectedItemSubCategory}
+  >
+    <option value="">Select Item</option>
+    {items.map((i) => (
+      <option key={i.id} value={i.id}>{i.name}</option>
+    ))}
+  </select>
+</div>
+                    <div className="col-md-12">
+                      <label htmlFor="file" className="form-label required">Thumbnail</label><br />
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        style={{ display: "none" }}
+                        onChange={handleFileChange}
+                        multiple
+                        accept="image/png, image/jpeg"
+                      />
+                      <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
+                        <i className="bx bxs-plus-square me-1" />Add Image
+                      </button>
+                      {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
+                    </div>
+                    <div className="col-md-12">
+                      <div className="mt-3 d-flex flex-wrap">
+                        {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
+                          <div key={index} className="position-relative m-2">
+                            <img
+                              src={`${ROOT_URL}/${image.file}`}
+                              alt={`Preview ${index}`}
+                              className="object-fit-cover m-3"
+                              width={80}
+                              height={80}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-remove-image"
+                              style={{ width: '1.5rem', height: '1.5rem' }}
+                              onClick={() => openDeleteModal(image.id)}
+                            >
+                              <i className="bx bx-x me-0" />
+                            </button>
+                          </div>
+                        ))}
+                        {files.length > 0 && files?.map((file, index) => (
+                          <div key={index} className="position-relative m-2">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`New Preview ${index}`}
+                              className="object-fit-cover m-3"
+                              width={80}
+                              height={80}
+                            />
+                            <button
+                              variant="danger"
+                              size="sm"
+                              className="btn btn-danger btn-remove-image"
+                              style={{ width: '1.5rem', height: '1.5rem' }}
+                              onClick={() => {
+                                setFiles(prev => prev.filter((_, i) => i !== index));
+                              }}
+                            >
+                              <i className="bx bx-x me-0" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  </div>
+                  </div>
+                </div>
+                <div className="col-12 text-end mt-2">
+                  <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      {isEditing ? "Updating..." : "Saving..."}
+                    </>
+                  ) : (
+                    isEditing ? "Update" : "Save"
+                  )}
+                </button>
+                </div>
+              </form>
+            </div>
           </div>
           {/*end row*/}
         </div>

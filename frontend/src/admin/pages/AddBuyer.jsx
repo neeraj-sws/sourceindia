@@ -299,7 +299,7 @@ const AddBuyer = () => {
                       <label htmlFor="country" className="form-label required">Country</label>
                       <select
                         id="country"
-                        className={`form-control select2 ${errors.country ? 'is-invalid' : ''}`}
+                        className="form-control select2"
                         value={selectedCountry}
                         onChange={handleCountryChange}
                       >
@@ -308,13 +308,13 @@ const AddBuyer = () => {
                           <option key={country.id} value={country.id}>{country.name}</option>
                         ))}
                       </select>
-                      {errors.country && <div className="invalid-feedback">{errors.country}</div>}
+                      {errors.country && <div className="text-danger small">{errors.country}</div>}
                     </div>
                     <div className="col-md-3 mb-3">
                       <label htmlFor="state" className="form-label required">State</label>
                       <select
                         id="state"
-                        className={`form-control select2 ${errors.state ? "is-invalid" : ""}`}
+                        className="form-control select2"
                         value={selectedState}
                         onChange={handleStateChange}
                       >
@@ -323,13 +323,13 @@ const AddBuyer = () => {
                           <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
                       </select>
-                      {errors.state && <div className="invalid-feedback">{errors.state}</div>}
+                      {errors.state && <div className="text-danger small">{errors.state}</div>}
                     </div>
                     <div className="col-md-3 mb-3">
                       <label htmlFor="city" className="form-label required">City</label>
                       <select
                         id="city"
-                        className={`form-control select2 ${errors.city ? "is-invalid" : ""}`}
+                        className="form-control select2"
                         value={selectedCity}
                         onChange={handleCityChange}
                       >
@@ -338,7 +338,7 @@ const AddBuyer = () => {
                           <option key={city.id} value={city.id}>{city.name}</option>
                         ))}
                       </select>
-                      {errors.city && <div className="invalid-feedback">{errors.city}</div>}
+                      {errors.city && <div className="text-danger small">{errors.city}</div>}
                     </div>
                     <div className="col-md-3 mb-3">
                       <label htmlFor="zipcode" className="form-label required">Post Code</label>

@@ -539,7 +539,7 @@ const AddSeller = () => {
                   <div className="col-md-4">
                     <label htmlFor="user_type" className="form-label required">User Type</label>
                     <select
-                      id="user_type" className={`form-control ${errors.user_type ? "is-invalid" : ""}`}
+                      id="user_type" className="form-control select2"
                       value={selectedRoles}
                       onChange={handleRolesChange}
                     >
@@ -548,12 +548,12 @@ const AddSeller = () => {
                         <option key={role.id} value={role.id}>{role.name}</option>
                       ))}
                     </select>
-                    {errors.user_type && (<div className="invalid-feedback">{errors.user_type}</div>)}
+                    {errors.user_type && (<div className="text-danger small">{errors.user_type}</div>)}
                   </div>
                   <div className="col-md-4">
                     <label htmlFor="core_activity" className="form-label required">Core Activity</label>
                     <select
-                      id="core_activity" className={`form-control ${errors.core_activity ? "is-invalid" : ""}`}
+                      id="core_activity" className="form-control select2"
                       value={selectedCoreActivity}
                       onChange={handleCoreActivityChange}
                     >
@@ -562,12 +562,12 @@ const AddSeller = () => {
                         <option key={core_activity.id} value={core_activity.id}>{core_activity.name}</option>
                       ))}
                     </select>
-                    {errors.core_activity && (<div className="invalid-feedback">{errors.core_activity}</div>)}
+                    {errors.core_activity && (<div className="text-danger small">{errors.core_activity}</div>)}
                   </div>
                   <div className="col-md-4">
                     <label htmlFor="activity" className="form-label required">Activity</label>
                     <select
-                      id="activity" className={`form-control ${errors.activity ? "is-invalid" : ""}`}
+                      id="activity" className="form-control select2"
                       value={selectedActivity}
                       onChange={handleActivityChange}
                       disabled={!selectedCoreActivity}
@@ -577,12 +577,12 @@ const AddSeller = () => {
                         <option key={activity.id} value={activity.id}>{activity.name}</option>
                       ))}
                     </select>
-                    {errors.activity && (<div className="invalid-feedback">{errors.activity}</div>)}
+                    {errors.activity && (<div className="text-danger small">{errors.activity}</div>)}
                   </div>
                   <div className="col-md-4">
                     <label htmlFor="category_sell" className="form-label required">Category</label>
                     <select
-                      id="category_sell" className={`form-control select2 ${errors.category_sell ? "is-invalid" : ""}`}
+                      id="category_sell" className="form-control select2"
                       value={selectedCategory}
                       onChange={handleCategoryChange}
                       multiple
@@ -592,7 +592,7 @@ const AddSeller = () => {
                         <option key={category.id} value={category.id}>{category.name}</option>
                       ))}
                     </select>
-                    {errors.category_sell && (<div className="invalid-feedback">{errors.category_sell}</div>)}
+                    {errors.category_sell && (<div className="text-danger small">{errors.category_sell}</div>)}
                   </div>
                   <div className="col-md-4">
                     <label htmlFor="sub_category" className="form-label">Sub Category</label>
@@ -880,7 +880,7 @@ const AddSeller = () => {
                       <label htmlFor="country" className="form-label required">Country</label>
                       <select
                         id="country"
-                        className={`form-control select2 ${errors.country ? 'is-invalid' : ''}`}
+                        className="form-control select2"
                         value={selectedCountry}
                         onChange={handleCountryChange}
                       >
@@ -889,13 +889,13 @@ const AddSeller = () => {
                           <option key={country.id} value={country.id}>{country.name}</option>
                         ))}
                       </select>
-                      {errors.country && <div className="invalid-feedback">{errors.country}</div>}
+                      {errors.country && <div className="text-danger small">{errors.country}</div>}
                     </div>
                     <div className="col-md-3 mb-3">
                       <label htmlFor="state" className="form-label required">State</label>
                       <select
                         id="state"
-                        className={`form-control select2 ${errors.state ? "is-invalid" : ""}`}
+                        className="form-control select2"
                         value={selectedState}
                         onChange={handleStateChange}
                       >
@@ -904,13 +904,13 @@ const AddSeller = () => {
                           <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
                       </select>
-                      {errors.state && <div className="invalid-feedback">{errors.state}</div>}
+                      {errors.state && <div className="text-danger small">{errors.state}</div>}
                     </div>
                     <div className="col-md-3 mb-3">
                       <label htmlFor="city" className="form-label required">City</label>
                       <select
                         id="city"
-                        className={`form-control select2 ${errors.city ? "is-invalid" : ""}`}
+                        className="form-control select2"
                         value={selectedCity}
                         onChange={handleCityChange}
                       >
@@ -919,7 +919,7 @@ const AddSeller = () => {
                           <option key={city.id} value={city.id}>{city.name}</option>
                         ))}
                       </select>
-                      {errors.city && <div className="invalid-feedback">{errors.city}</div>}
+                      {errors.city && <div className="text-danger small">{errors.city}</div>}
                     </div>
                     <div className="col-md-3 mb-3">
                       <label htmlFor="zipcode" className="form-label required">Post Code</label>

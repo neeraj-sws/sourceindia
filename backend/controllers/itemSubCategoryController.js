@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 const validator = require('validator');
@@ -6,6 +6,7 @@ const ItemSubCategory = require('../models/ItemSubCategory');
 const ItemCategory = require('../models/ItemCategory');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
+const Products = require('../models/Products');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
 
@@ -263,6 +264,81 @@ exports.getItemSubCategoriesByCategorySubCategoryItemCategory = async (req, res)
     res.json(itemSubCategory);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getItemSubCategoriesBySelectedCategorySubCategoryItemCategory = async (req, res) => {
+  try {
+    const { categories, subcategories, itemCategories } = req.body;
+
+    // Validate input arrays
+    if (
+      !categories || !Array.isArray(categories) || categories.length === 0 ||
+      !subcategories || !Array.isArray(subcategories) || subcategories.length === 0 ||
+      !itemCategories || !Array.isArray(itemCategories) || itemCategories.length === 0
+    ) {
+      return res.status(400).json({
+        error: 'categories[], subcategories[], and itemCategories[] arrays are required and cannot be empty.'
+      });
+    }
+
+    // 🟢 Fetch matching item subcategories
+    const itemSubCategories = await ItemSubCategory.findAll({
+      where: {
+        category_id: { [Op.in]: categories },
+        subcategory_id: { [Op.in]: subcategories },
+        item_category_id: { [Op.in]: itemCategories },
+        status: 1
+      },
+      include: [
+        { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+      ],
+      order: [['id', 'ASC']],
+    });
+
+    // 🟢 Product count for each Item SubCategory
+    const productCounts = await Products.findAll({
+      attributes: ['item_subcategory_id', [fn('COUNT', col('product_id')), 'count']],
+      where: {
+        is_delete: 0,
+        is_approve: 1,
+        status: 1,
+      },
+      group: ['item_subcategory_id'],
+      raw: true,
+    });
+
+    const productCountMap = {};
+    productCounts.forEach(item => {
+      productCountMap[item.item_subcategory_id] = parseInt(item.count);
+    });
+
+    // 🟢 Final response (no company count)
+    const modifiedItemSubCategories = itemSubCategories.map(sub => {
+      const data = sub.toJSON();
+      return {
+        ...data,
+        getStatus: data.status === 1 ? 'Active' : 'Inactive',
+        category_name: data.Categories?.name || null,
+        subcategory_name: data.SubCategories?.name || null,
+        item_category_name: data.ItemCategory?.name || null,
+        product_count: productCountMap[data.id] || 0
+      };
+    });
+
+    if (modifiedItemSubCategories.length === 0) {
+      return res.status(404).json({
+        message: 'No item subcategories found for the given categories, subcategories, and item categories.'
+      });
+    }
+
+    res.json(modifiedItemSubCategories);
+
+  } catch (err) {
+    console.error('getItemSubCategoriesBySelectedCategorySubCategoryItemCategory error:', err);
     res.status(500).json({ error: err.message });
   }
 };
