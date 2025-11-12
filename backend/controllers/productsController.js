@@ -35,7 +35,7 @@ exports.allProduct = async (req, res) => {
     }
 
     const products = await Products.findAll({ where: { company_id: parseInt(company_id) }, attributes: ['id', 'title', 'description'] });
-    console.log(products);
+
 
     if (!products || products.length === 0) {
       return res.status(404).json({ success: false, message: 'No products found for the given company', data: [] });
