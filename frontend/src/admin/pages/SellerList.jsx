@@ -82,6 +82,31 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
   const [mailType, setMailType] = useState("selected");
   const [mailLoading, setMailLoading] = useState(false);
 
+  const [showMailHistoryModal, setShowMailHistoryModal] = useState(false);
+  const [mailHistoryData, setMailHistoryData] = useState([]);
+  const [mailHistoryLoading, setMailHistoryLoading] = useState(false);
+
+  const openMailHistoryModal = async (userId) => {
+    setShowMailHistoryModal(true);
+    setMailHistoryLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/seller_mail_histories`, {
+        params: { user_id: userId },
+      });
+      setMailHistoryData(response.data);
+    } catch (error) {
+      console.error("Error fetching mail history:", error);
+      showNotification("Failed to fetch mail history.", "error");
+    } finally {
+      setMailHistoryLoading(false);
+    }
+  };
+
+  const closeMailHistoryModal = () => {
+    setShowMailHistoryModal(false);
+    setMailHistoryData([]);
+  };
+        
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
@@ -887,10 +912,13 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                               </li>
                               {!getInactive && !getNotCompleted && !getNotApproved && (
                                 <li>
-                                  <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
-                                    <i className="bx bx-envelope me-2"></i> Mail History
-                                  </button>
-                                </li>
+  <button
+    className="dropdown-item"
+    onClick={() => openMailHistoryModal(row.id)}
+  >
+    <i className="bx bx-envelope me-2"></i> Mail History
+  </button>
+</li>
                               )}
                             </>
                           ) : (
@@ -990,6 +1018,10 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
         statusToggleInfo={statusToggleInfo}
         closeStatusModal={closeStatusModal}
         handleStatusConfirm={handleStatusConfirm}
+        showMailHistoryModal={showMailHistoryModal}
+        mailHistoryData={mailHistoryData}
+        mailHistoryLoading={mailHistoryLoading}
+        closeMailHistoryModal={closeMailHistoryModal}
       />
       <ExcelExport
         ref={excelExportRef}

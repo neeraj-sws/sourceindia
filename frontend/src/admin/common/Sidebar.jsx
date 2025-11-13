@@ -173,6 +173,7 @@ const menuData = [
       { title: 'About Settings', link: '/admin/about_settings' },
       { title: 'Home Settings', link: '/admin/home_settings' },
       { title: 'ShortCut menu', link: '/admin/shortcut-page' },
+      { title: 'Frony menu', link: '/admin/front_menu' },
     ],
   },
   {

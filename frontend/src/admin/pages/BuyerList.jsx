@@ -579,10 +579,29 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                           {!getDeleted ? (
                             <>
                               <li>
-                                <button className="dropdown-item">
-                                  <i className="bx bx-log-in me-2"></i> Login
-                                </button>
-                              </li>
+  <button
+    className="dropdown-item"
+    onClick={async () => {
+      try {
+        const token = localStorage.getItem("adminToken"); // your admin’s token
+        const response = await axios.get(`${API_BASE_URL}/signup/admin-login/${row.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.data.redirectUrl) {
+          window.open(response.data.redirectUrl, "_blank");
+        } else {
+          showNotification("Failed to get login link", "error");
+        }
+      } catch (error) {
+        showNotification("Error logging in as user", "error");
+        console.error(error);
+      }
+    }}
+  >
+    <i className="bx bx-log-in me-2"></i> Login
+  </button>
+</li>
                               <li>
                                 <button className="dropdown-item" onClick={() => navigate(`/admin/edit_buyer/${row.id}`)}>
                                   <i className="bx bx-edit me-2"></i> Edit
