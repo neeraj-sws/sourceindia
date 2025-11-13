@@ -1,4 +1,5 @@
 import React from "react";
+import { formatDateTime } from '../../../utils/formatDate';
 
 const SellerModals = ({
   // Delete modal
@@ -12,6 +13,12 @@ const SellerModals = ({
   statusToggleInfo,
   closeStatusModal,
   handleStatusConfirm,
+
+  // Mail History modal
+  showMailHistoryModal,
+  mailHistoryData = [],
+  mailHistoryLoading = false,
+  closeMailHistoryModal,
 }) => {
   return (
     <>
@@ -66,8 +73,64 @@ const SellerModals = ({
         </div>
       )}
 
+      {/* Mail History Modal */}
+      {showMailHistoryModal && (
+        <div className="modal fade show" tabIndex="-1" style={{ display: "block" }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Mail History</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={closeMailHistoryModal}
+                  aria-label="Close"
+                />
+              </div>
+              <div className="modal-body">
+                {mailHistoryLoading ? (
+                  <div className="text-center py-3">Loading...</div>
+                ) : mailHistoryData.length > 0 ? (
+                  <div className="table-responsive">
+                    <table className="table table-bordered table-sm">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Mail Title</th>
+                          <th>Mail Type</th>
+                          <th>Location</th>
+                          <th>Mail Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mailHistoryData.map((item, index) => (
+                          <tr key={item.id}>
+                            <td>{index + 1}</td>
+                            <td>{item.mail_title ? item.mail_title : 'NA'}</td>
+                            <td>{item.mail_type ? item.mail_type : 'NA'}</td>
+                            <td>{[item.city, item.state, item.country].filter(Boolean).join(', ')}</td>
+                            <td>{formatDateTime(item.created_at)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">No mail history found.</div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary btn-sm" onClick={closeMailHistoryModal}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Backdrop */}
-      {(showDeleteModal || showStatusModal) && (
+      {(showDeleteModal || showStatusModal || showMailHistoryModal) && (
         <div className="modal-backdrop fade show"></div>
       )}
     </>

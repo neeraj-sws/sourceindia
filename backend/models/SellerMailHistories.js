@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const Users = require('./Users');
+const Emails = require('./Emails');
 
 const SellerMailHistories = sequelize.define('SellerMailHistories', {
     id: {
@@ -37,5 +38,6 @@ const SellerMailHistories = sequelize.define('SellerMailHistories', {
 });
 
 SellerMailHistories.belongsTo(Users, { foreignKey: 'user_id', targetKey: 'id', as: 'Users', constraints: false });
+SellerMailHistories.belongsTo(Emails, { foreignKey: 'email_id', targetKey: 'id', as: 'Emails', constraints: false });
 
 module.exports = SellerMailHistories;

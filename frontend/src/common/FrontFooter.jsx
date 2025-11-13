@@ -5,6 +5,7 @@ import API_BASE_URL from '../config';
 
 const FrontFooter = () => {
   const [footerData, setFooterData] = useState(null);
+  const [menuData, setMenuData] = useState([]);
 
   useEffect(() => {
     const fetchFooterData = async () => {
@@ -15,12 +16,23 @@ const FrontFooter = () => {
         console.error('Error fetching footer data:', error);
       }
     };
+    const fetchMenuData = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/front_menu`);
+        setMenuData(response.data);
+      } catch (error) {
+        console.error('Error fetching menu data:', error);
+      }
+    };
     fetchFooterData();
+    fetchMenuData();
   }, []);
 
-  if (!footerData) {
-    return null; // or a small loader if needed
+  if (!footerData || !menuData.length) {
+    return null;
   }
+
+  const helpItems = menuData.filter(item => item.parent_id === 0 && item.type === 2);
 
   return (
     <footer>
@@ -62,12 +74,11 @@ const FrontFooter = () => {
             <div className="col-md-2">
               <p className="footer-section-title">Need Help?</p>
               <ul className="list-unstyled mb-0">
-                <li><Link to="/terms_conditions">Terms & Conditions</Link></li>
-                <li><a href="#">FAQ</a></li>
-                <li><Link to="/privacy_policy">Privacy Policy</Link></li>
-                <li><Link to="/get-support">Support</Link></li>
-                <li><Link to="/knowledge-center">Knowledge Center</Link></li>
-                <li><Link to="/contact-us">Contact Us</Link></li>
+                {helpItems.map(item => (
+                  <li key={item.id}>
+                    <Link to={item.link}>{item.name}</Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
