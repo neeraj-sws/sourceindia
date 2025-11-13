@@ -3151,3 +3151,14 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	padding: 4px 6px;
 	line-height: 9px;
 }
+
+#allMail input[type="radio"]:checked+.option_mail {
+	background-color: #008cff;
+	color: #fff;
+	box-shadow: 0 0 4px rgb(0 0 0 / 17%), 0 2px 4px rgb(0 0 0 / 14%);
+}
+
+#allMail input[type="radio"] {
+	appearance: none;
+	display: none;
+}

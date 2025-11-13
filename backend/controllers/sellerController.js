@@ -19,6 +19,9 @@ const Designations = require('../models/Designations');
 const NatureBusinesses = require('../models/NatureBusinesses');
 const Products = require('../models/Products');
 const SellerCategory = require('../models/SellerCategory');
+const SellerMailHistories = require('../models/SellerMailHistories');
+const Emails = require('../models/Emails');
+const { getTransporter } = require('../helpers/mailHelper');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
@@ -983,3 +986,124 @@ async function getNamesByIds(Model, idsString) {
 
   return records.map(r => r.name).join(', ');
 }
+
+exports.getEmailtemplate = async (req, res) => {
+
+  try {
+    const templates = await Emails.findAll({
+      where: {
+        is_seller_direct: 1,
+        title: { [Op.ne]: "Incomplete Seller" }
+      },
+      order: [["id", "DESC"]]
+    });
+
+    return res.json(templates);
+
+  } catch (error) {
+    console.log("Email template load error:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Error loading email templates"
+    });
+  }
+};
+
+exports.sendMail = async (req, res) => {
+  try {
+    const { ids, template_id } = req.body;
+    console.log(ids);
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ status: false, message: "Seller IDs missing" });
+    }
+
+    if (!template_id) {
+      return res.status(400).json({ status: false, message: "Template not selected" });
+    }
+
+    const template = await Emails.findOne({
+      where: {
+        id: template_id,
+        is_seller_direct: 1
+      }
+    });
+
+    if (!template) {
+      return res.status(404).json({ status: false, message: "Template not found" });
+    }
+
+    // Get all sellers by IDs
+    const sellers = await Users.findAll({
+      where: { id: ids, status: 1, is_seller: 1 }
+    });
+
+    // send mails
+    for (const seller of sellers) {
+
+      let verification_link = `<a class='back_to' href='/'  
+  style='background: linear-gradient(90deg, rgb(248 143 66) 45%, #38a15a 100%);
+  border: 1px solid transparent; padding: 4px 10px; font-size: 12px; 
+  border-radius: 4px; color: #fff;'>
+  Click and Login Account
+</a>`;
+
+      const APP_URL = process.env.APP_URL
+
+      const msgStr = template.message.toString('utf8');
+      let userMessage = msgStr
+        .replace("{{ USER_NAME }}", `${seller.fname} ${seller.lname}`)
+        .replace("{{ USER_EMAIL }}", seller.email)
+        .replace("{{ USER_PASSWORD }}", seller.real_password)
+        .replace("{{ APP_URL }}", APP_URL)
+        .replace("{{ VERIFICATION_LINK }}", verification_link);
+
+      const { transporter } = await getTransporter();
+      await transporter.sendMail({
+        from: `<info@sourceindia-electronics.com>`,
+        to: seller.email,
+        subject: template?.subject,
+        html: userMessage,
+      });
+
+
+
+      const ipaddress = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || '0.0.0.0';
+
+      // Optional: if you use a location library
+      let city = null, state = null, country = null, location = null;
+      try {
+        const currentUserInfo = await Location.get(ipaddress);
+        city = currentUserInfo?.cityName || null;
+        state = currentUserInfo?.regionName || null;
+        country = currentUserInfo?.countryName || null;
+        location = JSON.stringify(currentUserInfo || {});
+      } catch (e) {
+        console.warn("Location fetch failed:", e.message);
+      }
+      const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      await SellerMailHistories.create({
+        mail_type: 3,
+        mail: seller.email,
+        mail_template_id: template.id,
+        user_id: seller.id,
+        email_id: template.id,
+        status: 1,
+        company_id: seller.company_id,
+        ip_address: ipaddress,
+        city: city || '',
+        state: state || '',
+        country: country || '',
+        location: location || '',
+        mail_send_time: now,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+    }
+    return res.json({ status: true, message: "Mail sent successfully!" });
+
+  } catch (error) {
+    console.error("Send mail error:", error);
+    return res.status(500).json({ status: false, message: "Internal error" });
+  }
+};
