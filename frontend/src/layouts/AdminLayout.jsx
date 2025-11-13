@@ -67,6 +67,7 @@ import ItemSubCategory from '../admin/pages/ItemSubCategory';
 import NewItems from '../admin/pages/NewItems';
 import ShortcutPage from '../admin/pages/ShortcutPage';
 import PageEdit from '../admin/pages/PageEdit';
+import FrontMenu from '../admin/pages/FrontMenu';
 
 function AdminLayout() {
   const location = useLocation();
@@ -174,6 +175,7 @@ function AdminLayout() {
           <Route path="/new_items" element={<ProtectedRoute><NewItems /></ProtectedRoute>} />
           <Route path="/terms_conditions" element={<ProtectedRoute><PageEdit pageId={9} title="Terms & Conditions" /></ProtectedRoute>} />
           <Route path="/privacy_policy" element={<ProtectedRoute><PageEdit pageId={8} title="Privacy Policy" /></ProtectedRoute>} />
+          <Route path="/front_menu" element={<ProtectedRoute><FrontMenu /></ProtectedRoute>} />
         </Routes>
       </div>
       {showLayout && <Footer />}

@@ -1,0 +1,170 @@
+const { Op } = require('sequelize');
+const FrontMenu = require('../models/FrontMenu');
+
+exports.createFrontMenu = async (req, res) => {
+  try {
+    const { parent_id, name, link, is_show, status, type } = req.body;
+    const frontMenu = await FrontMenu.create({ parent_id, name, link, is_show, status, type });
+    res.status(201).json({ message: 'Front menu created', frontMenu });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllFrontMenu = async (req, res) => {
+  try {
+    const { parent_id } = req.query;
+    const query = {};
+    if (parent_id) {
+      query.parent_id = parent_id;
+    } else {
+      query.parent_id = 0;
+    }
+    const frontMenu = await FrontMenu.findAll({ 
+      where: query,
+      order: [['id', 'DESC']]
+    });
+    res.json(frontMenu);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getFrontMenuById = async (req, res) => {
+  try {
+    const frontMenu = await FrontMenu.findByPk(req.params.id);
+    if (!frontMenu) return res.status(404).json({ message: 'Front menu not found' });
+    res.json(frontMenu);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateFrontMenu = async (req, res) => {
+  try {
+    const { parent_id, name, link, is_show, status, type } = req.body;
+    const frontMenu = await FrontMenu.findByPk(req.params.id);
+    if (!frontMenu) return res.status(404).json({ message: 'Front menu not found' });
+    frontMenu.parent_id = parent_id;
+    frontMenu.name = name;
+    frontMenu.link = link;
+    frontMenu.is_show = is_show;
+    frontMenu.status = status;
+    frontMenu.type = type;
+    frontMenu.updated_at = new Date();
+    await frontMenu.save();
+    res.json({ message: 'Front menu updated', frontMenu });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.deleteFrontMenu = async (req, res) => {
+  try {
+    const frontMenu = await FrontMenu.findByPk(req.params.id);
+    if (!frontMenu) return res.status(404).json({ message: 'Ticket Category not found' });
+
+    await frontMenu.destroy();
+    res.json({ message: 'Ticket Category deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateFrontMenuShowStatus = async (req, res) => {
+  try {
+    const { is_show } = req.body;
+    if (is_show !== 0 && is_show !== 1) {
+      return res.status(400).json({ message: 'Invalid is_show. Use 1 (yes) or 0 (No).' });
+    }
+    const frontMenu = await FrontMenu.findByPk(req.params.id);
+    if (!frontMenu) return res.status(404).json({ message: 'Faq Category not found' });
+    frontMenu.is_show = is_show;
+    await frontMenu.save();
+    res.json({ message: 'Show status updated', frontMenu });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateFrontMenuStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (status !== 0 && status !== 1) {
+      return res.status(400).json({ message: 'Invalid status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const frontMenu = await FrontMenu.findByPk(req.params.id);
+    if (!frontMenu) return res.status(404).json({ message: 'Faq Category not found' });
+    frontMenu.status = status;
+    await frontMenu.save();
+    res.json({ message: 'Status updated', frontMenu });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getChildMenus = async (req, res) => {
+  try {
+    const { parentId } = req.params;
+    const childMenus = await FrontMenu.findAll({ where: { parent_id: parentId } });
+    res.status(200).json(childMenus);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllFrontMenuServerSide = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      sortBy = 'id',
+      sort = 'DESC',
+    } = req.query;
+    const validColumns = ['id', 'parent_id', 'name', 'link', 'is_show', 'status', 'type', 'created_at', 'updated_at'];
+    const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const limitValue = parseInt(limit);
+    let order = [];
+    if (validColumns.includes(sortBy)) {
+      order = [[sortBy, sortDirection]];
+    } else {
+      order = [['id', 'DESC']];
+    }
+    const where = {};
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { link: { [Op.like]: `%${search}%` } },
+      ];
+    }
+    const totalRecords = await FrontMenu.count();
+    const { count: filteredRecords, rows } = await FrontMenu.findAndCountAll({
+      where,
+      order,
+      limit: limitValue,
+      offset,
+      include: [],
+    });
+    const mappedRows = rows.map(row => ({
+      id: row.id,
+      parent_id: row.parent_id,
+      name: row.name,
+      link: row.link,
+      is_show: row.is_show,
+      status: row.status,
+      type: row.type,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    }));
+    res.json({
+      data: mappedRows,
+      totalRecords,
+      filteredRecords,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

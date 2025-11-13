@@ -35,17 +35,16 @@ const LeadDetail = () => {
   });
 
   useEffect(() => {
-    const fetchNewsletter = async () => {
+    const fetchLeads = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}`);
         const data = res.data;
-        console.log(data);
         setFormData(data);
       } catch (error) {
-        console.error('Error fetching Newsletter:', error);
+        console.error('Error fetching Leads:', error);
       }
     };
-    fetchNewsletter();
+    fetchLeads();
   }, [enquiry_number]);
 
   let status = "Pending";
@@ -234,8 +233,8 @@ const LeadDetail = () => {
                         <p className="mb-0 text-dark">
                           {formData.product_details?.Categories?.name}
                         </p>
-                      </div>}
-
+                      </div>
+                    }
                     {formData.product_details?.SubCategories &&
                       <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Sub Category</p>

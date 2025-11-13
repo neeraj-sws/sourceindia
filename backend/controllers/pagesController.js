@@ -3,9 +3,9 @@ const Pages = require('../models/Pages');
 
 exports.getPagesById = async (req, res) => {
   try {
-    const subSubCategories = await Pages.findByPk(req.params.id);
-    if (!subSubCategories) return res.status(404).json({ message: 'Pages not found' });
-    res.json(subSubCategories);
+    const pages = await Pages.findByPk(req.params.id);
+    if (!pages) return res.status(404).json({ message: 'Pages not found' });
+    res.json(pages);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -14,15 +14,15 @@ exports.getPagesById = async (req, res) => {
 exports.updatePages = async (req, res) => {
   try {
     const { title, description } = req.body;
-    const subSubCategories = await Pages.findByPk(req.params.id);
-    if (!subSubCategories) return res.status(404).json({ message: 'Pages not found' });
+    const pages = await Pages.findByPk(req.params.id);
+    if (!pages) return res.status(404).json({ message: 'Pages not found' });
 
-    subSubCategories.title = title;
-    subSubCategories.description = description;
-    subSubCategories.updated_at = new Date();
-    await subSubCategories.save();
+    pages.title = title;
+    pages.description = description;
+    pages.updated_at = new Date();
+    await pages.save();
 
-    res.json({ message: 'Pages updated', subSubCategories });
+    res.json({ message: 'Pages updated', pages });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

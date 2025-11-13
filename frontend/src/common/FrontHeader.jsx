@@ -15,6 +15,30 @@ const FrontHeader = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [logoUrl, setLogoUrl] = useState('/logo.png');
   const [mobile, setMobile] = useState('+91-11-41615985');
+  const [menuItems, setMenuItems] = useState([]);
+  const [dropdownItems, setDropdownItems] = useState({});
+
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/front_menu`);
+        const mainMenu = response.data.filter(item => item.parent_id === 0);
+        setMenuItems(mainMenu);
+        mainMenu.forEach(async (menu) => {
+          if (menu.type === 1) {
+            const dropdownResponse = await axios.get(`${API_BASE_URL}/front_menu?parent_id=${menu.id}`);
+            setDropdownItems((prev) => ({
+              ...prev,
+              [menu.id]: dropdownResponse.data,
+            }));
+          }
+        });
+      } catch (err) {
+        console.error('Error fetching menu data:', err);
+      }
+    };
+    fetchMenu();
+  }, []);
 
   useEffect(() => {
     const fetchSiteSettings = async () => {
@@ -204,28 +228,45 @@ const FrontHeader = () => {
                     </button>
                     <div className="collapse navbar-collapse" id="mainNavbar">
                       <ul className="navbar-nav ms-auto">
-                        <li className="nav-item">
-                          <Link className="nav-link active" to="/">Home</Link>
-                        </li>
-                        <li className="nav-item">
-                          <Link className="nav-link" to="/categories">Product Categories</Link>
-                        </li>
-                        <li className="nav-item dropdown">
-                          <a className="nav-link dropdown-toggle" href="#" id="companyDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Companies
-                          </a>
-                          <ul className="dropdown-menu" aria-labelledby="companyDropdown">
-                            <li><Link className="dropdown-item" to="/company-list">Seller <small><i>(Manufacturer)</i></small></Link></li>
-                            <li><Link className="dropdown-item" to="/buyer-list">Buyers</Link></li>
-                            <li><Link className="dropdown-item" to="/trading-list">Distributors</Link></li>
-                          </ul>
-                        </li>
-                        <li className="nav-item">
-                          <a className="nav-link" href="https://event.sourceindia-electronics.com/">Event</a>
-                        </li>
-                        <li className="nav-item">
-                          <Link className="nav-link" to="/open-enquiry">Enquiry</Link>
-                        </li>
+                        {menuItems.filter((menuItem) => menuItem.is_show === 1 && menuItem.status === 1 && menuItem.type === 1
+                        )
+                        .map((menuItem) => {
+                          const hasDropdown = dropdownItems[menuItem.id] && dropdownItems[menuItem.id].length > 0;
+                          return (
+                            <li
+                              className={`nav-item ${hasDropdown ? 'dropdown' : ''}`}
+                              key={menuItem.id}
+                            >
+                              {hasDropdown ? (
+                                <>
+                                  <a
+                                    className="nav-link dropdown-toggle"
+                                    href="#"
+                                    id={`dropdown-${menuItem.id}`}
+                                    role="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                  >
+                                    {menuItem.name}
+                                  </a>
+                                  <ul className="dropdown-menu" aria-labelledby={`dropdown-${menuItem.id}`}>
+                                    {dropdownItems[menuItem.id].map((subItem) => (
+                                      <li key={subItem.id}>
+                                        <Link className="dropdown-item" to={subItem.link}>
+                                          {subItem.name}
+                                        </Link>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </>
+                              ) : (
+                                <Link className="nav-link" to={menuItem.link}>
+                                  {menuItem.name}
+                                </Link>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   </div>

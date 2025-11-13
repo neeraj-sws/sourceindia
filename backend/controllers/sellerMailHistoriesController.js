@@ -3,10 +3,15 @@ const moment = require('moment');
 const SellerMailHistories = require('../models/SellerMailHistories');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
+const Emails = require('../models/Emails');
 
 exports.getAllSellerMailHistories = async (req, res) => {
   try {
-    const sellerMailHistories = await SellerMailHistories.findAll({
+    // Check if user_id is provided in query parameters
+    const { user_id } = req.query;  // You can send the user_id in the query string
+
+    // Build query options
+    const options = {
       order: [['id', 'ASC']],
       include: [
         {
@@ -28,9 +33,24 @@ exports.getAllSellerMailHistories = async (req, res) => {
             }
           ],
           required: false,
-        }
+        }, {
+              model: Emails,
+              as: 'Emails',
+              attributes: ['id', 'title'],
+              required: false,
+            }
       ],
-    });
+    };
+
+    // If user_id is provided, add it to the where condition to filter by user_id
+    if (user_id) {
+      options.where = {
+        user_id: user_id
+      };
+    }
+
+    // Fetch the seller mail histories with the applied conditions
+    const sellerMailHistories = await SellerMailHistories.findAll(options);
 
     const formatted = sellerMailHistories.map(row => {
       let mailTypeText = null;
@@ -47,7 +67,6 @@ exports.getAllSellerMailHistories = async (req, res) => {
         default:
           mailTypeText = 'Unknown';
       }
-
       return {
         id: row.id,
         user_id: row.user_id,
@@ -56,7 +75,8 @@ exports.getAllSellerMailHistories = async (req, res) => {
         user_name: row.Users ? `${row.Users.fname} ${row.Users.lname}` : null,
         user_email: row.Users ? row.Users.email : null,
         user_company_name: row.Users?.company_info?.organization_name || null,
-        mail_type: mailTypeText, // ✅ readable label
+        mail_title: row.Emails?.title || null,
+        mail_type: mailTypeText,
         country: row.country,
         state: row.state,
         city: row.city,
@@ -66,6 +86,7 @@ exports.getAllSellerMailHistories = async (req, res) => {
       };
     });
 
+    // Return the formatted data as a response
     res.json(formatted);
   } catch (err) {
     console.error(err);
