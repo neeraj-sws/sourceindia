@@ -76,7 +76,12 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
   const [selectedElcinaMember, setSelectedElcinaMember] = useState("");
   const [appliedElcinaMember, setAppliedElcinaMember] = useState("");
   const datePickerRef = useRef(null);
-        
+  const [showMailModal, setShowMailModal] = useState(false);
+  const [mailTemplates, setMailTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [mailType, setMailType] = useState("selected");
+  const [mailLoading, setMailLoading] = useState(false);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
@@ -490,35 +495,105 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     setShowPicker(false);
   };
 
+
+  const openMailPopup = async (type) => {
+    if (type === "selected" && selectedSeller.length === 0) {
+      showNotification("Please select at least one seller!", "error");
+      return;
+    }
+
+    setMailType(type);
+
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sellers/get-email-template`);
+      setMailTemplates(res.data);
+    } catch (e) {
+      showNotification("Failed to load mail templates", "error");
+    }
+
+    setShowMailModal(true);
+  };
+
+  const sendMailRequest = async () => {
+    if (!selectedTemplate) {
+      showNotification("Select mail template!", "error");
+      return;
+    }
+
+    let ids = [];
+
+    if (mailType === "selected") {
+      ids = selectedSeller;
+    } else if (mailType === "all") {
+      ids = sellerData.map((s) => s.id);
+    } else if (mailType === "single") {
+      ids = selectedSeller;
+    }
+
+    try {
+      setMailLoading(true);  // <-- START LOADING
+
+      const res = await axios.post(`${API_BASE_URL}/sellers/send-mail`, {
+        ids,
+        template_id: selectedTemplate,
+      });
+
+      showNotification(res.data.message, "success");
+      setShowMailModal(false);
+
+    } catch (error) {
+      showNotification("Mail send failed!", "error");
+    } finally {
+      setMailLoading(false); // <-- STOP LOADING
+    }
+  };
+
+  const openMailPopupSingle = async (id) => {
+    setMailType("single");      // single mail mode
+    setSelectedSeller([id]);    // IMPORTANT → array में सिर्फ ONE id store
+
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sellers/get-email-template`);
+      setMailTemplates(res.data);
+    } catch (e) {
+      showNotification("Unable to load templates", "error");
+    }
+
+    setShowMailModal(true);
+  };
+
+
+
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Sellers" maincount={totalRecords} page="Users" 
-          title={ getInactive ? "Inactive Sellers" : getNotApproved ? "Not Approved Sellers" : getNotCompleted ? "Not Completed Sellers" : getDeleted ? "Recently Deleted Sellers" : "Sellers" }
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Seller</>)} add_link="/admin/add_seller"
-          actions={
-            <>
-              {!getDeleted && !getInactive && !getNotApproved && (
-                <>
-                <button className="btn btn-sm btn-primary mb-2 me-2">
-                  Selected Mail
+          <Breadcrumb mainhead="Sellers" maincount={totalRecords} page="Users"
+            title={getInactive ? "Inactive Sellers" : getNotApproved ? "Not Approved Sellers" : getNotCompleted ? "Not Completed Sellers" : getDeleted ? "Recently Deleted Sellers" : "Sellers"}
+            add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Seller</>)} add_link="/admin/add_seller"
+            actions={
+              <>
+                {!getDeleted && !getInactive && !getNotApproved && (
+                  <>
+                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={() => openMailPopup("selected")}>
+                      Selected Mail
+                    </button>
+                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={() => openMailPopup("all")}>
+                      All Mail
+                    </button>
+                  </>
+                )}
+                <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}>
+                  <i className="bx bx-download me-1" /> Excel
                 </button>
-                <button className="btn btn-sm btn-primary mb-2 me-2">
-                  All Mail
-                </button>
-                </>
-              )}
-              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}>
-                <i className="bx bx-download me-1" /> Excel
-              </button>
-              {!getDeleted && (
-                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedSeller.length === 0}>
-                  <i className="bx bx-trash me-1" /> Delete Selected
-                </button>
-              )}
-            </>
-          }
+                {!getDeleted && (
+                  <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedSeller.length === 0}>
+                    <i className="bx bx-trash me-1" /> Delete Selected
+                  </button>
+                )}
+              </>
+            }
           />
           <div className="card mb-3">
             <div className="card-body">
@@ -714,7 +789,10 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
             <div className="card-body">
               <DataTable
                 columns={[
-                  ...(!getDeleted ? [{ key: "select", label: (<input type="checkbox" onChange={handleSelectAll} />) }] : []),
+                  ...(!getDeleted ? [{
+                    key: "select", label: (<input type="checkbox" name="template"
+                      onChange={handleSelectAll} />)
+                  }] : []),
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "organization_name", label: "Company", sortable: true },
                   { key: "coreactivity_name", label: "Coreactivity / Category / Segment / Sub Segment", sortable: true },
@@ -742,7 +820,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                   <tr key={row.id}>
                     {!getDeleted && (
                       <td>
-                        <input type="checkbox" checked={selectedSeller.includes(row.id)} onChange={() => handleSelectSeller(row.id)} />
+                        <input type="checkbox" value={row.id} checked={selectedSeller.includes(row.id)} onChange={() => handleSelectSeller(row.id)} />
                       </td>
                     )}
                     <td><Link to={`/admin/seller/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
@@ -797,7 +875,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                               </li>
                               {!getInactive && !getNotApproved && (
                                 <li>
-                                  <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
+                                  <button className="dropdown-item" onClick={() => openMailPopupSingle(row.id)}>
                                     <i className="bx bx-envelope me-2"></i> Mail
                                   </button>
                                 </li>
@@ -841,6 +919,67 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
             </div>
           </div>
         </div>
+
+        {showMailModal && (
+          <div className="modal fade show" style={{ display: "block", background: "rgba(0,0,0,0.5)" }}>
+            <div className="modal-dialog modal-xl">
+              <div className="modal-content">
+
+                <div className="modal-header">
+                  <h5 className="modal-title">Choose Mail Type</h5>
+                  <button className="btn-close" onClick={() => setShowMailModal(false)}></button>
+                </div>
+
+                <div className="modal-body">
+                  <div className="row" id="allMail">
+                    {mailTemplates?.map((item) => (
+                      <div className="col-md-4 mb-2" key={item.id}>
+                        <div className="w-100 align-items-center mb-1">
+                          <input
+                            type="radio"
+                            name="template"
+                            value={item.id}
+                            onChange={() => setSelectedTemplate(item.id)}
+                            className="me-2"
+                            id={`option_${item.id}`}
+                          />
+                          <label for={`option_${item.id}`} className="option_mail  d-flex gap-2 align-items-center border p-2 rounded w-100 border-dark justify-content-center">
+                            <i class="bx bx-radio-circle"></i>
+                            <span className="text-capitalize">{item.title}</span>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+
+                  </div>
+                </div>
+
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={() => setShowMailModal(false)}>
+                    Close
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={sendMailRequest}
+                    disabled={mailLoading}
+                  >
+                    {mailLoading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Sending...
+                      </>
+                    ) : (
+                      "Send Mail"
+                    )}
+                  </button>
+
+                </div>
+
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
       <SellerModals
         showDeleteModal={showDeleteModal}
