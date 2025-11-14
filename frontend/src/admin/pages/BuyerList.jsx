@@ -57,22 +57,27 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
   const [fullName, setFullName] = useState("");
   const [tempFullName, setTempFullName] = useState("");
   const datePickerRef = useRef(null);
-  
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
-          setShowPicker(false);
-        }
-      };
-      if (showPicker) {
-        document.addEventListener("mousedown", handleClickOutside);
-      } else {
-        document.removeEventListener("mousedown", handleClickOutside);
+  const [showMailModal, setShowMailModal] = useState(false);
+  const [mailTemplates, setMailTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [mailType, setMailType] = useState("selected");
+  const [mailLoading, setMailLoading] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setShowPicker(false);
       }
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }, [showPicker]);
+    };
+    if (showPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showPicker]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -124,26 +129,26 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
 
   useEffect(() => {
     $("#country").select2({
-        theme: "bootstrap",
-        width: "100%",
-        placeholder: "Select Country",
-      })
+      theme: "bootstrap",
+      width: "100%",
+      placeholder: "Select Country",
+    })
       .on("change", function () {
         handleCountryChange({ target: { value: $(this).val() } });
       });
     $("#state").select2({
-        theme: "bootstrap",
-        width: "100%",
-        placeholder: "Select State",
-      })
+      theme: "bootstrap",
+      width: "100%",
+      placeholder: "Select State",
+    })
       .on("change", function () {
         handleStateChange({ target: { value: $(this).val() } });
       });
     $("#city").select2({
-        theme: "bootstrap",
-        width: "100%",
-        placeholder: "Select City",
-      })
+      theme: "bootstrap",
+      width: "100%",
+      placeholder: "Select City",
+    })
       .on("change", function () {
         handleCityChange({ target: { value: $(this).val() } });
       });
@@ -158,7 +163,8 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/buyers/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, getInactive: getInactive ? "true" : "false",
+        params: {
+          page, limit, search, sortBy, sort: sortDirection, getInactive: getInactive ? "true" : "false",
           getNotApproved: getNotApproved ? "true" : "false", getDeleted: getDeleted ? "true" : "false",
           dateRange, startDate, endDate, country: appliedCountry || "", state: appliedState || "", city: appliedCity || "",
           customerId: customerId || "", full_name: fullName || "",
@@ -176,7 +182,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
 
   useEffect(() => {
     fetchData();
-  }, [ page, limit, search, sortBy, sortDirection, getInactive, getNotApproved, getDeleted, dateRange, startDate, endDate,
+  }, [page, limit, search, sortBy, sortDirection, getInactive, getNotApproved, getDeleted, dateRange, startDate, endDate,
     appliedCountry, appliedState, appliedCity, customerId, fullName,
   ]);
 
@@ -210,7 +216,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
   const handleDeleteConfirm = async () => {
     if (isBulkDelete) {
       try {
-        const res = await axios.delete(`${API_BASE_URL}/buyers/delete-selected`, {data: {ids: selectedBuyer}});
+        const res = await axios.delete(`${API_BASE_URL}/buyers/delete-selected`, { data: { ids: selectedBuyer } });
         setData((prevData) => prevData.filter((item) => !selectedBuyer.includes(item.id)));
         setTotalRecords((prev) => prev - selectedBuyer.length);
         setFilteredRecords((prev) => prev - selectedBuyer.length);
@@ -275,17 +281,18 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     }
   };
 
-  const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggleInfo({ id, currentStatus, field, valueKey });
+  const openStatusModal = (id, currentStatus, field, valueKey) => {
+    setStatusToggleInfo({ id, currentStatus, field, valueKey });
     setShowStatusModal(true);
   };
 
-  const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({id: null, currentStatus: null, field: "", valueKey: ""}); };
+  const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: "", valueKey: "" }); };
 
   const handleStatusConfirm = async () => {
     const { id, currentStatus, field, valueKey } = statusToggleInfo;
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
-      await axios.patch(`${API_BASE_URL}/buyers/${id}/${field}`, {[valueKey]: newStatus});
+      await axios.patch(`${API_BASE_URL}/buyers/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map((d) => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
       if (field == "seller_status" || field == "delete_status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
@@ -340,35 +347,104 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     setShowPicker(false);
   };
 
+
+
+  const openMailPopup = async (type) => {
+    if (type === "selected" && selectedBuyer.length === 0) {
+      showNotification("Please select at least one seller!", "error");
+      return;
+    }
+
+    setMailType(type);
+
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sellers/get-email-template`);
+      setMailTemplates(res.data);
+    } catch (e) {
+      showNotification("Failed to load mail templates", "error");
+    }
+
+    setShowMailModal(true);
+  };
+
+  const sendMailRequest = async () => {
+    if (!selectedTemplate) {
+      showNotification("Select mail template!", "error");
+      return;
+    }
+
+    let ids = [];
+
+    if (mailType === "selected") {
+      ids = selectedBuyer;
+    } else if (mailType === "all") {
+      ids = sellerData.map((s) => s.id);
+    } else if (mailType === "single") {
+      ids = selectedBuyer;
+    }
+
+    try {
+      setMailLoading(true);  // <-- START LOADING
+
+      const res = await axios.post(`${API_BASE_URL}/sellers/send-mail`, {
+        ids,
+        template_id: selectedTemplate,
+      });
+
+      showNotification(res.data.message, "success");
+      setShowMailModal(false);
+
+    } catch (error) {
+      showNotification("Mail send failed!", "error");
+    } finally {
+      setMailLoading(false); // <-- STOP LOADING
+    }
+  };
+
+  const openMailPopupSingle = async (id) => {
+    setMailType("single");
+    setselectedBuyer([id]);
+
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sellers/get-email-template`);
+      setMailTemplates(res.data);
+    } catch (e) {
+      showNotification("Unable to load templates", "error");
+    }
+
+    setShowMailModal(true);
+  };
+
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Buyers" maincount={totalRecords} page="" 
-          title={getInactive ? "Inactive Buyers" : getNotApproved ? "Not Approved Buyers" : getDeleted ? "Recently Deleted Buyers" : "Buyers"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Buyer</>)} add_link="/admin/add_buyer"
-          actions={
-            <>
-              {!getDeleted && !getInactive && !getNotApproved && (
-                <button className="btn btn-sm btn-primary mb-2 me-2">
-                  Mail to Selected User
+          <Breadcrumb mainhead="Buyers" maincount={totalRecords} page=""
+            title={getInactive ? "Inactive Buyers" : getNotApproved ? "Not Approved Buyers" : getDeleted ? "Recently Deleted Buyers" : "Buyers"}
+            add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Buyer</>)} add_link="/admin/add_buyer"
+            actions={
+              <>
+                {!getDeleted && !getInactive && !getNotApproved && (
+                  <button className="btn btn-sm btn-primary mb-2 me-2" onClick={() => openMailPopup("selected")}>
+                    Mail to Selected User
+                  </button>
+                )}
+                {!getDeleted && (
+                  <button className="btn btn-sm btn-primary mb-2 me-2" onClick={() => openMailPopup("all")}>
+                    All Mail
+                  </button>
+                )}
+                <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}>
+                  <i className="bx bx-download me-1" /> Excel
                 </button>
-              )}
-              {!getDeleted && (
-              <button className="btn btn-sm btn-primary mb-2 me-2">
-                All Mail
-              </button>
-              )}
-              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}>
-                <i className="bx bx-download me-1" /> Excel
-              </button>
-              {!getDeleted && (
-                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedBuyer.length === 0}>
-                  <i className="bx bx-trash me-1" /> Delete Selected
-                </button>
-              )}
-            </>
-          }
+                {!getDeleted && (
+                  <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedBuyer.length === 0}>
+                    <i className="bx bx-trash me-1" /> Delete Selected
+                  </button>
+                )}
+              </>
+            }
           />
           <div className="card mb-3">
             <div className="card-body">
@@ -416,55 +492,55 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                   </div>
                 </div>
                 {!getDeleted && (
-                <>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Customer ID</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter Customer ID"
-                    value={tempCustomerId}
-                    onChange={(e) => setTempCustomerId(e.target.value)}
-                  />
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Full Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter Full Name"
-                    value={tempFullName}
-                    onChange={(e) => setTempFullName(e.target.value)}
-                  />
-                </div>
-                <div className="col-md-4 mb-3">
-                  <label className="form-label">Country</label>
-                  <select id="country" className="form-control select2" value={selectedCountry} onChange={handleCountryChange}>
-                    <option value="">All</option>
-                    {countries.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-4 mb-3">
-                  <label className="form-label">State</label>
-                  <select id="state" className="form-control select2" value={selectedState} onChange={handleStateChange}>
-                    <option value="">All</option>
-                    {states.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-4 mb-3">
-                  <label className="form-label">City</label>
-                  <select id="city" className="form-control select2" value={selectedCity} onChange={handleCityChange}>
-                    <option value="">All</option>
-                    {cities.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                </>
+                  <>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Customer ID</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter Customer ID"
+                        value={tempCustomerId}
+                        onChange={(e) => setTempCustomerId(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Full Name</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter Full Name"
+                        value={tempFullName}
+                        onChange={(e) => setTempFullName(e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <label className="form-label">Country</label>
+                      <select id="country" className="form-control select2" value={selectedCountry} onChange={handleCountryChange}>
+                        <option value="">All</option>
+                        {countries.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <label className="form-label">State</label>
+                      <select id="state" className="form-control select2" value={selectedState} onChange={handleStateChange}>
+                        <option value="">All</option>
+                        {states.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-4 mb-3">
+                      <label className="form-label">City</label>
+                      <select id="city" className="form-control select2" value={selectedCity} onChange={handleCityChange}>
+                        <option value="">All</option>
+                        {cities.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
                 )}
                 <div className={!getDeleted ? "col-md-12 d-flex justify-content-end gap-2" : "col-md-4 d-flex justify-content-end gap-2"}>
                   <button
@@ -492,18 +568,18 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
             <div className="card-body">
               <DataTable
                 columns={[
-                  ...(!getDeleted ? [{key: "select", label: (<input type="checkbox" onChange={handleSelectAll} />)}] : []),
+                  ...(!getDeleted ? [{ key: "select", label: (<input type="checkbox" onChange={handleSelectAll} />) }] : []),
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "full_name", label: "Name", sortable: true },
                   { key: "user_company", label: "Company", sortable: true },
                   { key: "address", label: "Location", sortable: true },
                   ...(!getDeleted ? [
-                  { key: "status", label: "User Status", sortable: false },
-                  { key: "account_status", label: "Account Status", sortable: false },
-                  { key: "seller_status", label: "Make Seller", sortable: false },
-                  ]:[]),
+                    { key: "status", label: "User Status", sortable: false },
+                    { key: "account_status", label: "Account Status", sortable: false },
+                    { key: "seller_status", label: "Make Seller", sortable: false },
+                  ] : []),
                   { key: "created_at", label: "Created", sortable: true },
-                  { key: "updated_at", label: "Last Update", sortable: true },                  
+                  { key: "updated_at", label: "Last Update", sortable: true },
                   { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}
@@ -516,15 +592,15 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                 sortDirection={sortDirection}
                 onPageChange={(newPage) => setPage(newPage)}
                 onSortChange={handleSortChange}
-                onSearchChange={(val) => {setSearch(val); setPage(1);}}
+                onSearchChange={(val) => { setSearch(val); setPage(1); }}
                 search={search}
-                onLimitChange={(val) => {setLimit(val); setPage(1);}}
+                onLimitChange={(val) => { setLimit(val); setPage(1); }}
                 getRangeText={getRangeText}
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     {!getDeleted && (
                       <td>
-                        <input type="checkbox" checked={selectedBuyer.includes(row.id)} onChange={() => handleSelectBuyer(row.id)}/>
+                        <input type="checkbox" checked={selectedBuyer.includes(row.id)} onChange={() => handleSelectBuyer(row.id)} />
                       </td>
                     )}
                     <td><Link to={`/admin/buyer/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
@@ -539,7 +615,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                               className="form-check-input"
                               type="checkbox"
                               checked={row.status == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal( row.id, row.status, "status", "status" ); }}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
                               readOnly
                             />
                           </div>
@@ -550,7 +626,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                               className="form-check-input"
                               type="checkbox"
                               checked={row.is_approve == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal( row.id, row.is_approve, "account_status", "is_approve" ); }}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_approve, "account_status", "is_approve"); }}
                               readOnly
                             />
                           </div>
@@ -561,7 +637,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                               className="form-check-input"
                               type="checkbox"
                               checked={row.is_seller == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal( row.id, row.is_seller, "seller_status", "is_seller" ); }}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_seller, "seller_status", "is_seller"); }}
                               readOnly
                             />
                           </div>
@@ -579,29 +655,29 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                           {!getDeleted ? (
                             <>
                               <li>
-  <button
-    className="dropdown-item"
-    onClick={async () => {
-      try {
-        const token = localStorage.getItem("adminToken"); // your admin’s token
-        const response = await axios.get(`${API_BASE_URL}/signup/admin-login/${row.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+                                <button
+                                  className="dropdown-item"
+                                  onClick={async () => {
+                                    try {
+                                      const token = localStorage.getItem("adminToken"); // your admin’s token
+                                      const response = await axios.get(`${API_BASE_URL}/signup/admin-login/${row.id}`, {
+                                        headers: { Authorization: `Bearer ${token}` },
+                                      });
 
-        if (response.data.redirectUrl) {
-          window.open(response.data.redirectUrl, "_blank");
-        } else {
-          showNotification("Failed to get login link", "error");
-        }
-      } catch (error) {
-        showNotification("Error logging in as user", "error");
-        console.error(error);
-      }
-    }}
-  >
-    <i className="bx bx-log-in me-2"></i> Login
-  </button>
-</li>
+                                      if (response.data.redirectUrl) {
+                                        window.open(response.data.redirectUrl, "_blank");
+                                      } else {
+                                        showNotification("Failed to get login link", "error");
+                                      }
+                                    } catch (error) {
+                                      showNotification("Error logging in as user", "error");
+                                      console.error(error);
+                                    }
+                                  }}
+                                >
+                                  <i className="bx bx-log-in me-2"></i> Login
+                                </button>
+                              </li>
                               <li>
                                 <button className="dropdown-item" onClick={() => navigate(`/admin/edit_buyer/${row.id}`)}>
                                   <i className="bx bx-edit me-2"></i> Edit
@@ -610,7 +686,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                               <li>
                                 <button
                                   className="dropdown-item text-danger"
-                                  onClick={(e) => { e.preventDefault(); openStatusModal( row.id, row.is_delete, "delete_status", "is_delete" ); }}
+                                  onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete"); }}
                                 >
                                   <i className="bx bx-trash me-2"></i> Delete
                                 </button>
@@ -621,7 +697,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                               <li>
                                 <button
                                   className="dropdown-item"
-                                  onClick={(e) => { e.preventDefault(); openStatusModal( row.id, row.is_delete, "delete_status", "is_delete" ); }}
+                                  onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_delete, "delete_status", "is_delete"); }}
                                 >
                                   <i className="bx bx-windows me-2"></i> Restore
                                 </button>
@@ -641,6 +717,65 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
               />
             </div>
           </div>
+          {showMailModal && (
+            <div className="modal fade show" style={{ display: "block", background: "rgba(0,0,0,0.5)" }}>
+              <div className="modal-dialog modal-xl">
+                <div className="modal-content">
+
+                  <div className="modal-header">
+                    <h5 className="modal-title">Choose Mail Type</h5>
+                    <button className="btn-close" onClick={() => setShowMailModal(false)}></button>
+                  </div>
+
+                  <div className="modal-body">
+                    <div className="row" id="allMail">
+                      {mailTemplates?.map((item) => (
+                        <div className="col-md-4 mb-2" key={item.id}>
+                          <div className="w-100 align-items-center mb-1">
+                            <input
+                              type="radio"
+                              name="template"
+                              value={item.id}
+                              onChange={() => setSelectedTemplate(item.id)}
+                              className="me-2"
+                              id={`option_${item.id}`}
+                            />
+                            <label for={`option_${item.id}`} className="option_mail  d-flex gap-2 align-items-center border p-2 rounded w-100 border-dark justify-content-center">
+                              <i class="bx bx-radio-circle"></i>
+                              <span className="text-capitalize">{item.title}</span>
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+
+                    </div>
+                  </div>
+
+                  <div className="modal-footer">
+                    <button className="btn btn-secondary" onClick={() => setShowMailModal(false)}>
+                      Close
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={sendMailRequest}
+                      disabled={mailLoading}
+                    >
+                      {mailLoading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2"></span>
+                          Sending...
+                        </>
+                      ) : (
+                        "Send Mail"
+                      )}
+                    </button>
+
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <BuyerModals

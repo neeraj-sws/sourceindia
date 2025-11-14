@@ -1,11 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const sellerController = require('../controllers/sellerController');
+const mailCronController = require('../controllers/mailCronController');
 
 router.post('/', sellerController.createSeller);
 router.get('/count', sellerController.getSellerCount);
 router.get('/get-email-template', sellerController.getEmailtemplate);
 router.post('/send-mail', sellerController.sendMail);
+router.get('/sendmail-cron', mailCronController.sendMail);
 
 router.get('/', sellerController.getAllSeller);
 router.get('/server-side', sellerController.getAllSellerServerSide);
