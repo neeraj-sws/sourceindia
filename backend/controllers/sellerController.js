@@ -1034,36 +1034,36 @@ exports.sendMail = async (req, res) => {
 
     // Get all sellers by IDs
     const sellers = await Users.findAll({
-      where: { id: ids, status: 1, is_seller: 1 }
+      where: { id: ids, status: 1 }
     });
 
     // send mails
     for (const seller of sellers) {
 
-      let verification_link = `<a class='back_to' href='/'  
-  style='background: linear-gradient(90deg, rgb(248 143 66) 45%, #38a15a 100%);
-  border: 1px solid transparent; padding: 4px 10px; font-size: 12px; 
-  border-radius: 4px; color: #fff;'>
-  Click and Login Account
-</a>`;
+      //       let verification_link = `<a class='back_to' href='/'  
+      //   style='background: linear-gradient(90deg, rgb(248 143 66) 45%, #38a15a 100%);
+      //   border: 1px solid transparent; padding: 4px 10px; font-size: 12px; 
+      //   border-radius: 4px; color: #fff;'>
+      //   Click and Login Account
+      // </a>`;
 
-      const APP_URL = process.env.APP_URL
+      //       const APP_URL = process.env.APP_URL
 
-      const msgStr = template.message.toString('utf8');
-      let userMessage = msgStr
-        .replace("{{ USER_NAME }}", `${seller.fname} ${seller.lname}`)
-        .replace("{{ USER_EMAIL }}", seller.email)
-        .replace("{{ USER_PASSWORD }}", seller.real_password)
-        .replace("{{ APP_URL }}", APP_URL)
-        .replace("{{ VERIFICATION_LINK }}", verification_link);
+      //       const msgStr = template.message.toString('utf8');
+      //       let userMessage = msgStr
+      //         .replace("{{ USER_NAME }}", `${seller.fname} ${seller.lname}`)
+      //         .replace("{{ USER_EMAIL }}", seller.email)
+      //         .replace("{{ USER_PASSWORD }}", seller.real_password)
+      //         .replace("{{ APP_URL }}", APP_URL)
+      //         .replace("{{ VERIFICATION_LINK }}", verification_link);
 
-      const { transporter } = await getTransporter();
-      await transporter.sendMail({
-        from: `<info@sourceindia-electronics.com>`,
-        to: seller.email,
-        subject: template?.subject,
-        html: userMessage,
-      });
+      //       const { transporter } = await getTransporter();
+      //       await transporter.sendMail({
+      //         from: `<info@sourceindia-electronics.com>`,
+      //         to: seller.email,
+      //         subject: template?.subject,
+      //         html: userMessage,
+      //       });
 
 
 
@@ -1096,6 +1096,7 @@ exports.sendMail = async (req, res) => {
         country: country || '',
         location: location || '',
         mail_send_time: now,
+        is_sent: 0,
         created_at: new Date(),
         updated_at: new Date(),
       });
@@ -1107,3 +1108,4 @@ exports.sendMail = async (req, res) => {
     return res.status(500).json({ status: false, message: "Internal error" });
   }
 };
+

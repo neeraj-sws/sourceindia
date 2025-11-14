@@ -21,6 +21,8 @@ const SellerMailHistories = sequelize.define('SellerMailHistories', {
   mail: { type: DataTypes.STRING, allowNull: false },
   email_id: { type: DataTypes.INTEGER, allowNull: false },
   user_id: { type: DataTypes.INTEGER, allowNull: false },
+  is_sent: { type: DataTypes.INTEGER, allowNull: false },
+  is_failed: { type: DataTypes.INTEGER, allowNull: false },
   company_id: { type: DataTypes.STRING, allowNull: false },
   mail_send_time: { type: DataTypes.STRING, allowNull: true },
   ip_address: { type: DataTypes.TEXT, allowNull: false },
@@ -39,5 +41,6 @@ const SellerMailHistories = sequelize.define('SellerMailHistories', {
 
 SellerMailHistories.belongsTo(Users, { foreignKey: 'user_id', targetKey: 'id', as: 'Users', constraints: false });
 SellerMailHistories.belongsTo(Emails, { foreignKey: 'email_id', targetKey: 'id', as: 'Emails', constraints: false });
+
 
 module.exports = SellerMailHistories;
