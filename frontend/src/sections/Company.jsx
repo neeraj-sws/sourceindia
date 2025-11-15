@@ -41,7 +41,7 @@ const Company = ({ limit }) => {
               {companies.map((item, index) => (
                 <div className="col-md-2 mb-3" key={index}>
                   <Link to={`/companies/${item.organization_slug}`} className="d-block h-100">
-                    <div key={item.id} className="companyBox px-3 py-4 bg-white border h-100 d-flex align-items-center justify-content-center">
+                    <div key={item.id} className="companyBox px-3 py-4 bg-white border h-100 text-center">
                       <div className="ComImg">
                         <ImageFront
                           src={`${ROOT_URL}/${item.company_logo_file}`}
@@ -50,6 +50,7 @@ const Company = ({ limit }) => {
                           showFallback={true}
                         />
                       </div>
+                      <p className='mb-0'><small>{item.organization_name}</small></p>
                     </div>
                   </Link>
                 </div>

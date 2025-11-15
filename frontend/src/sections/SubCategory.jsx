@@ -89,12 +89,20 @@ const SubCategory = () => {
 
                           </ul>
                         </div>
-                        <img
-                          src="https://www.glossyjewels.com/uploads/dummy.jpg"
-                          className="img-fluid rounded"
-                          width="100"
-                          alt={sub.name}
-                        />
+
+                        {sub.file_name && (
+                          <img
+                            src={`${ROOT_URL}/${sub.file_name}`}
+                            className="img-fluid"
+                            alt={sub.name || "SubCategory"} width="100px"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = "https://www.glossyjewels.com/uploads/dummy.jpg";
+                            }}
+                          />
+                        )}
+
+
                       </div>
                     </div>
                   </div>

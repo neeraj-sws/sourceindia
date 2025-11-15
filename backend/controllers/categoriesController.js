@@ -456,7 +456,14 @@ exports.getItemCategories = async (req, res) => {
     // 2️⃣ Fetch all subcategories
     const subcategories = await SubCategories.findAll({
       where: { is_delete: 0, status: 1 },
-      attributes: ['id', ['sub_category_id', 'id'], 'name', 'category', 'slug'],
+      attributes: [
+        'id',
+        'sub_category_id',
+        'file_id',
+        'name',
+        'category',
+        'slug'
+      ],
       order: [['id', 'ASC']],
       raw: true
     });
@@ -500,7 +507,8 @@ exports.getItemCategories = async (req, res) => {
         id: sub.id,
         name: sub.name,
         slug: sub.slug,
-        item_categories: itemBySubcategory[sub.id] || []
+        item_categories: itemBySubcategory[sub.id] || [],
+        file_name: imageMap[sub.file_id] || null
       });
     });
 
@@ -546,7 +554,7 @@ exports.getItemSubCategories = async (req, res) => {
     // 2️⃣ Fetch subcategories (pagination applied)
     const subcategories = await SubCategories.findAll({
       where: { category: categoryIds, is_delete: 0, status: 1 },
-      attributes: ['id', 'name', 'category', 'slug'],
+      attributes: ['id', 'name', 'category', 'slug','file_id'],
       order: [['id', 'ASC']],
       offset: offset,
       limit: limit,
@@ -595,7 +603,8 @@ exports.getItemSubCategories = async (req, res) => {
         id: sub.id,
         name: sub.name,
         slug: sub.slug,
-        item_categories: itemBySubcategory[sub.id] || []
+        item_categories: itemBySubcategory[sub.id] || [],
+        file_name: imageMap[sub.file_id] || null
       });
     });
 

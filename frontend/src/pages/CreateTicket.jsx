@@ -178,7 +178,7 @@ const CreateTicket = () => {
                       )}
                     </button>
 
-                    <a href="/support" className="btn btn-secondary ms-2">
+                    <a href="/get-support" className="btn btn-secondary ms-2">
                       Back
                     </a>
                   </div>

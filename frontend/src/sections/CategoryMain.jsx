@@ -73,7 +73,20 @@ const CategoryMain = ({ isHome, limit }) => {
                                           </li>
                                         ))}
                                       </ul>
-                                      <img src="https://www.glossyjewels.com/uploads/dummy.jpg" className='img-fluid' width="100" />
+
+
+                                      {sub.file_name && (
+                                        <img
+                                          src={`${ROOT_URL}/${sub.file_name}`}
+                                          className="img-fluid"
+                                          alt={sub.name || "SubCategory"} width="100"
+                                          onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://www.glossyjewels.com/uploads/dummy.jpg";
+                                          }}
+                                        />
+                                      )}
+
                                     </div>
                                   </div>
                                 </div>

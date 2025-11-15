@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const Categories = require('./Categories');
+const UploadImage = require('./UploadImage');
 const slugify = require('slugify'); // 🟢 import slugify
 
 const SubCategories = sequelize.define('SubCategories', {
@@ -29,6 +30,11 @@ const SubCategories = sequelize.define('SubCategories', {
     allowNull: false,
     defaultValue: 0,
   },
+  file_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+  },
   status: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -53,6 +59,13 @@ SubCategories.belongsTo(Categories, {
   targetKey: 'id',
   as: 'Categories',
   constraints: false
+});
+
+// 🟢 Relation
+Categories.belongsTo(UploadImage, {
+  foreignKey: 'file_id',
+  targetKey: 'id',
+  onDelete: 'CASCADE'
 });
 
 // 🟢 Hook: Auto-generate slug before create

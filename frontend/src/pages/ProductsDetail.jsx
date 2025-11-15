@@ -26,6 +26,8 @@ const ProductDetail = () => {
   const [review, setReview] = useState("");
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -36,6 +38,12 @@ const ProductDetail = () => {
       }
     };
     fetchProduct();
+  }, [slug]);
+
+
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [slug]);
 
   if (!product) return <div>Loading...</div>;

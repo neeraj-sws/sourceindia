@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import ImageWithFallback from "../admin/common/ImageWithFallback";
-
+import { Link } from 'react-router-dom';
 const Companies = () => {
   const [companies, setCompanies] = useState([]);
   const [page, setPage] = useState(1);
@@ -60,13 +60,17 @@ const Companies = () => {
         {companies.map((company) => (
           <div className="col-md-2" key={company.id}>
             <div className="latest-product">
-              <ImageWithFallback
-                src={`${ROOT_URL}/${company.company_logo_file}`}
-                width={180}
-                height={180}
-                showFallback={true}
-              />
+              <Link to={`/companies/${company.organization_slug}`} className="d-block h-100">
+                <ImageWithFallback
+                  src={`${ROOT_URL}/${company.company_logo_file}`}
+                  width={180}
+                  height={180}
+                  showFallback={true}
+                />
+                <p className='mt-2'><small>{company.organization_name}</small></p>
+              </Link>
             </div>
+
           </div>
         ))}
       </div>

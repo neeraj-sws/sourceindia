@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const UploadImage = require('./UploadImage');
-const slugify = require('slugify'); // 🟢 import slugify library
+const slugify = require('slugify'); 
 
 const Categories = sequelize.define('Categories', {
   id: {
