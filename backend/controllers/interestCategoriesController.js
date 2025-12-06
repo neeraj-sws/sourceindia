@@ -125,7 +125,7 @@ exports.deleteInterestCategories = async (req, res) => {
     const interestCategory = await InterestCategories.findByPk(req.params.id);
     if (!interestCategory) return res.status(404).json({ message: 'Interest Category not found' });
 
-    if (interestCategory.file_id) {
+    if (interestCategory.file_id && interestCategory.file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(interestCategory.file_id);
       if (uploadImage) {
         const oldImagePath = path.resolve(uploadImage.file);        

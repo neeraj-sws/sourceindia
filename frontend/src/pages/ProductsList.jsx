@@ -257,6 +257,8 @@ useEffect(() => {
     fetchCompanies();
   }, []);
 
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
   const fetchProducts = async (pageNumber = 1, append = false) => {
     if ((append && scrollLoading) || (!append && loading)) return;
     if (append) {
@@ -273,14 +275,14 @@ useEffect(() => {
         url += `&sub_category=${selectedSubCategories.join(',')}`;
       }
       if (selectedItemCategories.length > 0) {
-  url += `&item_category_id=${selectedItemCategories.join(',')}`;
-}
-if (selectedItemSubCategories.length > 0) {
-  url += `&item_subcategory_id=${selectedItemSubCategories.join(',')}`;
-}
-if (selectedItems.length > 0) {
-  url += `&item_id=${selectedItems.join(',')}`;
-}
+        url += `&item_category_id=${selectedItemCategories.join(',')}`;
+      }
+      if (selectedItemSubCategories.length > 0) {
+        url += `&item_subcategory_id=${selectedItemSubCategories.join(',')}`;
+      }
+      if (selectedItems.length > 0) {
+        url += `&item_id=${selectedItems.join(',')}`;
+      }
       if (selectedStates.length > 0) {
         url += `&user_state=${selectedStates.join(',')}`;
       }
@@ -310,11 +312,13 @@ if (selectedItems.length > 0) {
     } catch (err) {
       console.error('Error fetching products:', err);
     } finally {
-      if (append) {
-        setScrollLoading(false);
-      } else {
-        setLoading(false);
-      }
+      await sleep(1000);
+
+    if (append) {
+      setScrollLoading(false);
+    } else {
+      setLoading(false);
+    }
     }
   };
 
@@ -392,6 +396,71 @@ if (selectedItems.length > 0) {
     const item = array.find(el => el.id === id);
     return item ? item.name || item.organization_name : '';
   };
+  const ProductSkeletonLoader = ({ count = 9, isListView = false }) => {
+  const items = Array.from({ length: count });
+
+  return (
+    <>
+      {items.map((_, i) => (
+        <div key={i} className={isListView ? "col-md-6 mb-4" : "col-sm-4 mb-4"}>
+          <div
+            className={`card products-list-cards border overflow-hidden ${
+              isListView ? "flex-row" : "h-100"
+            }`}
+            style={{ height: isListView ? 200 : "auto" }}
+          >
+            {/* Image Skeleton */}
+            <div
+              className={`d-flex justify-content-center align-items-center ${
+                isListView ? "border-end listviewimg" : "border-bottom gridviewimg"
+              }`}
+              style={{
+                width: isListView ? "200px" : "100%",
+                height: isListView ? "100%" : "200px",
+                background: "#eee",
+              }}
+            >
+              <span
+                className="content-placeholder rounded-circle"
+                style={{ width: 100, height: 100 }}
+              ></span>
+            </div>
+
+            {/* Content Skeleton */}
+            <div className="card-body py-3 px-3" style={{ flex: 1 }}>
+              <p>
+                <span
+                  className="content-placeholder"
+                  style={{ width: "70%", height: 12, display: "block", marginBottom: 10 }}
+                ></span>
+              </p>
+
+              <p>
+                <span
+                  className="content-placeholder"
+                  style={{ width: "40%", height: 10, display: "block", marginBottom: 6 }}
+                ></span>
+                <span
+                  className="content-placeholder"
+                  style={{ width: "30%", height: 10, display: "block", marginBottom: 6 }}
+                ></span>
+              </p>
+
+              {!isListView && (
+                <p>
+                  <span
+                    className="content-placeholder"
+                    style={{ width: "100%", height: 30, display: "block" }}
+                  ></span>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+};
 
   return (
     <div className="container my-4">
@@ -765,7 +834,7 @@ if (selectedItems.length > 0) {
   </span>
 ))}
 {selectedItemSubCategories.map(id => (
-  <span key={`itemsub-${id}`} className="badge bg-secondary text-white d-flex align-items-center">
+  <span key={`itemsub-${id}`} className="badge bg-info text-white d-flex align-items-center">
     {getNameById(itemSubCategories, id)}
     <button
       onClick={() => setSelectedItemSubCategories(prev => prev.filter(cid => cid !== id))}
@@ -832,8 +901,8 @@ if (selectedItems.length > 0) {
           <div className="py-3 rounded-2 pb-0 mt-2">
             <div className="row">
               {loading ? (
-                <div className="text-center"><img src="/producfilter.gif" height={80} /></div>
-              ) : filteredProducts.length > 0 ? (
+  <ProductSkeletonLoader count={9} isListView={isListView} />
+) : filteredProducts.length > 0 ? (
                 filteredProducts.map(product => (
 
                   <div key={product.id} className={isListView ? "col-md-6 mb-4" : "col-sm-4 mb-4"}>
@@ -843,8 +912,7 @@ if (selectedItems.length > 0) {
                       style={{ height: isListView ? 200 : "auto" }}
                     >
                       <div
-                        className={`d-flex justify-content-center align-items-center ${isListView ? "border-end listviewimg" : "border-bottom gridviewimg"
-                          }`}
+                        className={`d-flex justify-content-center align-items-center ${isListView ? "border-end listviewimg" : "border-bottom gridviewimg"}`}
                         style={{
                           width: isListView ? "200px" : "100%",
                           height: isListView ? "100%" : "200px",
@@ -895,10 +963,8 @@ if (selectedItems.length > 0) {
                 <div className="col-12"><p className="text-center">No products found.</p></div>
               )}
               {!loading && scrollLoading && (
-                <div className="text-center my-4">
-                  <img src="/producfilter.gif" alt="Loading..." height={60} />
-                </div>
-              )}
+  <ProductSkeletonLoader count={3} isListView={isListView} />
+)}
             </div>
           </div>
         </section>

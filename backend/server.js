@@ -53,6 +53,7 @@ const basePath = '/v2'; // All APIs will start with /v2
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Health check
 app.get(basePath + '/', (req, res) => {

@@ -3,8 +3,8 @@ const FrontMenu = require('../models/FrontMenu');
 
 exports.createFrontMenu = async (req, res) => {
   try {
-    const { parent_id, name, link, is_show, status, type } = req.body;
-    const frontMenu = await FrontMenu.create({ parent_id, name, link, is_show, status, type });
+    const { parent_id, name, link, is_show, status, type, position } = req.body;
+    const frontMenu = await FrontMenu.create({ parent_id, name, link, is_show, status, type, position });
     res.status(201).json({ message: 'Front menu created', frontMenu });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -22,7 +22,7 @@ exports.getAllFrontMenu = async (req, res) => {
     }
     const frontMenu = await FrontMenu.findAll({ 
       where: query,
-      order: [['id', 'DESC']]
+      order: [['type', 'ASC'], ['position', 'ASC'], ]
     });
     res.json(frontMenu);
   } catch (err) {
@@ -42,7 +42,7 @@ exports.getFrontMenuById = async (req, res) => {
 
 exports.updateFrontMenu = async (req, res) => {
   try {
-    const { parent_id, name, link, is_show, status, type } = req.body;
+    const { parent_id, name, link, is_show, status, type, position } = req.body;
     const frontMenu = await FrontMenu.findByPk(req.params.id);
     if (!frontMenu) return res.status(404).json({ message: 'Front menu not found' });
     frontMenu.parent_id = parent_id;
@@ -51,6 +51,7 @@ exports.updateFrontMenu = async (req, res) => {
     frontMenu.is_show = is_show;
     frontMenu.status = status;
     frontMenu.type = type;
+    frontMenu.position = position;
     frontMenu.updated_at = new Date();
     await frontMenu.save();
     res.json({ message: 'Front menu updated', frontMenu });
@@ -62,10 +63,10 @@ exports.updateFrontMenu = async (req, res) => {
 exports.deleteFrontMenu = async (req, res) => {
   try {
     const frontMenu = await FrontMenu.findByPk(req.params.id);
-    if (!frontMenu) return res.status(404).json({ message: 'Ticket Category not found' });
+    if (!frontMenu) return res.status(404).json({ message: 'Front menu not found' });
 
     await frontMenu.destroy();
-    res.json({ message: 'Ticket Category deleted successfully' });
+    res.json({ message: 'Front menu deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -165,6 +166,20 @@ exports.getAllFrontMenuServerSide = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getFrontMenuCount = async (req, res) => {
+  try {
+    const headerCount = await FrontMenu.count({
+      where: { type: 1, parent_id: 0 }
+    });
+    const footerCount = await FrontMenu.count({
+      where: { type: 2, parent_id: 0 }
+    });
+    res.json({ headerCount, footerCount });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };

@@ -339,6 +339,14 @@ exports.register = async (req, res) => {
       is_complete: category == 0 ? 1 : 0,
       status: 1,
       user_company: cname,
+      is_profile: 1,
+      step: 1,
+      mode: 0,
+      remember_token: '',
+      payment_status: 0,
+      featured_company: 0,
+      is_intrest: 0,
+      request_admin: 0,
     });
 
     if (category == 1) {
@@ -371,7 +379,6 @@ exports.register = async (req, res) => {
 
     const { transporter, siteConfig } = await getTransporter();
 
-
     const user_type = category == 1 ? 'Seller' : 'Buyer';
     const adminEmailTemplateId = 6;
     const adminEmailData = await Emails.findByPk(adminEmailTemplateId);
@@ -395,7 +402,6 @@ exports.register = async (req, res) => {
       subject: adminEmailData.subject,
       html: adminMessage,
     };
-
 
     await transporter.sendMail(adminMailOptions);
 
@@ -421,7 +427,6 @@ exports.register = async (req, res) => {
       subject: userEmailData.subject,
       html: userMessage,
     };
-
 
     await transporter.sendMail(userMailOptions);
 
@@ -915,6 +920,7 @@ exports.updateProfileold = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   const upload = getMulterUpload('users');
+  let redirectToMyProduct = false;
   upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'company_logo', maxCount: 1 },
@@ -1046,9 +1052,13 @@ exports.updateProfile = async (req, res) => {
           company_video_second: req.body.company_video_second,
           organizations_product_description: req.body.organizations_product_description,
         });
+        if (user.is_company === 0) {
+          await user.update({ is_company: 1 });
+          redirectToMyProduct = true;
+        }
 
         // 🧩 Category/Subcategory Handling
-        let { category_sell, sub_category } = req.body;
+        /*let { category_sell, sub_category } = req.body;
 
         if (typeof category_sell === 'string') category_sell = category_sell.split(',').map(Number);
         if (typeof sub_category === 'string') sub_category = sub_category.split(',').map(Number);
@@ -1083,12 +1093,67 @@ exports.updateProfile = async (req, res) => {
 
         // 5️⃣ Remove existing entries for this user, insert fresh clean data
         await SellerCategory.destroy({ where: { user_id: user.id } });
-        await SellerCategory.bulkCreate(sellerCategoryData);
+        await SellerCategory.bulkCreate(sellerCategoryData);*/
+        if (req.body.categories !== undefined || req.body.subcategory_ids !== undefined) {
+    
+    let categoryIds = [];
+    let subcategoryIds = [];
+
+    if (req.body.categories) {
+        categoryIds = req.body.categories.split(',').map(id => parseInt(id.trim()));
+    }
+
+    if (req.body.subcategory_ids) {
+        subcategoryIds = req.body.subcategory_ids.split(',').map(id => parseInt(id.trim()));
+    }
+
+    // ---------- SAFE because both are arrays now ----------
+    const existingCategories = await SellerCategory.findAll({ where: { user_id: userId } });
+    const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
+    const incomingCategoryMap = [];
+
+    // ADD categories
+    for (const categoryId of categoryIds) {
+        const key = `${categoryId}-null`;
+        incomingCategoryMap.push(key);
+        if (!existingCategoryMap.includes(key)) {
+            await SellerCategory.create({ user_id: userId, category_id: categoryId, subcategory_id: null });
+        }
+    }
+
+    // ADD subcategories
+    for (const subcategoryId of subcategoryIds) {
+        const subCategory = await SubCategories.findOne({ where: { id: subcategoryId, is_delete: 0 } });
+        if (subCategory) {
+            const categoryId = subCategory.category;
+            const key = `${categoryId}-${subcategoryId}`;
+            incomingCategoryMap.push(key);
+            if (!existingCategoryMap.includes(key)) {
+                await SellerCategory.create({ user_id: userId, category_id: categoryId, subcategory_id: subcategoryId });
+            }
+        }
+    }
+
+    // REMOVE only categories that are missing
+    const nullSubcategoryRows = await SellerCategory.findAll({
+        where: { user_id: userId, subcategory_id: null },
+    });
+
+    for (const existing of nullSubcategoryRows) {
+        const categoryId = existing.category_id;
+        if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
+            await SellerCategory.destroy({
+                where: { user_id: userId, category_id: categoryId, subcategory_id: null },
+            });
+        }
+    }
+}
       }
 
       return res.status(200).json({
         message: 'Profile updated successfully',
         user,
+        redirectToMyProduct,
       });
     } catch (error) {
       console.error('Error in updateProfile:', error);
@@ -1382,5 +1447,39 @@ exports.updateUsersStatus = async (req, res) => {
     res.json({ message: 'Status updated', users });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.impersonateLogin = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ message: "UserId is required" });
+    }
+    const user = await Users.findOne({
+      where: { id: userId, is_delete: 0 }
+    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        fname: user.fname,
+        lname: user.lname,
+        is_seller: user.is_seller,
+        impersonated: true
+      },
+      "your_jwt_secret_key",
+      { expiresIn: "1h" }
+    );
+    return res.json({
+      message: "Impersonation token generated",
+      token
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server Error" });
   }
 };

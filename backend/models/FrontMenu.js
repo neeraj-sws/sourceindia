@@ -20,6 +20,7 @@ const FrontMenu = sequelize.define('FrontMenu', {
   is_show: { type: DataTypes.INTEGER, allowNull: false },
   status: { type: DataTypes.INTEGER, allowNull: false },
   type: { type: DataTypes.INTEGER, allowNull: false, comment: "1 = Header, 2 = Footer" },
+  position: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 }
 }, {
   tableName: 'front_menu',
   timestamps: true,

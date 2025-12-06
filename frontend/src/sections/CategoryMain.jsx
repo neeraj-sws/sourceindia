@@ -4,18 +4,89 @@ import API_BASE_URL, { ROOT_URL } from './../config';
 
 const CategoryMain = ({ isHome, limit }) => {
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCategories = async () => {
+      setLoading(true);
       try {
         const res = await axios.get(`${API_BASE_URL}/categories/category-item?is_delete=0&status=1&limit=${limit}`);
         setCategories(res.data || []);
       } catch (err) {
         console.error("Error fetching categories:", err);
+      } finally {
+        // show skeleton for at least 1 second
+        setTimeout(() => setLoading(false), 1000);
       }
     };
     fetchCategories();
   }, [limit]);
+
+  const CategorySkeletonLoader = ({ count = 2 }) => {
+  const categories = Array.from({ length: count });
+
+  return (
+    <>
+      {categories.map((_, i) => (
+        <section key={i} className="categorySection py-4 my-4">
+          <div className="container">
+            <div className="categoryMain">
+              {/* Category Title Skeleton */}
+              <h5 className="fw-semibold mb-3">
+                <span
+                  className="content-placeholder"
+                  style={{ width: "30%", height: 20, display: "block" }}
+                ></span>
+              </h5>
+
+              <div className="card">
+                <div className="card-body">
+                  <div className="row g-4">
+                    {/* LEFT IMAGE BLOCK Skeleton */}
+                    <div className="col-md-4">
+                      <div
+                        className="position-relative rounded overflow-hidden shadow-sm h-100"
+                        style={{ backgroundColor: "#eee", minHeight: 200 }}
+                      ></div>
+                    </div>
+
+                    {/* RIGHT SIDE GRID (Subcategories) Skeleton */}
+                    <div className="col-md-8">
+                      <div className="row g-3">
+                        {Array.from({ length: 6 }).map((_, j) => (
+                          <div key={j} className="col-sm-6 col-lg-4">
+                            <div className="card card-hover h-100 shadow-sm border-0 p-3">
+                              <span
+                                className="content-placeholder"
+                                style={{ width: "70%", height: 18, display: "block", marginBottom: 6 }}
+                              ></span>
+                              <span
+                                className="content-placeholder"
+                                style={{ width: "50%", height: 14, display: "block" }}
+                              ></span>
+                              <div
+                                className="mt-2"
+                                style={{ width: "100%", height: 60, backgroundColor: "#eee", borderRadius: 4 }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ))}
+    </>
+  );
+};
+
+if (loading) {
+    return <CategorySkeletonLoader count={2} />; // Show 2 skeleton categories
+  }
 
   return (
     <>

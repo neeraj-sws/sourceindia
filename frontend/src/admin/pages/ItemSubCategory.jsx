@@ -219,9 +219,16 @@ const ItemSubCategory = () => {
         await axios.put(`${API_BASE_URL}/item_sub_category/${formData.id}`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        const img = await axios.get(`${API_BASE_URL}/files/${formData.file_id}`);
-        const updatedFileName = img.data.file;
-        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, file_name: updatedFileName, updated_at: new Date().toISOString() } : item)));
+        // const img = await axios.get(`${API_BASE_URL}/files/${formData.file_id}`);
+        // const updatedFileName = img.data.file;
+        let updatedFileName = formData.file_name || null;
+        const updatedItem = await axios.get(`${API_BASE_URL}/item_sub_category/${formData.id}`);
+        const newFileId = updatedItem.data.file_id;
+        if (newFileId && newFileId !== 0) {
+          const img = await axios.get(`${API_BASE_URL}/files/${newFileId}`);
+          updatedFileName = img.data.file;
+        }
+        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, file_id: newFileId, file_name: updatedFileName, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/item_sub_category`, payload, {
           headers: { "Content-Type": "multipart/form-data" },

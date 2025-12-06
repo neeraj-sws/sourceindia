@@ -12,6 +12,7 @@ const ReviewRating = require('./ReviewRating');
 const ItemCategory = require('./ItemCategory');
 const ItemSubCategory = require('./ItemSubCategory');
 const Items = require('./Items');
+const ProductServices = require('./ProductServices');
 
 const Products = sequelize.define('Products', {
   id: {
@@ -27,7 +28,7 @@ const Products = sequelize.define('Products', {
     unique: true,
   },
   user_id: { type: DataTypes.INTEGER, allowNull: false },
-  company_id: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  company_id: { type: DataTypes.INTEGER, allowNull: false },
   slug: { type: DataTypes.STRING, allowNull: false },
   title: { type: DataTypes.STRING, allowNull: false },
   code: { type: DataTypes.STRING, allowNull: true },
@@ -85,5 +86,6 @@ Products.belongsTo(Color, { foreignKey: 'color', targetKey: 'id', as: 'Color', c
 Products.belongsTo(ItemCategory, { foreignKey: 'item_category_id', targetKey: 'id', as: 'ItemCategory', constraints: false });
 Products.belongsTo(ItemSubCategory, { foreignKey: 'item_subcategory_id', targetKey: 'id', as: 'ItemSubCategory', constraints: false });
 Products.belongsTo(Items, { foreignKey: 'item_id', targetKey: 'id', as: 'Items', constraints: false });
+Products.belongsTo(ProductServices, { foreignKey: 'product_service', targetKey: 'id', as: 'ProductServices', constraints: false });
 
 module.exports = Products;

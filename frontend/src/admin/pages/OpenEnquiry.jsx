@@ -271,7 +271,7 @@ const OpenEnquiry = ({ getDeleted }) => {
               <DataTable
                 columns={[
                   { key: "id", label: "S.No.", sortable: true },
-                  { key: "name", label: "Name", sortable: true },
+                  { key: "name", label: "From", sortable: true },
                   { key: "title", label: "Title", sortable: true },
                   { key: "description", label: "Description", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },
@@ -296,7 +296,9 @@ const OpenEnquiry = ({ getDeleted }) => {
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     <td>{(page - 1) * limit + index + 1}</td>
-                    <td>{row.name}<br />{row.email}<br />{row.phone}<br />
+                    <td>{row.name && (<>{row.name}<br /></>)}
+                    {row.email && (<>{row.email}<br /></>)}
+                    {row.email && (<>{row.phone}<br /></>)}
                     <span className="badge bg-primary">{row.user_type==1 ? "Seller" : row.user_type==0 ? "Buyer" : "Public Enquery"}</span>
                     </td>
                     <td>{row.title}</td>

@@ -2,19 +2,26 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import axios from "axios";
 import API_BASE_URL from "../../config";
+import { useAlert } from "../../context/AlertContext";
 import Breadcrumb from '../common/Breadcrumb';
+import LeadsModals from "./modal/LeadsModals";
 
 const ViewEnquiry = () => {
     const { enquiry_number } = useParams();
     const navigate = useNavigate();
+    const { showNotification } = useAlert();
     const [formData, setFormData] = useState({ enquiry_number: '', from_full_name: '', from_email: '', from_mobile: '',
         from_organization_name: '', to_full_name: '', to_email: '', to_mobile: '', to_organization_name: '',
-        category_name: '', sub_category_name: '', description: '', enquiry_product: ''
+        category_name: '', sub_category_name: '', description: '', enquiry_product: '', is_approve: '', is_delete: ''
      });
     const [counterCount, setcounterCount] = useState(null);
     const [awardedList, setAwardedList] = useState([]);
     const [acceptList, setAcceptList] = useState([]);
     const [shortList, setShortList] = useState([]);
+    const [nextEnquiry, setNextEnquiry] = useState(null);
+    const [previousEnquiry, setPreviousEnquiry] = useState(null);
+    const [showStatusModal, setShowStatusModal] = useState(false);
+    const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null, field: '', valueKey: '' });
 
     useEffect(() => {
       const fetchLeads = async () => {
@@ -86,39 +93,118 @@ const ViewEnquiry = () => {
       });
   }, [formData?.company_id, formData?.id]);
 
+  useEffect(() => {
+  if (!enquiry_number) return;
+
+  axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}/next`)
+    .then(res => setNextEnquiry(res.data.next))
+    .catch(() => setNextEnquiry(null));
+
+  axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}/previous`)
+    .then(res => setPreviousEnquiry(res.data.prev))
+    .catch(() => setPreviousEnquiry(null));
+
+}, [enquiry_number]);
+
+const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggleInfo({ id, currentStatus, field, valueKey }); setShowStatusModal(true); };
+
+  const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
+
+  const handleStatusConfirm = async () => {
+    const { id, currentStatus, field, valueKey } = statusToggleInfo;
+    const newStatus = Number(currentStatus) === 1 ? 0 : 1;
+    try {
+      await axios.patch(`${API_BASE_URL}/enquiries/${id}/${field}`, { [valueKey]: newStatus });
+      if (field == "delete_status") {
+        showNotification(newStatus == 1 ? "Removed from list" : "Restored from deleted", "success");
+      } else {
+        showNotification("Status Approved!", "success");
+      }
+      if (nextEnquiry) {
+        navigate(`/admin/admin-view-enquiry/${nextEnquiry}`);
+      } else {
+        navigate("/admin/enquiries-list");
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      showNotification("Failed to update status.", "danger");
+    } finally {
+      closeStatusModal();
+      document.activeElement.blur();
+    }
+  };
+
   return (
     <>
     <div className="page-wrapper">
       <div className="page-content">
         <Breadcrumb page="Settings" title="View Enquiry" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
         <div className="card mb-3">
-            <div className="card-body">
-              <div className="d-flex align-items-center justify-content-between flex-wrap">
-                <div className="d-flex align-items-center mb-2">
-                  <div className="avatar avatar-xxl avatar-rounded border border-warning bg-soft-warning me-3 flex-shrink-0">
-                    {formData.from_full_name && (() => {
-                      const parts = formData.from_full_name.trim().split(" ");
-                      const initials = parts
-                        .map(p => p.charAt(0).toUpperCase())
-                        .slice(0, 2) // sirf first 2 letters (first name + last name)
-                        .join("");
-                      return (
-                        <h6 className="mb-0 text-warning">
-                          {initials}
-                        </h6>
-                      );
-                    })()}
-                  </div>
-                  <div>
-                    {formData.from_full_name && <h5 className="mb-0"><i className="bx bx-user"></i> {formData.from_full_name} </h5>}
-                    {formData.from_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.from_email}</p>}
-                    {formData.from_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.from_mobile}</p>}
-                    {formData.from_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.from_organization_name}</p>}
-                  </div>
+          <div className="card-body">
+            <div className="d-flex align-items-center justify-content-between flex-wrap">
+              <div className="d-flex align-items-center mb-2">
+                <div className="avatar avatar-xxl avatar-rounded border border-warning bg-soft-warning me-3 flex-shrink-0">
+                  {formData.from_full_name && (() => {
+                    const parts = formData.from_full_name.trim().split(" ");
+                    const initials = parts
+                      .map(p => p.charAt(0).toUpperCase())
+                      .slice(0, 2) // sirf first 2 letters (first name + last name)
+                      .join("");
+                    return (
+                      <h6 className="mb-0 text-warning">
+                        {initials}
+                      </h6>
+                    );
+                  })()}
+                </div>
+                <div>
+                  {formData.from_full_name && <h5 className="mb-0"><i className="bx bx-user"></i> {formData.from_full_name} </h5>}
+                  {formData.from_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.from_email}</p>}
+                  {formData.from_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.from_mobile}</p>}
+                  {formData.from_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.from_organization_name}</p>}
                 </div>
               </div>
+              {formData.is_approve === 0 && (
+                <>
+                <div className="d-flex align-items-center mb-2">
+                  <button
+                    className="btn btn-success me-2"
+                    onClick={(e) => { e.preventDefault(); openStatusModal( formData.id, formData.is_approve, "account_status", "is_approve" ); }}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    className="btn btn-danger"
+                    onClick={(e) => { e.preventDefault(); openStatusModal(formData.id, formData.is_delete, "delete_status", "is_delete"); }}
+                  >
+                    Delete
+                  </button>
+                </div>
+                <div className="d-flex align-items-center mb-2">
+                  {/* Previous Button */}
+                  {previousEnquiry && (
+                    <button
+                      className="btn btn-secondary me-2"
+                      onClick={() => navigate(`/admin/admin-view-enquiry/${previousEnquiry}`)}
+                    >
+                      <i className="bx bx-left-arrow-alt"></i> Previous
+                    </button>
+                  )}
+                  {/* Next Button */}
+                  {nextEnquiry && (
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => navigate(`/admin/admin-view-enquiry/${nextEnquiry}`)}
+                    >
+                      Next <i className="bx bx-right-arrow-alt"></i>
+                    </button>
+                  )}
+                </div>
+                </>
+              )}
             </div>
           </div>
+        </div>
         <div className="row">
           <div className="col-md-4">
               <div className="card mb-3">
@@ -209,10 +295,7 @@ const ViewEnquiry = () => {
                     }
                     {formData.product_details?.description &&
                       <div className="d-flex align-items-center justify-content-between mb-2 mt-3">
-
-                        <p className="mb-0 text-dark">
-                          {formData.product_details?.description}
-                        </p>
+                        <p className="mb-0 text-dark" dangerouslySetInnerHTML={{ __html: formData.product_details?.description }} />
                       </div>
                     }
                   </div>
@@ -339,6 +422,12 @@ const ViewEnquiry = () => {
         
       </div>
     </div>
+    <LeadsModals
+            showStatusModal={showStatusModal}
+            statusToggleInfo={statusToggleInfo}
+            closeStatusModal={closeStatusModal}
+            handleStatusConfirm={handleStatusConfirm}
+          />
     </>
   )
 }

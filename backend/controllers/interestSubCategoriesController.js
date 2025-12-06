@@ -51,33 +51,32 @@ exports.getAllInterestSubCategories = async (req, res) => {
 
 exports.getBuyerInterestsWithProductCount = async (req, res) => {
   try {
-    // Raw SQL query
-    const sql = `
-      SELECT 
-        bi.buyerinterest_id,
-        bi.buyer_id,
-        bi.activity_id,
-        isc.name AS category_name,
-        COUNT(bi.buyer_id) AS product_count,
-        u.status,
-        CASE WHEN u.status = 1 THEN 'Active' ELSE 'Inactive' END AS getStatus
-      FROM buyerinterests bi
-      INNER JOIN users u ON u.user_id = bi.buyer_id
-      INNER JOIN company_info ci ON ci.company_id = u.company_id AND ci.is_delete = 0
-      INNER JOIN interest_sub_categories isc ON isc.interest_sub_category_id = bi.activity_id
-      WHERE 
-        u.status = 1
-        AND u.is_approve = 1
-        AND u.is_seller = 0
-      GROUP BY isc.name, bi.activity_id, bi.buyerinterest_id, bi.buyer_id, u.status
-      ORDER BY product_count DESC
-      LIMIT 5;
-    `;
+    const sql = `SELECT buyerinterests.*,
+          interest_sub_categories.name as name,
+          interest_sub_categories.interest_sub_category_id AS id,
+          COUNT(buyerinterests.buyer_id) AS company_count
+          FROM buyerinterests
+          LEFT JOIN interest_sub_categories 
+          ON buyerinterests.activity_id = interest_sub_categories.interest_sub_category_id
+          LEFT JOIN company_info 
+          ON buyerinterests.buyer_id = company_info.company_id
+          WHERE buyerinterests.buyer_id IN (
+          SELECT users.user_id AS u_id
+          FROM company_info
+          JOIN users ON users.company_id = company_info.company_id
+          JOIN cities ON users.city = cities.city_id
+          JOIN states ON users.state = states.state_id
+          JOIN countries ON users.country = countries.country_id
+          LEFT JOIN upload_images ON upload_images.upload_image_id = users.company_file_id
+          JOIN buyerinterests ON buyerinterests.buyer_id = users.user_id
+          WHERE users.status = 1
+          AND users.is_approve = 1
+          AND users.is_seller = 0
+          AND company_info.is_delete = 0
+      )
+      GROUP BY interest_sub_categories.name`;
 
-    const results = await sequelize.query(sql, {
-      type: QueryTypes.SELECT,
-    });
-
+    const results = await sequelize.query(sql, { type: QueryTypes.SELECT });
     res.json(results);
   } catch (err) {
     console.error(err);

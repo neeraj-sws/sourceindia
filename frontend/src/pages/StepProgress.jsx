@@ -13,6 +13,7 @@ const StepProgress = () => {
       if (user.is_profile && user.is_company && user.is_product) step = 4;
       else if (user.is_profile && user.is_company) step = 3;
       else if (user.is_profile) step = 2;
+      console.log(step)
       setCurrentActive(step);
     }
   }, [user]);

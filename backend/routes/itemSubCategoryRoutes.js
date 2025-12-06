@@ -3,6 +3,7 @@ const router = express.Router();
 const itemSubCategoryController = require('../controllers/itemSubCategoryController');
 
 router.post('/', itemSubCategoryController.createItemSubCategory);
+router.get('/count', itemSubCategoryController.getItemSubCategoryCount);
 router.get('/', itemSubCategoryController.getAllItemSubCategory);
 router.get('/server-side', itemSubCategoryController.getAllItemSubCategoryServerSide);
 router.delete('/delete-selected', itemSubCategoryController.deleteSelectedItemSubCategory);

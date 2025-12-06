@@ -233,19 +233,20 @@ exports.getAllNewslettersServerSide = async (req, res) => {
     } else {
       order = [['id', 'DESC']];
     }
-    const baseWhere = { is_delete: 0 };
+    const where = { is_delete: 0 };
     if (req.query.getDeleted === 'true') {
-      baseWhere.is_delete = 1;
+      where.is_delete = 1;
     }
+    const baseWhere = { ...where };
     if (search) {
       baseWhere[Op.or] = [
         { title: { [Op.like]: `%${search}%` } },
         { '$UserCategory.name$': { [Op.like]: `%${search}%` } }
       ];
     }
-    const totalRecords = await Newsletters.count();
+    const totalRecords = await Newsletters.count({where});
     const { count: filteredRecords, rows } = await Newsletters.findAndCountAll({
-      where: { ...baseWhere },
+      where: baseWhere,
       order,
       limit: limitValue,
       offset,

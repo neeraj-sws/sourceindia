@@ -3,6 +3,7 @@ const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
 const sequelize = require('../config/database');
+const { QueryTypes } = require('sequelize');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const ItemCategory = require('../models/ItemCategory');
@@ -78,18 +79,19 @@ exports.getAllCategories = async (req, res) => {
     });
 
     // company count per category (simplified for now)
-    const companyCounts = await CompanyInfo.findAll({
-      attributes: [
-        [fn('COUNT', col('company_id')), 'count'],
-        'category_sell'
-      ],
-      where: { is_delete: 0 },
-      group: ['category_sell'],
-      raw: true,
-    });
+    const companyCountsRaw = await sequelize.query(
+      `SELECT ci.category_sell, COUNT(ci.company_id) AS count
+      FROM company_info ci
+      INNER JOIN users u 
+          ON ci.company_id = u.company_id
+          AND u.is_delete = 0
+          AND u.status = 1
+          AND u.is_approve = 1
+      WHERE ci.is_delete = 0
+      GROUP BY ci.category_sell`, { type: QueryTypes.SELECT });
 
     const companyCountMap = {};
-    companyCounts.forEach(item => {
+    companyCountsRaw.forEach(item => {
       const csv = item.category_sell || '';
       const count = parseInt(item.count) || 0;
       csv.split(',').forEach(catIdStr => {
@@ -213,7 +215,7 @@ exports.deleteCategories = async (req, res) => {
     const categories = await Categories.findByPk(req.params.id);
     if (!categories) return res.status(404).json({ message: 'Categories not found' });
 
-    if (categories.cat_file_id) {
+    if (categories.cat_file_id && categories.cat_file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(categories.cat_file_id);
       if (uploadImage) {
         const oldImagePath = path.resolve(uploadImage.file);

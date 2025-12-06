@@ -76,15 +76,15 @@ const FrontHeader = () => {
     fetchSiteSettings();
   }, []);
 
-  useEffect(() => {
-    const checkToken = () => {
-      setIsLoggedIn(!!localStorage.getItem('user_token'));
-    };
-    window.addEventListener('storage', checkToken);
-    return () => {
-      window.removeEventListener('storage', checkToken);
-    };
-  }, []);
+  // useEffect(() => {
+  //   const checkToken = () => {
+  //     setIsLoggedIn(!!localStorage.getItem('user_token'));
+  //   };
+  //   window.addEventListener('storage', checkToken);
+  //   return () => {
+  //     window.removeEventListener('storage', checkToken);
+  //   };
+  // }, []);
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -94,7 +94,7 @@ const FrontHeader = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!token || user) return;
+      if (!token) return;
       try {
         const response = await axios.get(`${API_BASE_URL}/signup/profile`, {
           headers: {
@@ -107,7 +107,7 @@ const FrontHeader = () => {
       }
     };
     fetchProfile();
-  }, [token, user, setUser]);
+  }, [token]);
 
 
   const handleSubmit = (e) => {

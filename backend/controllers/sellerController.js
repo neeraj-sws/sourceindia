@@ -19,11 +19,13 @@ const Designations = require('../models/Designations');
 const NatureBusinesses = require('../models/NatureBusinesses');
 const Products = require('../models/Products');
 const SellerCategory = require('../models/SellerCategory');
+const SellerMessages = require('../models/SellerMessages');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 
 function createSlug(inputString) {
+  if (!inputString) return '';
   return inputString.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
 }
 
@@ -56,7 +58,7 @@ exports.createSeller = async (req, res) => {
         fname, lname, email, password, mobile, country, state, city, zipcode,
         address, status, is_trading, elcina_member, user_company, website, products,
         step, mode, real_password, remember_token, payment_status, is_email_verify, featured_company, is_approve,
-        organization_name, user_type, core_activity, activity, category_sell, sub_category,
+        organization_name, user_type, core_activity, activity, categories,
         company_website, company_location, is_star_seller, is_verified, role,
         company_meta_title, company_video_second, brief_company,
         organizations_product_description, designation
@@ -114,11 +116,13 @@ exports.createSeller = async (req, res) => {
         real_password: real_password || '',
         remember_token: remember_token || '',
         payment_status: payment_status || 0,
-        is_email_verify: is_email_verify || 0,
         featured_company: featured_company || 0,
         is_seller: 1,
         file_id: profileImage.id,
         company_file_id: companyLogoImage.id,
+        is_email_verify: is_email_verify || 1,
+        is_profile: is_profile || 1,
+        is_company: is_company || 1,
       });
 
       // Create company info
@@ -150,7 +154,7 @@ exports.createSeller = async (req, res) => {
       await user.update({ company_id: companyInfo.id });
 
       // Insert or update seller categories
-      if (category_sell && sub_category) {
+      /*if (category_sell && sub_category) {
         const categoryArray = Array.isArray(category_sell) ? category_sell : [category_sell];
         const subCategoryArray = Array.isArray(sub_category) ? sub_category : [sub_category];
 
@@ -166,6 +170,54 @@ exports.createSeller = async (req, res) => {
           }, {
             fields: ['user_id', 'category_id', 'subcategory_id', 'updated_at']
           });
+        }
+      }*/
+      if (categories && Array.isArray(categories)) {
+        const existingCategories = await SellerCategory.findAll({ where: { user_id: user.id } });
+        const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
+        const incomingCategoryMap = [];
+
+        for (const cat of categories) {
+          let category_id = cat.category_id || null;
+          let subcategory_id = cat.subcategory_id || null;
+
+          // Handle valid subcategory
+          if (subcategory_id) {
+            const subCategory = await SubCategories.findOne({ where: { id: subcategory_id, is_delete: 0 } });
+            if (!subCategory) {
+              subcategory_id = null;
+            } else {
+              category_id = subCategory.category;
+            }
+          } else {
+            subcategory_id = null;
+          }
+
+          if (!category_id) continue;
+
+          const key = `${category_id}-${subcategory_id ?? 'null'}`;
+          incomingCategoryMap.push(key);
+
+          // If category doesn't already have a row with `subcategory_id = null`, create it
+          if (!existingCategoryMap.includes(key)) {
+            await SellerCategory.create({ user_id: user.id, category_id, subcategory_id });
+          }
+        }
+
+        // Cleanup redundant `null` rows for categories
+        const nullSubcategoryRows = await SellerCategory.findAll({
+          where: { user_id: user.id, subcategory_id: null }
+        });
+
+        for (const existing of nullSubcategoryRows) {
+          const categoryId = existing.category_id;
+
+          // If no valid subcategory is added for this category, delete the `null` row
+          if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
+            await SellerCategory.destroy({
+              where: { user_id: user.id, category_id: categoryId, subcategory_id: null }
+            });
+          }
         }
       }
 
@@ -298,16 +350,16 @@ exports.getSellerById = async (req, res) => {
     const sellerCategories = await SellerCategory.findAll({
       where: { user_id: seller.id },
       include: [
-        { model: Categories, as: 'Category', attributes: ['name'] },
-        { model: SubCategories, as: 'SubCategory', attributes: ['name'] },
+        { model: Categories, as: 'category', attributes: ['name'] },
+        { model: SubCategories, as: 'subcategory', attributes: ['name'] },
       ],
     });
 
     const categories = sellerCategories.map(sc => ({
       category_id: sc.category_id,
-      category_name: sc.Category ? sc.Category.name : null,
+      category_name: sc.category ? sc.category.name : null,
       subcategory_id: sc.subcategory_id,
-      subcategory_name: sc.SubCategory ? sc.SubCategory.name : null,
+      subcategory_name: sc.subcategory ? sc.subcategory.name : null,
     }));
 
     const response = {
@@ -391,6 +443,9 @@ exports.getSellerCount = async (req, res) => {
           is_seller: 1,
           status: 1,
           is_delete: 0,
+          member_role: 1,
+          is_complete: 1,
+          is_approve: 1,
         },
         include: [
           {
@@ -408,6 +463,8 @@ exports.getSellerCount = async (req, res) => {
           is_seller: 1,
           status: 0,
           is_delete: 0,
+          member_role: 1,
+          is_complete: 1,
         },
         include: [
           {
@@ -425,6 +482,7 @@ exports.getSellerCount = async (req, res) => {
           is_seller: 1,
           is_approve: 0,
           is_delete: 0,
+          is_complete: 1
         },
         include: [
           {
@@ -442,6 +500,7 @@ exports.getSellerCount = async (req, res) => {
           is_seller: 1,
           is_complete: 0,
           is_delete: 0,
+          is_approve: 0,
         },
         include: [
           {
@@ -491,15 +550,11 @@ exports.updateSeller = async (req, res) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-
     try {
       const sellerId = req.params.id;
       const user = await Users.findByPk(sellerId);
       if (!user) return res.status(404).json({ error: 'User not found' });
-
       const companyInfo = await CompanyInfo.findByPk(user.company_id);
-
-      // Update basic user info
       const updatedData = {
         fname: req.body.fname,
         lname: req.body.lname,
@@ -519,7 +574,6 @@ exports.updateSeller = async (req, res) => {
         products: req.body.products,
       };
 
-      // Handle file uploads (profile, company logo, sample, ppt, video)
       const fileFields = [
         { field: 'file', idField: 'file_id', folder: 'users' },
         { field: 'company_logo', idField: 'company_file_id', folder: 'users' },
@@ -528,6 +582,7 @@ exports.updateSeller = async (req, res) => {
         { field: 'company_video', idField: 'company_video', folder: 'users/video' }
       ];
 
+      // Handling file uploads
       for (const f of fileFields) {
         const uploadedFile = req.files?.[f.field]?.[0];
         if (uploadedFile) {
@@ -551,7 +606,7 @@ exports.updateSeller = async (req, res) => {
 
       await user.update(updatedData);
 
-      // Update company info
+      // Update company information if exists
       if (companyInfo) {
         await companyInfo.update({
           organization_name: req.body.user_company,
@@ -573,17 +628,61 @@ exports.updateSeller = async (req, res) => {
         });
       }
 
-      // Update SellerCategory
-      if (req.body.categories && Array.isArray(req.body.categories)) {
-        // Remove existing categories
-        await SellerCategory.destroy({ where: { user_id: sellerId } });
+      // Step 1: Add Categories without Subcategories first
+      const categoryIds = req.body.categories.split(',').map(id => parseInt(id.trim()));
+      const existingCategories = await SellerCategory.findAll({ where: { user_id: sellerId } });
+      const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
+      const incomingCategoryMap = [];
 
-        // Add new categories
-        for (const cat of req.body.categories) {
-          await SellerCategory.create({
-            user_id: sellerId,
-            category_id: cat.category_id,
-            subcategory_id: cat.subcategory_id
+      // First, create SellerCategory for all categories with subcategory_id = null
+      for (const categoryId of categoryIds) {
+        const key = `${categoryId}-null`;
+        incomingCategoryMap.push(key);
+
+        // If category does not have a subcategory_id or it is not present in existing categories, create a record with null subcategory
+        if (!existingCategoryMap.includes(key)) {
+          await SellerCategory.create({ user_id: sellerId, category_id: categoryId, subcategory_id: null });
+        }
+      }
+
+      // Step 2: Add Subcategories if available
+      const subcategoryIds = req.body.subcategory_ids ? req.body.subcategory_ids.split(',').map(id => parseInt(id.trim())) : [];
+
+      for (const subcategoryId of subcategoryIds) {
+        const subCategory = await SubCategories.findOne({ where: { id: subcategoryId, is_delete: 0 } });
+        if (subCategory) {
+          const categoryId = subCategory.category;
+          const key = `${categoryId}-${subcategoryId}`;
+          incomingCategoryMap.push(key);
+
+          // Add or update the category-subcategory pair
+          if (!existingCategoryMap.includes(key)) {
+            await SellerCategory.create({ user_id: sellerId, category_id: categoryId, subcategory_id: subcategoryId });
+          }
+        }
+      }
+
+      // Step 3: Cleanup redundant rows where subcategory_id is null
+      // Remove rows where subcategory_id = null for the same user_id and category_id
+      const nullSubcategoryRows = await SellerCategory.findAll({
+        where: {
+          user_id: sellerId,
+          subcategory_id: null
+        }
+      });
+
+      // We want to delete **only** redundant `null` rows that are already existing with category_id and user_id
+      for (const existing of nullSubcategoryRows) {
+        const categoryId = existing.category_id;
+
+        // If the category has valid subcategories added, remove the `null` row
+        if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
+          await SellerCategory.destroy({
+            where: {
+              user_id: sellerId,
+              category_id: categoryId,
+              subcategory_id: null
+            }
           });
         }
       }
@@ -793,13 +892,17 @@ exports.getAllSellerServerSide = async (req, res) => {
     }
 
     // 🧾 WHERE Clauses
-    const where = { is_seller: 1, is_delete: 0 };
-
-    if (req.query.getDeleted !== 'true') {
+    // const where = { is_seller: 1, is_delete: 0 };
+    const where = {};
+    where.is_seller = 1; where.is_delete = 0;
+    where.status = 1;
+      where.member_role = 1;
+      where.is_complete = 1;
+    /*if (req.query.getDeleted !== 'true') {
       where.status = 1;
       where.member_role = 1;
       where.is_complete = 1;
-    }
+    }*/
 
     if (req.query.getNotCompleted !== 'true') where.is_approve = 1;
     if (req.query.getInactive === 'true') where.status = 0;
@@ -808,7 +911,13 @@ exports.getAllSellerServerSide = async (req, res) => {
       where.is_complete = 0;
       where.is_approve = 0;
     }
-    if (req.query.getDeleted === 'true') where.is_delete = 1;
+    if (req.query.getDeleted === 'true') {
+      where.is_delete = 1;
+      delete where.is_approve;
+      delete where.status;
+      delete where.member_role;
+      delete where.is_complete;
+    }
 
     const searchWhere = { ...where };
 
@@ -873,17 +982,25 @@ exports.getAllSellerServerSide = async (req, res) => {
     }
     if (dateCondition) searchWhere.created_at = dateCondition;
 
+    const requiresSellerCategoryJoin =
+  search ||
+  categoryId ||
+  subCategoryId ||
+  (searchWhere[Op.or] &&
+   searchWhere[Op.or].some(c => JSON.stringify(c).includes('seller_categories')));
+
     // 🏢 Include Relationships (with category/subcategory filter fix)
     const sellerCategoryInclude = {
-      model: SellerCategory,
-      as: 'seller_categories',
-      attributes: ['category_id', 'subcategory_id'],
-      include: [
-        { model: Categories, as: 'category', attributes: ['id', 'name'] },
-        { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'] },
-      ],
-      required: false,
-    };
+  model: SellerCategory,
+  as: 'seller_categories',
+  separate: true, // fetch in separate query to prevent row multiplication
+  required: false, // still include users even if they have no categories
+  attributes: ['category_id', 'subcategory_id'],
+  include: [
+    { model: Categories, as: 'category', attributes: ['id', 'name'], required: false },
+    { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'], required: false },
+  ],
+};
 
     // ✅ apply category/subcategory filters inside include (correct SQL alias)
     if (categoryId || subCategoryId) {
@@ -896,17 +1013,18 @@ exports.getAllSellerServerSide = async (req, res) => {
     const companyInfoInclude = {
       model: CompanyInfo,
       as: 'company_info',
-      attributes: ['organization_name', 'organization_slug', 'company_location', 'designation'],
+      attributes: ['organization_name', 'organization_slug', 'company_location', 'designation', 'company_website', 'organization_quality_certification'],
       include: [
         { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
         { model: Activity, as: 'Activity', attributes: ['name'] },
         { model: NatureBusinesses, as: 'NatureBusinesses', attributes: ['name'] }
-      ]
+      ],
+      required: false
     };
 
     const totalRecords = await Users.count({
       where,
-      include: [sellerCategoryInclude],
+      // include: [sellerCategoryInclude],
     });
 
     const { count: filteredRecords, rows } = await Users.findAndCountAll({
@@ -923,6 +1041,7 @@ exports.getAllSellerServerSide = async (req, res) => {
         { model: Cities, as: 'city_data', attributes: ['name'] },
         sellerCategoryInclude,
       ],
+      subQuery: false,
       distinct: true,
     });
 
@@ -945,6 +1064,8 @@ exports.getAllSellerServerSide = async (req, res) => {
         organization_name: row.company_info?.organization_name || null,
         organization_slug: row.company_info?.organization_slug || null,
         designation: row.company_info?.designation || null,
+        company_website: row.company_info?.company_website || null,
+        organization_quality_certification: row.company_info?.organization_quality_certification || null,
         category_name: categoryNames,
         sub_category_name: subCategoryNames,
         coreactivity_name: row.company_info?.CoreActivity?.name || null,
@@ -952,8 +1073,10 @@ exports.getAllSellerServerSide = async (req, res) => {
         country_name: row.country_data?.name || null,
         state_name: row.state_data?.name || null,
         city_name: row.city_data?.name || null,
+        elcina_member: row.elcina_member,
         user_count: productCount,
         status: row.status,
+        is_approve: row.is_approve,
         created_at: row.created_at,
         updated_at: row.updated_at
       };
@@ -966,7 +1089,6 @@ exports.getAllSellerServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 async function getNamesByIds(Model, idsString) {
   if (!idsString) return null;
@@ -983,3 +1105,287 @@ async function getNamesByIds(Model, idsString) {
 
   return records.map(r => r.name).join(', ');
 }
+
+exports.getFilteredSellers = async (req, res) => {
+  try {
+    const {
+      fname,
+      lname,
+      email,
+      mobile,
+      zipcode,
+      company_id,
+      member_role,
+      status,
+      is_approve,
+      state,
+      city,
+      dateRange = '',
+      startDate,
+      endDate
+    } = req.query;
+
+    // Base where condition
+    const where = {
+      is_seller: 1,
+      is_delete: 0
+    };
+
+    if (fname) where.fname = { [Op.like]: `%${fname}%` };
+    if (lname) where.lname = { [Op.like]: `%${lname}%` };
+    if (email) where.email = { [Op.like]: `%${email}%` };
+    if (mobile) where.mobile = { [Op.like]: `%${mobile}%` };
+    if (zipcode) where.zipcode = { [Op.like]: `%${zipcode}%` };
+    if (company_id) where.company_id = company_id;
+    if (member_role) where.member_role = member_role;
+    if (status) where.status = status;
+    if (is_approve) where.is_approve = is_approve;
+    if (state) where.state = state;
+    if (city) where.city = city;
+
+    // Date filter
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      where.created_at = dateCondition;
+    }
+
+    // Fetch sellers with associations
+    const sellers = await Users.findAll({
+      where,
+      include: [
+        { model: Countries, as: 'country_data', attributes: ['name'] },
+        { model: States, as: 'state_data', attributes: ['name'] },
+        { model: Cities, as: 'city_data', attributes: ['name'] },
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['organization_name', 'designation'],
+          include: [
+            { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
+            { model: Activity, as: 'Activity', attributes: ['name'] },
+          ]
+        },
+        {
+          model: SellerCategory,
+          as: 'seller_categories',
+          attributes: ['id'],
+          include: [
+            { model: Categories, as: 'category', attributes: ['id', 'name'] },
+            { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'] }
+          ]
+        }
+      ]
+    });
+
+    // Map the results
+    const data = sellers.map(seller => {
+      const s = seller.toJSON();
+      const categoryNames = s.seller_categories?.length
+        ? [...new Set(s.seller_categories.map(sc => sc.category?.name).filter(Boolean))].join(', ')
+        : 'NA';
+      const subCategoryNames = s.seller_categories?.length
+        ? [...new Set(s.seller_categories.map(sc => sc.subcategory?.name).filter(Boolean))].join(', ')
+        : 'NA';
+
+      return {
+        id: s.id,
+        full_name: `${s.fname} ${s.lname}`,
+        fname: s.fname,
+        lname: s.lname,
+        email: s.email,
+        mobile: s.mobile,
+        address: s.address,
+        zipcode: s.zipcode,
+        country_name: s.country_data?.name || 'NA',
+        state_name: s.state_data?.name || 'NA',
+        city_name: s.city_data?.name || 'NA',
+        organization_name: s.company_info?.organization_name || null,
+        designation: s.company_info?.designation || null,
+        coreactivity_name: s.company_info?.CoreActivity?.name || 'NA',
+        activity_name: s.company_info?.Activity?.name || 'NA',
+        category_names: categoryNames,
+        sub_category_names: subCategoryNames,
+        status: s.status==1?'Active':'Inactive',
+        is_approve: s.is_approve==1?'Approved':'Pending',
+        member_role: s.member_role==1?'Admin':'',
+        created_at: s.created_at
+      };
+    });
+
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateAccountStatus = async (req, res) => {
+  try {
+    const { is_approve } = req.body;
+    if (is_approve !== 0 && is_approve !== 1) {
+      return res.status(400).json({ message: 'Invalid account status. Use 1 (Approve) or 0 (Unapprove).' });
+    }
+    const sellers = await Users.findByPk(req.params.id);
+    if (!sellers) return res.status(404).json({ message: 'Seller not found' });
+    sellers.is_approve = is_approve;
+    if (is_approve === 1) {
+      sellers.is_new = 1;
+      sellers.status = 1;
+      sellers.approve_date = new Date();
+    } else {
+      sellers.approve_date = null;
+    }
+    await sellers.save();
+    res.json({ message: 'Account status updated', sellers });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.addOrUpdateSellerMessage = async (req, res) => {
+  try {
+    const { user_id, message } = req.body;
+    if (!user_id)
+      return res.status(400).json({ message: "user_id is required" });
+    const existing = await SellerMessages.findOne({
+      where: { user_id }
+    });
+    if (existing) {
+      existing.message = message;
+      existing.updated_at = new Date();
+      await existing.save();
+      return res.json({
+        message: 'Seller message updated',
+        data: existing
+      });
+    }
+    const created = await SellerMessages.create({
+      user_id,
+      message
+    });
+    return res.json({
+      message: 'Seller message created',
+      data: created
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getSellerMessage = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    if (!user_id)
+      return res.status(400).json({ message: "user_id is required" });
+    const message = await SellerMessages.findOne({
+      where: { user_id },
+      include: [
+        {
+          model: Users,
+          as: 'Users',
+          attributes: ['id', 'fname', 'lname', 'email', 'is_seller']
+        }
+      ]
+    });
+    if (!message) {return res.status(404).json({ message: "Seller message not found", data: null });}
+    return res.json({
+      message: "Seller message fetched successfully",
+      data: message
+    });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getSellersWithMessages = async (req, res) => {
+  try {
+    const messages = await SellerMessages.findAll({
+      attributes: ['user_id'],
+      where: { user_id: { [Sequelize.Op.ne]: null } }
+    });
+    const user_ids = messages.map(m => m.user_id);
+    res.json({ user_ids });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateSellerStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (status !== 0 && status !== 1) {
+      return res.status(400).json({ message: 'Invalid status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const sellers = await Users.findByPk(req.params.id);
+    if (!sellers) return res.status(404).json({ message: 'Sellers not found' });
+    sellers.status = status;
+    await sellers.save();
+    res.json({ message: 'Status updated', sellers });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateSellerDeleteStatus = async (req, res) => {
+  try {
+    const { is_delete } = req.body;
+    if (is_delete !== 0 && is_delete !== 1) {
+      return res.status(400).json({ message: 'Invalid delete status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const sellers = await Users.findByPk(req.params.id);
+    if (!sellers) return res.status(404).json({ message: 'Seller not found' });
+    sellers.is_delete = is_delete;
+    await sellers.save();
+    res.json({ message: 'Seller is removed', sellers });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

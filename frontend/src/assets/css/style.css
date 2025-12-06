@@ -77,3 +77,15 @@
   position: absolute;
   right: 0;
 }
+
+.content-placeholder {
+  display: inline-block;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f8f8f8 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: placeholderShimmer 1.2s infinite;
+}
+
+@keyframes placeholderShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
