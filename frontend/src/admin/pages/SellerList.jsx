@@ -571,7 +571,6 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     setShowPicker(false);
   };
 
-<<<<<<< HEAD
 
   const openMailPopup = async (type) => {
     if (type === "selected" && selectedSeller.length === 0) {
@@ -642,7 +641,6 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
 
 
 
-=======
   const handleImpersonateLogin = async (userId) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/signup/impersonate-login`, { userId });
@@ -655,7 +653,6 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     }
   };
 
->>>>>>> praveen-14-11-25
   return (
     <>
       <div className="page-wrapper">

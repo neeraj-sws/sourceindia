@@ -347,7 +347,6 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     setShowPicker(false);
   };
 
-<<<<<<< HEAD
 
 
   const openMailPopup = async (type) => {
@@ -417,7 +416,6 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
   };
 
 
-=======
   const handleImpersonateLogin = async (userId) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/signup/impersonate-login`, { userId });
@@ -430,7 +428,6 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     }
   };
 
->>>>>>> praveen-14-11-25
   return (
     <>
       <div className="page-wrapper">
@@ -589,18 +586,11 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                   { key: "user_company", label: "Company", sortable: true },
                   { key: "address", label: "Location", sortable: true },
                   ...(!getDeleted ? [
-<<<<<<< HEAD
-                    { key: "status", label: "User Status", sortable: false },
-                    { key: "account_status", label: "Account Status", sortable: false },
-                    { key: "seller_status", label: "Make Seller", sortable: false },
-                  ] : []),
-=======
                   { key: "status", label: "User Status", sortable: false },
                   { key: "account_status", label: "Account Status", sortable: false },
                   { key: "seller_status", label: "Make Seller", sortable: false },
                   ]:[]),
                   { key: "user_category", label: "User Category", sortable: true },
->>>>>>> praveen-14-11-25
                   { key: "created_at", label: "Created", sortable: true },
                   { key: "updated_at", label: "Last Update", sortable: true },
                   { key: "action", label: "Action", sortable: false },
@@ -679,30 +669,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                           {!getDeleted ? (
                             <>
                               <li>
-<<<<<<< HEAD
-                                <button
-                                  className="dropdown-item"
-                                  onClick={async () => {
-                                    try {
-                                      const token = localStorage.getItem("adminToken"); // your admin’s token
-                                      const response = await axios.get(`${API_BASE_URL}/signup/admin-login/${row.id}`, {
-                                        headers: { Authorization: `Bearer ${token}` },
-                                      });
-
-                                      if (response.data.redirectUrl) {
-                                        window.open(response.data.redirectUrl, "_blank");
-                                      } else {
-                                        showNotification("Failed to get login link", "error");
-                                      }
-                                    } catch (error) {
-                                      showNotification("Error logging in as user", "error");
-                                      console.error(error);
-                                    }
-                                  }}
-                                >
-=======
                                 <button className="dropdown-item" onClick={() =>handleImpersonateLogin(row.id)}>
->>>>>>> praveen-14-11-25
                                   <i className="bx bx-log-in me-2"></i> Login
                                 </button>
                               </li>

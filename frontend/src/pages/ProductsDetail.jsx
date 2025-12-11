@@ -26,11 +26,7 @@ const ProductDetail = () => {
   const [review, setReview] = useState("");
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-<<<<<<< HEAD
-
-=======
   const { user } = UseAuth();
->>>>>>> praveen-14-11-25
 
   useEffect(() => {
     const fetchProduct = async () => {
