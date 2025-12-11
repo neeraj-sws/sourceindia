@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
+import { useAuth } from "../context/AuthContext";
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const Registration = () => {
     const { showNotification } = useAlert();
+    const { login, setUser, isLoggedIn, user } = useAuth();
     const navigate = useNavigate();
     const [form, setForm] = useState({
         fname: "",
@@ -44,6 +46,16 @@ const Registration = () => {
     const [verifyLoading, setVerifyLoading] = useState(false);
     const [verifyMessage, setVerifyMessage] = useState("");
     const [errors, setErrors] = useState({});
+
+    useEffect(() => {
+        if (isLoggedIn && user) {
+            if (user.is_seller == 1) {
+                navigate("/company-edit", { replace: true });
+            } else {
+                navigate("/profile-edit", { replace: true });
+            }
+        }
+    }, [isLoggedIn, user, navigate]);
 
     // Fetch countries on mount
     useEffect(() => {
@@ -371,7 +383,30 @@ const Registration = () => {
                 setOtp("");
                 setOtpSent(false);
                 setUserId(null);
-                navigate('/login');
+                // navigate('/login');
+                const generatedPassword = res.data.password;   // auto-generated password
+    const email = form.email;
+
+    // 🔥 AUTO LOGIN using generated backend password
+    const loginResponse = await axios.post(`${API_BASE_URL}/signup/login`, {
+        email: email,
+        password: generatedPassword
+    });
+
+    if (loginResponse.data.token) {
+        // Save token & user to AuthContext
+        login(loginResponse.data.token);
+        setUser(loginResponse.data.user);
+
+        // 🔥 Redirect based on type
+        if (loginResponse.data.user.is_seller == 1) {
+            navigate("/company-edit", { replace: true });
+        } else {
+            navigate("/profile-edit", { replace: true });
+        }
+    }
+
+    return;
             } else if (res.data.errors) {
                 setErrors(res.data.errors);
             } else {

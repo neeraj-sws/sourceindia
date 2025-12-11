@@ -30,8 +30,7 @@ function createSlug(inputString) {
 }
 
 exports.createSeller = async (req, res) => {
-  const upload = getMulterUpload();
-
+  const upload = getMulterUpload('users'); // Fixed: Add 'users' param like updateSeller
   upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'company_logo', maxCount: 1 },
@@ -40,7 +39,7 @@ exports.createSeller = async (req, res) => {
     { name: 'company_video', maxCount: 1 },
   ])(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
-
+    
     const deleteUploadedFiles = () => {
       const files = [];
       if (req.files?.file) files.push(req.files.file[0].path);
@@ -58,166 +57,100 @@ exports.createSeller = async (req, res) => {
         fname, lname, email, password, mobile, country, state, city, zipcode,
         address, status, is_trading, elcina_member, user_company, website, products,
         step, mode, real_password, remember_token, payment_status, is_email_verify, featured_company, is_approve,
-        organization_name, user_type, core_activity, activity, categories,
+        organization_name, organization_slug, user_type, core_activity, activity, categories, subcategory_ids, // Added subcategory_ids
         company_website, company_location, is_star_seller, is_verified, role,
         company_meta_title, company_video_second, brief_company,
-        organizations_product_description, designation
+        organizations_product_description, designation, is_profile, is_company, is_intrest, request_admin, is_complete
       } = req.body;
 
-      // Validate required fields
+      // Validation (unchanged)
       if (!fname || !lname || !email || !password || !mobile || !country || !state || !city || !zipcode || !address) {
         deleteUploadedFiles();
         return res.status(400).json({ message: 'Missing required user fields.' });
       }
-
       if (!validator.isEmail(email)) {
         deleteUploadedFiles();
         return res.status(400).json({ error: 'Invalid email format' });
       }
-
       if (!req.files?.file || !req.files?.company_logo) {
         deleteUploadedFiles();
         return res.status(400).json({ message: 'All required files must be uploaded' });
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Upload files
+      // Create UploadImage records for files (same logic)
       const profileImage = await UploadImage.create({ file: `upload/users/${req.files.file[0].filename}` });
       const companyLogoImage = await UploadImage.create({ file: `upload/users/${req.files.company_logo[0].filename}` });
       const companySampleFile = req.files?.sample_file_id ? await UploadImage.create({ file: `upload/users/${req.files.sample_file_id[0].filename}` }) : null;
       const companyPptFile = req.files?.company_sample_ppt_file ? await UploadImage.create({ file: `upload/users/${req.files.company_sample_ppt_file[0].filename}` }) : null;
       const companyVideoFile = req.files?.company_video ? await UploadImage.create({ file: `upload/users/video/${req.files.company_video[0].filename}` }) : null;
 
-      const organization_slug = createSlug(user_company);
-
-      // Create user
+      // Create user (unchanged)
+      const hashedPassword = await bcrypt.hash(password, 10);
+      // const organization_slug = createSlug(user_company);
       const user = await Users.create({
-        fname,
-        lname,
-        email,
-        mobile,
-        country,
-        state,
-        city,
-        zipcode,
-        address,
-        products,
-        status: status || 1,
-        is_trading: is_trading || 0,
-        is_approve: is_approve || 1,
-        elcina_member: elcina_member || 2,
-        user_company,
-        website,
-        step: step || 0,
-        mode: mode || 0,
-        password: hashedPassword,
-        real_password: real_password || '',
-        remember_token: remember_token || '',
-        payment_status: payment_status || 0,
-        featured_company: featured_company || 0,
-        is_seller: 1,
-        file_id: profileImage.id,
-        company_file_id: companyLogoImage.id,
-        is_email_verify: is_email_verify || 1,
-        is_profile: is_profile || 1,
-        is_company: is_company || 1,
+        fname, lname, email, mobile, country, state, city, zipcode, address, products,
+        status: status || 1, is_trading: is_trading || 0, is_approve: is_approve || 1,
+        elcina_member: elcina_member || 2, user_company, website, step: step || 0, mode: mode || 0,
+        password: hashedPassword, real_password: real_password || '', remember_token: remember_token || '',
+        payment_status: payment_status || 0, featured_company: featured_company || 0, is_seller: 1,
+        file_id: profileImage.id, company_file_id: companyLogoImage.id,
+        is_email_verify: is_email_verify || 1, is_profile: is_profile || 1, is_company: is_company || 1,
+        is_intrest: is_intrest || 0, request_admin: request_admin || 0, is_complete: is_complete || 1
       });
 
-      // Create company info
+      // Create company info (unchanged)
       const companyInfo = await CompanyInfo.create({
-        organization_name: user_company,
-        organization_slug,
-        role,
-        user_type,
-        core_activity,
-        activity,
-        company_website: website,
-        company_location,
-        is_star_seller: is_star_seller || 0,
-        is_verified: is_verified || 0,
-        company_meta_title,
-        company_video_second,
-        brief_company,
-        organizations_product_description: products,
-        designation,
-        featured_company: featured_company || 0,
-        company_logo: companyLogoImage.id,
-        sample_file_id: companySampleFile?.id || null,
-        company_sample_ppt_file: companyPptFile?.id || null,
-        company_video: companyVideoFile?.id || null,
-        is_delete: 0,
+        organization_name: user_company, organization_slug: createSlug(user_company), role, user_type: user_type || 9,
+        core_activity, activity, company_website: website, company_location,
+        is_star_seller: is_star_seller || 0, is_verified: is_verified || 0, company_meta_title,
+        company_video_second, brief_company, organizations_product_description: products, designation,
+        featured_company: featured_company || 0, company_logo: companyLogoImage.id,
+        sample_file_id: companySampleFile?.id || null, company_sample_ppt_file: companyPptFile?.id || null,
+        company_video: companyVideoFile?.id || null, is_delete: 0,
       });
-
-      // Update user with company_id
       await user.update({ company_id: companyInfo.id });
 
-      // Insert or update seller categories
-      /*if (category_sell && sub_category) {
-        const categoryArray = Array.isArray(category_sell) ? category_sell : [category_sell];
-        const subCategoryArray = Array.isArray(sub_category) ? sub_category : [sub_category];
+      // FIXED: Category handling - same exact logic as updateSeller
+      const existingCategories = await SellerCategory.findAll({ where: { user_id: user.id } });
+      const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
+      const incomingCategoryMap = [];
 
-        for (let i = 0; i < categoryArray.length; i++) {
-          const category_id = categoryArray[i];
-          const subcategory_id = subCategoryArray[i] || null;
-
-          await SellerCategory.upsert({
-            user_id: user.id,
-            category_id,
-            subcategory_id,
-            updated_at: new Date(),
-          }, {
-            fields: ['user_id', 'category_id', 'subcategory_id', 'updated_at']
-          });
-        }
-      }*/
-      if (categories && Array.isArray(categories)) {
-        const existingCategories = await SellerCategory.findAll({ where: { user_id: user.id } });
-        const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
-        const incomingCategoryMap = [];
-
-        for (const cat of categories) {
-          let category_id = cat.category_id || null;
-          let subcategory_id = cat.subcategory_id || null;
-
-          // Handle valid subcategory
-          if (subcategory_id) {
-            const subCategory = await SubCategories.findOne({ where: { id: subcategory_id, is_delete: 0 } });
-            if (!subCategory) {
-              subcategory_id = null;
-            } else {
-              category_id = subCategory.category;
-            }
-          } else {
-            subcategory_id = null;
-          }
-
-          if (!category_id) continue;
-
-          const key = `${category_id}-${subcategory_id ?? 'null'}`;
+      // Handle categories (comma-separated string)
+      if (categories) {
+        const categoryIds = categories.split(',').map(id => parseInt(id.trim()));
+        for (const categoryId of categoryIds) {
+          const key = `${categoryId}-null`;
           incomingCategoryMap.push(key);
-
-          // If category doesn't already have a row with `subcategory_id = null`, create it
           if (!existingCategoryMap.includes(key)) {
-            await SellerCategory.create({ user_id: user.id, category_id, subcategory_id });
+            await SellerCategory.create({ user_id: user.id, category_id: categoryId, subcategory_id: null });
           }
         }
+      }
 
-        // Cleanup redundant `null` rows for categories
-        const nullSubcategoryRows = await SellerCategory.findAll({
-          where: { user_id: user.id, subcategory_id: null }
-        });
-
-        for (const existing of nullSubcategoryRows) {
-          const categoryId = existing.category_id;
-
-          // If no valid subcategory is added for this category, delete the `null` row
-          if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
-            await SellerCategory.destroy({
-              where: { user_id: user.id, category_id: categoryId, subcategory_id: null }
-            });
+      // Handle subcategories (comma-separated string)
+      const subcategoryIds = subcategory_ids ? subcategory_ids.split(',').map(id => parseInt(id.trim())) : [];
+      for (const subcategoryId of subcategoryIds) {
+        const subCategory = await SubCategories.findOne({ where: { id: subcategoryId, is_delete: 0 } });
+        if (subCategory) {
+          const categoryId = subCategory.category;
+          const key = `${categoryId}-${subcategoryId}`;
+          incomingCategoryMap.push(key);
+          if (!existingCategoryMap.includes(key)) {
+            await SellerCategory.create({ user_id: user.id, category_id: categoryId, subcategory_id: subcategoryId });
           }
+        }
+      }
+
+      // Clean up removed categories (same logic)
+      const nullSubcategoryRows = await SellerCategory.findAll({
+        where: { user_id: user.id, subcategory_id: null }
+      });
+      for (const existing of nullSubcategoryRows) {
+        const categoryId = existing.category_id;
+        if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
+          await SellerCategory.destroy({
+            where: { user_id: user.id, category_id: categoryId, subcategory_id: null }
+          });
         }
       }
 
@@ -226,7 +159,6 @@ exports.createSeller = async (req, res) => {
         user,
         companyInfo
       });
-
     } catch (error) {
       deleteUploadedFiles();
       return res.status(500).json({ error: error.message });
@@ -610,9 +542,9 @@ exports.updateSeller = async (req, res) => {
       if (companyInfo) {
         await companyInfo.update({
           organization_name: req.body.user_company,
-          organization_slug: createSlug(req.body.organization_name),
+          organization_slug: createSlug(req.body.user_company),
           role: req.body.role,
-          user_type: req.body.user_type,
+          // user_type: req.body.user_type,
           core_activity: req.body.core_activity,
           activity: req.body.activity,
           company_location: req.body.company_location,
@@ -856,7 +788,7 @@ exports.getAllSellerServerSide = async (req, res) => {
       'is_trading', 'elcina_member', 'address', 'products', 'category_name',
       'sub_category_name', 'designation', 'coreactivity_name', 'activity_name',
       'status', 'is_approve', 'is_complete', 'is_seller', 'walkin_buyer',
-      'created_at', 'updated_at'
+      'created_at', 'updated_at', 'approve_date'
     ];
 
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
@@ -938,8 +870,8 @@ exports.getAllSellerServerSide = async (req, res) => {
         // { website: { [Op.like]: `%${search}%` } },
         { '$company_info.organization_name$': { [Op.like]: `%${search}%` } },
         // { '$company_info.designation$': { [Op.like]: `%${search}%` } },
-        { '$seller_categories.category.name$': { [Op.like]: `%${search}%` } },
-        { '$seller_categories.subcategory.name$': { [Op.like]: `%${search}%` } },
+        // { '$seller_categories.category.name$': { [Op.like]: `%${search}%` } },
+        // { '$seller_categories.subcategory.name$': { [Op.like]: `%${search}%` } },
         { '$city_data.name$': { [Op.like]: `%${search}%` } },
         { '$state_data.name$': { [Op.like]: `%${search}%` } }
       ];
@@ -1077,8 +1009,10 @@ exports.getAllSellerServerSide = async (req, res) => {
         user_count: productCount,
         status: row.status,
         is_approve: row.is_approve,
+        is_delete: row.is_delete,
         created_at: row.created_at,
-        updated_at: row.updated_at
+        updated_at: row.updated_at,
+        approve_date: row.approve_date
       };
     }));
 

@@ -44,7 +44,7 @@ exports.createBuyer = async (req, res) => {
       const {
         fname, lname, email, password, mobile, country, state, city, zipcode,
         user_company, website, is_trading, elcina_member, address, status, is_approve, step, products, is_seller,
-        mode, real_password, remember_token, payment_status, is_email_verify, featured_company, user_category,
+        mode, real_password, remember_token, payment_status, is_email_verify, featured_company, user_category, is_complete,
         organization_name, company_website, organizations_product_description, is_star_seller, is_verified, is_intrest, request_admin,
       } = req.body;
       // if (!fname || !lname || !email || !password || !mobile || !country || !state || !city || !zipcode ||

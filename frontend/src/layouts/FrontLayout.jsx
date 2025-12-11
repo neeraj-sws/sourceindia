@@ -69,7 +69,7 @@ function FrontLayout() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-              <Route path="/registration" element={<PublicRoute><Registration /></PublicRoute>} />
+              <Route path="/registration" element={<Registration />} />
               <Route path="/about" element={<About />} />
               <Route path="/companies" element={<Companies />} />
               <Route path="/companies/:slug" element={<CompanyDetail />} />

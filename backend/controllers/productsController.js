@@ -1142,6 +1142,7 @@ exports.getAllProductsServerSide = async (req, res) => {
       file_id: row.file_id,
       file_name: row.file ? row.file.file : null,
       status: row.status,
+      is_approve: row.is_approve,
       is_delete: row.is_delete,
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -1485,6 +1486,22 @@ exports.getFilteredProducts = async (req, res) => {
 
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateAccountStatus = async (req, res) => {
+  try {
+    const { is_approve } = req.body;
+    if (is_approve !== 0 && is_approve !== 1) {
+      return res.status(400).json({ message: 'Invalid is_approve. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const products = await Products.findByPk(req.params.id);
+    if (!products) return res.status(404).json({ message: 'Product not found' });
+    products.is_approve = is_approve;
+    await products.save();
+    res.json({ message: 'Product approved', products });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };

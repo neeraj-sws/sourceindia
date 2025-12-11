@@ -18,6 +18,7 @@ router.get('/:id', productsController.getProductsById);
 router.put('/:id', productsController.updateProducts);
 router.delete('/:id', productsController.deleteProducts);
 router.patch('/:id/status', productsController.updateProductsStatus);
+router.patch('/:id/account_status', productsController.updateAccountStatus);
 router.patch('/:id/delete_status', productsController.updateProductsDeleteStatus);
 router.post('/:id/images', productsController.appendProductImages);
 router.delete('/:id/images/:imageId', productsController.removeProductImage);

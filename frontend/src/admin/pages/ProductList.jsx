@@ -300,7 +300,7 @@ const userIdFromUrl = queryParams.get("id");
     try {
       await axios.patch(`${API_BASE_URL}/products/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if(field=="delete_status"){
+      if(field=="delete_status" || field == "account_status"){
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
@@ -309,7 +309,7 @@ const userIdFromUrl = queryParams.get("id");
       if (field == "delete_status") {
         showNotification(newStatus == 1 ? "Removed from list" : "Restored from deleted", "success");
       } else {
-        showNotification("Status updated!", "success");
+        showNotification(field == "account_status" ? "Product is approved!" : "Status updated!", "success");
       }
     } catch (error) {
       console.error("Error updating status:", error);
@@ -496,6 +496,7 @@ const userIdFromUrl = queryParams.get("id");
                   { key: "created_at", label: "Created At", sortable: true },
                   { key: "updated_at", label: "Updated At", sortable: true },
                   { key: "status", label: "Status", sortable: false },
+                  { key: "account_status", label: "Approve", sortable: false },
                   { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}
@@ -538,6 +539,17 @@ const userIdFromUrl = queryParams.get("id");
                           type="checkbox"
                           checked={row.status == 1}
                           onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
+                          readOnly
+                        />
+                      </div>
+                    </td>
+                    <td>
+                      <div className="form-check form-switch">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={row.is_approve == 1}
+                          onClick={(e) => { e.preventDefault(); openStatusModal( row.id, row.is_approve, "account_status", "is_approve" ); }}
                           readOnly
                         />
                       </div>
