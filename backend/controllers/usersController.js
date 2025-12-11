@@ -339,7 +339,6 @@ exports.register = async (req, res) => {
       is_complete: category == 0 ? 1 : 0,
       status: 1,
       user_company: cname,
-      is_profile: 1,
       step: 1,
       mode: 0,
       remember_token: '',
@@ -397,7 +396,7 @@ exports.register = async (req, res) => {
     }
 
     const adminMailOptions = {
-
+      from: `"Support Team" <info@sourceindia-electronics.com>`,
       to: siteConfig['site_email'],
       subject: adminEmailData.subject,
       html: adminMessage,
@@ -422,7 +421,7 @@ exports.register = async (req, res) => {
     }
 
     const userMailOptions = {
-      from: `<${email}>`,
+      from: `"Support Team" <info@sourceindia-electronics.com>`,
       to: email,
       subject: userEmailData.subject,
       html: userMessage,

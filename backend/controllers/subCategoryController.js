@@ -93,8 +93,8 @@ exports.getSubCategoriesByCategories = async (req, res) => {
   try {
     const { categories } = req.body;
 
-    if (!categories || !Array.isArray(categories) || categories.length === 0) {
-      return res.status(400).json({ error: 'categories array is required and cannot be empty' });
+    if (!categories || !Array.isArray(categories)) {
+      return res.status(400).json({ error: 'categories array is required' });
     }
 
     // 1. Fetch subcategories

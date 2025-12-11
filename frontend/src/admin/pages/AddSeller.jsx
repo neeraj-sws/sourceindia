@@ -28,11 +28,11 @@ const AddSeller = () => {
   const [activities, setActivities] = useState([]);
   const [selectedCoreActivity, setSelectedCoreActivity] = useState("");
   const [selectedActivity, setSelectedActivity] = useState("");
-  const [roles, setRoles] = useState([]);
-  const [selectedRoles, setSelectedRoles] = useState('');
+  // const [roles, setRoles] = useState([]);
+  // const [selectedRoles, setSelectedRoles] = useState('');
   const [formData, setFormData] = useState({
     fname: "", lname: "", email: "", password: "", mobile: "", zipcode: "", website: "", is_trading: "", elcina_member: "",
-    address: "", file: null, company_logo: null, user_company: "", user_type: "", company_location: "",
+    address: "", file: null, company_logo: null, user_company: "", company_location: "",
     is_star_seller: "", is_verified: "", company_meta_title: "", company_video_second: "", brief_company: "", products: "",
     designation: "", featured_company: "", company_sample_ppt_file: null, company_video: null, sample_file_id: null,
   });
@@ -223,14 +223,14 @@ const AddSeller = () => {
       handleActivityChange({ target: { value: activityId } });
     });
 
-    $('#user_type').select2({
+    /*$('#user_type').select2({
       theme: "bootstrap",
       width: '100%',
       placeholder: "Select Activity"
     }).on("change", function () {
       const rolesId = $(this).val();
       handleRolesChange({ target: { value: rolesId } });
-    });
+    });*/
 
     return () => {
       $('#country').off("change").select2('destroy');
@@ -240,9 +240,9 @@ const AddSeller = () => {
       $('#sub_category').off("change").select2('destroy');
       $('#core_activity').off("change").select2('destroy');
       $('#activity').off("change").select2('destroy');
-      $('#user_type').off("change").select2('destroy');
+      // $('#user_type').off("change").select2('destroy');
     };
-  }, [countries, states, cities, categories, subCategories, selectedSubCategory, subCategoryMap, coreactivities, activities, roles]);
+  }, [countries, states, cities, categories, subCategories, selectedSubCategory, subCategoryMap, coreactivities, activities]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -381,7 +381,7 @@ const AddSeller = () => {
     if (!formData.company_location?.trim()) errs.company_location = "Company Location is required";
     // if (!formData.company_video_second?.trim()) errs.company_video_second = "Video URL is required";
     if (!formData.brief_company?.trim()) errs.brief_company = "Brief Company Description is required";
-    if (!selectedRoles) errs.user_type = "User Type is required";
+    // if (!selectedRoles) errs.user_type = "User Type is required";
     if (!formData.is_star_seller) errs.is_star_seller = "Star Seller status is required";
     if (!formData.is_verified) errs.is_verified = "Verification status is required";
     if (!formData.elcina_member) errs.elcina_member = "ELCINA Member is required";
@@ -477,6 +477,7 @@ const AddSeller = () => {
           // user_type: data.user_type || "",
           featured_company: String(data.featured_company) || "",
           company_sample_file_name: data.company_sample_file_name || "",
+          company_sample_ppt_file_name: data.company_sample_ppt_file_name || "",
           is_star_seller: String(data.is_star_seller) || "",
           is_verified: String(data.is_verified) || "",
         });
@@ -506,7 +507,7 @@ const AddSeller = () => {
     }
         setSelectedCoreActivity(data.core_activity || "");
         setSelectedActivity(data.activity || "");
-        setSelectedRoles(data.user_type || "");
+        // setSelectedRoles(data.user_type || "");
         if (data.country) {
           const stRes = await axios.get(`${API_BASE_URL}/location/states/${data.country}`); setStates(stRes.data);
         }
@@ -548,7 +549,7 @@ const AddSeller = () => {
   data.append("subcategory_ids", selectedSubCategory.join(','));
     data.append("core_activity", selectedCoreActivity);
     data.append("activity", selectedActivity);
-    data.append("user_type", selectedRoles);
+    // data.append("user_type", selectedRoles);
     if (file) data.append("file", file);
     if (companyFile) data.append("company_logo", companyFile);
     if (companyBrochure) data.append("sample_file_id", companyBrochure);
@@ -568,7 +569,7 @@ const AddSeller = () => {
     }
   };
 
-  useEffect(() => {
+  /*useEffect(() => {
     const fetchRoles = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/roles`);
@@ -583,7 +584,7 @@ const AddSeller = () => {
   const handleRolesChange = async (event) => {
     const rolesId = event.target.value;
     setSelectedRoles(rolesId);
-  };
+  };*/
 
   return (
     <>
@@ -606,7 +607,7 @@ const AddSeller = () => {
                     />
                     {errors.user_company && (<div className="invalid-feedback">{errors.user_company}</div>)}
                   </div>
-                  <div className="col-md-4">
+                  {/* <div className="col-md-4">
                     <label htmlFor="user_type" className="form-label required">User Type</label>
                     <select
                       id="user_type" className="form-control select2"
@@ -619,7 +620,7 @@ const AddSeller = () => {
                       ))}
                     </select>
                     {errors.user_type && (<div className="text-danger small">{errors.user_type}</div>)}
-                  </div>
+                  </div> */}
                   <div className="col-md-4">
                     <label htmlFor="core_activity" className="form-label required">Core Activity</label>
                     <select
@@ -716,7 +717,7 @@ const AddSeller = () => {
                     {errors.is_star_seller && (<div className="invalid-feedback">{errors.is_star_seller}</div>
                     )}
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-4">
                     <label htmlFor="is_verified" className="form-label required">Trusted Seal Verified</label>
                     <select
                       id="is_verified" className={`form-control ${errors.is_verified ? "is-invalid" : ""}`}
@@ -729,7 +730,7 @@ const AddSeller = () => {
                     </select>
                     {errors.is_verified && (<div className="invalid-feedback">{errors.is_verified}</div>)}
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-4">
                     <label htmlFor="featured_company" className="form-label">Featured Company</label>
                     <select
                       id="featured_company" className="form-control"
@@ -741,7 +742,7 @@ const AddSeller = () => {
                       <option value="0">No</option>
                     </select>
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-4">
                     <label htmlFor="is_trading" className="form-label">Trader</label>
                     <select
                       id="is_trading" className="form-control"
@@ -753,7 +754,7 @@ const AddSeller = () => {
                       <option value="0">No</option>
                     </select>
                   </div>
-                  <div className="col-md-3">
+                  <div className="col-md-4">
                     <label htmlFor="company_meta_title" className="form-label">Company Display Title</label>
                     <input
                       type="text" className="form-control"
@@ -796,6 +797,9 @@ const AddSeller = () => {
                       id="company_sample_ppt_file"
                       onChange={handleInputChange}
                     />
+                    {formData.company_sample_ppt_file_name && 
+                    <a className="mt-2" href={`${ROOT_URL}/${formData.company_sample_ppt_file_name}`} target="_blank">Sample PPT File</a>
+                    }
                     {errors.company_sample_ppt_file && (<div className="invalid-feedback">{errors.company_sample_ppt_file}</div>)}
                   </div>
                   <div className="col-md-6">
@@ -806,8 +810,11 @@ const AddSeller = () => {
                       id="sample_file_id"
                       onChange={handleCompanyBrochureChange}
                     />
+                    {formData.company_sample_file_name && 
+                    <a className="mt-2" href={`${ROOT_URL}/${formData.company_sample_file_name}`} target="_blank">Sample File</a>
+                    }
                     {errors.sample_file_id && (<div className="invalid-feedback">{errors.sample_file_id}</div>)}
-                    {companyBrochure ? (
+                    {/* {companyBrochure ? (
                       <img
                         src={URL.createObjectURL(companyBrochure)}
                         className="img-preview object-fit-cover mt-3"
@@ -822,7 +829,7 @@ const AddSeller = () => {
                         height={150}
                         showFallback={false}
                       />
-                    ) : null}
+                    ) : null} */}
                   </div>
                   <div className="col-md-6">
                     <label htmlFor="elcina_member" className="form-label required">ELCINA Member</label>
@@ -1004,11 +1011,11 @@ const AddSeller = () => {
                       {errors.zipcode && (<div className="invalid-feedback">{errors.zipcode}</div>)}
                     </div>
                     <div className="col-md-6 mb-3">
-                      <label htmlFor="browser" className="form-label">Designation</label>
+                      <label htmlFor="designation" className="form-label">Designation</label>
                       <input
                         type="text" className="form-control"
                         list="browsers"
-                        id="browser"
+                        id="designation"
                         placeholder="Designation"
                         value={formData.designation}
                         onChange={handleInputChange}

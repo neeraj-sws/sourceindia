@@ -891,6 +891,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                   { key: "designation", label: "Designation / Website / Quality Certification", sortable: true },
                   { key: "created_at", label: "Created", sortable: true },
                   { key: "updated_at", label: "Last Update", sortable: true },
+                  { key: "approve_date", label: "	Approve Date", sortable: true },
                   ...(!getDeleted ? [{ key: "status", label: "Status", sortable: false }] : []),
                   { key: "action", label: "Action", sortable: false },
                 ]}
@@ -966,6 +967,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                     </td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
+                    <td>{formatDateTime(row.approve_date)}</td>
                     {!getDeleted && (
                       <td>
                         <div className="form-check form-switch">

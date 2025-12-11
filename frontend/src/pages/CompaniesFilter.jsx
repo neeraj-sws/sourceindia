@@ -128,27 +128,14 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
 
     try {
       let url = `${API_BASE_URL}/products/companies?is_delete=0&status=1&limit=9&page=${pageNumber}`;
-      if (typeof isSeller !== 'undefined') {
-        url += `&is_seller=${isSeller}`;
-      }
-      if (typeof isTrading !== 'undefined') {
-        url += `&is_trading=${isTrading}`;
-      }
-      if (selectedCategories.length > 0) {
-        url += `&category=${selectedCategories.join(',')}`;
-      }
-      if (selectedSubCategories.length > 0) {
-        url += `&sub_category=${selectedSubCategories.join(',')}`;
-      }
-      if (selectedStates.length > 0) {
-        url += `&user_state=${selectedStates.join(',')}`;
-      }
-      if (selectedSourcingInterest.length > 0) {
-        url += `&interest_sub_categories=${selectedSourcingInterest.join(',')}`;
-      }
-      if (sortBy) {
-        url += `&sort_by=${sortBy}`;
-      }
+      if (typeof isSeller !== 'undefined') url += `&is_seller=${isSeller}`;
+      if (typeof isTrading !== 'undefined') url += `&is_trading=${isTrading}`;
+      if (selectedCategories.length > 0) url += `&category=${selectedCategories.join(',')}`;
+      if (selectedSubCategories.length > 0) url += `&sub_category=${selectedSubCategories.join(',')}`;
+      if (selectedStates.length > 0) url += `&user_state=${selectedStates.join(',')}`;
+      if (selectedSourcingInterest.length > 0) url += `&interest_sub_categories=${selectedSourcingInterest.join(',')}`;
+      if (sortBy) url += `&sort_by=${sortBy}`;
+      if (searchTerm) url += `&title=${encodeURIComponent(searchTerm)}`;
       const res = await axios.get(url);
       const newCompanies = res.data.companies || [];
       setCompaniesTotal(res.data.total);
@@ -179,7 +166,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     setPage(1);
     setHasMore(true);
     fetchCompanies(1, false);
-  }, [selectedCategories, selectedSubCategories, selectedStates, selectedSourcingInterest, sortBy, isSeller, isTrading]);
+  }, [searchTerm, selectedCategories, selectedSubCategories, selectedStates, selectedSourcingInterest, sortBy, isSeller, isTrading]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -199,7 +186,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
   }, [page, hasMore, scrollLoading, loading]);
 
   const handleSearch = (e) => {
-    setSearchTerm(e.target.value.toLowerCase());
+    setSearchTerm(e.target.value);
   };
 
   const handleCategoryCheckboxChange = (categoryId) => {
