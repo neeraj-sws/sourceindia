@@ -9,7 +9,7 @@ const SystemSettingsForm = () => {
   const [logoFile, setLogoFile] = useState(null);
   const [faviconFile, setFaviconFile] = useState(null);
   const [errors, setErrors] = useState({});
-  const [formData, setFormData] = useState({ title: '', site_email: '', mobile: '', address: '', logo_file: '', favicon_file: '' });
+  const [formData, setFormData] = useState({ title: '', site_email: '', mobile: '', address: '', logo_file: '', favicon_file: '', seller_category_limit: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
@@ -37,6 +37,7 @@ const SystemSettingsForm = () => {
     if (!formData.mobile.trim()) errs.mobile = 'Mobile is required';
     else if (!/^[6-9]\d{9}$/.test(formData.mobile)) errs.mobile = "Mobile Number is invalid";
     if (!formData.address) errs.address = 'Address is required';
+    if (!formData.seller_category_limit) errs.seller_category_limit = 'Seller category limit is required';
 
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     const maxSize = 2 * 1024 * 1024;
@@ -90,7 +91,7 @@ const SystemSettingsForm = () => {
       <hr />
       <form className="row g-3" onSubmit={handleSubmit}>
         <div className="col-md-4">
-          <label htmlFor="Title" className="form-label required">Title</label>
+          <label htmlFor="title" className="form-label required">Title</label>
           <input type="text" className={`form-control ${errors.title ? 'is-invalid' : ''}`} id="title" placeholder="Title"
             value={formData.title} onChange={handleInputChange} />
           {errors.title && <div className="invalid-feedback">{errors.title}</div>}
@@ -161,6 +162,19 @@ const SystemSettingsForm = () => {
             defaultValue={formData.address}
           />
           {errors.address && <div className="invalid-feedback">{errors.address}</div>}
+        </div>
+        <div className="col-md-6">
+          <label htmlFor="seller_category_limit" className="form-label required">Seller Category Limit</label>
+          <select id="seller_category_limit"
+            className={`form-select ${errors.seller_category_limit ? 'is-invalid' : ''}`}
+            value={formData.seller_category_limit} onChange={handleInputChange}
+          >
+            <option value="">Select here</option>
+            {Array.from({ length: 10 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>{i + 1}</option>
+            ))}
+          </select>
+          {errors.seller_category_limit && <div className="invalid-feedback">{errors.seller_category_limit}</div>}
         </div>
         <div className="col-12 text-end mt-4">
           <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>

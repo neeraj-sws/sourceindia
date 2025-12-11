@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
@@ -57,6 +57,9 @@ const ProductList = ({ getDeleted, isApprove }) => {
   const [selectedProductStatus, setSelectedProductStatus] = useState("");
   const [appliedProductStatus, setAppliedProductStatus] = useState("");
   const datePickerRef = useRef(null);
+  const location = useLocation();
+const queryParams = new URLSearchParams(location.search);
+const userIdFromUrl = queryParams.get("id");
         
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -171,7 +174,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
       const response = await axios.get(`${API_BASE_URL}/products/server-side`, {
         params: { page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false',
         dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "",
-        company: appliedCompanies || "", product_status: appliedProductStatus, is_approve: isApprove
+        company: appliedCompanies || "", product_status: appliedProductStatus, is_approve: isApprove, user_id: userIdFromUrl || ""
       },
       });
       setData(response.data.data);
@@ -185,7 +188,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
   };
 
   useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted,
-    dateRange, startDate, endDate, appliedCategory, appliedSubCategory, appliedCompanies, appliedProductStatus, isApprove]);
+    dateRange, startDate, endDate, appliedCategory, appliedSubCategory, appliedCompanies, appliedProductStatus, isApprove, userIdFromUrl]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {

@@ -17,6 +17,7 @@ const SellerCategory = require('../models/SellerCategory');
 const ItemCategory = require('../models/ItemCategory');
 const ItemSubCategory = require('../models/ItemSubCategory');
 const Items = require('../models/Items');
+const ProductServices = require('../models/ProductServices');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
@@ -37,12 +38,17 @@ exports.allProduct = async (req, res) => {
     const products = await Products.findAll({ where: { company_id: parseInt(company_id) }, attributes: ['id', 'title', 'description'] });
 
 
-    if (!products || products.length === 0) {
+    /*if (!products || products.length === 0) {
       return res.status(404).json({ success: false, message: 'No products found for the given company', data: [] });
     }
 
     console.log('Products fetched:', products);
-    res.status(200).json({ success: true, message: 'Products fetched successfully', data: products });
+    res.status(200).json({ success: true, message: 'Products fetched successfully', data: products });*/
+    res.status(200).json({ 
+      success: true, 
+      message: products.length ? 'Products fetched successfully' : 'No products found', 
+      data: products 
+    });
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ success: false, message: 'Server error while fetching products', data: [] });
@@ -92,6 +98,7 @@ exports.createProducts = async (req, res) => {
       }));
 
       const fileIds = uploadImages.map(image => image.id).join(',');
+      const user = await Users.findOne({ where: { id: user_id } });
 
       const products = await Products.create({
         user_id,
@@ -118,7 +125,15 @@ exports.createProducts = async (req, res) => {
         item_category_id,
         item_subcategory_id,
         item_id,
+        company_id: user.company_id,
       });
+
+      let updateObj = {};
+      if (user.is_product === 0) updateObj.is_product = 1;
+      if (user.is_complete === 0) updateObj.is_complete = 1;
+      if (Object.keys(updateObj).length > 0) {
+        await user.update(updateObj);
+      }
 
       res.status(201).json({ message: 'Product created', products });
 
@@ -625,7 +640,8 @@ exports.getAllCompanyInfo = async (req, res) => {
       sub_category,
       is_delete,
       is_seller,
-      is_trading
+      is_trading,
+      interest_sub_categories
     } = req.query;
 
     // ✅ Sorting
@@ -656,7 +672,7 @@ exports.getAllCompanyInfo = async (req, res) => {
               SELECT 1 FROM users u 
               INNER JOIN seller_categories sc ON sc.user_id = u.user_id
               WHERE u.company_id = CompanyInfo.company_id
-              AND u.is_delete = 0 AND u.status = 1
+              AND u.is_delete = 0 AND u.status = 1 AND u.is_approve = 1
               AND (${sellerWhere.join(' OR ')})
             )
           `)
@@ -665,13 +681,43 @@ exports.getAllCompanyInfo = async (req, res) => {
     }
 
     // ✅ User filters
-    const userFilters = [`u.is_delete = 0`, `u.status = 1`];
+    const userFilters = [`u.is_delete = 0`, `u.status = 1`, `u.is_approve = 1`];
     if (user_state) {
       const stateIds = parseCsv(user_state).map(x => parseInt(x)).filter(x => !isNaN(x));
       if (stateIds.length) userFilters.push(`u.state IN (${stateIds.join(',')})`);
     }
     if (typeof is_seller !== 'undefined') userFilters.push(`u.is_seller = ${parseInt(is_seller)}`);
     if (typeof is_trading !== 'undefined') userFilters.push(`u.is_trading = ${parseInt(is_trading)}`);
+
+    let interestSubCatIds = [];
+    if (interest_sub_categories) {
+      interestSubCatIds = parseCsv(interest_sub_categories)
+        .map(x => parseInt(x))
+        .filter(x => !isNaN(x));
+    }
+
+    if (interestSubCatIds.length) {
+      whereClause[Op.and] = whereClause[Op.and] || [];
+      whereClause[Op.and].push(
+        literal(`
+          EXISTS (
+            SELECT 1
+            FROM users u2
+            JOIN cities c ON u2.city = c.city_id
+            JOIN states s ON u2.state = s.state_id
+            JOIN countries co ON u2.country = co.country_id
+            JOIN buyerinterests bi ON bi.buyer_id = u2.user_id
+            WHERE u2.company_id = CompanyInfo.company_id
+              AND bi.activity_id IN (${interestSubCatIds.join(',')})
+              AND u2.status = 1
+              AND u2.is_approve = 1
+              AND u2.is_seller = 0
+              AND u2.is_delete = 0
+              AND CompanyInfo.is_delete = 0
+          )
+        `)
+      );
+    }
 
     whereClause[Op.and] = whereClause[Op.and] || [];
     whereClause[Op.and].push(
@@ -721,7 +767,7 @@ exports.getAllCompanyInfo = async (req, res) => {
 
     // ✅ Fetch users (single user per company)
     const users = await Users.findAll({
-      where: { company_id: { [Op.in]: companyIds }, is_delete: 0, status: 1 },
+      where: { company_id: { [Op.in]: companyIds }, is_delete: 0, status: 1, is_approve: 1 },
       order: [['id', 'ASC']], // to pick first user if multiple exist
       raw: true
     });
@@ -978,10 +1024,10 @@ exports.getAllProductsServerSide = async (req, res) => {
       order = [['id', 'DESC']];
     }
     const baseWhere = { is_delete: 0 };
-    if (user_id) {
+    if (user_id !== undefined && user_id !== "") {
       baseWhere.user_id = user_id;
     }
-    if (is_approve) {
+    if (is_approve !== undefined && is_approve !== "") {
       baseWhere.is_approve = is_approve;
     }
     if (req.query.getDeleted === 'true') {
@@ -1187,6 +1233,258 @@ exports.getItemHierarchy = async (req, res) => {
       item_id: product.item_id,
     });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getFilteredCompanies = async (req, res) => {
+  try {
+    const {
+      organization_name,
+      company_location,
+      contact_person,
+      brief_company,
+      company_phone,
+      company_website,
+      company_email,
+      core_activity,
+      activity,
+      dateRange = '',
+      startDate,
+      endDate
+    } = req.query;
+
+    // Base where condition
+    const where = {
+      is_delete: 0,
+    };
+
+    if (organization_name) where.organization_name = { [Op.like]: `%${organization_name}%` };
+    if (company_location) where.company_location = { [Op.like]: `%${company_location}%` };
+    if (contact_person) where.contact_person = { [Op.like]: `%${contact_person}%` };
+    if (brief_company) where.brief_company = { [Op.like]: `%${brief_company}%` };
+    if (company_phone) where.company_phone = { [Op.like]: `%${company_phone}%` };
+    if (company_website) where.company_website = { [Op.like]: `%${company_website}%` };
+    if (company_email) where.company_email = { [Op.like]: `%${company_email}%` };
+    if (core_activity) where.core_activity = core_activity;
+    if (activity) where.activity = activity;
+
+    // Date filter
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      where.created_at = dateCondition;
+    }
+
+    // Fetch companies with associations
+    const companies = await CompanyInfo.findAll({
+      where,
+      include: [
+        { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
+        { model: Activity, as: 'Activity', attributes: ['name'] },
+      ]
+    });
+
+    // Map the results
+    const data = companies.map(company => {
+      const s = company.toJSON();
+
+      return {
+        id: s.id,
+        organization_name: s.organization_name,
+        company_location: s.company_location,
+        contact_person: s.contact_person,
+        brief_company: s.brief_company,
+        coreactivity_name: s.CoreActivity?.name || 'NA',
+        activity_name: s.Activity?.name || 'NA',
+        created_at: s.created_at
+      };
+    });
+
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getFilteredProducts = async (req, res) => {
+  try {
+    const {
+      title,
+      user_id,
+      category,
+      sub_category,
+      company_id,
+      code,
+      article_number,
+      product_service,
+      is_gold,
+      is_featured,
+      is_recommended,
+      best_product,
+      dateRange = '',
+      startDate,
+      endDate
+    } = req.query;
+
+    // Base where condition
+    const where = {
+      is_delete: 0,
+    };
+
+    if (title) where.title = { [Op.like]: `%${title}%` };
+    if (user_id) where.user_id = user_id;
+    if (category) where.category = category;
+    if (sub_category) where.sub_category = sub_category;
+    if (company_id) where.company_id = company_id;
+    if (code) where.code = { [Op.like]: `%${code}%` };
+    if (article_number) where.article_number = { [Op.like]: `%${article_number}%` };
+    if (product_service) where.product_service = product_service;
+    if (is_gold) where.is_gold = is_gold;
+    if (is_featured) where.is_featured = is_featured;
+    if (is_recommended) where.is_recommended = is_recommended;
+    if (best_product) where.best_product = best_product;
+
+    // Date filter
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      where.created_at = dateCondition;
+    }
+
+    // Fetch companies with associations
+    const companies = await Products.findAll({
+      where,
+      include: [
+        { model: Users, as: 'Users', attributes: ['fname', 'lname'] },
+        { model: Categories, as: 'Categories', attributes: ['name'] },
+        { model: SubCategories, as: 'SubCategories', attributes: ['name'] },
+        { model: CompanyInfo, as: 'company_info', attributes: ['organization_name'] },
+        { model: ProductServices, as: 'ProductServices', attributes: ['title'] },
+      ]
+    });
+
+    // Map the results
+    const data = companies.map(company => {
+      const s = company.toJSON();
+
+      return {
+        id: s.id,
+        title: s.title,
+        user_name: s.Users ? `${s.Users.fname} ${s.Users.lname}` : 'NA',
+        category_name: s.Categories?.name || 'NA',
+        subcategory_name: s.SubCategories?.name || 'NA',
+        company_name: s.company_info?.organization_name || 'NA',
+        code: s.code,
+        article_number: s.article_number,
+        product_service: s.product_service,
+        product_service_name: s.ProductServices?.title || '',
+        is_gold: s.is_gold==1?'Yes':'No',
+        is_featured: s.is_featured==1?'Yes':'No',
+        is_recommended: s.is_recommended==1?'Yes':'No',
+        best_product: s.best_product==1?'Yes':'No',
+        created_at: s.created_at
+      };
+    });
+
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };

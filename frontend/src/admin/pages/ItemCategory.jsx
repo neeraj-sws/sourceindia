@@ -167,11 +167,51 @@ const ItemCategory = () => {
       }
 
       if (isEditing) {
-        await axios.put(`${API_BASE_URL}/item_category/${formData.id}`, formDataToSend, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        // await axios.put(`${API_BASE_URL}/item_category/${formData.id}`, formDataToSend, {
+        //   headers: { "Content-Type": "multipart/form-data" },
+        // });
 
-        showNotification("Item category updated successfully!", "success");
+        // showNotification("Item category updated successfully!", "success");
+        await axios.put(`${API_BASE_URL}/item_category/${formData.id}`, formDataToSend, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  // --- 2. Get updated item (to get new file_id) ---
+  const updatedItem = await axios.get(`${API_BASE_URL}/item_category/${formData.id}`);
+  const newFileId = updatedItem.data.file_id;
+
+  let updatedFileName = formData.file_name || null;
+
+  // --- 3. If backend assigned new file id, fetch image file record ---
+  if (newFileId && newFileId !== 0) {
+    try {
+      const img = await axios.get(`${API_BASE_URL}/files/${newFileId}`);
+      updatedFileName = img.data.file;
+    } catch (error) {
+      console.warn("File record not found:", error);
+    }
+  }
+
+  // --- 4. Update DataTable without refresh ---
+  setData((prev) =>
+    prev.map((item) =>
+      item.id === formData.id
+        ? {
+            ...item,
+            name: formData.name,
+            category_id: selectedCategory,
+            subcategory_id: selectedSubCategory,
+            status: Number(formData.status),
+            file_id: newFileId,
+            file_name: updatedFileName,
+            updated_at: new Date().toISOString(),
+          }
+        : item
+    )
+  );
+
+  showNotification("Item category updated successfully!", "success");
+  resetForm();
       } else {
         await axios.post(`${API_BASE_URL}/item_category`, formDataToSend, {
           headers: { "Content-Type": "multipart/form-data" },

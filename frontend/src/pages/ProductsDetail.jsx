@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from '../config'; // Assuming you have ROOT_URL for images
-import { useParams } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Thumbs, Pagination } from 'swiper/modules'; // Removed Zoom module, added Thumbs
 import 'swiper/css'; // Core Swiper styles
@@ -10,12 +10,12 @@ import 'swiper/css/pagination';
 import 'swiper/css/thumbs';
 import ImageFront from "../admin/common/ImageFront";
 import EnquiryForm from "./EnquiryForm";
-import { Link } from "react-router-dom";
 import { useAlert } from "../context/AlertContext";
+import UseAuth from '../sections/UseAuth';
 
 const ProductDetail = () => {
+  const navigate = useNavigate();
   const { slug } = useParams();
-
   const [product, setProduct] = useState(null);
   const thumbsSwiper = useRef(null); // Correct use of useRef
   const [activeTab, setActiveTab] = useState('productDetails'); // Manage active tab
@@ -26,7 +26,11 @@ const ProductDetail = () => {
   const [review, setReview] = useState("");
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+<<<<<<< HEAD
 
+=======
+  const { user } = UseAuth();
+>>>>>>> praveen-14-11-25
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -62,12 +66,18 @@ const ProductDetail = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!user) {
+      showNotification("Please log in to submit a review.", "error");
+      navigate("/login");
+      return;
+    }
+
     if (!review.trim()) {
-      alert("Please enter your review.");
+      showNotification("Please enter your review.", "error");
       return;
     }
     if (rating === 0) {
-      alert("Please select a rating.");
+      showNotification("Please select a rating.", "error");
       return;
     }
 
@@ -76,7 +86,7 @@ const ProductDetail = () => {
       const response = await axios.post(`${API_BASE_URL}/products/company-review`, {
         product_id: product.id,
         company_id: product.company_id,
-        user_id: 2021, // replace with logged-in user ID if available
+        user_id: user?.id, // replace with logged-in user ID if available
         rating,
         review,
       });

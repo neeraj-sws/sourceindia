@@ -162,7 +162,6 @@ const LeadDetail = () => {
             </div>
           </div>
 
-
           <div className="row">
             <div className="col-md-4">
               <div className="card mb-3">
@@ -194,7 +193,6 @@ const LeadDetail = () => {
                     </div>
                   </div>
                   <h6 className="mb-3 fw-semibold">Enquiry Detail</h6>
-
                   <div className="border-bottom mb-3 pb-3">
                     {formData.seller_category_names &&
                       <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
@@ -217,7 +215,6 @@ const LeadDetail = () => {
                         {formData.description}
                       </p>
                     </div>
-
                   </div>
                   <h6 className="mb-3 fw-semibold">Product Detail</h6>
                   <div className="border-bottom mb-3 pb-3">
@@ -253,14 +250,10 @@ const LeadDetail = () => {
                     }
                     {formData.product_details?.description &&
                       <div className="d-flex align-items-center justify-content-between mb-2 mt-3">
-
-                        <p className="mb-0 text-dark">
-                          {formData.product_details?.description}
-                        </p>
+                        <p className="mb-0 text-dark" dangerouslySetInnerHTML={{ __html: formData.product_details?.description }} />
                       </div>
                     }
                   </div>
-
                 </div>
               </div>
             </div>
@@ -345,8 +338,6 @@ const LeadDetail = () => {
                       )}
                     </div>
                     <div className="tab-pane fade" id="primary-pills-meta" role="tabpanel">
-
-
                       {shortList.length > 0 ? (
                         <table className="table table-striped table-bordered w-100">
                           <thead>
@@ -370,7 +361,6 @@ const LeadDetail = () => {
                           <p>- No Enquiry Shortlisted. -</p>
                         </div>
                       )}
-
                     </div>
                     <div className="tab-pane fade" id="primary-pills-email" role="tabpanel">
                       <div className="text-center">
@@ -383,11 +373,6 @@ const LeadDetail = () => {
               </div>
             </div>
           </div>
-
-
-
-
-
         </div>
       </div>
     </>

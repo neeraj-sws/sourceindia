@@ -24,7 +24,7 @@ const UseAuth = () => {
       } catch (error) {
         console.error("Error fetching profile:", error);
         // Optionally log out the user if the token is invalid
-        localStorage.removeItem('user_token');
+        // localStorage.removeItem('user_token');
         // navigate('/login');
       } finally {
         setLoading(false);

@@ -14,11 +14,11 @@ const MembershipDetail = sequelize.define('MembershipDetail', {
     allowNull: false,
     unique: true,
   },
-  id: {
+  /*id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
-  },
+  },*/
   company_id: {
     type: DataTypes.INTEGER,
     allowNull: false,

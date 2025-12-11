@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
+import "select2/dist/css/select2.min.css";
+import "select2";
+import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 
 const Registration = () => {
     const { showNotification } = useAlert();
+    const navigate = useNavigate();
     const [form, setForm] = useState({
         fname: "",
         lname: "",
@@ -27,6 +32,9 @@ const Registration = () => {
     const [countries, setCountries] = useState([]);
     const [states, setStates] = useState([]);
     const [cities, setCities] = useState([]);
+    const [selectedCountry, setSelectedCountry] = useState('');
+      const [selectedState, setSelectedState] = useState('');
+      const [selectedCity, setSelectedCity] = useState('');
 
     const [emailVerified, setEmailVerified] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
@@ -50,6 +58,113 @@ const Registration = () => {
         fetchCountries();
     }, []);
 
+    const handleCountryChange = async (event) => {
+    const countryId = event.target.value;
+    setSelectedCountry(countryId);
+
+    setForm(prev => ({
+        ...prev,
+        country: countryId,
+        state: "",
+        city: ""
+    }));
+
+    try {
+        const res = await axios.get(`${API_BASE_URL}/signup/states?country_id=${countryId}`);
+        setStates(res.data);
+        setSelectedState("");
+        setSelectedCity("");
+        setCities([]);
+    } catch (error) {
+        console.error("Error fetching states:", error);
+    }
+};
+    
+      const handleStateChange = async (event) => {
+    const stateId = event.target.value;
+    setSelectedState(stateId);
+
+    setForm(prev => ({
+        ...prev,
+        state: stateId,
+        city: ""
+    }));
+
+    try {
+        const res = await axios.get(`${API_BASE_URL}/signup/cities?state_id=${stateId}`);
+        setCities(res.data);
+        setSelectedCity("");
+    } catch (error) {
+        console.error("Error fetching cities:", error);
+    }
+};
+    
+      const handleCityChange = (event) => {
+    const cityId = event.target.value;
+    setSelectedCity(cityId);
+
+    setForm(prev => ({
+        ...prev,
+        city: cityId
+    }));
+};
+    
+      useEffect(() => {
+    if (!emailVerified) return; // Selects exist only when emailVerified is true
+
+    const $country = $('#country');
+    const $state = $('#state');
+    const $city = $('#city');
+
+    // ---- COUNTRY ----
+    if (!$country.data("select2")) {
+        $country.select2({
+            theme: "bootstrap",
+            width: "100%",
+            placeholder: "Select Country"
+        }).on("change", function () {
+            handleCountryChange({ target: { value: $(this).val() } });
+        });
+    } else {
+        // Sync React state to Select2 UI
+        $country.val(selectedCountry);
+    }
+
+    // ---- STATE ----
+    if (!$state.data("select2")) {
+        $state.select2({
+            theme: "bootstrap",
+            width: "100%",
+            placeholder: "Select State"
+        }).on("change", function () {
+            handleStateChange({ target: { value: $(this).val() } });
+        });
+    } else {
+        $state.val(selectedState).trigger("change.select2");
+    }
+
+    // ---- CITY ----
+    if (!$city.data("select2")) {
+        $city.select2({
+            theme: "bootstrap",
+            width: "100%",
+            placeholder: "Select City"
+        }).on("change", function () {
+            handleCityChange({ target: { value: $(this).val() } });
+        });
+    } else {
+        $city.val(selectedCity).trigger("change.select2");
+    }
+
+    // Cleanup only when component unmounts or emailVerified becomes false
+    return () => {
+        if ($country.data("select2")) $country.off().select2("destroy");
+        if ($state.data("select2")) $state.off().select2("destroy");
+        if ($city.data("select2")) $city.off().select2("destroy");
+    };
+
+}, [emailVerified, selectedCountry, selectedState, selectedCity]);
+
     // Handle input changes
     const handleChange = (e) => {
 
@@ -68,35 +183,35 @@ const Registration = () => {
     };
 
     // When country changes, load states
-    useEffect(() => {
-        const fetchStates = async () => {
-            if (!form.country) return setStates([]);
-            try {
-                const res = await axios.get(`${API_BASE_URL}/signup/states?country_id=${form.country}`);
-                setStates(res.data);
-            } catch (err) {
-                console.error(err);
-            }
-        };
-        fetchStates();
-        setForm({ ...form, state: "", city: "" });
-        setCities([]);
-    }, [form.country]);
+    // useEffect(() => {
+    //     const fetchStates = async () => {
+    //         if (!form.country) return setStates([]);
+    //         try {
+    //             const res = await axios.get(`${API_BASE_URL}/signup/states?country_id=${form.country}`);
+    //             setStates(res.data);
+    //         } catch (err) {
+    //             console.error(err);
+    //         }
+    //     };
+    //     fetchStates();
+    //     setForm({ ...form, state: "", city: "" });
+    //     setCities([]);
+    // }, [form.country]);
 
-    // When state changes, load cities
-    useEffect(() => {
-        const fetchCities = async () => {
-            if (!form.state) return setCities([]);
-            try {
-                const res = await axios.get(`${API_BASE_URL}/signup/cities?state_id=${form.state}`);
-                setCities(res.data);
-            } catch (err) {
-                console.error(err);
-            }
-        };
-        fetchCities();
-        // setForm({ ...form, city: "" });
-    }, [form.state]);
+    // // When state changes, load cities
+    // useEffect(() => {
+    //     const fetchCities = async () => {
+    //         if (!form.state) return setCities([]);
+    //         try {
+    //             const res = await axios.get(`${API_BASE_URL}/signup/cities?state_id=${form.state}`);
+    //             setCities(res.data);
+    //         } catch (err) {
+    //             console.error(err);
+    //         }
+    //     };
+    //     fetchCities();
+    //     // setForm({ ...form, city: "" });
+    // }, [form.state]);
 
     // Send OTP
     const sendOtp = async () => {
@@ -181,10 +296,22 @@ const Registration = () => {
 
             setForm({
                 ...form,
-                country: countryId || "",
-                state: stateId || "",
-                city: cityId || "",
+                // country: countryId || "",
+                // state: stateId || "",
+                // city: cityId || "",
             });
+            setSelectedCountry(countryId || '');
+        setSelectedState(stateId || '');
+        setSelectedCity(cityId || '');
+
+        if (countryId) {
+          const stRes = await axios.get(`${API_BASE_URL}/location/states/${countryId}`);
+          setStates(stRes.data);
+        }
+        if (stateId) {
+          const ctRes = await axios.get(`${API_BASE_URL}/location/cities/${stateId}`);
+          setCities(ctRes.data);
+        }
         } catch (err) {
             console.error(err);
             showNotification("Failed to fetch location from PIN code", "error");
@@ -206,7 +333,13 @@ const Registration = () => {
         setVerifyMessage("");
 
         try {
-            const payload = { ...form, cname: form.cname };
+            const payload = { 
+    ...form, 
+    cname: form.cname,
+    country: selectedCountry,
+    state: selectedState,
+    city: selectedCity
+};
 
             const res = await axios.post(`${API_BASE_URL}/signup/register`, payload);
 
@@ -226,15 +359,19 @@ const Registration = () => {
                     products: "",
                     user_category: "",
                     address: "",
-                    city: "",
-                    state: "",
-                    country: "",
+                    // city: "",
+                    // state: "",
+                    // country: "",
                     pinCode: "",
                 });
+                setSelectedCountry('');
+        setSelectedState('');
+        setSelectedCity('');
                 setEmailVerified(false);
                 setOtp("");
                 setOtpSent(false);
                 setUserId(null);
+                navigate('/login');
             } else if (res.data.errors) {
                 setErrors(res.data.errors);
             } else {
@@ -271,21 +408,21 @@ const Registration = () => {
                         <div className="row">
                             {/* First Name */}
                             <div className="col-md-6 mb-3">
-                                <label>First Name*</label>
+                                <label>First Name<sup className="text-danger">*</sup></label>
                                 <input type="text" name="fname" className="form-control" value={form.fname} onChange={handleChange} />
                                 {errors.fname && <small className="text-danger">{errors.fname}</small>}
                             </div>
 
                             {/* Last Name */}
                             <div className="col-md-6 mb-3">
-                                <label>Last Name*</label>
+                                <label>Last Name<sup className="text-danger">*</sup></label>
                                 <input type="text" name="lname" className="form-control" value={form.lname} onChange={handleChange} />
                                 {errors.lname && <small className="text-danger">{errors.lname}</small>}
                             </div>
 
                             {/* Company Name */}
                             <div className="col-md-6 mb-3">
-                                <label>Company Name*</label>
+                                <label>Company Name<sup className="text-danger">*</sup></label>
                                 <input type="text" name="cname" className="form-control" value={form.cname} onChange={handleChange} />
                                 {errors.cname && <small className="text-danger">{errors.cname}</small>}
                             </div>
@@ -299,7 +436,7 @@ const Registration = () => {
 
                             {/* Mobile */}
                             <div className="col-md-6 mb-3">
-                                <label>Mobile*</label>
+                                <label>Mobile<sup className="text-danger">*</sup></label>
                                 <input
                                     type="text"
                                     name="mobile"
@@ -316,7 +453,7 @@ const Registration = () => {
 
                             {/* Email + OTP */}
                             <div className="col-md-6 mb-3">
-                                <label>Email*</label>
+                                <label>Email<sup className="text-danger">*</sup></label>
                                 <div className="d-flex gap-2 align-items-start">
                                     <input type="email" name="email" className="form-control w-50" value={form.email} onChange={handleChange} disabled={emailVerified} />
 
@@ -328,7 +465,7 @@ const Registration = () => {
 
                                     {!emailVerified && otpSent && (
                                         <>
-                                            <input type="text" placeholder="Enter OTP" value={otp} onChange={(e) => setOtp(e.target.value)} className="form-control w-25" />
+                                            <input type="text" placeholder="Enter OTP" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\s/g, ""))} className="form-control w-25" />
                                             <button type="button" className="btn btn-primary" onClick={verifyOtp} disabled={verifyLoading}>
                                                 {verifyLoading ? "Verifying..." : "Verify OTP"}
                                             </button>
@@ -347,7 +484,7 @@ const Registration = () => {
                                 <>
                                     {/* Category */}
                                     <div className="col-md-6 mb-3">
-                                        <label>Category*</label>
+                                        <label>Category<sup className="text-danger">*</sup></label>
                                         <select name="category" className="form-select" value={form.category} onChange={handleChange}>
                                             <option value="">Select Category</option>
                                             <option value="1">Seller</option>
@@ -358,7 +495,7 @@ const Registration = () => {
 
                                     {/* ELCINA Member */}
                                     <div className="col-md-3 mb-3">
-                                        <label>ELCINA Member*</label>
+                                        <label>ELCINA Member<sup className="text-danger">*</sup></label>
                                         <select name="elcina_member" className="form-select" value={form.elcina_member} onChange={handleChange}>
                                             <option value="">Select</option>
                                             <option value="1">Yes</option>
@@ -368,7 +505,7 @@ const Registration = () => {
                                         {errors.elcina_member && <small className="text-danger">{errors.elcina_member}</small>}
                                     </div>
                                     <div className="col-md-3 mb-3">
-                                        <label>Trader*</label>
+                                        <label>Trader<sup className="text-danger">*</sup></label>
                                         <select name="is_trading" className="form-select" value={form.is_trading} onChange={handleChange}>
                                             <option value="">Select</option>
                                             <option value="0">No</option>
@@ -381,12 +518,12 @@ const Registration = () => {
                                     {form.category === "0" && (
                                         <>
                                             <div className="col-md-6 mb-3">
-                                                <label>Products*</label>
+                                                <label>Products<sup className="text-danger">*</sup></label>
                                                 <input type="text" name="products" className="form-control" value={form.products} onChange={handleChange} />
                                                 {errors.products && <small className="text-danger">{errors.products}</small>}
                                             </div>
                                             <div className="col-md-6 mb-3">
-                                                <label>User Category*</label>
+                                                <label>User Category<sup className="text-danger">*</sup></label>
                                                 <select className="form-select" name="user_category" value={form.user_category} onChange={handleChange}>
                                                     <option value="">Select User Category</option>
                                                     <option value="brand">Brand</option>
@@ -403,38 +540,71 @@ const Registration = () => {
 
                                     {/* Address */}
                                     <div className="col-md-12 mb-3">
-                                        <label>Address*</label>
+                                        <label>Address<sup className="text-danger">*</sup></label>
                                         <textarea name="address" className="form-control" value={form.address} onChange={handleChange} />
                                         {errors.address && <small className="text-danger">{errors.address}</small>}
                                     </div>
                                     <div className="col-md-3 mb-3">
-                                        <label>Pin Code*</label>
+                                        <label>Pin Code<sup className="text-danger">*</sup></label>
                                         <input type="text" name="pinCode" className="form-control" value={form.pinCode} onChange={handleChange} onBlur={handlePinBlur} />
                                         {errors.pinCode && <small className="text-danger">{errors.pinCode}</small>}
                                     </div>
                                     {/* Country/State/City/Pin */}
                                     <div className="col-md-3 mb-3">
-                                        <label>Country*</label>
-                                        <select name="country" className="form-select" value={form.country} onChange={handleChange}>
+                                        <label>Country<sup className="text-danger">*</sup></label>
+                                        {/* <select name="country" className="form-select" value={form.country} onChange={handleChange}>
                                             <option value="">Select Country</option>
                                             {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
+                                        </select> */}
+                                        <select
+                        id="country"
+                        className="form-control select2"
+                        value={selectedCountry}
+                        onChange={handleCountryChange}
+                      >
+                        <option value="">Select Country</option>
+                        {countries.map(country => (
+                          <option key={country.id} value={country.id}>{country.name}</option>
+                        ))}
+                      </select>
                                         {errors.country && <small className="text-danger">{errors.country}</small>}
                                     </div>
                                     <div className="col-md-3 mb-3">
-                                        <label>State*</label>
-                                        <select name="state" className="form-select" value={form.state} onChange={handleChange}>
+                                        <label>State<sup className="text-danger">*</sup></label>
+                                        {/* <select name="state" className="form-select" value={form.state} onChange={handleChange}>
                                             <option value="">Select State</option>
                                             {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        </select>
+                                        </select> */}
+                                        <select
+                        id="state"
+                        className="form-control select2"
+                        value={selectedState}
+                        onChange={handleStateChange}
+                      >
+                        <option value="">Select State</option>
+                        {states.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
                                         {errors.state && <small className="text-danger">{errors.state}</small>}
                                     </div>
                                     <div className="col-md-3 mb-3">
-                                        <label>City*</label>
-                                        <select name="city" className="form-select" value={form.city} onChange={handleChange}>
+                                        <label>City<sup className="text-danger">*</sup></label>
+                                        {/* <select name="city" className="form-select" value={form.city} onChange={handleChange}>
                                             <option value="">Select City</option>
                                             {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
+                                        </select> */}
+                                        <select
+                        id="city"
+                        className="form-control select2"
+                        value={selectedCity}
+                        onChange={handleCityChange}
+                      >
+                        <option value="">Select City</option>
+                        {cities.map((city) => (
+                          <option key={city.id} value={city.id}>{city.name}</option>
+                        ))}
+                      </select>
                                         {errors.city && <small className="text-danger">{errors.city}</small>}
                                     </div>
 

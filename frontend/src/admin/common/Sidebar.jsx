@@ -36,6 +36,12 @@ const menuData = [
     ],
   },
   {
+    key: 'public_enquiries',
+    title: 'Public Enquiries',
+    icon: 'bx bx-user',
+    link: '/admin/public_enquiries',
+  },
+  {
     key: 'leads',
     title: 'Leads Master',
     icon: 'bx bx-user',
@@ -43,8 +49,15 @@ const menuData = [
       // { title: 'Leads', link: '/admin/leads' },
       { key: 'approve_leads', title: 'Approve Leads', link: '/admin/approve_leads' },
       { key: 'enquiries_list', title: 'Pending Leads', link: '/admin/enquiries-list' },
-      { key: 'public_enquiries', title: 'Public Enquiries', link: '/admin/public_enquiries' },
-      { key: 'open_enquiries', title: 'Open Enquiries', link: '/admin/open_enquiries' },
+    ],
+  },
+  {
+    key: 'open_enquiries',
+    title: 'Open Enquiries',
+    icon: 'bx bx-user',
+    subMenu: [
+      { key: 'open_enquiry_list', title: 'Open Enquiry List', link: '/admin/open_enquiries' },
+      { key: 'delete_open_enquiry', title: 'Delete Open Enquiry', link: '/admin/open-enquiry-remove-list' },
     ],
   },
   {
@@ -173,7 +186,7 @@ const menuData = [
       { title: 'About Settings', link: '/admin/about_settings' },
       { title: 'Home Settings', link: '/admin/home_settings' },
       { title: 'ShortCut menu', link: '/admin/shortcut-page' },
-      { title: 'Frony menu', link: '/admin/front_menu' },
+      { title: 'Front menu', link: '/admin/front_menu' },
     ],
   },
   {
@@ -214,7 +227,7 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {
 
   const itemLinks = Array.isArray(item.link) ? item.link : [item.link];
   const isItemActive = itemLinks.includes(currentPath) || isSubMenuActive;
-  const shouldExpand = isOpen || isSubMenuActive;
+  const shouldExpand = isOpen;
 
   const getCount = (key) => {
   switch (key) {
@@ -317,7 +330,7 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {
   const mainCount = getCount(item.key);
 
   return (
-    <li className={isItemActive ? 'mm-active' : ''}>
+    <li className={`${isItemActive ? 'mm-active' : ''} ${shouldExpand ? 'mm-show' : ''}`}>
       <Link
         to={hasSubMenu ? '#' : (Array.isArray(item.link) ? item.link[0] : item.link) || '#'}
         className={hasSubMenu ? 'has-arrow' : ''}
@@ -457,6 +470,23 @@ useEffect(() => {
   const handleToggle = (index) => {
     setOpenIndex((prev) => (prev === index ? null : index));
   };
+
+  useEffect(() => {
+  // Find the menu index that matches the currentPath
+  const activeIndex = menuData.findIndex((item) => {
+    if (item.subMenu) {
+      return item.subMenu.some((sub) => sub.link === currentPath);
+    }
+    if (Array.isArray(item.link)) {
+      return item.link.includes(currentPath);
+    }
+    return item.link === currentPath;
+  });
+
+  if (activeIndex !== -1) {
+    setOpenIndex(activeIndex);
+  }
+}, [currentPath]);
 
   return (
     <div className="sidebar-wrapper" data-simplebar="init">

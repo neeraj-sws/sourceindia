@@ -145,7 +145,7 @@ exports.deleteHomeBanners = async (req, res) => {
 
     const fileId = homeBanners.file_id;
     await homeBanners.destroy();
-    if (fileId) {
+    if (fileId && fileId !== 0) {
       const uploadImage = await UploadImage.findByPk(fileId);
       if (uploadImage) {
         const oldImagePath = path.resolve(uploadImage.file);        

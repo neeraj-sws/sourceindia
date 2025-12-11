@@ -36,6 +36,9 @@ async function getTransporter() {
             user: siteConfig['smtp_username'],
             pass: siteConfig['smtp_password'],
         },
+    tls: {
+        rejectUnauthorized: false,   // <-- IMPORTANT FIX
+    }
     });
 
     return { transporter, siteConfig };

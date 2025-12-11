@@ -85,6 +85,23 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
   const [showMailHistoryModal, setShowMailHistoryModal] = useState(false);
   const [mailHistoryData, setMailHistoryData] = useState([]);
   const [mailHistoryLoading, setMailHistoryLoading] = useState(false);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [declineUserId, setDeclineUserId] = useState(null);
+  const [declineMessage, setDeclineMessage] = useState("");
+  const [usersWithMessages, setUsersWithMessages] = useState([]);
+
+  useEffect(() => {
+    const fetchUsersWithMessages = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/sellers/with-messages`);
+        setUsersWithMessages(response.data.user_ids || []);
+      } catch (err) {
+        console.error("Error fetching users with messages:", err);
+      }
+    };
+
+    fetchUsersWithMessages();
+  }, []);
 
   const openMailHistoryModal = async (userId) => {
     setShowMailHistoryModal(true);
@@ -105,6 +122,40 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
   const closeMailHistoryModal = () => {
     setShowMailHistoryModal(false);
     setMailHistoryData([]);
+  };
+
+  const openDeclineModal = async (userId) => {
+    setDeclineUserId(userId);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sellers/seller-message/${userId}`);
+      setDeclineMessage(res.data.data.message || "");
+    } catch (error) {
+      console.error("Error fetching message:", error);
+      setDeclineMessage("");
+    }
+    setShowDeclineModal(true);
+  };
+
+  const closeDeclineModal = () => {
+    setShowDeclineModal(false);
+    setDeclineUserId(null);
+    setDeclineMessage("");
+  };
+
+  const handleDeclineSubmit = async () => {
+    try {
+      const res = await axios.post(`${API_BASE_URL}/sellers/messages`, {
+        user_id: declineUserId,
+        message: declineMessage,
+      });
+      showNotification("Seller approval has been declined!", "success");
+      closeDeclineModal();
+      setUsersWithMessages(prev => [...prev, declineUserId]);
+      fetchData();
+    } catch (error) {
+      console.error("Error updating message:", error);
+      showNotification("Failed to update message", "error");
+    }
   };
         
   useEffect(() => {
@@ -448,7 +499,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     try {
       await axios.patch(`${API_BASE_URL}/sellers/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if (field == "delete_status") {
+      if (field == "delete_status" || field == "account_status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
@@ -457,7 +508,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
       if (field == "delete_status") {
         showNotification(newStatus == 1 ? "Removed from list" : "Restored from deleted", "success");
       } else {
-        showNotification("Status updated!", "success");
+        showNotification(field == "account_status" ? "Seller is approved!" : "Status updated!", "success");
       }
     } catch (error) {
       console.error("Error updating status:", error);
@@ -520,6 +571,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     setShowPicker(false);
   };
 
+<<<<<<< HEAD
 
   const openMailPopup = async (type) => {
     if (type === "selected" && selectedSeller.length === 0) {
@@ -590,6 +642,20 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
 
 
 
+=======
+  const handleImpersonateLogin = async (userId) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/signup/impersonate-login`, { userId });
+      if (response.data.token) {
+        const url = `${window.location.origin}/impersonate?token=${response.data.token}`;
+        window.open(url, "_blank");
+      }
+    } catch (error) {
+      console.error("Impersonation login failed", error);
+    }
+  };
+
+>>>>>>> praveen-14-11-25
   return (
     <>
       <div className="page-wrapper">
@@ -819,9 +885,10 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                       onChange={handleSelectAll} />)
                   }] : []),
                   { key: "id", label: "S.No.", sortable: true },
+                  ...(getNotApproved ? [{ key: "accept_status", label: "Accept/Decline", sortable: false }] : []),
                   { key: "organization_name", label: "Company", sortable: true },
                   { key: "coreactivity_name", label: "Coreactivity / Category / Segment / Sub Segment", sortable: true },
-                  // { key: "designation", label: "Designation / Website / Quality Certification", sortable: true },
+                  { key: "designation", label: "Designation / Website / Quality Certification", sortable: true },
                   { key: "created_at", label: "Created", sortable: true },
                   { key: "updated_at", label: "Last Update", sortable: true },
                   ...(!getDeleted ? [{ key: "status", label: "Status", sortable: false }] : []),
@@ -849,19 +916,54 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                       </td>
                     )}
                     <td><Link to={`/admin/seller/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
+                    {getNotApproved && (
+                    <td>
+                      {!usersWithMessages.includes(row.id) ? (
+                      <div className="d-flex">
+                        <a href="#" onClick={(e) => {
+                          e.preventDefault(); openStatusModal(row.id, row.is_approve, "account_status", "is_approve");
+                        }}>
+                          <span className="badge bg-success mx-2 py-2">
+                            <i className="bx bx-check" aria-hidden="true" />
+                          </span>
+                        </a>
+                        <a href="#" className="px-2 decline-approval"
+                          onClick={(e) => { e.preventDefault(); openDeclineModal(row.id); }}
+                        >
+                          <span className="badge bg-danger py-2">
+                            <i className="bx bx-x" aria-hidden="true" />
+                          </span>
+                        </a>
+                      </div>
+                      ) : (
+                        <a href="#" className="px-2 decline-approval"
+                          onClick={(e) => { e.preventDefault(); openDeclineModal(row.id); }}
+                        >
+                          <span className="badge bg-dark rounded-pill p-2">
+                            <i className="bx bx-question-mark" aria-hidden="true" />
+                          </span>
+                        </a>
+                      )}
+                    </td>
+                    )}
                     <td>
                       {row.organization_name && (<><strong><a href={`/companies/${row.organization_slug}`} target="_blank">{row.organization_name}</a></strong><br /></>)}
-                      {row.elcina_member == 1 && (<><span className="badge bg-primary mb-1">Elcina Member</span><br /></>)}
+                      {row.elcina_member == 1 ? (<><span className="badge bg-primary mb-1 text-uppercase">Elcina Member</span><br /></>) :
+                      row.elcina_member == 2 ? (<><span className="badge bg-primary mb-1 text-uppercase">Trial</span><br /></>) : "" }
                       {row.is_trading == 1 && (<><span className="badge bg-success mb-1">Trader</span><br /></>)}
                       {row.full_name && (<><i className="bx bx-user me-1" />{row.full_name}<br /></>)}
                       {row.email && (<><i className="bx bx-user me-1" />{row.email}<br /></>)}
                       {row.mobile && (<><i className="bx bx-mobile me-1" />{row.mobile}<br /></>)}
                       {row.state_name && (<><i className="bx bx-map me-1" />{row.state_name}<br /></>)}
                       {row.city_name && (<><i className="bx bx-map me-1" />{row.city_name}<br /></>)}
-                      <strong>Products:</strong> <span className="badge bg-primary mb-1">{row.user_count}</span>
+                      <strong>Products:</strong> <Link to={`/admin/product-list?id=${row.id}`}><span className="badge bg-primary mb-1">{row.user_count}</span></Link>
                     </td>
                     <td>{row.coreactivity_name}<br />{row.activity_name}<br />{row.category_name}<br />{row.sub_category_name}</td>
-                    {/* <td>{row.designation}<br />{row.website}</td> */}
+                    <td>
+                      {row.designation && (<>{row.designation}<br /></>)}
+                      {row.company_website && (<>{row.company_website}<br /></>)}
+                      {row.organization_quality_certification && row.organization_quality_certification}
+                    </td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     {!getDeleted && (
@@ -906,19 +1008,19 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                                 </li>
                               )}
                               <li>
-                                <button className="dropdown-item" onClick={() => navigate(`/admin/edit_seller/${row.id}`)}>
+                                <button className="dropdown-item" onClick={() =>handleImpersonateLogin(row.id)}>
                                   <i className="bx bx-log-in me-2"></i> Login
                                 </button>
                               </li>
                               {!getInactive && !getNotCompleted && !getNotApproved && (
                                 <li>
-  <button
-    className="dropdown-item"
-    onClick={() => openMailHistoryModal(row.id)}
-  >
-    <i className="bx bx-envelope me-2"></i> Mail History
-  </button>
-</li>
+                                  <button
+                                    className="dropdown-item"
+                                    onClick={() => openMailHistoryModal(row.id)}
+                                  >
+                                    <i className="bx bx-envelope me-2"></i> Mail History
+                                  </button>
+                                </li>
                               )}
                             </>
                           ) : (
@@ -1022,6 +1124,11 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
         mailHistoryData={mailHistoryData}
         mailHistoryLoading={mailHistoryLoading}
         closeMailHistoryModal={closeMailHistoryModal}
+        showDeclineModal={showDeclineModal}
+        declineMessage={declineMessage}
+        setDeclineMessage={setDeclineMessage}
+        closeDeclineModal={closeDeclineModal}
+        handleDeclineSubmit={handleDeclineSubmit}
       />
       <ExcelExport
         ref={excelExportRef}

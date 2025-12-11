@@ -4,11 +4,11 @@ import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
-import SearchDropdown from "../common/SearchDropdown";
-import API_BASE_URL from "../../config";
+import ImageWithFallback from "../common/ImageWithFallback";
+import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import ProductSubCategoryModals from "./modal/ProductSubCategoryModals";
-const initialForm = { id: null, name: "", category: "", status: "1" };
+const initialForm = { id: null, name: "", category: "", status: "1", file: null };
 import ExcelExport from "../common/ExcelExport";
 import { DateRangePicker } from 'react-date-range';
 import 'react-date-range/dist/styles.css'; 
@@ -31,6 +31,7 @@ const ProductSubCategoryList = ({ getDeleted }) => {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [subCategoryToDelete, setSubCategoryToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -111,13 +112,22 @@ const ProductSubCategoryList = ({ getDeleted }) => {
     }
   };
 
-  const openForm = (editData = null) => {
+  const openForm = async (editData = null) => {
     setIsEditing(!!editData);
     setErrors({});
     if (editData) {
-      setFormData({ ...editData, status: String(editData.status) });
+      const res = await axios.get(`${API_BASE_URL}/sub_categories/${editData.id}`);
+      setFormData({ ...editData, status: String(editData.status), file_name: res.data.file_name, file: null });
+      setSelectedCategory(res.data.category);
+      setTimeout(() => {
+            if ($("#category").data("select2")) $("#category").val(res.data.category).trigger("change.select2");
+        }, 400);
     } else {
       setFormData(initialForm);
+      setSelectedCategory("");
+      setTimeout(() => {
+        if ($("#category").data("select2")) $("#category").val(null).trigger("change.select2");
+        }, 300);
     }
   };
 
@@ -125,6 +135,10 @@ const ProductSubCategoryList = ({ getDeleted }) => {
     setFormData(initialForm);
     setIsEditing(false);
     setErrors({});
+    setSelectedCategory('');
+    setTimeout(() => {
+  if ($("#category").data("select2")) $("#category").val(null);
+}, 100);
   };
 
   const handleChange = (e) => {
@@ -132,17 +146,24 @@ const ProductSubCategoryList = ({ getDeleted }) => {
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
   };
 
-  const handleSelectChange = (fieldName) => (selectedOption) => {
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: selectedOption ? selectedOption.value : "",
-    }));
+  const allowedImageTypes = ["image/jpeg", "image/png", "image/gif"];
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!allowedImageTypes.includes(file.type)) {
+        setErrors((prev) => ({ ...prev, file: "Please upload a valid image (JPG, PNG, GIF).", }));
+        setFormData((prev) => ({ ...prev, file: null, }));
+        return;
+      }
+      setErrors((prev) => ({ ...prev, file: null, }));
+      setFormData((prev) => ({ ...prev, file: file, file_name: file.name, }));
+    }
   };
 
   const validateForm = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = "Name is required";
-    if (!formData.category) errs.category = "Category is required";
+    if (!selectedCategory) errs.category = "Category is required";
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -152,15 +173,28 @@ const ProductSubCategoryList = ({ getDeleted }) => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    const selectedCategory = categories.find((c) => c.id.toString() === formData.category.toString());
-    const payload = { ...formData, category_name: selectedCategory?.name || "" };
+    const selectedCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
+    const payload = { ...formData, category: selectedCategory, category_name: selectedCategory?.name || "" };
     try {
       if (isEditing) {
-        await axios.put(`${API_BASE_URL}/sub_categories/${formData.id}`, payload);
-        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
+        await axios.put(`${API_BASE_URL}/sub_categories/${formData.id}`, payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        let updatedFileName = formData.file_name || null;
+        const updatedItem = await axios.get(`${API_BASE_URL}/sub_categories/${formData.id}`);
+        const newFileId = updatedItem.data.file_id;
+        if (newFileId && newFileId !== 0) {
+          const img = await axios.get(`${API_BASE_URL}/files/${newFileId}`);
+          updatedFileName = img.data.file;
+        }
+        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, file_id: newFileId, file_name: updatedFileName, updated_at: new Date().toISOString() } : item)));
       } else {
-        const res = await axios.post(`${API_BASE_URL}/sub_categories`, payload);
-        const payload1 = { ...res.data.subCategories, category_name: selectedCategory?.name || "" };
+        const res = await axios.post(`${API_BASE_URL}/sub_categories`, payload, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        const img = await axios.get(`${API_BASE_URL}/files/${res.data.subCategories.file_id}`);
+        const updatedFileName = img.data.file;
+        const payload1 = { ...res.data.subCategories, category_name: selectedCategory?.name || "", file_name: updatedFileName };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
@@ -186,6 +220,24 @@ const ProductSubCategoryList = ({ getDeleted }) => {
     };
     fetchCategories();
   }, []);
+
+  const handleCategoryChange = (event) => {
+      setSelectedCategory(event.target.value);
+    };
+    
+  useEffect(() => {
+            $('#category').select2({
+              theme: "bootstrap",
+              width: '100%',
+              placeholder: "Select category"
+            }).on("change", function () {
+              const icId = $(this).val();
+              handleCategoryChange({ target: { value: icId } });
+            });
+            return () => {
+              if ($('#category').data('select2')) {$('#category').select2('destroy') };
+            };
+          }, [categories]);
 
   const openDeleteModal = (subCategoriesId) => { setSubCategoryToDelete(subCategoriesId); setIsBulkDelete(false); setShowDeleteModal(true); };
   const openBulkDeleteModal = () => { setSubCategoryToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
@@ -347,15 +399,21 @@ const ProductSubCategoryList = ({ getDeleted }) => {
                     </div>
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="category" className="form-label required">Category</label>
-                      <SearchDropdown
+                      <select
+                        className="form-control"
                         id="category"
-                        options={categories?.map(cat => ({ value: cat.id, label: cat.name }))}
-                        value={formData.category}
-                        onChange={handleSelectChange("category")}
-                        placeholder="Select Category"
-                        className={`form-control ${errors.category ? "is-invalid" : ""}`}
-                      />
-                      {errors.category && <div className="text-danger small mt-1">{errors.category}</div>}
+                        value={selectedCategory}
+                        onChange={handleCategoryChange}
+                      >
+                        <option value="">Select Category</option>
+                        {categories?.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.category && (<div className="text-danger small">{errors.category} </div>
+                      )}
                     </div>
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="status" className="form-label required">Status</label>
@@ -370,6 +428,32 @@ const ProductSubCategoryList = ({ getDeleted }) => {
                       </select>
                       {errors.status && (<div className="invalid-feedback">{errors.status}</div>
                       )}
+                    </div>
+                    <div className="form-group col-md-12 mb-3">
+                      <label htmlFor="file" className="form-label">Sub Category Image</label>
+                      <input
+                        type="file"
+                        className="form-control"
+                        id="file"
+                        onChange={handleFileChange}
+                      />
+                      {/* {errors.file && <div className="invalid-feedback">{errors.file}</div>} */}
+                      {formData.file ? (
+                        <img
+                          src={URL.createObjectURL(formData.file)}
+                          className="img-preview object-fit-cover mt-3"
+                          width={150}
+                          height={150}
+                          alt="Preview"
+                        />
+                      ) : formData.file_name ? (
+                        <ImageWithFallback
+                          src={`${ROOT_URL}/${formData.file_name}`}
+                          width={150}
+                          height={150}
+                          showFallback={false}
+                        />
+                      ) : null}
                     </div>
                     <div className="d-flex justify-content-between">
                       <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
@@ -464,6 +548,7 @@ const ProductSubCategoryList = ({ getDeleted }) => {
                     columns={[
                       ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),
                       { key: "id", label: "S.No.", sortable: true },
+                      { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
                       { key: "category_name", label: "Category", sortable: true },
                       { key: "status", label: "Status", sortable: false },
@@ -491,6 +576,12 @@ const ProductSubCategoryList = ({ getDeleted }) => {
                         </td>
                         )}
                         <td>{(page - 1) * limit + index + 1}</td>
+                        <td><ImageWithFallback
+                          src={`${ROOT_URL}/${row.file_name}`}
+                          width={50}
+                          height={50}
+                          showFallback={true}
+                        /></td>
                         <td>{row.name}</td>
                         <td>{row.category_name}</td>
                         <td>

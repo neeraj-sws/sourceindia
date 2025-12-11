@@ -335,9 +335,9 @@ const TicketList = () => {
     setTicketTitle("");
     setTempTicketTitle("");
     setStatusFilter('');
-setPriorityFilter('');
-setAppliedStatusFilter('');
-setAppliedPriorityFilter('');
+    setPriorityFilter('');
+    setAppliedStatusFilter('');
+    setAppliedPriorityFilter('');
     setSelectedFilterCategories("");
     setAppliedFilterCategories("");
     setPage(1);
@@ -358,8 +358,7 @@ setAppliedPriorityFilter('');
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb mainhead="Ticket" maincount={totalRecords} page="Settings" title="Ticket" add_button={<><i className="bx bxs-plus-square me-1" /> Add Ticket</>} add_link="#" onClick={() => openForm()}
-          actions={<button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>}
-          />
+          actions={<button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>} />
           <div className="row">
             <div className="col-md-4">
               <div className="card">
@@ -480,7 +479,7 @@ setAppliedPriorityFilter('');
               </div>
             </div>
             <div className="col-md-8">
-              <div className="card">
+              <div className="card mb-3">
                 <div className="card-body">
                   <div className="row mb-3">
                     <div className="col-md-6 mb-3">
@@ -591,6 +590,10 @@ setAppliedPriorityFilter('');
                       <button className="btn btn-secondary" onClick={() => { clearFilters(); }}>Clear</button>
                     </div>
                   </div>
+                </div>
+              </div>
+              <div className="card">
+                <div className="card-body">
                   <DataTable
                     columns={[
                       { key: "id", label: "S.No.", sortable: true },

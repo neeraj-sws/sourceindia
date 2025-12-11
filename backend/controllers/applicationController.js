@@ -132,7 +132,7 @@ exports.deleteApplications = async (req, res) => {
 
     const fileId = applications.cat_file_id;
     await applications.destroy();
-    if (fileId) {
+    if (fileId && fileId !== 0) {
       const uploadImage = await UploadImage.findByPk(fileId);
       if (uploadImage) {
         const oldImagePath = path.resolve(uploadImage.file);

@@ -124,7 +124,7 @@ exports.deleteTestimonials = async (req, res) => {
     const testimonials = await Testimonials.findByPk(req.params.id);
     if (!testimonials) return res.status(404).json({ message: 'Testimonials not found' });
 
-    if (testimonials.file_id) {
+    if (testimonials.file_id && testimonials.file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(testimonials.file_id);
       if (uploadImage) {
         const oldImagePath = path.resolve(uploadImage.file);        

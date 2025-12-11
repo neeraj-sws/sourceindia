@@ -1,22 +1,33 @@
 const { Op, fn, col, literal } = require('sequelize');
+const fs = require('fs');
+const path = require('path');
 const moment = require('moment');
 const sequelize = require('../config/database');
 const SubCategories = require('../models/SubCategories');
 const Categories = require('../models/Categories');
 const Products = require('../models/Products');
 const CompanyInfo = require('../models/CompanyInfo');
+  const UploadImage = require('../models/UploadImage');
+  const getMulterUpload = require('../utils/upload');
 
 exports.createSubCategories = async (req, res) => {
+  const upload = getMulterUpload('category');
+  upload.single('file')(req, res, async (err) => {
+    if (err) return res.status(500).json({ error: err.message });
   try {
     const { name, category, status } = req.body;
     /*if (!name || !category || !status) {
         return res.status(400).json({ message: 'All fields (name, category, status) are required' });
       }*/
-    const subCategories = await SubCategories.create({ name, category, status });
+    const uploadImage = await UploadImage.create({
+        file: `upload/category/${req.file.filename}`,
+      });
+    const subCategories = await SubCategories.create({ name, category, status, file_id: uploadImage.id });
     res.status(201).json({ message: 'Sub Category created', subCategories });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+  });
 };
 
 exports.getAllSubCategories = async (req, res) => {
@@ -45,9 +56,18 @@ exports.getAllSubCategories = async (req, res) => {
 
 exports.getSubCategoriesById = async (req, res) => {
   try {
-    const subCategories = await SubCategories.findByPk(req.params.id);
+    const subCategories = await SubCategories.findByPk(req.params.id, {
+      include: [{
+        model: UploadImage,
+        attributes: ['file'],
+      }],
+    });
     if (!subCategories) return res.status(404).json({ message: 'Sub Category not found' });
-    res.json(subCategories);
+    const response = {
+      ...subCategories.toJSON(),
+      file_name: subCategories.UploadImage ? subCategories.UploadImage.file : null,
+    };
+    res.json(response);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -157,11 +177,45 @@ exports.getSubCategoriesCount = async (req, res) => {
 };
 
 exports.updateSubCategories = async (req, res) => {
+  const upload = getMulterUpload('category');
+  upload.single('file')(req, res, async (err) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
   try {
     const { name, category, status } = req.body;
     const subCategories = await SubCategories.findByPk(req.params.id);
     if (!subCategories) return res.status(404).json({ message: 'Sub Category not found' });
-
+    const uploadDir = path.resolve('upload/category');
+    if (!fs.existsSync(uploadDir)) {
+      console.log("Directory does not exist, creating:", uploadDir);
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    const file_id = subCategories.file_id;
+    if (req.file) {
+      if (file_id) {
+        const existingImage = await UploadImage.findByPk(file_id);
+        if (existingImage) {
+          const oldImagePath = path.resolve(existingImage.file);
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+          }
+          existingImage.file = `upload/category/${req.file.filename}`;
+          existingImage.updated_at = new Date();
+          await existingImage.save();
+        } else {
+          const newImage = await UploadImage.create({
+            file: `upload/category/${req.file.filename}`,
+          });
+          subCategories.file_id = newImage.id;
+        }
+      } else {
+        const newImage = await UploadImage.create({
+          file: `upload/category/${req.file.filename}`,
+        });
+        subCategories.file_id = newImage.id;
+      }
+    }
     subCategories.name = name;
     subCategories.category = category;
     subCategories.status = status;
@@ -172,13 +226,23 @@ exports.updateSubCategories = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+  });
 };
 
 exports.deleteSubCategories = async (req, res) => {
   try {
     const subCategories = await SubCategories.findByPk(req.params.id);
     if (!subCategories) return res.status(404).json({ message: 'Sub Category not found' });
-
+    if (subCategories.file_id && subCategories.file_id !== 0) {
+      const uploadImage = await UploadImage.findByPk(subCategories.file_id);
+      if (uploadImage) {
+        const oldImagePath = path.resolve(uploadImage.file);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+        await uploadImage.destroy();
+      }
+    }
     await subCategories.destroy();
     res.json({ message: 'Sub Category deleted successfully' });
   } catch (err) {
@@ -351,11 +415,14 @@ exports.getAllSubCategoriesServerSide = async (req, res) => {
       offset,
       include: [
         { model: Categories, attributes: ['name'], as: 'Categories' },
+        { model: UploadImage, attributes: ['file'] }
       ],
     });
     const mappedRows = rows.map(row => ({
       id: row.id,
       name: row.name,
+      file_id: row.file_id,
+      file_name: row.UploadImage ? row.UploadImage.file : null,
       category: row.category,
       category_name: row.Categories ? row.Categories.name : null,
       status: row.status,

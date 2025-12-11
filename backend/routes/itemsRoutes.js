@@ -3,6 +3,7 @@ const router = express.Router();
 const itemsController = require('../controllers/itemsController');
 
 router.post('/', itemsController.createItems);
+router.get('/count', itemsController.getItemsCount);
 router.get('/', itemsController.getAllItems);
 router.get('/server-side', itemsController.getAllItemsServerSide);
 router.delete('/delete-selected', itemsController.deleteSelectedItems);

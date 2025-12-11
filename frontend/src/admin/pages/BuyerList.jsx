@@ -347,6 +347,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     setShowPicker(false);
   };
 
+<<<<<<< HEAD
 
 
   const openMailPopup = async (type) => {
@@ -416,6 +417,20 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
   };
 
 
+=======
+  const handleImpersonateLogin = async (userId) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/signup/impersonate-login`, { userId });
+      if (response.data.token) {
+        const url = `${window.location.origin}/impersonate?token=${response.data.token}`;
+        window.open(url, "_blank");
+      }
+    } catch (error) {
+      console.error("Impersonation login failed", error);
+    }
+  };
+
+>>>>>>> praveen-14-11-25
   return (
     <>
       <div className="page-wrapper">
@@ -574,10 +589,18 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                   { key: "user_company", label: "Company", sortable: true },
                   { key: "address", label: "Location", sortable: true },
                   ...(!getDeleted ? [
+<<<<<<< HEAD
                     { key: "status", label: "User Status", sortable: false },
                     { key: "account_status", label: "Account Status", sortable: false },
                     { key: "seller_status", label: "Make Seller", sortable: false },
                   ] : []),
+=======
+                  { key: "status", label: "User Status", sortable: false },
+                  { key: "account_status", label: "Account Status", sortable: false },
+                  { key: "seller_status", label: "Make Seller", sortable: false },
+                  ]:[]),
+                  { key: "user_category", label: "User Category", sortable: true },
+>>>>>>> praveen-14-11-25
                   { key: "created_at", label: "Created", sortable: true },
                   { key: "updated_at", label: "Last Update", sortable: true },
                   { key: "action", label: "Action", sortable: false },
@@ -606,7 +629,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                     <td><Link to={`/admin/buyer/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
                     <td>{row.full_name}<br />{row.email}<br />{row.mobile}<br />{row.is_trading == 1 ? (<span className="badge bg-success">Trader</span>) : ("")}</td>
                     <td><a href={`/companies/${row.company_slug}`} target="_blank">{row.user_company}</a><br />{row.walkin_buyer == 1 ? (<span className="badge bg-primary">Walk-In Buyer</span>) : ("")}</td>
-                    <td>{row.address}</td>
+                    <td>{row.country_name}<br />{row.state_name}<br />{row.city_name}<br /></td>
                     {!getDeleted && (
                       <>
                         <td>
@@ -644,7 +667,8 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                         </td>
                       </>
                     )}
-                    <td>{formatDateTime(row.created_at)}</td>
+                    <td>{row.user_category}</td>
+                    <td>{formatDateTime(row.created_at)}</td>                    
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>
                       <div className="dropdown">
@@ -655,6 +679,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                           {!getDeleted ? (
                             <>
                               <li>
+<<<<<<< HEAD
                                 <button
                                   className="dropdown-item"
                                   onClick={async () => {
@@ -675,6 +700,9 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                                     }
                                   }}
                                 >
+=======
+                                <button className="dropdown-item" onClick={() =>handleImpersonateLogin(row.id)}>
+>>>>>>> praveen-14-11-25
                                   <i className="bx bx-log-in me-2"></i> Login
                                 </button>
                               </li>

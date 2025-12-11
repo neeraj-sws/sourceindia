@@ -42,6 +42,7 @@ import EnquiryList from '../pages/EnquiryList';
 import MyAllEnquiryChat from '../pages/MyAllEnquiryChat';
 import TermsConditions from '../pages/TermsConditions';
 import PrivacyPolicy from '../pages/PrivacyPolicy';
+import Impersonate from '../pages/Impersonate';
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -106,6 +107,7 @@ function FrontLayout() {
               <Route path="/ticket/view/:number" element={<TicketView />} />
               <Route path="/terms_conditions" element={<TermsConditions />} />
               <Route path="/privacy_policy" element={<PrivacyPolicy />} />
+              <Route path="/impersonate" element={<Impersonate />} />
             </Routes>
           </main>
           {isUserLayout ? <UserFooter /> : <FrontFooter />}

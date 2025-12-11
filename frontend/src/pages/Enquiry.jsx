@@ -29,26 +29,30 @@ const Enquiry = () => {
 
   // Fetch Enquiries
   const fetchEnquiries = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams({
-        is_home: "1",
-        is_delete: "0",
-      });
+  setIsLoading(true);
+  const delay = new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
 
-      if (activeTab === "my" && user?.id) {
-        params.append("user_id", user.id);
-      }
+  try {
+    const params = new URLSearchParams({
+      is_home: "1",
+      is_delete: "0",
+    });
 
-      const url = `${API_BASE_URL}/open_enquiries/front-enquiry?${params.toString()}`;
-      const response = await axios.get(url);
-      setEnquiries(response.data);
-    } catch (error) {
-      console.error("Error fetching enquiries:", error);
-    } finally {
-      setIsLoading(false);
+    if (activeTab === "my" && user?.id) {
+      params.append("user_id", user.id);
     }
-  }, [activeTab, user]);
+
+    const url = `${API_BASE_URL}/open_enquiries/front-enquiry?${params.toString()}`;
+    const responsePromise = axios.get(url);
+
+    const [response] = await Promise.all([responsePromise, delay]); // wait for both
+    setEnquiries(response.data);
+  } catch (error) {
+    console.error("Error fetching enquiries:", error);
+  } finally {
+    setIsLoading(false);
+  }
+}, [activeTab, user]);
 
   useEffect(() => {
     fetchEnquiries();
@@ -88,6 +92,67 @@ const Enquiry = () => {
   const handleEnquiryAdded = () => {
     fetchEnquiries();
   };
+
+  const EnquirySkeletonLoader = ({ count = 6 }) => {
+  const items = Array.from({ length: count });
+
+  return (
+    <>
+      {items.map((_, i) => (
+        <div key={i} className="col-lg-4 col-md-6 mb-4">
+          <div className="card h-100 border shadow-sm">
+            {/* Header Skeleton */}
+            <div className="card-header bg-white d-flex gap-2 align-items-center">
+              <div
+                className="compnaylogo"
+                style={{
+                  width: 90,
+                  height: 60,
+                  backgroundColor: "#eee",
+                  borderRadius: 4,
+                }}
+              ></div>
+              <div className="flex-grow-1">
+                <span
+                  className="content-placeholder"
+                  style={{ width: "80%", height: 18, display: "block", marginBottom: 6 }}
+                ></span>
+                <span
+                  className="content-placeholder"
+                  style={{ width: "50%", height: 12, display: "block" }}
+                ></span>
+              </div>
+            </div>
+
+            {/* Body Skeleton */}
+            <div className="card-body p-3">
+              <span
+                className="content-placeholder"
+                style={{ width: "100%", height: 12, display: "block", marginBottom: 8 }}
+              ></span>
+              <span
+                className="content-placeholder"
+                style={{ width: "60%", height: 12, display: "block", marginBottom: 8 }}
+              ></span>
+              <span
+                className="content-placeholder"
+                style={{ width: "70%", height: 12, display: "block" }}
+              ></span>
+            </div>
+
+            {/* Footer Skeleton */}
+            <div className="card-footer text-center">
+              <span
+                className="content-placeholder"
+                style={{ width: "50%", height: 32, display: "inline-block" }}
+              ></span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+};
 
   return (
     <>
@@ -131,10 +196,8 @@ const Enquiry = () => {
 
           {/* Loading or List */}
           {isLoading ? (
-            <div className="text-center py-5">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
+            <div className="row">
+              <EnquirySkeletonLoader count={6} />
             </div>
           ) : enquiries.length === 0 ? (
             <div className="text-center py-5">

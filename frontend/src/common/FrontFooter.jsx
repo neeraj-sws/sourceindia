@@ -105,16 +105,13 @@ const FrontFooter = () => {
 
             <div className="col-md-4 footer-border">
               <p className="footer-section-title">Contact Us</p>
-              <p className="mb-1">
-                <i className="bi bi-telephone"></i> {footerData.contactphone_1} / {footerData.contactphone_2}
+              <p className="d-flex mb-1">
+                <i className="bx bx-phone me-1"></i> <Link to={`tel:${footerData.contactphone_1}`} className="d-inline-block">{`tel:${footerData.contactphone_1}`}</Link> / <Link to={`tel:${footerData.contactphone_2}`} className="d-inline-block">{footerData.contactphone_2}</Link>
               </p>
-              <p className="mb-1">
-                <i className="bi bi-envelope"></i> {footerData.contactemail}
+              <p className="d-flex mb-1">
+                <i className="bx bx-envelope me-1"></i> <Link to={`mailto:${footerData.contactemail}`} className="d-inline-block">{footerData.contactemail}</Link>
               </p>
-              <div
-                className="mb-2"
-                dangerouslySetInnerHTML={{ __html: footerData.contactaddress }}
-              ></div>
+              <div className="d-flex"><i className="bx bx-map me-1"></i> <Link to={footerData.contact_map_url}><div className="mb-2" dangerouslySetInnerHTML={{ __html: footerData.contactaddress }} /></Link></div>
 
               <div className="social-icons">
                 <a href={footerData.facebook_url} target="_blank" rel="noopener noreferrer"><i className="bi bi-facebook"></i></a>

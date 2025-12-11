@@ -848,6 +848,25 @@ exports.verifyEmail = async (req, res) => {
       otp,
       password: hashedPassword,
       real_password: password,
+      fname: "",
+  lname: "",
+  step: 0,
+  mode: 0,
+  country: "",
+  state: "",
+  city: "",
+  address: "",
+  remember_token: "",
+  is_seller: 0,
+  status: 1,
+  payment_status: 1,
+  is_approve: 0,
+  is_email_verify: 0,
+  featured_company: 0,
+  is_intrest: 0,
+  website: "",
+  products: "",
+  request_admin: 0,
     });
     await newUser.save();
     await sendOtpEmail(email, otp);
@@ -1729,4 +1748,221 @@ exports.getEnquiriesByEnquiryServerSide = async (req, res) => {
   }
 };
 
+exports.getFilteredEnquiries = async (req, res) => {
+  try {
+    const {
+      enquiry_number,
+      category_name,
+      sub_category_name,
+      company_id,
+      dateRange = '',
+      startDate,
+      endDate
+    } = req.query;
 
+    // Base where condition
+    const where = {
+      is_delete: 0,
+    };
+
+    if (enquiry_number) where.enquiry_number = { [Op.like]: `%${enquiry_number}%` };
+    if (category_name) where.category_name = { [Op.like]: `%${category_name}%` };
+    if (sub_category_name) where.sub_category_name = { [Op.like]: `%${sub_category_name}%` };
+    if (company_id) where.company_id = company_id;
+
+    // Date filter
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      where.created_at = dateCondition;
+    }
+
+    // Fetch companies with associations
+    const companies = await Enquiries.findAll({
+      where,
+      include: [
+        {
+          model: Users,
+          as: 'to_user',
+          attributes: ['id'],
+          include: [
+            { model: CompanyInfo, as: 'company_info', attributes: ['organization_name'] },
+          ]
+        }
+      ]
+    });
+
+    // Map the results
+    const data = companies.map(company => {
+      const s = company.toJSON();
+
+      return {
+        id: s.id,
+        enquiry_number: s.enquiry_number,
+        category_name: s.category_name,
+        sub_category_name: s.sub_category_name,
+        company_name: s.to_user?.company_info?.organization_name || 'NA',
+        created_at: s.created_at
+      };
+    });
+
+    res.json(data);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.sendMessage = async (req, res) => {
+  try {
+    const { logged_in_user_id, company_id, title, message, receiver_name } = req.body;
+
+    const sender = await Users.findByPk(logged_in_user_id);
+    if (!sender) return res.status(404).json({ message: "User not found" });
+
+    // get company user
+    const companyUser = await Users.findOne({ where: { company_id } });
+    if (!companyUser) return res.status(404).json({ message: "Company user not found" });
+
+    // email format template
+    const html = `
+    <div style="background-color:#fff; padding:10px; margin:15px; border:1px dashed #ccc;">
+        <p>Dear ${receiver_name},</p>
+        <p style="text-align:right;">You have received a new message from user ${sender.fname} ${sender.lname}</p>
+        <p>${title}</p>
+        <p style="text-align:center;">${message}</p>
+    </div>
+    `;
+
+    const { transporter } = await getTransporter();
+
+    await transporter.sendMail({
+      from: `"SourceIndia Electronics" <info@sourceindia-electronics.com>`,
+      to: companyUser.email,
+      subject: title,
+      html
+    });
+
+    return res.status(200).json({ message: "Mail sent successfully" });
+
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getNextUnapprovedEnquiry = async (req, res) => {
+  try {
+    const { enquiry_number } = req.params;
+
+    const current = await Enquiries.findOne({
+      where: { enquiry_number }
+    });
+
+    if (!current) return res.json({ next: null });
+
+    // NEXT in DESC list = smaller id
+    const next = await Enquiries.findOne({
+      where: {
+        is_approve: 0,
+        is_delete: 0,
+        id: { [Op.lt]: current.id }
+      },
+      order: [['id', 'DESC']]   // Because list is descending
+    });
+
+    res.json({ next: next ? next.enquiry_number : null });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getPreviousUnapprovedEnquiry = async (req, res) => {
+  try {
+    const { enquiry_number } = req.params;
+
+    const current = await Enquiries.findOne({
+      where: { enquiry_number }
+    });
+
+    if (!current) return res.json({ prev: null });
+
+    // PREVIOUS in DESC list = larger id
+    const prev = await Enquiries.findOne({
+      where: {
+        is_approve: 0,
+        is_delete: 0,
+        id: { [Op.gt]: current.id }
+      },
+      order: [['id', 'ASC']]   // Smallest greater ID first
+    });
+
+    res.json({ prev: prev ? prev.enquiry_number : null });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.updateEnquiriesApproveStatus = async (req, res) => {
+  try {
+    const { is_approve } = req.body;
+    if (is_approve !== 0 && is_approve !== 1) {
+      return res.status(400).json({ message: 'Invalid account status. Use 1 (Active) or 0 (Deactive).' });
+    }
+    const enquiries = await Enquiries.findByPk(req.params.id);
+    if (!enquiries) return res.status(404).json({ message: 'Enquiries not found' });
+    enquiries.is_approve = is_approve;
+    await enquiries.save();
+    res.json({ message: 'Approve status updated', enquiries });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

@@ -524,7 +524,7 @@ $('#item_id')
                           >
                             <option value="">Select user</option>
                             {sellers?.map((user) => (
-                              <option key={user.id} value={user.id}>{user.fname + " " + user.lname}</option>
+                              <option key={user.id} value={user.id}>{user.company_name}</option>
                             ))}
                           </select>
                           {errors.user_id && (<div className="text-danger small">{errors.user_id}</div>)}
@@ -570,6 +570,16 @@ $('#item_id')
                               onChange={(e) => handleCheckboxChange('is_gold', e.target.checked)}
                             />
                             <label className="form-check-label" htmlFor="is_gold">Gold</label>
+                          </div>
+                          <div className="form-check form-check-inline">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id="is_featured"
+                              checked={formData.is_featured === 1}
+                              onChange={(e) => handleCheckboxChange('is_featured', e.target.checked)}
+                            />
+                            <label className="form-check-label" htmlFor="is_featured">Featured</label>
                           </div>
                           <div className="form-check form-check-inline">
                             <input
@@ -737,7 +747,7 @@ $('#item_id')
                       <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
                         <i className="bx bxs-plus-square me-1" />Add Image
                       </button>
-                      {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
+                      {errors.file && (<div className="text-danger small mt-1">{errors.file}</div>)}
                     </div>
                     <div className="col-md-12">
                       <div className="mt-3 d-flex flex-wrap">

@@ -45,13 +45,13 @@ exports.createBuyer = async (req, res) => {
         fname, lname, email, password, mobile, country, state, city, zipcode,
         user_company, website, is_trading, elcina_member, address, status, is_approve, step, products, is_seller,
         mode, real_password, remember_token, payment_status, is_email_verify, featured_company, user_category,
-        organization_name, company_website, organizations_product_description, is_star_seller, is_verified
+        organization_name, company_website, organizations_product_description, is_star_seller, is_verified, is_intrest, request_admin,
       } = req.body;
-      if (!fname || !lname || !email || !password || !mobile || !country || !state || !city || !zipcode ||
-          !user_company || !website || !is_trading || !elcina_member || !address || !products) {
-        deleteUploadedFiles();
-        return res.status(400).json({ message: 'Missing required user fields.' });
-      }
+      // if (!fname || !lname || !email || !password || !mobile || !country || !state || !city || !zipcode ||
+      //     !user_company || !website || !is_trading || !elcina_member || !address || !products) {
+      //   deleteUploadedFiles();
+      //   return res.status(400).json({ message: 'Missing required user fields.' });
+      // }
       if (!validator.isEmail(email)) {
         deleteUploadedFiles();
         return res.status(400).json({ error: 'Invalid email format' });
@@ -92,6 +92,9 @@ exports.createBuyer = async (req, res) => {
         is_seller: 0,
         file_id: profileImage.id,
         company_file_id: companyLogoImage.id,
+        is_complete: is_complete || 1,
+        is_intrest: is_intrest || 0,
+        request_admin: request_admin || 0,
       });
       const companyInfo = await CompanyInfo.create({
         organization_name: user_company,
@@ -566,7 +569,10 @@ exports.getAllBuyerServerSide = async (req, res) => {
         { email: { [Op.like]: `%${search}%` } },
         { mobile: { [Op.like]: `%${search}%` } },
         { '$company_info.organization_name$': { [Op.like]: `%${search}%` } },
-        // { '$company_info.user_category$': { [Op.like]: `%${search}%` } },
+        { '$company_info.user_category$': { [Op.like]: `%${search}%` } },
+        { '$country_data.name$': { [Op.like]: `%${search}%` } },
+        { '$state_data.name$': { [Op.like]: `%${search}%` } },
+        { '$city_data.name$': { [Op.like]: `%${search}%` } }
       ];
     }
     if (customerId) {
@@ -646,12 +652,17 @@ exports.getAllBuyerServerSide = async (req, res) => {
         { model: UploadImage, as: 'file', attributes: ['file'] },
         { model: UploadImage, as: 'company_file', attributes: ['file'] },
         { model: CompanyInfo, as: 'company_info', attributes: ['organization_name', 'organization_slug', 'user_category'] },
+        { model: Countries, as: 'country_data', attributes: ['name'] },
+        { model: States, as: 'state_data', attributes: ['name'] },
+        { model: Cities, as: 'city_data', attributes: ['name'] },
       ],
     });
     const mappedRows = rows.map(row => ({
       id: row.id,
       full_name: `${row.fname} ${row.lname}`,
       email: row.email,
+      password: row.password,
+      remember_token: row.remember_token,
       file_id: row.file_id,
       file_name: row.file ? row.file.file : null,
       company_file_id: row.company_file_id,
@@ -661,6 +672,9 @@ exports.getAllBuyerServerSide = async (req, res) => {
       country: row.country,
       state: row.state,
       city: row.city,
+      country_name: row.country_data?.name || 'NA',
+      state_name: row.state_data?.name || 'NA',
+      city_name: row.city_data?.name || 'NA',
       zipcode: row.zipcode,
       user_company: row.company_info ? row.company_info.organization_name : null,
       company_slug: row.company_info ? row.company_info.organization_slug : null,
@@ -682,6 +696,150 @@ exports.getAllBuyerServerSide = async (req, res) => {
       totalRecords,
       filteredRecords,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getFilteredBuyers = async (req, res) => {
+  try {
+    const {
+      fname,
+      lname,
+      email,
+      mobile,
+      zipcode,
+      company_id,
+      member_role,
+      status,
+      is_approve,
+      state,
+      city,
+      dateRange = '',
+      startDate,
+      endDate
+    } = req.query;
+
+    // Base where condition
+    const where = {
+      is_seller: 0,
+      is_delete: 0
+    };
+
+    if (fname) where.fname = { [Op.like]: `%${fname}%` };
+    if (lname) where.lname = { [Op.like]: `%${lname}%` };
+    if (email) where.email = { [Op.like]: `%${email}%` };
+    if (mobile) where.mobile = { [Op.like]: `%${mobile}%` };
+    if (zipcode) where.zipcode = { [Op.like]: `%${zipcode}%` };
+    if (company_id) where.company_id = company_id;
+    if (member_role) where.member_role = member_role;
+    if (status) where.status = status;
+    if (is_approve) where.is_approve = is_approve;
+    if (state) where.state = state;
+    if (city) where.city = city;
+
+    // Date filter
+    let dateCondition = null;
+    if (dateRange) {
+      const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
+      const today = moment().startOf('day');
+      const now = moment();
+      if (range === 'today') {
+        dateCondition = {
+          [Op.gte]: today.toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'yesterday') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'day').startOf('day').toDate(),
+          [Op.lte]: moment().subtract(1, 'day').endOf('day').toDate(),
+        };
+      } else if (range === 'last7days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'last30days') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'thismonth') {
+        dateCondition = {
+          [Op.gte]: moment().startOf('month').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      } else if (range === 'lastmonth') {
+        dateCondition = {
+          [Op.gte]: moment().subtract(1, 'month').startOf('month').toDate(),
+          [Op.lte]: moment().subtract(1, 'month').endOf('month').toDate(),
+        };
+      } else if (range === 'customrange' && startDate && endDate) {
+        dateCondition = {
+          [Op.gte]: moment(startDate).startOf('day').toDate(),
+          [Op.lte]: moment(endDate).endOf('day').toDate(),
+        };
+      } else if (!isNaN(range)) {
+        const days = parseInt(range);
+        dateCondition = {
+          [Op.gte]: moment().subtract(days - 1, 'days').startOf('day').toDate(),
+          [Op.lte]: now.toDate(),
+        };
+      }
+    }
+    if (dateCondition) {
+      where.created_at = dateCondition;
+    }
+
+    // Fetch buyers with associations
+    const buyers = await Users.findAll({
+      where,
+      include: [
+        { model: Countries, as: 'country_data', attributes: ['name'] },
+        { model: States, as: 'state_data', attributes: ['name'] },
+        { model: Cities, as: 'city_data', attributes: ['name'] },
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['organization_name', 'designation'],
+          include: [
+            { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
+            { model: Activity, as: 'Activity', attributes: ['name'] },
+          ]
+        }
+      ]
+    });
+
+    // Map the results
+    const data = buyers.map(buyer => {
+      const s = buyer.toJSON();
+
+      return {
+        id: s.id,
+        full_name: `${s.fname} ${s.lname}`,
+        fname: s.fname,
+        lname: s.lname,
+        email: s.email,
+        mobile: s.mobile,
+        address: s.address,
+        zipcode: s.zipcode,
+        country_name: s.country_data?.name || 'NA',
+        state_name: s.state_data?.name || 'NA',
+        city_name: s.city_data?.name || 'NA',
+        organization_name: s.company_info?.organization_name || null,
+        designation: s.company_info?.designation || null,
+        coreactivity_name: s.company_info?.CoreActivity?.name || 'NA',
+        activity_name: s.company_info?.Activity?.name || 'NA',
+        status: s.status==1?'Active':'Inactive',
+        is_approve: s.is_approve==1?'Approved':'Pending',
+        member_role: s.member_role==1?'Admin':'',
+        created_at: s.created_at
+      };
+    });
+
+    res.json(data);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

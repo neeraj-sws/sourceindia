@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from './../config';
 import ImageWithFallback from "../admin/common/ImageWithFallback";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import UseAuth from '../sections/UseAuth';
+import ConnectForm from "./ConnectForm";
 
 const CompaniesFilter = ({ isSeller, isTrading }) => {
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -27,7 +30,9 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
   const [scrollLoading, setScrollLoading] = useState(false);
   const [sortBy, setSortBy] = useState('');
   const [viewMode, setViewMode] = useState("grid");
-
+  const { user } = UseAuth();
+  const [showModal, setShowModal] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState(null);
 
   useEffect(() => {
     const searchValue = searchParams.get('search');
@@ -45,7 +50,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     state.name.toLowerCase().includes(statesSearchTerm)
   );
   const filteredSourcingInterest = sourcingInterest.filter(sic =>
-    sic.category_name.toLowerCase().includes(sourcingInterestSearchTerm)
+    sic.name.toLowerCase().includes(sourcingInterestSearchTerm)
   );
 
   useEffect(() => {
@@ -105,7 +110,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
       try {
         const res = await axios.get(`${API_BASE_URL}/interest_sub_categories/count_relation`);
         const isc = res.data || [];
-        const filtered = isc.filter(si => si.product_count > 0);
+        const filtered = isc.filter(si => si.company_count > 0);
         setSourcingInterest(filtered);
       } catch (err) {
         console.error('Error fetching Sourcing Interest:', err);
@@ -113,6 +118,8 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     };
     fetchSourcingInterest();
   }, []);
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const fetchCompanies = async (pageNumber = 1, append = false) => {
     if ((append && scrollLoading) || (!append && loading)) return;
@@ -135,6 +142,9 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
       }
       if (selectedStates.length > 0) {
         url += `&user_state=${selectedStates.join(',')}`;
+      }
+      if (selectedSourcingInterest.length > 0) {
+        url += `&interest_sub_categories=${selectedSourcingInterest.join(',')}`;
       }
       if (sortBy) {
         url += `&sort_by=${sortBy}`;
@@ -160,6 +170,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     } catch (err) {
       console.error('Error fetching companies:', err);
     } finally {
+      await sleep(1000);
       append ? setScrollLoading(false) : setLoading(false);
     }
   };
@@ -233,6 +244,71 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     const item = array.find(el => el.id === id);
     return item ? item.name : '';
   };
+
+  const CompanySkeletonLoader = ({ count = 6, viewMode = "grid" }) => {
+  const items = Array.from({ length: count });
+
+  return (
+    <>
+      {items.map((_, index) => (
+        <div
+          key={index}
+          className={viewMode === "grid" ? "col-12 col-sm-6" : "col-12"}
+        >
+          <div
+            className={`card shadow-sm border p-3 h-100 ${
+              viewMode === "list" ? "flex-row" : ""
+            }`}
+          >
+            {/* Logo */}
+            <div className="me-3 text-center">
+              <div
+                className="content-placeholder rounded"
+                style={{
+                  width: viewMode === "list" ? 100 : 180,
+                  height: viewMode === "list" ? 100 : 180,
+                }}
+              />
+            </div>
+
+            {/* Details */}
+            <div style={{ flex: 1 }}>
+              <div
+                className="content-placeholder mb-2"
+                style={{ width: "60%", height: 14 }}
+              ></div>
+
+              <div
+                className="content-placeholder mb-2"
+                style={{ width: "40%", height: 12 }}
+              ></div>
+
+              <div
+                className="content-placeholder mb-2"
+                style={{ width: "70%", height: 12 }}
+              ></div>
+
+              <div
+                className="content-placeholder mb-2"
+                style={{ width: "50%", height: 12 }}
+              ></div>
+
+              <div
+                className="content-placeholder mb-3"
+                style={{ width: "80%", height: 12 }}
+              ></div>
+
+              <div
+                className="content-placeholder"
+                style={{ width: "100%", height: 35 }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+};
 
   return (
     <div className="container my-4">
@@ -364,6 +440,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                   />
                 </div>
                 <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSourcingInterest.length >= 5 ? 'auto' : 'visible' }}>
+                  
                   {filteredSourcingInterest.map(sic => (
                     <div className="form-check mb-2" >
                       <input
@@ -374,7 +451,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                         onChange={() => handleSourcingInterestCheckboxChange(sic.id)}
                       />
                       <label htmlFor={`sic-${sic.id}`} className="form-check-label text-capitalize">
-                        {sic.category_name} ({sic.product_count})
+                        {sic.name} ({sic.company_count})
                       </label>
                     </div>
                   ))}
@@ -462,7 +539,8 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
           </div>
           {(selectedCategories.length > 0 ||
             selectedSubCategories.length > 0 ||
-            selectedStates.length > 0) && (
+            selectedStates.length > 0 ||
+            selectedSourcingInterest.length > 0) && (
               <div className="mb-3 border px-3 py-2 bg-white rounded-2">
                 <strong className="pb-2">Filter:</strong>
                 <div className="d-flex align-items-baseline justify-content-between gap-2 mb-2">
@@ -500,12 +578,24 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                         />
                       </span>
                     ))}
+                    {selectedSourcingInterest.map(id => (
+                      <span className="badge bg-warning text-white d-flex align-items-center">
+                        {getNameById(sourcingInterest, id)}
+                        <button
+                          onClick={() => handleSourcingInterestCheckboxChange(id)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
                   </div>
                   <button
                     onClick={() => {
                       setSelectedCategories([]);
                       setSelectedSubCategories([]);
                       setSelectedStates([]);
+                      setSelectedSourcingInterest([]);
                     }}
                     className="btn btn-sm btn-outline-danger text-nowrap" style={{
                       padding: '0.188rem 0.625rem'
@@ -519,9 +609,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
 
           <div className={`row g-3 mt-3 ${viewMode === 'list' ? 'flex-column' : ''}`} style={{ display: 'none' }}>
             {loading ? (
-              <div className="text-center">
-                <img src="/producfilter.gif" height={80} />
-              </div>
+              <CompanySkeletonLoader count={6} viewMode={viewMode} />
             ) : filteredCompanies.length > 0 ? (
               filteredCompanies.map((company) => (
                 <div
@@ -636,7 +724,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
 
           <div className={`row g-3 mt-1 ${viewMode === 'list' ? 'flex-column' : ''}`}>
             {loading ? (
-              <div className="text-center"><img src="/producfilter.gif" height={80} /></div>
+              <CompanySkeletonLoader count={6} viewMode={viewMode} />
             ) : filteredCompanies.length > 0 ? (
               filteredCompanies.map(company => (
                 <div
@@ -771,8 +859,16 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                             </Link>
                           )
                           : (
-                            <Link
-                              to="/login"  // or whatever your login/connect route is
+                            <Link to="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (!user) {
+                                  navigate("/login");
+                                } else {
+                                  setSelectedCompany(company);     // store entire company object
+                                  setShowModal(true);
+                                }
+                              }}
                               className="d-block w-100 pt-2 btn btn-orange text-nowrap px-5"
                             >
                               Connect
@@ -791,10 +887,18 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
             ) : (
               <div className="col-12"><p className="text-center">No companies found.</p></div>
             )}
+            {selectedCompany && (
+  <ConnectForm
+    show={showModal}
+    onHide={() => setShowModal(false)}
+    companyId={selectedCompany.id}
+    receiverName={selectedCompany.user?.fname}
+    isBuyer={true}
+    companyName={selectedCompany.name} // optional, for title
+  />
+)}
             {!loading && scrollLoading && (
-              <div className="text-center my-4">
-                <img src="/producfilter.gif" alt="Loading..." height={60} />
-              </div>
+              <CompanySkeletonLoader count={2} viewMode={viewMode} />
             )}
           </div>
 

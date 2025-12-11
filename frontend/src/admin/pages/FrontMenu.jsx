@@ -3,7 +3,7 @@ import axios from "axios";
 import Breadcrumb from "../common/Breadcrumb";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
-const initialForm = { name: "", link: "", is_show: 1, status: 1, type: 1 };
+const initialForm = { name: "", link: "", is_show: 1, status: 1, type: 1, position: 1 };
 import ChildMenuModal from "./modal/ChildMenuModal";
 
 const FrontMenu = () => {
@@ -14,13 +14,35 @@ const FrontMenu = () => {
   const [newRow, setNewRow] = useState(initialForm);
   const [childModalVisible, setChildModalVisible] = useState(false);
   const [parentId, setParentId] = useState(null);
+  const [menuCounts, setMenuCounts] = useState({
+    headerCount: 0,
+    footerCount: 0,
+  });
+
+  // Fetch menu counts
+  const fetchMenuCounts = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/front_menu/count`);
+      setMenuCounts(response.data);
+    } catch (error) {
+      console.error("Error fetching menu counts:", error);
+    }
+  };
 
   // Fetch shortcut menus
   const fetchMenus = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/front_menu`);
-      setMenus(response.data || []);
+      const normalized = response.data.map(m => ({
+  ...m,
+  type: Number(m.type),
+  status: Number(m.status),
+  is_show: Number(m.is_show),
+  position: Number(m.position) || 1, // fallback to 1
+}));
+
+setMenus(normalized);
     } catch (error) {
       console.error("Error fetching menus:", error);
       showAlert("Failed to fetch shortcut menus", "error");
@@ -31,7 +53,19 @@ const FrontMenu = () => {
 
   useEffect(() => {
     fetchMenus();
+    fetchMenuCounts();
   }, []);
+
+  const getAddPositionOptions = (type) => {
+    const count = type === 1 ? menuCounts.headerCount : menuCounts.footerCount;
+    return Array.from({ length: count + 1 }, (_, i) => i + 1);
+  };
+
+  // Position dropdown for EDIT MODE = original count only
+  const getEditPositionOptions = (type) => {
+    const count = type === 1 ? menuCounts.headerCount : menuCounts.footerCount;
+    return Array.from({ length: count }, (_, i) => i + 1);
+  };
 
   // Save or Update Menu
   const handleSave = async (menu) => {
@@ -52,6 +86,7 @@ const FrontMenu = () => {
 
       setEditingId(null);
       fetchMenus();
+      fetchMenuCounts();
     } catch (error) {
       console.error("Error saving menu:", error);
       showNotification("Failed to save menu", "error");
@@ -65,6 +100,7 @@ const FrontMenu = () => {
       await axios.delete(`${API_BASE_URL}/front_menu/${id}`);
       showNotification("Menu deleted successfully", "success");
       fetchMenus();
+      fetchMenuCounts();
     } catch (error) {
       console.error("Error deleting menu:", error);
       showNotification("Failed to delete menu", "error");
@@ -89,6 +125,7 @@ const FrontMenu = () => {
                       <th style={{ width: "120px" }}>Type</th>
                       <th style={{ width: "120px" }}>Status</th>
                       <th style={{ width: "120px" }}>Show</th>
+                      <th style={{ width: "120px" }}>Position</th>
                       <th style={{ width: "150px" }}>Action</th>
                     </tr>
                   </thead>
@@ -161,6 +198,22 @@ const FrontMenu = () => {
                         >
                           <option value={1}>Yes</option>
                           <option value={0}>No</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select
+                          className="form-select"
+                          value={newRow.position}
+                          onChange={(e) =>
+                            setNewRow({
+                              ...newRow,
+                              position: Number(e.target.value),
+                            })
+                          }
+                        >
+                          {getAddPositionOptions(newRow.type).map((pos) => (
+                            <option key={pos} value={pos}>{pos}</option>
+                          ))}
                         </select>
                       </td>
                       <td>
@@ -282,6 +335,30 @@ const FrontMenu = () => {
 
                         <td>
                           {editingId === menu.id ? (
+                            <select
+                              className="form-select"
+                              value={menu.position}
+                              onChange={(e) =>
+                                setMenus((prev) =>
+                                  prev.map((m) =>
+                                    m.id === menu.id
+                                      ? { ...m, position: Number(e.target.value) }
+                                      : m
+                                  )
+                                )
+                              }
+                            >
+                              {getEditPositionOptions(menu.type).map((pos) => (
+                                <option key={pos} value={pos}>{pos}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="badge bg-info">{menu.position}</span>
+                          )}
+                        </td>
+
+                        <td>
+                          {editingId === menu.id ? (
                             <>
                               <button
                                 className="btn btn-sm btn-success me-2"
@@ -340,7 +417,8 @@ const FrontMenu = () => {
         </div>
       </div>
       <ChildMenuModal 
-        parentId={parentId} 
+        parentId={parentId}
+        parentType={menus.find(m => m.id === parentId)?.type}
         show={childModalVisible} 
         onClose={() => setChildModalVisible(false)} 
       />

@@ -141,7 +141,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
     try {
       const user_id = user?.id;
       await axios.post(`${API_BASE_URL}/enquiries/user-submit-enquiry`, {
-        user_id,
+        userId: user_id,
         quantity,
         description,
         product_id: selectedProductId || productId,
@@ -187,7 +187,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                 <p className="text-secondary">{productTitle}</p>
               </div>
               <button type="button" className="close btn" onClick={handleClose} aria-label="Close">
-                <span aria-hidden="true">&times;</span>
+                <span aria-hidden="true"><i className="bx bx-x" /></span>
               </button>
             </div>
             <div className="modal-body">
@@ -332,13 +332,13 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                 <p className="text-secondary">{productTitle}</p>
               </div>
               <button type="button" className="close btn" onClick={handleClose} aria-label="Close">
-                <span aria-hidden="true">&times;</span>
+                <span aria-hidden="true"><i className="bx bx-x" /></span>
               </button>
             </div>
             <div className="modal-body">
               <form onSubmit={handleUserSubmit}>
                 <div className='form-group mb-3'>
-                  <label>Quantity</label>
+                  <label>Quantity<sup className="text-danger">*</sup></label>
                   <input
                     type="text"
                     className="form-control"
@@ -348,12 +348,36 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                     required
                   />
                 </div>
+                {!productId && (
+                        <div className="form-group mb-3">
+                          <label>Products<sup className="text-danger">*</sup></label>
+                          <select
+                            className="form-select"
+                            value={selectedProductId}
+                            onChange={(e) => setSelectedProductId(e.target.value)}
+                            required
+                          >
+                            <option value="">Select Product</option>
+                            {products.length > 0 ? (
+                              products.map((product) => (
+                                <option key={product.id} value={product.id}>
+                                  {product.title || 'Untitled Product'}
+                                </option>
+                              ))
+                            ) : (
+                              <option value="" disabled>
+                                No products available
+                              </option>
+                            )}
+                          </select>
+                        </div>
+                      )}
                 <div className="form-group mb-3">
-                  <label>Message</label>
+                  <label>Message<sup className="text-danger">*</sup></label>
                   <textarea
                     className="form-control"
                     rows="4"
-                    placeholder="Message *"
+                    placeholder="Message"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     required

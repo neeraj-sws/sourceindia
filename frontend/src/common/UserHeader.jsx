@@ -11,15 +11,15 @@ const UserHeader = () => {
   // const [user, setUser] = useState(null);
   const token = localStorage.getItem('user_token');
 
-  useEffect(() => {
-    const checkToken = () => {
-      setIsLoggedIn(!!localStorage.getItem('user_token'));
-    };
-    window.addEventListener('storage', checkToken);
-    return () => {
-      window.removeEventListener('storage', checkToken);
-    };
-  }, []);
+  // useEffect(() => {
+  //   const checkToken = () => {
+  //     setIsLoggedIn(!!localStorage.getItem('user_token'));
+  //   };
+  //   window.addEventListener('storage', checkToken);
+  //   return () => {
+  //     window.removeEventListener('storage', checkToken);
+  //   };
+  // }, []);
 
   const handleLogout = (e) => {
     e.preventDefault();
@@ -31,7 +31,7 @@ const UserHeader = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!token || user) return;
+      if (!token) return;
       try {
         const response = await axios.get(`${API_BASE_URL}/signup/profile`, {
           headers: {
@@ -40,7 +40,7 @@ const UserHeader = () => {
         });
         setUser(response.data.user);
       } catch (err) {
-        if (err.response && err.response.status === 401) {
+        if (err.response?.status === 401) {
           logout();
           navigate('/login');
         } else {
@@ -49,7 +49,7 @@ const UserHeader = () => {
       }
     };
     fetchProfile();
-  }, [token, user, setUser]);
+  }, [token]);
 
   return (
     <header>

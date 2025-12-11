@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from '../config';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import 'swiper/css';
@@ -10,8 +10,10 @@ import 'swiper/css/pagination';
 import ImageFront from "../admin/common/ImageFront";
 import { useAlert } from "../context/AlertContext";
 import EnquiryForm from "./EnquiryForm";
+import UseAuth from '../sections/UseAuth';
 
 const CompanyDetail = () => {
+  const navigate = useNavigate();
   const { slug } = useParams();
   const [company, setCompany] = useState(null);
   const { showNotification } = useAlert();
@@ -21,6 +23,7 @@ const CompanyDetail = () => {
   const [review, setReview] = useState("");
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const { user } = UseAuth();
 
   useEffect(() => {
     const fetchCompany = async () => {
@@ -38,12 +41,18 @@ const CompanyDetail = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!user) {
+      showNotification("Please log in to submit a review.", "error");
+      navigate("/login");
+      return;
+    }
+
     if (!review.trim()) {
-      alert("Please enter your review.");
+      showNotification("Please enter your review.", "error");
       return;
     }
     if (rating === 0) {
-      alert("Please select a rating.");
+      showNotification("Please select a rating.", "error");
       return;
     }
 
@@ -51,7 +60,7 @@ const CompanyDetail = () => {
     try {
       const response = await axios.post(`${API_BASE_URL}/products/company-review`, {
         company_id: company.id,
-        user_id: 2021, // replace with logged-in user ID if available
+        user_id: user?.id, // replace with logged-in user ID if available
         rating,
         review,
       });
@@ -134,7 +143,6 @@ const CompanyDetail = () => {
                           rows="3"
                           value={review}
                           onChange={(e) => setReview(e.target.value)}
-                          required
                         ></textarea>
                       </div>
 

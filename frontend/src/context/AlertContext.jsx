@@ -11,8 +11,12 @@ export const AlertProvider = ({ children }) => {
   const showNotification = (message, type = 'success') => {
     if (type === 'success') {
       toast.success(message);
-    } else {
+    } else if (type === 'error') {
       toast.error(message);
+    } else if (type === 'warning') {
+      toast.warning(message);
+    } else {
+      toast(message); // default
     }
   };
 

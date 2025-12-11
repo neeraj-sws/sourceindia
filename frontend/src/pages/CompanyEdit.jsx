@@ -39,6 +39,8 @@ const CompanyEdit = () => {
   const [companyFile, setCompanyFile] = useState(null);
   const [companyBrochure, setCompanyBrochure] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [categoryLimit, setCategoryLimit] = useState(null);
+    const isBlockingRef = useRef(false);
 
   useEffect(() => {
     const fetchCoreActivities = async () => {
@@ -82,6 +84,10 @@ const CompanyEdit = () => {
 
   const handleCategoryChange = async (event) => {
     const selectedOptions = Array.from(event.target.selectedOptions, (option) => Number(option.value));
+    if (categoryLimit && selectedOptions.length > categoryLimit) {
+      showNotification(`You can select up to ${categoryLimit} categories only.`, "error");
+      return;  
+    }
     setSelectedCategory(selectedOptions);
     if (selectedOptions.length > 0) {
       try {
@@ -118,6 +124,12 @@ const CompanyEdit = () => {
       multiple: true,
     }).on("change", async function () {
       const currentSelected = $(this).val()?.map(Number) || [];
+      if (categoryLimit && currentSelected.length > categoryLimit) {
+        currentSelected.pop();
+        $(this).val(currentSelected).trigger("change");
+        showNotification(`You can select maximum ${categoryLimit} categories.`, "error");
+        return;
+    }
       const previousSelectedCategories = previousSelectedCategoriesRef.current;
       const addedCategories = currentSelected.filter(cat => !previousSelectedCategories.includes(cat));
       const removedCategories = previousSelectedCategories.filter(cat => !currentSelected.includes(cat));
@@ -291,6 +303,19 @@ const CompanyEdit = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/settings/site`);
+        setCategoryLimit(Number(res.data.seller_category_limit)); // convert to number
+      } catch (err) {
+        console.error("Error fetching settings:", err);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
   const validateForm = () => {
     const errs = {};
 
@@ -386,8 +411,10 @@ const CompanyEdit = () => {
       formData.append("company_website", user.company_info?.company_website || "");
       formData.append("core_activity", selectedCoreActivity || "");
       formData.append("activity", selectedActivity || "");
-      formData.append("category_sell", selectedCategory.join(","));
-      formData.append("sub_category", selectedSubCategory.join(","));
+      // formData.append("category_sell", selectedCategory.join(","));
+      // formData.append("sub_category", selectedSubCategory.join(","));
+      formData.append("categories", selectedCategory.join(",")); // Append categories as comma-separated string
+  formData.append("subcategory_ids", selectedSubCategory.join(","));
       formData.append("brief_company", user.company_info?.brief_company || "");
       formData.append("company_video_second", user.company_info?.company_video_second || "");
 
@@ -395,11 +422,15 @@ const CompanyEdit = () => {
       if (file) formData.append("company_logo", file); // company logo
       if (companyBrochure) formData.append("sample_file_id", companyBrochure); // company brochure
       if (companyFile) formData.append("company_sample_ppt_file", companyFile);
-      await axios.post(`${API_BASE_URL}/signup/update-profile`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/signup/update-profile`, formData, {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
       });
-      showNotification("Profile updated successfully!", 'success');
-      navigate("/profile");
+      showNotification("Company updated successfully!", 'success');
+      if (response.data.redirectToMyProduct) {
+        navigate("/my-product");
+      } else {
+        navigate("/profile");
+      }
     } catch (err) {
       console.error("Update failed", err);
       showNotification("Error updating profile", 'error');
@@ -520,7 +551,7 @@ const CompanyEdit = () => {
                               <option key={category.id} value={category.id}>{category.name}</option>
                             ))}
                           </select>
-                          {errors.category_sell && (<div className="text-danger small">{errors.category_sell}</div>)}
+                          {errors.category_sell && (<div className= "text-danger small mt-1">{errors.category_sell}</div>)}
                         </div>
                         <div className="col-md-6">
                           <label htmlFor="sub_category" className="form-label">Sub Category</label>
@@ -539,7 +570,7 @@ const CompanyEdit = () => {
                         </div>
                         <div className="col-md-12">
                           <label className="form-label">Company Logo </label>
-                          <input className={`form-control ${errors.file ? 'is-invalid' : ''}`} type="file"
+                          <input className="form-control" type="file"
                             id="file" onChange={handleFileChange} />
                           {errors.file && <div className="invalid-feedback">{errors.file}</div>}
                           {file ? (
@@ -572,6 +603,7 @@ const CompanyEdit = () => {
                             value={user.company_info?.brief_company || ""}
                             onChange={handleChange}
                           />
+                          {errors.brief_company && <div className= "text-danger small mt-1">{errors.brief_company}</div>}
                           <p className="pt-3">
                             Total Words Limit <span className="about">1500 </span>{" "}
                           </p>

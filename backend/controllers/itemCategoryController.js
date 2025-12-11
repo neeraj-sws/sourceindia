@@ -154,7 +154,7 @@ exports.deleteItemCategory = async (req, res) => {
   try {
     const itemCategory = await ItemCategory.findByPk(req.params.id);
     if (!itemCategory) return res.status(404).json({ message: 'Item Category not found' });
-    if (itemCategory.file_id) {
+    if (itemCategory.file_id && itemCategory.file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(itemCategory.file_id);
       if (uploadImage) {
         const oldImagePath = path.resolve(uploadImage.file);        
@@ -392,6 +392,16 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
       totalRecords,
       filteredRecords,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getItemCategoryCount = async (req, res) => {
+  try {
+    const total = await ItemCategory.count();
+    res.json({ total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

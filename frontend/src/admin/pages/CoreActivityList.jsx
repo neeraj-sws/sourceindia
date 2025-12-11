@@ -184,12 +184,21 @@ const CoreActivityList = ({ getDeleted }) => {
         await axios.put(`${API_BASE_URL}/core_activities/${formData.id}`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
+        let updatedFileName = formData.file_name || null;
+        const updatedItem = await axios.get(`${API_BASE_URL}/core_activities/${formData.id}`);
+        const newFileId = updatedItem.data.file_id;
+        if (newFileId && newFileId !== 0) {
+          const img = await axios.get(`${API_BASE_URL}/files/${newFileId}`);
+          updatedFileName = img.data.file;
+        }
+        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, file_id: newFileId, file_name: updatedFileName, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/core_activities`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        const payload1 = { ...res.data.coreActivity, color_name: sColor?.title || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const img = await axios.get(`${API_BASE_URL}/files/${res.data.coreActivity.file_id}`);
+        const updatedFileName = img.data.file;
+        const payload1 = { ...res.data.coreActivity, file_name: updatedFileName, color_name: sColor?.title || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);

@@ -638,7 +638,7 @@ $('#item_id')
                       <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
                         <i className="bx bxs-plus-square me-1" />Add Image
                       </button>
-                      {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
+                      {errors.file && (<div className="text-danger small mt-1">{errors.file}</div>)}
                     </div>
                     <div className="col-md-12">
                       <div className="mt-3 d-flex flex-wrap">

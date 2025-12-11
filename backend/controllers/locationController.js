@@ -81,7 +81,7 @@ exports.getStatesByCountry = async (req, res) => {
     const companyCounts = await Users.findAll({
       attributes: [
         'state',
-        [fn('COUNT', fn('DISTINCT', col('company_id'))), 'count'],
+        [fn('COUNT', fn('DISTINCT', col('Users.company_id'))), 'count'],
       ],
       where: {
         country: country_id,
@@ -89,7 +89,17 @@ exports.getStatesByCountry = async (req, res) => {
         is_delete: 0,
         is_approve: 1,
         status: 1,
+        is_seller: 1,
       },
+      include: [
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: [],
+          required: true,              // ensures join works as filter
+          where: { is_delete: 0 }      // filter companies where company_info.is_delete = 0
+        }
+      ],
       group: ['state'],
       raw: true,
     });

@@ -109,6 +109,7 @@ function AdminLayout() {
           <Route path="/approve-product-list" element={<ProtectedRoute><ProductList isApprove={1} /></ProtectedRoute>} />
           <Route path="/notapprove-product-list" element={<ProtectedRoute><ProductList isApprove={0} /></ProtectedRoute>} />
           <Route path="/product-remove" element={<ProtectedRoute><ProductList getDeleted={true} /></ProtectedRoute>} />
+          <Route path="/product-list" element={<ProtectedRoute><ProductList /></ProtectedRoute>} />
           <Route path="/add_product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
           <Route path="/edit_product/:productId" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
           <Route path="/product_categories" element={<ProtectedRoute><ProductCategoryList /></ProtectedRoute>} />

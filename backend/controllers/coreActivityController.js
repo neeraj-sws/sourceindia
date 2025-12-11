@@ -134,7 +134,7 @@ exports.deleteCoreActivity = async (req, res) => {
     const coreActivity = await CoreActivity.findByPk(req.params.id);
     if (!coreActivity) return res.status(404).json({ message: 'Core activity not found' });
 
-    if (coreActivity.file_id) {
+    if (coreActivity.file_id && coreActivity.file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(coreActivity.file_id);
       if (uploadImage) {
         const oldImagePath = path.resolve(uploadImage.file);        

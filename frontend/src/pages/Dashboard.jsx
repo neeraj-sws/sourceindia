@@ -33,6 +33,7 @@ const Dashboard = () => {
   const [endDate, setEndDate] = useState(null);
   const [enquiriesToDelete, setEnquiriesToDelete] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [sellerMessage, setSellerMessage] = useState("");
 
   useEffect(() => {
     if (loading) return; // Wait until loading is false
@@ -191,6 +192,18 @@ const Dashboard = () => {
       showNotification("Failed to delete Enquiry.", "error");
     }
   };
+  
+  useEffect(() => {
+    if (!user || !user.id) return;
+    axios.get(`${API_BASE_URL}/sellers/seller-message/${user.id}`)
+    .then((res) => {
+      const msg = res.data?.data?.message;
+      setSellerMessage(msg ? msg : "");
+    })
+    .catch(() => {
+      setSellerMessage("");
+    });
+  }, [user]);
 
   const renderBuyerInterestForm = () => {
     if (!isModalOpen) return null;
@@ -279,9 +292,24 @@ const Dashboard = () => {
                 <div className="card-body">
                   <StepProgress />
                 </div>
-              </div>}
-
+              </div>
+            }
             <div className="row">
+              {sellerMessage && (
+                <div className="col-sm-12">
+                  <div className="card mb-4 border border-danger">
+                    <div className="card-body text-center">
+                      <div className="me-3">
+                        <i className="bx bx-message-dots text-danger display-6" />
+                      </div>
+                      <h4 className="card-title text-danger">
+                        Your profile has been declined reason.
+                      </h4>
+                      <div className="card-text" dangerouslySetInnerHTML={{__html: sellerMessage}} />
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="col-md-4 col-sm-6 col-12">
                 <div className="card radius-10 border-start border-0 border-3 border-danger">
                   <div className="card-body">

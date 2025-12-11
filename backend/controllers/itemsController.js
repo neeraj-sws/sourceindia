@@ -155,7 +155,7 @@ exports.deleteItems = async (req, res) => {
   try {
     const items = await Items.findByPk(req.params.id);
     if (!items) return res.status(404).json({ message: 'Item not found' });
-    if (items.file_id) {
+    if (items.file_id && items.file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(items.file_id);
       if (uploadImage) {
         const oldImagePath = path.resolve(uploadImage.file);        
@@ -411,6 +411,16 @@ exports.getAllItemsServerSide = async (req, res) => {
       totalRecords,
       filteredRecords,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getItemsCount = async (req, res) => {
+  try {
+    const total = await Items.count();
+    res.json({ total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

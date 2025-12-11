@@ -44,6 +44,8 @@ const AddSeller = () => {
   const previousSelectedCategoriesRef = useRef([]);
   const [subCategoryMap, setSubCategoryMap] = useState({}); 
   const [designations, setDesignations] = useState([]);
+  const [categoryLimit, setCategoryLimit] = useState(null);
+  const isBlockingRef = useRef(false);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -114,59 +116,84 @@ const AddSeller = () => {
     });
 
     $('#category_sell').select2({
-      theme: "bootstrap",
-      width: '100%',
-      placeholder: "Select Category",
-      multiple: true,
-    }).on("change", async function () {
-      const currentSelected = $(this).val()?.map(Number) || [];
-      const previousSelectedCategories = previousSelectedCategoriesRef.current;
-      const addedCategories = currentSelected.filter(cat => !previousSelectedCategories.includes(cat));
-      const removedCategories = previousSelectedCategories.filter(cat => !currentSelected.includes(cat));
-      previousSelectedCategoriesRef.current = [...currentSelected];
-      setSelectedCategory(currentSelected);
-      let updatedSubCategories = [...subCategories];
-      let updatedMap = { ...subCategoryMap };
-      if (addedCategories.length > 0) {
-        try {
-          const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
-            categories: addedCategories
-          });
-          const newSubCats = res.data;
-          newSubCats.forEach(sub => {
-            if (!updatedMap[sub.id]) updatedMap[sub.id] = new Set();
-            addedCategories.forEach(catId => updatedMap[sub.id].add(catId));
-            if (!updatedSubCategories.find(s => s.id === sub.id)) {
-              updatedSubCategories.push(sub);
-            }
-          });
-        } catch (err) {
-          console.error("Error adding subcategories:", err);
-        }
-      }
-      if (removedCategories.length > 0) {
-        Object.entries(updatedMap).forEach(([subId, categorySet]) => {
-          removedCategories.forEach(catId => categorySet.delete(catId));
+    theme: "bootstrap",
+    width: '100%',
+    placeholder: "Select Category",
+    multiple: true,
+  })
+
+  // ⬇⬇ ADD THIS BLOCK RIGHT HERE (before .on("change")) ⬇⬇
+  .on("select2:select", function (e) {
+  const values = $(this).val() || [];
+
+  if (categoryLimit && values.length > categoryLimit) {
+    isBlockingRef.current = true;  // ⬅ Block next change event
+
+    $(this).val(values.slice(0, categoryLimit)).trigger("change");
+
+    showNotification(`Maximum ${categoryLimit} categories allowed`, "error");
+  }
+})
+  // ⬆⬆ ADD ABOVE ⬆⬆
+
+  .on("change", async function () {
+    if (isBlockingRef.current) {
+    isBlockingRef.current = false;
+    return;  // prevent clearing subcategories
+  }
+    const currentSelected = $(this).val()?.map(Number) || [];
+    const previousSelectedCategories = previousSelectedCategoriesRef.current;
+    const addedCategories = currentSelected.filter(cat => !previousSelectedCategories.includes(cat));
+    const removedCategories = previousSelectedCategories.filter(cat => !currentSelected.includes(cat));
+    previousSelectedCategoriesRef.current = [...currentSelected];
+    setSelectedCategory(currentSelected);
+
+    let updatedSubCategories = [...subCategories];
+    let updatedMap = { ...subCategoryMap };
+
+    if (addedCategories.length > 0) {
+      try {
+        const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+          categories: addedCategories
         });
-        updatedSubCategories = updatedSubCategories.filter(sub => {
-          const set = updatedMap[sub.id];
-          return set && set.size > 0;
+        const newSubCats = res.data;
+        newSubCats.forEach(sub => {
+          if (!updatedMap[sub.id]) updatedMap[sub.id] = new Set();
+          addedCategories.forEach(catId => updatedMap[sub.id].add(catId));
+          if (!updatedSubCategories.find(s => s.id === sub.id)) {
+            updatedSubCategories.push(sub);
+          }
         });
-        const updatedSelected = selectedSubCategory.filter(subId => {
-          return updatedMap[subId] && updatedMap[subId].size > 0;
-        });
-        setSelectedSubCategory(updatedSelected);
-        $('#sub_category').val(updatedSelected).trigger('change');
+      } catch (err) {
+        console.error("Error adding subcategories:", err);
       }
-      setSubCategories(updatedSubCategories);
-      setSubCategoryMap(updatedMap);
-      if (currentSelected.length === 0) {
-        setSubCategories([]);
-        setSelectedSubCategory([]);
-        setSubCategoryMap({});
-        $('#sub_category').val([]).trigger('change');
-      }
-    });
+    }
+
+    if (removedCategories.length > 0) {
+      Object.entries(updatedMap).forEach(([subId, categorySet]) => {
+        removedCategories.forEach(catId => categorySet.delete(catId));
+      });
+      updatedSubCategories = updatedSubCategories.filter(sub => {
+        const set = updatedMap[sub.id];
+        return set && set.size > 0;
+      });
+      const updatedSelected = selectedSubCategory.filter(subId => {
+        return updatedMap[subId] && updatedMap[subId].size > 0;
+      });
+      setSelectedSubCategory(updatedSelected);
+      $('#sub_category').val(updatedSelected).trigger('change');
+    }
+
+    setSubCategories(updatedSubCategories);
+    setSubCategoryMap(updatedMap);
+
+    if (currentSelected.length === 0) {
+      setSubCategories([]);
+      setSelectedSubCategory([]);
+      setSubCategoryMap({});
+      $('#sub_category').val([]).trigger('change');
+    }
+  });
 
     $('#sub_category').select2({
       theme: "bootstrap",
@@ -231,6 +258,10 @@ const AddSeller = () => {
 
   const handleCategoryChange = async (event) => {
     const selectedOptions = Array.from(event.target.selectedOptions, (option) => Number(option.value));
+    if (categoryLimit && selectedOptions.length > categoryLimit) {
+      showNotification(`You can select only ${categoryLimit} categories`, "error");
+      return; // STOP user from selecting more
+    }
     setSelectedCategory(selectedOptions);
     if (selectedOptions.length > 0) {
       try {
@@ -312,6 +343,19 @@ const AddSeller = () => {
 
   const handleCompanyBrochureChange = (e) => { setCompanyBrochure(e.target.files[0]); };
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/settings/site`);
+        setCategoryLimit(Number(res.data.seller_category_limit)); // convert to number
+      } catch (err) {
+        console.error("Error fetching settings:", err);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
   const validateForm = () => {
     const errs = {};
     if (!formData.fname?.trim()) errs.fname = "First Name is required";
@@ -341,7 +385,12 @@ const AddSeller = () => {
     if (!formData.is_star_seller) errs.is_star_seller = "Star Seller status is required";
     if (!formData.is_verified) errs.is_verified = "Verification status is required";
     if (!formData.elcina_member) errs.elcina_member = "ELCINA Member is required";
-    if (!selectedCategory) errs.category_sell = "Category is required";
+    if (selectedCategory.length === 0) {
+      errs.category_sell = "Category is required";
+    }
+    if (categoryLimit && selectedCategory.length > categoryLimit) {
+      errs.category_sell = `You can select only ${categoryLimit} categories`;
+    }
     if (!selectedCoreActivity) errs.core_activity = "Core Activity is required";
     if (!selectedActivity) errs.activity = "Activity is required";
 
@@ -412,14 +461,14 @@ const AddSeller = () => {
           password: "",
           mobile: data.mobile || "",
           zipcode: data.zipcode || "",
-          user_company: data.user_company || "",
+          user_company: data.organization_name || "",
           is_trading: String(data.is_trading),
           elcina_member: String(data.elcina_member),
           address: data.address || "",
           file_name: data.file_name || "",
           company_file_name: data.company_file_name || "",
           designation: data.designation || "",
-          website: data.website || "",
+          website: data.company_website || "",
           company_location: data.company_location || "",
           company_meta_title: data.company_meta_title || "",
           company_video_second: data.company_video_second || "",
@@ -434,8 +483,27 @@ const AddSeller = () => {
         setSelectedCountry(data.country || "");
         setSelectedState(data.state || "");
         setSelectedCity(data.city || "");
-        setSelectedCategory(data.category_sell ? data.category_sell.split(',') : []);
-        setSelectedSubCategory(data.sub_category ? data.sub_category.split(',') : []);
+        // setSelectedCategory(data.category_sell ? data.category_sell.split(',') : []);
+        // setSelectedSubCategory(data.sub_category ? data.sub_category.split(',') : []);
+        // Extract only unique category_id values
+        if (data.categories && Array.isArray(data.categories)) {
+      const categoryIds = [...new Set(data.categories.map(c => c.category_id).filter(Boolean))];
+      const subCategoryIds = data.categories.map(c => c.subcategory_id).filter(Boolean);
+
+      setSelectedCategory(categoryIds);
+
+      // Fetch subcategories for selected categories
+      const subRes = await axios.post(`${API_BASE_URL}/sub_categories/categories`, { categories: categoryIds });
+      setSubCategories(subRes.data);
+
+      setSelectedSubCategory(subCategoryIds);
+
+      // Update Select2 values after options exist
+      setTimeout(() => {
+        $('#category_sell').val(categoryIds).trigger('change');
+        $('#sub_category').val(subCategoryIds).trigger('change');
+      }, 50);
+    }
         setSelectedCoreActivity(data.core_activity || "");
         setSelectedActivity(data.activity || "");
         setSelectedRoles(data.user_type || "");
@@ -445,7 +513,7 @@ const AddSeller = () => {
         if (data.state) {
           const ctRes = await axios.get(`${API_BASE_URL}/location/cities/${data.state}`); setCities(ctRes.data);
         }
-        if (data.category_sell) {
+        /*if (data.category_sell) {
           const categoriesArray = data.category_sell.split(',').map(Number);
           setSelectedCategory(categoriesArray);
           const cRes = await axios.post(`${API_BASE_URL}/sub_categories/categories`, { categories: categoriesArray });
@@ -454,7 +522,7 @@ const AddSeller = () => {
           setSelectedSubCategory(subCatArray);
           $('#sub_category').val(subCatArray).trigger('change');
           $('#category_sell').val(categoriesArray).trigger('change');
-        }
+        }*/
         if (data.core_activity) {
           const aRes = await axios.get(`${API_BASE_URL}/activities/coreactivity/${data.core_activity}`); setActivities(aRes.data);
         }
@@ -474,8 +542,10 @@ const AddSeller = () => {
     data.append("country", selectedCountry);
     data.append("state", selectedState);
     data.append("city", selectedCity);
-    data.append("category_sell", selectedCategory.join(","));
-    data.append("sub_category", selectedSubCategory.join(","));
+    // data.append("category_sell", selectedCategory.join(","));
+    // data.append("sub_category", selectedSubCategory.join(","));
+    data.append("categories", selectedCategory.join(','));
+  data.append("subcategory_ids", selectedSubCategory.join(','));
     data.append("core_activity", selectedCoreActivity);
     data.append("activity", selectedActivity);
     data.append("user_type", selectedRoles);
@@ -582,9 +652,10 @@ const AddSeller = () => {
                   <div className="col-md-4">
                     <label htmlFor="category_sell" className="form-label required">Category</label>
                     <select
-                      id="category_sell" className="form-control select2"
+                      id="category_sell"
+                      className="form-control select2"
                       value={selectedCategory}
-                      onChange={handleCategoryChange}
+                      onChange={() => {}}
                       multiple
                     >
                       <option value="">Select Category</option>
@@ -597,9 +668,9 @@ const AddSeller = () => {
                   <div className="col-md-4">
                     <label htmlFor="sub_category" className="form-label">Sub Category</label>
                     <select
-                      id="sub_category" className="form-control select2"
+                      id="sub_category"
+                      className="form-control select2"
                       value={selectedSubCategory}
-                      onChange={handleSubCategoryChange}
                       disabled={subCategories.length === 0}
                       multiple
                     >

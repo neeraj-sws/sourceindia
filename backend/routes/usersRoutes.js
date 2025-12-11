@@ -12,6 +12,7 @@ router.post('/send-login-otp', usersController.sendLoginotp);
 router.post('/verify-login-otp', usersController.verifyLoginotp);
 router.post('/register', usersController.register);
 router.post('/change-password', authMiddleware, usersController.changePassword);
+router.post('/impersonate-login', usersController.impersonateLogin);
 router.get('/profile', authMiddleware, usersController.getProfile);
 router.post('/update-profile', authMiddleware, usersController.updateProfile);
 router.get('/countries', usersController.getCountries);

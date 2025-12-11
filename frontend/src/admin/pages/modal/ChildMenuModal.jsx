@@ -5,12 +5,17 @@ import API_BASE_URL from "../../../config";
 
 const initialForm = { name: "", link: "", is_show: 1, status: 1, type: 1 };
 
-const ChildMenuModal = ({ parentId, show, onClose }) => {
+const ChildMenuModal = ({ parentId, parentType, show, onClose }) => {
   const { showNotification } = useAlert();
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [newRow, setNewRow] = useState(initialForm);
+  const [newRow, setNewRow] = useState({ ...initialForm, type: parentType || 1 });
+
+  useEffect(() => {
+    setNewRow(prev => ({ ...prev, type: parentType || 1 }));
+    setMenus(prev => prev.map(menu => ({ ...menu, type: parentType || 1 }))); // ensure editing menus follow parentType
+  }, [parentType]);
 
   // Fetch child menus for specific parent
   const fetchMenus = async () => {
@@ -18,7 +23,8 @@ const ChildMenuModal = ({ parentId, show, onClose }) => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/front_menu?parent_id=${parentId}`);
-      setMenus(response.data || []);
+      const updated = response.data.map(m => ({ ...m, type: parentType || 1 }));
+      setMenus(updated);
     } catch (err) {
       console.error(err);
       showNotification("Failed to fetch child menus", "error");
@@ -38,14 +44,17 @@ const ChildMenuModal = ({ parentId, show, onClose }) => {
     }
 
     try {
+      const payload = { ...menu, parent_id: parentId, type: parentType }; // force parent type
+
       if (menu.id) {
-        await axios.put(`${API_BASE_URL}/front_menu/${menu.id}`, menu);
+        await axios.put(`${API_BASE_URL}/front_menu/${menu.id}`, payload);
         showNotification("Child menu updated", "success");
       } else {
-        await axios.post(`${API_BASE_URL}/front_menu`, { ...menu, parent_id: parentId });
+        await axios.post(`${API_BASE_URL}/front_menu`, payload);
         showNotification("Child menu added", "success");
-        setNewRow(initialForm);
+        setNewRow({ ...initialForm, type: parentType || 1 });
       }
+
       setEditingId(null);
       fetchMenus();
     } catch (err) {
@@ -110,14 +119,7 @@ const ChildMenuModal = ({ parentId, show, onClose }) => {
                     />
                   </td>
                   <td>
-                    <select
-                      className="form-select"
-                      value={newRow.type}
-                      onChange={(e) => setNewRow({ ...newRow, type: parseInt(e.target.value) })}
-                    >
-                      <option value={1}>Header</option>
-                      <option value={2}>Footer</option>
-                    </select>
+                    {parentType === 1 ? (<span className="badge bg-success">Header</span>) : (<span className="badge bg-danger">Footer</span>)}
                   </td>
                   <td>
                     <select
@@ -191,24 +193,7 @@ const ChildMenuModal = ({ parentId, show, onClose }) => {
                       )}
                     </td>
                     <td>
-                      {editingId === menu.id ? (
-                        <select
-                          className="form-select"
-                          value={menu.type}
-                          onChange={(e) =>
-                            setMenus((prev) =>
-                              prev.map((m) => (m.id === menu.id ? { ...m, type: parseInt(e.target.value) } : m))
-                            )
-                          }
-                        >
-                          <option value={1}>Header</option>
-                          <option value={2}>Footer</option>
-                        </select>
-                      ) : menu.type === 1 ? (
-                            <span className="badge bg-success">Header</span>
-                          ) : menu.type === 2 ? (
-                            <span className="badge bg-danger">Footer</span>
-                          ) : ""}
+                      {parentType === 1 ? (<span className="badge bg-success">Header</span>) : (<span className="badge bg-danger">Footer</span>)}
                     </td>
                     <td>
                       {editingId === menu.id ? (
