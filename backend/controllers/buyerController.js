@@ -24,7 +24,7 @@ function createSlug(inputString) {
 }
 
 exports.createBuyer = async (req, res) => {
-  const upload = getMulterUpload();
+  const upload = getMulterUpload('users');
   upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'company_file', maxCount: 1 },

@@ -19,13 +19,10 @@ const Designations = require('../models/Designations');
 const NatureBusinesses = require('../models/NatureBusinesses');
 const Products = require('../models/Products');
 const SellerCategory = require('../models/SellerCategory');
-<<<<<<< HEAD
 const SellerMailHistories = require('../models/SellerMailHistories');
 const Emails = require('../models/Emails');
 const { getTransporter } = require('../helpers/mailHelper');
-=======
 const SellerMessages = require('../models/SellerMessages');
->>>>>>> praveen-14-11-25
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
@@ -1046,7 +1043,6 @@ async function getNamesByIds(Model, idsString) {
   return records.map(r => r.name).join(', ');
 }
 
-<<<<<<< HEAD
 exports.getEmailtemplate = async (req, res) => {
 
   try {
@@ -1169,7 +1165,6 @@ exports.sendMail = async (req, res) => {
   }
 };
 
-=======
 exports.getFilteredSellers = async (req, res) => {
   try {
     const {
@@ -1453,4 +1448,83 @@ exports.updateSellerDeleteStatus = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
->>>>>>> praveen-14-11-25
+
+exports.getSellerCategories = async (req, res) => {
+  try {
+    const { user_id } = req.query;
+
+    if (!user_id) return res.status(400).json({ error: 'user_id is required' });
+
+    const sellerCategories = await SellerCategory.findAll({
+      where: { user_id },
+      attributes: [], // we only want included category
+      include: [
+        {
+          model: Categories,
+          as: 'category',
+          attributes: ['id', 'name', 'slug'],
+        },
+      ],
+      raw: true,
+    });
+
+    // Deduplicate categories
+    const categoryMap = {};
+    sellerCategories.forEach(sc => {
+      if (sc['category.id'] && !categoryMap[sc['category.id']]) {
+        categoryMap[sc['category.id']] = { 
+          id: sc['category.id'],
+          name: sc['category.name'],
+          slug: sc['category.slug'],
+        };
+      }
+    });
+
+    const categories = Object.values(categoryMap);
+    res.json(categories);
+  } catch (err) {
+    console.error('getSellerCategories error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get subcategories for a seller and category
+exports.getSellerSubCategories = async (req, res) => {
+  try {
+    const { user_id, category_id } = req.query;
+
+    if (!user_id || !category_id)
+      return res.status(400).json({ error: 'user_id and category_id are required' });
+
+    const sellerSubCategories = await SellerCategory.findAll({
+      where: { user_id, category_id },
+      attributes: [],
+      include: [
+        {
+          model: SubCategories,
+          as: 'subcategory',
+          attributes: ['id', 'name', 'slug'],
+        },
+      ],
+      raw: true,
+    });
+
+    // Deduplicate subcategories
+    const subCategoryMap = {};
+    sellerSubCategories.forEach(sc => {
+      if (sc['subcategory.id'] && !subCategoryMap[sc['subcategory.id']]) {
+        subCategoryMap[sc['subcategory.id']] = { 
+          id: sc['subcategory.id'],
+          name: sc['subcategory.name'],
+          slug: sc['subcategory.slug'],
+        };
+      }
+    });
+
+    const subcategories = Object.values(subCategoryMap);
+    res.json(subcategories);
+  } catch (err) {
+    console.error('getSellerSubCategories error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};

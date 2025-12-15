@@ -15,8 +15,22 @@ exports.createActivity = async (req, res) => {
 
 exports.getAllActivities = async (req, res) => {
   try {
+    const { is_delete, status } = req.query;
+
+    const whereCondition = {};
+
+    // Optional filters
+    if (typeof is_delete !== 'undefined') {
+      whereCondition.is_delete = parseInt(is_delete);
+    }
+
+    if (typeof status !== 'undefined') {
+      whereCondition.status = parseInt(status);
+    }
+
     const activities = await Activity.findAll({
       order: [['id', 'ASC']],
+      where: whereCondition,
       include: [
         {
           model: CoreActivity,
@@ -25,15 +39,19 @@ exports.getAllActivities = async (req, res) => {
         },
       ],
     });
+
     const modifiedActivity = activities.map(activity => {
-      const activitiesData = activity.toJSON();
-      activitiesData.getStatus = activitiesData.status === 1 ? 'Active' : 'Inactive';
-      activitiesData.coreactivity_name = activitiesData.CoreActivity?.name || null;
-      delete activitiesData.CoreActivity;
-      return activitiesData;
+      const data = activity.toJSON();
+      return {
+        ...data,
+        getStatus: data.status === 1 ? 'Active' : 'Inactive',
+        coreactivity_name: data.CoreActivity?.name || null,
+      };
     });
+
     res.json(modifiedActivity);
   } catch (err) {
+    console.error('getAllActivities error:', err);
     res.status(500).json({ error: err.message });
   }
 };

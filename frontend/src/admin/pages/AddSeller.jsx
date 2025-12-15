@@ -293,7 +293,7 @@ const AddSeller = () => {
   useEffect(() => {
     const fetchCoreactivities = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/core_activities`);
+        const res = await axios.get(`${API_BASE_URL}/core_activities?is_delete=0`);
         setCoreactivities(res.data);
       } catch (error) {
         console.error("Error fetching core activities:", error);

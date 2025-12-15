@@ -55,9 +55,11 @@ exports.getAllCategories = async (req, res) => {
 
     const categories = await Categories.findAll({
       order: [['id', 'ASC']], // ✅ fixed
+      attributes: { exclude: ['file_id'] },
       include: [
         {
           model: UploadImage,
+          as: 'CategoryImage',
           attributes: ['file'],
         },
       ],
@@ -104,10 +106,10 @@ exports.getAllCategories = async (req, res) => {
 
     const modifiedCategories = categories.map(category => {
       const cd = category.toJSON();
-      const { UploadImage, ...rest } = cd;
+      const { CategoryImage, ...rest } = cd;
       return {
         ...rest,
-        file_name: UploadImage?.file || null,
+        file_name: CategoryImage?.file || null,
         product_count: productCountMap[category.id] || 0, // ✅ fixed
         company_count: companyCountMap[category.id] || 0, // ✅ fixed
       };
@@ -123,8 +125,10 @@ exports.getAllCategories = async (req, res) => {
 exports.getCategoriesById = async (req, res) => {
   try {
     const categories = await Categories.findByPk(req.params.id, {
+      attributes: { exclude: ['file_id'] },
       include: [{
         model: UploadImage,
+        as: 'CategoryImage',
         attributes: ['file'],
       }],
     });
@@ -133,7 +137,7 @@ exports.getCategoriesById = async (req, res) => {
     }
     const response = {
       ...categories.toJSON(),
-      file_name: categories.UploadImage ? categories.UploadImage.file : null,
+      file_name: categories.CategoryImage ? categories.CategoryImage.file : null,
     };
     res.json(response);
   } catch (err) {
@@ -154,55 +158,86 @@ exports.getCategoriesCount = async (req, res) => {
 
 exports.updateCategories = async (req, res) => {
   const upload = getMulterUpload('category');
+
   upload.single('file')(req, res, async (err) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
+
     try {
       const { name, top_category, status } = req.body;
-      /*if (!name || !top_category || !status) {
-        return res.status(400).json({ message: 'All fields (name, top_category, status) are required' });
-      }*/
-      const categories = await Categories.findByPk(req.params.id);
+
+      // ✅ Include UploadImage with correct alias
+      const categories = await Categories.findByPk(req.params.id, {
+        attributes: { exclude: ['file_id'] },
+        include: [
+          {
+            model: UploadImage,
+            as: 'CategoryImage', // must match the association alias
+            attributes: ['id', 'file'],
+          },
+        ],
+      });
+
       if (!categories) {
-        return res.status(404).json({ message: 'Categories not found' });
+        return res.status(404).json({ message: 'Category not found' });
       }
+
+      // Ensure upload directory exists
       const uploadDir = path.resolve('upload/category');
       if (!fs.existsSync(uploadDir)) {
-        console.log("Directory does not exist, creating:", uploadDir);
         fs.mkdirSync(uploadDir, { recursive: true });
       }
-      const cat_file_id = categories.cat_file_id;
+
+      const currentImage = categories.CategoryImage;
+
+      // ------------------------------
+      // IMAGE UPDATE LOGIC
+      // ------------------------------
       if (req.file) {
-        if (cat_file_id) {
-          const existingImage = await UploadImage.findByPk(cat_file_id);
-          if (existingImage) {
-            const oldImagePath = path.resolve(existingImage.file);
-            if (fs.existsSync(oldImagePath)) {
-              fs.unlinkSync(oldImagePath);
-            }
-            existingImage.file = `upload/category/${req.file.filename}`;
-            existingImage.updated_at = new Date();
-            await existingImage.save();
-          } else {
-            const newImage = await UploadImage.create({
-              file: `upload/category/${req.file.filename}`,
-            });
-            categories.cat_file_id = newImage.id;
+        // CASE 1: Update existing image
+        if (currentImage) {
+          const oldImagePath = path.resolve(currentImage.file);
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
           }
-        } else {
+
+          currentImage.file = `upload/category/${req.file.filename}`;
+          currentImage.updated_at = new Date();
+          await currentImage.save();
+        }
+        // CASE 2: Create a new image record
+        else {
           const newImage = await UploadImage.create({
             file: `upload/category/${req.file.filename}`,
           });
           categories.cat_file_id = newImage.id;
         }
       }
-      categories.name = name;
-      categories.top_category = top_category;
-      categories.status = status;
+
+      // ------------------------------
+      // UPDATE CATEGORY FIELDS
+      // ------------------------------
+      if (name !== undefined) categories.name = name;
+      if (top_category !== undefined) categories.top_category = top_category;
+      if (status !== undefined) categories.status = status;
+
       categories.updated_at = new Date();
       await categories.save();
-      res.json({ message: 'Categories updated', categories });
+
+      // Reload with updated image
+      const updatedCategory = await Categories.findByPk(req.params.id, {
+        attributes: { exclude: ['file_id'] },
+        include: [
+          {
+            model: UploadImage,
+            as: 'CategoryImage', // ✅ alias must match model association
+            attributes: ['file'],
+          },
+        ],
+      });
+
+      res.json({ message: 'Category updated successfully', category: updatedCategory });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: err.message });
@@ -212,21 +247,35 @@ exports.updateCategories = async (req, res) => {
 
 exports.deleteCategories = async (req, res) => {
   try {
-    const categories = await Categories.findByPk(req.params.id);
-    if (!categories) return res.status(404).json({ message: 'Categories not found' });
+    // Fetch category with the associated image
+    const category = await Categories.findByPk(req.params.id, {
+      attributes: { exclude: ['file_id'] },
+      include: [
+        {
+          model: UploadImage,
+          as: 'CategoryImage', // match the association alias
+          attributes: ['id', 'file'],
+        },
+      ],
+    });
 
-    if (categories.cat_file_id && categories.cat_file_id !== 0) {
-      const uploadImage = await UploadImage.findByPk(categories.cat_file_id);
-      if (uploadImage) {
-        const oldImagePath = path.resolve(uploadImage.file);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
-        await uploadImage.destroy();
-      }
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
     }
-    await categories.destroy();
-    res.json({ message: 'Categories deleted successfully' });
+
+    // Delete associated image file if exists
+    if (category.cat_file_id && category.CategoryImage) {
+      const imagePath = path.resolve(category.CategoryImage.file);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
+      await category.CategoryImage.destroy();
+    }
+
+    // Delete the category
+    await category.destroy();
+
+    res.json({ message: 'Category deleted successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -236,31 +285,39 @@ exports.deleteCategories = async (req, res) => {
 exports.deleteSelectedCategories = async (req, res) => {
   try {
     const { ids } = req.body;
+
     if (!Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ message: 'Please provide an array of IDs to update.' });
     }
+
     const parsedIds = ids.map(id => parseInt(id, 10));
+
+    // Fetch categories while excluding the nonexistent file_id column
     const categories = await Categories.findAll({
       where: {
-        id: {
-          [Op.in]: parsedIds,
-        },
+        id: { [Op.in]: parsedIds },
         is_delete: 0
-      }
+      },
+      attributes: { exclude: ['file_id'] },
+      include: [
+        {
+          model: UploadImage,
+          as: 'CategoryImage', // consistent alias
+          attributes: ['file'],
+        },
+      ],
     });
+
     if (categories.length === 0) {
       return res.status(404).json({ message: 'No categories found with the given IDs.' });
     }
+
+    // Mark selected categories as deleted
     await Categories.update(
-      { is_delete: 1 },
-      {
-        where: {
-          id: {
-            [Op.in]: parsedIds,
-          }
-        }
-      }
+      { is_delete: 1, updated_at: new Date() },
+      { where: { id: { [Op.in]: parsedIds } } }
     );
+
     res.json({ message: `${categories.length} categories marked as deleted.` });
   } catch (err) {
     console.error(err);
@@ -271,15 +328,36 @@ exports.deleteSelectedCategories = async (req, res) => {
 exports.updateCategoriesStatus = async (req, res) => {
   try {
     const { status } = req.body;
+
+    // Validate status
     if (status !== 0 && status !== 1) {
       return res.status(400).json({ message: 'Invalid status. Use 1 (Active) or 0 (Deactive).' });
     }
-    const categories = await Categories.findByPk(req.params.id);
-    if (!categories) return res.status(404).json({ message: 'Categories not found' });
+
+    // Fetch category while excluding the nonexistent file_id column
+    const categories = await Categories.findByPk(req.params.id, {
+      attributes: { exclude: ['file_id'] },
+      include: [
+        {
+          model: UploadImage,
+          as: 'CategoryImage', // in case you want to return the image
+          attributes: ['file'],
+        },
+      ],
+    });
+
+    if (!categories) {
+      return res.status(404).json({ message: 'Categories not found' });
+    }
+
+    // Update status
     categories.status = status;
+    categories.updated_at = new Date();
     await categories.save();
+
     res.json({ message: 'Status updated', categories });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -290,7 +368,16 @@ exports.updateCategoriesTopCategory = async (req, res) => {
     if (top_category !== 0 && top_category !== 1) {
       return res.status(400).json({ message: 'Invalid category status. Use 1 (Active) or 0 (Deactive).' });
     }
-    const categories = await Categories.findByPk(req.params.id);
+    const categories = await Categories.findByPk(req.params.id, {
+      attributes: { exclude: ['file_id'] },
+      include: [
+        {
+          model: UploadImage,
+          as: 'CategoryImage', // in case you want to return the image
+          attributes: ['file'],
+        },
+      ],
+    });
     if (!categories) return res.status(404).json({ message: 'Categories not found' });
     categories.top_category = top_category;
     await categories.save();
@@ -306,7 +393,16 @@ exports.updateCategoriesDeleteStatus = async (req, res) => {
     if (is_delete !== 0 && is_delete !== 1) {
       return res.status(400).json({ message: 'Invalid delete status. Use 1 (Active) or 0 (Deactive).' });
     }
-    const categories = await Categories.findByPk(req.params.id);
+    const categories = await Categories.findByPk(req.params.id, {
+      attributes: { exclude: ['file_id'] },
+      include: [
+        {
+          model: UploadImage,
+          as: 'CategoryImage', // in case you want to return the image
+          attributes: ['file'],
+        },
+      ],
+    });
     if (!categories) return res.status(404).json({ message: 'Categories not found' });
     categories.is_delete = is_delete;
     await categories.save();
@@ -408,6 +504,7 @@ exports.getAllCategoriesServerSide = async (req, res) => {
       limit: limitValue,
       offset,
       attributes: {
+        exclude: ['file_id'],
         include: [
           [literal(`(SELECT COUNT(*) FROM products WHERE products.category = Categories.category_id AND products.is_delete = 0)`), 'product_count']
         ]
@@ -415,6 +512,7 @@ exports.getAllCategoriesServerSide = async (req, res) => {
       include: [
         {
           model: UploadImage,
+          as: 'CategoryImage',
           attributes: ['file']
         }
       ],
@@ -424,7 +522,7 @@ exports.getAllCategoriesServerSide = async (req, res) => {
       name: row.name,
       top_category: row.top_category,
       cat_file_id: row.cat_file_id,
-      file_name: row.UploadImage ? row.UploadImage.file : null,
+      file_name: row.CategoryImage ? row.CategoryImage.file : null,
       status: row.status,
       is_delete: row.is_delete,
       product_count: row.get('product_count') || 0,

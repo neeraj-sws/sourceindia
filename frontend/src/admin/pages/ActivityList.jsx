@@ -192,7 +192,7 @@ const ActivityList = ({ getDeleted }) => {
   useEffect(() => {
     const fetchCoreActivities = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/core_activities`);
+        const res = await axios.get(`${API_BASE_URL}/core_activities?is_delete=0`);
         setCoreActivities(res.data);
       } catch (error) {
         console.error("Error fetching core activities:", error);
