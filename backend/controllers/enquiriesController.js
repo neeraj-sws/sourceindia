@@ -982,7 +982,10 @@ exports.storeEnquiry = async (req, res) => {
       enquiry_number,
       company_id: enq_company_id,
       user_id: user.id,
+      buyer_company_id: "",
       description,
+      type: 1,                        // e.g., 1 = product
+      quantity: 1,
       // category: category_ids,  // Fetch real data as needed
       // sub_category: subcategory_ids,
       // category_name: category_names,

@@ -22,30 +22,34 @@ const Dashboard = () => {
 
     const colorClass = colorMap[randomNum];
 
-    return (
-      <div className="">
-        <div className="col mb-4">
-          <Link to={link}>
-            <div className="card radius-2 overflow-hidden position-relative h-100 card-border">
-              <div className="card-body ps-4 py-4">
-                <div className="d-flex align-items-center">
-                  <div className="labeltitle">
-                    <p className="mb-2">{label}</p>
-                    <h2 className="mb-0">{value}</h2>
-                  </div>
-                  <div className={`ms-auto dashicon avatar avatar-md rounded-circle ${colorClass}`}>
-                    <i className={`${icon}`}></i>
-                  </div>
-                </div>
-              </div>
-              <img
-                src={imgSrc}
-                className="img-fluid position-absolute top-0 start-0"
-                alt="logo icon"
-              />
+    const content = (
+      <div className="card radius-2 overflow-hidden position-relative h-100 card-border">
+        <div className="card-body ps-4 py-4">
+          <div className="d-flex align-items-center">
+            <div className="labeltitle">
+              <p className="mb-2">{label}</p>
+              <h2 className="mb-0">{value}</h2>
             </div>
-          </Link>
+            <div className={`ms-auto dashicon avatar avatar-md rounded-circle ${colorClass}`}>
+              <i className={`${icon}`}></i>
+            </div>
+          </div>
         </div>
+        <img
+          src={imgSrc}
+          className="img-fluid position-absolute top-0 start-0"
+          alt="logo icon"
+        />
+      </div>
+    );
+
+    return (
+      <div className="col mb-4">
+        {link && link !== "#" ? (
+          <Link to={link}>{content}</Link>
+        ) : (
+          <div style={{ cursor: "pointer" }}>{content}</div>
+        )}
       </div>
     );
   };

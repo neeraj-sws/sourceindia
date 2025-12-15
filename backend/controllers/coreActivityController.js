@@ -37,14 +37,31 @@ exports.createCoreActivity = async (req, res) => {
 
 exports.getAllCoreActivities = async (req, res) => {
   try {
-    const coreActivity = await CoreActivity.findAll({ order: [['id', 'ASC']] });
-    const modifiedCoreActivity = coreActivity.map(core_activity => {
-      const coreActivityData = core_activity.toJSON();
-      coreActivityData.getStatus = coreActivityData.status === 1 ? 'Active' : 'Inactive';
-      return coreActivityData;
+    const { is_delete } = req.query;
+
+    const whereCondition = {};
+
+    // Apply is_delete filter only if provided
+    if (typeof is_delete !== 'undefined') {
+      whereCondition.is_delete = parseInt(is_delete);
+    }
+
+    const coreActivities = await CoreActivity.findAll({
+      order: [['id', 'ASC']],
+      where: whereCondition,
     });
+
+    const modifiedCoreActivity = coreActivities.map(item => {
+      const data = item.toJSON();
+      return {
+        ...data,
+        getStatus: data.status === 1 ? 'Active' : 'Inactive',
+      };
+    });
+
     res.json(modifiedCoreActivity);
   } catch (err) {
+    console.error('getAllCoreActivities error:', err);
     res.status(500).json({ error: err.message });
   }
 };

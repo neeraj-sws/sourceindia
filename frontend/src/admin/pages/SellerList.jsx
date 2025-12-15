@@ -207,7 +207,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
   useEffect(() => {
     const fetchCoreactivity = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/core_activities`);
+        const res = await axios.get(`${API_BASE_URL}/core_activities?is_delete=0`);
         setCoreActivities(res.data);
       } catch (err) {
         console.error("Error fetching core activities:", err);

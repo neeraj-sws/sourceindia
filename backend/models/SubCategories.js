@@ -61,18 +61,16 @@ SubCategories.belongsTo(Categories, {
   constraints: false
 });
 
-<<<<<<< HEAD
 // 🟢 Relation
 Categories.belongsTo(UploadImage, {
   foreignKey: 'file_id',
   targetKey: 'id',
   onDelete: 'CASCADE'
-=======
+});
 SubCategories.belongsTo(UploadImage, { 
   foreignKey: 'file_id', 
   targetKey: 'id', 
-  onDelete: 'CASCADE' 
->>>>>>> praveen-14-11-25
+  onDelete: 'CASCADE'
 });
 
 // 🟢 Hook: Auto-generate slug before create

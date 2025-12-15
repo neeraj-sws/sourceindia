@@ -69,7 +69,7 @@ const ProductModals = ({
                     statusToggleInfo.field === "delete_status"
                       ? statusToggleInfo.currentStatus === 1 ? "Restore" : "Remove"
                       : statusToggleInfo.field === "account_status"
-                      ? statusToggleInfo.currentStatus === 1 && "Yes"
+                      ? "Yes"
                       : "Yes, Change"
                   }
                 </button>

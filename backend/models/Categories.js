@@ -62,9 +62,10 @@ const Categories = sequelize.define('Categories', {
 
 // 🟢 Relation
 Categories.belongsTo(UploadImage, { 
-  foreignKey: 'cat_file_id', 
-  targetKey: 'id', 
-  onDelete: 'CASCADE' 
+  as: 'CategoryImage',
+  foreignKey: 'cat_file_id',
+  targetKey: 'id',
+  onDelete: 'CASCADE'
 });
 
 // 🟢 Hook: Auto slug generate from name
