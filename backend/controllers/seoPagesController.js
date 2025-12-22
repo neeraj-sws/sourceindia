@@ -2,28 +2,23 @@ const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 const SeoPages = require('../models/SeoPages');
-const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
 const upload = getMulterUpload('seo').single('meta_image');
-
-function createSlug(inputString) {
-  return inputString.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
-}
 
 exports.createSeoPages = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
-      const { title, meta_title, meta_description } = req.body;
+      const { title, slug, meta_title, meta_keywords, meta_description } = req.body;
       /*if (!title || !meta_title || !meta_description || !req.file) {
         return res.status(400).json({ message: 'All fields (title, meta_title, meta_description, file) are required' });
       }*/
       const meta_image = req.file ? `upload/seo/${req.file.filename}` : null;
-      const slug = createSlug(title);
       const seoPages = await SeoPages.create({
         title,
         slug,
         meta_title,
+        meta_keywords,
         meta_description,
         meta_image,
       });
@@ -36,7 +31,7 @@ exports.createSeoPages = async (req, res) => {
 
 exports.getAllSeoPages = async (req, res) => {
   try {
-    const seoPages = await SeoPages.findAll({ order: [['id', 'ASC']] });
+    const seoPages = await SeoPages.findAll({ order: [['id', 'DESC']] });
     res.json(seoPages);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -62,7 +57,7 @@ exports.updateSeoPages = async (req, res) => {
       return res.status(500).json({ error: err.message });
     }
     try {
-      const { title, meta_title, meta_description } = req.body;
+      const { title, slug, meta_title, meta_keywords, meta_description } = req.body;
       /*if (!title || !meta_title || !meta_description) {
         return res.status(400).json({ message: 'All fields (title, meta_title, meta_description) are required' });
       }*/
@@ -76,8 +71,9 @@ exports.updateSeoPages = async (req, res) => {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
       seoPages.title = title;
-      seoPages.slug = createSlug(title);
+      seoPages.slug = slug;
       seoPages.meta_title = meta_title;
+      seoPages.meta_keywords = meta_keywords;
       seoPages.meta_description = meta_description;
       if (req.file) { 
       if (seoPages.meta_image) {
@@ -126,7 +122,7 @@ exports.getAllSeoPagesServerSide = async (req, res) => {
       sortBy = 'id',
       sort = 'DESC',
     } = req.query;
-    const validColumns = ['id', 'title', 'meta_title', 'meta_description', 'created_at', 'updated_at'];
+    const validColumns = ['id', 'title', 'slug', 'meta_title', 'meta_keywords', 'meta_description', 'created_at', 'updated_at'];
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitValue = parseInt(limit);
@@ -140,7 +136,10 @@ exports.getAllSeoPagesServerSide = async (req, res) => {
     if (search) {
       where[Op.or] = [
         { title: { [Op.like]: `%${search}%` } },
+        { slug: { [Op.like]: `%${search}%` } },
         { meta_title: { [Op.like]: `%${search}%` } },
+        { meta_keywords: { [Op.like]: `%${search}%` } },
+        { meta_description: { [Op.like]: `%${search}%` } },
       ];
     }
     const totalRecords = await SeoPages.count();
@@ -154,7 +153,9 @@ exports.getAllSeoPagesServerSide = async (req, res) => {
     const mappedRows = rows.map(row => ({
       id: row.id,
       title: row.title,
+      slug: row.slug,
       meta_title: row.meta_title,
+      meta_keywords: row.meta_keywords,
       meta_description: row.meta_description,
       meta_image: row.meta_image,
       created_at: row.created_at,
@@ -165,6 +166,19 @@ exports.getAllSeoPagesServerSide = async (req, res) => {
       totalRecords,
       filteredRecords,
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getSeoPagesBySlug = async (req, res) => {
+  try {
+    const seoPages = await SeoPages.findOne({ where: { slug: req.params.slug } });
+    if (!seoPages) {
+      return res.status(404).json({ message: 'Seo Pages not found' });
+    }
+    res.json(seoPages);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

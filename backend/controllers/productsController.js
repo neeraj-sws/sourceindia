@@ -23,6 +23,11 @@ const sequelize = require('../config/database');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
 const parseCsv2 = (value) => value.split(',').map(item => item.trim());
 
+function createSlug(inputString) {
+  if (!inputString) return '';
+  return inputString.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+}
+
 exports.allProduct = async (req, res) => {
   try {
     const { company_id } = req.query;
@@ -85,12 +90,9 @@ exports.createProducts = async (req, res) => {
             ? String(v).trim().replace(/^,/, '')
             : v
       );
-
-
-      if (!user_id || !title || !category || !status || !short_description || !req.files || req.files.length === 0) {
+      /*if (!user_id || !title || !category || !status || !short_description || !req.files || req.files.length === 0) {
         return res.status(400).json({ message: 'All fields (user_id, title, category, short_description, files) are required' });
-      }
-
+      }*/
       const uploadImages = await Promise.all(req.files.map(async (file) => {
         return await UploadImage.create({
           file: `upload/products/${file.filename}`,
@@ -115,7 +117,7 @@ exports.createProducts = async (req, res) => {
         application,
         short_description,
         description,
-        slug: slug || '',
+        slug: createSlug(title),
         core_activity: core_activity || 0,
         activity: activity || 0,
         segment: segment || 0,
@@ -451,6 +453,7 @@ exports.updateProducts = async (req, res) => {
     await product.update({
       user_id,
       title,
+      slug: createSlug(title),
       code,
       article_number,
       category,

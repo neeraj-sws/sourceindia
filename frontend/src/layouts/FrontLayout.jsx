@@ -1,5 +1,6 @@
 import { Outlet, Routes, Route, useLocation } from 'react-router-dom';
 import '../assets/css/style.css';
+import GlobalSeo from '../utils/GlobalSeo';
 import FrontHeader from '../common/FrontHeader';
 import FrontFooter from '../common/FrontFooter';
 import UserHeader from '../common/UserHeader';
@@ -63,6 +64,7 @@ function FrontLayout() {
     <>
       <AuthProvider>
         <AlertProvider>
+          <GlobalSeo />
           <ToastContainer position="top-right" autoClose={2000} hideProgressBar={true} />
           {isUserLayout ? <><UserHeader /><UserSidebar /></> : <FrontHeader />}
           <main>

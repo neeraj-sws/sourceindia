@@ -17,6 +17,7 @@ const SeoPages = sequelize.define('SeoPages', {
   title: { type: DataTypes.STRING, allowNull: true },
   slug: { type: DataTypes.STRING, allowNull: true },
   meta_title: { type: DataTypes.TEXT, allowNull: true },
+  meta_keywords: { type: DataTypes.TEXT, allowNull: true },
   meta_description: { type: DataTypes.TEXT, allowNull: true },
   meta_image: { type: DataTypes.TEXT, allowNull: true },
 }, {

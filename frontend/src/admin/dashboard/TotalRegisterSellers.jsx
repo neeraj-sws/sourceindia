@@ -4,7 +4,7 @@ import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 import { formatDateTime } from '../../utils/formatDate';
 
-const TotalRegisterBuyers = () => {
+const TotalRegisterSellers = () => {
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -19,7 +19,7 @@ const TotalRegisterBuyers = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/buyers/server-side`, {
+      const response = await axios.get(`${API_BASE_URL}/sellers/server-side`, {
         params: { page, limit, search, sortBy, sort: sortDirection, todayOnly: todayOnly ? 'true' : undefined, },
       });
       setData(response.data.data);
@@ -63,15 +63,16 @@ const TotalRegisterBuyers = () => {
 
   return (
     <>
-      <h6 className="mb-0 text-uppercase">Today Register Buyer</h6>
+      <h6 className="mb-0 text-uppercase">Today Register Seller</h6>
       <hr />
       <div className="card">
         <div className="card-body">
           <DataTable
             columns={[
               { key: "id", label: "S.No.", sortable: true },
-              { key: "full_name", label: "Name", sortable: true },
-              { key: "country_name", label: "Location", sortable: true },
+              { key: "organization_name", label: "Company", sortable: true },
+              { key: "coreactivity_name", label: "Coreactivity / Category / Segment / Sub Segment", sortable: true },
+              { key: "designation", label: "Designation / Website / Quality Certification", sortable: true },
               { key: "created_at", label: "Created At", sortable: true },
               { key: "updated_at", label: "Updated At", sortable: true },
             ]}
@@ -92,8 +93,21 @@ const TotalRegisterBuyers = () => {
             renderRow={(row, index) => (
               <tr key={row.id}>
                 <td>{(page - 1) * limit + index + 1}</td>
-                <td>{row.full_name}<br />{row.email}<br />{row.mobile}</td>
-                <td>{row.country_name}<br />{row.state_name}<br />{row.city_name}<br /></td>
+                <td>{row.organization_name && (<><strong><a href={`/companies/${row.organization_slug}`} target="_blank">{row.organization_name}</a></strong><br /></>)}
+                      {row.elcina_member == 1 ? (<><span className="badge bg-primary mb-1 text-uppercase">Elcina Member</span><br /></>) :
+                      row.elcina_member == 2 ? (<><span className="badge bg-primary mb-1 text-uppercase">Trial</span><br /></>) : "" }
+                      {row.is_trading == 1 && (<><span className="badge bg-success mb-1">Trader</span><br /></>)}
+                      {row.full_name && (<><i className="bx bx-user me-1" />{row.full_name}<br /></>)}
+                      {row.email && (<><i className="bx bx-user me-1" />{row.email}<br /></>)}
+                      {row.mobile && (<><i className="bx bx-mobile me-1" />{row.mobile}<br /></>)}
+                      {row.state_name && (<><i className="bx bx-map me-1" />{row.state_name}<br /></>)}
+                      {row.city_name && (<><i className="bx bx-map me-1" />{row.city_name}<br /></>)}</td>
+                <td>{row.coreactivity_name}<br />{row.activity_name}<br />{row.category_name}<br />{row.sub_category_name}</td>
+                <td>
+                      {row.designation && (<>{row.designation}<br /></>)}
+                      {row.company_website && (<>{row.company_website}<br /></>)}
+                      {row.organization_quality_certification && row.organization_quality_certification}
+                    </td>
                 <td>{formatDateTime(row.created_at)}</td>
                 <td>{formatDateTime(row.updated_at)}</td>
               </tr>
@@ -101,8 +115,8 @@ const TotalRegisterBuyers = () => {
           />
         </div>
       </div>
-    </>
+      </>
   );
 };
 
-export default TotalRegisterBuyers;
+export default TotalRegisterSellers;
