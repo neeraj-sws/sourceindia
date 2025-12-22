@@ -33,7 +33,7 @@ function createSlug(inputString) {
 }
 
 exports.createSeller = async (req, res) => {
-  const upload = getMulterUpload('users'); // Fixed: Add 'users' param like updateSeller
+  const upload = getMulterUpload('seller'); // Fixed: Add 'users' param like updateSeller
   upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'company_logo', maxCount: 1 },
@@ -42,7 +42,7 @@ exports.createSeller = async (req, res) => {
     { name: 'company_video', maxCount: 1 },
   ])(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
-    
+
     const deleteUploadedFiles = () => {
       const files = [];
       if (req.files?.file) files.push(req.files.file[0].path);
@@ -831,8 +831,8 @@ exports.getAllSellerServerSide = async (req, res) => {
     const where = {};
     where.is_seller = 1; where.is_delete = 0;
     where.status = 1;
-      where.member_role = 1;
-      where.is_complete = 1;
+    where.member_role = 1;
+    where.is_complete = 1;
     /*if (req.query.getDeleted !== 'true') {
       where.status = 1;
       where.member_role = 1;
@@ -918,24 +918,24 @@ exports.getAllSellerServerSide = async (req, res) => {
     if (dateCondition) searchWhere.created_at = dateCondition;
 
     const requiresSellerCategoryJoin =
-  search ||
-  categoryId ||
-  subCategoryId ||
-  (searchWhere[Op.or] &&
-   searchWhere[Op.or].some(c => JSON.stringify(c).includes('seller_categories')));
+      search ||
+      categoryId ||
+      subCategoryId ||
+      (searchWhere[Op.or] &&
+        searchWhere[Op.or].some(c => JSON.stringify(c).includes('seller_categories')));
 
     // 🏢 Include Relationships (with category/subcategory filter fix)
     const sellerCategoryInclude = {
-  model: SellerCategory,
-  as: 'seller_categories',
-  separate: true, // fetch in separate query to prevent row multiplication
-  required: false, // still include users even if they have no categories
-  attributes: ['category_id', 'subcategory_id'],
-  include: [
-    { model: Categories, as: 'category', attributes: ['id', 'name'], required: false },
-    { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'], required: false },
-  ],
-};
+      model: SellerCategory,
+      as: 'seller_categories',
+      separate: true, // fetch in separate query to prevent row multiplication
+      required: false, // still include users even if they have no categories
+      attributes: ['category_id', 'subcategory_id'],
+      include: [
+        { model: Categories, as: 'category', attributes: ['id', 'name'], required: false },
+        { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'], required: false },
+      ],
+    };
 
     // ✅ apply category/subcategory filters inside include (correct SQL alias)
     if (categoryId || subCategoryId) {
@@ -1311,9 +1311,9 @@ exports.getFilteredSellers = async (req, res) => {
         activity_name: s.company_info?.Activity?.name || 'NA',
         category_names: categoryNames,
         sub_category_names: subCategoryNames,
-        status: s.status==1?'Active':'Inactive',
-        is_approve: s.is_approve==1?'Approved':'Pending',
-        member_role: s.member_role==1?'Admin':'',
+        status: s.status == 1 ? 'Active' : 'Inactive',
+        is_approve: s.is_approve == 1 ? 'Approved' : 'Pending',
+        member_role: s.member_role == 1 ? 'Admin' : '',
         created_at: s.created_at
       };
     });
@@ -1394,7 +1394,7 @@ exports.getSellerMessage = async (req, res) => {
         }
       ]
     });
-    if (!message) {return res.status(404).json({ message: "Seller message not found", data: null });}
+    if (!message) { return res.status(404).json({ message: "Seller message not found", data: null }); }
     return res.json({
       message: "Seller message fetched successfully",
       data: message
@@ -1472,7 +1472,7 @@ exports.getSellerCategories = async (req, res) => {
     const categoryMap = {};
     sellerCategories.forEach(sc => {
       if (sc['category.id'] && !categoryMap[sc['category.id']]) {
-        categoryMap[sc['category.id']] = { 
+        categoryMap[sc['category.id']] = {
           id: sc['category.id'],
           name: sc['category.name'],
           slug: sc['category.slug'],
@@ -1513,7 +1513,7 @@ exports.getSellerSubCategories = async (req, res) => {
     const subCategoryMap = {};
     sellerSubCategories.forEach(sc => {
       if (sc['subcategory.id'] && !subCategoryMap[sc['subcategory.id']]) {
-        subCategoryMap[sc['subcategory.id']] = { 
+        subCategoryMap[sc['subcategory.id']] = {
           id: sc['subcategory.id'],
           name: sc['subcategory.name'],
           slug: sc['subcategory.slug'],
