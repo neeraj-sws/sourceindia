@@ -1026,64 +1026,156 @@ exports.storeEnquiry = async (req, res) => {
 
 exports.submitEnquiryuser = async (req, res) => {
   try {
-    const { userId, quantity, description, product_id, enq_company_id } = req.body;
+    const {
+      userId,
+      quantity,
+      description,
+      product_id,
+      enq_company_id
+    } = req.body;
+
+    /* ------------------------------
+       1. Get product and sender user
+    ------------------------------ */
 
     const product = await Products.findByPk(product_id);
-
-    const user = await Users.findByPk(userId);
-    console.log(user);
-
     if (!product) return res.status(404).json({ message: 'Product not found' });
-    let is_approve = 1;
 
-    if (user.walkin_buyer == 1) {
-      is_approve = 0;
-    }
+    const senderUser = await Users.findByPk(userId, {
+      include: [{ model: CompanyInfo, as: 'company_info', attributes: ['organization_name'] }]
+    });
+    if (!senderUser) return res.status(404).json({ message: 'User not found' });
+
+    /* ------------------------------
+       2. Approval logic
+    ------------------------------ */
+
+    let is_approve = senderUser.walkin_buyer === 1 ? 0 : 1;
+
+    /* ------------------------------
+       3. Create enquiry and related records
+    ------------------------------ */
+
     const enquiry_number = Math.random().toString(36).substring(2, 10).toUpperCase();
-    const enquiry = new Enquiries({
+
+    const enquiry = await Enquiries.create({
       enquiry_number,
       company_id: enq_company_id,
-      user_id: user.id,
+      buyer_company_id: senderUser.company_id,
+      user_id: senderUser.id,
       type: 1,
-      quantity: quantity,
-      is_approve: is_approve,
-      description,
+      quantity,
+      is_approve,
+      description
     });
-    await enquiry.save();
 
-    const enquiryUser = new EnquiryUsers({
+    await EnquiryUsers.create({
       enquiry_id: enquiry.id,
       company_id: enq_company_id,
       product_id,
-      product_name: product.title,
+      product_name: product.title
     });
-    await enquiryUser.save();
 
-    const enquiryMessage = new EnquiryMessage({
+    const enquiryMessage = await EnquiryMessage.create({
       seller_company_id: enq_company_id,
       enquiry_id: enquiry.id,
-      buyer_company_id: user.company_id,
+      buyer_company_id: senderUser.company_id
     });
-    await enquiryMessage.save();
 
-    const userMessage = new UserMessage({
-      user_id: user.id,
+    await UserMessage.create({
+      user_id: senderUser.id,
       message: description,
       message_id: enquiryMessage.id,
-      company_id: user.company_id,
+      company_id: senderUser.company_id
     });
-    await userMessage.save();
 
-    if (user.walkin_buyer == 1) {
-      // await productEnquirymail(enquiry, enquiryUser);
-    } else {
+    /* ------------------------------
+       4. Get receiver user (seller)
+    ------------------------------ */
 
-    }
+    const receiverUser = await Users.findOne({
+      where: { company_id: enq_company_id, is_seller: 1, status: 1 },
+      include: [{ model: CompanyInfo, as: 'company_info', attributes: ['organization_name'] }]
+    });
 
-    // await sendEnquiryConfirmation(user.email, name);
-    res.status(200).json({ message: 'Enquiry submitted successfully' });
+    if (!receiverUser) return res.status(404).json({ message: 'Seller not found' });
+
+    /* ------------------------------
+       5. Get transporter & site config
+    ------------------------------ */
+
+    const { transporter } = await getTransporter();
+
+    /* ------------------------------
+       6. Prepare emails (plain text)
+    ------------------------------ */
+
+    const senderMail = `
+Dear ${senderUser.fname},
+
+A new enquiry has been submitted by you. Please check the enquiry details below:
+
+Product Title: ${product.title}
+Quantity: ${quantity}
+
+Seller Company: ${receiverUser.company_info.organization_name}
+Seller Name: ${receiverUser.fname} ${receiverUser.lname}
+Seller Email: ${receiverUser.email}
+Seller Mobile: ${receiverUser.mobile}
+
+Enquiry Number: ${enquiry.enquiry_number}
+Enquiry Message: ${description}
+
+Thanks`;
+
+    const receiverMail = `
+Dear ${receiverUser.fname},
+
+A new enquiry has been received on your company. Please check the enquiry details below:
+
+Product Title: ${product.title}
+Quantity: ${quantity}
+
+Company Name: ${senderUser.company_info.organization_name}
+Name: ${senderUser.fname} ${senderUser.lname}
+Email: ${senderUser.email}
+Mobile: ${senderUser.mobile}
+
+Enquiry Number: ${enquiry.enquiry_number}
+Enquiry Message: ${description}
+
+Thanks`;
+
+    /* ------------------------------
+       7. Send mails
+    ------------------------------ */
+
+    await transporter.sendMail({
+      from: `"Source India-Electronics Supply Chain Portal " <info@sourceindia-electronics.com>`,
+      to: senderUser.email,
+      subject: 'Buyer company enquiry mail',
+      text: senderMail
+    });
+
+    await transporter.sendMail({
+      from: `"Source India-Electronics Supply Chain Portal " <info@sourceindia-electronics.com>`,
+      to: receiverUser.email,
+      subject: 'New company enquiry received',
+      text: receiverMail
+    });
+
+    /* ------------------------------
+       8. Final response
+    ------------------------------ */
+
+    return res.status(200).json({
+      message: 'Enquiry submitted successfully',
+      enquiry_number: enquiry.enquiry_number
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
@@ -1967,5 +2059,103 @@ exports.updateEnquiriesApproveStatus = async (req, res) => {
     res.json({ message: 'Approve status updated', enquiries });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getEnquiryChartData = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+const earliestUser = await Enquiries.findOne({
+  where: { is_delete: 0 },
+  order: [["created_at", "ASC"]],
+});
+
+const start = startDate
+  ? new Date(startDate)
+  : earliestUser
+    ? new Date(earliestUser.created_at)
+    : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // fallback 1 year ago
+
+const end = endDate ? new Date(endDate) : new Date();
+
+start.setHours(0, 0, 0, 0);
+end.setHours(23, 59, 59, 999);
+
+    // Fetch grouped data
+    const chartData = await Enquiries.findAll({
+      attributes: [
+        [Sequelize.fn("DATE", Sequelize.col("Enquiries.created_at")), "date"],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Enquiries.is_approve = 1 THEN 1 ELSE 0 END"
+            )
+          ),
+          "approved"
+        ],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Enquiries.is_approve = 0 THEN 1 ELSE 0 END"
+            )
+          ),
+          "notApproved"
+        ],
+      ],
+      where: {
+        is_delete: 0,
+        created_at: { [Op.between]: [start, end] },
+      },
+      group: [Sequelize.fn("DATE", Sequelize.col("Enquiries.created_at"))],
+      order: [[Sequelize.fn("DATE", Sequelize.col("Enquiries.created_at")), "ASC"]],
+    });
+
+    // Convert to map for fast lookup
+    const dataMap = {};
+    chartData.forEach(row => {
+      const rowDateStr = row.getDataValue("date"); // already 'YYYY-MM-DD'
+dataMap[rowDateStr] = {
+  Approved: parseInt(row.getDataValue("approved")),
+  NotApproved: parseInt(row.getDataValue("notApproved")),
+};
+    });
+
+    // Fill missing dates
+    const chartArray = [];
+const currentDate = new Date(start);
+let cumulativeApproved = 0;
+let cumulativeNotApproved = 0;
+
+while (currentDate <= end) {
+  const dateStr = currentDate.toISOString().split("T")[0];
+
+  const entry = dataMap[dateStr] || {
+    Approved: 0, 
+    NotApproved: 0,
+  };
+
+  // Update cumulative totals
+  cumulativeApproved += entry.Approved;
+  cumulativeNotApproved += entry.NotApproved;
+
+  const total = cumulativeApproved + cumulativeNotApproved;
+
+  chartArray.push({
+    date: dateStr,
+    Approved: cumulativeApproved,
+    NotApproved: cumulativeNotApproved,
+    Total: total
+  });
+
+  currentDate.setDate(currentDate.getDate() + 1);
+}
+
+    return res.json(chartArray);
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
 };

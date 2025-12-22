@@ -26,9 +26,21 @@ const AddProduct = () => {
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [imageToDelete, setImageToDelete] = useState(null);
-  const [formData, setFormData] = useState({
+  /*const [formData, setFormData] = useState({
     user_id: '', title: '', code: '', article_number: '', is_gold: '', is_featured: '', is_recommended: '', best_product: '',
     status: '', application: '', short_description: '', description: '', item_category_id: '', item_subcategory_id: '', item_id: ''
+  });*/
+  const [formData, setFormData] = useState({
+    title: '',
+    code: '',
+    article_number: '',
+    is_gold: '',
+    is_featured: '',
+    is_recommended: '',
+    best_product: '',
+    status: '',
+    short_description: '',
+    description: ''
   });
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
@@ -96,7 +108,45 @@ const AddProduct = () => {
     fetchSellers();
   }, []);
 
-  const handleSellersChange = (event) => { setSelectedSellers(event.target.value); };
+  useEffect(() => {
+  if (!selectedSellers) {
+    setCategories([]);
+    setSelectedCategory('');
+    return;
+  }
+
+  const fetchSellerCategories = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/sellers/seller-categories`,
+        { params: { user_id: selectedSellers } }
+      );
+      setCategories(res.data);
+    } catch (error) {
+      console.error("Error fetching seller categories:", error);
+      setCategories([]);
+    }
+  };
+
+  fetchSellerCategories();
+}, [selectedSellers]);
+
+  const handleSellersChange = (event) => {
+  const userId = event.target.value;
+  setSelectedSellers(userId);
+
+  // reset everything dependent on seller
+  setCategories([]);
+  setSubCategories([]);
+  setSelectedCategory('');
+  setSelectedSubCategory('');
+  setSelectedItemCategory('');
+  setSelectedItemSubCategory('');
+  setSelectedItem('');
+  setItemCategories([]);
+  setItemSubCategories([]);
+  setItems([]);
+};
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -112,7 +162,7 @@ const AddProduct = () => {
 
   const handleApplicationsChange = (event) => { setSelectedApplications(event.target.value); };
 
-  useEffect(() => {
+  /*useEffect(() => {
     const fetchCategories = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/categories`);
@@ -122,111 +172,116 @@ const AddProduct = () => {
       }
     };
     fetchCategories();
-  }, []);
+  }, []);*/
 
   const handleCategoryChange = async (event) => {
   const categoryId = event.target.value;
   setSelectedCategory(categoryId);
 
-  // Reset all dependent dropdowns to blank
+  // reset dependent fields
   setSelectedSubCategory('');
   setSelectedItemCategory('');
   setSelectedItemSubCategory('');
   setSelectedItem('');
-
   setSubCategories([]);
   setItemCategories([]);
   setItemSubCategories([]);
   setItems([]);
 
+  if (!selectedSellers || !categoryId) return;
+
   try {
-    if (categoryId) {
-      const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
-      setSubCategories(res.data);
-    } else {
-      setSubCategories([]);
-    }
+    const res = await axios.get(
+      `${API_BASE_URL}/sellers/seller-subcategories`,
+      {
+        params: {
+          user_id: selectedSellers,
+          category_id: categoryId
+        }
+      }
+    );
+    setSubCategories(res.data);
   } catch (error) {
-    console.error("Error fetching sub categories:", error);
+    console.error("Error fetching seller sub categories:", error);
     setSubCategories([]);
   }
 };
 
-const handleSubCategoryChange = async (event) => {
-  const subCategoryId = event.target.value;
-  setSelectedSubCategory(subCategoryId);
+  const handleSubCategoryChange = async (event) => {
+    const subCategoryId = event.target.value;
+    setSelectedSubCategory(subCategoryId);
 
-  // Reset all dependent dropdowns to blank
-  setSelectedItemCategory('');
-  setSelectedItemSubCategory('');
-  setSelectedItem('');
-  setItemCategories([]);
-  setItemSubCategories([]);
-  setItems([]);
+    // Reset all dependent dropdowns to blank
+    setSelectedItemCategory('');
+    setSelectedItemSubCategory('');
+    setSelectedItem('');
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setItems([]);
 
-  if (selectedCategory && subCategoryId) {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${subCategoryId}`
-      );
-      setItemCategories(res.data);
-    } catch (error) {
-      console.error("Error fetching item categories:", error);
-      setItemCategories([]);
+    if (selectedCategory && subCategoryId) {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${subCategoryId}`
+        );
+        setItemCategories(res.data);
+      } catch (error) {
+        console.error("Error fetching item categories:", error);
+        setItemCategories([]);
+      }
     }
-  }
-};
+  };
 
-// Handle Item Category Change
-const handleItemCategoryChange = async (event) => {
-  const itemCategoryId = event.target.value;
-  setSelectedItemCategory(itemCategoryId);
+  // Handle Item Category Change
+  const handleItemCategoryChange = async (event) => {
+    const itemCategoryId = event.target.value;
+    setSelectedItemCategory(itemCategoryId);
 
-  // Reset lower dropdowns
-  setSelectedItemSubCategory('');
-  setSelectedItem('');
-  setItemSubCategories([]);
-  setItems([]);
+    // Reset lower dropdowns
+    setSelectedItemSubCategory('');
+    setSelectedItem('');
+    setItemSubCategories([]);
+    setItems([]);
 
-  if (selectedCategory && selectedSubCategory && itemCategoryId) {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
-      );
-      setItemSubCategories(res.data);
-    } catch (error) {
-      console.error("Error fetching item sub categories:", error);
-      setItemSubCategories([]);
+    if (selectedCategory && selectedSubCategory && itemCategoryId) {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
+        );
+        setItemSubCategories(res.data);
+      } catch (error) {
+        console.error("Error fetching item sub categories:", error);
+        setItemSubCategories([]);
+      }
     }
-  }
-};
+  };
 
-// Handle Item Sub Category Change
-const handleItemSubCategoryChange = async (event) => {
-  const itemSubCategoryId = event.target.value;
-  setSelectedItemSubCategory(itemSubCategoryId);
+  // Handle Item Sub Category Change
+  const handleItemSubCategoryChange = async (event) => {
+    const itemSubCategoryId = event.target.value;
+    setSelectedItemSubCategory(itemSubCategoryId);
 
-  // Reset lower dropdown
-  setSelectedItem('');
-  setItems([]);
+    // Reset lower dropdown
+    setSelectedItem('');
+    setItems([]);
 
-  if (selectedCategory && selectedSubCategory && selectedItemCategory && itemSubCategoryId) {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
-      );
-      setItems(res.data);
-    } catch (error) {
-      console.error("Error fetching items:", error);
-      setItems([]);
+    if (selectedCategory && selectedSubCategory && selectedItemCategory && itemSubCategoryId) {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
+        );
+        setItems(res.data);
+      } catch (error) {
+        console.error("Error fetching items:", error);
+        setItems([]);
+      }
     }
-  }
-};
+  };
 
-// Handle Item Change
-const handleItemChange = (event) => {
-  setSelectedItem(event.target.value);
-};
+  // Handle Item Change
+  const handleItemChange = (event) => {
+    setSelectedItem(event.target.value);
+  };
 
   useEffect(() => {
     $('#user_id').select2({
@@ -270,17 +325,17 @@ const handleItemChange = (event) => {
     handleItemCategoryChange({ target: { value: $(this).val() } });
   });
 
-$('#item_sub_category_id')
-  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
-  .on("change", function () {
-    handleItemSubCategoryChange({ target: { value: $(this).val() } });
-  });
+  $('#item_sub_category_id')
+    .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
+    .on("change", function () {
+      handleItemSubCategoryChange({ target: { value: $(this).val() } });
+    });
 
-$('#item_id')
-  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item" })
-  .on("change", function () {
-    handleItemChange({ target: { value: $(this).val() } });
-  });
+  $('#item_id')
+    .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item" })
+    .on("change", function () {
+      handleItemChange({ target: { value: $(this).val() } });
+    });
 
     return () => {
       $('#user_id').off("change").select2('destroy');
@@ -345,16 +400,34 @@ $('#item_id')
         description: data.description || '',
         images: data.images || [],
       });
-
+      setSelectedSellers(String(data.user_id || ""));
+      setSelectedApplications(String(data.application || ""));
       // Set category & subcategory first
       setSelectedCategory(data.category || "");
       setSelectedSubCategory(data.sub_category || "");
 
       // Fetch dependent dropdowns sequentially in correct order
-      if (data.category) {
-        const cRes = await axios.get(`${API_BASE_URL}/sub_categories/category/${data.category}`);
-        setSubCategories(cRes.data);
+      if (data.user_id) {
+  const catRes = await axios.get(
+    `${API_BASE_URL}/sellers/seller-categories`,
+    { params: { user_id: data.user_id } }
+  );
+  setCategories(catRes.data);
+}
+      if (data.user_id && data.category) {
+  const subRes = await axios.get(
+    `${API_BASE_URL}/sellers/seller-subcategories`,
+    {
+      params: {
+        user_id: data.user_id,
+        category_id: data.category
       }
+    }
+  );
+  setSubCategories(subRes.data);
+}
+
+setSelectedSubCategory(data.sub_category || "");
 
       let itemCatRes = [];
       if (data.category && data.sub_category) {
@@ -665,6 +738,7 @@ $('#item_id')
                         id="category" className="form-control select2"
                         value={selectedCategory}
                         onChange={handleCategoryChange}
+                        disabled={!selectedSellers}
                       >
                         <option value="">Select Category</option>
                         {categories?.map((category) => (

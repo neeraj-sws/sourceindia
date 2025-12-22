@@ -15,6 +15,7 @@ router.post('/prove-enquiry', enquiriesController.dashboardEnquiryProve);
 router.get('/awarded', enquiriesController.getAwardedEnquiries);
 router.get('/accept', enquiriesController.getAcceptEnquiries);
 router.get('/shortlisted', enquiriesController.getShortlistedenquiries);
+router.get('/chart', enquiriesController.getEnquiryChartData);
 router.delete('/delete-selected', enquiriesController.deleteSelectedEnquiries);
 router.get('/:enquiry_number', enquiriesController.getEnquiriesByNumber);
 router.get("/:enquiry_number/next", enquiriesController.getNextUnapprovedEnquiry);
