@@ -26,6 +26,7 @@ const SellerMessages = require('../models/SellerMessages');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const logSQL = false;
 
 function createSlug(inputString) {
   if (!inputString) return '';
@@ -853,7 +854,15 @@ exports.getAllSellerServerSide = async (req, res) => {
       delete where.member_role;
       delete where.is_complete;
     }
-
+    if (req.query.todayOnly === 'true') {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      where.created_at = {
+        [Op.between]: [startOfDay, endOfDay],
+      };
+    }
     const searchWhere = { ...where };
 
     if (country) searchWhere.country = country;
@@ -1526,5 +1535,301 @@ exports.getSellerSubCategories = async (req, res) => {
   } catch (err) {
     console.error('getSellerSubCategories error:', err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+const buildEmptyTrend = (period) => {
+  const trend = {};
+
+  if (period === "day") {
+    for (let i = 0; i < 30; i++) {
+      trend[moment().subtract(29 - i, "days").format("YYYY-MM-DD")] = 0;
+    }
+  } else if (period === "month") {
+    for (let i = 0; i < 12; i++) {
+      trend[moment().subtract(11 - i, "months").format("YYYY-MM")] = 0;
+    }
+  } else {
+    for (let i = 0; i < 5; i++) {
+      trend[moment().subtract(4 - i, "years").format("YYYY")] = 0;
+    }
+  }
+  return trend;
+};
+
+const fetchTrend = async (where, groupFormat, startDate, today) => {
+  const rows = await Users.findAll({
+    attributes: [
+      [fn("DATE_FORMAT", col("created_at"), groupFormat), "date"],
+      [fn("COUNT", col("user_id")), "count"],
+    ],
+    where: {
+      ...where,
+      created_at: { [Op.between]: [startDate, today] },
+    },
+    group: ["date"],
+    raw: true,
+  });
+
+  return rows.reduce((acc, r) => {
+    acc[r.date] = parseInt(r.count, 10);
+    return acc;
+  }, {});
+};
+
+exports.getSellerTrends = async (req, res) => {
+  try {
+    const period = req.query.period || "day";
+    const fromDateStr = req.query.from; // expected format: YYYY-MM-DD or YYYY-MM or YYYY
+    const toDateStr = req.query.to;
+
+    let startDate, today, groupFormat;
+
+    // Parse 'to' date or default to end of today
+    today = toDateStr ? moment(toDateStr).endOf("day") : moment().endOf("day");
+
+    // Parse 'from' date or default based on period
+    if (fromDateStr) {
+      startDate = moment(fromDateStr).startOf("day");
+    } else {
+      if (period === "day") {
+        startDate = moment().subtract(29, "days").startOf("day");
+      } else if (period === "month") {
+        startDate = moment().subtract(11, "months").startOf("month");
+      } else {
+        startDate = moment().subtract(4, "years").startOf("year");
+      }
+    }
+
+    // Determine groupFormat based on period or date range
+    // You can also add logic to infer groupFormat from date range length if you want
+    if (period === "day") {
+      groupFormat = "%Y-%m-%d";
+    } else if (period === "month") {
+      groupFormat = "%Y-%m";
+    } else {
+      groupFormat = "%Y";
+    }
+
+    // Build empty trend based on the actual date range length
+    // Optionally, you can modify buildEmptyTrend to accept startDate and endDate for more flexibility
+    const base = buildEmptyTrend(period);
+
+    const active = {
+      ...base,
+      ...(await fetchTrend(
+        {
+          is_seller: 1,
+          status: 1,
+          is_delete: 0,
+          member_role: 1,
+          is_complete: 1,
+          is_approve: 1,
+        },
+        groupFormat,
+        startDate.toDate(),
+        today.toDate()
+      )),
+    };
+
+    const inactive = {
+      ...base,
+      ...(await fetchTrend(
+        {
+          is_seller: 1,
+          status: 0,
+          is_delete: 0,
+          member_role: 1,
+          is_complete: 1,
+        },
+        groupFormat,
+        startDate.toDate(),
+        today.toDate()
+      )),
+    };
+
+    const notApproved = {
+      ...base,
+      ...(await fetchTrend(
+        {
+          is_seller: 1,
+          is_approve: 0,
+          is_delete: 0,
+          is_complete: 1,
+        },
+        groupFormat,
+        startDate.toDate(),
+        today.toDate()
+      )),
+    };
+
+    const notCompleted = {
+      ...base,
+      ...(await fetchTrend(
+        {
+          is_seller: 1,
+          is_complete: 0,
+          is_delete: 0,
+          is_approve: 0,
+        },
+        groupFormat,
+        startDate.toDate(),
+        today.toDate()
+      )),
+    };
+
+    res.json({
+      period,
+      from: startDate.format("YYYY-MM-DD"),
+      to: today.format("YYYY-MM-DD"),
+      active,
+      inactive,
+      notApproved,
+      notCompleted,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getSellerChartData = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+// Fetch earliest seller record for MAX period
+const earliestUser = await Users.findOne({
+  where: { is_seller: 1 },
+  order: [["created_at", "ASC"]],
+});
+
+const start = startDate
+  ? new Date(startDate)
+  : earliestUser
+    ? new Date(earliestUser.created_at)
+    : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // fallback 1 year ago
+
+const end = endDate ? new Date(endDate) : new Date();
+
+start.setHours(0, 0, 0, 0);
+end.setHours(23, 59, 59, 999);
+
+    // Fetch grouped data
+    const chartData = await Users.findAll({
+      attributes: [
+        [Sequelize.fn("DATE", Sequelize.col("Users.created_at")), "date"],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Users.status = 1 AND Users.is_delete = 0 AND Users.member_role = 1 AND Users.is_complete = 1 AND Users.is_approve = 1 THEN 1 ELSE 0 END"
+            )
+          ),
+          "active"
+        ],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Users.status = 0 AND Users.is_delete = 0 AND Users.member_role = 1 AND Users.is_complete = 1 THEN 1 ELSE 0 END"
+            )
+          ),
+          "inactive"
+        ],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Users.is_approve = 0 AND Users.is_delete = 0 AND Users.is_complete = 1 THEN 1 ELSE 0 END"
+            )
+          ),
+          "notApproved"
+        ],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Users.is_complete = 0 AND Users.is_delete = 0 AND Users.is_approve = 0 THEN 1 ELSE 0 END"
+            )
+          ),
+          "notCompleted"
+        ],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Users.is_delete = 1 THEN 1 ELSE 0 END"
+            )
+          ),
+          "deleted"
+        ],
+      ],
+      where: {
+        is_seller: 1,
+        created_at: { [Op.between]: [start, end] },
+      },
+      group: [Sequelize.fn("DATE", Sequelize.col("Users.created_at"))],
+      order: [[Sequelize.fn("DATE", Sequelize.col("Users.created_at")), "ASC"]],
+    });
+
+    // Convert to map for fast lookup
+    const dataMap = {};
+    chartData.forEach(row => {
+      const rowDateStr = row.getDataValue("date"); // already 'YYYY-MM-DD'
+dataMap[rowDateStr] = {
+  Active: parseInt(row.getDataValue("active")),
+  Inactive: parseInt(row.getDataValue("inactive")),
+  NotApproved: parseInt(row.getDataValue("notApproved")),
+  NotCompleted: parseInt(row.getDataValue("notCompleted")),
+  Deleted: parseInt(row.getDataValue("deleted")),
+};
+    });
+
+    // Fill missing dates
+    const chartArray = [];
+const currentDate = new Date(start);
+let cumulativeActive = 0;
+let cumulativeInactive = 0;
+let cumulativeNotApproved = 0;
+let cumulativeNotCompleted = 0;
+let cumulativeDeleted = 0;
+
+while (currentDate <= end) {
+  const dateStr = currentDate.toISOString().split("T")[0];
+
+  const entry = dataMap[dateStr] || { 
+    Active: 0, 
+    Inactive: 0, 
+    NotApproved: 0, 
+    NotCompleted: 0, 
+    Deleted: 0 
+  };
+
+  // Update cumulative totals
+  cumulativeActive += entry.Active;
+  cumulativeInactive += entry.Inactive;
+  cumulativeNotApproved += entry.NotApproved;
+  cumulativeNotCompleted += entry.NotCompleted;
+  cumulativeDeleted += entry.Deleted;
+
+  const total = cumulativeActive + cumulativeInactive + cumulativeNotApproved + cumulativeNotCompleted + cumulativeDeleted;
+
+  chartArray.push({
+    date: dateStr,
+    Active: cumulativeActive,
+    Inactive: cumulativeInactive,
+    NotApproved: cumulativeNotApproved,
+    NotCompleted: cumulativeNotCompleted,
+    Deleted: cumulativeDeleted,
+    Total: total
+  });
+
+  currentDate.setDate(currentDate.getDate() + 1);
+}
+
+    return res.json(chartArray);
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
 };

@@ -3162,3 +3162,57 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	appearance: none;
 	display: none;
 }
+
+.banner-slide {
+  height: 500px;
+  background-size: cover;
+  background-position: right center;
+  position: relative;
+}
+
+.banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    #071a2d 0%,
+    rgba(7, 26, 45, 0.95) 40%,
+    rgba(7, 26, 45, 0.5) 70%,
+    rgba(7, 26, 45, 0.1) 100%
+  );
+  z-index: 1;
+}
+
+.banner-slide .container {
+  position: relative;
+  z-index: 2;
+}
+
+.banner-content h1 {
+  font-size: 42px;
+  font-weight: 700;
+  color: #ff6a2a;
+}
+
+.banner-content h4 {
+  margin-top: 12px;
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.banner-content p {
+  margin-top: 15px;
+  max-width: 520px;
+  color: #d9e1ea;
+  line-height: 1.6;
+}
+
+.banner-content .btn {
+  border-color: #ff6a2a;
+  color: #ff6a2a;
+}
+
+.banner-content .btn:hover {
+  background-color: #ff6a2a;
+  color: #fff;
+}

@@ -3,10 +3,11 @@ import axios from "axios";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import ImageWithFallback from "../common/ImageWithFallback";
+import MetaKeywordsInput from "../common/MetaKeywordsInput";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import SeoPagesModals from "./modal/SeoPagesModals";
-const initialForm = { id: null, title: "", meta_title: "", meta_description: "", meta_image: null };
+const initialForm = { id: null, title: "", slug: "", meta_title: "", meta_keywords: "", meta_description: "", meta_image: null };
 
 const SeoPages = () => {
   const [data, setData] = useState([]);
@@ -109,10 +110,27 @@ const SeoPages = () => {
   const validateForm = () => {
     const errs = {};
     if (!formData.title?.trim()) errs.title = "Title is required";
-    if (!formData.meta_title?.trim()) errs.meta_title = "Meta Title is required";
-    if (!formData.meta_description?.trim()) errs.meta_description = "Meta description is required";
-    if (!formData.file && !isEditing) {
-      errs.file = "Image is required";
+    if (!formData.slug?.trim()) {
+      errs.slug = "Slug is required";
+    } else {
+      const slugRegex = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
+      if (!slugRegex.test(formData.slug.trim())) {
+        errs.slug = "Slug must be lowercase, contain only letters, numbers, and hyphens (no spaces or special characters)";
+      }
+    }
+    // if (!formData.meta_title?.trim()) errs.meta_title = "Meta Title is required";
+    // if (!formData.meta_keywords?.trim()) errs.meta_keywords = "Meta keywords is required";
+    // if (!formData.meta_description?.trim()) errs.meta_description = "Meta description is required";
+    // if (!formData.file && !isEditing) {
+    //   errs.file = "Image is required";
+    // }
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+    if (formData.file) {
+      if (!allowedImageTypes.includes(formData.file.type)) {
+        errs.file = "Invalid image format (only JPG/PNG allowed)";
+      } else if (formData.file.size > 2 * 1024 * 1024) {
+        errs.file = "Image size must be under 2MB";
+      }
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -124,7 +142,9 @@ const SeoPages = () => {
     setSubmitting(true);
     const form = new FormData();
     form.append("title", formData.title);
+    form.append("slug", formData.slug);
     form.append("meta_title", formData.meta_title);
+    form.append("meta_keywords", formData.meta_keywords);
     form.append("meta_description", formData.meta_description);
     if (formData.file) {
       form.append("meta_image", formData.file);
@@ -189,30 +209,49 @@ const SeoPages = () => {
                       {errors.title && <div className="invalid-feedback">{errors.title}</div>}
                     </div>
                     <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="meta_title" className="form-label required">Meta Title</label>
+                      <label htmlFor="slug" className="form-label required">Slug</label>
                       <input
                         type="text"
-                        className={`form-control ${errors.meta_title ? "is-invalid" : ""}`}
+                        className={`form-control ${errors.slug ? "is-invalid" : ""}`}
+                        id="slug"
+                        value={formData.slug}
+                        onChange={handleChange}
+                        placeholder="Slug"
+                      />
+                      {errors.slug && <div className="invalid-feedback">{errors.slug}</div>}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="meta_title" className="form-label">Meta Title</label>
+                      <input
+                        type="text"
+                        className="form-control"
                         id="meta_title"
                         value={formData.meta_title}
                         onChange={handleChange}
                         placeholder="Meta Title"
                       />
-                      {errors.meta_title && <div className="invalid-feedback">{errors.meta_title}</div>}
+                    </div>
+                    <div className="form-group mb-3 col-md-12">
+                      <label htmlFor="meta_keywords" className="form-label">Meta Keywords</label>
+                      <MetaKeywordsInput
+                        value={formData.meta_keywords}
+                        onChange={(val) =>
+                          setFormData(prev => ({ ...prev, meta_keywords: val }))
+                        }
+                      />
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="meta_description" className="form-label required">Description</label>
+                      <label htmlFor="meta_description" className="form-label">Description</label>
                       <textarea
-                        className={`form-control ${errors.meta_description ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="meta_description"
                         onChange={handleChange}
                         placeholder="Description"
                         value={formData.meta_description}
                       />
-                      {errors.meta_description && <div className="text-danger small mt-1">{errors.meta_description}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="file" className="form-label required">Meta Image</label>
+                      <label htmlFor="file" className="form-label">Meta Image</label>
                       <input
                         type="file"
                         className={`form-control ${errors.file ? "is-invalid" : ""}`}
@@ -264,7 +303,9 @@ const SeoPages = () => {
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "title", label: "Title", sortable: true },
+                      { key: "slug", label: "Slug", sortable: true },
                       { key: "meta_title", label: "Meta Title", sortable: true },
+                      { key: "meta_keywords", label: "Meta Keywords", sortable: true },
                       { key: "meta_description", label: "Meta Description", sortable: true },
                       { key: "action", label: "Action", sortable: false },
                     ]}
@@ -292,7 +333,9 @@ const SeoPages = () => {
                           showFallback={true}
                         /></td>
                         <td>{row.title}</td>
+                        <td>{row.slug}</td>
                         <td>{row.meta_title}</td>
+                        <td>{row.meta_keywords}</td>
                         <td>{row.meta_description}</td>
                         <td>
                           <div className="dropdown">

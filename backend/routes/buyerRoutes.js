@@ -8,6 +8,7 @@ router.get('/', buyerController.getAllBuyer);
 router.get('/server-side', buyerController.getAllBuyerServerSide);
 router.get('/filtered', buyerController.getFilteredBuyers);
 router.delete('/delete-selected', buyerController.deleteSelectedBuyer);
+router.get('/chart', buyerController.getBuyerChartData);
 router.get('/:id', buyerController.getBuyerById);
 router.put('/:id', buyerController.updateBuyer);
 router.delete('/:id', buyerController.deleteBuyer);

@@ -1,15 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Breadcrumb from '../common/Breadcrumb';
 import API_BASE_URL from "../../config";
+import SellerStockChart from '../dashboard/SellerStockChart';
+import BuyerStockChart from '../dashboard/BuyerStockChart';
+import EnquiryStockChart from '../dashboard/EnquiryStockChart';
 import LeadsList from '../dashboard/LeadsList';
 import TotalRegisterBuyers from "../dashboard/TotalRegisterBuyers";
+import TotalRegisterSellers from "../dashboard/TotalRegisterSellers";
 
 const Dashboard = () => {
   const [counts, setCounts] = useState({});
+  const buyerSectionRef = useRef(null);
+  const sellerSectionRef = useRef(null);
 
-  const CountData = ({ label, value, icon, link }) => {
+  const CountData = ({ label, value, icon, link, onClick }) => {
     const randomNum = Math.floor(Math.random() * 4) + 1;
     const imgSrc = `/element-0${randomNum}.svg`;
 
@@ -45,11 +51,15 @@ const Dashboard = () => {
 
     return (
       <div className="col mb-4">
-        {link && link !== "#" ? (
-          <Link to={link}>{content}</Link>
-        ) : (
-          <div style={{ cursor: "pointer" }}>{content}</div>
-        )}
+      {onClick ? (
+        <div style={{ cursor: "pointer" }} onClick={onClick}>
+          {content}
+        </div>
+      ) : link && link !== "#" ? (
+        <Link to={link}>{content}</Link>
+      ) : (
+        <div style={{ cursor: "pointer" }}>{content}</div>
+      )}
       </div>
     );
   };
@@ -114,8 +124,18 @@ const Dashboard = () => {
   }, []);
 
   const stats = [
-    { label: "Today Seller Members", value: counts.sellers?.addedToday, icon: "bx bxs-user-plus", link: "#" },
-    { label: "Today Buyer Members", value: counts.buyers?.addedToday, icon: "bx bxs-user-plus", link: "#" },
+    {
+      label: "Today Seller Members",
+      value: counts.sellers?.addedToday,
+      icon: "bx bxs-user-plus",
+      onClick: () => sellerSectionRef.current?.scrollIntoView({ behavior: "smooth" }),
+    },
+    {
+      label: "Today Buyer Members",
+      value: counts.buyers?.addedToday,
+      icon: "bx bxs-user-plus",
+      onClick: () => buyerSectionRef.current?.scrollIntoView({ behavior: "smooth" }),
+    },
     { label: "Total Seller Members", value: counts.sellers?.total, icon: "bx bxs-group", link: "/admin/sellers" },
     { label: "Active Seller Members", value: counts.sellers?.statusActive, icon: "bx bxs-user-check", link: "/admin/sellers" },
     { label: "Inactive Seller Members", value: counts.sellers?.statusInactive, icon: "bx bxs-user-x", link: "/admin/inactive_sellers" },
@@ -145,11 +165,48 @@ const Dashboard = () => {
         <Breadcrumb mainhead="Dashboard" title="" />
         <div className="row row-cols-1 row-cols-md-2 row-cols-xl-4">
           {stats?.map((s, idx) => (
-            <CountData key={idx} label={s.label} value={s.value || 0} icon={s.icon} link={s.link} />
+            <CountData key={idx} label={s.label} value={s.value || 0} icon={s.icon} link={s.link} onClick={s.onClick} />
           ))}
         </div>
+        <div className="row">
+          <div className="col-md-6">
+
+          </div>
+        </div>
+        <div id="sellerGraph" className="mb-3">
+          <h6 className="mb-0 text-uppercase">Seller Graph</h6>
+          <hr />
+          <div className="card">
+            <div className="card-body">
+              <SellerStockChart />
+            </div>
+          </div>
+        </div>
+        <div id="buyerGraph" className="mb-3">
+          <h6 className="mb-0 text-uppercase">Buyer Graph</h6>
+          <hr />
+          <div className="card">
+            <div className="card-body">
+              <BuyerStockChart />
+            </div>
+          </div>
+        </div>
+        <div id="enquiryGraph" className="mb-3">
+          <h6 className="mb-0 text-uppercase">Leads Graph</h6>
+          <hr />
+          <div className="card">
+            <div className="card-body">
+              <EnquiryStockChart />
+            </div>
+          </div>
+        </div>
         <LeadsList />
-        <TotalRegisterBuyers />
+        <div ref={sellerSectionRef}>
+          <TotalRegisterSellers />
+        </div>
+        <div ref={buyerSectionRef}>
+          <TotalRegisterBuyers />
+        </div>
       </div>
     </div>
   );

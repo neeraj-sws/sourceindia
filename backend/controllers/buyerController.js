@@ -845,3 +845,131 @@ exports.getFilteredBuyers = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getBuyerChartData = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+// Fetch earliest seller record for MAX period
+const earliestUser = await Users.findOne({
+  where: { is_seller: 0 },
+  order: [["created_at", "ASC"]],
+});
+
+const start = startDate
+  ? new Date(startDate)
+  : earliestUser
+    ? new Date(earliestUser.created_at)
+    : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // fallback 1 year ago
+
+const end = endDate ? new Date(endDate) : new Date();
+
+start.setHours(0, 0, 0, 0);
+end.setHours(23, 59, 59, 999);
+
+    // Fetch grouped data
+    const chartData = await Users.findAll({
+      attributes: [
+        [Sequelize.fn("DATE", Sequelize.col("Users.created_at")), "date"],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Users.status = 1 AND Users.is_delete = 0 AND Users.is_approve = 1 THEN 1 ELSE 0 END"
+            )
+          ),
+          "active"
+        ],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Users.status = 0 AND Users.is_delete = 0 THEN 1 ELSE 0 END"
+            )
+          ),
+          "inactive"
+        ],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Users.is_approve = 0 AND Users.is_delete = 0 AND Users.status = 1 THEN 1 ELSE 0 END"
+            )
+          ),
+          "notApproved"
+        ],
+        [
+          Sequelize.fn(
+            "SUM",
+            Sequelize.literal(
+              "CASE WHEN Users.is_delete = 1 THEN 1 ELSE 0 END"
+            )
+          ),
+          "deleted"
+        ],
+      ],
+      where: {
+        is_seller: 0,
+        created_at: { [Op.between]: [start, end] },
+      },
+      group: [Sequelize.fn("DATE", Sequelize.col("Users.created_at"))],
+      order: [[Sequelize.fn("DATE", Sequelize.col("Users.created_at")), "ASC"]],
+    });
+
+    // Convert to map for fast lookup
+    const dataMap = {};
+    chartData.forEach(row => {
+      const rowDateStr = row.getDataValue("date"); // already 'YYYY-MM-DD'
+dataMap[rowDateStr] = {
+  Active: parseInt(row.getDataValue("active")),
+  Inactive: parseInt(row.getDataValue("inactive")),
+  NotApproved: parseInt(row.getDataValue("notApproved")),
+  Deleted: parseInt(row.getDataValue("deleted")),
+};
+    });
+
+    // Fill missing dates
+    const chartArray = [];
+const currentDate = new Date(start);
+let cumulativeActive = 0;
+let cumulativeInactive = 0;
+let cumulativeNotApproved = 0;
+let cumulativeDeleted = 0;
+
+while (currentDate <= end) {
+  const dateStr = currentDate.toISOString().split("T")[0];
+
+  const entry = dataMap[dateStr] || { 
+    Active: 0, 
+    Inactive: 0, 
+    NotApproved: 0,
+    Deleted: 0 
+  };
+
+  // Update cumulative totals
+  cumulativeActive += entry.Active;
+  cumulativeInactive += entry.Inactive;
+  cumulativeNotApproved += entry.NotApproved;
+  cumulativeDeleted += entry.Deleted;
+
+  const total = cumulativeActive + cumulativeInactive + cumulativeNotApproved + cumulativeDeleted;
+
+  chartArray.push({
+    date: dateStr,
+    Active: cumulativeActive,
+    Inactive: cumulativeInactive,
+    NotApproved: cumulativeNotApproved,
+    Deleted: cumulativeDeleted,
+    Total: total
+  });
+
+  currentDate.setDate(currentDate.getDate() + 1);
+}
+
+    return res.json(chartArray);
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: err.message });
+  }
+};
