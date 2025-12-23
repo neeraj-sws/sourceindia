@@ -211,8 +211,8 @@ const Enquiry = () => {
                     {/* Header */}
                     <div className="card-header bg-white">
                       <div className="d-flex gap-2 align-items-center">
-                        <div className="compnaylogo">
-                          {enquiry.company_logo && (
+                        {enquiry.company_logo && (
+                        <div className="compnaylogo">                          
                             <ImageFront
                               src={`${ROOT_URL}/${enquiry.company_logo}`}
                               alt={enquiry.organization_name || "Company"}
@@ -224,9 +224,9 @@ const Enquiry = () => {
                               }}
                               showFallback={true}
                               defaultimg="/company.png"
-                            />
-                          )}
+                            />                          
                         </div>
+                        )}
                         <h5 className="card-title lh-sm" style={{ fontSize: "18px" }}>
                           {enquiry.title}
                         </h5>

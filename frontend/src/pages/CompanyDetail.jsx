@@ -16,6 +16,7 @@ const CompanyDetail = () => {
   const navigate = useNavigate();
   const { slug } = useParams();
   const [company, setCompany] = useState(null);
+  const [showSkeleton, setShowSkeleton] = useState(true);
   const { showNotification } = useAlert();
   // ⭐ Review form state
   const [rating, setRating] = useState(0);
@@ -26,16 +27,26 @@ const CompanyDetail = () => {
   const { user } = UseAuth();
 
   useEffect(() => {
-    const fetchCompany = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/products/companies/${slug}`);
+  const fetchCompany = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/products/companies/${slug}`
+      );
+
+      // Always show skeleton for 1 second
+      setTimeout(() => {
         setCompany(res.data);
-      } catch (error) {
-        console.error("Error fetching company:", error);
-      }
-    };
-    fetchCompany();
-  }, [slug]);
+        setShowSkeleton(false);
+      }, 1000);
+
+    } catch (error) {
+      console.error("Error fetching company:", error);
+      setShowSkeleton(false);
+    }
+  };
+
+  fetchCompany();
+}, [slug]);
 
   // 🧩 Handle Review Submit
   const handleSubmit = async (e) => {
@@ -76,13 +87,112 @@ const CompanyDetail = () => {
     }
   };
 
-  if (!company) return <div>Loading...</div>;
+  const Skeleton = ({ width = "100%", height = "16px", style = {} }) => (
+  <div
+    style={{
+      width,
+      height,
+      background: "linear-gradient(90deg,#e0e0e0 25%,#f5f5f5 37%,#e0e0e0 63%)",
+      backgroundSize: "400% 100%",
+      animation: "skeleton-loading 1.4s ease infinite",
+      borderRadius: "6px",
+      ...style,
+    }}
+  />
+);
+
+const CompanyDetailSkeleton = () => (
+  <>
+    <style>
+      {`
+        @keyframes skeleton-loading {
+          0% { background-position: 100% 50%; }
+          100% { background-position: 0 50%; }
+        }
+      `}
+    </style>
+
+    <section className="productDetail py-5">
+      <div className="container">
+        <div className="row">
+
+          {/* Left Card */}
+          <div className="col-lg-3">
+            <div className="card p-4">
+              <Skeleton height="20px" width="80%" style={{ marginBottom: 12 }} />
+              <Skeleton height="100px" style={{ marginBottom: 16 }} />
+
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} height="14px" style={{ marginBottom: 8 }} />
+              ))}
+
+              <Skeleton height="36px" style={{ marginTop: 12 }} />
+            </div>
+          </div>
+
+          {/* Right Content */}
+          <div className="col-lg-9">
+            <div className="card p-4">
+              <Skeleton height="28px" width="50%" style={{ marginBottom: 20 }} />
+
+              {[...Array(6)].map((_, i) => (
+                <Skeleton
+                  key={i}
+                  height="18px"
+                  style={{ marginBottom: 10 }}
+                />
+              ))}
+
+              <Skeleton height="80px" style={{ marginTop: 20 }} />
+              <Skeleton height="40px" width="160px" style={{ marginTop: 20 }} />
+            </div>
+          </div>
+
+        </div>
+
+        {/* Products Grid */}
+        <div className="mt-5">
+          <Skeleton height="30px" width="200px" style={{ marginBottom: 20 }} />
+          <div className="row">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="col-md-4">
+                <div className="card p-3">
+                  <Skeleton height="180px" />
+                  <Skeleton height="18px" style={{ marginTop: 12 }} />
+                  <Skeleton height="32px" width="100px" style={{ marginTop: 10 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </>
+);
+
+  if (showSkeleton) return <CompanyDetailSkeleton />;
 
   return (
     <>
       <section className="productDetail py-5">
         <div className="container">
           <div className="row">
+            <nav aria-label="breadcrumb" className="mb-3">
+  <ol className="breadcrumb mb-0">
+    <li className="breadcrumb-item">
+      <a href="/" className="text-decoration-none">Home</a>
+    </li>
+
+    <li className="breadcrumb-item">
+      <a href="/company-list" className="text-decoration-none">Seller</a>
+    </li>
+
+    <li className="breadcrumb-item active" aria-current="page">
+      {company.organization_name}
+    </li>
+  </ol>
+</nav>
             {/* Company Info */}
             <div className="col-lg-3">
               <div className="card h-100 shadow-sm">

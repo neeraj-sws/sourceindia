@@ -748,7 +748,15 @@ exports.getItemCategory = async (req, res) => {
     const subcategory = await SubCategories.findOne({
       where: { slug: slug, is_delete: 0, status: 1 },
       attributes: ["id", "name", "category", "slug"],
-      raw: true,
+      include: [
+    {
+      model: Categories,
+      as: "Categories",
+      attributes: ["id", "name", "slug"],
+    }
+  ],
+  raw: true,
+  nest: true
     });
 
     if (!subcategory) {
@@ -826,6 +834,11 @@ exports.getItemCategory = async (req, res) => {
         id: subcategory.id,
         name: subcategory.name,
         slug: subcategory.slug,
+        category: {
+      id: subcategory.Categories.id,
+      name: subcategory.Categories.name,
+      slug: subcategory.Categories.slug
+    },
         item_categories: items,
       },
       pagination: {
@@ -852,8 +865,21 @@ exports.getItemSubcategory = async (req, res) => {
     // 1️⃣ Find subcategory
     const subcategory = await ItemCategory.findOne({
       where: { slug: slug, status: 1 },
-      attributes: ["id", "name", "category_id", "slug"],
-      raw: true,
+      attributes: ["id", "name", "slug"],
+  include: [
+    {
+      model: Categories,
+      as: "Categories",
+      attributes: ["id", "name", "slug"],
+    },
+    {
+      model: SubCategories,
+      as: "SubCategories",
+      attributes: ["id", "name", "slug"],
+    }
+  ],
+  raw: true,
+  nest: true
     });
 
     if (!subcategory) {
@@ -931,6 +957,17 @@ exports.getItemSubcategory = async (req, res) => {
         id: subcategory.id,
         name: subcategory.name,
         slug: subcategory.slug,
+        category: {
+      id: subcategory.Categories.id,
+      name: subcategory.Categories.name,
+      slug: subcategory.Categories.slug
+    },
+
+    sub_category: {
+      id: subcategory.SubCategories.id,
+      name: subcategory.SubCategories.name,
+      slug: subcategory.SubCategories.slug
+    },
         item_categories: items,
       },
       pagination: {
