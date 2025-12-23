@@ -8,21 +8,22 @@ const ItemSubCategory = () => {
   const [subcategory, setSubcategory] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/categories/sub-items?slug=${slug}&page=${page}&limit=8`
-        );
+  const fetchData = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/categories/sub-items?slug=${slug}&page=${page}&limit=8`
+      );
 
-        const data = res.data;
+      const data = res.data;
 
+      setTimeout(() => {
         if (data && data.subcategory) {
           if (page === 1) {
             setSubcategory(data.subcategory);
           } else {
-            // Merge pagination data
             setSubcategory(prev => ({
               ...prev,
               item_categories: [
@@ -33,28 +34,133 @@ const ItemSubCategory = () => {
           }
 
           setHasMore(data.pagination?.hasMore || false);
-        } else {
-          console.warn("Invalid response structure:", data);
         }
-      } catch (err) {
-        console.error("Error fetching data:", err);
-      }
-    };
 
-    fetchData();
-  }, [slug, page]);
+        setShowSkeleton(false);
+      }, 1000); // ⏱️ 1 second
+
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setShowSkeleton(false);
+    }
+  };
+
+  fetchData();
+}, [slug, page]);
 
   const handleLoadMore = () => {
     setPage(prev => prev + 1);
   };
 
-  if (!subcategory) {
-    return <p className="text-center my-5 text-muted">Loading...</p>;
-  }
+  const Skeleton = ({ width = "100%", height = "16px", style = {} }) => (
+  <div
+    style={{
+      width,
+      height,
+      background: "linear-gradient(90deg,#e0e0e0 25%,#f5f5f5 37%,#e0e0e0 63%)",
+      backgroundSize: "400% 100%",
+      animation: "skeleton-loading 1.4s ease infinite",
+      borderRadius: "6px",
+      ...style,
+    }}
+  />
+);
+
+const ItemSubCategorySkeleton = () => (
+  <>
+    <style>
+      {`
+        @keyframes skeleton-loading {
+          0% { background-position: 100% 50%; }
+          100% { background-position: 0 50%; }
+        }
+      `}
+    </style>
+
+    <section className="categorySection py-4 my-4">
+      <div className="container">
+
+        {/* Heading */}
+        <Skeleton height="26px" width="280px" style={{ marginBottom: 24 }} />
+
+        <div className="card mb-3">
+          <div className="card-body">
+
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="mb-4">
+
+                <Skeleton height="20px" width="200px" style={{ marginBottom: 16 }} />
+
+                <div className="row g-3">
+                  {[...Array(6)].map((_, j) => (
+                    <div key={j} className="col-6 col-sm-4 col-md-3 col-lg-2">
+                      <div className="card border-0 shadow-sm h-100">
+                        <div className="card-body p-2">
+                          <Skeleton height="125px" />
+                          <Skeleton height="14px" style={{ marginTop: 10 }} />
+                          <Skeleton height="12px" width="40%" style={{ marginTop: 6 }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            ))}
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </>
+);
+
+  if (showSkeleton && page === 1) {
+  return <ItemSubCategorySkeleton />;
+}
 
   return (
     <section className="categorySection py-4 my-4">
       <div className="container">
+        <nav aria-label="breadcrumb" className="mb-3">
+  <ol className="breadcrumb mb-0">
+    <li className="breadcrumb-item">
+      <a href="/" className="text-decoration-none">Home</a>
+    </li>
+
+    <li className="breadcrumb-item">
+      <a href="/categories" className="text-decoration-none">Categories</a>
+    </li>
+
+    {/* Parent Category (if available from API) */}
+    {subcategory?.category && (
+      <li className="breadcrumb-item">
+        <a
+          href={`/sub-categories/${subcategory.category.slug}`}
+          className="text-decoration-none"
+        >
+          {subcategory.category.name}
+        </a>
+      </li>
+    )}
+    {subcategory?.sub_category && (
+      <li className="breadcrumb-item">
+        <a
+          href={`/item-categories/${subcategory.sub_category.slug}`}
+          className="text-decoration-none"
+        >
+          {subcategory.sub_category.name}
+        </a>
+      </li>
+    )}
+
+    {/* Current Subcategory */}
+    <li className="breadcrumb-item active" aria-current="page">
+      {subcategory?.name}
+    </li>
+  </ol>
+</nav>
         {/* 🟢 Subcategory Heading */}
         <h4 className="fw-semibold mb-4  pb-2 text-blue text-capitalize">
           {subcategory.name}

@@ -16,6 +16,15 @@ const GetSupport = () => {
 
   const [loading, setLoading] = useState(false);
   const [responseMsg, setResponseMsg] = useState("");
+  const [showSkeleton, setShowSkeleton] = useState(true);
+
+  useEffect(() => {
+  const timer = setTimeout(() => {
+    setShowSkeleton(false);
+  }, 1000); // ⏱️ 1 second
+
+  return () => clearTimeout(timer);
+}, []);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -50,6 +59,86 @@ const GetSupport = () => {
       setLoading(false);
     }
   };
+
+  const Skeleton = ({ width = "100%", height = "16px", style = {} }) => (
+  <div
+    style={{
+      width,
+      height,
+      background: "linear-gradient(90deg,#e0e0e0 25%,#f5f5f5 37%,#e0e0e0 63%)",
+      backgroundSize: "400% 100%",
+      animation: "skeleton-loading 1.4s ease infinite",
+      borderRadius: "6px",
+      ...style,
+    }}
+  />
+);
+
+const GetSupportSkeleton = () => (
+  <>
+    <style>
+      {`
+        @keyframes skeleton-loading {
+          0% { background-position: 100% 50%; }
+          100% { background-position: 0 50%; }
+        }
+      `}
+    </style>
+
+    <section className="my-5">
+      <div className="container">
+
+        {/* Header */}
+        <div className="card mb-5">
+          <div className="card-body py-5 d-flex justify-content-center">
+            <Skeleton width="250px" height="36px" />
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-body py-md-4 pe-lg-5">
+            <div className="row">
+
+              {/* Left Info */}
+              <div className="col-lg-4">
+                <Skeleton height="22px" width="120px" style={{ marginBottom: 20 }} />
+
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} style={{ marginBottom: 20 }}>
+                    <Skeleton height="16px" width="140px" />
+                    <Skeleton height="14px" style={{ marginTop: 8 }} />
+                    <Skeleton height="14px" width="80%" style={{ marginTop: 6 }} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Right Content */}
+              <div className="col-lg-8">
+                <Skeleton height="22px" width="300px" style={{ marginBottom: 25 }} />
+
+                <div className="row">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className="col-md-6">
+                      <div className="card p-4 text-center">
+                        <Skeleton height="40px" width="40px" style={{ margin: "0 auto" }} />
+                        <Skeleton height="18px" width="120px" style={{ margin: "12px auto" }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </>
+);
+
+if (showSkeleton) return <GetSupportSkeleton />;
 
   return (
     <section className="my-5">
