@@ -895,6 +895,56 @@ exports.getCompanyInfoById = async (req, res) => {
     const data = company.toJSON();
     data.company_logo_file = data.companyLogo?.file || null;
 
+    const user = await Users.findOne({
+  where: {
+    company_id: company.id,
+    is_delete: 0,
+    status: 1,
+    is_approve: 1
+  },
+  attributes: ['id'],
+  order: [['id', 'ASC']],
+  raw: true
+});
+
+// 2️⃣ Get seller categories
+let categoryNames = [];
+let subCategoryNames = [];
+
+if (user) {
+  const sellerCats = await SellerCategory.findAll({
+    where: { user_id: user.id },
+    attributes: ['category_id', 'subcategory_id'],
+    raw: true
+  });
+
+  const categoryIds = [...new Set(
+    sellerCats.map(sc => sc.category_id).filter(Boolean)
+  )];
+
+  const subCategoryIds = [...new Set(
+    sellerCats.map(sc => sc.subcategory_id).filter(Boolean)
+  )];
+
+  if (categoryIds.length) {
+    const categories = await Categories.findAll({
+      where: { id: categoryIds },
+      attributes: ['name'],
+      raw: true
+    });
+    categoryNames = categories.map(c => c.name);
+  }
+
+  if (subCategoryIds.length) {
+    const subCategories = await SubCategories.findAll({
+      where: { id: subCategoryIds },
+      attributes: ['name'],
+      raw: true
+    });
+    subCategoryNames = subCategories.map(sc => sc.name);
+  }
+}
+
     // Get products belonging to the company
     const products = await Products.findAll({
       where: { company_id: company.id, is_delete: 0, status: 1, is_approve: 1 },
@@ -914,34 +964,6 @@ exports.getCompanyInfoById = async (req, res) => {
       };
     });
 
-    // Get category names from stored category IDs
-    const categoryIdsStr = data.category_sell;
-    let categoryNames = [];
-    let allowedCategories = [];
-
-    if (categoryIdsStr) {
-      allowedCategories = categoryIdsStr.split(',').map(id => id.trim());
-      const categoryIds = allowedCategories.map(id => parseInt(id)).filter(id => !isNaN(id));
-      const categories = await Categories.findAll({
-        where: { id: { [Op.in]: categoryIds } },
-        attributes: ['name']
-      });
-      categoryNames = categories.map(cat => cat.name);
-    }
-
-    // Get sub-category names
-    const subCategoryIdsStr = data.sub_category;
-    let subCategoryNames = [];
-
-    if (subCategoryIdsStr) {
-      const subCategoryIds = subCategoryIdsStr.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-      const subCategories = await SubCategories.findAll({
-        where: { id: { [Op.in]: subCategoryIds } },
-        attributes: ['name']
-      });
-      subCategoryNames = subCategories.map(cat => cat.name);
-    }
-
     // Fetch other companies for recommendations
     const allCompanies = await CompanyInfo.findAll({
       where: {
@@ -957,10 +979,24 @@ exports.getCompanyInfoById = async (req, res) => {
       ]
     });
 
+    const allowedCategories = new Set();
+
+if (user) {
+  const sellerCats = await SellerCategory.findAll({
+    where: { user_id: user.id },
+    attributes: ['category_id'],
+    raw: true
+  });
+
+  sellerCats.forEach(sc => {
+    if (sc.category_id) allowedCategories.add(String(sc.category_id));
+  });
+}
+
     const recommendedCompanies = allCompanies.filter(c => {
       if (!c.category_sell) return false;
       const companyCategories = c.category_sell.split(',').map(id => id.trim());
-      return companyCategories.some(cat => allowedCategories.includes(cat));
+      return companyCategories.some(cat => allowedCategories.has(cat));
     });
 
     const response = {
