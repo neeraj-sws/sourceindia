@@ -19,6 +19,9 @@ const UploadImage = require('../models/UploadImage');
 const InterestSubCategories = require('../models/InterestSubCategories');
 const InterestCategories = require('../models/InterestCategories');
 const BuyerInterests = require('../models/BuyerInterests');
+const ItemCategory = require('../models/ItemCategory');
+const ItemSubCategory = require('../models/ItemSubCategory');
+const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const { getTransporter } = require('../helpers/mailHelper');
 const { generateUniqueSlug } = require('../helpers/mailHelper');
 const getMulterUpload = require('../utils/upload');
@@ -46,6 +49,7 @@ exports.getBuyerInterest = async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch buyer interest data' });
   }
 };
+
 exports.storeBuyerInterest = async (req, res) => {
   try {
     const { userId } = req.body; // Get userId from body
@@ -124,5 +128,118 @@ exports.getBuyerInterestchecked = async (req, res) => {
   } catch (error) {
     console.error('Error fetching buyer interest:', error);
     return res.status(500).json({ error: 'Failed to fetch buyer interest' });
+  }
+};
+
+exports.getItemType = async (req, res) => {
+  try {
+    const categories = await ItemCategory.findAll({
+      where: {
+        status: 1, // 🔥 yahan mapping
+      },
+      order: [['id', 'DESC']],
+    });
+
+    return res.json({ categories });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Failed to fetch Item Category data' });
+  }
+};
+
+exports.getItemSubcategory = async (req, res) => {
+  try {
+    const { categoryId } = req.query;
+    if (!categoryId) {
+      return res.status(400).json({ error: 'categoryId is required' });
+    }
+
+    const categories = await ItemSubCategory.findAll({
+      where: {
+        status: 1,
+        item_category_id: categoryId,
+      },
+      order: [['id', 'DESC']],
+    });
+
+    return res.json({ subcategories: categories });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      error: 'Failed to fetch Item SubCategory data',
+    });
+  }
+};
+// exports.storeItemsubcategory = async (req, res) => {
+
+//   const { userId } = req.body; // Get userId from body
+//   if (!userId) {
+//     return res.status(401).json({ error: 'User ID is required' });
+//   }
+
+//   const { activity } = req.body;
+//   if (!activity || Object.keys(activity).length === 0) {
+//     return res.status(400).json({ error: 'At least one activity is required' });
+//   }
+
+//   await BuyerSourcingInterests.destroy({ where: { buyer_id: userId } });
+
+
+
+//   // await Users.update(
+//   //   { is_intrest: 1 },
+//   //   { where: { id: userId } }
+//   // );
+// }
+
+exports.storeItemsubcategory = async (req, res) => {
+  try {
+    const { userId, activity } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: "User ID is required" });
+    }
+
+    if (
+      !activity ||
+      !activity.category_id ||
+      !Array.isArray(activity.subcategory_ids) ||
+      activity.subcategory_ids.length === 0
+    ) {
+      return res.status(400).json({
+        error: "Category and at least one subcategory are required",
+      });
+    }
+
+    const { category_id, subcategory_ids } = activity;
+
+    // 🔥 DELETE OLD INTERESTS (IMPORTANT)
+    await BuyerSourcingInterests.destroy({
+      where: { user_id: userId },
+    });
+
+    // 🔥 PREPARE RECORDS
+    const records = subcategory_ids.map((subId) => ({
+      user_id: userId,
+      item_category_id: category_id,
+      item_subcategory_id: subId,
+      uuid: require("uuid").v4(),
+      created_at: new Date(),
+      updated_at: new Date(),
+    }));
+
+    // 🔥 BULK INSERT
+    await BuyerSourcingInterests.bulkCreate(records);
+    await Users.update(
+      { is_intrest: 1 },
+      { where: { id: userId } }
+    );
+    return res.json({
+      success: true,
+      message: "Buyer sourcing interests saved successfully",
+    });
+  } catch (err) {
+    console.error("storeItemsubcategory error:", err);
+    return res.status(500).json({ error: "Something went wrong" });
   }
 };

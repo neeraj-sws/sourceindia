@@ -734,3 +734,14 @@ button.nav-link:hover {
     max-width: 80px;
     border-radius: 8px;
 }
+
+.rightPart {
+    position: absolute;
+    height: 400px;
+    overflow-y: scroll;
+}
+
+.heightPart {
+    height: 400px;
+    overflow-x: hidden;
+}

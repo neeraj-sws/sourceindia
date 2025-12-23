@@ -17,6 +17,9 @@ const Dashboard = () => {
   const [openEnquiryCountData, setOpenEnquiryCountData] = useState(0);
   const [error, setError] = useState(null);
   const [interestData, setInterestData] = useState({ categories: [], subCategories: {} });
+  const [itemCategoryData, setItemcategoryData] = useState({ categories: [] });
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [subCategories, setSubCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ activity: {} });
   const [data, setData] = useState([]);
@@ -34,7 +37,8 @@ const Dashboard = () => {
   const [enquiriesToDelete, setEnquiriesToDelete] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [sellerMessage, setSellerMessage] = useState("");
-
+  const [selectedSubIds, setSelectedSubIds] = useState([]);
+  const [categoryCounts, setCategoryCounts] = useState({});
   useEffect(() => {
     if (loading) return; // Wait until loading is false
 
@@ -65,6 +69,15 @@ const Dashboard = () => {
           headers: { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' },
         });
         setInterestData(interestResponse.data || { categories: [], subCategories: {} });
+
+
+
+        const itemcatgeoryResponse = await axios.get(`${API_BASE_URL}/dashboard/get-itemtype?userId=${user.id}`, {
+          headers: { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' },
+        });
+        setItemcategoryData(itemcatgeoryResponse.data || { categories: [] });
+
+
 
         const openEnquiryCountResponse = await axios.get(`${API_BASE_URL}/open_enquiries/count/${user.id}`);
         setOpenEnquiryCountData(openEnquiryCountResponse.data.totalOpenEnquiries);
@@ -97,32 +110,46 @@ const Dashboard = () => {
 
   const handleSubmit = async () => {
     const token = localStorage.getItem("user_token");
-    if (!token || !user || !user.id) {
+
+    if (!token || !user?.id) {
       showNotification("User not authenticated", "error");
       return;
     }
 
-    if (!formData.activity || Object.keys(formData.activity).length === 0) {
-      showNotification("At least one activity is required", "error");
+    if (
+      !formData.activity ||
+      !formData.activity.subcategory_ids ||
+      formData.activity.subcategory_ids.length === 0
+    ) {
+      showNotification("Please select at least one sub category", "error");
       return;
     }
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/dashboard/store-buyer-interest`,
-        { ...formData, userId: user.id },
-        { headers: { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' } }
+      const res = await axios.post(
+        `${API_BASE_URL}/dashboard/store-item-subcategory`,
+        {
+          userId: user.id,
+          activity: formData.activity,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
-      if (response.data.success) {
+      if (res.data.success) {
         showNotification("Interest Added Successfully", "success");
+
         if (updateUser) {
           updateUser({ ...user, is_intrest: 1 });
         }
+
         setIsModalOpen(false);
       }
-    } catch (error) {
-      console.error("Error submitting interest:", error.response?.data || error.message);
+    } catch (err) {
+      console.error(err);
       showNotification("Failed to submit interest", "error");
     }
   };
@@ -192,76 +219,191 @@ const Dashboard = () => {
       showNotification("Failed to delete Enquiry.", "error");
     }
   };
-  
+
   useEffect(() => {
     if (!user || !user.id) return;
     axios.get(`${API_BASE_URL}/sellers/seller-message/${user.id}`)
-    .then((res) => {
-      const msg = res.data?.data?.message;
-      setSellerMessage(msg ? msg : "");
-    })
-    .catch(() => {
-      setSellerMessage("");
-    });
+      .then((res) => {
+        const msg = res.data?.data?.message;
+        setSellerMessage(msg ? msg : "");
+      })
+      .catch(() => {
+        setSellerMessage("");
+      });
   }, [user]);
 
+
+  useEffect(() => {
+    if (selectedCategoryId && selectedSubIds.length > 0) {
+      setFormData({
+        activity: {
+          category_id: selectedCategoryId,
+          subcategory_ids: selectedSubIds,
+        },
+      });
+    } else {
+      setFormData({ activity: {} });
+    }
+  }, [selectedCategoryId, selectedSubIds]);
+
+
+  const handleCategoryChange = async (categoryId) => {
+    setSelectedCategoryId(categoryId);
+    setSelectedSubIds([]); // category change par subcategory reset
+
+    const token = localStorage.getItem("user_token");
+
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/dashboard/get-item-subcategory?categoryId=${categoryId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setSubCategories(res.data?.subcategories || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCheckAll = (e) => {
+    if (!selectedCategoryId) return;
+
+    if (e.target.checked) {
+      const allIds = subCategories.map((sub) => sub.id);
+      setSelectedSubIds(allIds);
+
+      // 🔥 update count for this category
+      setCategoryCounts((prev) => ({
+        ...prev,
+        [selectedCategoryId]: allIds.length,
+      }));
+    } else {
+      setSelectedSubIds([]);
+
+      // 🔥 reset count for this category
+      setCategoryCounts((prev) => ({
+        ...prev,
+        [selectedCategoryId]: 0,
+      }));
+    }
+  };
+
+  const handleSubCheck = (id) => {
+    setSelectedSubIds((prev) => {
+      let updated;
+
+      if (prev.includes(id)) {
+        updated = prev.filter((item) => item !== id);
+      } else {
+        updated = [...prev, id];
+      }
+
+      // 🔥 count update
+      setCategoryCounts((prevCounts) => ({
+        ...prevCounts,
+        [selectedCategoryId]: updated.length,
+      }));
+
+      return updated;
+    });
+  };
   const renderBuyerInterestForm = () => {
     if (!isModalOpen) return null;
 
     return (
       <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", zIndex: 1000 }}>
-        <div className="modal-dialog" style={{ maxWidth: "800px", margin: "50px auto" }}>
-          <div className="modal-content">
+        <div className="modal-dialog modal-lg" style={{ maxWidth: "1200px", margin: "50px auto" }}>
+          <div className="modal-content p-2">
             <div className="modal-header">
               <h4 className="modal-title">Buyer Sourcing Interest</h4>
               <button type="button" className="btn-close" onClick={() => setIsModalOpen(false)}></button>
             </div>
             <div className="modal-body">
-              <div className="row">
-                <div className="col-md-4">
-                  <h5>MECHANICAL</h5>
-                  {interestData.subCategories[1]?.map((sub) => (
-                    <div className="d-flex gap-1 align-items-center" key={sub.id}>
-                      <input
-                        type="checkbox"
-                        id={sub.id}
-                        name={`activity[1]`}
-                        checked={formData.activity[1]?.includes(sub.id) || false}
-                        onChange={() => handleCheckboxChange(1, sub.id)}
-                      />
-                      <label htmlFor={sub.id}>{sub.name}</label>
+              <div className="heightPart">
+
+                <div className="row">
+                  <div className="col-9 border-end">
+                    <h6 className="mb-3">Category</h6>
+
+                    {itemCategoryData.categories.length === 0 && (
+                      <p className="text-muted">No categories found</p>
+                    )}
+                    <div className="row">
+                      {itemCategoryData.categories.map((cat) => (
+                        <div className="col-lg-4">
+                          <div key={cat.id} className="form-check mb-2">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={selectedCategoryId === cat.id}
+                              id={`categoryData_${cat.id}`}
+                              onChange={() => handleCategoryChange(cat.id)}
+                            />
+                            <label className="form-check-label" for={`categoryData_${cat.id}`}>
+                              {cat.name}
+                              {categoryCounts[cat.id] > 0 && (
+                                <span className="ms-2 badge bg-primary">
+                                  {categoryCounts[cat.id]}
+                                </span>
+                              )}
+                            </label>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  )) || <p>No subcategories available</p>}
-                </div>
-                <div className="col-md-4">
-                  <h5>ELECTRO-MECHANICAL</h5>
-                  {interestData.subCategories[2]?.map((sub) => (
-                    <div className="d-flex gap-1 align-items-center" key={sub.id}>
-                      <input
-                        type="checkbox"
-                        id={sub.id}
-                        name={`activity[2]`}
-                        checked={formData.activity[2]?.includes(sub.id) || false}
-                        onChange={() => handleCheckboxChange(2, sub.id)}
-                      />
-                      <label htmlFor={sub.id}>{sub.name}</label>
+                  </div>
+                  <div className="col-3" style={{ background: "#ffe5e5" }}>
+                    <div className="p-2">
+                      <h6 className="mb-3 mt-2">Please Select The Type</h6>
+
+                      {loading && <p>Loading...</p>}
+
+                      {!loading && subCategories.length === 0 && (
+                        <p className="text-muted">
+                          Please select a type to see categories
+                        </p>
+                      )}
+
+                      {subCategories.length > 0 && (
+                        <div className="subpart">
+                          {/* CHECK ALL */}
+                          <div className="mb-3 bg-primary p-2 rounded text-white">
+                            <label htmlFor="checkAllsub" className="d-flex">
+                              <input
+                                type="checkbox"
+                                className="me-2"
+                                id="checkAllsub"
+                                checked={
+                                  selectedSubIds.length === subCategories.length &&
+                                  subCategories.length > 0
+                                }
+                                onChange={handleCheckAll}
+                              />
+                              Check All
+                            </label>
+                          </div>
+
+                          {/* SUB CATEGORIES */}
+                          {subCategories.map((sub) => (
+                            <div key={sub.id} className="subcate mb-3">
+                              <div className="border p-2 rounded bg-white">
+                                <label htmlFor={`itemtype_${sub.id}`}>
+                                  <input
+                                    type="checkbox"
+                                    className="me-2"
+                                    id={`itemtype_${sub.id}`}
+                                    checked={selectedSubIds.includes(sub.id)}
+                                    onChange={() => handleSubCheck(sub.id)}
+                                  />
+                                  {sub.name}
+                                </label>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )) || <p>No subcategories available</p>}
-                </div>
-                <div className="col-md-4">
-                  <h5>ELECTRONICS</h5>
-                  {interestData.subCategories[3]?.map((sub) => (
-                    <div className="d-flex gap-1 align-items-center" key={sub.id}>
-                      <input
-                        type="checkbox"
-                        id={sub.id}
-                        name={`activity[3]`}
-                        checked={formData.activity[3]?.includes(sub.id) || false}
-                        onChange={() => handleCheckboxChange(3, sub.id)}
-                      />
-                      <label htmlFor={sub.id}>{sub.name}</label>
-                    </div>
-                  )) || <p>No subcategories available</p>}
+                  </div>
                 </div>
               </div>
             </div>
@@ -275,7 +417,7 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div >
     );
   };
 
@@ -305,7 +447,7 @@ const Dashboard = () => {
                       <h4 className="card-title text-danger">
                         Your profile has been declined reason.
                       </h4>
-                      <div className="card-text" dangerouslySetInnerHTML={{__html: sellerMessage}} />
+                      <div className="card-text" dangerouslySetInnerHTML={{ __html: sellerMessage }} />
                     </div>
                   </div>
                 </div>
