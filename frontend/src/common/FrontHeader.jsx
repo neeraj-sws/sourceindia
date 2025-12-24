@@ -112,9 +112,19 @@ const FrontHeader = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault(); // Prevent default form submission
+
     if (searchQuery.trim()) {
-      const path = searchType === 'product' ? '/products' : '/company-list';
-      navigate(`${path}?search=${encodeURIComponent(searchQuery.trim())}`); // Navigate with query param
+      let path = "";
+
+      if (searchType === "product") {
+        path = "/products";
+      } else if (searchType === "seller") {
+        path = "/company-list";
+      } else if (searchType === "buyer") {
+        path = "/buyer-list";
+      }
+
+      navigate(`${path}?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -142,7 +152,8 @@ const FrontHeader = () => {
                     onChange={(e) => setSearchType(e.target.value)}
                   >
                     <option value="product">Product</option>
-                    <option value="company">Company</option>
+                    <option value="seller">Seller</option>
+                    <option value="buyer">Buyer</option>
                   </select>
                   <input
                     type="text"
@@ -173,12 +184,12 @@ const FrontHeader = () => {
                     >
                       <div className="position-relative me-2">
                         <ImageWithFallback
-                        src={user.file && `${ROOT_URL}/${user.file.file}`}
-                        width={50}
-                        height={50}
-                        showFallback={true}
-                        className="user-img"
-                    />
+                          src={user.file && `${ROOT_URL}/${user.file.file}`}
+                          width={50}
+                          height={50}
+                          showFallback={true}
+                          className="user-img"
+                        />
                         {/* <span className="badge bg-primary text-white position-absolute badge-sm userbadge">
                           {user.is_seller ? 'Seller' : 'Buyer'}
                         </span> */}
@@ -230,43 +241,43 @@ const FrontHeader = () => {
                       <ul className="navbar-nav ms-auto">
                         {menuItems.filter((menuItem) => menuItem.is_show === 1 && menuItem.status === 1 && menuItem.type === 1
                         )
-                        .map((menuItem) => {
-                          const hasDropdown = dropdownItems[menuItem.id] && dropdownItems[menuItem.id].length > 0;
-                          return (
-                            <li
-                              className={`nav-item ${hasDropdown ? 'dropdown' : ''}`}
-                              key={menuItem.id}
-                            >
-                              {hasDropdown ? (
-                                <>
-                                  <a
-                                    className="nav-link dropdown-toggle"
-                                    href="#"
-                                    id={`dropdown-${menuItem.id}`}
-                                    role="button"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                  >
+                          .map((menuItem) => {
+                            const hasDropdown = dropdownItems[menuItem.id] && dropdownItems[menuItem.id].length > 0;
+                            return (
+                              <li
+                                className={`nav-item ${hasDropdown ? 'dropdown' : ''}`}
+                                key={menuItem.id}
+                              >
+                                {hasDropdown ? (
+                                  <>
+                                    <a
+                                      className="nav-link dropdown-toggle"
+                                      href="#"
+                                      id={`dropdown-${menuItem.id}`}
+                                      role="button"
+                                      data-bs-toggle="dropdown"
+                                      aria-expanded="false"
+                                    >
+                                      {menuItem.name}
+                                    </a>
+                                    <ul className="dropdown-menu" aria-labelledby={`dropdown-${menuItem.id}`}>
+                                      {dropdownItems[menuItem.id].map((subItem) => (
+                                        <li key={subItem.id}>
+                                          <Link className="dropdown-item" to={subItem.link}>
+                                            {subItem.name}
+                                          </Link>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </>
+                                ) : (
+                                  <Link className="nav-link" to={menuItem.link}>
                                     {menuItem.name}
-                                  </a>
-                                  <ul className="dropdown-menu" aria-labelledby={`dropdown-${menuItem.id}`}>
-                                    {dropdownItems[menuItem.id].map((subItem) => (
-                                      <li key={subItem.id}>
-                                        <Link className="dropdown-item" to={subItem.link}>
-                                          {subItem.name}
-                                        </Link>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </>
-                              ) : (
-                                <Link className="nav-link" to={menuItem.link}>
-                                  {menuItem.name}
-                                </Link>
-                              )}
-                            </li>
-                          );
-                        })}
+                                  </Link>
+                                )}
+                              </li>
+                            );
+                          })}
                       </ul>
                     </div>
                   </div>
