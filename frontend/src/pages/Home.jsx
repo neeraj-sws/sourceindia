@@ -1,5 +1,6 @@
 import React from 'react'
 import Banner from '../sections/Banner';
+import CommonSection from '../pages/CommonSection';
 import Category from '../sections/Category';
 import Product from '../sections/Product';
 import Company from '../sections/Company';
@@ -11,6 +12,7 @@ const Home = () => {
     <>
       {/* Hero Section */}
       <Banner />
+      <CommonSection />
       {/* <Category limit={12} isHome={true} /> */}
       <Product />
       <CategoryMain limit={6} />

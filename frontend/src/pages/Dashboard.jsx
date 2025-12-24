@@ -8,6 +8,7 @@ import StepProgress from "./StepProgress";
 import UseAuth from "../sections/UseAuth";
 import DataTable from "../admin/common/DataTable";
 import LeadsModals from "../admin/pages/modal/LeadsModals";
+import CommonSection from '../pages/CommonSection';
 
 const Dashboard = () => {
   const { showNotification } = useAlert();
@@ -82,7 +83,7 @@ const Dashboard = () => {
         const openEnquiryCountResponse = await axios.get(`${API_BASE_URL}/open_enquiries/count/${user.id}`);
         setOpenEnquiryCountData(openEnquiryCountResponse.data.totalOpenEnquiries);
 
-        if (user.is_intrest === 0 && user.is_seller === 0) {
+        if (user.is_intrest === 0) {
           setIsModalOpen(true);
         }
       } catch (error) {
@@ -249,77 +250,135 @@ const Dashboard = () => {
 
   const handleCategoryChange = async (categoryId) => {
     setSelectedCategoryId(categoryId);
-    setSelectedSubIds([]); // category change par subcategory reset
+    setSelectedSubIds([]);
 
     const token = localStorage.getItem("user_token");
 
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/dashboard/get-item-subcategory?categoryId=${categoryId}`,
+        `${API_BASE_URL}/dashboard/get-item-subcategory?categoryId=${categoryId}&userId=${user.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setSubCategories(res.data?.subcategories || []);
+
+      // auto set checked ids
+      const checkedIds = res.data.subcategories
+        .filter((s) => s.checked)
+        .map((s) => s.id);
+
+      setSelectedSubIds(checkedIds);
+      setCategoryCounts(prev => ({
+        ...prev,
+        [categoryId]: checkedIds.length
+      }));
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleCheckAll = (e) => {
+  const handleCheckAll = async (e) => {
     if (!selectedCategoryId) return;
 
+    const token = localStorage.getItem("user_token");
+    if (!token) return;
+
+    let updatedSubIds = [];
+
     if (e.target.checked) {
-      const allIds = subCategories.map((sub) => sub.id);
-      setSelectedSubIds(allIds);
+      updatedSubIds = subCategories.map((sub) => sub.id);
+    }
 
-      // 🔥 update count for this category
-      setCategoryCounts((prev) => ({
-        ...prev,
-        [selectedCategoryId]: allIds.length,
-      }));
-    } else {
-      setSelectedSubIds([]);
+    // Update local state
+    setSelectedSubIds(updatedSubIds);
 
-      // 🔥 reset count for this category
-      setCategoryCounts((prev) => ({
-        ...prev,
-        [selectedCategoryId]: 0,
-      }));
+    // Update category count
+    setCategoryCounts((prev) => ({
+      ...prev,
+      [selectedCategoryId]: updatedSubIds.length,
+    }));
+
+    // Send all selected or deselected IDs to backend
+    try {
+      await axios.post(
+        `${API_BASE_URL}/dashboard/store-item-subcategory`,
+        {
+          userId: user.id,
+          activity: {
+            category_id: selectedCategoryId,
+            subcategory_ids: subCategories.map((sub) => sub.id), // all IDs
+            action: e.target.checked ? "add" : "remove",
+          },
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to save all selections", "error");
     }
   };
 
-  const handleSubCheck = (id) => {
+
+  const handleSubCheck = async (id) => {
+    const token = localStorage.getItem("user_token");
+    if (!token) return;
+
+    const isChecked = selectedSubIds.includes(id);
+    let updatedSubIds;
+
+    // Update local state
     setSelectedSubIds((prev) => {
-      let updated;
+      updatedSubIds = isChecked
+        ? prev.filter((item) => item !== id)
+        : [...prev, id];
 
-      if (prev.includes(id)) {
-        updated = prev.filter((item) => item !== id);
-      } else {
-        updated = [...prev, id];
-      }
-
-      // 🔥 count update
+      // update category count
       setCategoryCounts((prevCounts) => ({
         ...prevCounts,
-        [selectedCategoryId]: updated.length,
+        [selectedCategoryId]: updatedSubIds.length,
       }));
 
-      return updated;
+      return updatedSubIds;
     });
+
+    // Send **single ID and action** to backend
+    try {
+      await axios.post(
+        `${API_BASE_URL}/dashboard/store-item-subcategory`,
+        {
+          userId: user.id,
+          activity: {
+            category_id: selectedCategoryId,
+            subcategory_ids: [id], // only this ID
+            action: isChecked ? "remove" : "add",
+          },
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+    } catch (err) {
+      console.error(err);
+      showNotification("Failed to save interest", "error");
+    }
   };
+
+
   const renderBuyerInterestForm = () => {
-    if (!isModalOpen) return null;
+    // if (!isModalOpen) return null;
 
     return (
-      <div className="modal" style={{ display: "block", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", zIndex: 1000 }}>
+      <div className="modal" id="buyerSourcing" style={{ display: isModalOpen ? "block" : "none", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: isModalOpen ? "rgba(0,0,0,0.5)" : "", zIndex: 10000 }}>
         <div className="modal-dialog modal-lg" style={{ maxWidth: "1200px", margin: "50px auto" }}>
           <div className="modal-content p-2">
             <div className="modal-header">
-              <h4 className="modal-title">Buyer Sourcing Interest</h4>
-              <button type="button" className="btn-close" onClick={() => setIsModalOpen(false)}></button>
+              <h4 className="modal-title"> Sourcing Interest</h4>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" onClick={() => setIsModalOpen(false)}></button>
             </div>
             <div className="modal-body">
-              <div className="heightPart">
+              <div className="">
 
                 <div className="row">
                   <div className="col-9 border-end">
@@ -328,32 +387,34 @@ const Dashboard = () => {
                     {itemCategoryData.categories.length === 0 && (
                       <p className="text-muted">No categories found</p>
                     )}
-                    <div className="row">
-                      {itemCategoryData.categories.map((cat) => (
-                        <div className="col-lg-4">
-                          <div key={cat.id} className="form-check mb-2">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              checked={selectedCategoryId === cat.id}
-                              id={`categoryData_${cat.id}`}
-                              onChange={() => handleCategoryChange(cat.id)}
-                            />
-                            <label className="form-check-label" for={`categoryData_${cat.id}`}>
-                              {cat.name}
-                              {categoryCounts[cat.id] > 0 && (
-                                <span className="ms-2 badge bg-primary">
-                                  {categoryCounts[cat.id]}
-                                </span>
-                              )}
-                            </label>
+                    <div className="heightPart">
+                      <div className="row">
+                        {itemCategoryData.categories.map((cat) => (
+                          <div className="col-lg-4">
+                            <div key={cat.id} className="form-check mb-2">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                checked={selectedCategoryId === cat.id}
+                                id={`categoryData_${cat.id}`}
+                                onChange={() => handleCategoryChange(cat.id)}
+                              />
+                              <label className="form-check-label" for={`categoryData_${cat.id}`}>
+                                {cat.name}
+                                {(categoryCounts?.[cat.id] ?? cat.count) > 0 && (
+                                  <span className="ms-2 badge bg-primary">
+                                    {categoryCounts?.[cat.id] ?? cat.count}
+                                  </span>
+                                )}
+                              </label>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
                   <div className="col-3" style={{ background: "#ffe5e5" }}>
-                    <div className="p-2">
+                    <div className="p-2 rightPart ">
                       <h6 className="mb-3 mt-2">Please Select The Type</h6>
 
                       {loading && <p>Loading...</p>}
@@ -408,10 +469,10 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-primary" onClick={handleSubmit}>
+              {/* <button className="btn btn-primary" onClick={handleSubmit}>
                 Submit
-              </button>
-              <button className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
+              </button> */}
+              <button className="btn btn-secondary" data-bs-dismiss="modal" onClick={() => setIsModalOpen(false)}>
                 Close
               </button>
             </div>
@@ -436,6 +497,7 @@ const Dashboard = () => {
                 </div>
               </div>
             }
+            
             <div className="row">
               {sellerMessage && (
                 <div className="col-sm-12">
@@ -542,6 +604,8 @@ const Dashboard = () => {
                 </div>
               </div>
             }
+      <CommonSection />
+
           </div>
         </div>
       </div>

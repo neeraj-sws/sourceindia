@@ -95,6 +95,8 @@ const UserSidebar = () => {
     { title: "Dashboard", icon: "bx bx-home-circle", link: "/dashboard" },
     { title: "Profile", icon: "bx bx-user", link: "/profile" },
 
+   
+
     // My Products (member_role == 1 or 3) && is_seller == 1 && is_company == 1
     {
       title: "My Products",

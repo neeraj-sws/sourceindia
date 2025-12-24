@@ -736,7 +736,7 @@ button.nav-link:hover {
 }
 
 .rightPart {
-    position: absolute;
+    /* position: absolute; */
     height: 400px;
     overflow-y: scroll;
 }
@@ -744,4 +744,8 @@ button.nav-link:hover {
 .heightPart {
     height: 400px;
     overflow-x: hidden;
+}
+
+.companyProImg img {
+    width: 100px;
 }

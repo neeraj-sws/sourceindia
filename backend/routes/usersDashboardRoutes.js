@@ -8,5 +8,7 @@ router.post('/store-buyer-interest', userDashbordController.storeBuyerInterest);
 router.get('/get-buyer-interest', userDashbordController.getBuyerInterestchecked);
 router.get('/get-itemtype', userDashbordController.getItemType);
 router.get('/get-item-subcategory', userDashbordController.getItemSubcategory);
+router.get('/get-products', userDashbordController.getProductbuyercate);
+router.get('/get-seller-company', userDashbordController.getSellercompany);
 router.post('/store-item-subcategory', userDashbordController.storeItemsubcategory);
 module.exports = router;
