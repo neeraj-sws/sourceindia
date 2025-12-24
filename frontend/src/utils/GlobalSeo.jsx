@@ -28,11 +28,24 @@ const GlobalSeo = () => {
   const isProductDetailPage = (pathname) =>
   pathname.startsWith('/products/') && pathname.split('/').length === 3;
 
+  const isTicketViewPage = (pathname) =>
+  pathname.startsWith('/ticket/view/');
+
   useEffect(() => {
   const pathname = location.pathname;
 
   const fetchSeo = async () => {
     try {
+      if (isTicketViewPage(pathname)) {
+        setSeo({
+          title: 'Support Ticket | Source India',
+          meta_title: 'Support Ticket Status',
+          meta_description: 'View and reply to your support ticket on Source India.',
+          meta_keywords: '',
+          meta_image: null,
+        });
+        return;
+      }
         // 🔵 PRODUCT DETAIL PAGE
       if (isProductDetailPage(pathname)) {
         const productSlug = pathname.split('/')[2];

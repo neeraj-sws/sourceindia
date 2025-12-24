@@ -208,7 +208,7 @@ const TicketView = () => {
 
                   {replies && replies.length > 0 ? (
                     replies.map((reply) => (
-                      <div className="card mb-4">
+                      <div key={reply.id} className="card mb-4">
                         <div key={reply.id} className="card-body">
                           <div className="d-flex justify-content-between align-items-center gap-4">
                             <div>

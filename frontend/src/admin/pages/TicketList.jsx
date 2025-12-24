@@ -155,7 +155,7 @@ const TicketList = () => {
       $("#category").val(null).trigger("change");
     }
     if ($("#user_id").data("select2")) {
-      $("#user_id").val(userId).trigger("change");
+      $("#user_id").val('').trigger("change");
     }
   }, 100);
   };
@@ -172,13 +172,23 @@ const TicketList = () => {
   const validateForm = () => {
     const errs = {};
     if (!formData.title.trim()) errs.title = "Title is required";
-    if (!selectedUsers) errs.user_id = "User is required";
+    // if (!selectedUsers) errs.user_id = "User is required";
     if (!formData.message.trim()) errs.message = "Message is required";
-    if (!formData.priority.trim()) errs.priority = "Priority is required";
+    // if (!formData.priority.trim()) errs.priority = "Priority is required";
     if (!selectedCategory) errs.category = "Category is required";
     if (!formData.status) errs.status = "Invalid status";
-    if (!formData.attachment && !isEditing) {
-      errs.attachment = "Attachment is required";
+    // if (!formData.attachment && !isEditing) {
+    //   errs.attachment = "Attachment is required";
+    // }
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+    const maxSize = 2 * 1024 * 1024;
+    if (formData.attachment) {
+      if (!allowedImageTypes.includes(formData.attachment.type)) {
+        errs.attachment =
+          "Invalid video format (only JPG/PNG allowed as placeholder)";
+      } else if (formData.attachment.size > maxSize) {
+        errs.attachment = "Video file must be under 2MB";
+      }
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -189,8 +199,8 @@ const TicketList = () => {
     if (!validateForm()) return;
     setSubmitting(true);
     const sCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
-    const sUser = users.find((u) => u.id.toString() === formData.user_id.toString());
-    const payload = { ...formData, category: selectedCategory, category_name: sCategory?.name || "", user_id: selectedUsers, user_name: sUser?.fname + " " + sUser?.lname };
+    const sUser = users.find((u) => u.id.toString() === selectedUsers.toString());
+    const payload = { ...formData, category: selectedCategory, category_name: sCategory?.name || "", user_id: selectedUsers, user_name: sUser ? `${sUser.fname} ${sUser.lname}` : "" };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/tickets/${formData.id}`, payload, {
@@ -366,7 +376,7 @@ const TicketList = () => {
                   <h5 className="card-title mb-3">{isEditing ? "Edit Ticket" : "Add Ticket"}</h5>
                   <form className="row" onSubmit={handleSubmit} noValidate>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="user_id" className="form-label required">On Behalf Of</label>
+                      <label htmlFor="user_id" className="form-label">On Behalf Of</label>
                       <select
                         className="form-control"
                         id="user_id"
@@ -380,7 +390,6 @@ const TicketList = () => {
                           </option>
                         ))}
                       </select>
-                      {errors.user_id && <div className="text-danger small mt-1">{errors.user_id}</div>}
                     </div>
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="title" className="form-label required">Title</label>
@@ -395,10 +404,10 @@ const TicketList = () => {
                       {errors.title && <div className="invalid-feedback">{errors.title}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="priority" className="form-label required">Priority</label>
+                      <label htmlFor="priority" className="form-label">Priority</label>
                       <select
                         id="priority"
-                        className={`form-select ${errors.priority ? "is-invalid" : ""}`}
+                        className="form-select"
                         value={formData.priority}
                         onChange={handleChange}
                       >
@@ -406,7 +415,6 @@ const TicketList = () => {
                         <option value="normal">Normal</option>
                         <option value="high">High</option>
                       </select>
-                      {errors.priority && <div className="invalid-feedback">{errors.priority}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="category" className="form-label required">Category</label>
@@ -437,7 +445,7 @@ const TicketList = () => {
                       {errors.message && <div className="invalid-feedback">{errors.message}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="attachment" className="form-label required">Attachment</label>
+                      <label htmlFor="attachment" className="form-label">Attachment</label>
                       <input
                         type="file"
                         className={`form-control ${errors.attachment ? "is-invalid" : ""}`}
@@ -597,6 +605,7 @@ const TicketList = () => {
                   <DataTable
                     columns={[
                       { key: "id", label: "S.No.", sortable: true },
+                      { key: "ticket_id", label: "Ticket ID", sortable: true },
                       { key: "title", label: "Title", sortable: true },
                       { key: "priority", label: "Priority", sortable: true },
                       { key: "category_name", label: "Ticket Category", sortable: true },
@@ -620,6 +629,7 @@ const TicketList = () => {
                     renderRow={(row, index) => (
                       <tr key={row.id}>
                         <td>{(page - 1) * limit + index + 1}</td>
+                        <td>{row.ticket_id}</td>
                         <td>{row.title}</td>
                         <td>{row.priority}</td>
                         <td>{row.category_name}</td>
