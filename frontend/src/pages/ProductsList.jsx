@@ -9,7 +9,6 @@ const ProductsList = () => {
   const [productsData, setProductsData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
-
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
@@ -17,18 +16,18 @@ const ProductsList = () => {
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
   const [subCategorySearchTerm, setSubCategorySearchTerm] = useState('');
   const [itemCategories, setItemCategories] = useState([]);
-const [selectedItemCategories, setSelectedItemCategories] = useState([]);
-const [itemCategorySearchTerm, setItemCategorySearchTerm] = useState('');
+  const [selectedItemCategories, setSelectedItemCategories] = useState([]);
+  const [itemCategorySearchTerm, setItemCategorySearchTerm] = useState('');
 
-// Item sub-category filters
-const [itemSubCategories, setItemSubCategories] = useState([]);
-const [selectedItemSubCategories, setSelectedItemSubCategories] = useState([]);
-const [itemSubCategorySearchTerm, setItemSubCategorySearchTerm] = useState('');
+  // Item sub-category filters
+  const [itemSubCategories, setItemSubCategories] = useState([]);
+  const [selectedItemSubCategories, setSelectedItemSubCategories] = useState([]);
+  const [itemSubCategorySearchTerm, setItemSubCategorySearchTerm] = useState('');
 
-// Items filters
-const [items, setItems] = useState([]);
-const [selectedItems, setSelectedItems] = useState([]);
-const [itemSearchTerm, setItemSearchTerm] = useState('');
+  // Items filters
+  const [items, setItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [itemSearchTerm, setItemSearchTerm] = useState('');
   const [states, setStates] = useState([]);
   const [selectedStates, setSelectedStates] = useState([]);
   const [statesSearchTerm, setStatesSearchTerm] = useState('');
@@ -47,28 +46,44 @@ const [itemSearchTerm, setItemSearchTerm] = useState('');
   const location = useLocation();
 
   useEffect(() => {
-  const queryParams = new URLSearchParams(location.search);
-  const itemIdParam = queryParams.get("item_id");
+    const queryParams = new URLSearchParams(location.search);
+    const itemIdParam = queryParams.get("item_id");
+    const cateIdParam = queryParams.get("category_id");
+    const subcateIdParam = queryParams.get("subcategory_id");
+    const itemcateIdParam = queryParams.get("item_category_id");
+    const itemsubcateIdParam = queryParams.get("item_subcategory_id");
 
-  if (itemIdParam) {
-    const itemId = parseInt(itemIdParam, 10);
-    (async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/products/item-hierarchy/${itemId}`);
-        const data = res.data;
+    if (cateIdParam) {
+      setSelectedCategories([Number(cateIdParam)]);
+    }
+    if (subcateIdParam) {
+      setSelectedSubCategories([Number(subcateIdParam)]);
+    }
+    if (itemcateIdParam) {
+      setSelectedItemCategories([Number(itemcateIdParam)]);
+    }
+    if (itemsubcateIdParam) {
+      setSelectedItemSubCategories([Number(itemsubcateIdParam)]);
+    }
 
-        // Set all parent selections
-        setSelectedCategories(data.category_id ? [data.category_id] : []);
-        setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
-        setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
-        setSelectedItemSubCategories(data.item_subcategory_id ? [data.item_subcategory_id] : []);
-        setSelectedItems(data.item_id ? [data.item_id] : []);
-      } catch (err) {
-        console.error("Error fetching item hierarchy:", err);
-      }
-    })();
-  }
-}, [location.search]);
+    if (itemIdParam) {
+      const itemId = parseInt(itemIdParam, 10);
+      (async () => {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/products/item-hierarchy/${itemId}`);
+          const data = res.data;
+
+          setSelectedCategories(data.category_id ? [data.category_id] : []);
+          setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
+          setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
+          setSelectedItemSubCategories(data.item_subcategory_id ? [data.item_subcategory_id] : []);
+          setSelectedItems(data.item_id ? [data.item_id] : []);
+        } catch (err) {
+          console.error("Error fetching item hierarchy:", err);
+        }
+      })();
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const searchValue = searchParams.get('search');
@@ -140,94 +155,94 @@ const [itemSearchTerm, setItemSearchTerm] = useState('');
   }, [selectedCategories]);
 
   // Fetch Item Categories by selected Category & SubCategory
-useEffect(() => {
-  const fetchItemCategories = async () => {
-    try {
-      if (selectedCategories.length === 0 || selectedSubCategories.length === 0) {
-        setItemCategories([]);
-        setSelectedItemCategories([]);
-        return;
+  useEffect(() => {
+    const fetchItemCategories = async () => {
+      try {
+        if (selectedCategories.length === 0 || selectedSubCategories.length === 0) {
+          setItemCategories([]);
+          setSelectedItemCategories([]);
+          return;
+        }
+        const res = await axios.post(`${API_BASE_URL}/item_category/by-selected-category-subcategory`, {
+          categories: selectedCategories,
+          subcategories: selectedSubCategories,
+        });
+        const data = res.data || [];
+        setItemCategories(data);
+        // Filter out unselected
+        setSelectedItemCategories(prev =>
+          prev.filter(id => data.some(cat => cat.id === id))
+        );
+      } catch (err) {
+        console.error("Error fetching item categories:", err);
       }
-      const res = await axios.post(`${API_BASE_URL}/item_category/by-selected-category-subcategory`, {
-        categories: selectedCategories,
-        subcategories: selectedSubCategories,
-      });
-      const data = res.data || [];
-      setItemCategories(data);
-      // Filter out unselected
-      setSelectedItemCategories(prev =>
-        prev.filter(id => data.some(cat => cat.id === id))
-      );
-    } catch (err) {
-      console.error("Error fetching item categories:", err);
-    }
-  };
-  fetchItemCategories();
-}, [selectedCategories, selectedSubCategories]);
+    };
+    fetchItemCategories();
+  }, [selectedCategories, selectedSubCategories]);
 
 
-// Fetch Item SubCategories by selected Item Categories
-useEffect(() => {
-  const fetchItemSubCategories = async () => {
-    try {
-      if (
-        selectedCategories.length === 0 ||
-        selectedSubCategories.length === 0 ||
-        selectedItemCategories.length === 0
-      ) {
-        setItemSubCategories([]);
-        setSelectedItemSubCategories([]);
-        return;
+  // Fetch Item SubCategories by selected Item Categories
+  useEffect(() => {
+    const fetchItemSubCategories = async () => {
+      try {
+        if (
+          selectedCategories.length === 0 ||
+          selectedSubCategories.length === 0 ||
+          selectedItemCategories.length === 0
+        ) {
+          setItemSubCategories([]);
+          setSelectedItemSubCategories([]);
+          return;
+        }
+        const res = await axios.post(`${API_BASE_URL}/item_sub_category/by-selected-category-subcategory-itemcategory`, {
+          categories: selectedCategories,
+          subcategories: selectedSubCategories,
+          itemCategories: selectedItemCategories,
+        });
+        const data = res.data || [];
+        setItemSubCategories(data);
+        setSelectedItemSubCategories(prev =>
+          prev.filter(id => data.some(sub => sub.id === id))
+        );
+      } catch (err) {
+        console.error("Error fetching item subcategories:", err);
       }
-      const res = await axios.post(`${API_BASE_URL}/item_sub_category/by-selected-category-subcategory-itemcategory`, {
-        categories: selectedCategories,
-        subcategories: selectedSubCategories,
-        itemCategories: selectedItemCategories,
-      });
-      const data = res.data || [];
-      setItemSubCategories(data);
-      setSelectedItemSubCategories(prev =>
-        prev.filter(id => data.some(sub => sub.id === id))
-      );
-    } catch (err) {
-      console.error("Error fetching item subcategories:", err);
-    }
-  };
-  fetchItemSubCategories();
-}, [selectedCategories, selectedSubCategories, selectedItemCategories]);
+    };
+    fetchItemSubCategories();
+  }, [selectedCategories, selectedSubCategories, selectedItemCategories]);
 
 
-// Fetch Items by selected Item SubCategories
-useEffect(() => {
-  const fetchItems = async () => {
-    try {
-      if (
-        selectedCategories.length === 0 ||
-        selectedSubCategories.length === 0 ||
-        selectedItemCategories.length === 0 ||
-        selectedItemSubCategories.length === 0
-      ) {
-        setItems([]);
-        setSelectedItems([]);
-        return;
+  // Fetch Items by selected Item SubCategories
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        if (
+          selectedCategories.length === 0 ||
+          selectedSubCategories.length === 0 ||
+          selectedItemCategories.length === 0 ||
+          selectedItemSubCategories.length === 0
+        ) {
+          setItems([]);
+          setSelectedItems([]);
+          return;
+        }
+        const res = await axios.post(`${API_BASE_URL}/items/by-selected-category-subcategory-itemcategory-itemsubcategory`, {
+          categories: selectedCategories,
+          subcategories: selectedSubCategories,
+          itemCategories: selectedItemCategories,
+          itemSubCategories: selectedItemSubCategories,
+        });
+        const data = res.data || [];
+        setItems(data);
+        setSelectedItems(prev =>
+          prev.filter(id => data.some(item => item.id === id))
+        );
+      } catch (err) {
+        console.error("Error fetching items:", err);
       }
-      const res = await axios.post(`${API_BASE_URL}/items/by-selected-category-subcategory-itemcategory-itemsubcategory`, {
-        categories: selectedCategories,
-        subcategories: selectedSubCategories,
-        itemCategories: selectedItemCategories,
-        itemSubCategories: selectedItemSubCategories,
-      });
-      const data = res.data || [];
-      setItems(data);
-      setSelectedItems(prev =>
-        prev.filter(id => data.some(item => item.id === id))
-      );
-    } catch (err) {
-      console.error("Error fetching items:", err);
-    }
-  };
-  fetchItems();
-}, [selectedCategories, selectedSubCategories, selectedItemCategories, selectedItemSubCategories]);
+    };
+    fetchItems();
+  }, [selectedCategories, selectedSubCategories, selectedItemCategories, selectedItemSubCategories]);
 
   useEffect(() => {
     const fetchStates = async () => {
@@ -314,28 +329,28 @@ useEffect(() => {
     } finally {
       await sleep(1000);
 
-    if (append) {
-      setScrollLoading(false);
-    } else {
-      setLoading(false);
-    }
+      if (append) {
+        setScrollLoading(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-  setPage(1);
-  setHasMore(true);
-  fetchProducts(1, false);
-}, [
-  selectedCategories,
-  selectedSubCategories,
-  selectedItemCategories,
-  selectedItemSubCategories,
-  selectedItems,
-  selectedStates,
-  selectedCompanies,
-  sortBy
-]);
+    setPage(1);
+    setHasMore(true);
+    fetchProducts(1, false);
+  }, [
+    selectedCategories,
+    selectedSubCategories,
+    selectedItemCategories,
+    selectedItemSubCategories,
+    selectedItems,
+    selectedStates,
+    selectedCompanies,
+    sortBy
+  ]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -397,70 +412,68 @@ useEffect(() => {
     return item ? item.name || item.organization_name : '';
   };
   const ProductSkeletonLoader = ({ count = 9, isListView = false }) => {
-  const items = Array.from({ length: count });
+    const items = Array.from({ length: count });
 
-  return (
-    <>
-      {items.map((_, i) => (
-        <div key={i} className={isListView ? "col-md-6 mb-4" : "col-sm-4 mb-4"}>
-          <div
-            className={`card products-list-cards border overflow-hidden ${
-              isListView ? "flex-row" : "h-100"
-            }`}
-            style={{ height: isListView ? 200 : "auto" }}
-          >
-            {/* Image Skeleton */}
+    return (
+      <>
+        {items.map((_, i) => (
+          <div key={i} className={isListView ? "col-md-6 mb-4" : "col-sm-4 mb-4"}>
             <div
-              className={`d-flex justify-content-center align-items-center ${
-                isListView ? "border-end listviewimg" : "border-bottom gridviewimg"
-              }`}
-              style={{
-                width: isListView ? "200px" : "100%",
-                height: isListView ? "100%" : "200px",
-                background: "#eee",
-              }}
+              className={`card products-list-cards border overflow-hidden ${isListView ? "flex-row" : "h-100"
+                }`}
+              style={{ height: isListView ? 200 : "auto" }}
             >
-              <span
-                className="content-placeholder rounded-circle"
-                style={{ width: 100, height: 100 }}
-              ></span>
-            </div>
-
-            {/* Content Skeleton */}
-            <div className="card-body py-3 px-3" style={{ flex: 1 }}>
-              <p>
+              {/* Image Skeleton */}
+              <div
+                className={`d-flex justify-content-center align-items-center ${isListView ? "border-end listviewimg" : "border-bottom gridviewimg"
+                  }`}
+                style={{
+                  width: isListView ? "200px" : "100%",
+                  height: isListView ? "100%" : "200px",
+                  background: "#eee",
+                }}
+              >
                 <span
-                  className="content-placeholder"
-                  style={{ width: "70%", height: 12, display: "block", marginBottom: 10 }}
+                  className="content-placeholder rounded-circle"
+                  style={{ width: 100, height: 100 }}
                 ></span>
-              </p>
+              </div>
 
-              <p>
-                <span
-                  className="content-placeholder"
-                  style={{ width: "40%", height: 10, display: "block", marginBottom: 6 }}
-                ></span>
-                <span
-                  className="content-placeholder"
-                  style={{ width: "30%", height: 10, display: "block", marginBottom: 6 }}
-                ></span>
-              </p>
-
-              {!isListView && (
+              {/* Content Skeleton */}
+              <div className="card-body py-3 px-3" style={{ flex: 1 }}>
                 <p>
                   <span
                     className="content-placeholder"
-                    style={{ width: "100%", height: 30, display: "block" }}
+                    style={{ width: "70%", height: 12, display: "block", marginBottom: 10 }}
                   ></span>
                 </p>
-              )}
+
+                <p>
+                  <span
+                    className="content-placeholder"
+                    style={{ width: "40%", height: 10, display: "block", marginBottom: 6 }}
+                  ></span>
+                  <span
+                    className="content-placeholder"
+                    style={{ width: "30%", height: 10, display: "block", marginBottom: 6 }}
+                  ></span>
+                </p>
+
+                {!isListView && (
+                  <p>
+                    <span
+                      className="content-placeholder"
+                      style={{ width: "100%", height: 30, display: "block" }}
+                    ></span>
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
-    </>
-  );
-};
+        ))}
+      </>
+    );
+  };
 
   return (
     <div className="container my-4">
@@ -539,124 +552,124 @@ useEffect(() => {
             </>
           )}
           {/* Item Category Filter */}
-{itemCategories.length > 0 && (
-  <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-    <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Item Category</h3>
-    <div className="input-group flex-nowrap ps-2 pe-4">
-      <i className="bx bx-search input-group-text" />
-      <input
-        type="text"
-        placeholder="Search item categories..."
-        onChange={(e) => setItemCategorySearchTerm(e.target.value.toLowerCase())}
-        className="form-control"
-      />
-    </div>
-    <div className="px-2" style={{ maxHeight: '190px', overflowY: itemCategories.length >= 5 ? 'auto' : 'visible' }}>
-      {itemCategories
-        .filter(itemCat => itemCat.name.toLowerCase().includes(itemCategorySearchTerm))
-        .map(itemCat => (
-          <div className="form-check mb-2" key={itemCat.id}>
-            <input
-              type="checkbox"
-              id={`itemCat-${itemCat.id}`}
-              className="form-check-input"
-              checked={selectedItemCategories.includes(itemCat.id)}
-              onChange={() =>
-                setSelectedItemCategories(prev =>
-                  prev.includes(itemCat.id)
-                    ? prev.filter(id => id !== itemCat.id)
-                    : [...prev, itemCat.id]
-                )
-              }
-            />
-            <label htmlFor={`itemCat-${itemCat.id}`} className="form-check-label text-capitalize">
-              {itemCat.name}  ({itemCat.product_count || 0})
-            </label>
-          </div>
-        ))}
-    </div>
-  </div>
-)}
+          {itemCategories.length > 0 && (
+            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Item Category</h3>
+              <div className="input-group flex-nowrap ps-2 pe-4">
+                <i className="bx bx-search input-group-text" />
+                <input
+                  type="text"
+                  placeholder="Search item categories..."
+                  onChange={(e) => setItemCategorySearchTerm(e.target.value.toLowerCase())}
+                  className="form-control"
+                />
+              </div>
+              <div className="px-2" style={{ maxHeight: '190px', overflowY: itemCategories.length >= 5 ? 'auto' : 'visible' }}>
+                {itemCategories
+                  .filter(itemCat => itemCat.name.toLowerCase().includes(itemCategorySearchTerm))
+                  .map(itemCat => (
+                    <div className="form-check mb-2" key={itemCat.id}>
+                      <input
+                        type="checkbox"
+                        id={`itemCat-${itemCat.id}`}
+                        className="form-check-input"
+                        checked={selectedItemCategories.includes(itemCat.id)}
+                        onChange={() =>
+                          setSelectedItemCategories(prev =>
+                            prev.includes(itemCat.id)
+                              ? prev.filter(id => id !== itemCat.id)
+                              : [...prev, itemCat.id]
+                          )
+                        }
+                      />
+                      <label htmlFor={`itemCat-${itemCat.id}`} className="form-check-label text-capitalize">
+                        {itemCat.name}  ({itemCat.product_count || 0})
+                      </label>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
 
-{/* Item Sub Category Filter */}
-{itemSubCategories.length > 0 && (
-  <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-    <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Item Sub Category</h3>
-    <div className="input-group flex-nowrap ps-2 pe-4">
-      <i className="bx bx-search input-group-text" />
-      <input
-        type="text"
-        placeholder="Search item sub-categories..."
-        onChange={(e) => setItemSubCategorySearchTerm(e.target.value.toLowerCase())}
-        className="form-control"
-      />
-    </div>
-    <div className="px-2" style={{ maxHeight: '190px', overflowY: itemSubCategories.length >= 5 ? 'auto' : 'visible' }}>
-      {itemSubCategories
-        .filter(itemSub => itemSub.name.toLowerCase().includes(itemSubCategorySearchTerm))
-        .map(itemSub => (
-          <div className="form-check mb-2" key={itemSub.id}>
-            <input
-              type="checkbox"
-              id={`itemSub-${itemSub.id}`}
-              className="form-check-input"
-              checked={selectedItemSubCategories.includes(itemSub.id)}
-              onChange={() =>
-                setSelectedItemSubCategories(prev =>
-                  prev.includes(itemSub.id)
-                    ? prev.filter(id => id !== itemSub.id)
-                    : [...prev, itemSub.id]
-                )
-              }
-            />
-            <label htmlFor={`itemSub-${itemSub.id}`} className="form-check-label text-capitalize">
-              {itemSub.name} ({itemSub.product_count || 0})
-            </label>
-          </div>
-        ))}
-    </div>
-  </div>
-)}
+          {/* Item Sub Category Filter */}
+          {itemSubCategories.length > 0 && (
+            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Item Sub Category</h3>
+              <div className="input-group flex-nowrap ps-2 pe-4">
+                <i className="bx bx-search input-group-text" />
+                <input
+                  type="text"
+                  placeholder="Search item sub-categories..."
+                  onChange={(e) => setItemSubCategorySearchTerm(e.target.value.toLowerCase())}
+                  className="form-control"
+                />
+              </div>
+              <div className="px-2" style={{ maxHeight: '190px', overflowY: itemSubCategories.length >= 5 ? 'auto' : 'visible' }}>
+                {itemSubCategories
+                  .filter(itemSub => itemSub.name.toLowerCase().includes(itemSubCategorySearchTerm))
+                  .map(itemSub => (
+                    <div className="form-check mb-2" key={itemSub.id}>
+                      <input
+                        type="checkbox"
+                        id={`itemSub-${itemSub.id}`}
+                        className="form-check-input"
+                        checked={selectedItemSubCategories.includes(itemSub.id)}
+                        onChange={() =>
+                          setSelectedItemSubCategories(prev =>
+                            prev.includes(itemSub.id)
+                              ? prev.filter(id => id !== itemSub.id)
+                              : [...prev, itemSub.id]
+                          )
+                        }
+                      />
+                      <label htmlFor={`itemSub-${itemSub.id}`} className="form-check-label text-capitalize">
+                        {itemSub.name} ({itemSub.product_count || 0})
+                      </label>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
 
-{/* Items Filter */}
-{items.length > 0 && (
-  <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-    <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Items</h3>
-    <div className="input-group flex-nowrap ps-2 pe-4">
-      <i className="bx bx-search input-group-text" />
-      <input
-        type="text"
-        placeholder="Search items..."
-        onChange={(e) => setItemSearchTerm(e.target.value.toLowerCase())}
-        className="form-control"
-      />
-    </div>
-    <div className="px-2" style={{ maxHeight: '190px', overflowY: items.length >= 5 ? 'auto' : 'visible' }}>
-      {items
-        .filter(item => item.name.toLowerCase().includes(itemSearchTerm))
-        .map(item => (
-          <div className="form-check mb-2" key={item.id}>
-            <input
-              type="checkbox"
-              id={`item-${item.id}`}
-              className="form-check-input"
-              checked={selectedItems.includes(item.id)}
-              onChange={() =>
-                setSelectedItems(prev =>
-                  prev.includes(item.id)
-                    ? prev.filter(id => id !== item.id)
-                    : [...prev, item.id]
-                )
-              }
-            />
-            <label htmlFor={`item-${item.id}`} className="form-check-label text-capitalize">
-              {item.name} ({item.product_count || 0})
-            </label>
-          </div>
-        ))}
-    </div>
-  </div>
-)}
+          {/* Items Filter */}
+          {items.length > 0 && (
+            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Items</h3>
+              <div className="input-group flex-nowrap ps-2 pe-4">
+                <i className="bx bx-search input-group-text" />
+                <input
+                  type="text"
+                  placeholder="Search items..."
+                  onChange={(e) => setItemSearchTerm(e.target.value.toLowerCase())}
+                  className="form-control"
+                />
+              </div>
+              <div className="px-2" style={{ maxHeight: '190px', overflowY: items.length >= 5 ? 'auto' : 'visible' }}>
+                {items
+                  .filter(item => item.name.toLowerCase().includes(itemSearchTerm))
+                  .map(item => (
+                    <div className="form-check mb-2" key={item.id}>
+                      <input
+                        type="checkbox"
+                        id={`item-${item.id}`}
+                        className="form-check-input"
+                        checked={selectedItems.includes(item.id)}
+                        onChange={() =>
+                          setSelectedItems(prev =>
+                            prev.includes(item.id)
+                              ? prev.filter(id => id !== item.id)
+                              : [...prev, item.id]
+                          )
+                        }
+                      />
+                      <label htmlFor={`item-${item.id}`} className="form-check-label text-capitalize">
+                        {item.name} ({item.product_count || 0})
+                      </label>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
           <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
             <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">State</h3>
             <div className="d-flex flex-column gap-2">
@@ -823,38 +836,38 @@ useEffect(() => {
                       </span>
                     ))}
                     {selectedItemCategories.map(id => (
-  <span key={`itemcat-${id}`} className="badge bg-warning text-dark d-flex align-items-center">
-    {getNameById(itemCategories, id)}
-    <button
-      onClick={() => setSelectedItemCategories(prev => prev.filter(cid => cid !== id))}
-      className="btn-close btn-close-white ms-2"
-      style={{ fontSize: '0.6em' }}
-      aria-label="Remove"
-    />
-  </span>
-))}
-{selectedItemSubCategories.map(id => (
-  <span key={`itemsub-${id}`} className="badge bg-info text-white d-flex align-items-center">
-    {getNameById(itemSubCategories, id)}
-    <button
-      onClick={() => setSelectedItemSubCategories(prev => prev.filter(cid => cid !== id))}
-      className="btn-close btn-close-white ms-2"
-      style={{ fontSize: '0.6em' }}
-      aria-label="Remove"
-    />
-  </span>
-))}
-{selectedItems.map(id => (
-  <span key={`itm-${id}`} className="badge bg-dark text-white d-flex align-items-center">
-    {getNameById(items, id)}
-    <button
-      onClick={() => setSelectedItems(prev => prev.filter(cid => cid !== id))}
-      className="btn-close btn-close-white ms-2"
-      style={{ fontSize: '0.6em' }}
-      aria-label="Remove"
-    />
-  </span>
-))}
+                      <span key={`itemcat-${id}`} className="badge bg-warning text-dark d-flex align-items-center">
+                        {getNameById(itemCategories, id)}
+                        <button
+                          onClick={() => setSelectedItemCategories(prev => prev.filter(cid => cid !== id))}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
+                    {selectedItemSubCategories.map(id => (
+                      <span key={`itemsub-${id}`} className="badge bg-info text-white d-flex align-items-center">
+                        {getNameById(itemSubCategories, id)}
+                        <button
+                          onClick={() => setSelectedItemSubCategories(prev => prev.filter(cid => cid !== id))}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
+                    {selectedItems.map(id => (
+                      <span key={`itm-${id}`} className="badge bg-dark text-white d-flex align-items-center">
+                        {getNameById(items, id)}
+                        <button
+                          onClick={() => setSelectedItems(prev => prev.filter(cid => cid !== id))}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
                     {selectedStates.map(id => (
                       <span key={`state-${id}`} className="badge bg-success text-white d-flex align-items-center">
                         {getNameById(states, id)}
@@ -884,8 +897,8 @@ useEffect(() => {
                       setSelectedCategories([]);
                       setSelectedSubCategories([]);
                       setSelectedItemCategories([]);
-  setSelectedItemSubCategories([]);
-  setSelectedItems([]);
+                      setSelectedItemSubCategories([]);
+                      setSelectedItems([]);
                       setSelectedStates([]);
                       setSelectedCompanies([]);
                     }}
@@ -901,8 +914,8 @@ useEffect(() => {
           <div className="py-3 rounded-2 pb-0 mt-2">
             <div className="row">
               {loading ? (
-  <ProductSkeletonLoader count={9} isListView={isListView} />
-) : filteredProducts.length > 0 ? (
+                <ProductSkeletonLoader count={9} isListView={isListView} />
+              ) : filteredProducts.length > 0 ? (
                 filteredProducts.map(product => (
 
                   <div key={product.id} className={isListView ? "col-md-6 mb-4" : "col-sm-4 mb-4"}>
@@ -963,8 +976,8 @@ useEffect(() => {
                 <div className="col-12"><p className="text-center">No products found.</p></div>
               )}
               {!loading && scrollLoading && (
-  <ProductSkeletonLoader count={3} isListView={isListView} />
-)}
+                <ProductSkeletonLoader count={3} isListView={isListView} />
+              )}
             </div>
           </div>
         </section>

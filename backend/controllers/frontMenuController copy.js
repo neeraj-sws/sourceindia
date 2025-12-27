@@ -9,7 +9,6 @@ const ItemSubCategory = require('../models/ItemSubCategory');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const SellerCategory = require('../models/SellerCategory');
-const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 
 exports.createFrontMenu = async (req, res) => {
   try {
@@ -21,7 +20,7 @@ exports.createFrontMenu = async (req, res) => {
   }
 };
 
-const searchProducts = async (q, type) => {
+const searchProducts = async (q) => {
   /* -------------------------------
    1️⃣ PRODUCT NAME MATCH (MAX 3)
   --------------------------------*/
@@ -47,7 +46,7 @@ const searchProducts = async (q, type) => {
     where: {
       name: { [Op.like]: `%${q}%` },
     },
-    attributes: ["id", "name", "category_id", "subcategory_id"],
+    attributes: ["id", "name"],
     group: ["item_category_id"],
     limit: 5,
     raw: true,
@@ -60,155 +59,159 @@ const searchProducts = async (q, type) => {
     where: {
       name: { [Op.like]: `%${q}%` },
     },
-    attributes: ["id", "name", "category_id", "subcategory_id", "item_category_id"],
+    attributes: ["id", "name"],
     group: ["item_subcategory_id"],
     limit: 5,
     raw: true,
   });
 
+  /* -------------------------------
+   4️⃣ MERGED RESPONSE (ORDER FIXED)
+  --------------------------------*/
   return [
     // 🔹 Products first
     ...productMatches.map((p) => ({
       id: p.id,
-      category_id: 0,
-      subcategory_id: 0,
-      item_category_id: 0,
-      item_subcategory_id: 0,
       name: p.name,
       slug: p.slug,
       type: "product",
-      search_type: type,
     })),
 
     // 🔹 Categories
     ...categoryMatches.map((c) => ({
       id: c.id,
-      category_id: c.category_id,
-      subcategory_id: c.subcategory_id,
-      item_category_id: c.id,
-      item_subcategory_id: 0,
       name: c.name,
       type: "category",
-      search_type: type
     })),
 
     // 🔹 Subcategories
     ...subCategoryMatches.map((s) => ({
       id: s.id,
-      category_id: s.category_id,
-      subcategory_id: s.subcategory_id,
-      item_category_id: s.item_category_id,
-      item_subcategory_id: s.id,
       name: s.name,
       type: "subcategory",
-      search_type: type
     })),
   ];
 };
 
-const searchSellers = async (q, type) => {
+const searchSellers = async (q) => {
+  const users = await Users.findAll({
+    attributes: ["id"],
 
-  const companyMatches = await Users.findAll({
-    where: { is_seller: 1 },
     include: [
       {
         model: CompanyInfo,
         as: "company_info",
         required: true,
-        where: {
-          organization_name: { [Op.like]: `%${q}%` },
-        },
         attributes: ["id", "organization_name", "organization_slug"],
       },
     ],
-    limit: 3,
+
+    where: {
+      is_seller: 1,
+      [Op.or]: [
+        // 🔹 company name
+        { "$company_info.organization_name$": { [Op.like]: `%${q}%` } },
+
+        // 🔹 category match (CSV)
+        Sequelize.literal(`
+          EXISTS (
+            SELECT 1
+            FROM categories c
+            WHERE
+              c.name LIKE '%${q}%'
+              AND FIND_IN_SET(c.category_id, company_info.category_sell)
+          )
+        `),
+
+        // 🔹 subcategory match (CSV)
+        Sequelize.literal(`
+          EXISTS (
+            SELECT 1
+            FROM sub_categories sc
+            WHERE
+              sc.name LIKE '%${q}%'
+              AND FIND_IN_SET(sc.sub_category_id, company_info.sub_category)
+          )
+        `),
+      ],
+    },
+
+    order: [
+      [
+        Sequelize.literal(`
+          CASE
+            WHEN company_info.organization_name LIKE '%${q}%' THEN 1
+            WHEN EXISTS (
+              SELECT 1 FROM categories c
+              WHERE c.name LIKE '%${q}%'
+              AND FIND_IN_SET(c.category_id, company_info.category_sell)
+            ) THEN 2
+            WHEN EXISTS (
+              SELECT 1 FROM sub_categories sc
+              WHERE sc.name LIKE '%${q}%'
+              AND FIND_IN_SET(sc.sub_category_id, company_info.sub_category)
+            ) THEN 3
+            ELSE 4
+          END
+        `),
+        "ASC",
+      ],
+    ],
+
+    limit: 20,
+    subQuery: false,
   });
 
-  const companies = companyMatches.map((u) => ({
-    id: u.company_info.id,
-    category_id: 0,
-    subcategory_id: 0,
-    item_category_id: 0,
-    item_subcategory_id: 0,
-    name: u.company_info.organization_name,
-    slug: u.company_info.organization_slug,
-    type: "buyer",
-    search_type: type
-  }));
+  /* ---------- RESULT SHAPING ---------- */
 
-  const categoryMatches = await SellerCategory.findAll({
-    include: [
-      {
-        model: Categories,
-        as: "category",
-        where: {
-          name: { [Op.like]: `%${q}%` },
-        },
-        attributes: ["id", "name", "category_id"],
-      },
-    ],
-    attributes: [],
-    group: ["category.category_id"],
+  const companies = [];
+
+  for (const u of users) {
+    const company = u.company_info;
+
+    if (
+      company.organization_name
+        .toLowerCase()
+        .includes(q.toLowerCase()) &&
+      companies.length < 3
+    ) {
+      companies.push({
+        id: company.id,
+        name: company.organization_name,
+        slug: company.organization_slug,
+        type: "company",
+      });
+    }
+  }
+
+  /* ---------- CATEGORY (MODEL ONLY) ---------- */
+  const matchedCategories = await Categories.findAll({
+    where: { name: { [Op.like]: `%${q}%` } },
+    attributes: [["category_id", "id"], "name"],
     limit: 5,
     raw: true,
   });
 
-  const categories = categoryMatches.map((c) => ({
-    id: c["category.id"],
-    name: c["category.name"],
-    type: "category",
-    search_type: type,
-    category_id: c["category.category_id"],
-    subcategory_id: 0,
-    item_category_id: 0,
-    item_subcategory_id: 0,
-  }));
-
-
-  /* -------------------------------
-   3️⃣ SUBCATEGORY MATCH
-  --------------------------------*/
-  const subCategoryMatches = await SellerCategory.findAll({
-    include: [
-      {
-        model: SubCategories,
-        as: "subcategory",
-        where: {
-          name: { [Op.like]: `%${q}%` },
-        },
-        attributes: ["id", "name", "category"],
-      },
-    ],
-    attributes: [],
-    group: ["subcategory.sub_category_id"],
+  /* ---------- SUBCATEGORY (MODEL ONLY) ---------- */
+  const matchedSubCategories = await SubCategories.findAll({
+    where: { name: { [Op.like]: `%${q}%` } },
+    attributes: [["sub_category_id", "id"], "name"],
     limit: 5,
     raw: true,
   });
 
-  const subcategories = subCategoryMatches.map((s) => ({
-    id: s["subcategory.id"],
-    name: s["subcategory.name"],
-    type: "subcategory",
-    search_type: type,
-    category_id: s["subcategory.category"],
-    subcategory_id: s["subcategory.id"],
-    item_category_id: 0,
-    item_subcategory_id: 0,
-  }));
-
-
-  /* -------------------------------
-   4️⃣ FINAL MERGED RESPONSE
-  --------------------------------*/
   return [
-    ...companies,      // 🔹 buyers first
-    ...categories,     // 🔹 categories
-    ...subcategories,  // 🔹 subcategories
+    ...companies,
+    ...matchedCategories.map((c) => ({ ...c, type: "category" })),
+    ...matchedSubCategories.map((s) => ({ ...s, type: "subcategory" })),
   ];
 };
 
-const searchBuyers = async (q, type) => {
+const searchBuyers = async (q) => {
 
+  /* -------------------------------
+   1️⃣ BUYER COMPANY NAME (MAX 3)
+  --------------------------------*/
   const companyMatches = await Users.findAll({
     where: { is_seller: 0 },
     include: [
@@ -230,26 +233,25 @@ const searchBuyers = async (q, type) => {
     name: u.company_info.organization_name,
     slug: u.company_info.organization_slug,
     type: "buyer",
-    search_type: type,
-    category_id: 0,
-    subcategory_id: 0,
-    item_category_id: 0,
-    item_subcategory_id: 0,
   }));
 
-  const categoryMatches = await BuyerSourcingInterests.findAll({
+
+  /* -------------------------------
+   2️⃣ CATEGORY MATCH (Buyer → SellerCategory)
+  --------------------------------*/
+  const categoryMatches = await SellerCategory.findAll({
     include: [
       {
-        model: ItemCategory,
+        model: Categories,
         as: "category",
         where: {
           name: { [Op.like]: `%${q}%` },
         },
-        attributes: ["id", "name", "category_id", "subcategory_id"],
+        attributes: ["id", "name"],
       },
     ],
     attributes: [],
-    group: ["category.item_category_id"],
+    group: ["category.id"],
     limit: 5,
     raw: true,
   });
@@ -258,30 +260,25 @@ const searchBuyers = async (q, type) => {
     id: c["category.id"],
     name: c["category.name"],
     type: "category",
-    search_type: type,
-    category_id: c["category.category_id"],
-    subcategory_id: c["category.subcategory_id"],
-    item_category_id: c["category.id"],
-    item_subcategory_id: 0,
   }));
 
 
   /* -------------------------------
    3️⃣ SUBCATEGORY MATCH
   --------------------------------*/
-  const subCategoryMatches = await BuyerSourcingInterests.findAll({
+  const subCategoryMatches = await SellerCategory.findAll({
     include: [
       {
-        model: ItemSubCategory,
+        model: SubCategories,
         as: "subcategory",
         where: {
           name: { [Op.like]: `%${q}%` },
         },
-        attributes: ["id", "name", "category_id", "subcategory_id", 'item_category_id'],
+        attributes: ["id", "name"],
       },
     ],
     attributes: [],
-    group: ["subcategory.item_subcategory_id"],
+    group: ["subcategory.id"],
     limit: 5,
     raw: true,
   });
@@ -290,11 +287,6 @@ const searchBuyers = async (q, type) => {
     id: s["subcategory.id"],
     name: s["subcategory.name"],
     type: "subcategory",
-    search_type: type,
-    category_id: s["subcategory.category_id"],
-    subcategory_id: s["subcategory.subcategory_id"],
-    item_category_id: s["subcategory.item_category_id"],
-    item_subcategory_id: s["subcategory.id"],
   }));
 
 
@@ -308,17 +300,6 @@ const searchBuyers = async (q, type) => {
   ];
 };
 
-const buildUrlParams = (item) => {
-  return Object.entries({
-    category_id: item.category_id,
-    subcategory_id: item.subcategory_id,
-    item_category_id: item.item_category_id,
-    item_subcategory_id: item.item_subcategory_id,
-  })
-    .filter(([_, v]) => v && v !== 0)
-    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-    .join("&");
-};
 
 exports.searchMulti = async (req, res) => {
   try {
@@ -330,56 +311,28 @@ exports.searchMulti = async (req, res) => {
 
     switch (type) {
       case "product":
-        results = await searchProducts(q, type);
+        results = await searchProducts(q);
         break;
 
       case "seller":
-        results = await searchSellers(q, type);
+        results = await searchSellers(q);
         break;
 
       case "buyer":
-        results = await searchBuyers(q, type);
+        results = await searchBuyers(q);
         break;
 
       default:
         results = [];
     }
 
-
-    const finalResults = results.map(item => {
-      let url = "";
-
-      if (item.search_type === "product") {
-        if (item.type === "product") {
-          url = `/products/${item.slug}`;
-        } else {
-          const qs = buildUrlParams(item);
-          url = qs ? `/products?${qs}` : `/products`;
-        }
-      }
-
-      if (item.search_type === "seller" || item.search_type === "buyer") {
-        if (item.type === "buyer" || item.type === "seller") {
-          url = `/companies/${item.slug}`;
-        } else {
-          const qs = buildUrlParams(item);
-          url = qs ? `/company-list?${qs}` : `/company-list`;
-        }
-      }
-
-      return {
-        ...item,
-        url,
-      };
-    });
-
-    res.json(finalResults);
-
+    res.json(results);
   } catch (err) {
     console.error("searchMulti error:", err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 exports.getAllFrontMenu = async (req, res) => {
   try {

@@ -39,6 +39,28 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     if (searchValue) {
       setSearchTerm(searchValue); // Set state if search param exists
     }
+
+    const queryParams = new URLSearchParams(location.search);
+    const cateIdParam = queryParams.get("category_id");
+    const subcateIdParam = queryParams.get("subcategory_id");
+    // const itemcateIdParam = queryParams.get("item_category_id");
+    // const itemsubcateIdParam = queryParams.get("item_subcategory_id");
+
+    if (cateIdParam) {
+      setSelectedCategories([Number(cateIdParam)]);
+    }
+    if (subcateIdParam) {
+      setSelectedSubCategories([Number(subcateIdParam)]);
+    }
+    // if (itemcateIdParam) {
+    //   setSelectedItemCategories([Number(itemcateIdParam)]);
+    // }
+    // if (itemsubcateIdParam) {
+    //   setSelectedItemSubCategories([Number(itemsubcateIdParam)]);
+    // }
+
+
+
   }, [searchParams]);
   const filteredCategories = categories.filter(cat =>
     cat.name.toLowerCase().includes(categorySearchTerm)
@@ -233,69 +255,68 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
   };
 
   const CompanySkeletonLoader = ({ count = 6, viewMode = "grid" }) => {
-  const items = Array.from({ length: count });
+    const items = Array.from({ length: count });
 
-  return (
-    <>
-      {items.map((_, index) => (
-        <div
-          key={index}
-          className={viewMode === "grid" ? "col-12 col-sm-6" : "col-12"}
-        >
+    return (
+      <>
+        {items.map((_, index) => (
           <div
-            className={`card shadow-sm border p-3 h-100 ${
-              viewMode === "list" ? "flex-row" : ""
-            }`}
+            key={index}
+            className={viewMode === "grid" ? "col-12 col-sm-6" : "col-12"}
           >
-            {/* Logo */}
-            <div className="me-3 text-center">
-              <div
-                className="content-placeholder rounded"
-                style={{
-                  width: viewMode === "list" ? 100 : 180,
-                  height: viewMode === "list" ? 100 : 180,
-                }}
-              />
-            </div>
+            <div
+              className={`card shadow-sm border p-3 h-100 ${viewMode === "list" ? "flex-row" : ""
+                }`}
+            >
+              {/* Logo */}
+              <div className="me-3 text-center">
+                <div
+                  className="content-placeholder rounded"
+                  style={{
+                    width: viewMode === "list" ? 100 : 180,
+                    height: viewMode === "list" ? 100 : 180,
+                  }}
+                />
+              </div>
 
-            {/* Details */}
-            <div style={{ flex: 1 }}>
-              <div
-                className="content-placeholder mb-2"
-                style={{ width: "60%", height: 14 }}
-              ></div>
+              {/* Details */}
+              <div style={{ flex: 1 }}>
+                <div
+                  className="content-placeholder mb-2"
+                  style={{ width: "60%", height: 14 }}
+                ></div>
 
-              <div
-                className="content-placeholder mb-2"
-                style={{ width: "40%", height: 12 }}
-              ></div>
+                <div
+                  className="content-placeholder mb-2"
+                  style={{ width: "40%", height: 12 }}
+                ></div>
 
-              <div
-                className="content-placeholder mb-2"
-                style={{ width: "70%", height: 12 }}
-              ></div>
+                <div
+                  className="content-placeholder mb-2"
+                  style={{ width: "70%", height: 12 }}
+                ></div>
 
-              <div
-                className="content-placeholder mb-2"
-                style={{ width: "50%", height: 12 }}
-              ></div>
+                <div
+                  className="content-placeholder mb-2"
+                  style={{ width: "50%", height: 12 }}
+                ></div>
 
-              <div
-                className="content-placeholder mb-3"
-                style={{ width: "80%", height: 12 }}
-              ></div>
+                <div
+                  className="content-placeholder mb-3"
+                  style={{ width: "80%", height: 12 }}
+                ></div>
 
-              <div
-                className="content-placeholder"
-                style={{ width: "100%", height: 35 }}
-              ></div>
+                <div
+                  className="content-placeholder"
+                  style={{ width: "100%", height: 35 }}
+                ></div>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
-    </>
-  );
-};
+        ))}
+      </>
+    );
+  };
 
   return (
     <div className="container my-4">
@@ -427,7 +448,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                   />
                 </div>
                 <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSourcingInterest.length >= 5 ? 'auto' : 'visible' }}>
-                  
+
                   {filteredSourcingInterest.map(sic => (
                     <div className="form-check mb-2" >
                       <input
@@ -875,15 +896,15 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
               <div className="col-12"><p className="text-center">No companies found.</p></div>
             )}
             {selectedCompany && (
-  <ConnectForm
-    show={showModal}
-    onHide={() => setShowModal(false)}
-    companyId={selectedCompany.id}
-    receiverName={selectedCompany.user?.fname}
-    isBuyer={true}
-    companyName={selectedCompany.name} // optional, for title
-  />
-)}
+              <ConnectForm
+                show={showModal}
+                onHide={() => setShowModal(false)}
+                companyId={selectedCompany.id}
+                receiverName={selectedCompany.user?.fname}
+                isBuyer={true}
+                companyName={selectedCompany.name} // optional, for title
+              />
+            )}
             {!loading && scrollLoading && (
               <CompanySkeletonLoader count={2} viewMode={viewMode} />
             )}
