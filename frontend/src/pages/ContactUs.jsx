@@ -26,7 +26,7 @@ const ContactUs = () => {
         const response = await axios.get(`${API_BASE_URL}/settings/home`);
         setFooterData(response.data);
       } catch (error) {
-        console.error('Error fetching footer data:', error);
+        console.error("Error fetching footer data:", error);
       }
     };
     fetchFooterData();
@@ -81,7 +81,7 @@ const ContactUs = () => {
     try {
       await axios.post(`${API_BASE_URL}/contacts`, formData);
       // setResponseMsg("Your message has been sent successfully!");
-      showNotification('our message has been sent successfully!', "success");
+      showNotification("our message has been sent successfully!", "success");
       setFormData({
         fname: "",
         lname: "",
@@ -93,15 +93,18 @@ const ContactUs = () => {
     } catch (err) {
       console.error(err);
       // setResponseMsg("Something went wrong. Please try again later.");
-      showNotification('Something went wrong. Please try again later.', "warning");
+      showNotification(
+        "Something went wrong. Please try again later.",
+        "warning"
+      );
     } finally {
       setLoading(false);
     }
   };
   return (
     <section className="my-5">
-      <div className="container">
-        <div className="card mb-5 commonHead border shodow-none">
+      <div className="container-xl">
+        <div className="card mb-lg-5 mb-3 commonHead border shodow-none">
           <div className="card-body py-5 d-flex align-items-center justify-content-center">
             <div className="firstHead text-center">
               <h1 className="mb-0 text-white">LET'S CONNECT</h1>
@@ -112,23 +115,38 @@ const ContactUs = () => {
           <div className="card">
             <div className="card-body">
               <div className="row">
-                <div className="col-lg-4">
+                <div className="col-xl-4 col-md-6 mb-xl-0 mb-5">
                   <div className="iframeBox h-100">
-                    <iframe src={footerData.contact_map_url} allowfullscreen className="w-100 h-100"></iframe>
+                    <iframe
+                      src={footerData.contact_map_url}
+                      allowfullscreen
+                      className="w-100 h-100"
+                    ></iframe>
                   </div>
                 </div>
-                <div className="col-lg-3">
-                  <div className="contact-info ps-lg-4 pe-lg-3 border-end h-100">
+                <div className="col-xl-3 col-md-6 mb-xl-0 mb-5">
+                  <div className="contact-info ps-lg-3 pe-lg-3 border-end h-100">
                     <h2>MEET US</h2>
                     <div className="info-item d-flex align-items-start mt-4">
-                      <i className="bi bi-telephone-fill"></i>
                       <div>
                         <h6 className="text-orange">Call Us Now</h6>
-                        <p className="d-flex align-items-center gap-2"><i className="lni lni-phone"></i> <a href={`tel:${footerData.contactphone_1}`} className="nav-link">
-                          {footerData.contactphone_1}, </a>
-                          <a href={`tel:${footerData.contactphone_2}`} className="nav-link">
-                            {footerData.contactphone_2}</a>
-                        </p>
+                        <div className="d-flex gap-2">
+                        <span className="pt-1"> <i className="lni lni-phone"></i> </span>
+                        <div className="d-flex align-items-center gap-2 flex-wrap">
+                          <p><a
+                            href={`tel:${footerData.contactphone_1}`}
+                            className="nav-link"
+                          >
+                            {footerData.contactphone_1},{" "}
+                          </a></p>
+                          <p><a
+                            href={`tel:${footerData.contactphone_2}`}
+                            className="nav-link"
+                          >
+                            {footerData.contactphone_2}
+                          </a></p>
+                        </div>
+                        </div>
                       </div>
                     </div>
 
@@ -136,10 +154,12 @@ const ContactUs = () => {
                       <i className="bi bi-geo-alt-fill"></i>
                       <div>
                         <h6 className="text-orange">Our Location</h6>
-                        <p
-                          className="d-flex align-items-center gap-2"
-                          dangerouslySetInnerHTML={{ __html: `<i class="lni lni-map-marker"></i> ${footerData.contactaddress}` }}
-                        ></p>
+                        <div
+                          className="d-flex gap-2"
+                          dangerouslySetInnerHTML={{
+                            __html: ` <i class="lni lni-map-marker pt-2"></i> ${footerData.contactaddress}`,
+                          }}
+                        ></div>
                       </div>
                     </div>
 
@@ -147,12 +167,15 @@ const ContactUs = () => {
                       <i className="bi bi-envelope-fill"></i>
                       <div>
                         <h6 className="text-orange">Write Us Now</h6>
-                        <p className="d-flex align-items-center gap-2"><i className="fadeIn animated bx bx-comment-detail"></i> {footerData.contactemail}</p>
+                        <div className="d-flex gap-2">
+                          <i className="fadeIn animated bx bx-comment-detail pt-1"></i>{" "}
+                          {footerData.contactemail}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="col-lg-5">
+                <div className="col-xl-5 col-md-8 mx-auto">
                   <div className="contact-form">
                     <h2 className="mb-4">HAVE A QUESTION?</h2>
                     <form onSubmit={handleSubmit}>
@@ -166,11 +189,14 @@ const ContactUs = () => {
                               placeholder="Your First Name*"
                               value={formData.fname}
                               onChange={handleChange}
-                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.fname ? "is-invalid" : ""
-                                }`}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${
+                                errors.fname ? "is-invalid" : ""
+                              }`}
                             />
                             {errors.fname && (
-                              <small className="text-danger">{errors.fname}</small>
+                              <small className="text-danger">
+                                {errors.fname}
+                              </small>
                             )}
                           </div>
                         </div>
@@ -184,11 +210,14 @@ const ContactUs = () => {
                               placeholder="Your Last Name*"
                               value={formData.lname}
                               onChange={handleChange}
-                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.lname ? "is-invalid" : ""
-                                }`}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${
+                                errors.lname ? "is-invalid" : ""
+                              }`}
                             />
                             {errors.lname && (
-                              <small className="text-danger">{errors.lname}</small>
+                              <small className="text-danger">
+                                {errors.lname}
+                              </small>
                             )}
                           </div>
                         </div>
@@ -202,11 +231,14 @@ const ContactUs = () => {
                               placeholder="Your Email*"
                               value={formData.email}
                               onChange={handleChange}
-                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.email ? "is-invalid" : ""
-                                }`}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${
+                                errors.email ? "is-invalid" : ""
+                              }`}
                             />
                             {errors.email && (
-                              <small className="text-danger">{errors.email}</small>
+                              <small className="text-danger">
+                                {errors.email}
+                              </small>
                             )}
                           </div>
                         </div>
@@ -220,11 +252,14 @@ const ContactUs = () => {
                               placeholder="Subject*"
                               value={formData.subject}
                               onChange={handleChange}
-                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.subject ? "is-invalid" : ""
-                                }`}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${
+                                errors.subject ? "is-invalid" : ""
+                              }`}
                             />
                             {errors.subject && (
-                              <small className="text-danger">{errors.subject}</small>
+                              <small className="text-danger">
+                                {errors.subject}
+                              </small>
                             )}
                           </div>
                         </div>
@@ -238,11 +273,14 @@ const ContactUs = () => {
                               rows="6"
                               value={formData.message}
                               onChange={handleChange}
-                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.message ? "is-invalid" : ""
-                                }`}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${
+                                errors.message ? "is-invalid" : ""
+                              }`}
                             ></textarea>
                             {errors.message && (
-                              <small className="text-danger">{errors.message}</small>
+                              <small className="text-danger">
+                                {errors.message}
+                              </small>
                             )}
                           </div>
                         </div>

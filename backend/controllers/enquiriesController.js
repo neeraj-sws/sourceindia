@@ -1628,11 +1628,11 @@ exports.getAcceptEnquiries = async (req, res) => {
       // ✅ Checkbox logic (shortlist)
       const checked =
         enquiry.shortlist === 1
-          ? `<input class="form-check-input me-3 filed_check" checked ${disabled} name="check[]" type="checkbox" value="1" onchange="shortlist(${enquiry.id},0)">`
-          : `<input class="form-check-input me-3 filed_check" name="check[]" ${disabled} type="checkbox" value="0" onchange="shortlist(${enquiry.id},1)">`;
+          ? `<input className="form-check-input me-3 filed_check" checked ${disabled} name="check[]" type="checkbox" value="1" onchange="shortlist(${enquiry.id},0)">`
+          : `<input className="form-check-input me-3 filed_check" name="check[]" ${disabled} type="checkbox" value="0" onchange="shortlist(${enquiry.id},1)">`;
 
       // ✅ Badge HTML
-      const statusHTML = `<div class="badge rounded-pill text-${color} bg-light-${color} p-2 px-3" style="font-size:10px;">${status}</div>`;
+      const statusHTML = `<div className="badge rounded-pill text-${color} bg-light-${color} p-2 px-3" style="font-size:10px;">${status}</div>`;
 
       return {
         sno: index + 1,

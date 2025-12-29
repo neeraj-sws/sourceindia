@@ -21,16 +21,16 @@ const Product = () => {
 
   return (
     <>
-      <section className="productSection py-5 my-4">
+      <section className="productSection py-md-5 py-3 mb-4">
         <div className="container">
-          <div className="firstHead text-center pb-5">
-            <h1>Latest Product</h1>
+          <div className="firstHead text-center pb-md-5 pb-4">
+            <h1 className="mb-0">Latest Product</h1>
           </div>
 
           <div className="productGrid">
             <div className="row">
               {products.map((product, index) => (
-                <div className="col-lg-4 col-md-3 col-sm-6 mb-4" key={index}>
+                <div className="col-lg-4 col-sm-6 col-12 mb-4" key={index}>
                   <div key={product.id} className="productBox p-3 bg-white">
                     <div className="cateproduct">
                       <p>{product.category_name}</p>
