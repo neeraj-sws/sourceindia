@@ -133,7 +133,7 @@ const CreateTicket = () => {
     <section className="my-5">
       <div className="container">
         {/* Header */}
-        <div className="card mb-5 commonHead border shodow-none">
+        <div className="card mb-lg-5 mb-3 commonHead border shodow-none">
           <div className="card-body py-5 d-flex align-items-center justify-content-center">
             <div className="firstHead text-center">
               <h1 className="mb-0 text-white">Support Portal</h1>

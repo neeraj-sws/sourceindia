@@ -7,43 +7,45 @@ const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const Products = require('../models/Products');
 const UploadImage = require('../models/UploadImage');
+const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const getMulterUpload = require('../utils/upload');
+const ItemSubCategory = require('../models/ItemSubCategory');
 
 exports.createItemCategory = async (req, res) => {
   const upload = getMulterUpload('items');
   upload.single('file')(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
-  try {
-    const { name, category_id, subcategory_id, status } = req.body;
-    /*if (!name || !category_id || !subcategory_id || status === undefined) {
-      return res.status(400).json({ message: 'All fields (name, category_id, subcategory_id, status) are required' });
-    }*/
-    const uploadImage = await UploadImage.create({
-      file: `upload/items/${req.file.filename}`,
-    });
-    const itemCategory = await ItemCategory.create({
-      name,
-      category_id,
-      subcategory_id,
-      status,
-      file_id: uploadImage.id,
-    });
-    const category = await Categories.findByPk(category_id);
-    const subCategory = await SubCategories.findByPk(subcategory_id);
-    const itemCategoryWithNames = {
-      ...itemCategory.toJSON(),
-      category_name: category ? category.name : '',
-      subcategory_name: subCategory ? subCategory.name : '',
-      file_name: uploadImage.file
-    };
-    res.status(201).json({
-      message: 'Item Category created',
-      itemCategory: itemCategoryWithNames
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
+    try {
+      const { name, category_id, subcategory_id, status } = req.body;
+      /*if (!name || !category_id || !subcategory_id || status === undefined) {
+        return res.status(400).json({ message: 'All fields (name, category_id, subcategory_id, status) are required' });
+      }*/
+      const uploadImage = await UploadImage.create({
+        file: `upload/items/${req.file.filename}`,
+      });
+      const itemCategory = await ItemCategory.create({
+        name,
+        category_id,
+        subcategory_id,
+        status,
+        file_id: uploadImage.id,
+      });
+      const category = await Categories.findByPk(category_id);
+      const subCategory = await SubCategories.findByPk(subcategory_id);
+      const itemCategoryWithNames = {
+        ...itemCategory.toJSON(),
+        category_name: category ? category.name : '',
+        subcategory_name: subCategory ? subCategory.name : '',
+        file_name: uploadImage.file
+      };
+      res.status(201).json({
+        message: 'Item Category created',
+        itemCategory: itemCategoryWithNames
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+    }
   });
 };
 
@@ -127,11 +129,11 @@ exports.updateItemCategory = async (req, res) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-  try {
-    const { name, category_id, subcategory_id, status } = req.body;
-    const itemCategory = await ItemCategory.findByPk(req.params.id);
-    if (!itemCategory) return res.status(404).json({ message: 'Item Category not found' });
-    const uploadDir = path.resolve('upload/items');
+    try {
+      const { name, category_id, subcategory_id, status } = req.body;
+      const itemCategory = await ItemCategory.findByPk(req.params.id);
+      if (!itemCategory) return res.status(404).json({ message: 'Item Category not found' });
+      const uploadDir = path.resolve('upload/items');
       if (!fs.existsSync(uploadDir)) {
         console.log("Directory does not exist, creating:", uploadDir);
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -161,19 +163,114 @@ exports.updateItemCategory = async (req, res) => {
           itemCategory.file_id = newImage.id;
         }
       }
-    itemCategory.name = name;
-    itemCategory.category_id = category_id;
-    itemCategory.subcategory_id = subcategory_id;
-    itemCategory.status = status;
-    itemCategory.updated_at = new Date();
-    await itemCategory.save();
+      itemCategory.name = name;
+      itemCategory.category_id = category_id;
+      itemCategory.subcategory_id = subcategory_id;
+      itemCategory.status = status;
+      itemCategory.updated_at = new Date();
+      await itemCategory.save();
 
-    res.json({ message: 'Item Category updated', itemCategory });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+      res.json({ message: 'Item Category updated', itemCategory });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   });
 };
+
+
+
+
+exports.getAllItemCategories = async (req, res) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const status = req.query.status;
+
+    const whereCondition = {};
+
+    if (typeof status !== 'undefined') {
+      whereCondition.status = parseInt(status);
+    }
+
+    const categories = await ItemCategory.findAll({
+      order: [['id', 'ASC']],
+      where: whereCondition,
+      ...(limit && { limit }),
+    });
+
+    // product count per category
+    const sourcingCounts = await BuyerSourcingInterests.findAll({
+      attributes: ['item_category_id', [fn('COUNT', col('user_id')), 'count']],
+      group: ['item_category_id'],
+      raw: true,
+    });
+
+    const sourcingCountMap = {};
+    sourcingCounts.forEach(item => {
+      sourcingCountMap[item.item_category_id] = parseInt(item.count);
+    });
+
+    const modifiedCategories = categories.map(category => {
+      const cd = category.toJSON();
+      const { CategoryImage, ...rest } = cd;
+      return {
+        ...rest,
+        company_count: sourcingCountMap[category.id] || 0, // ✅ fixed
+      };
+    });
+
+    res.json(modifiedCategories);
+  } catch (err) {
+    console.error('getAllCategories error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getItemCategoryByItemType = async (req, res) => {
+  try {
+    const { category_id } = req.params;
+
+    const categoryId = Number(category_id);
+
+    const whereCondition = {};
+    if (!isNaN(categoryId)) {
+      whereCondition.item_category_id = categoryId;
+    }
+
+    const categories = await ItemSubCategory.findAll({
+      where: whereCondition,
+      order: [['id', 'ASC']],
+    });
+
+    const sourcingCounts = await BuyerSourcingInterests.findAll({
+      attributes: [
+        'item_subcategory_id',
+        [fn('COUNT', col('user_id')), 'count'],
+      ],
+      where: {
+        ...(!isNaN(categoryId) && { item_category_id: categoryId }),
+
+      },
+      group: ['item_subcategory_id'],
+      raw: true,
+    });
+
+    const sourcingCountMap = {};
+    sourcingCounts.forEach(item => {
+      sourcingCountMap[item.item_subcategory_id] = Number(item.count);
+    });
+
+    const modifiedCategories = categories.map(cat => ({
+      ...cat.toJSON(),
+      company_count: sourcingCountMap[cat.id] || 0,
+    }));
+
+    res.json(modifiedCategories);
+  } catch (err) {
+    console.error('getAllItemSubCategories error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 exports.deleteItemCategory = async (req, res) => {
   try {
@@ -182,7 +279,7 @@ exports.deleteItemCategory = async (req, res) => {
     if (itemCategory.file_id && itemCategory.file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(itemCategory.file_id);
       if (uploadImage) {
-        const oldImagePath = path.resolve(uploadImage.file);        
+        const oldImagePath = path.resolve(uploadImage.file);
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }

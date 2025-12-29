@@ -1,32 +1,39 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
-import API_BASE_URL, { ROOT_URL } from '../config';
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
+import API_BASE_URL, { ROOT_URL } from "../config";
 import ImageWithFallback from "../admin/common/ImageWithFallback";
 import "../css/home.css";
 
 const FrontHeader = () => {
   const { isLoggedIn, logout, user, setUser } = useAuth();
-  // const [user, setUser] = useState(null);
-  const token = localStorage.getItem('user_token');
+  const token = localStorage.getItem("user_token");
   const navigate = useNavigate();
-  const [searchType, setSearchType] = useState('product'); // Default to 'product'
-  const [searchQuery, setSearchQuery] = useState('');
-  const [logoUrl, setLogoUrl] = useState('/logo.png');
-  const [mobile, setMobile] = useState('+91-11-41615985');
+
+  const [searchType, setSearchType] = useState("product");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const [logoUrl, setLogoUrl] = useState("/logo.png");
+  const [mobile, setMobile] = useState("+91-11-41615985");
   const [menuItems, setMenuItems] = useState([]);
   const [dropdownItems, setDropdownItems] = useState({});
+  const [searchFocused, setSearchFocused] = useState(false);
 
+  /* ================= SITE SETTINGS ================= */
   useEffect(() => {
     const fetchMenu = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/front_menu`);
-        const mainMenu = response.data.filter(item => item.parent_id === 0);
+        const mainMenu = response.data.filter((item) => item.parent_id === 0);
         setMenuItems(mainMenu);
         mainMenu.forEach(async (menu) => {
           if (menu.type === 1) {
-            const dropdownResponse = await axios.get(`${API_BASE_URL}/front_menu?parent_id=${menu.id}`);
+            const dropdownResponse = await axios.get(
+              `${API_BASE_URL}/front_menu?parent_id=${menu.id}`
+            );
             setDropdownItems((prev) => ({
               ...prev,
               [menu.id]: dropdownResponse.data,
@@ -34,132 +41,181 @@ const FrontHeader = () => {
           }
         });
       } catch (err) {
-        console.error('Error fetching menu data:', err);
+        console.error("Error fetching menu data:", err);
       }
     };
     fetchMenu();
   }, []);
-
   useEffect(() => {
     const fetchSiteSettings = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/settings/site`);
-        const data = response.data;
+        const res = await axios.get(`${API_BASE_URL}/settings/site`);
+        const data = res.data;
+
         if (data?.logo_file) {
           setLogoUrl(`${ROOT_URL}/${data.logo_file}`);
-        } else {
-          setLogoUrl('/logo.png');
         }
         if (data?.mobile) {
           setMobile(data.mobile);
         }
-        const faviconLink = document.querySelector("link[rel='icon']");
-        if (faviconLink) {
-          faviconLink.href = data?.favicon_file
-            ? `${ROOT_URL}/${data.favicon_file}`
-            : "/favicon.png";
-          const testImg = new Image();
-          testImg.src = faviconLink.href;
-          testImg.onerror = () => {
-            faviconLink.href = "/favicon.png";
-          };
-        }
-      } catch (err) {
-        console.error("Error fetching site settings:", err);
-        setLogoUrl("/logo.png");
-        setMobile("+91-11-41615985");
-        const faviconLink = document.querySelector("link[rel='icon']");
-        if (faviconLink) faviconLink.href = "/favicon.png";
-      }
-    };
-
-    fetchSiteSettings();
-  }, []);
-
-  // useEffect(() => {
-  //   const checkToken = () => {
-  //     setIsLoggedIn(!!localStorage.getItem('user_token'));
-  //   };
-  //   window.addEventListener('storage', checkToken);
-  //   return () => {
-  //     window.removeEventListener('storage', checkToken);
-  //   };
-  // }, []);
-
-  const handleLogout = (e) => {
-    e.preventDefault();
-    logout();
-    navigate('/login');
-  };
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!token) return;
-      try {
-        const response = await axios.get(`${API_BASE_URL}/signup/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setUser(response.data.user);
       } catch (err) {
         console.error(err);
       }
     };
+    fetchSiteSettings();
+  }, []);
+
+  /* ================= PROFILE ================= */
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/signup/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUser(res.data.user);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     fetchProfile();
   }, [token]);
 
-
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent default form submission
-    if (searchQuery.trim()) {
-      const path = searchType === 'product' ? '/products' : '/company-list';
-      navigate(`${path}?search=${encodeURIComponent(searchQuery.trim())}`); // Navigate with query param
+  /* ================= AUTOCOMPLETE ================= */
+  useEffect(() => {
+    if (searchQuery.length < 1) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      return;
     }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await axios.post(
+          `${API_BASE_URL}/front_menu/main-search?q=${searchQuery}&type=${searchType}`
+        );
+
+        setSuggestions(res.data || []);
+        setShowDropdown(true);
+      } catch (err) {
+        console.error(err);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchType]);
+
+  /* ================= SUBMIT ================= */
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (searchQuery.trim().length < 3) {
+      alert("Enter Product / Service Keyword(s) at least three characters");
+      return;
+    }
+
+    const path =
+      searchType === "product"
+        ? "/products"
+        : searchType === "seller"
+          ? "/company-list"
+          : "/buyer-list";
+
+    navigate(`${path}?search=${encodeURIComponent(searchQuery.trim())}`);
+  };
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    logout();
+    navigate("/login");
   };
 
   return (
     <>
-      <header className='mainHeader'>
-        <div className='container'>
-          <div className="top-bar px-3 d-flex justify-content-between align-items-center">
-            <div className="welcomeBox d-flex">
+      <header className="mainHeader">
+        <div className="container-xl">
+          <div className="top-bar px-xl-3 d-flex justify-content-between align-items-center">
+            <div className="welcomeBox d-lg-flex d-block">
               {isLoggedIn && user ? (
-                <span>Welcome <b className="text-orange">{user.is_seller ? 'Seller' : 'Buyer'}</b>!</span>
+                <span>
+                  Welcome{" "}
+                  <b className="text-orange">
+                    {user.is_seller ? "Seller" : "Buyer"}
+                  </b>
+                  !
+                </span>
               ) : (
-                <span>Welcome User!</span>
+                <span className="text-nowrap">Welcome User!</span>
               )}
               <div className="text-center text-md-start d-none d-md-block">
-                <span className="ms-3">Support: {mobile}</span>
+                <span className="ms-xl-3 text-nowrap">Support: {mobile}</span>
               </div>
             </div>
             <div className="middleBox">
-              <form className="d-flex align-items-center flex-grow-1" onSubmit={handleSubmit}>
+              <form onSubmit={handleSubmit} className="d-flex align-items-center flex-grow-1 position-relative w-100">
                 <div className="search-bar-front d-flex w-100">
                   <select
-                    className="form-select w-auto px-3"
+                    className="form-select w-auto  px-3"
                     value={searchType}
                     onChange={(e) => setSearchType(e.target.value)}
                   >
-                    <option value="product">Product</option>
-                    <option value="company">Company</option>
+                    <option value="product">Products</option>
+                    <option value="seller">Seller</option>
+                    <option value="buyer">Buyer</option>
                   </select>
+
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Search.."
+                    placeholder="Enter product / service to search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+
+                    onFocus={() => {
+                      setSearchFocused(true);                  // ⭐ body dark
+                      if (searchQuery.length >= 3) {
+                        setShowDropdown(true);
+                      }
+                    }}
+
+                    onBlur={() => {
+                      setTimeout(() => {
+                        setSearchFocused(false);               // ⭐ remove overlay
+                        setShowDropdown(false);
+                      }, 200); // click allow for suggestions
+                    }}
                   />
+
                   <button className="btn search-btn" type="submit">
                     Search
                   </button>
+
+                  {showDropdown && suggestions.length > 0 && (
+                    <ul className="search-suggestion-box list-unstyled">
+                      {suggestions.map((item) => (
+                        <li
+                          key={item.id}
+                        >
+                          <Link to={`${item.url}`}>
+                            <div className="d-flex align-items-center gap-2">
+                              <i className="bx bx-history"></i> {item.name}
+                            </div>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </form>
             </div>
             <div className="lastbox">
               <div className="d-flex align-items-center gap-2">
-                <Link to="/get-support" className="thLink text-center me-2 lh-1">
+                <Link
+                  to="/get-support"
+                  className="thLink text-center me-2 lh-1 d-flex flex-column"
+                >
                   <i className="lni lni-question-circle d-block"></i>Support
                 </Link>
                 {isLoggedIn && user ? (
@@ -171,32 +227,65 @@ const FrontHeader = () => {
                       aria-expanded="false"
                       role="button"
                     >
-                      <div className="position-relative me-2">
+                      <div className="position-relative me-2 user-img-login">
                         <ImageWithFallback
-                        src={user.file && `${ROOT_URL}/${user.file.file}`}
-                        width={50}
-                        height={50}
-                        showFallback={true}
-                        className="user-img"
-                    />
+                          src={user.file && `${ROOT_URL}/${user.file.file}`}
+                          width={50}
+                          height={50}
+                          showFallback={true}
+                          className="user-img"
+                        />
                         {/* <span className="badge bg-primary text-white position-absolute badge-sm userbadge">
                           {user.is_seller ? 'Seller' : 'Buyer'}
                         </span> */}
                       </div>
-                      <div className="text-start lh-sm">
+                      {/* <div className="text-start lh-sm">
                         <div className="fw-medium">{user.fname}</div>
                         <div className="fw-medium">{user.lname}</div>
+                      </div> */}
+                      <div className="text-start lh-sm">
+                        <p className="user-name mb-0">
+                          {user.fname}
+                          {/* {user?.lname?.charAt(0)?.toUpperCase()} */}
+                        </p>
                       </div>
                     </div>
-                    <ul className="dropdown-menu dropdown-menu-end mt-2" aria-labelledby="userDropdown">
-                      <li><Link className="dropdown-item" to="/dashboard">Dashboard</Link></li>
-                      <li><Link className="dropdown-item" to="#" onClick={handleLogout}>Logout</Link></li>
+                    <ul
+                      className="dropdown-menu dropdown-menu-end mt-2"
+                      aria-labelledby="userDropdown"
+                    >
+                      <li>
+                        <Link className="dropdown-item" to="/dashboard">
+                          Dashboard
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          className="dropdown-item"
+                          to="#"
+                          onClick={handleLogout}
+                        >
+                          Logout
+                        </Link>
+                      </li>
                     </ul>
                   </div>
                 ) : (
                   <>
-                    <Link to="/login" className="btn btn-sm btnType1">Sign In</Link>
-                    <Link to="/registration" className="btn btn-sm btn-primary">Join Free</Link>
+                    <div className="lastboxbtns d-flex flex-md-row flex-column gap-1">
+                      <Link
+                        to="/login"
+                        className="btn btn-sm btnType1 text-nowrap"
+                      >
+                        Sign In
+                      </Link>
+                      <Link
+                        to="/registration"
+                        className="btn btn-sm btn-primary text-nowrap"
+                      >
+                        Join Free
+                      </Link>
+                    </div>
                   </>
                 )}
               </div>
@@ -204,81 +293,119 @@ const FrontHeader = () => {
           </div>
         </div>
         <div className="bg-white py-3">
-          <div className="container">
-            <div className="d-flex flex-wrap justify-content-between align-items-center">
-              <div>
-                <Link to="/" className="d-flex align-items-center text-decoration-none">
+          <div className="container-xl">
+            <nav className="navbar navbar-expand-lg py-0">
+              <div className="container-fluid px-0">
+                {/* LOGO */}
+                <Link to="/" className="navbar-brand">
                   <img
                     src={logoUrl}
                     alt="Site Logo"
                     height="40"
                     className="me-2"
+                    style={{ width: "auto" }}
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = "/logo.png";
                     }}
                   />
                 </Link>
-              </div>
-              <div className="centerMenu">
-                <nav className="navbar navbar-expand-lg">
-                  <div className="">
-                    <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
-                      <span className="navbar-toggler-icon"></span>
-                    </button>
-                    <div className="collapse navbar-collapse" id="mainNavbar">
-                      <ul className="navbar-nav ms-auto">
-                        {menuItems.filter((menuItem) => menuItem.is_show === 1 && menuItem.status === 1 && menuItem.type === 1
-                        )
-                        .map((menuItem) => {
-                          const hasDropdown = dropdownItems[menuItem.id] && dropdownItems[menuItem.id].length > 0;
-                          return (
-                            <li
-                              className={`nav-item ${hasDropdown ? 'dropdown' : ''}`}
-                              key={menuItem.id}
-                            >
-                              {hasDropdown ? (
-                                <>
-                                  <a
-                                    className="nav-link dropdown-toggle"
-                                    href="#"
-                                    id={`dropdown-${menuItem.id}`}
-                                    role="button"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                  >
-                                    {menuItem.name}
-                                  </a>
-                                  <ul className="dropdown-menu" aria-labelledby={`dropdown-${menuItem.id}`}>
-                                    {dropdownItems[menuItem.id].map((subItem) => (
-                                      <li key={subItem.id}>
-                                        <Link className="dropdown-item" to={subItem.link}>
-                                          {subItem.name}
-                                        </Link>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </>
-                              ) : (
-                                <Link className="nav-link" to={menuItem.link}>
+
+                {/* DESKTOP BUTTON */}
+                <a
+                  href="https://elcina.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="post-btn d-inline-block ms-auto me-2 order-lg-3"
+                >
+                  ELCINA Website
+                </a>
+
+                {/* HAMBURGER */}
+                <button
+                  className="navbar-toggler border-0 p-0 position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#mainNavbar"
+                  aria-controls="mainNavbar"
+                  aria-expanded="false"
+                  aria-label="Toggle navigation"
+                  style={{
+                    boxShadow: "unset",
+                  }}
+                >
+                  <span className="bx bx-menu fs-1"></span>
+                </button>
+                {/* MENU */}
+                <div
+                  className="collapse navbar-collapse px-3 py-2 rounded-2 centerMenu"
+                  id="mainNavbar"
+                >
+                  <ul className="navbar-nav mx-auto mt-0">
+                    {menuItems
+                      .filter(
+                        (menuItem) =>
+                          menuItem.is_show === 1 &&
+                          menuItem.status === 1 &&
+                          menuItem.type === 1
+                      )
+                      .map((menuItem) => {
+                        const hasDropdown =
+                          dropdownItems[menuItem.id] &&
+                          dropdownItems[menuItem.id].length > 0;
+                        return (
+                          <li
+                            className={`nav-item ${hasDropdown ? "dropdown" : ""
+                              }`}
+                            key={menuItem.id}
+                          >
+                            {hasDropdown ? (
+                              <>
+                                <a
+                                  className="nav-link dropdown-toggle"
+                                  href="#"
+                                  id={`dropdown-${menuItem.id}`}
+                                  role="button"
+                                  data-bs-toggle="dropdown"
+                                  aria-expanded="false"
+                                >
                                   {menuItem.name}
-                                </Link>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  </div>
-                </nav>
+                                </a>
+                                <ul
+                                  className="dropdown-menu"
+                                  aria-labelledby={`dropdown-${menuItem.id}`}
+                                >
+                                  {dropdownItems[menuItem.id].map((subItem) => (
+                                    <li key={subItem.id}>
+                                      <Link
+                                        className="dropdown-item"
+                                        to={subItem.link}
+                                      >
+                                        {subItem.name}
+                                      </Link>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </>
+                            ) : (
+                              <Link className="nav-link" to={menuItem.link}>
+                                {menuItem.name}
+                              </Link>
+                            )}
+                          </li>
+                        );
+                      })}
+                  </ul>
+                </div>
               </div>
-              <div><a href="https://elcina.com" className="post-btn" target="_blank">ELCINA Website</a></div>
-            </div>
+            </nav>
           </div>
         </div>
-      </header>
+      </header >
+      {searchFocused && <div className="search-overlay"></div>
+      }
     </>
-  )
-}
+  );
+};
 
-export default FrontHeader
+export default FrontHeader;

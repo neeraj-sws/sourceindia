@@ -86,7 +86,7 @@ const GetSupportSkeleton = () => (
     </style>
 
     <section className="my-5">
-      <div className="container">
+      <div className="container-xl">
 
         {/* Header */}
         <div className="card mb-5">
@@ -100,7 +100,7 @@ const GetSupportSkeleton = () => (
             <div className="row">
 
               {/* Left Info */}
-              <div className="col-lg-4">
+              <div className="col-lg-4 col-md-5">
                 <Skeleton height="22px" width="120px" style={{ marginBottom: 20 }} />
 
                 {[...Array(3)].map((_, i) => (
@@ -113,7 +113,7 @@ const GetSupportSkeleton = () => (
               </div>
 
               {/* Right Content */}
-              <div className="col-lg-8">
+              <div className="col-lg-8 col-md-7">
                 <Skeleton height="22px" width="300px" style={{ marginBottom: 25 }} />
 
                 <div className="row">
@@ -142,7 +142,7 @@ if (showSkeleton) return <GetSupportSkeleton />;
 
   return (
     <section className="my-5">
-      <div className="container">
+      <div className="container-xl">
         <div className="card mb-5 commonHead border shodow-none">
           <div className="card-body py-5 d-flex align-items-center justify-content-center">
             <div className="firstHead text-center">
@@ -154,7 +154,7 @@ if (showSkeleton) return <GetSupportSkeleton />;
           <div className="card">
             <div className="card-body py-md-4 pe-lg-5">
               <div className="row">
-                <div className="col-lg-4">
+                <div className="col-lg-4 col-md-5">
                   <div className="contact-info ps-lg-4 pe-lg-3 border-end h-100">
                     <h4>MEET US</h4>
                     <div className="info-item d-flex align-items-start mt-4">
@@ -186,11 +186,11 @@ if (showSkeleton) return <GetSupportSkeleton />;
                     </div>
                   </div>
                 </div>
-                <div className="col-lg-8">
+                <div className="col-lg-8 col-md-7">
                   <div className="contact-form">
                     <h4 className="mb-4">Please Create Your Support Ticket</h4>
                     <div className="row pt-lg-1">
-                      <div className="col-md-6">
+                      <div className="col-sm-6 mb-3">
                         <div className="card supportTicket">
                           <div className="card-body">
                             <Link to="/get-support/createticket" className="d-block">
@@ -202,7 +202,7 @@ if (showSkeleton) return <GetSupportSkeleton />;
                           </div>
                         </div>
                       </div>
-                      <div className="col-md-6">
+                      <div className="col-sm-6 mb-3">
                         <div className="card supportTicket">
                           <div className="card-body">
                             <Link to="/get-support/trackticket" className="d-block">

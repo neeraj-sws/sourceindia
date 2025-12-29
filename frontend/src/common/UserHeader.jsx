@@ -69,7 +69,7 @@ const UserHeader = () => {
                   <span>Back to Home</span>
                 </Link>
               </div>
-              <div className="user-box dropdown">
+              <div className="user-box dropdown user-img-login">
                 <a
                   className="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret"
                   href="#"
@@ -84,8 +84,14 @@ const UserHeader = () => {
                     showFallback={true}
                     className="user-img"
                   />
-                  <div className="user-info ps-3">
+                  {/* <div className="user-info ps-3">
                     <p className="user-name mb-0">{user.fname} {user.lname}</p>
+                  </div> */}
+                   <div className="user-info ps-3">
+                  <p className="user-name mb-0">
+  {user?.fname?.charAt(0)?.toUpperCase()}
+  {user?.lname?.charAt(0)?.toUpperCase()}
+</p>
                   </div>
                 </a>
                 <ul className="dropdown-menu dropdown-menu-end">

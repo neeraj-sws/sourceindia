@@ -22,10 +22,7 @@ const BuyerProduct = () => {
     if (loading) return;
 
     const token = localStorage.getItem("user_token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+
 
     if (!user?.id) return;
 
