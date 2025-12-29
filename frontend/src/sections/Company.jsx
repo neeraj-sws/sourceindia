@@ -31,15 +31,15 @@ const Company = ({ limit }) => {
 
   return (
     <>
-      <section className="companySection py-5 my-4">
-        <div className="container">
-          <div className="firstHead text-center pb-5">
-            <h1>FEATURED COMPANIES</h1>
+      <section className="companySection py-md-5 pt-2 pb-3 mb-4">
+        <div className="container-xl">
+          <div className="firstHead text-center pb-md-5">
+            <h1 className="mb-0">FEATURED COMPANIES</h1>
           </div>
           <div className="companyGrid">
             <div className="row gx-3">
               {companies.map((item, index) => (
-                <div className="col-md-2 mb-3" key={index}>
+                <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3" key={index}>
                   <Link to={`/companies/${item.organization_slug}`} className="d-block h-100">
                     <div key={item.id} className="companyBox px-3 py-4 bg-white border h-100 text-center">
                       <div className="ComImg">
@@ -55,7 +55,7 @@ const Company = ({ limit }) => {
                   </Link>
                 </div>
               ))}
-              <div className="col-md-2 mb-3">
+              <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
                 <Link to="/companies" className="d-block h-100">
                   <div className="companyBox px-3 py-4 bg-white border text-center h-100">
                     <div className="ComImg">

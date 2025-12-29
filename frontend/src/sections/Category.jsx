@@ -23,10 +23,10 @@ const Category = ({ isHome, limit }) => {
 
   return (
     <>
-      <section className="categorySection py-4 my-4">
+      <section className="categorySection py-md-4 pt-2 my-4">
         <div className="container">
           <div className="firstHead text-center pb-5">
-            <h1>Trending Categories</h1>
+            <h1 className="mb-0">Trending Categories</h1>
           </div>
 
           <div className="categoriesGrid justify-content-center">

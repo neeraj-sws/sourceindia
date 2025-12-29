@@ -260,7 +260,7 @@ const Login = () => {
                     </div>
 
                     {!isOtpMode && (
-                        <div className="d-flex justify-content-between align-items-center">
+                        <div className="d-flex justify-content-sm-between justify-content-center align-items-center flex-sm-row flex-column">
                             <div className="form-check">
                                 <input
                                     type="checkbox"

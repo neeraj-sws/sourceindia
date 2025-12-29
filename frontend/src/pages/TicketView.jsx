@@ -254,7 +254,7 @@ const TicketView = () => {
                                         rel="noopener noreferrer"
                                         download="download"
                                       >
-                                        <p className="mb-0 text-nowrap"><i class="fadeIn animated bx bx-file pe-1"></i>View Attachment</p>
+                                        <p className="mb-0 text-nowrap"><i className="fadeIn animated bx bx-file pe-1"></i>View Attachment</p>
                                       </a>
                                     );
                                   }

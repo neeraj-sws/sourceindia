@@ -46,7 +46,7 @@ const StepProgress = () => {
       <div className="steps">
         <div className={`circle ${currentActive >= 1 ? "active" : ""}`}>
 
-          <i class="lni lni-envelope"></i>
+          <i className="lni lni-envelope"></i>
 
 
 
@@ -56,19 +56,19 @@ const StepProgress = () => {
         <div className={`circle ${currentActive >= 2 ? "active" : ""}`}>
 
 
-          <i class="bx bx-user"></i>
+          <i className="bx bx-user"></i>
 
           <div className="caption">Profile</div>
         </div>
 
         <div className={`circle ${currentActive >= 3 ? "active" : ""}`}>
 
-          <i class="lni lni-apartment"></i>
+          <i className="lni lni-apartment"></i>
           <div className="caption">Company</div>
         </div>
 
         <div className={`circle ${currentActive >= 4 ? "active" : ""}`}>
-          <i class="bx bx-cart ms-auto"></i>
+          <i className="bx bx-cart ms-auto"></i>
           <div className="caption">Product</div>
         </div>
       </div>
