@@ -1,5 +1,15 @@
-const { Op } = require('sequelize');
+const Sequelize = require('sequelize');
+const { Op, fn, col } = Sequelize;
 const FrontMenu = require('../models/FrontMenu');
+const Users = require('../models/Users');
+const CompanyInfo = require('../models/CompanyInfo');
+const Products = require('../models/Products');
+const ItemCategory = require('../models/ItemCategory');
+const ItemSubCategory = require('../models/ItemSubCategory');
+const Categories = require('../models/Categories');
+const SubCategories = require('../models/SubCategories');
+const SellerCategory = require('../models/SellerCategory');
+const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 
 exports.createFrontMenu = async (req, res) => {
   try {
@@ -7,6 +17,366 @@ exports.createFrontMenu = async (req, res) => {
     const frontMenu = await FrontMenu.create({ parent_id, name, link, is_show, status, type, position });
     res.status(201).json({ message: 'Front menu created', frontMenu });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const searchProducts = async (q, type) => {
+  /* -------------------------------
+   1️⃣ PRODUCT NAME MATCH (MAX 3)
+  --------------------------------*/
+  const productMatches = await Products.findAll({
+    where: {
+      title: { [Op.like]: `%${q}%` },
+    },
+    attributes: [
+      "id",
+      ["title", "name"],
+      "slug",
+    ],
+    limit: 3,
+    raw: true,
+  });
+
+  const excludeIds = productMatches.map((p) => p.id);
+
+  /* -------------------------------
+   2️⃣ UNIQUE CATEGORY MATCH
+  --------------------------------*/
+  const categoryMatches = await ItemCategory.findAll({
+    where: {
+      name: { [Op.like]: `%${q}%` },
+    },
+    attributes: ["id", "name", "category_id", "subcategory_id"],
+    group: ["item_category_id"],
+    limit: 5,
+    raw: true,
+  });
+
+  /* -------------------------------
+   3️⃣ UNIQUE SUBCATEGORY MATCH
+  --------------------------------*/
+  const subCategoryMatches = await ItemSubCategory.findAll({
+    where: {
+      name: { [Op.like]: `%${q}%` },
+    },
+    attributes: ["id", "name", "category_id", "subcategory_id", "item_category_id"],
+    group: ["item_subcategory_id"],
+    limit: 5,
+    raw: true,
+  });
+
+  return [
+    // 🔹 Products first
+    ...productMatches.map((p) => ({
+      id: p.id,
+      category_id: 0,
+      subcategory_id: 0,
+      item_category_id: 0,
+      item_subcategory_id: 0,
+      name: p.name,
+      slug: p.slug,
+      type: "product",
+      search_type: type,
+    })),
+
+    // 🔹 Categories
+    ...categoryMatches.map((c) => ({
+      id: c.id,
+      category_id: c.category_id,
+      subcategory_id: c.subcategory_id,
+      item_category_id: c.id,
+      item_subcategory_id: 0,
+      name: c.name,
+      type: "category",
+      search_type: type
+    })),
+
+    // 🔹 Subcategories
+    ...subCategoryMatches.map((s) => ({
+      id: s.id,
+      category_id: s.category_id,
+      subcategory_id: s.subcategory_id,
+      item_category_id: s.item_category_id,
+      item_subcategory_id: s.id,
+      name: s.name,
+      type: "subcategory",
+      search_type: type
+    })),
+  ];
+};
+
+const searchSellers = async (q, type) => {
+
+  const companyMatches = await Users.findAll({
+    where: { is_seller: 1 },
+    include: [
+      {
+        model: CompanyInfo,
+        as: "company_info",
+        required: true,
+        where: {
+          organization_name: { [Op.like]: `%${q}%` },
+        },
+        attributes: ["id", "organization_name", "organization_slug"],
+      },
+    ],
+    limit: 3,
+  });
+
+  const companies = companyMatches.map((u) => ({
+    id: u.company_info.id,
+    category_id: 0,
+    subcategory_id: 0,
+    item_category_id: 0,
+    item_subcategory_id: 0,
+    name: u.company_info.organization_name,
+    slug: u.company_info.organization_slug,
+    type: "buyer",
+    search_type: type
+  }));
+
+  const categoryMatches = await SellerCategory.findAll({
+    include: [
+      {
+        model: Categories,
+        as: "category",
+        where: {
+          name: { [Op.like]: `%${q}%` },
+        },
+        attributes: ["id", "name", "category_id"],
+      },
+    ],
+    attributes: [],
+    group: ["category.category_id"],
+    limit: 5,
+    raw: true,
+  });
+
+  const categories = categoryMatches.map((c) => ({
+    id: c["category.id"],
+    name: c["category.name"],
+    type: "category",
+    search_type: type,
+    category_id: c["category.category_id"],
+    subcategory_id: 0,
+    item_category_id: 0,
+    item_subcategory_id: 0,
+  }));
+
+
+  /* -------------------------------
+   3️⃣ SUBCATEGORY MATCH
+  --------------------------------*/
+  const subCategoryMatches = await SellerCategory.findAll({
+    include: [
+      {
+        model: SubCategories,
+        as: "subcategory",
+        where: {
+          name: { [Op.like]: `%${q}%` },
+        },
+        attributes: ["id", "name", "category"],
+      },
+    ],
+    attributes: [],
+    group: ["subcategory.sub_category_id"],
+    limit: 5,
+    raw: true,
+  });
+
+  const subcategories = subCategoryMatches.map((s) => ({
+    id: s["subcategory.id"],
+    name: s["subcategory.name"],
+    type: "subcategory",
+    search_type: type,
+    category_id: s["subcategory.category"],
+    subcategory_id: s["subcategory.id"],
+    item_category_id: 0,
+    item_subcategory_id: 0,
+  }));
+
+
+  /* -------------------------------
+   4️⃣ FINAL MERGED RESPONSE
+  --------------------------------*/
+  return [
+    ...companies,      // 🔹 buyers first
+    ...categories,     // 🔹 categories
+    ...subcategories,  // 🔹 subcategories
+  ];
+};
+
+const searchBuyers = async (q, type) => {
+
+  const companyMatches = await Users.findAll({
+    where: { is_seller: 0 },
+    include: [
+      {
+        model: CompanyInfo,
+        as: "company_info",
+        required: true,
+        where: {
+          organization_name: { [Op.like]: `%${q}%` },
+        },
+        attributes: ["id", "organization_name", "organization_slug"],
+      },
+    ],
+    limit: 3,
+  });
+
+  const companies = companyMatches.map((u) => ({
+    id: u.company_info.id,
+    name: u.company_info.organization_name,
+    slug: u.company_info.organization_slug,
+    type: "buyer",
+    search_type: type,
+    category_id: 0,
+    subcategory_id: 0,
+    item_category_id: 0,
+    item_subcategory_id: 0,
+  }));
+
+  const categoryMatches = await BuyerSourcingInterests.findAll({
+    include: [
+      {
+        model: ItemCategory,
+        as: "category",
+        where: {
+          name: { [Op.like]: `%${q}%` },
+        },
+        attributes: ["id", "name", "category_id", "subcategory_id"],
+      },
+    ],
+    attributes: [],
+    group: ["category.item_category_id"],
+    limit: 5,
+    raw: true,
+  });
+
+  const categories = categoryMatches.map((c) => ({
+    id: c["category.id"],
+    name: c["category.name"],
+    type: "category",
+    search_type: type,
+    category_id: c["category.category_id"],
+    subcategory_id: c["category.subcategory_id"],
+    item_category_id: c["category.id"],
+    item_subcategory_id: 0,
+  }));
+
+
+  /* -------------------------------
+   3️⃣ SUBCATEGORY MATCH
+  --------------------------------*/
+  const subCategoryMatches = await BuyerSourcingInterests.findAll({
+    include: [
+      {
+        model: ItemSubCategory,
+        as: "subcategory",
+        where: {
+          name: { [Op.like]: `%${q}%` },
+        },
+        attributes: ["id", "name", "category_id", "subcategory_id", 'item_category_id'],
+      },
+    ],
+    attributes: [],
+    group: ["subcategory.item_subcategory_id"],
+    limit: 5,
+    raw: true,
+  });
+
+  const subcategories = subCategoryMatches.map((s) => ({
+    id: s["subcategory.id"],
+    name: s["subcategory.name"],
+    type: "subcategory",
+    search_type: type,
+    category_id: s["subcategory.category_id"],
+    subcategory_id: s["subcategory.subcategory_id"],
+    item_category_id: s["subcategory.item_category_id"],
+    item_subcategory_id: s["subcategory.id"],
+  }));
+
+
+  /* -------------------------------
+   4️⃣ FINAL MERGED RESPONSE
+  --------------------------------*/
+  return [
+    ...companies,      // 🔹 buyers first
+    ...categories,     // 🔹 categories
+    ...subcategories,  // 🔹 subcategories
+  ];
+};
+
+const buildUrlParams = (item) => {
+  return Object.entries({
+    category_id: item.category_id,
+    subcategory_id: item.subcategory_id,
+    item_category_id: item.item_category_id,
+    item_subcategory_id: item.item_subcategory_id,
+  })
+    .filter(([_, v]) => v && v !== 0)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .join("&");
+};
+
+exports.searchMulti = async (req, res) => {
+  try {
+    const { q, type } = req.query;
+
+    if (!q || q.length < 2) return res.json([]);
+
+    let results = [];
+
+    switch (type) {
+      case "product":
+        results = await searchProducts(q, type);
+        break;
+
+      case "seller":
+        results = await searchSellers(q, type);
+        break;
+
+      case "buyer":
+        results = await searchBuyers(q, type);
+        break;
+
+      default:
+        results = [];
+    }
+
+
+    const finalResults = results.map(item => {
+      let url = "";
+
+      if (item.search_type === "product") {
+        if (item.type === "product") {
+          url = `/products/${item.slug}`;
+        } else {
+          const qs = buildUrlParams(item);
+          url = qs ? `/products?${qs}` : `/products`;
+        }
+      }
+
+      if (item.search_type === "seller" || item.search_type === "buyer") {
+        if (item.type === "buyer" || item.type === "seller") {
+          url = `/companies/${item.slug}`;
+        } else {
+          const qs = buildUrlParams(item);
+          url = qs ? `/company-list?${qs}` : `/company-list`;
+        }
+      }
+
+      return {
+        ...item,
+        url,
+      };
+    });
+
+    res.json(finalResults);
+
+  } catch (err) {
+    console.error("searchMulti error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -20,9 +390,9 @@ exports.getAllFrontMenu = async (req, res) => {
     } else {
       query.parent_id = 0;
     }
-    const frontMenu = await FrontMenu.findAll({ 
+    const frontMenu = await FrontMenu.findAll({
       where: query,
-      order: [['type', 'ASC'], ['position', 'ASC'], ]
+      order: [['type', 'ASC'], ['position', 'ASC'],]
     });
     res.json(frontMenu);
   } catch (err) {
@@ -183,3 +553,4 @@ exports.getFrontMenuCount = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+

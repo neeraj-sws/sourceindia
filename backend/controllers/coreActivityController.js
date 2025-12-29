@@ -1,7 +1,9 @@
 const { Op } = require('sequelize');
+const Sequelize = require('sequelize');
 const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
+const { QueryTypes } = require('sequelize');
 const CoreActivity = require('../models/CoreActivity');
 const Color = require('../models/Color');
 const UploadImage = require('../models/UploadImage');
@@ -34,34 +36,44 @@ exports.createCoreActivity = async (req, res) => {
     }
   });
 };
-
 exports.getAllCoreActivities = async (req, res) => {
   try {
     const { is_delete } = req.query;
 
     const whereCondition = {};
-
-    // Apply is_delete filter only if provided
-    if (typeof is_delete !== 'undefined') {
+    if (typeof is_delete !== "undefined") {
       whereCondition.is_delete = parseInt(is_delete);
     }
 
     const coreActivities = await CoreActivity.findAll({
-      order: [['id', 'ASC']],
       where: whereCondition,
+      order: [["id", "ASC"]],
+      attributes: {
+        include: [
+          [
+            Sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM company_info AS ci
+              WHERE ci.core_activity = CoreActivity.core_activity_id
+            )`),
+            "company_count",
+          ],
+        ],
+      },
     });
 
     const modifiedCoreActivity = coreActivities.map(item => {
       const data = item.toJSON();
       return {
         ...data,
-        getStatus: data.status === 1 ? 'Active' : 'Inactive',
+        getStatus: data.status === 1 ? "Active" : "Inactive",
+        company_count: data.company_count,
       };
     });
 
     res.json(modifiedCoreActivity);
   } catch (err) {
-    console.error('getAllCoreActivities error:', err);
+    console.error("getAllCoreActivities error:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -154,7 +166,7 @@ exports.deleteCoreActivity = async (req, res) => {
     if (coreActivity.file_id && coreActivity.file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(coreActivity.file_id);
       if (uploadImage) {
-        const oldImagePath = path.resolve(uploadImage.file);        
+        const oldImagePath = path.resolve(uploadImage.file);
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }
@@ -367,7 +379,7 @@ exports.getAllCoreActivitiesServerSide = async (req, res) => {
 
 exports.getCoreActivityCount = async (req, res) => {
   try {
-    const total = await CoreActivity.count({where: { is_delete: 0 }});
+    const total = await CoreActivity.count({ where: { is_delete: 0 } });
     res.json({ total });
   } catch (err) {
     console.error(err);

@@ -1,23 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 import API_BASE_URL, { ROOT_URL } from "../config";
 import ImageWithFallback from "../admin/common/ImageWithFallback";
 import "../css/home.css";
 
 const FrontHeader = () => {
   const { isLoggedIn, logout, user, setUser } = useAuth();
-  // const [user, setUser] = useState(null);
   const token = localStorage.getItem("user_token");
   const navigate = useNavigate();
-  const [searchType, setSearchType] = useState("product"); // Default to 'product'
+
+  const [searchType, setSearchType] = useState("product");
   const [searchQuery, setSearchQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [mobile, setMobile] = useState("+91-11-41615985");
   const [menuItems, setMenuItems] = useState([]);
   const [dropdownItems, setDropdownItems] = useState({});
+  const [searchFocused, setSearchFocused] = useState(false);
 
+  /* ================= SITE SETTINGS ================= */
   useEffect(() => {
     const fetchMenu = async () => {
       try {
@@ -41,92 +46,90 @@ const FrontHeader = () => {
     };
     fetchMenu();
   }, []);
-
   useEffect(() => {
     const fetchSiteSettings = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/settings/site`);
-        const data = response.data;
+        const res = await axios.get(`${API_BASE_URL}/settings/site`);
+        const data = res.data;
+
         if (data?.logo_file) {
           setLogoUrl(`${ROOT_URL}/${data.logo_file}`);
-        } else {
-          setLogoUrl("/logo.png");
         }
         if (data?.mobile) {
           setMobile(data.mobile);
         }
-        const faviconLink = document.querySelector("link[rel='icon']");
-        if (faviconLink) {
-          faviconLink.href = data?.favicon_file
-            ? `${ROOT_URL}/${data.favicon_file}`
-            : "/favicon.png";
-          const testImg = new Image();
-          testImg.src = faviconLink.href;
-          testImg.onerror = () => {
-            faviconLink.href = "/favicon.png";
-          };
-        }
       } catch (err) {
-        console.error("Error fetching site settings:", err);
-        setLogoUrl("/logo.png");
-        setMobile("+91-11-41615985");
-        const faviconLink = document.querySelector("link[rel='icon']");
-        if (faviconLink) faviconLink.href = "/favicon.png";
+        console.error(err);
       }
     };
-
     fetchSiteSettings();
   }, []);
 
-  // useEffect(() => {
-  //   const checkToken = () => {
-  //     setIsLoggedIn(!!localStorage.getItem('user_token'));
-  //   };
-  //   window.addEventListener('storage', checkToken);
-  //   return () => {
-  //     window.removeEventListener('storage', checkToken);
-  //   };
-  // }, []);
+  /* ================= PROFILE ================= */
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/signup/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUser(res.data.user);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchProfile();
+  }, [token]);
+
+  /* ================= AUTOCOMPLETE ================= */
+  useEffect(() => {
+    if (searchQuery.length < 1) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await axios.post(
+          `${API_BASE_URL}/front_menu/main-search?q=${searchQuery}&type=${searchType}`
+        );
+
+        setSuggestions(res.data || []);
+        setShowDropdown(true);
+      } catch (err) {
+        console.error(err);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchType]);
+
+  /* ================= SUBMIT ================= */
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (searchQuery.trim().length < 3) {
+      alert("Enter Product / Service Keyword(s) at least three characters");
+      return;
+    }
+
+    const path =
+      searchType === "product"
+        ? "/products"
+        : searchType === "seller"
+          ? "/company-list"
+          : "/buyer-list";
+
+    navigate(`${path}?search=${encodeURIComponent(searchQuery.trim())}`);
+  };
 
   const handleLogout = (e) => {
     e.preventDefault();
     logout();
     navigate("/login");
-  };
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!token) return;
-      try {
-        const response = await axios.get(`${API_BASE_URL}/signup/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setUser(response.data.user);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchProfile();
-  }, [token]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent default form submission
-
-    if (searchQuery.trim()) {
-      let path = "";
-
-      if (searchType === "product") {
-        path = "/products";
-      } else if (searchType === "seller") {
-        path = "/company-list";
-      } else if (searchType === "buyer") {
-        path = "/buyer-list";
-      }
-
-      navigate(`${path}?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
   };
 
   return (
@@ -151,30 +154,59 @@ const FrontHeader = () => {
               </div>
             </div>
             <div className="middleBox">
-              <form
-                className="d-flex align-items-center flex-grow-1"
-                onSubmit={handleSubmit}
-              >
+              <form onSubmit={handleSubmit} className="d-flex align-items-center flex-grow-1 position-relative w-100">
                 <div className="search-bar-front d-flex w-100">
                   <select
-                    className="form-select w-auto px-3"
+                    className="form-select w-auto  px-3"
                     value={searchType}
                     onChange={(e) => setSearchType(e.target.value)}
                   >
-                    <option value="product">Product</option>
+                    <option value="product">Products</option>
                     <option value="seller">Seller</option>
                     <option value="buyer">Buyer</option>
                   </select>
+
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Search.."
+                    placeholder="Enter product / service to search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+
+                    onFocus={() => {
+                      setSearchFocused(true);                  // ⭐ body dark
+                      if (searchQuery.length >= 3) {
+                        setShowDropdown(true);
+                      }
+                    }}
+
+                    onBlur={() => {
+                      setTimeout(() => {
+                        setSearchFocused(false);               // ⭐ remove overlay
+                        setShowDropdown(false);
+                      }, 200); // click allow for suggestions
+                    }}
                   />
+
                   <button className="btn search-btn" type="submit">
                     Search
                   </button>
+
+                  {showDropdown && suggestions.length > 0 && (
+                    <ul className="search-suggestion-box list-unstyled">
+                      {suggestions.map((item) => (
+                        <li
+                          key={item.id}
+                        >
+                          <Link to={`${item.url}`}>
+                            <div className="d-flex align-items-center gap-2">
+                              <i className="bx bx-history"></i> {item.name}
+                            </div>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </form>
             </div>
@@ -202,7 +234,7 @@ const FrontHeader = () => {
                           height={50}
                           showFallback={true}
                           className="user-img"
-                          />
+                        />
                         {/* <span className="badge bg-primary text-white position-absolute badge-sm userbadge">
                           {user.is_seller ? 'Seller' : 'Buyer'}
                         </span> */}
@@ -213,7 +245,7 @@ const FrontHeader = () => {
                       </div> */}
                       <div className="text-start lh-sm">
                         <p className="user-name mb-0">
-                        {user.fname} 
+                          {user.fname}
                           {/* {user?.lname?.charAt(0)?.toUpperCase()} */}
                         </p>
                       </div>
@@ -323,9 +355,8 @@ const FrontHeader = () => {
                           dropdownItems[menuItem.id].length > 0;
                         return (
                           <li
-                            className={`nav-item ${
-                              hasDropdown ? "dropdown" : ""
-                            }`}
+                            className={`nav-item ${hasDropdown ? "dropdown" : ""
+                              }`}
                             key={menuItem.id}
                           >
                             {hasDropdown ? (
@@ -370,7 +401,9 @@ const FrontHeader = () => {
             </nav>
           </div>
         </div>
-      </header>
+      </header >
+      {searchFocused && <div className="search-overlay"></div>
+      }
     </>
   );
 };

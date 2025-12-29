@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
-const Categories = require('./Categories');
-const SubCategories = require('./SubCategories');
+const Categories = require('./ItemCategory');
+const SubCategories = require('./ItemSubCategory');
 
 const BuyerSourcingInterests = sequelize.define("BuyerSourcingInterests", {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, field: 'buyer_sourcing_interest_id' },

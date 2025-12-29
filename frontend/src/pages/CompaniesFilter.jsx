@@ -16,7 +16,21 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
   const [subCategories, setSubCategories] = useState([]);
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
-  const [subCategorySearchTerm, setSubCategorySearchTerm] = useState("");
+  const [subCategorySearchTerm, setSubCategorySearchTerm] = useState('');
+  const [coreActivities, setCoreActivities] = useState([]);
+  const [selectedCoreActivities, setSelectedCoreActivities] = useState(null);
+  const [coreactivitySearchTerm, setCoreActivitiySearchTerm] = useState('');
+  const [activities, setActivities] = useState([]);
+  const [selectedActivities, setSelectedActivities] = useState(null);
+  const [activitiySearchTerm, setActivitiySearchTerm] = useState('');
+
+  const [itemcategories, setItemCategories] = useState([]);
+  const [selectedItemCategories, setSelectedItemCategories] = useState(null);
+  const [itemcategorySearchTerm, setItemCategorySearchTerm] = useState('');
+  const [itemsubCategories, setItemSubCategories] = useState([]);
+  const [selectedItemSubCategories, setSelectedItemSubCategories] = useState([]);
+  const [itemsubCategorySearchTerm, setItemSubCategorySearchTerm] = useState('');
+
   const [states, setStates] = useState([]);
   const [selectedStates, setSelectedStates] = useState([]);
   const [statesSearchTerm, setStatesSearchTerm] = useState("");
@@ -41,19 +55,108 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     if (searchValue) {
       setSearchTerm(searchValue); // Set state if search param exists
     }
+
+    const queryParams = new URLSearchParams(location.search);
+    const cateIdParam = queryParams.get("category_id");
+    const subcateIdParam = queryParams.get("subcategory_id");
+    // const itemcateIdParam = queryParams.get("item_category_id");
+    // const itemsubcateIdParam = queryParams.get("item_subcategory_id");
+
+    if (cateIdParam) {
+      setSelectedCategories([Number(cateIdParam)]);
+    }
+    if (subcateIdParam) {
+      setSelectedSubCategories([Number(subcateIdParam)]);
+    }
+    // if (itemcateIdParam) {
+    //   setSelectedItemCategories([Number(itemcateIdParam)]);
+    // }
+    // if (itemsubcateIdParam) {
+    //   setSelectedItemSubCategories([Number(itemsubcateIdParam)]);
+    // }
+
+
+
   }, [searchParams]);
-  const filteredCategories = categories.filter((cat) =>
+
+  const filteredCoreActivities = coreActivities.filter(core =>
+    core.name.toLowerCase().includes(coreactivitySearchTerm)
+  );
+  const filteredActivities = activities.filter(act =>
+    act.name.toLowerCase().includes(activitiySearchTerm)
+  );
+
+  const filteredCategories = categories.filter(cat =>
     cat.name.toLowerCase().includes(categorySearchTerm)
   );
   const filteredSubCategories = subCategories.filter((sub) =>
     sub.name.toLowerCase().includes(subCategorySearchTerm)
   );
-  const filteredStates = states.filter((state) =>
+
+  const filteredItemCategories = itemcategories.filter(cat =>
+    cat.name.toLowerCase().includes(itemcategorySearchTerm)
+  );
+
+  const filteredItemSubCategories = itemsubCategories.filter(sub =>
+    sub.name.toLowerCase().includes(itemsubCategorySearchTerm)
+  );
+
+  const filteredStates = states.filter(state =>
     state.name.toLowerCase().includes(statesSearchTerm)
   );
   const filteredSourcingInterest = sourcingInterest.filter((sic) =>
     sic.name.toLowerCase().includes(sourcingInterestSearchTerm)
   );
+
+
+  useEffect(() => {
+    const fetchCoreActivities = async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/core_activities?is_delete=0&status=1`
+        );
+        const coreact = res.data || [];
+        const filtered = coreact.filter(cat => cat.company_count > 0);
+        setCoreActivities(filtered);
+      } catch (err) {
+        console.error('Error fetching coreactivities:', err);
+      }
+    };
+    fetchCoreActivities();
+  }, []);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        // 🧹 nothing selected
+        if (!selectedCoreActivities) {
+          setActivities([]);
+          setSelectedActivities([]);
+          return;
+        }
+
+        // ✅ single core id
+        const res = await axios.get(
+          `${API_BASE_URL}/activities/coreactivity/${selectedCoreActivities}`
+        );
+
+        const acts = res.data || [];
+        const filtered = acts.filter(act => act.company_count > 0);
+
+        setActivities(filtered);
+
+        // remove invalid selected activities
+        setSelectedActivities(prev =>
+          filtered.some(act => act.id === prev) ? prev : null
+        );
+
+      } catch (err) {
+        console.error('Error fetching Activity by Core Activity:', err);
+      }
+    };
+
+    fetchActivities();
+  }, [selectedCoreActivities]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -98,6 +201,45 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     fetchSubCategoriesByCategories();
   }, [selectedCategories]);
 
+
+  useEffect(() => {
+    const fetchItemCategories = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/item_category/getitem?status=1`);
+        const cats = res.data || [];
+        const filtered = cats.filter(cat => cat.company_count > 0);
+        setItemCategories(filtered);
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
+    };
+    fetchItemCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchItemSubCategoriesByCategories = async () => {
+      try {
+        if (typeof selectedItemCategories !== "number") {
+          setItemSubCategories([]);
+          setSelectedItemSubCategories([]);
+          return;
+        }
+        const res = await axios.get(`${API_BASE_URL}/item_category/getitemtype/${selectedItemCategories}`, {
+          item_category: selectedItemCategories,
+        });
+        const subs = res.data || [];
+        const filtered = subs.filter(sub => sub.company_count > 0);
+        setItemSubCategories(filtered);
+        setSelectedItemSubCategories(prevSelected =>
+          prevSelected.filter(id => filtered.some(sub => sub.id === id))
+        );
+      } catch (err) {
+        console.error('Error fetching item sub categories by item categories:', err);
+      }
+    };
+    fetchItemSubCategoriesByCategories();
+  }, [selectedItemCategories]);
+
   useEffect(() => {
     const fetchStates = async () => {
       try {
@@ -134,19 +276,19 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     if ((append && scrollLoading) || (!append && loading)) return;
 
     append ? setScrollLoading(true) : setLoading(true);
-
+    console.log(selectedCoreActivities);
     try {
       let url = `${API_BASE_URL}/products/companies?is_delete=0&status=1&limit=9&page=${pageNumber}`;
-      if (typeof isSeller !== "undefined") url += `&is_seller=${isSeller}`;
-      if (typeof isTrading !== "undefined") url += `&is_trading=${isTrading}`;
-      if (selectedCategories.length > 0)
-        url += `&category=${selectedCategories.join(",")}`;
-      if (selectedSubCategories.length > 0)
-        url += `&sub_category=${selectedSubCategories.join(",")}`;
-      if (selectedStates.length > 0)
-        url += `&user_state=${selectedStates.join(",")}`;
-      if (selectedSourcingInterest.length > 0)
-        url += `&interest_sub_categories=${selectedSourcingInterest.join(",")}`;
+      if (typeof isSeller !== 'undefined') url += `&is_seller=${isSeller}`;
+      if (typeof isTrading !== 'undefined') url += `&is_trading=${isTrading}`;
+      if (selectedCoreActivities) url += `&core_activity=${selectedCoreActivities}`;
+      if (selectedActivities) url += `&activity=${selectedActivities}`;
+      if (selectedCategories.length > 0) url += `&category=${selectedCategories.join(',')}`;
+      if (selectedSubCategories.length > 0) url += `&sub_category=${selectedSubCategories.join(',')}`;
+      if (selectedItemCategories) url += `&item_category=${selectedItemCategories}`;
+      if (selectedItemSubCategories.length > 0) url += `&item_subcategory=${selectedItemSubCategories.join(',')}`;
+      if (selectedStates.length > 0) url += `&user_state=${selectedStates.join(',')}`;
+      if (selectedSourcingInterest.length > 0) url += `&interest_sub_categories=${selectedSourcingInterest.join(',')}`;
       if (sortBy) url += `&sort_by=${sortBy}`;
       if (searchTerm) url += `&title=${encodeURIComponent(searchTerm)}`;
       const res = await axios.get(url);
@@ -179,22 +321,15 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     setPage(1);
     setHasMore(true);
     fetchCompanies(1, false);
-  }, [
-    searchTerm,
-    selectedCategories,
-    selectedSubCategories,
-    selectedStates,
-    selectedSourcingInterest,
-    sortBy,
-    isSeller,
-    isTrading,
-  ]);
+  }, [searchTerm, selectedCategories, selectedSubCategories, selectedStates, selectedSourcingInterest, selectedCoreActivities,   // ✅ ADD
+    selectedActivities, selectedItemSubCategories,   // ✅ ADD
+    selectedActivities, sortBy, isSeller, isTrading]);
 
   useEffect(() => {
     const handleScroll = () => {
       if (
         window.innerHeight + window.scrollY + 100 >=
-          document.documentElement.scrollHeight &&
+        document.documentElement.scrollHeight &&
         hasMore &&
         !scrollLoading &&
         !loading
@@ -212,6 +347,14 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     setSearchTerm(e.target.value);
   };
 
+  const handleCoreActivitiyCheckboxChange = (coreactivitiesId) => {
+    setSelectedCoreActivities(coreactivitiesId);
+  };
+
+  const handleActivitiyCheckboxChange = (coreactivitiesId) => {
+    setSelectedActivities(coreactivitiesId);
+  };
+
   const handleCategoryCheckboxChange = (categoryId) => {
     setSelectedCategories((prev) =>
       prev.includes(categoryId)
@@ -225,6 +368,18 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
       prev.includes(subCategoryId)
         ? prev.filter((id) => id !== subCategoryId)
         : [...prev, subCategoryId]
+    );
+  };
+
+  const handleItemCategoryCheckboxChange = (itemcategoryId) => {
+    setSelectedItemCategories(itemcategoryId);
+  };
+
+  const handleItemSubCategoryCheckboxChange = (itemsubCategoryId) => {
+    setSelectedItemSubCategories(prev =>
+      prev.includes(itemsubCategoryId)
+        ? prev.filter(id => id !== itemsubCategoryId)
+        : [...prev, itemsubCategoryId]
     );
   };
 
@@ -267,9 +422,8 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
             className={viewMode === "grid" ? "col-12 col-sm-6" : "col-12"}
           >
             <div
-              className={`card shadow-sm border p-3 h-100 ${
-                viewMode === "list" ? "flex-row" : ""
-              }`}
+              className={`card shadow-sm border p-3 h-100 ${viewMode === "list" ? "flex-row" : ""
+                }`}
             >
               {/* Logo */}
               <div className="me-3 text-center">
@@ -339,62 +493,101 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 &times;
               </button>
             </div>
-            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                Company Name
-              </h3>
-              <div className="input-group flex-nowrap ps-2 pe-4">
-                <i className="bx bx-search input-group-text" />
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Search companies..."
-                  value={searchTerm}
-                  onChange={handleSearch}
-                />
-              </div>
-            </div>
+
             {isSeller == 1 && (
               <>
                 <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                  <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                    Category
-                  </h3>
+                  <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Core Activity</h3>
+                  <div className="d-flex flex-column gap-2">
+                    <div className="input-group flex-nowrap ps-2 pe-4">
+                      <i className="bx bx-search input-group-text" />
+                      <input
+                        type="text"
+                        placeholder="Search Core Activity..."
+                        onChange={(e) => setCoreActivitiySearchTerm(e.target.value.toLowerCase())}
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredCoreActivities.length >= 5 ? 'auto' : 'visible' }}>
+                      {filteredCoreActivities.map(core => (
+                        <div className="form-check mb-2" key={core.id}>
+                          <input
+                            type="radio"
+                            id={`core-${core.id}`}
+                            name="coreActivity"
+                            className="form-check-input"
+                            checked={selectedCoreActivities === core.id}
+                            onChange={() => handleCoreActivitiyCheckboxChange(core.id)}
+                          />
+                          <label htmlFor={`core-${core.id}`} className="form-check-label text-capitalize">
+                            {core.name} ({core.company_count})
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {filteredActivities.length > 0 && (
+                  <>
+                    <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                      <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Activitiy</h3>
+                      <div className="d-flex flex-column gap-2">
+                        <div className="input-group flex-nowrap ps-2 pe-4">
+                          <i className="bx bx-search input-group-text" />
+                          <input
+                            type="text"
+                            placeholder="Search Activitiy..."
+                            onChange={(e) => setActivitiySearchTerm(e.target.value.toLowerCase())}
+                            className="form-control"
+                          />
+                        </div>
+                        <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredActivities.length >= 5 ? 'auto' : 'visible' }}>
+                          {filteredActivities.map(activity => (
+                            <div className="form-check mb-2" key={activity.id}>
+                              <input
+                                type="radio"
+                                name="activity"
+                                id={`activity-${activity.id}`}
+                                className="form-check-input"
+                                checked={selectedActivities === activity.id}
+                                onChange={() => handleActivitiyCheckboxChange(activity.id)}
+                              />
+                              <label htmlFor={`activity-${activity.id}`} className="form-check-label text-capitalize">
+                                {activity.name} ({activity.company_count})
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+
+                {/* Category */}
+                <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                  <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Category</h3>
                   <div className="d-flex flex-column gap-2">
                     <div className="input-group flex-nowrap ps-2 pe-4">
                       <i className="bx bx-search input-group-text" />
                       <input
                         type="text"
                         placeholder="Search categories..."
-                        onChange={(e) =>
-                          setCategorySearchTerm(e.target.value.toLowerCase())
-                        }
+                        onChange={(e) => setCategorySearchTerm(e.target.value.toLowerCase())}
                         className="form-control"
                       />
                     </div>
-                    <div
-                      className="px-2"
-                      style={{
-                        maxHeight: "190px",
-                        overflowY:
-                          filteredCategories.length >= 5 ? "auto" : "visible",
-                      }}
-                    >
-                      {filteredCategories.map((cat) => (
-                        <div className="form-check mb-2">
+                    <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredCategories.length >= 5 ? 'auto' : 'visible' }}>
+                      {filteredCategories.map(cat => (
+                        <div className="form-check mb-2" key={cat.id}>
                           <input
                             type="checkbox"
                             id={`cat-${cat.id}`}
                             className="form-check-input"
                             checked={selectedCategories.includes(cat.id)}
-                            onChange={() =>
-                              handleCategoryCheckboxChange(cat.id)
-                            }
+                            onChange={() => handleCategoryCheckboxChange(cat.id)}
                           />
-                          <label
-                            htmlFor={`cat-${cat.id}`}
-                            className="form-check-label text-capitalize"
-                          >
+                          <label htmlFor={`cat-${cat.id}`} className="form-check-label text-capitalize">
                             {cat.name} ({cat.company_count})
                           </label>
                         </div>
@@ -405,48 +598,28 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 {filteredSubCategories.length > 0 && (
                   <>
                     <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                      <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                        Sub Category
-                      </h3>
+                      <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Sub Category</h3>
                       <div className="d-flex flex-column gap-2">
                         <div className="input-group flex-nowrap ps-2 pe-4">
                           <i className="bx bx-search input-group-text" />
                           <input
                             type="text"
                             placeholder="Search sub-categories..."
-                            onChange={(e) =>
-                              setSubCategorySearchTerm(
-                                e.target.value.toLowerCase()
-                              )
-                            }
+                            onChange={(e) => setSubCategorySearchTerm(e.target.value.toLowerCase())}
                             className="form-control"
                           />
                         </div>
-                        <div
-                          className="px-2"
-                          style={{
-                            maxHeight: "190px",
-                            overflowY:
-                              filteredSubCategories.length >= 5
-                                ? "auto"
-                                : "visible",
-                          }}
-                        >
-                          {filteredSubCategories.map((sub) => (
-                            <div className="form-check mb-2">
+                        <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSubCategories.length >= 5 ? 'auto' : 'visible' }}>
+                          {filteredSubCategories.map(sub => (
+                            <div className="form-check mb-2" key={sub.id}>
                               <input
                                 type="checkbox"
                                 id={`subcat-${sub.id}`}
                                 className="form-check-input"
                                 checked={selectedSubCategories.includes(sub.id)}
-                                onChange={() =>
-                                  handleSubCategoryCheckboxChange(sub.id)
-                                }
+                                onChange={() => handleSubCategoryCheckboxChange(sub.id)}
                               />
-                              <label
-                                htmlFor={`subcat-${sub.id}`}
-                                className="form-check-label text-capitalize"
-                              >
+                              <label htmlFor={`subcat-${sub.id}`} className="form-check-label text-capitalize">
                                 {sub.name} ({sub.company_count})
                               </label>
                             </div>
@@ -457,44 +630,28 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                   </>
                 )}
                 <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                  <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                    State
-                  </h3>
+                  <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">State</h3>
                   <div className="d-flex flex-column gap-2">
                     <div className="input-group flex-nowrap ps-2 pe-4">
                       <i className="bx bx-search input-group-text" />
                       <input
                         type="text"
                         placeholder="Search states..."
-                        onChange={(e) =>
-                          setStatesSearchTerm(e.target.value.toLowerCase())
-                        }
+                        onChange={(e) => setStatesSearchTerm(e.target.value.toLowerCase())}
                         className="form-control"
                       />
                     </div>
-                    <div
-                      className="px-2"
-                      style={{
-                        maxHeight: "190px",
-                        overflowY:
-                          filteredStates.length >= 5 ? "auto" : "visible",
-                      }}
-                    >
-                      {filteredStates.map((state) => (
-                        <div className="form-check mb-2">
+                    <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredStates.length >= 5 ? 'auto' : 'visible' }}>
+                      {filteredStates.map(state => (
+                        <div className="form-check mb-2" key={state.id}>
                           <input
                             type="checkbox"
                             id={`state-${state.id}`}
                             className="form-check-input"
                             checked={selectedStates.includes(state.id)}
-                            onChange={() =>
-                              handleStatesCheckboxChange(state.id)
-                            }
+                            onChange={() => handleStatesCheckboxChange(state.id)}
                           />
-                          <label
-                            htmlFor={`state-${state.id}`}
-                            className="form-check-label text-capitalize"
-                          >
+                          <label htmlFor={`state-${state.id}`} className="form-check-label text-capitalize">
                             {state.name} ({state.company_count})
                           </label>
                         </div>
@@ -505,67 +662,81 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
               </>
             )}
             {isSeller == 0 && (
-              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                  Sourcing Interest
-                </h3>
-                <div className="d-flex flex-column gap-2">
-                  <div className="input-group flex-nowrap ps-2 pe-4">
-                    <i className="bx bx-search input-group-text" />
-                    <input
-                      type="text"
-                      placeholder="Search sourcing interest..."
-                      onChange={(e) =>
-                        setSourcingInterestSearchTerm(
-                          e.target.value.toLowerCase()
-                        )
-                      }
-                      className="form-control"
-                    />
-                  </div>
-                  <div
-                    className="px-2"
-                    style={{
-                      maxHeight: "190px",
-                      overflowY:
-                        filteredSourcingInterest.length >= 5
-                          ? "auto"
-                          : "visible",
-                    }}
-                  >
-                    {filteredSourcingInterest.map((sic) => (
-                      <div className="form-check mb-2">
-                        <input
-                          type="checkbox"
-                          id={`sic-${sic.id}`}
-                          className="form-check-input"
-                          checked={selectedSourcingInterest.includes(sic.id)}
-                          onChange={() =>
-                            handleSourcingInterestCheckboxChange(sic.id)
-                          }
-                        />
-                        <label
-                          htmlFor={`sic-${sic.id}`}
-                          className="form-check-label text-capitalize"
-                        >
-                          {sic.name} ({sic.company_count})
-                        </label>
-                      </div>
-                    ))}
+
+              <div>
+                {/* Category */}
+                <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                  <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Item Category</h3>
+                  <div className="d-flex flex-column gap-2">
+                    <div className="input-group flex-nowrap ps-2 pe-4">
+                      <i className="bx bx-search input-group-text" />
+                      <input
+                        type="text"
+                        placeholder="Search Item Category..."
+                        onChange={(e) => setItemCategorySearchTerm(e.target.value.toLowerCase())}
+                        className="form-control"
+                      />
+                    </div>
+                    <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredItemCategories.length >= 5 ? 'auto' : 'visible' }}>
+
+                      {filteredItemCategories.map(itemcat => (
+                        <div className="form-check mb-2" key={itemcat.id}>
+                          <input
+                            type="radio"
+                            name="itemCategory"
+                            id={`itemCat-${itemcat.id}`}
+                            className="form-check-input"
+                            checked={selectedItemCategories === itemcat.id}
+                            onChange={() => handleItemCategoryCheckboxChange(itemcat.id)}
+                          />
+                          <label htmlFor={`itemCat-${itemcat.id}`} className="form-check-label text-capitalize">
+                            {itemcat.name} ({itemcat.company_count})
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
+                {filteredItemSubCategories.length > 0 && (
+                  <>
+                    <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                      <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Item Type</h3>
+                      <div className="d-flex flex-column gap-2">
+                        <div className="input-group flex-nowrap ps-2 pe-4">
+                          <i className="bx bx-search input-group-text" />
+                          <input
+                            type="text"
+                            placeholder="Search Type..."
+                            onChange={(e) => setItemSubCategorySearchTerm(e.target.value.toLowerCase())}
+                            className="form-control"
+                          />
+                        </div>
+                        <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredItemSubCategories.length >= 5 ? 'auto' : 'visible' }}>
+                          {filteredItemSubCategories.map(sub => (
+                            <div className="form-check mb-2">
+                              <input
+                                type="checkbox"
+                                id={`itemsubcat-${sub.id}`}
+                                className="form-check-input"
+                                checked={selectedItemSubCategories.includes(sub.id)}
+                                onChange={() => handleItemSubCategoryCheckboxChange(sub.id)}
+                              />
+                              <label htmlFor={`itemsubcat-${sub.id}`} className="form-check-label text-capitalize">
+                                {sub.name} ({sub.company_count})
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
+
             )}
+
           </aside>
-
-          {showFilter && (
-            <div
-              className="filter-overlay"
-              onClick={() => setShowFilter(false)}
-            ></div>
-          )}
         </div>
-
         {/* Companies grid */}
         <section className="col-12 col-lg-9 mb-4">
           <div className="mb-2 text-end d-sm-none d-block">
@@ -652,11 +823,10 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
               </div>
               <div className="d-lg-flex d-none gap-2 align-items-center">
                 <button
-                  className={`btn btn-sm text-nowrap ${
-                    viewMode === "grid"
-                      ? "btn-orange"
-                      : "btn-outline-white text-white"
-                  }`}
+                  className={`btn btn-sm text-nowrap ${viewMode === "grid"
+                    ? "btn-orange"
+                    : "btn-outline-white text-white"
+                    }`}
                   style={{ padding: "0.188rem 0.625rem" }}
                   onClick={() => setViewMode("grid")}
                 >
@@ -664,11 +834,10 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 </button>
 
                 <button
-                  className={`btn btn-sm text-nowrap ${
-                    viewMode === "list"
-                      ? "btn-orange"
-                      : "btn-outline-white text-white"
-                  }`}
+                  className={`btn btn-sm text-nowrap ${viewMode === "list"
+                    ? "btn-orange"
+                    : "btn-outline-white text-white"
+                    }`}
                   style={{ padding: "0.188rem 0.625rem" }}
                   onClick={() => setViewMode("list")}
                 >
@@ -677,81 +846,136 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
               </div>
             </div>
           </div>
-          {(selectedCategories.length > 0 ||
+          {(
+            selectedCategories.length > 0 ||
+            typeof selectedCoreActivities === 'number' ||
+            typeof selectedActivities === 'number' ||
             selectedSubCategories.length > 0 ||
+            typeof selectedItemCategories === 'number' || selectedItemSubCategories.length > 0 ||
             selectedStates.length > 0 ||
-            selectedSourcingInterest.length > 0) && (
-            <div className="mb-3 border px-3 py-2 bg-white rounded-2">
-              <strong className="pb-2">Filter:</strong>
-              <div className="d-sm-flex align-items-baseline justify-content-between gap-2 mb-2">
-                <div className="d-flex align-items-center gap-2 flex-wrap">
-                  {selectedCategories.map((id) => (
-                    <span className="badge bg-primary text-white d-flex align-items-center">
-                      {getNameById(categories, id)}
-                      <button
-                        onClick={() => handleCategoryCheckboxChange(id)}
-                        className="btn-close btn-close-white ms-2"
-                        style={{ fontSize: "0.6em" }}
-                        aria-label="Remove"
-                      />
-                    </span>
-                  ))}
-                  {selectedSubCategories.map((id) => (
-                    <span className="badge bg-secondary text-white d-flex align-items-center">
-                      {getNameById(subCategories, id)}
-                      <button
-                        onClick={() => handleSubCategoryCheckboxChange(id)}
-                        className="btn-close btn-close-white ms-2"
-                        style={{ fontSize: "0.6em" }}
-                        aria-label="Remove"
-                      />
-                    </span>
-                  ))}
-                  {selectedStates.map((id) => (
-                    <span className="badge bg-success text-white d-flex align-items-center">
-                      {getNameById(states, id)}
-                      <button
-                        onClick={() => handleStatesCheckboxChange(id)}
-                        className="btn-close btn-close-white ms-2"
-                        style={{ fontSize: "0.6em" }}
-                        aria-label="Remove"
-                      />
-                    </span>
-                  ))}
-                  {selectedSourcingInterest.map((id) => (
-                    <span className="badge bg-warning text-white d-flex align-items-center">
-                      {getNameById(sourcingInterest, id)}
-                      <button
-                        onClick={() => handleSourcingInterestCheckboxChange(id)}
-                        className="btn-close btn-close-white ms-2"
-                        style={{ fontSize: "0.6em" }}
-                        aria-label="Remove"
-                      />
-                    </span>
-                  ))}
+            selectedSourcingInterest.length > 0
+          ) && (
+              <div className="mb-3 border px-3 py-2 bg-white rounded-2">
+                <strong className="pb-2">Filter:</strong>
+                <div className="d-flex align-items-baseline justify-content-between gap-2 mb-2">
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
+                    {selectedCoreActivities !== null && typeof selectedCoreActivities === 'number' && (
+                      <span className="badge bg-primary text-white d-flex align-items-center">
+                        {getNameById(coreActivities, selectedCoreActivities)}
+                        <button
+                          onClick={() => setSelectedCoreActivities(null)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    )}
+                    {selectedActivities !== null && typeof selectedActivities === 'number' && (
+                      <span className="badge bg-primary text-white d-flex align-items-center">
+                        {getNameById(activities, selectedActivities)}
+                        <button
+                          onClick={() => setSelectedActivities(null)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    )}
+
+                    {selectedCategories.map(id => (
+                      <span className="badge bg-primary text-white d-flex align-items-center">
+                        {getNameById(categories, id)}
+                        <button
+                          onClick={() => handleCategoryCheckboxChange(id)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
+                    {selectedSubCategories.map(id => (
+                      <span className="badge bg-secondary text-white d-flex align-items-center">
+                        {getNameById(subCategories, id)}
+                        <button
+                          onClick={() => handleSubCategoryCheckboxChange(id)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
+                    {selectedItemCategories !== null && typeof selectedItemCategories === 'number' && (
+                      <span className="badge bg-primary text-white d-flex align-items-center">
+                        {getNameById(itemcategories, selectedItemCategories)}
+                        <button
+                          onClick={() => handleItemCategoryCheckboxChange(selectedItemCategories)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    )}
+                    {selectedItemSubCategories.map(id => (
+                      <span className="badge bg-secondary text-white d-flex align-items-center">
+                        {getNameById(itemsubCategories, id)}
+                        <button
+                          onClick={() => handleItemSubCategoryCheckboxChange(id)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
+                    {selectedStates.map(id => (
+                      <span className="badge bg-success text-white d-flex align-items-center">
+                        {getNameById(states, id)}
+                        <button
+                          onClick={() => handleStatesCheckboxChange(id)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
+                    {selectedSourcingInterest.map(id => (
+                      <span className="badge bg-warning text-white d-flex align-items-center">
+                        {getNameById(sourcingInterest, id)}
+                        <button
+                          onClick={() => handleSourcingInterestCheckboxChange(id)}
+                          className="btn-close btn-close-white ms-2"
+                          style={{ fontSize: '0.6em' }}
+                          aria-label="Remove"
+                        />
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedCoreActivities(null);
+                      setSelectedActivities(null);
+                      setSelectedCategories([]);
+                      setSelectedSubCategories([]);
+                      setSelectedItemCategories(null);
+                      setSelectedItemSubCategories([]);
+                      setSelectedStates([]);
+                      setSelectedSourcingInterest([]);
+                    }}
+                    className="btn btn-sm btn-outline-danger text-nowrap" style={{
+                      padding: '0.188rem 0.625rem'
+                    }}
+                  >
+                    Clear All
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setSelectedCategories([]);
-                    setSelectedSubCategories([]);
-                    setSelectedStates([]);
-                    setSelectedSourcingInterest([]);
-                  }}
-                  className="btn btn-sm btn-outline-danger text-nowrap mt-2 ms-auto d-block"
-                  style={{
-                    padding: "0.188rem 0.625rem",
-                  }}
-                >
-                  Clear All
-                </button>
+
               </div>
-            </div>
-          )}
+
+            )
+          }
 
           <div
-            className={`row g-3 mt-3 ${
-              viewMode === "list" ? "flex-column" : ""
-            }`}
+            className={`row g-3 mt-3 ${viewMode === "list" ? "flex-column" : ""
+              }`}
             style={{ display: "none" }}
           >
             {loading ? (
@@ -759,19 +983,18 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
             ) : filteredCompanies.length > 0 ? (
               filteredCompanies.map((company) => (
                 <div
-                  className={viewMode === "grid" ? "col-12 col-sm-6" : "col-12"}
-                >
+                  className={viewMode === 'grid' ? 'col-12 col-sm-6' : 'col-12'}
+
+                  key={company.id} >
                   <div
-                    className={`card shadow-sm border p-3 ${
-                      viewMode === "list" ? "list-view-card" : "h-100"
-                    }`}
+                    className={`card shadow-sm border p-3 ${viewMode === "list" ? "list-view-card" : "h-100"
+                      }`}
                   >
                     <div
-                      className={`d-flex ${
-                        viewMode === "list"
-                          ? "flex-column flex-md-row align-items-start gap-3"
-                          : "flex-column"
-                      }`}
+                      className={`d-flex ${viewMode === "list"
+                        ? "flex-column flex-md-row align-items-start gap-3"
+                        : "flex-column"
+                        }`}
                     >
                       {/* Company Logo */}
                       <div className="flex-shrink-0 text-center">
@@ -869,33 +1092,21 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
           </div>
 
           <div
-            className={`row g-3 mt-1 ${
-              viewMode === "list" ? "flex-column" : ""
-            }`}
+            className={`row g-3 mt-1 ${viewMode === "list" ? "flex-column" : ""
+              }`}
           >
             {loading ? (
               <CompanySkeletonLoader count={6} viewMode={viewMode} />
             ) : filteredCompanies.length > 0 ? (
               filteredCompanies.map((company) => (
                 <div
-                  className={viewMode === "grid" ? "col-12 col-sm-6" : "col-12"}
-                >
-                  <div
-                    className={`card shadow-sm border comapnycardlogo h-100 ${
-                      viewMode === "list" ? "flex-row p-2" : ""
-                    }`}
-                  >
-                    <div
-                      className={`card-header border-0 ${
-                        viewMode === "list" ? "p-0 ps-2 bg-white" : ""
-                      }`}
-                    >
-                      <div
-                        className={`d-md-flex ${
-                          viewMode === "list" ? "" : "align-items-center gap-2"
-                        }`}
-                      >
-                        <div className={viewMode === "list" ? "me-0" : "me-lg-3 me-md-1 text-center"}>
+                  className={viewMode === 'grid' ? 'col-12 col-sm-6' : 'col-12'}
+
+                  key={company.id} >
+                  <div className={`card shadow-sm border comapnycardlogo h-100 ${viewMode === 'list' ? 'flex-row p-2' : ''}`}>
+                    <div className={`card-header border-0 ${viewMode === 'list' ? 'p-0 ps-2 bg-white' : ''}`}>
+                      <div className={`d-flex ${viewMode === 'list' ? '' : 'align-items-center gap-2'}`}>
+                        <div className={viewMode === 'list' ? 'me-0' : 'me-3'}>
                           <ImageWithFallback
                             src={`${ROOT_URL}/${company.company_logo_file}`}
                             width={viewMode === "list" ? 100 : 180}
@@ -923,9 +1134,8 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                     </div>
 
                     <div
-                      className={`card-body ${
-                        viewMode === "list" ? "pt-2" : ""
-                      }`}
+                      className={`card-body ${viewMode === "list" ? "pt-2" : ""
+                        }`}
                     >
                       <div>
                         {isSeller == 1 || isTrading == 1 ? (
@@ -1017,16 +1227,14 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                     </div>
 
                     <div
-                      className={`card-footer ${
-                        viewMode === "list" ? "bg-white border-0 pe-2 pt-0" : ""
-                      }`}
+                      className={`card-footer ${viewMode === "list" ? "bg-white border-0 pe-2 pt-0" : ""
+                        }`}
                     >
                       <div
-                        className={`d-flex gap-2 ${
-                          viewMode === "list"
-                            ? "align-items-center h-100"
-                            : "flex-row"
-                        }`}
+                        className={`d-flex gap-2 ${viewMode === "list"
+                          ? "align-items-center h-100"
+                          : "flex-row"
+                          }`}
                       >
                         {isSeller == 1 || isTrading == 1 ? (
                           <Link
@@ -1080,9 +1288,9 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
               <CompanySkeletonLoader count={2} viewMode={viewMode} />
             )}
           </div>
-        </section>
-      </div>
-    </div>
+        </section >
+      </div >
+    </div >
   );
 };
 
