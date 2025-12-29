@@ -43,7 +43,7 @@ const CategoryMain = ({ isHome, limit }) => {
 
                 <div className="card">
                   <div className="card-body">
-                    <div className="row g-4 align-items-center">
+                    <div className="row g-4 align-items--center">
                       {/* LEFT IMAGE BLOCK Skeleton */}
                       <div className="col-xxl-4 col-md-5">
                         <div
@@ -116,7 +116,7 @@ const CategoryMain = ({ isHome, limit }) => {
 
                 <div className="card">
                   <div className="card-body">
-                    <div className="row g-4 align-items-center">
+                    <div className="row g-4 align-items--center">
                       {/* ✅ LEFT IMAGE BLOCK */}
                       <div className="col-lg-4">
                         <div className="position-relative rounded overflow-hidden shadow-sm h-100 categorytopimg">

@@ -365,6 +365,10 @@ body {
 .products-list-cards .card-title {
     font-size: 1.025rem;
     color: var(--primary-color);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .products-list-cards .card-text {

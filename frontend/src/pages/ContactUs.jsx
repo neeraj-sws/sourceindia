@@ -131,7 +131,7 @@ const ContactUs = () => {
                       <div>
                         <h6 className="text-orange">Call Us Now</h6>
                         <div className="d-flex gap-2">
-                        <span className="pt-1"> <i className="lni lni-phone"></i> </span>
+                        <span className="pt-0"> <i className="lni lni-phone"></i> </span>
                         <div className="d-flex align-items-center gap-2 flex-wrap">
                           <p><a
                             href={`tel:${footerData.contactphone_1}`}
