@@ -1171,7 +1171,7 @@ const ProductsList = () => {
             selectedCompanies.length > 0) && (
               <div className="mb-3 border px-3 py-2 bg-white rounded-2">
                 <strong className="pb-2">Filter:</strong>
-                <div className="d-flex align-items-baseline justify-content-between gap-2 mb-2">
+                <div className="d-sm-flex align-items-baseline justify-content-between gap-2 mb-2">
                   <div className="d-flex align-items-center gap-2 flex-wrap">
                     {selectedCategories.map(id => (
                       <span key={`cat-${id}`} className="badge bg-primary text-white d-flex align-items-center">
@@ -1262,31 +1262,14 @@ const ProductsList = () => {
                       setSelectedStates([]);
                       setSelectedCompanies([]);
                     }}
-                    className="btn btn-sm btn-outline-danger text-nowrap" style={{
+                    className="btn btn-sm btn-outline-danger text-nowrap mt-2 ms-auto d-block" style={{
                       padding: '0.188rem 0.625rem'
                     }}
                   >
                     Clear All
                   </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setSelectedCategories([]);
-                    setSelectedSubCategories([]);
-                    setSelectedItemCategories([]);
-                    setSelectedItemSubCategories([]);
-                    setSelectedItems([]);
-                    setSelectedStates([]);
-                    setSelectedCompanies([]);
-                  }}
-                  className="btn btn-sm btn-outline-danger text-nowrap mt-2 ms-auto d-block"
-                  style={{
-                    padding: "0.188rem 0.625rem",
-                  }}
-                >
-                  Clear All
-                </button>
-              </div>
+               </div>
 
             )}
           <div className="py-3 rounded-2 pb-0 mt-2">
