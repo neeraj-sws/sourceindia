@@ -1105,8 +1105,8 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                   key={company.id} >
                   <div className={`card shadow-sm border comapnycardlogo h-100 ${viewMode === 'list' ? 'flex-row p-2' : ''}`}>
                     <div className={`card-header border-0 ${viewMode === 'list' ? 'p-0 ps-2 bg-white' : ''}`}>
-                      <div className={`d-flex ${viewMode === 'list' ? '' : 'align-items-center gap-2'}`}>
-                        <div className={viewMode === 'list' ? 'me-0' : 'me-3'}>
+                      <div className={`bigmobile d-sm-flex ${viewMode === 'list' ? '' : 'align-items-md-center gap-2'}`}>
+                        <div className={viewMode === 'list' ? 'me-0' : 'me-xl-3 me-1 text-center mb-sm-0 mb-2'}>
                           <ImageWithFallback
                             src={`${ROOT_URL}/${company.company_logo_file}`}
                             width={viewMode === "list" ? 100 : 180}
@@ -1114,7 +1114,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                             showFallback={true}
                           />
                         </div>
-                        <div className={viewMode === "list" ? "d-none" : "mt-md-0 mt-3"}>
+                        <div className={viewMode === "list" ? "d-none" : "mt-md-0 mt--3"}>
                           <h5 className="card-title mb-1">
                             {company.organization_name}
                           </h5>
