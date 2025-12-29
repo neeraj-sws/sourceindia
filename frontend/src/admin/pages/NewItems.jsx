@@ -12,8 +12,9 @@ const initialForm = { id: null, name: "", category_id: "", subcategory_id: "", i
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
+import { formatDateTime } from '../../utils/formatDate';
 
-const NewItems = () => {
+const NewItems = ({excludeItem}) => {
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -77,7 +78,7 @@ useEffect(() => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/items/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection },
+        params: { page, limit, search, sortBy, sort: sortDirection, excludeItem: excludeItem ? 'true' : 'false' },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -89,7 +90,7 @@ useEffect(() => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, excludeItem]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -420,9 +421,14 @@ $('#item_sub_category_id')
   };
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/items`).then((res) => {
-      setItemsData(res.data);
-    });
+    // axios.get(`${API_BASE_URL}/items`).then((res) => {
+    //   setItemsData(res.data);
+    // });
+    axios.get(`${API_BASE_URL}/items`, {
+          params: { excludeItem: excludeItem ? 'true' : 'false' }
+        }).then((res) => {
+          setItemsData(res.data);
+        });
   }, []);
 
   const handleDownload = () => {
@@ -433,8 +439,9 @@ $('#item_sub_category_id')
 
   return (
     <>
-      <div className="page-wrapper">
+      <div className={excludeItem ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
+          {!excludeItem &&
           <Breadcrumb mainhead="Items" maincount={totalRecords} page="Settings" title="Items" add_button={<><i className="bx bxs-plus-square me-1" /> Add Items</>} add_link="#" onClick={() => openForm()}
           actions={
             <>
@@ -445,7 +452,9 @@ $('#item_sub_category_id')
             </>
           }
           />
+        }
           <div className="row">
+            {!excludeItem && (
             <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
@@ -602,7 +611,18 @@ $('#item_sub_category_id')
                 </div>
               </div>
             </div>
-            <div className="col-md-8">
+            )}
+            <div className={!excludeItem ? "col-md-8" : "col-md-12"}>
+              {excludeItem && (
+                  <div className="card mb-3">
+                <div className="card-body">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <h5 className="card-title mb-3">Unused Item List of Product</h5>
+                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                    </div>
+                    </div>
+                    </div>
+                  )}
               <div className="card">
                 <div className="card-body">
                   <DataTable
@@ -613,8 +633,10 @@ $('#item_sub_category_id')
                       { key: "name", label: "Name", sortable: true },
                       { key: "itemcategory_name", label: "Item Category", sortable: true },
                       { key: "item_subcategory_name", label: "Item Sub Category", sortable: true },
-                      { key: "status", label: "Status", sortable: false },
-                      { key: "action", label: "Action", sortable: false },
+                      ...(!excludeItem ? [{ key: "status", label: "Status", sortable: false }]:[]),
+                      ...(!excludeItem ? [{ key: "action", label: "Action", sortable: false }]:[]),
+                      ...(excludeItem ? [{ key: "created_at", label: "Created", sortable: true }]:[]),
+                      ...(excludeItem ? [{ key: "updated_at", label: "Last Update", sortable: true }]:[]),
                     ]}
                     data={data}
                     loading={loading}
@@ -645,6 +667,8 @@ $('#item_sub_category_id')
                         <td>{row.name}</td>
                         <td>{row.itemcategory_name}</td>
                         <td>{row.item_subcategory_name}</td>
+                        {!excludeItem && (
+                          <>
                         <td>
                           <div className="form-check form-switch">
                             <input
@@ -676,6 +700,14 @@ $('#item_sub_category_id')
                             </ul>
                           </div>
                         </td>
+                        </>
+                        )}
+                        {excludeItem && (
+                          <>
+                        <td>{formatDateTime(row.created_at)}</td>
+                                            <td>{formatDateTime(row.updated_at)}</td>
+                                            </>
+                        )}
                       </tr>
                     )}
                   />
@@ -698,7 +730,7 @@ $('#item_sub_category_id')
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Item SubCategory Export.xlsx"
+        fileName={excludeItem ? "Unused Item.xlsx" : "Item Export.xlsx"}
         data={itemsData}
         columns={[
           { label: "Name", key: "name" },

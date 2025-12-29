@@ -1,4 +1,4 @@
-const { Op, fn, col } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 const validator = require('validator');
@@ -47,7 +47,22 @@ exports.createItemSubCategory = async (req, res) => {
 
 exports.getAllItemSubCategory = async (req, res) => {
   try {
-    const itemSubCategory = await ItemSubCategory.findAll({ order: [['id', 'ASC']],
+    const where = {};
+
+    // Exclude item subcategories that are linked to products
+    if (req.query.excludeItemSubCategories === 'true') {
+      where.id = {
+        [Op.notIn]: literal(`(
+          SELECT DISTINCT item_subcategory_id
+          FROM products
+          WHERE item_subcategory_id IS NOT NULL
+        )`)
+      };
+    }
+
+    const itemSubCategories = await ItemSubCategory.findAll({
+      where,
+      order: [['id', 'ASC']],
       include: [
         {
           model: Categories,
@@ -64,20 +79,28 @@ exports.getAllItemSubCategory = async (req, res) => {
           as: 'ItemCategory',
           attributes: ['id', 'name'],
         },
-      ], });
-    const modifiedItemSubCategories = itemSubCategory.map(item_sub_categories => {
-      const itemSubCategoryData = item_sub_categories.toJSON();
-      itemSubCategoryData.getStatus = itemSubCategoryData.status === 1 ? 'Active' : 'Inactive';
-      itemSubCategoryData.category_name = itemSubCategoryData.Categories?.name || null;
-      itemSubCategoryData.subcategory_name = itemSubCategoryData.SubCategories?.name || null;
-      itemSubCategoryData.itemcategory_name = itemSubCategoryData.ItemCategory?.name || null;
-      delete itemSubCategoryData.Categories;
-      delete itemSubCategoryData.SubCategories;
-      delete itemSubCategoryData.ItemCategory;
-      return itemSubCategoryData;
+      ],
     });
+
+    // Flatten nested relations and map status
+    const modifiedItemSubCategories = itemSubCategories.map(sub => {
+      const data = sub.toJSON();
+      return {
+        ...data,
+        getStatus: data.status === 1 ? 'Active' : 'Inactive',
+        category_name: data.Categories?.name || null,
+        subcategory_name: data.SubCategories?.name || null,
+        itemcategory_name: data.ItemCategory?.name || null,
+        Categories: undefined,
+        SubCategories: undefined,
+        ItemCategory: undefined,
+      };
+    });
+
     res.json(modifiedItemSubCategories);
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -369,6 +392,15 @@ exports.getAllItemSubCategoryServerSide = async (req, res) => {
       order = [['id', 'DESC']];
     }
     const where = {};
+    if (req.query.excludeItemSubCategories === 'true') {
+      where.id = {
+        [Op.notIn]: literal(`(
+          SELECT DISTINCT item_subcategory_id
+          FROM products
+          WHERE item_subcategory_id IS NOT NULL
+        )`)
+      };
+    }
     if (search) {
       where[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
@@ -421,6 +453,54 @@ exports.getItemSubCategoryCount = async (req, res) => {
     res.json({ total });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getItemSubCategoryBarGraph = async (req, res) => {
+  try {
+    const subCategories = await ItemSubCategory.findAll({
+      attributes: ['id', 'name'],
+      where: { status: 1 },
+      order: [['id', 'ASC']],
+      raw: true,
+    });
+
+    const counts = await Products.findAll({
+      attributes: [
+        'item_subcategory_id',
+        'is_approve',
+        [fn('COUNT', col('product_id')), 'count'],
+      ],
+      where: { is_delete: 0 },
+      group: ['item_subcategory_id', 'is_approve'],
+      raw: true,
+    });
+
+    const approvedMap = {};
+    const unapprovedMap = {};
+
+    counts.forEach(r => {
+      if (r.is_approve === 1) approvedMap[r.item_subcategory_id] = Number(r.count);
+      else unapprovedMap[r.item_subcategory_id] = Number(r.count);
+    });
+
+    res.json({
+      labels: subCategories.map(s => s.name),
+      datasets: [
+        {
+          label: 'Approved',
+          backgroundColor: '#4CAF50',
+          data: subCategories.map(s => approvedMap[s.id] || 0),
+        },
+        {
+          label: 'Unapproved',
+          backgroundColor: '#FF5722',
+          data: subCategories.map(s => unapprovedMap[s.id] || 0),
+        },
+      ],
+    });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };

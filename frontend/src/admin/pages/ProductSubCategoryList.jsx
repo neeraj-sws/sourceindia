@@ -14,8 +14,9 @@ import { DateRangePicker } from 'react-date-range';
 import 'react-date-range/dist/styles.css'; 
 import 'react-date-range/dist/theme/default.css'; 
 import { format } from 'date-fns';
+import { formatDateTime } from '../../utils/formatDate';
 
-const ProductSubCategoryList = ({ getDeleted }) => {
+const ProductSubCategoryList = ({ getDeleted, excludeSellerSubCategories, excludeProductSubCategories }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -72,7 +73,11 @@ const ProductSubCategoryList = ({ getDeleted }) => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/sub_categories/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false', dateRange, startDate, endDate },
+        params: { page, limit, search, sortBy, sort: sortDirection, 
+          getDeleted: getDeleted ? 'true' : 'false', 
+          excludeSellerSubCategories: excludeSellerSubCategories ? 'true' : 'false', 
+          excludeProductSubCategories: excludeProductSubCategories ? 'true' : 'false', 
+          dateRange, startDate, endDate },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -84,7 +89,8 @@ const ProductSubCategoryList = ({ getDeleted }) => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, excludeSellerSubCategories, excludeProductSubCategories,
+    dateRange, startDate, endDate]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -292,11 +298,24 @@ const ProductSubCategoryList = ({ getDeleted }) => {
   };
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/sub_categories`).then((res) => {
-      const filtered = res.data.filter((c) => c.is_delete=== (getDeleted ? 1 : 0));
-      setSubCategoryData(filtered);
-    });
-  }, []);
+  const fetchSubCategoryData = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sub_categories`, {
+        params: {
+          is_delete: getDeleted ? 1 : 0,
+          excludeSellerSubCategories: excludeSellerSubCategories ? 'true' : 'false',
+          excludeProductSubCategories: excludeProductSubCategories ? 'true' : 'false',
+        },
+      });
+
+      setSubCategoryData(res.data);
+    } catch (error) {
+      console.error("Error fetching sub-category export data:", error);
+    }
+  };
+
+  fetchSubCategoryData();
+}, [getDeleted, excludeSellerSubCategories, excludeProductSubCategories]);
 
   const handleDownload = () => {
     if (excelExportRef.current) {
@@ -354,8 +373,9 @@ const ProductSubCategoryList = ({ getDeleted }) => {
 
   return (
     <>
-      <div className="page-wrapper">
+      <div className={excludeSellerSubCategories || excludeProductSubCategories ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
+          {!excludeSellerSubCategories && !excludeProductSubCategories &&
           <Breadcrumb mainhead="Sub Category" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Sub Category" : "Sub Category"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Sub Category</>)} add_link="#" onClick={() => openForm()}
           actions={
@@ -378,8 +398,9 @@ const ProductSubCategoryList = ({ getDeleted }) => {
             </>
           }
           />
+        }
           <div className="row">
-            {!getDeleted && (
+            {!getDeleted && !excludeSellerSubCategories && !excludeProductSubCategories && (
             <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
@@ -475,7 +496,7 @@ const ProductSubCategoryList = ({ getDeleted }) => {
               </div>
             </div>
             )}
-            <div className={!getDeleted ? "col-md-8" : "col-md-12"}>              
+            <div className={!getDeleted && !excludeSellerSubCategories && !excludeProductSubCategories ? "col-md-8" : "col-md-12"}>              
                   {getDeleted && (
                     <>
                     <div className="card mb-3">
@@ -542,6 +563,16 @@ const ProductSubCategoryList = ({ getDeleted }) => {
                     </div>
                     </>
                   )}
+                  {(excludeSellerSubCategories || excludeProductSubCategories) && (
+                  <div className="card mb-3">
+                <div className="card-body">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <h5 className="card-title mb-3">Unused SubCategory List of {excludeSellerSubCategories ? "Seller" : "Product"}</h5>
+                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                    </div>
+                    </div>
+                    </div>
+                  )}
                   <div className="card">
                 <div className="card-body">
                   <DataTable
@@ -551,8 +582,10 @@ const ProductSubCategoryList = ({ getDeleted }) => {
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
                       { key: "category_name", label: "Category", sortable: true },
-                      { key: "status", label: "Status", sortable: false },
-                      { key: "action", label: "Action", sortable: false },
+                      ...(!excludeSellerSubCategories && !excludeProductSubCategories ? [{ key: "status", label: "Status", sortable: false }]:[]),
+                      ...(!excludeSellerSubCategories && !excludeProductSubCategories ? [{ key: "action", label: "Action", sortable: false }]:[]),
+                      ...(excludeSellerSubCategories || excludeProductSubCategories ? [{ key: "created_at", label: "Created", sortable: true }]:[]),
+                      ...(excludeSellerSubCategories || excludeProductSubCategories ? [{ key: "updated_at", label: "Last Update", sortable: true }]:[]),
                     ]}
                     data={data}
                     loading={loading}
@@ -584,6 +617,8 @@ const ProductSubCategoryList = ({ getDeleted }) => {
                         /></td>
                         <td>{row.name}</td>
                         <td>{row.category_name}</td>
+                        {!excludeSellerSubCategories && !excludeProductSubCategories && (
+                          <>
                         <td>
                           {!getDeleted ? (
                           <div className="form-check form-switch">
@@ -646,6 +681,14 @@ const ProductSubCategoryList = ({ getDeleted }) => {
                             </ul>
                           </div>
                         </td>
+                        </>
+                        )}
+                        {(excludeSellerSubCategories || excludeProductSubCategories) && (
+                                                <>
+                                              <td>{formatDateTime(row.created_at)}</td>
+                                                                  <td>{formatDateTime(row.updated_at)}</td>
+                                                                  </>
+                                              )}
                       </tr>
                     )}
                   />
@@ -668,7 +711,10 @@ const ProductSubCategoryList = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName={getDeleted ? "Sub Category Remove Export.xlsx" : "Sub Category.xlsx"}
+        fileName={getDeleted ? "Sub Category Remove Export.xlsx" :
+          excludeSellerSubCategories ? "Unused Seller Sub Category.xlsx" : 
+          excludeProductSubCategories ? "Unused Product Sub Category.xlsx" :
+          "Sub Category.xlsx"}
         data={subCategoryData}
         columns={[
           { label: "Sub Category", key: "name" },

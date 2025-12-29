@@ -11,6 +11,8 @@ router.get('/item-category', categoriesController.getItemCategory);
 router.get('/sub-items', categoriesController.getItemSubcategory);
 router.get('/items', categoriesController.getItem);
 router.get('/server-side', categoriesController.getAllCategoriesServerSide);
+router.get('/product-bar-graph', categoriesController.getCategoryProductGraph);
+router.get('/seller-bar-graph', categoriesController.getSellerCategoryBarGraph);
 router.delete('/delete-selected', categoriesController.deleteSelectedCategories);
 router.get('/:id', categoriesController.getCategoriesById);
 router.put('/:id', categoriesController.updateCategories);

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, use } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
+import { formatDateTime } from '../../utils/formatDate';
 import TicketModals from "./modal/TicketModals";
 import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, user_id: "", title: "", message: "", priority: "", category: "", status: "", attachment: null };
@@ -57,6 +59,12 @@ const TicketList = () => {
   const [selectedFilterCategories, setSelectedFilterCategories] = useState("");
   const [appliedFilterCategories, setAppliedFilterCategories] = useState("");
   const datePickerRef = useRef(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusToggleInfo, setStatusToggleInfo] = useState({
+  id: null,
+  newStatus: null,
+});
+const [statusLoading, setStatusLoading] = useState(false);
         
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -174,12 +182,12 @@ const TicketList = () => {
     if (!formData.title.trim()) errs.title = "Title is required";
     if (!selectedUsers) errs.user_id = "User is required";
     if (!formData.message.trim()) errs.message = "Message is required";
-    if (!formData.priority.trim()) errs.priority = "Priority is required";
+    // if (!formData.priority.trim()) errs.priority = "Priority is required";
     if (!selectedCategory) errs.category = "Category is required";
-    if (!formData.status) errs.status = "Invalid status";
-    if (!formData.attachment && !isEditing) {
-      errs.attachment = "Attachment is required";
-    }
+    // if (!formData.status) errs.status = "Invalid status";
+    // if (!formData.attachment && !isEditing) {
+    //   errs.attachment = "Attachment is required";
+    // }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -353,6 +361,50 @@ const TicketList = () => {
     setShowPicker(false);
   };
 
+  const openStatusModal = (id, newStatus) => {
+  setStatusToggleInfo({ id, newStatus });
+  setShowStatusModal(true);
+};
+  
+    const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, newStatus: null }); };
+  
+    const handleStatusConfirm = async () => {
+  const { id, newStatus } = statusToggleInfo;
+
+  const statusMessage = newStatus === 2 ? "Ticket has been resolved successfully." : "Ticket has been cancelled.";
+setStatusLoading(true);
+  try {
+    // 1️⃣ Get ticket details (needed for ticket_id)
+    const ticketRes = await axios.get(`${API_BASE_URL}/tickets/${id}`);
+    const ticket = ticketRes.data?.ticket || ticketRes.data;
+
+    // 2️⃣ Send system reply
+    const formData = new FormData();
+    formData.append("id", ticket.ticket_id);
+    formData.append("message", statusMessage);
+    formData.append("added_by", "Admin");
+    formData.append("type", "reply");
+
+    await axios.post(`${API_BASE_URL}/tickets/store-support-ticket-reply`, formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    // 3️⃣ Update ticket status
+    await axios.patch(`${API_BASE_URL}/tickets/${id}/status`, { status: newStatus, });
+
+    // 4️⃣ Update UI state
+    setData(prev => prev.map(item => item.id === id ? { ...item, status: newStatus } : item));
+
+    showNotification(newStatus === 2 ? "Ticket resolved successfully!" : "Ticket cancelled successfully!", "success");
+    closeStatusModal();
+  } catch (error) {
+    console.error(error);
+    showNotification("Failed to update ticket status.", "error");
+  } finally {
+    setStatusLoading(false);
+  }
+};
+
   return (
     <>
       <div className="page-wrapper">
@@ -395,10 +447,10 @@ const TicketList = () => {
                       {errors.title && <div className="invalid-feedback">{errors.title}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="priority" className="form-label required">Priority</label>
+                      <label htmlFor="priority" className="form-label">Priority</label>
                       <select
                         id="priority"
-                        className={`form-select ${errors.priority ? "is-invalid" : ""}`}
+                        className="form-select"
                         value={formData.priority}
                         onChange={handleChange}
                       >
@@ -406,7 +458,6 @@ const TicketList = () => {
                         <option value="normal">Normal</option>
                         <option value="high">High</option>
                       </select>
-                      {errors.priority && <div className="invalid-feedback">{errors.priority}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="category" className="form-label required">Category</label>
@@ -437,16 +488,15 @@ const TicketList = () => {
                       {errors.message && <div className="invalid-feedback">{errors.message}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="attachment" className="form-label required">Attachment</label>
+                      <label htmlFor="attachment" className="form-label">Attachment</label>
                       <input
                         type="file"
-                        className={`form-control ${errors.attachment ? "is-invalid" : ""}`}
+                        className="form-control"
                         id="attachment"
                         onChange={handleChange}
                       />
-                      {errors.attachment && <div className="invalid-feedback">{errors.attachment}</div>}
                     </div>
-                    <div className="form-group col-md-12 mb-3">
+                    {/* <div className="form-group col-md-12 mb-3">
                       <label htmlFor="status" className="form-label required">Status</label>
                       <select
                         id="status"
@@ -458,7 +508,7 @@ const TicketList = () => {
                         {listStatus?.map((status, key) => (<option key={key} value={key}>{status}</option>))}
                       </select>
                       {errors.status && <div className="invalid-feedback">{errors.status}</div>}
-                    </div>
+                    </div> */}
                     <div className="d-flex justify-content-between">
                       <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
                         {isEditing ? "Cancel" : "Reset"}
@@ -597,10 +647,13 @@ const TicketList = () => {
                   <DataTable
                     columns={[
                       { key: "id", label: "S.No.", sortable: true },
+                      { key: "ticket_id", label: "Ticket ID", sortable: true },
                       { key: "title", label: "Title", sortable: true },
+                      { key: "full_name", label: "Created By", sortable: true },
+                      { key: "user_id", label: "Added By", sortable: false },
+                      { key: "last_reply_date", label: "Last Reply", sortable: true },
                       { key: "priority", label: "Priority", sortable: true },
                       { key: "category_name", label: "Ticket Category", sortable: true },
-                      { key: "status", label: "Status", sortable: false },
                       { key: "action", label: "Action", sortable: false },
                     ]}
                     data={data}
@@ -620,27 +673,39 @@ const TicketList = () => {
                     renderRow={(row, index) => (
                       <tr key={row.id}>
                         <td>{(page - 1) * limit + index + 1}</td>
+                        <td><Link to={`/admin/ticket/view/${row.id}`}>{row.ticket_id}</Link></td>
                         <td>{row.title}</td>
-                        <td>{row.priority}</td>
-                        <td>{row.category_name}</td>
-                        <td>{listStatus.map((s, i) => (row.status == i ? s : ""))}</td>
                         <td>
-                          <div className="dropdown">
-                            <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                              <i className="bx bx-dots-vertical-rounded"></i>
-                            </button>
-                            <ul className="dropdown-menu">
-                              <li>
-                                <button className="dropdown-item" onClick={() => openForm(row)}>
-                                  <i className="bx bx-edit me-2"></i> Edit
-                                </button>
-                              </li>
-                              <li>
-                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                  <i className="bx bx-trash me-2"></i> Delete
-                                </button>
-                              </li>
-                            </ul>
+                          {row.full_name && (<><i className="bx bx-user me-1" />{row.full_name}<br /></>)}
+                          {row.email && (<><i className="bx bx-envelope me-1" />{row.email}<br /></>)}
+                        </td>
+                        <td><span className="badge bg-success">{row.user_id==0?"Front":"Admin"}</span></td>
+                        <td>{formatDateTime(row.last_reply_date)}</td>
+                        <td>{row.priority}</td>
+                        <td><span className="badge bg-info">{row.category_name}</span></td>
+                        <td>
+                          <div className="d-flex gap-2">
+                            {(row.status==0 || row.status==1) &&
+                            <>
+                            <a href="#" className="btn btn-primary btn-sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openStatusModal(row.id, 2); // Resolve
+                              }}
+                            >
+                              Resolve
+                            </a>
+                            <a href="#" className="btn btn-danger btn-sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openStatusModal(row.id, 3); // Cancel
+                              }}
+                            >
+                              Cancel
+                            </a>
+                            </>
+                            }
+                            <button className="btn btn-dark btn-sm" onClick={() => openDeleteModal(row.id)}><i className="bx bx-trash"></i></button>
                           </div>
                         </td>
                       </tr>
@@ -656,6 +721,11 @@ const TicketList = () => {
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
         handleDeleteConfirm={handleDeleteConfirm}
+        showStatusModal={showStatusModal}
+        statusToggleInfo={statusToggleInfo}
+        closeStatusModal={closeStatusModal}
+        handleStatusConfirm={handleStatusConfirm}
+        statusLoading={statusLoading}
       />
       <ExcelExport
         ref={excelExportRef}
