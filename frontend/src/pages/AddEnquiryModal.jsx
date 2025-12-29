@@ -118,7 +118,7 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                         <h5 className="product_enquiry text-center">Open Enquiry</h5>
                     </div>
 
-                    <div className="modal-body pt-3 pb-5 px-5">
+                    <div className="modal-body pt-3 pb-sm-5 px-sm-5">
                         {isAuthenticated ? (
                             // Authenticated User Form
                             <form onSubmit={handleSubmit} id="productEnquiry">

@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col, Sequelize } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 const Tickets = require('../models/Tickets');
@@ -50,11 +50,37 @@ exports.getAllTickets = async (req, res) => {
 
 exports.getTicketsById = async (req, res) => {
   try {
-    const tickets = await Tickets.findByPk(req.params.id);
+    const ticketId = req.params.id; // primary key id
+    const tickets = await Tickets.findByPk(ticketId, {
+      include: [
+        { model: TicketCategory, attributes: ['name'], as: 'TicketCategory' },
+      ],
+    });
+
     if (!tickets) return res.status(404).json({ message: 'Ticket not found' });
-    res.json(tickets);
+
+    // Fetch all completed tickets for the same email
+    const relatedTickets = await Tickets.findAll({
+      where: { is_complete: 1, email: tickets.email },
+    });
+
+    // Fetch all replies for this ticket
+    const ticketReplies = await TicketReply.findAll({
+      where: { ticket_id: tickets.id },
+      order: [['id', 'DESC']],
+    });
+
+    const lastReply = ticketReplies.length > 0 ? ticketReplies[0] : null;
+
+    return res.json({
+      ticket: tickets,
+      relatedTickets,
+      replies: ticketReplies,
+      lastReply,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error fetching ticket by ID:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
@@ -113,20 +139,32 @@ exports.deleteTickets = async (req, res) => {
 
 exports.updateTicketsStatus = async (req, res) => {
   try {
-    const { status } = req.body;
-    if (status !== 0 && status !== 1) {
-      return res.status(400).json({ message: 'Invalid status. Use 1 (Active) or 0 (Deactive).' });
+    const { id } = req.params;
+    const { status } = req.body; // 2 = resolve, 3 = cancel
+
+    if (![2, 3].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
     }
-    const tickets = await Tickets.findByPk(req.params.id);
-    if (!tickets) return res.status(404).json({ message: 'Ticket not found' });
-    tickets.status = status;
-    await tickets.save();
-    res.json({ message: 'Status updated', tickets });
+
+    const ticket = await Tickets.findByPk(id);
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    await ticket.update({
+      status,
+      is_complete: status === 2 ? 1 : ticket.is_complete,
+    });
+
+    return res.json({
+      message: 'Ticket status updated successfully',
+      ticket,
+    });
   } catch (err) {
+    console.error('Status update error:', err);
     res.status(500).json({ error: err.message });
   }
 };
-
 
 exports.getAllTicketsServerSide = async (req, res) => {
   try {
@@ -144,7 +182,8 @@ exports.getAllTicketsServerSide = async (req, res) => {
       priority,
       category,
     } = req.query;
-    const validColumns = ['id', 'title', 'ticket_id', 'message', 'priority', 'created_at', 'updated_at', 'category_name', 'user_name'];
+    const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'title', 'ticket_id', 'message', 
+      'priority', 'created_at', 'updated_at', 'category_name', 'user_name'];
     const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitValue = parseInt(limit);
@@ -153,6 +192,13 @@ exports.getAllTicketsServerSide = async (req, res) => {
       order = [[{ model: TicketCategory, as: 'TicketCategory' }, 'name', sortDirection]];
     } else if (sortBy === 'user_name') {
       order = [[{ model: Users, as: 'Users' }, 'fname', sortDirection]];
+    } else if (sortBy === 'full_name') {
+      order = [[fn('concat', col('Tickets.fname'), ' ', col('Tickets.lname')), sortDirection]];
+    } else if (sortBy === 'last_reply_date') {
+      // Sort by last_reply_date literal
+      order = [[Sequelize.literal(`(
+        SELECT MAX(created_at) FROM ticket_replies AS TicketReplies WHERE TicketReplies.ticket_id = Tickets.tickets_id
+      )`), sortDirection]];
     } else if (validColumns.includes(sortBy)) {
       order = [[sortBy, sortDirection]];
     } else {
@@ -226,6 +272,8 @@ exports.getAllTicketsServerSide = async (req, res) => {
     }
     if (search) {
       baseWhere[Op.or] = [
+        Sequelize.where(fn('concat', col('fname'), ' ', col('lname')), { [Op.like]: `%${search}%` }),
+        { email: { [Op.like]: `%${search}%` } },
         { title: { [Op.like]: `%${search}%` } },
         { ticket_id: { [Op.like]: `%${search}%` } },
         { priority: { [Op.like]: `%${search}%` } },
@@ -244,9 +292,24 @@ exports.getAllTicketsServerSide = async (req, res) => {
         { model: TicketCategory, attributes: ['name'], as: 'TicketCategory' },
         { model: Users, attributes: ['fname'], as: 'Users' },
       ],
+      attributes: {
+        include: [
+          [
+            // Subquery to get last reply date
+            Sequelize.literal(`(
+              SELECT MAX(created_at)
+              FROM ticket_replies AS TicketReplies
+              WHERE TicketReplies.ticket_id = Tickets.tickets_id
+            )`),
+            'last_reply_date'
+          ]
+        ]
+      }
     });
     const mappedRows = rows.map(row => ({
       id: row.id,
+      full_name: `${row.fname} ${row.lname}`,
+      email: row.email,
       title: row.title,
       ticket_id: row.ticket_id,
       message: row.message,
@@ -259,6 +322,7 @@ exports.getAllTicketsServerSide = async (req, res) => {
       status: row.status,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      last_reply_date: row.getDataValue('last_reply_date')
     }));
     res.json({
       data: mappedRows,
@@ -273,7 +337,7 @@ exports.getAllTicketsServerSide = async (req, res) => {
 
 exports.sendOtp = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, user_id, created_by } = req.body;
 
     if (!email) return res.status(400).json({ message: "Email is required" });
 
@@ -291,12 +355,18 @@ exports.sendOtp = async (req, res) => {
     if (ticket) {
       ticket.otp = generatedOtp;
       ticket.added_by = 'front';
+        if (user_id) {
+          ticket.created_by = created_by;
+          ticket.user_id = user_id; // ✅ update user_id
+        }
       await ticket.save();
     } else {
       ticket = await Tickets.create({
         email,
         otp: generatedOtp,
         added_by: 'front',
+        user_id: user_id || 0,
+        created_by: created_by || "Guest",
       });
     }
 
@@ -378,13 +448,13 @@ exports.createstoreTicket = async (req, res) => {
     }
     try {
 
-      const { first_name, last_name, phone, title, message, email, ticket_id } = req.body;
+      const { first_name, last_name, phone, title, message, email, ticket_id, user_id, added_by } = req.body;
 
       const ticket = await Tickets.findByPk(ticket_id);
       if (!ticket || ticket.email !== email) {
         return res.status(403).json({ message: "Email not verified" });
       }
-      const created_by = "Guest";
+      // const created_by = created_by || "Guest";
       const ticketId = `SOURCE-INDIA-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 900 + 100)}`;
       const crypto = require("crypto");
 
@@ -401,17 +471,17 @@ exports.createstoreTicket = async (req, res) => {
       ticket.priority = 'high';
       ticket.category = 1;
       ticket.is_complete = 1;
-      ticket.created_by = created_by;
+      ticket.created_by = added_by || "Guest";
       ticket.token = token;
       await ticket.save();
 
       const mediaType = req.file?.mimetype?.startsWith("image/") ? "image" : "file";
 
       await TicketReply.create({
-        user_id: 0, // since guest
+        user_id: user_id || 0, // since guest
         ticket_id: ticket_id,
         reply: message,
-        added_by: created_by,
+        added_by: added_by || "Guest",
         attachment: req.file ? req.file.filename : null,
         media_type: mediaType,
       });
@@ -522,7 +592,7 @@ exports.getTicketByNumber = async (req, res) => {
 exports.ticketReplystore = async (req, res) => {
   try {
     upload(req, res, async () => {
-      const { id, message, type } = req.body;
+      const { id, message, type, added_by, user_id } = req.body;
       const attachment = req.file;
 
       // Validate required fields
@@ -553,7 +623,9 @@ exports.ticketReplystore = async (req, res) => {
         reply: message,
         attachment: attachment ? attachment.filename : null,
         media_type: type || 'reply',
-        added_by: req.user ? req.user.role : 'Guest', // Adjust based on your auth setup
+        // added_by: req.user ? req.user.role : 'Guest', // Adjust based on your auth setup
+        added_by: added_by || 'Guest',
+        user_id: user_id || 0,
       });
 
       // Update ticket status if needed
@@ -658,5 +730,62 @@ exports.getTicketsCount = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getNextTicket = async (req, res) => {
+  try {
+    const { ticket_id } = req.params;
+
+    // Find the current ticket by ticket_id
+    const current = await Tickets.findOne({
+      where: { ticket_id }
+    });
+
+    if (!current) return res.json({ next: null });
+
+    // Find the next ticket with smaller id (descending order)
+    const next = await Tickets.findOne({
+      where: {
+        id: { [Op.lt]: current.id }
+      },
+      order: [['id', 'DESC']],
+      attributes: ['ticket_id', 'token']  // Select ticket_id and token fields
+    });
+
+    res.json({ 
+      next: next ? next.ticket_id : null,
+      token: next ? next.token : null
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getNextTicketById = async (req, res) => { 
+  try {
+    const { id } = req.params; 
+    const ticketId = parseInt(id, 10);
+
+    if (isNaN(ticketId)) return res.status(400).json({ error: 'Invalid id parameter' });
+
+    const current = await Tickets.findOne({ where: { id: ticketId } });
+    if (!current) return res.json({ next: null, token: null, id: null });
+
+    const next = await Tickets.findOne({
+      where: { id: { [Op.lt]: current.id } },
+      order: [['id', 'DESC']],
+      attributes: ['ticket_id', 'token', 'id']
+    });
+
+    res.json({
+      next: next ? next.ticket_id : null,
+      token: next ? next.token : null,
+      id: next ? next.id : null
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

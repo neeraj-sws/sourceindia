@@ -17,6 +17,7 @@
     "axios": "^1.11.0",
     "bootstrap": "^5.3.8",
     "chart.js": "^4.5.1",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "datatables.net": "^2.3.2",
     "datatables.net-bs5": "^2.3.2",
     "date-fns": "^4.1.0",

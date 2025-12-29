@@ -14,7 +14,9 @@ const api = axios.create({
     "X-Requested-With": "XMLHttpRequest",
   },
 });
-const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content");
+const csrfToken = document
+  .querySelector('meta[name="csrf-token"]')
+  ?.getAttribute("content");
 if (csrfToken) {
   api.defaults.headers.common["X-CSRF-TOKEN"] = csrfToken;
 }
@@ -29,30 +31,30 @@ const Enquiry = () => {
 
   // Fetch Enquiries
   const fetchEnquiries = useCallback(async () => {
-  setIsLoading(true);
-  const delay = new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
+    setIsLoading(true);
+    const delay = new Promise((resolve) => setTimeout(resolve, 1000)); // 1 second delay
 
-  try {
-    const params = new URLSearchParams({
-      is_home: "1",
-      is_delete: "0",
-    });
+    try {
+      const params = new URLSearchParams({
+        is_home: "1",
+        is_delete: "0",
+      });
 
-    if (activeTab === "my" && user?.id) {
-      params.append("user_id", user.id);
+      if (activeTab === "my" && user?.id) {
+        params.append("user_id", user.id);
+      }
+
+      const url = `${API_BASE_URL}/open_enquiries/front-enquiry?${params.toString()}`;
+      const responsePromise = axios.get(url);
+
+      const [response] = await Promise.all([responsePromise, delay]); // wait for both
+      setEnquiries(response.data);
+    } catch (error) {
+      console.error("Error fetching enquiries:", error);
+    } finally {
+      setIsLoading(false);
     }
-
-    const url = `${API_BASE_URL}/open_enquiries/front-enquiry?${params.toString()}`;
-    const responsePromise = axios.get(url);
-
-    const [response] = await Promise.all([responsePromise, delay]); // wait for both
-    setEnquiries(response.data);
-  } catch (error) {
-    console.error("Error fetching enquiries:", error);
-  } finally {
-    setIsLoading(false);
-  }
-}, [activeTab, user]);
+  }, [activeTab, user]);
 
   useEffect(() => {
     fetchEnquiries();
@@ -67,10 +69,9 @@ const Enquiry = () => {
     }
 
     try {
-
       const res = await api.post(`${API_BASE_URL}/open_enquiries/cheak-chats`, {
         id: enquiryId,
-        user: user
+        user: user,
       });
 
       const { success, enquiry_id } = res.data;
@@ -94,72 +95,87 @@ const Enquiry = () => {
   };
 
   const EnquirySkeletonLoader = ({ count = 6 }) => {
-  const items = Array.from({ length: count });
+    const items = Array.from({ length: count });
 
-  return (
-    <>
-      {items.map((_, i) => (
-        <div key={i} className="col-lg-4 col-md-6 mb-4">
-          <div className="card h-100 border shadow-sm">
-            {/* Header Skeleton */}
-            <div className="card-header bg-white d-flex gap-2 align-items-center">
-              <div
-                className="compnaylogo"
-                style={{
-                  width: 90,
-                  height: 60,
-                  backgroundColor: "#eee",
-                  borderRadius: 4,
-                }}
-              ></div>
-              <div className="flex-grow-1">
+    return (
+      <>
+        {items.map((_, i) => (
+          <div key={i} className="col-lg-4 col-sm-6 mb-4">
+            <div className="card h-100 border shadow-sm enquirylistitem">
+              {/* Header Skeleton */}
+              <div className="card-header bg-white d-flex gap-2 align-items-center">
+                <div
+                  className="compnaylogo"
+                  style={{
+                    width: 90,
+                    height: 60,
+                    backgroundColor: "#eee",
+                    borderRadius: 4,
+                  }}
+                ></div>
+                <div className="flex-grow-1">
+                  <span
+                    className="content-placeholder"
+                    style={{
+                      width: "80%",
+                      height: 18,
+                      display: "block",
+                      marginBottom: 6,
+                    }}
+                  ></span>
+                  <span
+                    className="content-placeholder"
+                    style={{ width: "50%", height: 12, display: "block" }}
+                  ></span>
+                </div>
+              </div>
+
+              {/* Body Skeleton */}
+              <div className="card-body p-3">
                 <span
                   className="content-placeholder"
-                  style={{ width: "80%", height: 18, display: "block", marginBottom: 6 }}
+                  style={{
+                    width: "100%",
+                    height: 12,
+                    display: "block",
+                    marginBottom: 8,
+                  }}
                 ></span>
                 <span
                   className="content-placeholder"
-                  style={{ width: "50%", height: 12, display: "block" }}
+                  style={{
+                    width: "60%",
+                    height: 12,
+                    display: "block",
+                    marginBottom: 8,
+                  }}
+                ></span>
+                <span
+                  className="content-placeholder"
+                  style={{ width: "70%", height: 12, display: "block" }}
+                ></span>
+              </div>
+
+              {/* Footer Skeleton */}
+              <div className="card-footer text-center">
+                <span
+                  className="content-placeholder"
+                  style={{ width: "50%", height: 32, display: "inline-block" }}
                 ></span>
               </div>
             </div>
-
-            {/* Body Skeleton */}
-            <div className="card-body p-3">
-              <span
-                className="content-placeholder"
-                style={{ width: "100%", height: 12, display: "block", marginBottom: 8 }}
-              ></span>
-              <span
-                className="content-placeholder"
-                style={{ width: "60%", height: 12, display: "block", marginBottom: 8 }}
-              ></span>
-              <span
-                className="content-placeholder"
-                style={{ width: "70%", height: 12, display: "block" }}
-              ></span>
-            </div>
-
-            {/* Footer Skeleton */}
-            <div className="card-footer text-center">
-              <span
-                className="content-placeholder"
-                style={{ width: "50%", height: 32, display: "inline-block" }}
-              ></span>
-            </div>
           </div>
-        </div>
-      ))}
-    </>
-  );
-};
+        ))}
+      </>
+    );
+  };
 
   return (
     <>
       <section className="enquirySection">
-        <div className="container my-5">
+        <div className="container-xl my-5">
           {/* Header */}
-          <div className="card mb-5 commonHead border shadow-none">
+          <div className="card mb-lg-5 mb-3 commonHead border shadow-none">
             <div className="card-body py-5 text-center">
               <h1 className="text-white">Open Enquiry</h1>
             </div>
@@ -168,28 +184,39 @@ const Enquiry = () => {
           {/* Tabs + Add Button */}
           <div className="card mb-4">
             <div className="card-body">
-              <div className="d-flex align-items-center justify-content-between">
-                <div className="d-flex gap-3">
+              <div className="d-flex align-items-center justify-content-md-between gap-1 enquirybtnscontainer">
                   <button
-                    className={`btn ${activeTab === "all" ? "btn-primary" : "btn-outline-primary"}`}
+                    className={`enquirybtns text-nowrap btn ${
+                      activeTab === "all"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
+                    }`}
                     onClick={() => setActiveTab("all")}
                   >
                     All Enquiry
                   </button>
 
+                <div className="d-flex align-items-center gap-1 justify-content-between enquirybtnscontainer">
                   {user && (
                     <button
-                      className={`btn ${activeTab === "my" ? "btn-primary" : "btn-outline-primary"}`}
+                      className={`enquirybtns btn ${
+                        activeTab === "my"
+                          ? "btn-primary"
+                          : "btn-outline-primary"
+                      }`}
                       onClick={() => setActiveTab("my")}
                     >
                       My Enquiry
                     </button>
                   )}
+                  <a
+                    href="#"
+                    className="enquirybtns btn btn-outline-primary"
+                    onClick={handleOpenModal}
+                  >
+                    Add Enquiry
+                  </a>
                 </div>
-
-                <a href="#" className="btn btn-outline-primary" onClick={handleOpenModal}>
-                  Add Enquiry
-                </a>
               </div>
             </div>
           </div>
@@ -206,13 +233,13 @@ const Enquiry = () => {
           ) : (
             <div className="row">
               {enquiries.map((enquiry) => (
-                <div key={enquiry.id} className="col-lg-4 col-md-6 mb-4">
-                  <div className="card h-100 border shadow-sm">
+                <div key={enquiry.id} className="col-lg-4 col-sm-6 mb-4">
+                  <div className="card h-100 border shadow-sm enquirylistitem">
                     {/* Header */}
                     <div className="card-header bg-white">
                       <div className="d-flex gap-2 align-items-center">
                         {enquiry.company_logo && (
-                        <div className="compnaylogo">                          
+                          <div className="compnaylogo">
                             <ImageFront
                               src={`${ROOT_URL}/${enquiry.company_logo}`}
                               alt={enquiry.organization_name || "Company"}
@@ -224,10 +251,13 @@ const Enquiry = () => {
                               }}
                               showFallback={true}
                               defaultimg="/company.png"
-                            />                          
-                        </div>
+                            />
+                          </div>
                         )}
-                        <h5 className="card-title lh-sm" style={{ fontSize: "18px" }}>
+                        <h5
+                          className="card-title lh-sm mb-0"
+                          style={{ fontSize: "18px" }}
+                        >
                           {enquiry.title}
                         </h5>
                       </div>
@@ -238,21 +268,26 @@ const Enquiry = () => {
                       <div className="row gx-0">
                         <div className="col-lg-12 p-0">
                           <p className="card-text px-3 py-2 bg-light mb-0">
-                            <b className="fw-semibold">Description:</b> {enquiry.description}
+                            <b className="fw-semibold">Description:</b>{" "}
+                            {enquiry.description}
                           </p>
                           <div className="px-3 py-2">
                             <p className="card-text mb-1">
-                              <b className="fw-semibold">Quantity:</b> {enquiry.quantity || "N/A"}
+                              <b className="fw-semibold">Quantity:</b>{" "}
+                              {enquiry.quantity || "N/A"}
                             </p>
                             <p className="card-text mb-1">
-                              <b className="fw-semibold">Name:</b> {enquiry.fname} {enquiry.lname}
+                              <b className="fw-semibold">Name:</b>{" "}
+                              {enquiry.fname} {enquiry.lname}
                             </p>
 
                             {(enquiry.organization_name || enquiry.company) && (
                               <p className="card-text mb-1">
                                 <b className="fw-semibold">Company Name:</b>{" "}
                                 {enquiry.organization_slug ? (
-                                  <Link to={`/companies/${enquiry.organization_slug}`}>
+                                  <Link
+                                    to={`/companies/${enquiry.organization_slug}`}
+                                  >
                                     {enquiry.organization_name}
                                   </Link>
                                 ) : (
@@ -263,14 +298,17 @@ const Enquiry = () => {
 
                             <p className="card-text mb-1">
                               <b className="fw-semibold">Date:</b>{" "}
-                              {new Date(enquiry.created_at).toLocaleString("en-IN", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: true,
-                              })}
+                              {new Date(enquiry.created_at).toLocaleString(
+                                "en-IN",
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                }
+                              )}
                             </p>
                           </div>
                         </div>

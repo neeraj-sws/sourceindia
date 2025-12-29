@@ -27,6 +27,7 @@ import AddProduct from '../admin/pages/AddProduct';
 import ProductCategoryList from '../admin/pages/ProductCategoryList';
 import ProductSubCategoryList from '../admin/pages/ProductSubCategoryList';
 import TicketList from '../admin/pages/TicketList';
+import TicketView from '../admin/pages/TicketView';
 import TicketCategoryList from '../admin/pages/TicketCategoryList';
 import SiteSettings from '../admin/pages/SiteSettings';
 import FaqList from '../admin/pages/FaqList';
@@ -68,6 +69,10 @@ import NewItems from '../admin/pages/NewItems';
 import ShortcutPage from '../admin/pages/ShortcutPage';
 import PageEdit from '../admin/pages/PageEdit';
 import FrontMenu from '../admin/pages/FrontMenu';
+import SellerUnusedCategories from '../admin/pages/SellerUnusedCategories';
+import ProductUnusedCategories from '../admin/pages/ProductUnusedCategories';
+import ProductCategoriesGraph from '../admin/pages/ProductCategoriesGraph';
+import SellerCategoriesGraph from '../admin/pages/SellerCategoriesGraph';
 
 function AdminLayout() {
   const location = useLocation();
@@ -117,6 +122,7 @@ function AdminLayout() {
           <Route path="/product_sub_categories" element={<ProtectedRoute><ProductSubCategoryList /></ProtectedRoute>} />
           <Route path="/subcategory-remove-list" element={<ProtectedRoute><ProductSubCategoryList getDeleted={true} /></ProtectedRoute>} />
           <Route path="/tickets" element={<ProtectedRoute><TicketList /></ProtectedRoute>} />
+          <Route path="/ticket/view/:ticketId" element={<ProtectedRoute><TicketView /></ProtectedRoute>} />
           <Route path="/ticket_categories" element={<ProtectedRoute><TicketCategoryList /></ProtectedRoute>} />
           <Route path="/site_settings" element={<ProtectedRoute><SiteSettings /></ProtectedRoute>} />
           <Route path="/faqs" element={<ProtectedRoute><FaqList /></ProtectedRoute>} />
@@ -177,6 +183,10 @@ function AdminLayout() {
           <Route path="/terms_conditions" element={<ProtectedRoute><PageEdit pageId={9} title="Terms & Conditions" /></ProtectedRoute>} />
           <Route path="/privacy_policy" element={<ProtectedRoute><PageEdit pageId={8} title="Privacy Policy" /></ProtectedRoute>} />
           <Route path="/front_menu" element={<ProtectedRoute><FrontMenu /></ProtectedRoute>} />
+          <Route path="/seller_category_report" element={<ProtectedRoute><SellerUnusedCategories /></ProtectedRoute>} />
+          <Route path="/product_category_report" element={<ProtectedRoute><ProductUnusedCategories /></ProtectedRoute>} />
+          <Route path="/product_category_graph" element={<ProtectedRoute><ProductCategoriesGraph /></ProtectedRoute>} />
+          <Route path="/seller_category_graph" element={<ProtectedRoute><SellerCategoriesGraph /></ProtectedRoute>} />
         </Routes>
       </div>
       {showLayout && <Footer />}

@@ -7,6 +7,7 @@ const SubCategories = require('../models/SubCategories');
 const Categories = require('../models/Categories');
 const Products = require('../models/Products');
 const CompanyInfo = require('../models/CompanyInfo');
+const SellerCategory = require('../models/SellerCategory');
   const UploadImage = require('../models/UploadImage');
   const getMulterUpload = require('../utils/upload');
 
@@ -32,7 +33,43 @@ exports.createSubCategories = async (req, res) => {
 
 exports.getAllSubCategories = async (req, res) => {
   try {
-    const subCategories = await SubCategories.findAll({ order: [['id', 'ASC']],
+    const where = {};
+
+    // deleted filter (if you already use it elsewhere)
+    if (typeof req.query.is_delete !== 'undefined') {
+      where.is_delete = parseInt(req.query.is_delete);
+    }
+
+    // ✅ exclude seller sub-categories
+    const excludeQueries = [];
+
+    if (req.query.excludeSellerSubCategories === 'true') {
+      excludeQueries.push(`
+        SELECT DISTINCT subcategory_id
+        FROM seller_categories
+        WHERE subcategory_id IS NOT NULL
+      `);
+    }
+
+    // ✅ exclude product sub-categories
+    if (req.query.excludeProductSubCategories === 'true') {
+      excludeQueries.push(`
+        SELECT DISTINCT sub_category
+        FROM products
+        WHERE sub_category IS NOT NULL
+      `);
+    }
+
+    // ✅ merge both safely
+    if (excludeQueries.length) {
+      where.id = {
+        [Op.notIn]: literal(`(${excludeQueries.join(' UNION ')})`)
+      };
+    }
+
+    const subCategories = await SubCategories.findAll({
+      where,
+      order: [['id', 'ASC']],
       include: [
         {
           model: Categories,
@@ -41,13 +78,15 @@ exports.getAllSubCategories = async (req, res) => {
         },
       ],
     });
-    const modifiedSubCategories = subCategories.map(sub_categories => {
-      const subCategoriesData = sub_categories.toJSON();
-      subCategoriesData.getStatus = subCategoriesData.status === 1 ? 'Active' : 'Inactive';
-      subCategoriesData.category_name = subCategoriesData.Categories?.name || null;
-      delete subCategoriesData.Categories;
-      return subCategoriesData;
+
+    const modifiedSubCategories = subCategories.map(sc => {
+      const data = sc.toJSON();
+      data.getStatus = data.status === 1 ? 'Active' : 'Inactive';
+      data.category_name = data.Categories?.name || null;
+      delete data.Categories;
+      return data;
     });
+
     res.json(modifiedSubCategories);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -349,6 +388,24 @@ exports.getAllSubCategoriesServerSide = async (req, res) => {
     if (req.query.getDeleted === 'true') {
       where.is_delete = 1;
     }
+    if (req.query.excludeSellerSubCategories === 'true') {
+      where.id = {
+        [Op.notIn]: literal(`(
+          SELECT DISTINCT subcategory_id
+          FROM seller_categories
+          WHERE subcategory_id IS NOT NULL
+        )`)
+      };
+    }
+    if (req.query.excludeProductSubCategories === 'true') {
+      where.id = {
+        [Op.notIn]: literal(`(
+          SELECT DISTINCT sub_category
+          FROM products
+          WHERE sub_category IS NOT NULL
+        )`)
+      };
+    }
     const searchWhere = { ...where };
     if (search) {
       searchWhere[Op.or] = [
@@ -434,6 +491,105 @@ exports.getAllSubCategoriesServerSide = async (req, res) => {
       data: mappedRows,
       totalRecords,
       filteredRecords,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getSubCategoryProductGraph = async (req, res) => {
+  try {
+    // 1️⃣ Fetch active subcategories
+    const subcategories = await SubCategories.findAll({
+      attributes: ['id', 'name'],
+      where: { is_delete: 0, status: 1 },
+      order: [['id', 'ASC']],
+      raw: true,
+    });
+
+    if (!subcategories.length) return res.json({ labels: [], datasets: [] });
+
+    // 2️⃣ Product counts for approved products
+    const approvedCounts = await Products.findAll({
+      attributes: ['sub_category', [fn('COUNT', col('product_id')), 'count']],
+      where: { is_delete: 0, is_approve: 1, sub_category: { [Op.ne]: null } },
+      group: ['sub_category'],
+      raw: true,
+    });
+
+    // 3️⃣ Product counts for unapproved products
+    const unapprovedCounts = await Products.findAll({
+      attributes: ['sub_category', [fn('COUNT', col('product_id')), 'count']],
+      where: { is_delete: 0, is_approve: 0, sub_category: { [Op.ne]: null } },
+      group: ['sub_category'],
+      raw: true,
+    });
+
+    // 4️⃣ Map counts
+    const approvedMap = {};
+    approvedCounts.forEach(p => { approvedMap[p.sub_category] = Number(p.count); });
+
+    const unapprovedMap = {};
+    unapprovedCounts.forEach(p => { unapprovedMap[p.sub_category] = Number(p.count); });
+
+    // 5️⃣ Prepare bar graph data
+    const barGraph = {
+      labels: [],
+      datasets: [
+        { label: 'Approved', data: [], backgroundColor: '#4CAF50' },
+        { label: 'Unapproved', data: [], backgroundColor: '#FF5722' },
+      ],
+    };
+
+    subcategories.forEach(sub => {
+      barGraph.labels.push(sub.name);
+      barGraph.datasets[0].data.push(approvedMap[sub.id] || 0);
+      barGraph.datasets[1].data.push(unapprovedMap[sub.id] || 0);
+    });
+
+    res.json(barGraph);
+  } catch (error) {
+    console.error('getSubCategoryProductGraph error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getSellerSubCategoryBarGraph = async (req, res) => {
+  try {
+    const subCategories = await SubCategories.findAll({
+      attributes: ['id', 'name'],
+      where: { is_delete: 0, status: 1 },
+      order: [['id', 'ASC']],
+      raw: true,
+    });
+
+    const counts = await SellerCategory.findAll({
+      attributes: [
+        'subcategory_id',
+        [fn('COUNT', literal('DISTINCT user_id')), 'count'],
+      ],
+      where: {
+        subcategory_id: { [require('sequelize').Op.ne]: null },
+      },
+      group: ['subcategory_id'],
+      raw: true,
+    });
+
+    const countMap = {};
+    counts.forEach(c => {
+      countMap[c.subcategory_id] = Number(c.count);
+    });
+
+    res.json({
+      labels: subCategories.map(s => s.name),
+      datasets: [
+        {
+          label: 'Sellers',
+          data: subCategories.map(s => countMap[s.id] || 0),
+          backgroundColor: '#6610f2',
+        },
+      ],
     });
   } catch (err) {
     console.error(err);

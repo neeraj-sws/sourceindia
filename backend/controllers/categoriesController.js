@@ -12,6 +12,7 @@ const ItemSubCategory = require('../models/ItemSubCategory');
 const UploadImage = require('../models/UploadImage');
 const Products = require('../models/Products');
 const CompanyInfo = require('../models/CompanyInfo');
+const SellerCategory = require('../models/SellerCategory');
 const getMulterUpload = require('../utils/upload');
 
 exports.createCategories = async (req, res) => {
@@ -52,6 +53,26 @@ exports.getAllCategories = async (req, res) => {
     if (typeof status !== 'undefined') {
       whereCondition.status = parseInt(status);
     }
+    if (req.query.excludeSellerCategories === 'true') {
+  whereCondition.id = {
+    [Op.notIn]: literal(`(
+      SELECT DISTINCT category_id
+      FROM seller_categories
+      WHERE category_id IS NOT NULL
+    )`)
+  };
+}
+
+// ✅ NEW: exclude product categories
+if (req.query.excludeProductCategories === 'true') {
+  whereCondition.id = {
+    [Op.notIn]: literal(`(
+      SELECT DISTINCT category
+      FROM products
+      WHERE category IS NOT NULL
+    )`)
+  };
+}
 
     const categories = await Categories.findAll({
       order: [['id', 'ASC']], // ✅ fixed
@@ -439,6 +460,24 @@ exports.getAllCategoriesServerSide = async (req, res) => {
     const where = { is_delete: 0 };
     if (req.query.getDeleted === 'true') {
       where.is_delete = 1;
+    }
+    if (req.query.excludeSellerCategories === 'true') {
+      where.id = {
+        [Op.notIn]: literal(`(
+          SELECT DISTINCT category_id
+          FROM seller_categories
+          WHERE category_id IS NOT NULL
+        )`)
+      };
+    }
+    if (req.query.excludeProductCategories === 'true') {
+      where.id = {
+        [Op.notIn]: literal(`(
+          SELECT DISTINCT category
+          FROM products
+          WHERE category IS NOT NULL
+        )`)
+      };
     }
     const searchWhere = { ...where };
     if (search) {
@@ -1083,6 +1122,115 @@ exports.getItem = async (req, res) => {
     });
   } catch (err) {
     console.error("getItemCategory error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getCategoryProductGraph = async (req, res) => {
+  try {
+    // Fetch active categories
+    const categories = await Categories.findAll({
+      attributes: ['id', 'name'],
+      where: { is_delete: 0, status: 1 },
+      order: [['id', 'ASC']],
+      raw: true,
+    });
+
+    if (!categories.length) return res.json({ labels: [], datasets: [] });
+
+    // Product counts for approved products
+    const approvedCounts = await Products.findAll({
+      attributes: ['category', [fn('COUNT', col('product_id')), 'count']],
+      where: { is_delete: 0, is_approve: 1 },
+      group: ['category'],
+      raw: true,
+    });
+
+    // Product counts for unapproved products
+    const unapprovedCounts = await Products.findAll({
+      attributes: ['category', [fn('COUNT', col('product_id')), 'count']],
+      where: { is_delete: 0, is_approve: 0 },
+      group: ['category'],
+      raw: true,
+    });
+
+    // Map counts
+    const approvedMap = {};
+    approvedCounts.forEach(p => {
+      approvedMap[p.category] = Number(p.count);
+    });
+
+    const unapprovedMap = {};
+    unapprovedCounts.forEach(p => {
+      unapprovedMap[p.category] = Number(p.count);
+    });
+
+    // Prepare bar graph data
+    const barGraph = {
+      labels: [],
+      datasets: [
+        {
+          label: 'Approved',
+          data: [],
+          backgroundColor: '#4CAF50', // Green
+        },
+        {
+          label: 'Unapproved',
+          data: [],
+          backgroundColor: '#FF5722', // Orange
+        },
+      ],
+    };
+
+    categories.forEach(cat => {
+      barGraph.labels.push(cat.name);
+      barGraph.datasets[0].data.push(approvedMap[cat.id] || 0);
+      barGraph.datasets[1].data.push(unapprovedMap[cat.id] || 0);
+    });
+
+    res.json(barGraph);
+  } catch (error) {
+    console.error('getCategoryProductGraph error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getSellerCategoryBarGraph = async (req, res) => {
+  try {
+    const categories = await Categories.findAll({
+      attributes: ['id', 'name'],
+      where: { is_delete: 0, status: 1 },
+      order: [['id', 'ASC']],
+      raw: true,
+    });
+
+    // count DISTINCT users per category
+    const counts = await SellerCategory.findAll({
+      attributes: [
+        'category_id',
+        [fn('COUNT', literal('DISTINCT user_id')), 'count'],
+      ],
+      group: ['category_id'],
+      raw: true,
+    });
+
+    const countMap = {};
+    counts.forEach(c => {
+      countMap[c.category_id] = Number(c.count);
+    });
+
+    res.json({
+      labels: categories.map(c => c.name),
+      datasets: [
+        {
+          label: 'Sellers',
+          data: categories.map(c => countMap[c.id] || 0),
+          backgroundColor: '#0d6efd',
+        },
+      ],
+    });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };

@@ -12,6 +12,8 @@ router.post('/store-support-ticket-reply', ticketController.ticketReplystore);
 router.get('/count', ticketController.getTicketsCount);
 router.get('/', ticketController.getAllTickets);
 router.get('/server-side', ticketController.getAllTicketsServerSide);
+router.get("/:ticket_id/next", ticketController.getNextTicket);
+router.get("/id/:id/next", ticketController.getNextTicketById);
 router.get('/:id', ticketController.getTicketsById);
 router.put('/:id', ticketController.updateTickets);
 router.delete('/:id', ticketController.deleteTickets);

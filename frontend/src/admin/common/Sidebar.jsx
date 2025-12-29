@@ -217,6 +217,16 @@ const menuData = [
       { title: 'Privacy Policy', link: '/admin/privacy_policy' },
     ],
   },
+  {
+    title: 'Reports',
+    icon: 'bx bx-file-blank',
+    subMenu: [
+      { title: 'Seller Unused Categories', link: '/admin/seller_category_report' },
+      { title: 'Product Unused Categories', link: '/admin/product_category_report' },
+      { title: 'Seller Categories Graph', link: '/admin/seller_category_graph' },
+      { title: 'Product Categories Graph', link: '/admin/product_category_graph' },
+    ],
+  },
 ];
 
 const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {

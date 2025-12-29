@@ -53,7 +53,7 @@ const Item = () => {
   }
 
   return (
-    <section className="categorySection py-4 my-4">
+    <section className="categorySection py-md-4 pt-2 my-4">
       <div className="container">
         {/* 🟢 Subcategory Heading */}
         <h4 className="fw-semibold mb-4  pb-2 text-blue">
@@ -74,7 +74,7 @@ const Item = () => {
                   <div className="row g-3">
                     {(cat.items || []).length > 0 ? (
                       cat.items.map((item) => (
-                        <div key={item.id} className="col-6 col-sm-4 col-md-3 col-lg-2 text-center">
+                        <div key={item.id} className="col-6 col-sm-4 col-md-3 col-lg-2 text-center itemcolblock">
                           <div className="card border-0 shadow-sm h-100">
                             <div className="card-body p-2">
                               <img
