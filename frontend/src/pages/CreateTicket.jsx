@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
 import { useNavigate } from "react-router-dom";
+import UseAuth from '../sections/UseAuth';
 
 const CreateTicket = () => {
   const { showNotification } = useAlert();
@@ -22,6 +23,22 @@ const CreateTicket = () => {
     message: "",
     attachment: null,
   });
+  const { user } = UseAuth();
+
+  useEffect(() => {
+  if (user) {
+    setFormData((prev) => ({
+      ...prev,
+      first_name: user.fname || "",
+      last_name: user.lname || "",
+      phone: user.mobile || "",
+    }));
+
+    if (user.email) {
+      setEmail(user.email);
+    }
+  }
+}, [user]);
 
   // ✅ Handle OTP send/verify
   const handleOtpSubmit = async (e) => {
@@ -33,7 +50,8 @@ const CreateTicket = () => {
 
       if (!showOtpInput) {
         // Step 1: Send OTP
-        response = await axios.post(`${API_BASE_URL}/tickets/send-otp`, { email });
+        response = await axios.post(`${API_BASE_URL}/tickets/send-otp`, { email, user_id: user ? user.id : 0, 
+          created_by: user ? user.is_seller === 1 ? "Seller" : "Buyer" : "Guest" });
       } else {
         // Step 2: Verify OTP
         response = await axios.post(`${API_BASE_URL}/tickets/verify-otp`, { email, otp });
@@ -79,10 +97,14 @@ const CreateTicket = () => {
       Object.entries(formData).forEach(([key, value]) => form.append(key, value));
       form.append("email", email);
       form.append("ticket_id", ticketId);
-
-      const response = await axios.post(`${API_BASE_URL}/tickets/store-ticket`, form, {
-
-      });
+      if (user) {
+        form.append("user_id", user.id);
+        form.append("added_by", user.is_seller === 1 ? "Seller" : "Buyer");
+      } else {
+        form.append("user_id", 0);
+        form.append("added_by", "Guest");
+      }
+      const response = await axios.post(`${API_BASE_URL}/tickets/store-ticket`, form);
 
       showNotification(response.data.message || "Ticket created successfully", "success");
       const { ticket_id, token } = response.data;

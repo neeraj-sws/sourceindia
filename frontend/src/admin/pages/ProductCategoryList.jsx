@@ -14,8 +14,9 @@ import { DateRangePicker } from 'react-date-range';
 import 'react-date-range/dist/styles.css'; 
 import 'react-date-range/dist/theme/default.css'; 
 import { format } from 'date-fns';
+import { formatDateTime } from '../../utils/formatDate';
 
-const ProductCategoryList = ({ getDeleted }) => {
+const ProductCategoryList = ({ getDeleted, excludeSellerCategories, excludeProductCategories }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -70,7 +71,11 @@ const ProductCategoryList = ({ getDeleted }) => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/categories/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false', dateRange, startDate, endDate },
+        params: { page, limit, search, sortBy, sort: sortDirection, 
+          getDeleted: getDeleted ? 'true' : 'false', 
+          excludeSellerCategories: excludeSellerCategories ? 'true' : 'false', 
+          excludeProductCategories: excludeProductCategories ? 'true' : 'false', 
+          dateRange, startDate, endDate },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -82,7 +87,8 @@ const ProductCategoryList = ({ getDeleted }) => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, excludeSellerCategories, excludeProductCategories, 
+    dateRange, startDate, endDate]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -252,11 +258,24 @@ const ProductCategoryList = ({ getDeleted }) => {
   };
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/categories`).then((res) => {
-      const filtered = res.data.filter((c) => c.is_delete=== (getDeleted ? 1 : 0));
-      setCategoryData(filtered);
-    });
-  }, []);
+  const fetchCategoryData = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/categories`, {
+        params: {
+          is_delete: getDeleted ? 1 : 0,
+          excludeSellerCategories: excludeSellerCategories ? 'true' : 'false',
+          excludeProductCategories: excludeProductCategories ? 'true' : 'false',
+        },
+      });
+
+      setCategoryData(res.data);
+    } catch (error) {
+      console.error("Error fetching category export data:", error);
+    }
+  };
+
+  fetchCategoryData();
+}, [getDeleted, excludeSellerCategories, excludeProductCategories]);
 
   const handleDownload = () => {
     if (excelExportRef.current) {
@@ -314,8 +333,9 @@ const ProductCategoryList = ({ getDeleted }) => {
 
   return (
     <>
-      <div className="page-wrapper">
+      <div className={excludeSellerCategories || excludeProductCategories ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
+          {!excludeSellerCategories && !excludeProductCategories &&
           <Breadcrumb mainhead="Category" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Category" : "Category"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Category</>)} add_link="#" onClick={() => openForm()}
           actions={
@@ -338,8 +358,9 @@ const ProductCategoryList = ({ getDeleted }) => {
             </>
           }
           />
+        }
           <div className="row">
-            {!getDeleted && (
+            {!getDeleted && !excludeSellerCategories && !excludeProductCategories && (
             <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
@@ -430,7 +451,7 @@ const ProductCategoryList = ({ getDeleted }) => {
               </div>
             </div>
             )}
-            <div className={!getDeleted ? "col-md-8" : "col-md-12"}>
+            <div className={!getDeleted && !excludeSellerCategories && !excludeProductCategories ? "col-md-8" : "col-md-12"}>
               
                   {getDeleted && (
                     <>
@@ -498,6 +519,16 @@ const ProductCategoryList = ({ getDeleted }) => {
                     </div>
                     </>
                   )}
+                  {(excludeSellerCategories || excludeProductCategories) && (
+                  <div className="card mb-3">
+                <div className="card-body">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <h5 className="card-title mb-3">Unused Category List of {excludeSellerCategories ? "Seller" : "Product"}</h5>
+                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                    </div>
+                    </div>
+                    </div>
+                  )}
                   <div className="card">
                 <div className="card-body">
                   <DataTable
@@ -506,10 +537,12 @@ const ProductCategoryList = ({ getDeleted }) => {
                     { key: "id", label: "S.No.", sortable: true },
                     { key: "image", label: "Image", sortable: false },
                     { key: "name", label: "Name", sortable: true },
-                    ...(!getDeleted ? [{ key: "product_count", label: "Product", sortable: true }]:[]),
-                    { key: "status", label: "Status", sortable: false },
-                    { key: "category_status", label: "Top", sortable: false },
-                    { key: "action", label: "Action", sortable: false },
+                    ...(!getDeleted && !excludeSellerCategories && !excludeProductCategories ? [{ key: "product_count", label: "Product", sortable: true }]:[]),
+                    ...(!excludeSellerCategories && !excludeProductCategories ? [{ key: "status", label: "Status", sortable: false }]:[]),
+                    ...(!excludeSellerCategories && !excludeProductCategories ? [{ key: "category_status", label: "Top", sortable: false }]:[]),
+                    ...(!excludeSellerCategories && !excludeProductCategories ? [{ key: "action", label: "Action", sortable: false }]:[]),
+                    ...(excludeSellerCategories || excludeProductCategories ? [{ key: "created_at", label: "Created", sortable: true }]:[]),
+                    ...(excludeSellerCategories || excludeProductCategories ? [{ key: "updated_at", label: "Last Update", sortable: true }]:[]),
                   ]}
                   data={data}
                   loading={loading}
@@ -540,7 +573,9 @@ const ProductCategoryList = ({ getDeleted }) => {
                         showFallback={true}
                       /></td>
                       <td>{row.name}</td>
-                      {!getDeleted && (<td>{row.product_count}</td>)}
+                      {!getDeleted && !excludeSellerCategories && !excludeProductCategories && (<td>{row.product_count}</td>)}
+                      {!excludeSellerCategories && !excludeProductCategories && (
+                        <>
                       <td>
                         {!getDeleted ? (
                         <div className="form-check form-switch">
@@ -620,6 +655,14 @@ const ProductCategoryList = ({ getDeleted }) => {
                           </ul>
                         </div>
                       </td>
+                      </>
+                      )}
+                      {(excludeSellerCategories || excludeProductCategories) && (
+                        <>
+                      <td>{formatDateTime(row.created_at)}</td>
+                                          <td>{formatDateTime(row.updated_at)}</td>
+                                          </>
+                      )}
                     </tr>
                   )}
                   />
@@ -642,7 +685,10 @@ const ProductCategoryList = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName={getDeleted ? "Category Remove Export.xlsx" : "Category.xlsx"}
+        fileName={getDeleted ? "Category Remove Export.xlsx" : 
+          excludeSellerCategories ? "Unused Seller Category.xlsx" : 
+          excludeProductCategories ? "Unused Product Category.xlsx" : 
+          "Category.xlsx"}
         data={categoryData}
         columns={[
           { label: "Name", key: "name" },

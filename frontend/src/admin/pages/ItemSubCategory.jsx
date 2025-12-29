@@ -12,8 +12,9 @@ const initialForm = { id: null, name: "", category_id: "", subcategory_id: "", i
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
+import { formatDateTime } from '../../utils/formatDate';
 
-const ItemSubCategory = () => {
+const ItemSubCategory = ({excludeItemSubCategories}) => {
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -61,7 +62,7 @@ const ItemSubCategory = () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/item_sub_category/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection },
+        params: { page, limit, search, sortBy, sort: sortDirection, excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false' },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -73,7 +74,7 @@ const ItemSubCategory = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, excludeItemSubCategories]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -388,7 +389,12 @@ const ItemSubCategory = () => {
   };
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/item_sub_category`).then((res) => {
+    // axios.get(`${API_BASE_URL}/item_sub_category`).then((res) => {
+    //   setItemSubCategoryData(res.data);
+    // });
+    axios.get(`${API_BASE_URL}/item_sub_category`, {
+      params: { excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false' }
+    }).then((res) => {
       setItemSubCategoryData(res.data);
     });
   }, []);
@@ -401,8 +407,9 @@ const ItemSubCategory = () => {
 
   return (
     <>
-      <div className="page-wrapper">
+      <div className={excludeItemSubCategories ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
+          {!excludeItemSubCategories &&
           <Breadcrumb mainhead="Item Sub Category" maincount={totalRecords} page="Settings" title="Item Sub Category" add_button={<><i className="bx bxs-plus-square me-1" /> Add Item Sub Category</>} add_link="#" onClick={() => openForm()}
           actions={
             <>
@@ -413,7 +420,9 @@ const ItemSubCategory = () => {
             </>
           }
           />
+        }
           <div className="row">
+            {!excludeItemSubCategories && (
             <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
@@ -547,7 +556,18 @@ const ItemSubCategory = () => {
                 </div>
               </div>
             </div>
-            <div className="col-md-8">
+            )}
+            <div className={!excludeItemSubCategories ? "col-md-8" : "col-md-12"}>
+              {excludeItemSubCategories && (
+                  <div className="card mb-3">
+                <div className="card-body">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <h5 className="card-title mb-3">Unused Item Sub Category List of Product</h5>
+                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                    </div>
+                    </div>
+                    </div>
+                  )}
               <div className="card">
                 <div className="card-body">
                   <DataTable
@@ -557,8 +577,10 @@ const ItemSubCategory = () => {
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
                       { key: "itemcategory_name", label: "Item Category", sortable: true },
-                      { key: "status", label: "Status", sortable: false },
-                      { key: "action", label: "Action", sortable: false },
+                      ...(!excludeItemSubCategories ? [{ key: "status", label: "Status", sortable: false }]:[]),
+                      ...(!excludeItemSubCategories ? [{ key: "action", label: "Action", sortable: false }]:[]),
+                      ...(excludeItemSubCategories ? [{ key: "created_at", label: "Created", sortable: true }]:[]),
+                      ...(excludeItemSubCategories ? [{ key: "updated_at", label: "Last Update", sortable: true }]:[]),
                     ]}
                     data={data}
                     loading={loading}
@@ -588,6 +610,8 @@ const ItemSubCategory = () => {
                         /></td>
                         <td>{row.name}</td>
                         <td>{row.itemcategory_name}</td>
+                        {!excludeItemSubCategories && (
+                          <>
                         <td>
                           <div className="form-check form-switch">
                             <input
@@ -619,6 +643,14 @@ const ItemSubCategory = () => {
                             </ul>
                           </div>
                         </td>
+                        </>
+                                                )}
+                                                {excludeItemSubCategories && (
+                                                                                                <>
+                                                                                              <td>{formatDateTime(row.created_at)}</td>
+                                                                                                                  <td>{formatDateTime(row.updated_at)}</td>
+                                                                                                                  </>
+                                                                                              )}
                       </tr>
                     )}
                   />
@@ -641,7 +673,7 @@ const ItemSubCategory = () => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Item SubCategory Export.xlsx"
+        fileName={excludeItemSubCategories ? "Unused Item SubCategory.xlsx" : "Item SubCategory Export.xlsx"}
         data={itemSubCategoryData}
         columns={[
           { label: "Name", key: "name" },

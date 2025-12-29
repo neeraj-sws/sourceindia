@@ -12,8 +12,9 @@ const initialForm = { id: null, name: "", category_id: "", subcategory_id: "", s
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
+import { formatDateTime } from '../../utils/formatDate';
 
-const ItemCategory = () => {
+const ItemCategory = ({excludeItemCategories}) => {
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -45,7 +46,7 @@ const ItemCategory = () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/item_category/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection },
+        params: { page, limit, search, sortBy, sort: sortDirection, excludeItemCategories: excludeItemCategories ? 'true' : 'false' },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -57,7 +58,7 @@ const ItemCategory = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, excludeItemCategories]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -354,9 +355,14 @@ const ItemCategory = () => {
   };
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/item_category`).then((res) => {
-      setItemCategoryData(res.data);
-    });
+    // axios.get(`${API_BASE_URL}/item_category`).then((res) => {
+    //   setItemCategoryData(res.data);
+    // });
+    axios.get(`${API_BASE_URL}/item_category`, {
+  params: { excludeItemCategories: excludeItemCategories ? 'true' : 'false' }
+}).then((res) => {
+  setItemCategoryData(res.data);
+});
   }, []);
 
   const handleDownload = () => {
@@ -367,8 +373,9 @@ const ItemCategory = () => {
 
   return (
     <>
-      <div className="page-wrapper">
+      <div className={excludeItemCategories ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
+          {!excludeItemCategories &&
           <Breadcrumb mainhead="Item Category" maincount={totalRecords} page="Settings" title="Item Category" add_button={<><i className="bx bxs-plus-square me-1" /> Add Item Category</>} add_link="#" onClick={() => openForm()}
           actions={
             <>
@@ -379,7 +386,9 @@ const ItemCategory = () => {
             </>
           }
           />
+        }
           <div className="row">
+            {!excludeItemCategories && (
             <div className="col-md-4">
               <div className="card">
                 <div className="card-body">
@@ -493,7 +502,18 @@ const ItemCategory = () => {
                 </div>
               </div>
             </div>
-            <div className="col-md-8">
+            )}
+            <div className={!excludeItemCategories ? "col-md-8" : "col-md-12"}>
+              {excludeItemCategories && (
+                  <div className="card mb-3">
+                <div className="card-body">
+                  <div className="d-flex align-items-center justify-content-between">
+                    <h5 className="card-title mb-3">Unused Item Category List of Product</h5>
+                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                    </div>
+                    </div>
+                    </div>
+                  )}
               <div className="card">
                 <div className="card-body">
                   <DataTable
@@ -504,8 +524,10 @@ const ItemCategory = () => {
                       { key: "name", label: "Name", sortable: true },
                       { key: "category_name", label: "Category", sortable: true },
                       { key: "subcategory_name", label: "Sub Category", sortable: true },
-                      { key: "status", label: "Status", sortable: false },
-                      { key: "action", label: "Action", sortable: false },
+                      ...(!excludeItemCategories ? [{ key: "status", label: "Status", sortable: false }]:[]),
+                      ...(!excludeItemCategories ? [{ key: "action", label: "Action", sortable: false }]:[]),
+                      ...(excludeItemCategories ? [{ key: "created_at", label: "Created", sortable: true }]:[]),
+                      ...(excludeItemCategories ? [{ key: "updated_at", label: "Last Update", sortable: true }]:[]),
                     ]}
                     data={data}
                     loading={loading}
@@ -536,6 +558,8 @@ const ItemCategory = () => {
                         <td>{row.name}</td>
                         <td>{row.category_name}</td>
                         <td>{row.subcategory_name}</td>
+                        {!excludeItemCategories && (
+                          <>
                         <td>
                           <div className="form-check form-switch">
                             <input
@@ -567,6 +591,14 @@ const ItemCategory = () => {
                             </ul>
                           </div>
                         </td>
+                        </>
+                        )}
+                        {excludeItemCategories && (
+                                                                        <>
+                                                                      <td>{formatDateTime(row.created_at)}</td>
+                                                                                          <td>{formatDateTime(row.updated_at)}</td>
+                                                                                          </>
+                                                                      )}
                       </tr>
                     )}
                   />
@@ -589,7 +621,7 @@ const ItemCategory = () => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName="Item Category Export.xlsx"
+        fileName={excludeItemCategories ? "Unused Item Category.xlsx" : "Item Category Export.xlsx"}
         data={itemCategoryData}
         columns={[
           { label: "Name", key: "name" },

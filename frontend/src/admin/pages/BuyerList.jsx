@@ -736,7 +736,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                               id={`option_${item.id}`}
                             />
                             <label for={`option_${item.id}`} className="option_mail  d-flex gap-2 align-items-center border p-2 rounded w-100 border-dark justify-content-center">
-                              <i class="bx bx-radio-circle"></i>
+                              <i className="bx bx-radio-circle"></i>
                               <span className="text-capitalize">{item.title}</span>
                             </label>
                           </div>

@@ -6,6 +6,7 @@ router.post('/', itemSubCategoryController.createItemSubCategory);
 router.get('/count', itemSubCategoryController.getItemSubCategoryCount);
 router.get('/', itemSubCategoryController.getAllItemSubCategory);
 router.get('/server-side', itemSubCategoryController.getAllItemSubCategoryServerSide);
+router.get('/product-bar-graph', itemSubCategoryController.getItemSubCategoryBarGraph);
 router.delete('/delete-selected', itemSubCategoryController.deleteSelectedItemSubCategory);
 router.get(
   '/by-category-subcategory-itemcategory/:category_id/:subcategory_id/:item_category_id',

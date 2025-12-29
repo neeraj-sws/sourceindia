@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import API_BASE_URL, { ROOT_URL } from '../config'; // Assuming you have ROOT_URL for images
-import { useAlert } from "../context/AlertContext";
-import { useParams, useLocation, Link } from "react-router-dom";
+import API_BASE_URL, { ROOT_URL } from '../../config'; // Assuming you have ROOT_URL for images
+import { useAlert } from "../../context/AlertContext";
+import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
 import JoditEditor from "jodit-react";
-import { useNavigate } from "react-router-dom";
-import UseAuth from '../sections/UseAuth';
+import TicketModals from "./modal/TicketModals";
+import Breadcrumb from "../common/Breadcrumb";
 
 const TicketView = () => {
   const { showNotification } = useAlert();
-  const { number } = useParams(); // ticket_id from route like /support-ticket/track/:number
+  const { ticketId } = useParams();
   const location = useLocation();
-
+  const navigate = useNavigate();
   const [ticketData, setTicketData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formloading, setFormLoading] = useState(false);
@@ -23,12 +23,17 @@ const TicketView = () => {
   const queryParams = new URLSearchParams(location.search);
   const token = queryParams.get("token");
   const [nextTicket, setNextTicket] = useState(null);
-  const { user } = UseAuth();
+  const [showStatusModal, setShowStatusModal] = useState(false);
+const [statusToggleInfo, setStatusToggleInfo] = useState({
+  id: null,
+  newStatus: null, // 2 = resolve, 3 = cancel
+});
+const [statusLoading, setStatusLoading] = useState(false);
 
   useEffect(() => {
     const fetchTicket = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/tickets/support-ticket/track/${number}?token=${token}`);
+        const res = await axios.get(`${API_BASE_URL}/tickets/${ticketId}`);
 
         setTicketData(res.data);
       } catch (error) {
@@ -41,22 +46,16 @@ const TicketView = () => {
       }
     };
 
-    if (number && token) fetchTicket();
-  }, [number, token]);
+    if (ticketId) fetchTicket();
+  }, [ticketId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormLoading(true);
     const formData = new FormData();
-    formData.append("id", number);
+    formData.append("id", ticket.ticket_id);
     formData.append("message", message);
-    if (user) {
-      formData.append("user_id", user.id);
-      formData.append("added_by", user.is_seller === 1 ? "Seller" : "Buyer");
-    } else {
-      formData.append("user_id", 0);
-      formData.append("added_by", "Guest");
-    }
+    formData.append("added_by", "Admin");
     if (attachment) formData.append("attachment", attachment);
     formData.append("type", "reply");
 
@@ -69,7 +68,7 @@ const TicketView = () => {
       setAttachment(null);
       setShowButton(false);
       setFormLoading(false);
-      const updatedRes = await axios.get(`${API_BASE_URL}/tickets/support-ticket/track/${number}?token=${token}`);
+      const updatedRes = await axios.get(`${API_BASE_URL}/tickets/${ticketId}`);
       setTicketData(updatedRes.data);
     } catch (error) {
       setFormLoading(false);
@@ -80,15 +79,15 @@ const TicketView = () => {
   useEffect(() => {
   const fetchNextTicket = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/tickets/${number}/next`);
+      const res = await axios.get(`${API_BASE_URL}/tickets/id/${ticketId}/next`);
       setNextTicket(res.data);
     } catch (error) {
       console.error("Error fetching next ticket:", error);
     }
   };
 
-  if (number) fetchNextTicket();
-}, [number]);
+  if (ticketId) fetchNextTicket();
+}, [ticketId]);
 
   if (loading) {
     return (
@@ -110,19 +109,63 @@ const TicketView = () => {
 
   const { ticket, replies, lastReply } = ticketData;
 
-  return (
-    <section className="my-5">
-      <div className="container">
-        {/* Header */}
-        <div className="card mb-5 commonHead border shodow-none">
-          <div className="card-body py-5 d-flex align-items-center justify-content-center">
-            <div className="firstHead text-center">
-              <h1 className="mb-0 text-white">{ticket.title} - {ticket.id}</h1>
-              <p className="text-white mt-2 mb-0">{ticket.ticket_id}</p>
-            </div>
-          </div>
-        </div>
+const handleStatusConfirm = async () => {
+  const { id, newStatus } = statusToggleInfo;
 
+  const statusMessage = newStatus === 2 ? "Ticket has been resolved successfully." : "Ticket has been cancelled.";
+      
+setStatusLoading(true);
+  try {
+    // 1. Send system reply
+    const formData = new FormData();
+    formData.append("id", ticket.ticket_id);
+    formData.append("message", statusMessage);
+    formData.append("added_by", "Admin");
+    formData.append("type", "reply");
+
+    const replyRes = await axios.post(
+      `${API_BASE_URL}/tickets/store-support-ticket-reply`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    // 2. Update ticket status
+    await axios.patch(`${API_BASE_URL}/tickets/${id}/status`, { status: newStatus });
+
+    // 3. Update state locally and prepend the system reply
+    setTicketData(prev => ({
+      ...prev,
+      ticket: { ...prev.ticket, status: newStatus },
+      replies: [
+        {
+          id: replyRes.data.reply_id || new Date().getTime(), // fallback id
+          description: statusMessage,
+          added_by: "Admin",
+          sender_type: "Admin",
+          created_at: new Date().toISOString()
+        },
+        ...prev.replies
+      ]
+    }));
+
+    setShowStatusModal(false);
+    showNotification("Ticket status updated successfully.", "success");
+
+  } catch (error) {
+    showNotification(
+      error.response?.data?.message || "Failed to update ticket status",
+      "error"
+    );
+  } finally {
+    setStatusLoading(false); // STOP LOADER
+  }
+};
+
+  return (
+    <>
+    <div className="page-wrapper">
+        <div className="page-content">
+          <Breadcrumb mainhead="Tickets" page="Tickets" title={ticket.ticket_id} />
         <div className="row">
           {/* Ticket Information */}
           <div className="col-lg-4">
@@ -180,11 +223,36 @@ const TicketView = () => {
                     </p>
                   </div>
                 </div>
+                {(ticket.status==0 || ticket.status==1) && (
+                <div className="border-bottom mb-3 pb-3 mt-3">
+                  <h5>Issue Resolved/Cancel</h5>
+                  <div className="d-flex gap-2">
+                    <button
+  className="btn btn-primary"
+  onClick={() => {
+    setStatusToggleInfo({ id: ticketId, newStatus: 2 });
+    setShowStatusModal(true);
+  }}
+>
+  Resolve
+</button>
+<button
+  className="btn btn-danger"
+  onClick={() => {
+    setStatusToggleInfo({ id: ticketId, newStatus: 3 });
+    setShowStatusModal(true);
+  }}
+>
+  Cancel
+</button>
+                  </div>
+                </div>
+                )}
                 {nextTicket && nextTicket.id != null && (
-                  <div>
+                  <div className="border-bottom mb-3 pb-3 mt-3">
                     <h5>My Previous Tickets</h5>
                     <Link 
-                      to={`/ticket/view/${nextTicket.next}?token=${nextTicket.token}`}
+                      to={`/admin/ticket/view/${nextTicket.id}`}
                       className="text-decoration-none"
                     >
                       {nextTicket.next}
@@ -306,12 +374,18 @@ const TicketView = () => {
                 </div>
               </div>
             </div>
-
-
           </div>
         </div>
       </div>
-    </section>
+    </div>
+    <TicketModals
+  showStatusModal={showStatusModal}
+  statusToggleInfo={statusToggleInfo}
+  closeStatusModal={() => setShowStatusModal(false)}
+  handleStatusConfirm={handleStatusConfirm}
+  statusLoading={statusLoading}
+/>
+</>
   );
 };
 

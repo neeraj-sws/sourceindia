@@ -1,4 +1,4 @@
-const { Op, fn, col } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
 const validator = require('validator');
@@ -50,28 +50,51 @@ exports.createItems = async (req, res) => {
 
 exports.getAllItems = async (req, res) => {
   try {
-    const items = await Items.findAll({ order: [['id', 'ASC']],
+    const where = {};
+
+    // Exclude items linked to products
+    if (req.query.excludeItem === 'true') {
+      where.id = {
+        [Op.notIn]: literal(`(
+          SELECT DISTINCT item_id
+          FROM products
+          WHERE item_id IS NOT NULL
+        )`)
+      };
+    }
+
+    const items = await Items.findAll({
+      where,
+      order: [['id', 'ASC']],
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
         { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
         { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
-      ], });
-    const modifiedItems = items.map(item => {
-      const itemsData = item.toJSON();
-      itemsData.getStatus = itemsData.status === 1 ? 'Active' : 'Inactive';
-      itemsData.category_name = itemsData.Categories?.name || null;
-      itemsData.subcategory_name = itemsData.SubCategories?.name || null;
-      itemsData.itemcategory_name = itemsData.ItemCategory?.name || null;
-      itemsData.item_subcategory_name = itemsData.ItemSubCategory?.name || null;
-      delete itemsData.Categories;
-      delete itemsData.SubCategories;
-      delete itemsData.ItemCategory;
-      delete itemsData.ItemSubCategory;
-      return itemsData;
+      ],
     });
+
+    // Flatten nested relations and map status
+    const modifiedItems = items.map(item => {
+      const data = item.toJSON();
+      return {
+        ...data,
+        getStatus: data.status === 1 ? 'Active' : 'Inactive',
+        category_name: data.Categories?.name || null,
+        subcategory_name: data.SubCategories?.name || null,
+        itemcategory_name: data.ItemCategory?.name || null,
+        item_subcategory_name: data.ItemSubCategory?.name || null,
+        Categories: undefined,
+        SubCategories: undefined,
+        ItemCategory: undefined,
+        ItemSubCategory: undefined,
+      };
+    });
+
     res.json(modifiedItems);
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -368,6 +391,15 @@ exports.getAllItemsServerSide = async (req, res) => {
       order = [['id', 'DESC']];
     }
     const where = {};
+    if (req.query.excludeItem === 'true') {
+      where.id = {
+        [Op.notIn]: literal(`(
+          SELECT DISTINCT item_id
+          FROM products
+          WHERE item_id IS NOT NULL
+        )`)
+      };
+    }
     if (search) {
       where[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
@@ -423,6 +455,54 @@ exports.getItemsCount = async (req, res) => {
     res.json({ total });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getItemBarGraph = async (req, res) => {
+  try {
+    const items = await Items.findAll({
+      attributes: ['id', 'name'],
+      where: { status: 1 },
+      order: [['id', 'ASC']],
+      raw: true,
+    });
+
+    const counts = await Products.findAll({
+      attributes: [
+        'item_id',
+        'is_approve',
+        [fn('COUNT', col('product_id')), 'count'],
+      ],
+      where: { is_delete: 0 },
+      group: ['item_id', 'is_approve'],
+      raw: true,
+    });
+
+    const approvedMap = {};
+    const unapprovedMap = {};
+
+    counts.forEach(r => {
+      if (r.is_approve === 1) approvedMap[r.item_id] = Number(r.count);
+      else unapprovedMap[r.item_id] = Number(r.count);
+    });
+
+    res.json({
+      labels: items.map(i => i.name),
+      datasets: [
+        {
+          label: 'Approved',
+          backgroundColor: '#4CAF50',
+          data: items.map(i => approvedMap[i.id] || 0),
+        },
+        {
+          label: 'Unapproved',
+          backgroundColor: '#FF5722',
+          data: items.map(i => unapprovedMap[i.id] || 0),
+        },
+      ],
+    });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
