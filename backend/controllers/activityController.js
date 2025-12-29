@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const moment = require('moment');
 const Activity = require('../models/Activity');
 const CoreActivity = require('../models/CoreActivity');
@@ -69,18 +69,37 @@ exports.getActivityById = async (req, res) => {
 exports.getActivityByCoreActivity = async (req, res) => {
   try {
     const { coreactivity } = req.params;
+
     if (!coreactivity) {
       return res.status(400).json({ error: 'coreactivity is required' });
     }
+
     const activity = await Activity.findAll({
-      where: { coreactivity },
+      where: {
+        coreactivity: coreactivity, // or coreactivity_id if that's the column
+      },
+      attributes: {
+        include: [
+          [
+            Sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM company_info AS ci
+              WHERE ci.activity = Activity.activity_id
+            )`),
+            'company_count',
+          ],
+        ],
+      },
       order: [['id', 'ASC']],
     });
+
     res.json(activity);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 exports.updateActivity = async (req, res) => {
   try {
@@ -302,7 +321,7 @@ exports.getAllActivitiesServerSide = async (req, res) => {
 
 exports.getActivityCount = async (req, res) => {
   try {
-    const total = await Activity.count({where: { is_delete: 0 }});
+    const total = await Activity.count({ where: { is_delete: 0 } });
     res.json({ total });
   } catch (err) {
     console.error(err);

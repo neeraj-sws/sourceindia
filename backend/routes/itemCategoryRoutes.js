@@ -5,11 +5,16 @@ const itemCategoryController = require('../controllers/itemCategoryController');
 router.post('/', itemCategoryController.createItemCategory);
 router.get('/count', itemCategoryController.getItemCategoryCount);
 router.get('/', itemCategoryController.getAllItemCategory);
+router.get('/getitem', itemCategoryController.getAllItemCategories);
 router.get('/server-side', itemCategoryController.getAllItemCategoryServerSide);
 router.delete('/delete-selected', itemCategoryController.deleteSelectedItemCategory);
 router.get(
   '/by-category-subcategory/:category_id/:subcategory_id',
   itemCategoryController.getItemCategoriesByCategoryAndSubCategory
+);
+router.get(
+  '/getitemtype/:category_id',
+  itemCategoryController.getItemCategoryByItemType
 );
 router.post(
   '/by-selected-category-subcategory',
