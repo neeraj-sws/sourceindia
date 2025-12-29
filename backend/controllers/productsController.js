@@ -20,6 +20,7 @@ const Items = require('../models/Items');
 const ProductServices = require('../models/ProductServices');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
+const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
 const parseCsv2 = (value) => value.split(',').map(item => item.trim());
 
@@ -264,6 +265,9 @@ exports.getProductsById = async (req, res) => {
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+        { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
+        { model: Items, as: 'Items', attributes: ['id', 'name'] },
         { model: Color, as: 'Color', attributes: ['id', 'title'] },
         {
           model: CompanyInfo,
@@ -358,6 +362,9 @@ exports.getProductsById = async (req, res) => {
       ...productData,
       category_name: productData.Categories?.name || null,
       sub_category_name: productData.SubCategories?.name || null,
+      item_category_name: productData.ItemCategory?.name || null,
+      item_subcategory_name: productData.ItemSubCategory?.name || null,
+      item_name: productData.Items?.name || null,
       color_name: productData.Color?.title || null,
       company_name: productData.company_info?.organization_name || null,
       company_logo: productData.company_info?.companyLogo?.file || null,
@@ -874,6 +881,49 @@ exports.getAllCompanyInfo = async (req, res) => {
     const categoryMap = Object.fromEntries(categoriesList.map(c => [c.id, c.name]));
     const subCategoryMap = Object.fromEntries(subCategoriesList.map(s => [s.id, s.name]));
 
+
+    // item type
+    const buyerItemCates = await BuyerSourcingInterests.findAll({
+      attributes: ['user_id', 'item_category_id', 'item_subcategory_id'],
+      raw: true
+    });
+
+    const userBuyerMap = {};
+    buyerItemCates.forEach(sc => {
+      if (!userBuyerMap[sc.user_id]) userBuyerMap[sc.user_id] = [];
+      userBuyerMap[sc.user_id].push(sc);
+    });
+
+    const allItemCategoryIds = new Set();
+    const allItemSubCategoryIds = new Set();
+
+    buyerItemCates.forEach(sc => {
+      if (sc.item_category_id) allItemCategoryIds.add(sc.item_category_id);
+      if (sc.item_subcategory_id) allItemSubCategoryIds.add(sc.item_subcategory_id);
+    });
+
+    // ✅ Fetch category/subcategory names
+    const [itemCategoriesList, itemsubCategoriesList] = await Promise.all([
+      ItemCategory.findAll({
+        where: { id: [...allItemCategoryIds] },
+        attributes: ['id', 'name'],
+        raw: true
+      }),
+      ItemSubCategory.findAll({
+        where: { id: [...allItemSubCategoryIds] },
+        attributes: ['id', 'name'],
+        raw: true
+      })
+    ]);
+
+    const itemCategoryMap = Object.fromEntries(itemCategoriesList.map(c => [c.id, c.name]));
+    const itemSubCategoryMap = Object.fromEntries(itemsubCategoriesList.map(s => [s.id, s.name]));
+
+
+
+
+
+
     // ✅ Final data formatting
     const modified = companies.map(c => {
       const cd = c.toJSON();
@@ -895,8 +945,25 @@ exports.getAllCompanyInfo = async (req, res) => {
         });
       });
 
+
+      const itemCatSet = new Set();
+      const itemSubSet = new Set();
+
+      userIds.forEach(uid => {
+        const itementries = userBuyerMap[uid] || [];
+        itementries.forEach(e => {
+          if (e.item_category_id) itemCatSet.add(e.item_category_id);
+          if (e.item_subcategory_id) itemSubSet.add(e.item_subcategory_id);
+        });
+      });
+
+
+
       const categoryNames = [...catSet].map(id => categoryMap[id]).filter(Boolean).join(', ');
       const subCategoryNames = [...subSet].map(id => subCategoryMap[id]).filter(Boolean).join(', ');
+
+      const itemCategoryNames = [...itemCatSet].map(id => itemCategoryMap[id]).filter(Boolean).join(', ');
+      const itemSubCategoryNames = [...itemSubSet].map(id => itemSubCategoryMap[id]).filter(Boolean).join(', ');
 
       delete cd.companyLogo;
       delete cd.CoreActivity;
@@ -910,6 +977,8 @@ exports.getAllCompanyInfo = async (req, res) => {
         product_count: countMap[cd.id] || 0,
         category_name: categoryNames,
         sub_category_name: subCategoryNames,
+        item_category_name: itemCategoryNames,
+        item_subcategory_name: itemSubCategoryNames,
         products: productMap[cd.id] || [],
         user: companyUser // ✅ single user info
       };
@@ -1001,6 +1070,45 @@ exports.getCompanyInfoById = async (req, res) => {
       }
     }
 
+
+    let itemcategoryNames = [];
+    let itemsubCategoryNames = [];
+    // console.log(user);
+    if (user) {
+      const buyerCats = await BuyerSourcingInterests.findAll({
+        where: { user_id: user.id },
+        attributes: ['item_category_id', 'item_subcategory_id'],
+        raw: true
+      });
+
+      const itemcategoryIds = [...new Set(
+        buyerCats.map(sc => sc.item_category_id).filter(Boolean)
+      )];
+
+      const itemsubCategoryIds = [...new Set(
+        buyerCats.map(sc => sc.item_subcategory_id).filter(Boolean)
+      )];
+
+      if (itemcategoryIds.length) {
+        const itemcategories = await ItemCategory.findAll({
+          where: { id: itemcategoryIds },
+          attributes: ['name'],
+          raw: true
+        });
+
+        itemcategoryNames = itemcategories.map(c => c.name);
+      }
+
+      if (itemsubCategoryIds.length) {
+        const itemsubCategories = await ItemSubCategory.findAll({
+          where: { id: itemsubCategoryIds },
+          attributes: ['name'],
+          raw: true
+        });
+        itemsubCategoryNames = itemsubCategories.map(sc => sc.name);
+      }
+    }
+
     // Get products belonging to the company
     const products = await Products.findAll({
       where: { company_id: company.id, is_delete: 0, status: 1, is_approve: 1 },
@@ -1061,6 +1169,8 @@ exports.getCompanyInfoById = async (req, res) => {
       activity_name: data.Activity?.name || null,
       category_name: categoryNames.join(', '),
       sub_category_name: subCategoryNames.join(', '),
+      item_category_name: itemcategoryNames.join(', '),
+      item_subcategory_name: itemsubCategoryNames.join(', '),
       products: productList,
       recommended_companies: recommendedCompanies.map(c => ({
         id: c.id,

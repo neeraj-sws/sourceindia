@@ -30,119 +30,119 @@ const ProductDetail = () => {
   const { user } = UseAuth();
 
   useEffect(() => {
-  const fetchProduct = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/products/${slug}`);
+    const fetchProduct = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/products/${slug}`);
 
-      setTimeout(() => {
-        setProduct(res.data);
+        setTimeout(() => {
+          setProduct(res.data);
+          setShowSkeleton(false);
+        }, 1000); // ⏱️ 1 second skeleton
+      } catch (error) {
+        console.error("Error fetching product:", error);
         setShowSkeleton(false);
-      }, 1000); // ⏱️ 1 second skeleton
-    } catch (error) {
-      console.error("Error fetching product:", error);
-      setShowSkeleton(false);
-    }
-  };
+      }
+    };
 
-  fetchProduct();
-}, [slug]);
+    fetchProduct();
+  }, [slug]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [slug]);
 
   const Skeleton = ({ width = "100%", height = "16px", style = {} }) => (
-  <div
-    style={{
-      width,
-      height,
-      background: "linear-gradient(90deg,#e0e0e0 25%,#f5f5f5 37%,#e0e0e0 63%)",
-      backgroundSize: "400% 100%",
-      animation: "skeleton-loading 1.4s ease infinite",
-      borderRadius: "6px",
-      ...style,
-    }}
-  />
-);
+    <div
+      style={{
+        width,
+        height,
+        background: "linear-gradient(90deg,#e0e0e0 25%,#f5f5f5 37%,#e0e0e0 63%)",
+        backgroundSize: "400% 100%",
+        animation: "skeleton-loading 1.4s ease infinite",
+        borderRadius: "6px",
+        ...style,
+      }}
+    />
+  );
 
-const ProductDetailSkeleton = () => (
-  <>
-    <style>
-      {`
+  const ProductDetailSkeleton = () => (
+    <>
+      <style>
+        {`
         @keyframes skeleton-loading {
           0% { background-position: 100% 50%; }
           100% { background-position: 0 50%; }
         }
       `}
-    </style>
+      </style>
 
-    <section className="productDetail py-5">
-      <div className="container">
-        <div className="row">
+      <section className="productDetail py-5">
+        <div className="container">
+          <div className="row">
 
-          {/* Left Image */}
-          <div className="col-lg-9">
-            <div className="card p-3">
-              <div className="row">
-                <div className="col-5">
-                  <Skeleton height="300px" />
-                  <div className="d-flex gap-2 mt-3">
+            {/* Left Image */}
+            <div className="col-lg-9">
+              <div className="card p-3">
+                <div className="row">
+                  <div className="col-5">
+                    <Skeleton height="300px" />
+                    <div className="d-flex gap-2 mt-3">
+                      {[...Array(4)].map((_, i) => (
+                        <Skeleton key={i} width="60px" height="60px" />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="col-7">
+                    <Skeleton height="28px" width="70%" style={{ marginBottom: 15 }} />
                     {[...Array(4)].map((_, i) => (
-                      <Skeleton key={i} width="60px" height="60px" />
+                      <Skeleton key={i} height="18px" style={{ marginBottom: 10 }} />
                     ))}
+                    <Skeleton height="60px" />
                   </div>
                 </div>
-
-                <div className="col-7">
-                  <Skeleton height="28px" width="70%" style={{ marginBottom: 15 }} />
-                  {[...Array(4)].map((_, i) => (
-                    <Skeleton key={i} height="18px" style={{ marginBottom: 10 }} />
-                  ))}
-                  <Skeleton height="60px" />
-                </div>
               </div>
             </div>
-          </div>
 
-          {/* Company Card */}
-          <div className="col-lg-3">
-            <div className="card p-3 h-100">
-              <Skeleton height="20px" width="80%" style={{ marginBottom: 12 }} />
-              <Skeleton height="120px" />
-              <Skeleton height="40px" style={{ marginTop: 20 }} />
-            </div>
-          </div>
-
-        </div>
-
-        {/* Tabs */}
-        <div className="card mt-5 p-4">
-          <Skeleton height="20px" width="150px" style={{ marginBottom: 15 }} />
-          {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} height="16px" style={{ marginBottom: 8 }} />
-          ))}
-        </div>
-
-        {/* Similar Products */}
-        <div className="mt-5">
-          <Skeleton height="30px" width="200px" style={{ marginBottom: 20 }} />
-          <div className="row">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="col-md-4">
-                <div className="card p-3">
-                  <Skeleton height="180px" />
-                  <Skeleton height="18px" style={{ marginTop: 12 }} />
-                  <Skeleton height="32px" width="100px" style={{ marginTop: 10 }} />
-                </div>
+            {/* Company Card */}
+            <div className="col-lg-3">
+              <div className="card p-3 h-100">
+                <Skeleton height="20px" width="80%" style={{ marginBottom: 12 }} />
+                <Skeleton height="120px" />
+                <Skeleton height="40px" style={{ marginTop: 20 }} />
               </div>
+            </div>
+
+          </div>
+
+          {/* Tabs */}
+          <div className="card mt-5 p-4">
+            <Skeleton height="20px" width="150px" style={{ marginBottom: 15 }} />
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} height="16px" style={{ marginBottom: 8 }} />
             ))}
           </div>
-        </div>
 
-      </div>
-    </section>
-  </>
-);
+          {/* Similar Products */}
+          <div className="mt-5">
+            <Skeleton height="30px" width="200px" style={{ marginBottom: 20 }} />
+            <div className="row">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="col-md-4">
+                  <div className="card p-3">
+                    <Skeleton height="180px" />
+                    <Skeleton height="18px" style={{ marginTop: 12 }} />
+                    <Skeleton height="32px" width="100px" style={{ marginTop: 10 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </>
+  );
 
   if (showSkeleton) return <ProductDetailSkeleton />;
 
@@ -202,20 +202,20 @@ const ProductDetailSkeleton = () => (
         <div className="container">
           <div className="row">
             <nav aria-label="breadcrumb" className="mb-3">
-  <ol className="breadcrumb mb-0">
-    <li className="breadcrumb-item">
-      <a href="/" className="text-decoration-none">Home</a>
-    </li>
+              <ol className="breadcrumb mb-0">
+                <li className="breadcrumb-item">
+                  <a href="/" className="text-decoration-none">Home</a>
+                </li>
 
-    <li className="breadcrumb-item">
-      <a href="/products" className="text-decoration-none">Products</a>
-    </li>
+                <li className="breadcrumb-item">
+                  <a href="/products" className="text-decoration-none">Products</a>
+                </li>
 
-    <li className="breadcrumb-item active" aria-current="page">
-      {product.title}
-    </li>
-  </ol>
-</nav>
+                <li className="breadcrumb-item active" aria-current="page">
+                  {product.title}
+                </li>
+              </ol>
+            </nav>
             <div className="col-lg-9">
               <div className="card">
                 <div className="card-body">
@@ -296,6 +296,18 @@ const ProductDetailSkeleton = () => (
                             <tr>
                               <th>Sub Category</th>
                               <td>{product.sub_category_name || 'N/A'}</td>
+                            </tr>
+                            <tr>
+                              <th>Item Category</th>
+                              <td>{product.item_category_name || 'N/A'}</td>
+                            </tr>
+                            <tr>
+                              <th>Item Type</th>
+                              <td>{product.item_subcategory_name || 'N/A'}</td>
+                            </tr>
+                            <tr>
+                              <th>Item </th>
+                              <td>{product.item_name || 'N/A'}</td>
                             </tr>
                             <tr>
                               <th>Color</th>

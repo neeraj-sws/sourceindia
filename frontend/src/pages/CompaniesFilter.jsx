@@ -651,35 +651,6 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
           )}
           {isSeller == 0 && (
 
-            // <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Sourcing Interest</h3>
-            // <div className="d-flex flex-column gap-2">
-            //   <div className="input-group flex-nowrap ps-2 pe-4">
-            //     <i className="bx bx-search input-group-text" />
-            //     <input
-            //       type="text"
-            //       placeholder="Search sourcing interest..."
-            //       onChange={(e) => setSourcingInterestSearchTerm(e.target.value.toLowerCase())}
-            //       className="form-control"
-            //     />
-            //   </div>
-            //   <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredSourcingInterest.length >= 5 ? 'auto' : 'visible' }}>
-
-            //     {filteredSourcingInterest.map(sic => (
-            //       <div className="form-check mb-2" >
-            //         <input
-            //           type="checkbox"
-            //           id={`sic-${sic.id}`}
-            //           className="form-check-input"
-            //           checked={selectedSourcingInterest.includes(sic.id)}
-            //           onChange={() => handleSourcingInterestCheckboxChange(sic.id)}
-            //         />
-            //         <label htmlFor={`sic-${sic.id}`} className="form-check-label text-capitalize">
-            //           {sic.name} ({sic.company_count})
-            //         </label>
-            //       </div>
-            //     ))}
-            //   </div>
-            // </div>
             <div>
               {/* Category */}
               <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
@@ -1170,7 +1141,14 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                               <b className="fw-semibold">Product: </b>
                               <p className="mb-0">{company.user.products}</p>
                             </div>
-
+                            <div className="companyitems companybuyer  gap-2 mt-2">
+                              <b className="fw-semibold">Item Category </b>
+                              <p className="mb-0">{company.item_category_name}</p>
+                            </div>
+                            <div className="companyitems companybuyer  gap-2 mt-2">
+                              <b className="fw-semibold">Item Type </b>
+                              <p className="mb-0">{company.item_subcategory_name}</p>
+                            </div>
                           </>
                         )}
 
