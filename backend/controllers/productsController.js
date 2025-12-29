@@ -1,4 +1,4 @@
-const { Op, fn, col, literal } = require('sequelize');
+const { Op, fn, col, literal, Sequelize } = require('sequelize');
 const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
@@ -49,10 +49,10 @@ exports.allProduct = async (req, res) => {
 
     console.log('Products fetched:', products);
     res.status(200).json({ success: true, message: 'Products fetched successfully', data: products });*/
-    res.status(200).json({ 
-      success: true, 
-      message: products.length ? 'Products fetched successfully' : 'No products found', 
-      data: products 
+    res.status(200).json({
+      success: true,
+      message: products.length ? 'Products fetched successfully' : 'No products found',
+      data: products
     });
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -639,6 +639,10 @@ exports.getAllCompanyInfo = async (req, res) => {
       user_state,
       sort_by,
       title,
+      core_activity,
+      activity,
+      item_category,
+      item_subcategory,
       category,
       sub_category,
       is_delete,
@@ -664,6 +668,8 @@ exports.getAllCompanyInfo = async (req, res) => {
       const subIds = sub_category ? parseCsv(sub_category).map(x => parseInt(x)).filter(x => !isNaN(x)) : [];
 
       let sellerWhere = [];
+
+
       if (catIds.length) sellerWhere.push(`sc.category_id IN (${catIds.join(',')})`);
       if (subIds.length) sellerWhere.push(`sc.subcategory_id IN (${subIds.join(',')})`);
 
@@ -682,6 +688,11 @@ exports.getAllCompanyInfo = async (req, res) => {
         );
       }
     }
+    const coreWhere = [];
+    if (core_activity || activity) {
+      if (core_activity) coreWhere.push(`CompanyInfo.core_activity = ${core_activity}`);
+      if (activity) coreWhere.push(`CompanyInfo.activity = ${activity}`);
+    }
 
     // ✅ User filters
     const userFilters = [`u.is_delete = 0`, `u.status = 1`, `u.is_approve = 1`];
@@ -698,34 +709,79 @@ exports.getAllCompanyInfo = async (req, res) => {
         .map(x => parseInt(x))
         .filter(x => !isNaN(x));
     }
+    const interestConditions = [];
 
-    if (interestSubCatIds.length) {
+    if (item_category != null) {
+      interestConditions.push(`bi.item_category_id = ${Number(item_category)}`);
+    }
+
+    let ItemSubCatIds = [];
+
+    if (item_subcategory) {
+      ItemSubCatIds = parseCsv(item_subcategory)
+        .map(x => parseInt(x))
+        .filter(x => !isNaN(x));
+    }
+
+    if (ItemSubCatIds?.length) {
+      interestConditions.push(
+        `bi.item_subcategory_id IN (${ItemSubCatIds.map(Number).join(',')})`
+      );
+    }
+
+    if (interestConditions.length) {
       whereClause[Op.and] = whereClause[Op.and] || [];
       whereClause[Op.and].push(
         literal(`
-          EXISTS (
-            SELECT 1
-            FROM users u2
-            JOIN cities c ON u2.city = c.city_id
-            JOIN states s ON u2.state = s.state_id
-            JOIN countries co ON u2.country = co.country_id
-            JOIN buyerinterests bi ON bi.buyer_id = u2.user_id
-            WHERE u2.company_id = CompanyInfo.company_id
-              AND bi.activity_id IN (${interestSubCatIds.join(',')})
-              AND u2.status = 1
-              AND u2.is_approve = 1
-              AND u2.is_seller = 0
-              AND u2.is_delete = 0
-              AND CompanyInfo.is_delete = 0
-          )
-        `)
+      EXISTS (
+        SELECT 1
+        FROM users u2
+        JOIN buyer_sourcing_interests bi ON bi.user_id = u2.user_id
+        WHERE u2.company_id = CompanyInfo.company_id
+          AND ${interestConditions.join(' AND ')}
+          AND u2.status = 1
+          AND u2.is_approve = 1
+          AND u2.is_seller = 0
+          AND u2.is_delete = 0
+          AND CompanyInfo.is_delete = 0
+      )
+    `)
       );
     }
+
+
+    // if (interestSubCatIds.length) {
+    //   whereClause[Op.and] = whereClause[Op.and] || [];
+    //   whereClause[Op.and].push(
+    //     literal(`
+    //       EXISTS (
+    //         SELECT 1
+    //         FROM users u2
+    //         JOIN cities c ON u2.city = c.city_id
+    //         JOIN states s ON u2.state = s.state_id
+    //         JOIN countries co ON u2.country = co.country_id
+    //         JOIN buyerinterests bi ON bi.buyer_id = u2.user_id
+    //         WHERE u2.company_id = CompanyInfo.company_id
+    //           AND bi.activity_id IN (${interestSubCatIds.join(',')})
+    //           AND u2.status = 1
+    //           AND u2.is_approve = 1
+    //           AND u2.is_seller = 0
+    //           AND u2.is_delete = 0
+    //           AND CompanyInfo.is_delete = 0
+    //       )
+    //     `)
+    //   );
+    // }
 
     whereClause[Op.and] = whereClause[Op.and] || [];
     whereClause[Op.and].push(
       literal(`EXISTS (SELECT 1 FROM users u WHERE u.company_id = CompanyInfo.company_id AND ${userFilters.join(' AND ')})`)
     );
+    if (coreWhere.length) {
+      whereClause[Op.and].push(
+        Sequelize.literal(coreWhere.join(' AND '))
+      );
+    }
 
     // ✅ Total count
     const total = await CompanyInfo.count({ where: whereClause });
@@ -896,54 +952,54 @@ exports.getCompanyInfoById = async (req, res) => {
     data.company_logo_file = data.companyLogo?.file || null;
 
     const user = await Users.findOne({
-  where: {
-    company_id: company.id,
-    is_delete: 0,
-    status: 1,
-    is_approve: 1
-  },
-  attributes: ['id'],
-  order: [['id', 'ASC']],
-  raw: true
-});
-
-// 2️⃣ Get seller categories
-let categoryNames = [];
-let subCategoryNames = [];
-
-if (user) {
-  const sellerCats = await SellerCategory.findAll({
-    where: { user_id: user.id },
-    attributes: ['category_id', 'subcategory_id'],
-    raw: true
-  });
-
-  const categoryIds = [...new Set(
-    sellerCats.map(sc => sc.category_id).filter(Boolean)
-  )];
-
-  const subCategoryIds = [...new Set(
-    sellerCats.map(sc => sc.subcategory_id).filter(Boolean)
-  )];
-
-  if (categoryIds.length) {
-    const categories = await Categories.findAll({
-      where: { id: categoryIds },
-      attributes: ['name'],
+      where: {
+        company_id: company.id,
+        is_delete: 0,
+        status: 1,
+        is_approve: 1
+      },
+      attributes: ['id'],
+      order: [['id', 'ASC']],
       raw: true
     });
-    categoryNames = categories.map(c => c.name);
-  }
 
-  if (subCategoryIds.length) {
-    const subCategories = await SubCategories.findAll({
-      where: { id: subCategoryIds },
-      attributes: ['name'],
-      raw: true
-    });
-    subCategoryNames = subCategories.map(sc => sc.name);
-  }
-}
+    // 2️⃣ Get seller categories
+    let categoryNames = [];
+    let subCategoryNames = [];
+
+    if (user) {
+      const sellerCats = await SellerCategory.findAll({
+        where: { user_id: user.id },
+        attributes: ['category_id', 'subcategory_id'],
+        raw: true
+      });
+
+      const categoryIds = [...new Set(
+        sellerCats.map(sc => sc.category_id).filter(Boolean)
+      )];
+
+      const subCategoryIds = [...new Set(
+        sellerCats.map(sc => sc.subcategory_id).filter(Boolean)
+      )];
+
+      if (categoryIds.length) {
+        const categories = await Categories.findAll({
+          where: { id: categoryIds },
+          attributes: ['name'],
+          raw: true
+        });
+        categoryNames = categories.map(c => c.name);
+      }
+
+      if (subCategoryIds.length) {
+        const subCategories = await SubCategories.findAll({
+          where: { id: subCategoryIds },
+          attributes: ['name'],
+          raw: true
+        });
+        subCategoryNames = subCategories.map(sc => sc.name);
+      }
+    }
 
     // Get products belonging to the company
     const products = await Products.findAll({
@@ -981,17 +1037,17 @@ if (user) {
 
     const allowedCategories = new Set();
 
-if (user) {
-  const sellerCats = await SellerCategory.findAll({
-    where: { user_id: user.id },
-    attributes: ['category_id'],
-    raw: true
-  });
+    if (user) {
+      const sellerCats = await SellerCategory.findAll({
+        where: { user_id: user.id },
+        attributes: ['category_id'],
+        raw: true
+      });
 
-  sellerCats.forEach(sc => {
-    if (sc.category_id) allowedCategories.add(String(sc.category_id));
-  });
-}
+      sellerCats.forEach(sc => {
+        if (sc.category_id) allowedCategories.add(String(sc.category_id));
+      });
+    }
 
     const recommendedCompanies = allCompanies.filter(c => {
       if (!c.category_sell) return false;
@@ -1513,10 +1569,10 @@ exports.getFilteredProducts = async (req, res) => {
         article_number: s.article_number,
         product_service: s.product_service,
         product_service_name: s.ProductServices?.title || '',
-        is_gold: s.is_gold==1?'Yes':'No',
-        is_featured: s.is_featured==1?'Yes':'No',
-        is_recommended: s.is_recommended==1?'Yes':'No',
-        best_product: s.best_product==1?'Yes':'No',
+        is_gold: s.is_gold == 1 ? 'Yes' : 'No',
+        is_featured: s.is_featured == 1 ? 'Yes' : 'No',
+        is_recommended: s.is_recommended == 1 ? 'Yes' : 'No',
+        best_product: s.best_product == 1 ? 'Yes' : 'No',
         created_at: s.created_at
       };
     });
