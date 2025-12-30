@@ -179,8 +179,16 @@ const ProductSubCategoryList = ({ getDeleted, excludeSellerSubCategories, exclud
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    const selectedCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
-    const payload = { ...formData, category: selectedCategory, category_name: selectedCategory?.name || "" };
+    const selectedCategoryObj = categories.find((c) => c.id.toString() === selectedCategory.toString());
+    // const payload = { ...formData, category: selectedCategoryObj, category_name: selectedCategoryObj?.name || "" };
+    const payload = new FormData();
+payload.append("name", formData.name);
+payload.append("status", formData.status);
+payload.append("category", selectedCategory); // ✅ ID only
+
+if (formData.file) {
+  payload.append("file", formData.file);
+}
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/sub_categories/${formData.id}`, payload, {
@@ -193,7 +201,23 @@ const ProductSubCategoryList = ({ getDeleted, excludeSellerSubCategories, exclud
           const img = await axios.get(`${API_BASE_URL}/files/${newFileId}`);
           updatedFileName = img.data.file;
         }
-        setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, file_id: newFileId, file_name: updatedFileName, updated_at: new Date().toISOString() } : item)));
+        // setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, file_id: newFileId, file_name: updatedFileName, updated_at: new Date().toISOString() } : item)));
+      setData((prev) =>
+  prev.map((item) =>
+    item.id === formData.id
+      ? {
+          ...item,
+          name: formData.name,
+          status: formData.status,
+          category: selectedCategory,
+          category_name: selectedCategoryObj?.name || "",
+          file_id: newFileId,
+          file_name: updatedFileName,
+          updated_at: new Date().toISOString(),
+        }
+      : item
+  )
+);
       } else {
         const res = await axios.post(`${API_BASE_URL}/sub_categories`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
