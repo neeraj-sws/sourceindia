@@ -12,7 +12,7 @@ const getMulterUpload = require('../utils/upload');
 const ItemSubCategory = require('../models/ItemSubCategory');
 
 exports.createItemCategory = async (req, res) => {
-  const upload = getMulterUpload('items');
+  const upload = getMulterUpload('item_category');
   upload.single('file')(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
@@ -21,7 +21,7 @@ exports.createItemCategory = async (req, res) => {
         return res.status(400).json({ message: 'All fields (name, category_id, subcategory_id, status) are required' });
       }*/
       const uploadImage = await UploadImage.create({
-        file: `upload/items/${req.file.filename}`,
+        file: `upload/item_category/${req.file.filename}`,
       });
       const itemCategory = await ItemCategory.create({
         name,
@@ -124,7 +124,7 @@ exports.getItemCategoryById = async (req, res) => {
 };
 
 exports.updateItemCategory = async (req, res) => {
-  const upload = getMulterUpload('items');
+  const upload = getMulterUpload('item_category');
   upload.single('file')(req, res, async (err) => {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -133,7 +133,7 @@ exports.updateItemCategory = async (req, res) => {
       const { name, category_id, subcategory_id, status } = req.body;
       const itemCategory = await ItemCategory.findByPk(req.params.id);
       if (!itemCategory) return res.status(404).json({ message: 'Item Category not found' });
-      const uploadDir = path.resolve('upload/items');
+      const uploadDir = path.resolve('upload/item_category');
       if (!fs.existsSync(uploadDir)) {
         console.log("Directory does not exist, creating:", uploadDir);
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -147,18 +147,18 @@ exports.updateItemCategory = async (req, res) => {
             if (fs.existsSync(oldImagePath)) {
               fs.unlinkSync(oldImagePath);
             }
-            existingImage.file = `upload/items/${req.file.filename}`;
+            existingImage.file = `upload/item_category/${req.file.filename}`;
             existingImage.updated_at = new Date();
             await existingImage.save();
           } else {
             const newImage = await UploadImage.create({
-              file: `upload/items/${req.file.filename}`,
+              file: `upload/item_category/${req.file.filename}`,
             });
             itemCategory.file_id = newImage.id;
           }
         } else {
           const newImage = await UploadImage.create({
-            file: `upload/items/${req.file.filename}`,
+            file: `upload/item_category/${req.file.filename}`,
           });
           itemCategory.file_id = newImage.id;
         }
