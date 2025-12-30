@@ -414,6 +414,8 @@ const AddProduct = () => {
         setSelectedCategory(data.category || "");
         setSelectedSubCategory(data.sub_category || "");
         setSelectedItemCategory(data.item_category_id || '');
+        setSelectedItemSubCategory(data.item_subcategory_id || '');
+        setSelectedItem(data.item_id || '');
         // Fetch dependent dropdowns sequentially in correct order
         if (data.user_id) {
           const catRes = await axios.get(
@@ -494,11 +496,11 @@ const AddProduct = () => {
           ...formData,
           user_id: selectedSellers,
           application: selectedApplications,
-          category: selectedCategory,
-          sub_category: selectedSubCategory,
-          item_category_id: selectedItemCategory,
-          item_subcategory_id: selectedItemSubCategory,
-          item_id: selectedItem,
+          category: Number(selectedCategory) || 0,
+          sub_category: Number(selectedSubCategory) || 0,
+          item_category_id: Number(selectedItemCategory) || 0,
+          item_subcategory_id: Number(selectedItemSubCategory) || 0,
+          item_id: Number(selectedItem) || 0,
         };
         headers = { "Content-Type": "application/json" };
         await axios[method](endpoint, payload, { headers });
@@ -583,7 +585,7 @@ const AddProduct = () => {
       closeDeleteModal();
     }
   };
-  // console.log(selectedItemCategory);
+
   return (
     <>
       <div className="page-wrapper">
