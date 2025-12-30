@@ -73,6 +73,7 @@ import SellerUnusedCategories from '../admin/pages/SellerUnusedCategories';
 import ProductUnusedCategories from '../admin/pages/ProductUnusedCategories';
 import ProductCategoriesGraph from '../admin/pages/ProductCategoriesGraph';
 import SellerCategoriesGraph from '../admin/pages/SellerCategoriesGraph';
+import SourcingInterestsGraph from '../admin/pages/SourcingInterestsGraph';
 
 function AdminLayout() {
   const location = useLocation();
@@ -187,6 +188,7 @@ function AdminLayout() {
           <Route path="/product_category_report" element={<ProtectedRoute><ProductUnusedCategories /></ProtectedRoute>} />
           <Route path="/product_category_graph" element={<ProtectedRoute><ProductCategoriesGraph /></ProtectedRoute>} />
           <Route path="/seller_category_graph" element={<ProtectedRoute><SellerCategoriesGraph /></ProtectedRoute>} />
+          <Route path="/sourcing_interest_graph" element={<ProtectedRoute><SourcingInterestsGraph /></ProtectedRoute>} />
         </Routes>
       </div>
       {showLayout && <Footer />}

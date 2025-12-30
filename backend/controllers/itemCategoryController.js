@@ -586,3 +586,43 @@ exports.getItemCategoryBarGraph = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getBuyerSourcingInterestsBarGraph = async (req, res) => {
+  try {
+    const itemCategory = await ItemCategory.findAll({
+      attributes: ['id', 'name'],
+      where: { status: 1 },
+      order: [['id', 'ASC']],
+      raw: true,
+    });
+
+    // count DISTINCT users per category
+    const counts = await BuyerSourcingInterests.findAll({
+      attributes: [
+        'item_category_id',
+        [fn('COUNT', literal('DISTINCT user_id')), 'count'],
+      ],
+      group: ['item_category_id'],
+      raw: true,
+    });
+
+    const countMap = {};
+    counts.forEach(c => {
+      countMap[c.item_category_id] = Number(c.count);
+    });
+
+    res.json({
+      labels: itemCategory.map(c => c.name),
+      datasets: [
+        {
+          label: 'Sourcing Interests',
+          data: itemCategory.map(c => countMap[c.id] || 0),
+          backgroundColor: '#0d6efd',
+        },
+      ],
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

@@ -7,6 +7,7 @@ const ItemCategory = require('../models/ItemCategory');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const Products = require('../models/Products');
+const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
 
@@ -501,6 +502,46 @@ exports.getItemSubCategoryBarGraph = async (req, res) => {
       ],
     });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getBuyerSourcingInterestsBarGraph = async (req, res) => {
+  try {
+    const itemSubCategory = await ItemSubCategory.findAll({
+      attributes: ['id', 'name'],
+      where: { status: 1 },
+      order: [['id', 'ASC']],
+      raw: true,
+    });
+
+    // count DISTINCT users per category
+    const counts = await BuyerSourcingInterests.findAll({
+      attributes: [
+        'item_subcategory_id',
+        [fn('COUNT', literal('DISTINCT user_id')), 'count'],
+      ],
+      group: ['item_subcategory_id'],
+      raw: true,
+    });
+
+    const countMap = {};
+    counts.forEach(c => {
+      countMap[c.item_subcategory_id] = Number(c.count);
+    });
+
+    res.json({
+      labels: itemSubCategory.map(c => c.name),
+      datasets: [
+        {
+          label: 'Sourcing Interests',
+          data: itemSubCategory.map(c => countMap[c.id] || 0),
+          backgroundColor: '#0d6efd',
+        },
+      ],
+    });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
