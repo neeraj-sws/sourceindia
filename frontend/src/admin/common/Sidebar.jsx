@@ -225,6 +225,7 @@ const menuData = [
       { title: 'Product Unused Categories', link: '/admin/product_category_report' },
       { title: 'Seller Categories Graph', link: '/admin/seller_category_graph' },
       { title: 'Product Categories Graph', link: '/admin/product_category_graph' },
+      { title: 'Sourcing Interest Graph', link: '/admin/sourcing_interest_graph' },
     ],
   },
 ];

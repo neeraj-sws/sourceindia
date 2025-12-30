@@ -50,7 +50,7 @@ const customStyles = {
   }),
 };
 
-const FilterableSellerChart = ({ type = 'category' }) => {
+const FilterableSourcingInterestsChart = ({ type = 'category' }) => {
   const [allItems, setAllItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [graphData, setGraphData] = useState(null);
@@ -59,14 +59,14 @@ const FilterableSellerChart = ({ type = 'category' }) => {
 
   const chartConfigMap = {
   category: {
-    api: `${API_BASE_URL}/categories/seller-bar-graph`,
-    title: 'Sellers per Category',
+    api: `${API_BASE_URL}/item_category/sourcing-interest-bar-graph`,
+    title: 'Sourcing Interest per Category',
     placeholder: 'Select categories...',
     xAxisLabel: 'Categories',
   },
   subcategory: {
-    api: `${API_BASE_URL}/sub_categories/seller-bar-graph`,
-    title: 'Sellers per Subcategory',
+    api: `${API_BASE_URL}/item_sub_category/sourcing-interest-bar-graph`,
+    title: 'Sourcing Interest per Subcategory',
     placeholder: 'Select subcategories...',
     xAxisLabel: 'Subcategories',
   },
@@ -81,10 +81,16 @@ const apiUrl = config.api;
         const res = await axios.get(apiUrl);
         setOriginalData(res.data);
 
-        const options = res.data.labels.map(label => ({ label, value: label }));
-        setAllItems(options);
+        const nonZeroOptions = res.data.labels
+  .map((label, index) => ({
+    label,
+    value: label,
+    count: res.data.datasets[0].data[index],
+  }))
+  .filter(item => item.count > 0);
 
-        setSelectedItems(options.length > 30 ? options.slice(0, 10) : options);
+setAllItems(nonZeroOptions.map(({ label, value }) => ({ label, value })));
+setSelectedItems(nonZeroOptions.slice(0, 10));
         setGraphData(res.data);
       } catch (err) {
         console.error(err);
@@ -142,15 +148,9 @@ setGraphData({
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    layout: {
-    padding: {
-      top: 40, // ⬅️ space between heading & bars
-    },
-  },
     plugins: { legend: { position: 'top' }, tooltip: { enabled: true }, datalabels: {
       anchor: 'end',
       align: 'top',
-      offset: 4,
       color: '#333',
       font: {
         weight: 'bold',
@@ -190,4 +190,4 @@ setGraphData({
   );
 };
 
-export default FilterableSellerChart;
+export default FilterableSourcingInterestsChart;

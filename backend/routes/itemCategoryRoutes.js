@@ -8,6 +8,7 @@ router.get('/', itemCategoryController.getAllItemCategory);
 router.get('/getitem', itemCategoryController.getAllItemCategories);
 router.get('/server-side', itemCategoryController.getAllItemCategoryServerSide);
 router.get('/product-bar-graph', itemCategoryController.getItemCategoryBarGraph);
+router.get('/sourcing-interest-bar-graph', itemCategoryController.getBuyerSourcingInterestsBarGraph);
 router.delete('/delete-selected', itemCategoryController.deleteSelectedItemCategory);
 router.get(
   '/by-category-subcategory/:category_id/:subcategory_id',
