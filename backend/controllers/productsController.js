@@ -297,7 +297,7 @@ exports.getProductsById = async (req, res) => {
       where: {
         id: { [Op.ne]: productData.company_info?.id }
       },
-      attributes: ['id', 'organization_name', 'category_sell'],
+      attributes: ['id', 'organization_name', 'organization_slug', 'category_sell'],
       include: [
         {
           model: UploadImage,
@@ -379,6 +379,7 @@ exports.getProductsById = async (req, res) => {
       recommended_companies: recommendedCompanies.map(c => ({
         id: c.id,
         organization_name: c.organization_name,
+        organization_slug: c.organization_slug,
         category_sell: c.category_sell,
         company_logo_file: c.companyLogo?.file || null
       }))

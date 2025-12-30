@@ -185,6 +185,8 @@ body {
     border-radius: 5px;
     border: 1px solid #e1e1e1;
     transition: 0.6s;
+    min-height: 115px;
+    place-content: center;
 }
 
 .cateBox:hover,
@@ -835,6 +837,13 @@ button.nav-link:hover {
 
 }
 
+.productContainer img {
+    min-height: 150px;
+    max-height: 150px;
+    place-content: center;
+    object-fit: contain;
+    padding: 10px;
+}
 
 /* Responsive */
 @media (max-width: 1200px) {

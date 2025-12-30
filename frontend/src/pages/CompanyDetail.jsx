@@ -372,6 +372,7 @@ const CompanyDetail = () => {
             >
               {company.recommended_companies.map((item) => (
                 <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
+                  <div className='productContainer'>
                   <Link to={`/companies/${item.organization_slug}`}>
                     <ImageFront
                       src={`${ROOT_URL}/${item.company_logo_file}`}
@@ -381,6 +382,7 @@ const CompanyDetail = () => {
                     />
                     <p className="mt-3 mb-2">{item.organization_name}</p>
                   </Link>
+                  </div>
                 </SwiperSlide>
               ))}
             </Swiper>

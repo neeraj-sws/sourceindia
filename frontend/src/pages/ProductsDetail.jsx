@@ -599,14 +599,18 @@ const ProductDetail = () => {
               >
                 {product.recommended_companies.map((company) => (
                   <SwiperSlide key={company.id} className=' bg-white border rounded p-2 h-100 text-center'>
-                    <div className="company-card">
-                      <ImageFront
-                        src={`${ROOT_URL}/${company.company_logo_file}`}
-                        width={180}
-                        height={180}
-                        showFallback={true}
-                      />
-                      <p className='mt-3'>{company.organization_name}</p>
+                    <div className='productContainer'>
+                      <Link to={`/companies/${company.organization_slug}`}>
+                        <div className="company-card">
+                          <ImageFront
+                            src={`${ROOT_URL}/${company.company_logo_file}`}
+                            width={180}
+                            height={180}
+                            showFallback={true}
+                          />
+                          <p className='mt-3'>{company.organization_name}</p>
+                        </div>
+                      </Link>
                     </div>
                   </SwiperSlide>
                 ))}
