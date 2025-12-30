@@ -227,6 +227,7 @@ body {
 .ProImg.ProImgDetail {
     max-width: 125px;
     min-width: 125px;
+    margin: 0 auto;
 }
 
 .ProImg img {
@@ -837,6 +838,29 @@ button.nav-link:hover {
 
 }
 
+.thumb-swiper img {
+
+    height: 80px;
+
+}
+
+.ulnavoverflow {
+
+    width: 100%;
+
+    overflow: hidden;
+
+    overflow-x: auto;
+
+    flex-wrap: nowrap;
+
+}
+
+.ulnavoverflow li a {
+
+    text-wrap: nowrap;
+}
+
 .productContainer img {
     min-height: 150px;
     max-height: 150px;
@@ -861,7 +885,7 @@ button.nav-link:hover {
         position: absolute;
         top: 60px;
         background-color: var(--color-white);
-        z-index: 2;
+        z-index: 10;
         width: 250px;
         right: 0px;
         box-shadow: var(--bs-box-shadow) !important;
@@ -931,6 +955,20 @@ button.nav-link:hover {
     .iframeBox {
         height: 200px !important;
     }
+
+    .thumb-swiper img {
+        height: auto !important;
+        width: auto !important;
+    }
+
+    .companydetailimg img {
+        height: 250px !important;
+        object-fit: contain;
+    }
+
+    .enquirybtnwidth {
+        width: auto !important;
+    }
 }
 
 @media (max-width: 700px) {
@@ -943,6 +981,28 @@ button.nav-link:hover {
         width: 60%;
         margin: 0 auto;
     }
+
+    .comapnycardlogo img {
+        max-width: 125px !important;
+        max-height: 125px !important;
+    }
+
+    .bigmobile {
+        display: block !important;
+    }
+}
+
+@media (max-width: 650px) {
+
+    .swiper .productBoxswiper .middlepro {
+        grid-template-columns: 100%;
+    }
+
+    .productBoxswiper,
+    .productBoxswiper img {
+        text-align: center;
+    }
+
 }
 
 @media (max-width: 600px) {
@@ -989,6 +1049,10 @@ button.nav-link:hover {
 
     .enquirylistitem .card-header {
         min-height: auto;
+    }
+
+    .companydetailimg img {
+        height: 200px !important;
     }
 }
 
