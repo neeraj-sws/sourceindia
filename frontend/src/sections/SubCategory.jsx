@@ -147,7 +147,7 @@ const SubCategory = () => {
                   <div className="card card-hover h-100 shadow-sm border-0">
                     <div className="card-body">
                       <a
-                        href={`/item-categories/${sub.slug}`}
+                        href={`/categories/${category.slug}/${sub.slug}`}
                         className="d-block text-decoration-none"
                       >
                         <div className="d-flex justify-content-between align-items-start">
@@ -162,7 +162,7 @@ const SubCategory = () => {
                             .map((item, i) => (
                               <li key={i} className="text-start">
                                 <a
-                                  href={`/item-subcategory/${item.slug}`}
+                                  href={`/categories/${category.slug}/${sub.slug}/${item.slug}`}
                                   className="text-decoration-none text-primary small d-inline-block"
                                 >
                                   {item.name}
@@ -180,7 +180,7 @@ const SubCategory = () => {
                             onError={(e) => {
                               e.target.onerror = null;
                               e.target.src =
-                                "https://www.glossyjewels.com/uploads/dummy.jpg";
+                                "/default.png";
                             }}
                           />
                         )}

@@ -143,7 +143,7 @@ const ItemSubCategory = () => {
             {subcategory?.category && (
               <li className="breadcrumb-item">
                 <a
-                  href={`/sub-categories/${subcategory.category.slug}`}
+                  href={`/categories/${subcategory.category.slug}`}
                   className="text-decoration-none"
                 >
                   {subcategory.category.name}
@@ -153,7 +153,7 @@ const ItemSubCategory = () => {
             {subcategory?.sub_category && (
               <li className="breadcrumb-item">
                 <a
-                  href={`/item-categories/${subcategory.sub_category.slug}`}
+                  href={`/categories/${subcategory.category.slug}/${subcategory.sub_category.slug}`}
                   className="text-decoration-none"
                 >
                   {subcategory.sub_category.name}
@@ -199,11 +199,16 @@ const ItemSubCategory = () => {
                                   src={
                                     item.file_name
                                       ? `${ROOT_URL}/${item.file_name}`
-                                      : "https://www.glossyjewels.com/uploads/dummy.jpg"
+                                      : "/default.png"
                                   }
                                   className="img-fluid rounded mb-2 w-100"
                                   alt={item.name}
                                   style={{ height: "125px" }}
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src =
+                                      "/default.png";
+                                  }}
                                 />
 
                                 <h6 className="small fw-semibold mb-1">

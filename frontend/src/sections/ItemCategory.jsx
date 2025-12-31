@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 
 const ItemCategory = () => {
   const { slug } = useParams();
+  console.log(slug);
   const [subcategory, setSubcategory] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -136,7 +137,7 @@ const ItemCategory = () => {
             {subcategory?.category && (
               <li className="breadcrumb-item">
                 <a
-                  href={`/sub-categories/${subcategory.category.slug}`}
+                  href={`/categories/${subcategory.category.slug}`}
                   className="text-decoration-none"
                 >
                   {subcategory.category.name}
@@ -161,7 +162,7 @@ const ItemCategory = () => {
                 <div className="card h-100">
                   <div className="card-body">
                     <a
-                      href={`/item-subcategory/${cat.slug}`}
+                      href={`/categories/${subcategory.category.slug}/${subcategory.slug}/${cat.slug}`}
                       className="d-block text-decoration-none"
                     >
                       <div className="d-flex justify-content-between align-items-start">
@@ -175,10 +176,12 @@ const ItemCategory = () => {
                           cat.items.map((item) => (
                             <li className="text-start">
                               <a
-                                href={`/item-subcategory/${cat.slug}`}
+                                href={`/categories/${subcategory.category.slug}/${subcategory.slug}/${cat.slug}`}
                                 className="text-decoration-none text-primary small"
                               >
-                                {item.name}
+                                {item.name.length > 45
+                                  ? item.name.slice(0, 45) + "..."
+                                  : item.name}
                               </a>
                             </li>
                           ))

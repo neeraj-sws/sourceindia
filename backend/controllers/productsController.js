@@ -1429,15 +1429,17 @@ exports.getItemHierarchy = async (req, res) => {
         { model: Items, as: 'Items', attributes: ['id', 'name'] },
       ]
     });
+    const singleItem = await Items.findOne({
+      where: { id: itemId }
+    });
 
-    if (!product) return res.status(404).json({ message: 'Not found' });
 
     res.json({
-      category_id: product.category,
-      sub_category_id: product.sub_category,
-      item_category_id: product.item_category_id,
-      item_subcategory_id: product.item_subcategory_id,
-      item_id: product.item_id,
+      category_id: product?.category_id ?? singleItem?.category_id ?? '',
+      sub_category_id: product?.sub_category_id ?? singleItem?.subcategory_id ?? '',
+      item_category_id: product?.item_category_id ?? singleItem?.item_category_id ?? '',
+      item_subcategory_id: product?.item_subcategory_id ?? singleItem?.item_sub_category_id ?? '',
+      item_id: product?.item_id ?? singleItem?.item_id ?? '',
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

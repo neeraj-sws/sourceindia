@@ -67,23 +67,26 @@ const ProductsList = () => {
     }
 
     if (itemIdParam) {
+      // setSelectedItems([Number(itemIdParam)]);
       const itemId = parseInt(itemIdParam, 10);
       (async () => {
         try {
           const res = await axios.get(`${API_BASE_URL}/products/item-hierarchy/${itemId}`);
           const data = res.data;
-
           setSelectedCategories(data.category_id ? [data.category_id] : []);
           setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
           setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
           setSelectedItemSubCategories(data.item_subcategory_id ? [data.item_subcategory_id] : []);
-          setSelectedItems(data.item_id ? [data.item_id] : []);
+          setSelectedItems(data.item_id ? [data.item_id] : [Number(itemId)]);
         } catch (err) {
           console.error("Error fetching item hierarchy:", err);
         }
       })();
     }
   }, [location.search]);
+
+
+
 
   useEffect(() => {
     const searchValue = searchParams.get("search");
@@ -300,6 +303,8 @@ const ProductsList = () => {
       if (selectedItemSubCategories.length > 0) {
         url += `&item_subcategory_id=${selectedItemSubCategories.join(",")}`;
       }
+
+      console.log('selectedItems-' + selectedItems);
       if (selectedItems.length > 0) {
         url += `&item_id=${selectedItems.join(",")}`;
       }
@@ -872,187 +877,6 @@ const ProductsList = () => {
                 </div>
               </div>
             </div>
-
-
-            {/* Item Category Filter */}
-            {itemCategories.length > 0 && (
-              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Item Category</h3>
-                <div className="input-group flex-nowrap ps-2 pe-4">
-                  <i className="bx bx-search input-group-text" />
-                  <input
-                    type="text"
-                    placeholder="Search item categories..."
-                    onChange={(e) => setItemCategorySearchTerm(e.target.value.toLowerCase())}
-                    className="form-control"
-                  />
-                </div>
-                <div className="px-2" style={{ maxHeight: '190px', overflowY: itemCategories.length >= 5 ? 'auto' : 'visible' }}>
-                  {itemCategories
-                    .filter(itemCat => itemCat.name.toLowerCase().includes(itemCategorySearchTerm))
-                    .map(itemCat => (
-                      <div className="form-check mb-2" key={itemCat.id}>
-                        <input
-                          type="checkbox"
-                          id={`itemCat-${itemCat.id}`}
-                          className="form-check-input"
-                          checked={selectedItemCategories.includes(itemCat.id)}
-                          onChange={() =>
-                            setSelectedItemCategories(prev =>
-                              prev.includes(itemCat.id)
-                                ? prev.filter(id => id !== itemCat.id)
-                                : [...prev, itemCat.id]
-                            )
-                          }
-                        />
-                        <label htmlFor={`itemCat-${itemCat.id}`} className="form-check-label text-capitalize">
-                          {itemCat.name}  ({itemCat.product_count || 0})
-                        </label>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Item Sub Category Filter */}
-            {itemSubCategories.length > 0 && (
-              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Item Sub Category</h3>
-                <div className="input-group flex-nowrap ps-2 pe-4">
-                  <i className="bx bx-search input-group-text" />
-                  <input
-                    type="text"
-                    placeholder="Search item sub-categories..."
-                    onChange={(e) => setItemSubCategorySearchTerm(e.target.value.toLowerCase())}
-                    className="form-control"
-                  />
-                </div>
-                <div className="px-2" style={{ maxHeight: '190px', overflowY: itemSubCategories.length >= 5 ? 'auto' : 'visible' }}>
-                  {itemSubCategories
-                    .filter(itemSub => itemSub.name.toLowerCase().includes(itemSubCategorySearchTerm))
-                    .map(itemSub => (
-                      <div className="form-check mb-2" key={itemSub.id}>
-                        <input
-                          type="checkbox"
-                          id={`itemSub-${itemSub.id}`}
-                          className="form-check-input"
-                          checked={selectedItemSubCategories.includes(itemSub.id)}
-                          onChange={() =>
-                            setSelectedItemSubCategories(prev =>
-                              prev.includes(itemSub.id)
-                                ? prev.filter(id => id !== itemSub.id)
-                                : [...prev, itemSub.id]
-                            )
-                          }
-                        />
-                        <label htmlFor={`itemSub-${itemSub.id}`} className="form-check-label text-capitalize">
-                          {itemSub.name} ({itemSub.product_count || 0})
-                        </label>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Items Filter */}
-            {items.length > 0 && (
-              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Items</h3>
-                <div className="input-group flex-nowrap ps-2 pe-4">
-                  <i className="bx bx-search input-group-text" />
-                  <input
-                    type="text"
-                    placeholder="Search items..."
-                    onChange={(e) => setItemSearchTerm(e.target.value.toLowerCase())}
-                    className="form-control"
-                  />
-                </div>
-                <div className="px-2" style={{ maxHeight: '190px', overflowY: items.length >= 5 ? 'auto' : 'visible' }}>
-                  {items
-                    .filter(item => item.name.toLowerCase().includes(itemSearchTerm))
-                    .map(item => (
-                      <div className="form-check mb-2" key={item.id}>
-                        <input
-                          type="checkbox"
-                          id={`item-${item.id}`}
-                          className="form-check-input"
-                          checked={selectedItems.includes(item.id)}
-                          onChange={() =>
-                            setSelectedItems(prev =>
-                              prev.includes(item.id)
-                                ? prev.filter(id => id !== item.id)
-                                : [...prev, item.id]
-                            )
-                          }
-                        />
-                        <label htmlFor={`item-${item.id}`} className="form-check-label text-capitalize">
-                          {item.name} ({item.product_count || 0})
-                        </label>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">State</h3>
-              <div className="d-flex flex-column gap-2">
-                <div className="input-group flex-nowrap ps-2 pe-4">
-                  <i className="bx bx-search input-group-text" />
-                  <input
-                    type="text"
-                    placeholder="Search states..."
-                    onChange={(e) => setStatesSearchTerm(e.target.value.toLowerCase())}
-                    className="form-control"
-                  />
-                </div>
-                <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredStates.length >= 5 ? 'auto' : 'visible' }}>
-                  {filteredStates.map(state => (
-                    <div className="form-check mb-2" key={state.id}>
-                      <input
-                        type="checkbox"
-                        id={`state-${state.id}`}
-                        className="form-check-input"
-                        checked={selectedStates.includes(state.id)}
-                        onChange={() => handleStatesCheckboxChange(state.id)}
-                      />
-                      <label htmlFor={`state-${state.id}`} className="form-check-label text-capitalize">
-                        {state.name} ({state.product_count})
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Companies</h3>
-              <div className="d-flex flex-column gap-2">
-                <div className="input-group flex-nowrap ps-2 pe-4">
-                  <i className="bx bx-search input-group-text" />
-                  <input
-                    type="text"
-                    placeholder="Search companies..."
-                    onChange={(e) => setCompaniesSearchTerm(e.target.value.toLowerCase())}
-                    className="form-control"
-                  />
-                </div>
-                <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredCompanies.length >= 5 ? 'auto' : 'visible' }}>
-                  {filteredCompanies.map(company => (
-                    <div className="form-check mb-2" key={company.id}>
-                      <input
-                        type="checkbox"
-                        id={`company-${company.id}`}
-                        className="form-check-input"
-                        checked={selectedCompanies.includes(company.id)}
-                        onChange={() => handleCompaniesCheckboxChange(company.id)}
-                      />
-                      <label htmlFor={`company-${company.id}`} className="form-check-label text-capitalize">
-                        {company.organization_name} ({company.product_count})
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
           </aside>
 
           {showFilter && (
@@ -1269,23 +1093,7 @@ const ProductsList = () => {
                     Clear All
                   </button>
                 </div>
-                <button
-                  onClick={() => {
-                    setSelectedCategories([]);
-                    setSelectedSubCategories([]);
-                    setSelectedItemCategories([]);
-                    setSelectedItemSubCategories([]);
-                    setSelectedItems([]);
-                    setSelectedStates([]);
-                    setSelectedCompanies([]);
-                  }}
-                  className="btn btn-sm btn-outline-danger text-nowrap mt-2 ms-auto d-block"
-                  style={{
-                    padding: "0.188rem 0.625rem",
-                  }}
-                >
-                  Clear All
-                </button>
+
               </div>
 
             )}
