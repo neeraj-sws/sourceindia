@@ -81,7 +81,7 @@ const Item = () => {
                                 src={
                                   item.file_name
                                     ? `${ROOT_URL}/${item.file_name}`
-                                    : "https://www.glossyjewels.com/uploads/dummy.jpg"
+                                    : "/default.png"
                                 }
                                 className="img-fluid rounded mb-2"
                                 alt={item.name}

@@ -79,10 +79,10 @@ function FrontLayout() {
               <Route path="/buyer-list" element={<CompaniesFilter isSeller="0" />} />
               <Route path="/trading-list" element={<CompaniesFilter isTrading="1" />} />
               <Route path="/categories" element={<Categories />} />
-              <Route path="/sub-categories/:slug" element={<SubCategories />} />
-              <Route path="/item-categories/:slug" element={<ItemCategories />} />
+              <Route path="/categories/:slug" element={<SubCategories />} />
+              <Route path="/categories/:category/:slug" element={<ItemCategories />} />
               <Route path="/items/:slug" element={<Items />} />
-              <Route path="/item-subcategory/:slug" element={<ItemSubcategory />} />
+              <Route path="/categories/:category/:subcategory/:slug" element={<ItemSubcategory />} />
               <Route path="/products" element={<ProductsList />} />
               <Route path="/products/:slug" element={<ProductDetail />} />
               <Route path="/knowledge-center" element={<KnowledgeCenter />} />

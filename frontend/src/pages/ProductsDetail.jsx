@@ -199,7 +199,7 @@ const ProductDetail = () => {
   return (
     <>
       <section className="productDetail py-5">
-        <div className="container">
+        <div className="container-xl">
           <div className="row">
             <nav aria-label="breadcrumb" className="mb-3">
               <ol className="breadcrumb mb-0">
@@ -216,11 +216,11 @@ const ProductDetail = () => {
                 </li>
               </ol>
             </nav>
-            <div className="col-lg-9">
+            <div className="col-xl-9 col-lg-8 mb-lg-0 mb-3">
               <div className="card">
                 <div className="card-body">
                   <div className="row">
-                    <div className="col-5">
+                    <div className="col-md-5">
                       {/* Main Swiper Slider with Hover Zoom */}
                       <Swiper
                         modules={[Navigation, Thumbs, Pagination]} // Added Thumbs for thumbnail sync
@@ -282,8 +282,8 @@ const ProductDetail = () => {
                         ))}
                       </Swiper>
                     </div>
-                    <div className="col-7">
-                      <div className="product-details">
+                    <div className="col-md-7">
+                      <div className="product-details mt-md-0 mt-3">
                         <div className="detailhead">
                           <h4 className="text-orange">{product.title}</h4>
                         </div>
@@ -324,7 +324,7 @@ const ProductDetail = () => {
                 </div>
               </div>
             </div>
-            <div className="col-lg-3">
+            <div className="col-xl-3 col-lg-4 mb-lg-0 mb-3">
               <div className="card h-100">
                 <div className="card-body">
                   <div className="mb-3">
@@ -526,22 +526,31 @@ const ProductDetail = () => {
         </div>
       </section >
       <div className="product-detail-container">
-        <div className="container">
+        <div className="container-xl">
           <h2 className="color-primary">Similar Products</h2>
           <Swiper
             modules={[Navigation, Pagination]}
-            slidesPerView={3} // Display 3 items at a time
             spaceBetween={20} // Space between slides
             navigation={true} // Enable navigation arrows
-
             loop={false} // Infinite loop
             className="similar-products-carousel"
-            style={{ padding: '20px 0' }} // Optional padding for better spacing
+            style={{ padding: '20px 0' }}
+            breakpoints={{
+              0: {
+                slidesPerView: 1,
+              },
+              576: {
+                slidesPerView: 2,
+              },
+              1024: {
+                slidesPerView: 3,
+              },
+            }}
           >
             {product.similar_products.map((similar) => (
               <SwiperSlide key={similar.id}>
                 <div className="mb-4">
-                  <div className="productBox p-3 bg-white">
+                  <div className="productBox productBoxswiper p-3 bg-white">
 
                     <div className="middlepro">
                       <div className="ProImg">
@@ -589,13 +598,28 @@ const ProductDetail = () => {
             <div className="companygrid">
               <Swiper
                 modules={[Navigation, Pagination]}
-                slidesPerView={5} // Display 3 items at a time
                 spaceBetween={20} // Space between slides
-                navigation={true} // Enable navigation arrows
-
+                navigation={true}
                 loop={true} // Infinite loop
                 className="recommended-companies-carousel"
-                style={{ padding: '20px 0' }} // Optional padding for better spacing
+                style={{ padding: '20px 0' }}
+                breakpoints={{
+                  0: {
+                    slidesPerView: 1,
+                  },
+                  480: {
+                    slidesPerView: 2,
+                  },
+                  768: {
+                    slidesPerView: 3,
+                  },
+                  1024: {
+                    slidesPerView: 4,
+                  },
+                  1280: {
+                    slidesPerView: 5,
+                  },
+                }}
               >
                 {product.recommended_companies.map((company) => (
                   <SwiperSlide key={company.id} className=' bg-white border rounded p-2 h-100 text-center'>

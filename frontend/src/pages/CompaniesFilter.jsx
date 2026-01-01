@@ -493,7 +493,19 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 &times;
               </button>
             </div>
-
+            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">Company Name</h3>
+              <div className="input-group flex-nowrap ps-2 pe-4">
+                <i className="bx bx-search input-group-text" />
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search companies..."
+                  value={searchTerm}
+                  onChange={handleSearch}
+                />
+              </div>
+            </div>
             {isSeller == 1 && (
               <>
                 <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">

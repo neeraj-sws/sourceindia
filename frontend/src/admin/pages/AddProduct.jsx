@@ -65,36 +65,44 @@ const AddProduct = () => {
       setItemCategories([]);
     }
   }, [selectedCategory, selectedSubCategory]);
-  
+
   useEffect(() => {
     if (selectedCategory && selectedSubCategory && selectedItemCategory) {
       axios.get(
         `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}`
       )
-      .then(res => setItemSubCategories(res.data))
-      .catch(err => {
-        console.error("Error fetching item sub categories:", err);
-        setItemSubCategories([]);
-      });
+        .then(res => setItemSubCategories(res.data))
+        .catch(err => {
+          console.error("Error fetching item sub categories:", err);
+          setItemSubCategories([]);
+        });
     } else {
       setItemSubCategories([]);
     }
   }, [selectedCategory, selectedSubCategory, selectedItemCategory]);
-  
+
   useEffect(() => {
     if (selectedCategory && selectedSubCategory && selectedItemCategory && selectedItemSubCategory) {
       axios.get(
         `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${selectedItemSubCategory}`
       )
-      .then(res => setItems(res.data))
-      .catch(err => {
-        console.error("Error fetching items:", err);
-        setItems([]);
-      });
+        .then(res => setItems(res.data))
+        .catch(err => {
+          console.error("Error fetching items:", err);
+          setItems([]);
+        });
     } else {
       setItems([]);
     }
   }, [selectedCategory, selectedSubCategory, selectedItemCategory, selectedItemSubCategory]);
+
+  useEffect(() => {
+    if (selectedItemCategory && itemCategories.length > 0) {
+      $('#item_category_id')
+        .val(String(selectedItemCategory))
+        .trigger('change.select2');
+    }
+  }, [selectedItemCategory, itemCategories]);
 
   useEffect(() => {
     const fetchSellers = async () => {
@@ -109,44 +117,44 @@ const AddProduct = () => {
   }, []);
 
   useEffect(() => {
-  if (!selectedSellers) {
-    setCategories([]);
-    setSelectedCategory('');
-    return;
-  }
-
-  const fetchSellerCategories = async () => {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/sellers/seller-categories`,
-        { params: { user_id: selectedSellers } }
-      );
-      setCategories(res.data);
-    } catch (error) {
-      console.error("Error fetching seller categories:", error);
+    if (!selectedSellers) {
       setCategories([]);
+      setSelectedCategory('');
+      return;
     }
-  };
 
-  fetchSellerCategories();
-}, [selectedSellers]);
+    const fetchSellerCategories = async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/sellers/seller-categories`,
+          { params: { user_id: selectedSellers } }
+        );
+        setCategories(res.data);
+      } catch (error) {
+        console.error("Error fetching seller categories:", error);
+        setCategories([]);
+      }
+    };
+
+    fetchSellerCategories();
+  }, [selectedSellers]);
 
   const handleSellersChange = (event) => {
-  const userId = event.target.value;
-  setSelectedSellers(userId);
+    const userId = event.target.value;
+    setSelectedSellers(userId);
 
-  // reset everything dependent on seller
-  setCategories([]);
-  setSubCategories([]);
-  setSelectedCategory('');
-  setSelectedSubCategory('');
-  setSelectedItemCategory('');
-  setSelectedItemSubCategory('');
-  setSelectedItem('');
-  setItemCategories([]);
-  setItemSubCategories([]);
-  setItems([]);
-};
+    // reset everything dependent on seller
+    setCategories([]);
+    setSubCategories([]);
+    setSelectedCategory('');
+    setSelectedSubCategory('');
+    setSelectedItemCategory('');
+    setSelectedItemSubCategory('');
+    setSelectedItem('');
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setItems([]);
+  };
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -175,37 +183,37 @@ const AddProduct = () => {
   }, []);*/
 
   const handleCategoryChange = async (event) => {
-  const categoryId = event.target.value;
-  setSelectedCategory(categoryId);
+    const categoryId = event.target.value;
+    setSelectedCategory(categoryId);
 
-  // reset dependent fields
-  setSelectedSubCategory('');
-  setSelectedItemCategory('');
-  setSelectedItemSubCategory('');
-  setSelectedItem('');
-  setSubCategories([]);
-  setItemCategories([]);
-  setItemSubCategories([]);
-  setItems([]);
-
-  if (!selectedSellers || !categoryId) return;
-
-  try {
-    const res = await axios.get(
-      `${API_BASE_URL}/sellers/seller-subcategories`,
-      {
-        params: {
-          user_id: selectedSellers,
-          category_id: categoryId
-        }
-      }
-    );
-    setSubCategories(res.data);
-  } catch (error) {
-    console.error("Error fetching seller sub categories:", error);
+    // reset dependent fields
+    setSelectedSubCategory('');
+    setSelectedItemCategory('');
+    setSelectedItemSubCategory('');
+    setSelectedItem('');
     setSubCategories([]);
-  }
-};
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setItems([]);
+
+    if (!selectedSellers || !categoryId) return;
+
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/sellers/seller-subcategories`,
+        {
+          params: {
+            user_id: selectedSellers,
+            category_id: categoryId
+          }
+        }
+      );
+      setSubCategories(res.data);
+    } catch (error) {
+      console.error("Error fetching seller sub categories:", error);
+      setSubCategories([]);
+    }
+  };
 
   const handleSubCategoryChange = async (event) => {
     const subCategoryId = event.target.value;
@@ -319,23 +327,23 @@ const AddProduct = () => {
       const subCategoryId = $(this).val();
       handleSubCategoryChange({ target: { value: subCategoryId } });
     });
-     $('#item_category_id')
-  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
-  .on("change", function () {
-    handleItemCategoryChange({ target: { value: $(this).val() } });
-  });
+    $('#item_category_id')
+      .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
+      .on("change", function () {
+        handleItemCategoryChange({ target: { value: $(this).val() } });
+      });
 
-  $('#item_sub_category_id')
-    .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
-    .on("change", function () {
-      handleItemSubCategoryChange({ target: { value: $(this).val() } });
-    });
+    $('#item_sub_category_id')
+      .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
+      .on("change", function () {
+        handleItemSubCategoryChange({ target: { value: $(this).val() } });
+      });
 
-  $('#item_id')
-    .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item" })
-    .on("change", function () {
-      handleItemChange({ target: { value: $(this).val() } });
-    });
+    $('#item_id')
+      .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item" })
+      .on("change", function () {
+        handleItemChange({ target: { value: $(this).val() } });
+      });
 
     return () => {
       $('#user_id').off("change").select2('destroy');
@@ -384,94 +392,96 @@ const AddProduct = () => {
   };
 
   useEffect(() => {
-  if (!isEditing) return;
+    if (!isEditing) return;
 
-  const fetchProduct = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
-      const data = res.data;
+    const fetchProduct = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
+        const data = res.data;
 
-      setFormData({
-        title: data.title || '',
-        code: data.code || '',
-        article_number: data.article_number || '',
-        status: String(data.status),
-        short_description: data.short_description || '',
-        description: data.description || '',
-        images: data.images || [],
-      });
-      setSelectedSellers(String(data.user_id || ""));
-      setSelectedApplications(String(data.application || ""));
-      // Set category & subcategory first
-      setSelectedCategory(data.category || "");
-      setSelectedSubCategory(data.sub_category || "");
-
-      // Fetch dependent dropdowns sequentially in correct order
-      if (data.user_id) {
-  const catRes = await axios.get(
-    `${API_BASE_URL}/sellers/seller-categories`,
-    { params: { user_id: data.user_id } }
-  );
-  setCategories(catRes.data);
-}
-      if (data.user_id && data.category) {
-  const subRes = await axios.get(
-    `${API_BASE_URL}/sellers/seller-subcategories`,
-    {
-      params: {
-        user_id: data.user_id,
-        category_id: data.category
-      }
-    }
-  );
-  setSubCategories(subRes.data);
-}
-
-setSelectedSubCategory(data.sub_category || "");
-
-      let itemCatRes = [];
-      if (data.category && data.sub_category) {
-        const resIC = await axios.get(
-          `${API_BASE_URL}/item_category/by-category-subcategory/${data.category}/${data.sub_category}`
-        );
-        itemCatRes = resIC.data;
-        setItemCategories(itemCatRes);
-      }
-
-      // ✅ Now only set selectedItemCategory AFTER data is available
-      setSelectedItemCategory(data.item_category_id || '');
-
-      let itemSubCatRes = [];
-      if (data.category && data.sub_category && data.item_category_id) {
-        try {
-          const resISC = await axios.get(
-            `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${data.category}/${data.sub_category}/${data.item_category_id}`
+        setFormData({
+          title: data.title || '',
+          code: data.code || '',
+          article_number: data.article_number || '',
+          status: String(data.status),
+          short_description: data.short_description || '',
+          description: data.description || '',
+          images: data.images || [],
+        });
+        setSelectedSellers(String(data.user_id || ""));
+        setSelectedApplications(String(data.application || ""));
+        // Set category & subcategory first
+        setSelectedCategory(data.category || "");
+        setSelectedSubCategory(data.sub_category || "");
+        setSelectedItemCategory(data.item_category_id || '');
+        setSelectedItemSubCategory(data.item_subcategory_id || '');
+        setSelectedItem(data.item_id || '');
+        // Fetch dependent dropdowns sequentially in correct order
+        if (data.user_id) {
+          const catRes = await axios.get(
+            `${API_BASE_URL}/sellers/seller-categories`,
+            { params: { user_id: data.user_id } }
           );
-          itemSubCatRes = resISC.data;
-          setItemSubCategories(itemSubCatRes);
-        } catch (err) {
-          console.warn("No item subcategories found (404 likely):", err);
-          setItemSubCategories([]);
+          setCategories(catRes.data);
         }
+        if (data.user_id && data.category) {
+          const subRes = await axios.get(
+            `${API_BASE_URL}/sellers/seller-subcategories`,
+            {
+              params: {
+                user_id: data.user_id,
+                category_id: data.category
+              }
+            }
+          );
+          setSubCategories(subRes.data);
+        }
+
+        setSelectedSubCategory(data.sub_category || "");
+
+        let itemCatRes = [];
+        if (data.category && data.sub_category) {
+          const resIC = await axios.get(
+            `${API_BASE_URL}/item_category/by-category-subcategory/${data.category}/${data.sub_category}`
+          );
+          itemCatRes = resIC.data;
+          setItemCategories(itemCatRes);
+        }
+
+        // ✅ Now only set selectedItemCategory AFTER data is available
+        setSelectedItemCategory(data.item_category_id || '');
+
+        let itemSubCatRes = [];
+        if (data.category && data.sub_category && data.item_category_id) {
+          try {
+            const resISC = await axios.get(
+              `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${data.category}/${data.sub_category}/${data.item_category_id}`
+            );
+            itemSubCatRes = resISC.data;
+            setItemSubCategories(itemSubCatRes);
+          } catch (err) {
+            console.warn("No item subcategories found (404 likely):", err);
+            setItemSubCategories([]);
+          }
+        }
+
+        setSelectedItemSubCategory(data.item_subcategory_id || '');
+
+        if (data.category && data.sub_category && data.item_category_id && data.item_subcategory_id) {
+          const itemsRes = await axios.get(
+            `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${data.category}/${data.sub_category}/${data.item_category_id}/${data.item_subcategory_id}`
+          );
+          setItems(itemsRes.data);
+        }
+
+        setSelectedItem(data.item_id || '');
+      } catch (error) {
+        console.error('Error fetching Product:', error);
       }
+    };
 
-      setSelectedItemSubCategory(data.item_subcategory_id || '');
-
-      if (data.category && data.sub_category && data.item_category_id && data.item_subcategory_id) {
-        const itemsRes = await axios.get(
-          `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${data.category}/${data.sub_category}/${data.item_category_id}/${data.item_subcategory_id}`
-        );
-        setItems(itemsRes.data);
-      }
-
-      setSelectedItem(data.item_id || '');
-    } catch (error) {
-      console.error('Error fetching Product:', error);
-    }
-  };
-
-  fetchProduct();
-}, [productId]);
+    fetchProduct();
+  }, [productId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -486,11 +496,11 @@ setSelectedSubCategory(data.sub_category || "");
           ...formData,
           user_id: selectedSellers,
           application: selectedApplications,
-          category: selectedCategory,
-          sub_category: selectedSubCategory,
-          item_category_id: selectedItemCategory,
-          item_subcategory_id: selectedItemSubCategory,
-          item_id: selectedItem,
+          category: Number(selectedCategory) || 0,
+          sub_category: Number(selectedSubCategory) || 0,
+          item_category_id: Number(selectedItemCategory) || 0,
+          item_subcategory_id: Number(selectedItemSubCategory) || 0,
+          item_id: Number(selectedItem) || 0,
         };
         headers = { "Content-Type": "application/json" };
         await axios[method](endpoint, payload, { headers });
@@ -632,7 +642,7 @@ setSelectedSubCategory(data.sub_category || "");
                             value={formData.article_number}
                             onChange={handleInputChange}
                           />
-                        </div>                        
+                        </div>
                         <div className="col-md-12">
                           <div className="form-check form-check-inline">
                             <input
@@ -731,158 +741,158 @@ setSelectedSubCategory(data.sub_category || "");
                 <div className="col-md-4">
                   <div className="card">
                     <div className="card-body p-4">
-                  <div className="row">
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="category" className="form-label required">Category</label>
-                      <select
-                        id="category" className="form-control select2"
-                        value={selectedCategory}
-                        onChange={handleCategoryChange}
-                        disabled={!selectedSellers}
-                      >
-                        <option value="">Select Category</option>
-                        {categories?.map((category) => (
-                          <option key={category.id} value={category.id}>{category.name}</option>
-                        ))}
-                      </select>
-                      {errors.category && (<div className="text-danger small">{errors.category}</div>)}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="sub_category" className="form-label">Sub Category</label>
-                      <select
-                        id="sub_category" className="form-control"
-                        value={selectedSubCategory}
-                        onChange={handleSubCategoryChange}
-                        disabled={!selectedCategory}
-                      >
-                        <option value="">Select Sub Category</option>
-                        {subCategories?.map((sub_category) => (
-                          <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-  <label htmlFor="item_category_id" className="form-label">Item Category</label>
-  <select
-    id="item_category_id"
-    className="form-control"
-    value={selectedItemCategory}
-    onChange={handleItemCategoryChange}
-    disabled={!selectedCategory || !selectedSubCategory}
-  >
-    <option value="">Select Item Category</option>
-    {itemCategories.map((ic) => (
-      <option key={ic.id} value={ic.id}>{ic.name}</option>
-    ))}
-  </select>
-</div>
+                      <div className="row">
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="category" className="form-label required">Category</label>
+                          <select
+                            id="category" className="form-control select2"
+                            value={selectedCategory}
+                            onChange={handleCategoryChange}
+                            disabled={!selectedSellers}
+                          >
+                            <option value="">Select Category</option>
+                            {categories?.map((category) => (
+                              <option key={category.id} value={category.id}>{category.name}</option>
+                            ))}
+                          </select>
+                          {errors.category && (<div className="text-danger small">{errors.category}</div>)}
+                        </div>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="sub_category" className="form-label">Sub Category</label>
+                          <select
+                            id="sub_category" className="form-control"
+                            value={selectedSubCategory}
+                            onChange={handleSubCategoryChange}
+                            disabled={!selectedCategory}
+                          >
+                            <option value="">Select Sub Category</option>
+                            {subCategories?.map((sub_category) => (
+                              <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="item_category_id" className="form-label">Item Category</label>
+                          <select
+                            id="item_category_id"
+                            className="form-control"
+                            value={selectedItemCategory}
+                            onChange={handleItemCategoryChange}
+                            disabled={!selectedCategory || !selectedSubCategory}
+                          >
+                            <option value="">Select Item Category</option>
+                            {itemCategories.map((ic) => (
+                              <option key={ic.id} value={ic.id}>{ic.name}</option>
+                            ))}
+                          </select>
+                        </div>
 
-<div className="form-group mb-3 col-md-12">
-  <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
-  <select
-    id="item_sub_category_id"
-    className="form-control"
-    value={selectedItemSubCategory}
-    onChange={handleItemSubCategoryChange}
-    disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
-  >
-    <option value="">Select Item Sub Category</option>
-    {itemSubCategories.map((isc) => (
-      <option key={isc.id} value={isc.id}>{isc.name}</option>
-    ))}
-  </select>
-</div>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
+                          <select
+                            id="item_sub_category_id"
+                            className="form-control"
+                            value={selectedItemSubCategory}
+                            onChange={handleItemSubCategoryChange}
+                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
+                          >
+                            <option value="">Select Item Sub Category</option>
+                            {itemSubCategories.map((isc) => (
+                              <option key={isc.id} value={isc.id}>{isc.name}</option>
+                            ))}
+                          </select>
+                        </div>
 
-<div className="form-group mb-3 col-md-12">
-  <label htmlFor="item_id" className="form-label">Items</label>
-  <select
-    id="item_id"
-    className="form-control"
-    value={selectedItem}
-    onChange={handleItemChange}
-    disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory || !selectedItemSubCategory}
-  >
-    <option value="">Select Item</option>
-    {items.map((i) => (
-      <option key={i.id} value={i.id}>{i.name}</option>
-    ))}
-  </select>
-</div>
-                    <div className="col-md-12">
-                      <label htmlFor="file" className="form-label required">Thumbnail</label><br />
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        style={{ display: "none" }}
-                        onChange={handleFileChange}
-                        multiple
-                        accept="image/png, image/jpeg"
-                      />
-                      <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
-                        <i className="bx bxs-plus-square me-1" />Add Image
-                      </button>
-                      {errors.file && (<div className="text-danger small mt-1">{errors.file}</div>)}
-                    </div>
-                    <div className="col-md-12">
-                      <div className="mt-3 d-flex flex-wrap">
-                        {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
-                          <div key={index} className="position-relative m-2">
-                            <img
-                              src={`${ROOT_URL}/${image.file}`}
-                              alt={`Preview ${index}`}
-                              className="object-fit-cover m-3"
-                              width={80}
-                              height={80}
-                            />
-                            <button
-                              type="button"
-                              className="btn btn-danger btn-remove-image"
-                              style={{ width: '1.5rem', height: '1.5rem' }}
-                              onClick={() => openDeleteModal(image.id)}
-                            >
-                              <i className="bx bx-x me-0" />
-                            </button>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="item_id" className="form-label">Items</label>
+                          <select
+                            id="item_id"
+                            className="form-control"
+                            value={selectedItem}
+                            onChange={handleItemChange}
+                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory || !selectedItemSubCategory}
+                          >
+                            <option value="">Select Item</option>
+                            {items.map((i) => (
+                              <option key={i.id} value={i.id}>{i.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-md-12">
+                          <label htmlFor="file" className="form-label required">Thumbnail</label><br />
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            style={{ display: "none" }}
+                            onChange={handleFileChange}
+                            multiple
+                            accept="image/png, image/jpeg"
+                          />
+                          <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
+                            <i className="bx bxs-plus-square me-1" />Add Image
+                          </button>
+                          {errors.file && (<div className="text-danger small mt-1">{errors.file}</div>)}
+                        </div>
+                        <div className="col-md-12">
+                          <div className="mt-3 d-flex flex-wrap">
+                            {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
+                              <div key={index} className="position-relative m-2">
+                                <img
+                                  src={`${ROOT_URL}/${image.file}`}
+                                  alt={`Preview ${index}`}
+                                  className="object-fit-cover m-3"
+                                  width={80}
+                                  height={80}
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-remove-image"
+                                  style={{ width: '1.5rem', height: '1.5rem' }}
+                                  onClick={() => openDeleteModal(image.id)}
+                                >
+                                  <i className="bx bx-x me-0" />
+                                </button>
+                              </div>
+                            ))}
+                            {files.length > 0 && files?.map((file, index) => (
+                              <div key={index} className="position-relative m-2">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`New Preview ${index}`}
+                                  className="object-fit-cover m-3"
+                                  width={80}
+                                  height={80}
+                                />
+                                <button
+                                  variant="danger"
+                                  size="sm"
+                                  className="btn btn-danger btn-remove-image"
+                                  style={{ width: '1.5rem', height: '1.5rem' }}
+                                  onClick={() => {
+                                    setFiles(prev => prev.filter((_, i) => i !== index));
+                                  }}
+                                >
+                                  <i className="bx bx-x me-0" />
+                                </button>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                        {files.length > 0 && files?.map((file, index) => (
-                          <div key={index} className="position-relative m-2">
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={`New Preview ${index}`}
-                              className="object-fit-cover m-3"
-                              width={80}
-                              height={80}
-                            />
-                            <button
-                              variant="danger"
-                              size="sm"
-                              className="btn btn-danger btn-remove-image"
-                              style={{ width: '1.5rem', height: '1.5rem' }}
-                              onClick={() => {
-                                setFiles(prev => prev.filter((_, i) => i !== index));
-                              }}
-                            >
-                              <i className="bx bx-x me-0" />
-                            </button>
-                          </div>
-                        ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  </div>
                   </div>
                 </div>
                 <div className="col-12 text-end mt-2">
                   <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
-                  {submitting ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      {isEditing ? "Updating..." : "Saving..."}
-                    </>
-                  ) : (
-                    isEditing ? "Update" : "Save"
-                  )}
-                </button>
+                    {submitting ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        {isEditing ? "Updating..." : "Saving..."}
+                      </>
+                    ) : (
+                      isEditing ? "Update" : "Save"
+                    )}
+                  </button>
                 </div>
               </form>
             </div>

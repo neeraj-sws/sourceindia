@@ -112,12 +112,12 @@ const CompanyDetail = () => {
       `}
       </style>
 
-      <section className="productDetail py-5">
-        <div className="container">
+      <section className="productDetail py-lg-5 pt-5 pb-0">
+        <div className="container-xl">
           <div className="row">
 
             {/* Left Card */}
-            <div className="col-lg-3">
+            <div className="col-xl-3 col-md-4 mb-md-0 mb-3">
               <div className="card p-4">
                 <Skeleton height="20px" width="80%" style={{ marginBottom: 12 }} />
                 <Skeleton height="100px" style={{ marginBottom: 16 }} />
@@ -131,7 +131,7 @@ const CompanyDetail = () => {
             </div>
 
             {/* Right Content */}
-            <div className="col-lg-9">
+            <div className="col-xl-9 col-md-8 mb-md-0 mb-3">
               <div className="card p-4">
                 <Skeleton height="28px" width="50%" style={{ marginBottom: 20 }} />
 
@@ -175,8 +175,8 @@ const CompanyDetail = () => {
 
   return (
     <>
-      <section className="productDetail py-5">
-        <div className="container">
+      <section className="productDetail py-lg-5 pt-5 pb-0">
+        <div className="container-xl">
           <div className="row">
             <nav aria-label="breadcrumb" className="mb-3">
               <ol className="breadcrumb mb-0">
@@ -194,12 +194,12 @@ const CompanyDetail = () => {
               </ol>
             </nav>
             {/* Company Info */}
-            <div className="col-lg-3">
+            <div className="col-xl-3 col-md-4 mb-md-0 mb-3">
               <div className="card h-100 shadow-sm">
                 <div className="card-body text-center p-4">
                   <h6 className="my-3 text-start">{company.organization_name}</h6>
 
-                  <div className="rounded-2">
+                  <div className="rounded-2 companydetailimg">
                     <ImageFront
                       src={`${ROOT_URL}/${company.company_logo_file}`}
                       alt={company.organization_name}
@@ -269,7 +269,7 @@ const CompanyDetail = () => {
             </div>
 
             {/* Company Details */}
-            <div className="col-lg-9">
+            <div className="col-xl-9 col-md-8 mb-md-0 mb-3">
               <div className="card h-100 shadow-sm">
                 <div className="card-body p-4">
                   <h4 className="text-orange">{company.organization_name}</h4>
@@ -288,7 +288,7 @@ const CompanyDetail = () => {
                   <p>{company.brief_company || ""}</p>
                   <p>{company.organizations_product_description || ""}</p>
                   <div className='w-25 mt-4'>
-                    <button className="btn btn-orange w-100" onClick={() => setShowModal(true)}>
+                    <button className="btn btn-orange w-100 enquirybtnwidth" onClick={() => setShowModal(true)}>
                       <i className="lni lni-phone pe-2"></i> Enquiry
                     </button>
                   </div>
@@ -309,22 +309,32 @@ const CompanyDetail = () => {
       </section>
 
       {/* Products Carousel */}
-      <div className="container mt-5">
+      <div className="container-xl mt-5">
         {company?.products?.length > 0 && (
           < div className="companyProducts">
             <h2 className="color-primary">Products</h2>
             <Swiper
               modules={[Navigation, Pagination]}
-              slidesPerView={3}
               spaceBetween={20}
               navigation
               loop={false}
               className="similar-products-carousel"
               style={{ padding: "20px 0" }}
+              breakpoints={{
+                0: {
+                  slidesPerView: 1,
+                },
+                576: {
+                  slidesPerView: 2,
+                },
+                1024: {
+                  slidesPerView: 3,
+                },
+              }}
             >
               {company.products.map((similar) => (
                 <SwiperSlide key={similar.id}>
-                  <div className="productBox p-3 bg-white">
+                  <div className="productBox productBoxswiper  p-3 bg-white">
                     <div className="middlepro">
                       <div className="ProImg ProImgDetail">
                         <ImageFront
@@ -359,29 +369,45 @@ const CompanyDetail = () => {
 
         {/* Recommended Companies */}
         {company?.recommended_companies?.length > 0 && (
-          <div className="similerCompany mt-5">
+          <div className="similerCompany mt-lg-5 mt-3">
             <h2 className="color-primary">Recommended Companies</h2>
             <Swiper
               modules={[Navigation, Pagination]}
-              slidesPerView={5}
               spaceBetween={20}
               navigation
               loop
               className="recommended-companies-carousel"
               style={{ padding: "20px 0" }}
+              breakpoints={{
+                0: {
+                  slidesPerView: 1,
+                },
+                576: {
+                  slidesPerView: 2,
+                },
+                768: {
+                  slidesPerView: 3,
+                },
+                992: {
+                  slidesPerView: 4,
+                },
+                1200: {
+                  slidesPerView: 5,
+                },
+              }}
             >
               {company.recommended_companies.map((item) => (
                 <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
                   <div className='productContainer'>
-                  <Link to={`/companies/${item.organization_slug}`}>
-                    <ImageFront
-                      src={`${ROOT_URL}/${item.company_logo_file}`}
-                      width={180}
-                      height={180}
-                      showFallback
-                    />
-                    <p className="mt-3 mb-2">{item.organization_name}</p>
-                  </Link>
+                    <Link to={`/companies/${item.organization_slug}`}>
+                      <ImageFront
+                        src={`${ROOT_URL}/${item.company_logo_file}`}
+                        width={180}
+                        height={180}
+                        showFallback
+                      />
+                      <p className="mt-3 mb-2">{item.organization_name}</p>
+                    </Link>
                   </div>
                 </SwiperSlide>
               ))}

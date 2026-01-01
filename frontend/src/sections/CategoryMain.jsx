@@ -116,14 +116,14 @@ const CategoryMain = ({ isHome, limit }) => {
 
                 <div className="card">
                   <div className="card-body">
-                    <div className="row g-4 align-items--center">
+                    <div className="row g-4 align-items-center">
                       {/* ✅ LEFT IMAGE BLOCK */}
                       <div className="col-lg-4">
-                        <div className="position-relative rounded overflow-hidden shadow-sm h-100 categorytopimg">
+                        <div className="position-relative  overflow-hidden  h-100 categorytopimg">
                           {cat.file_name && (
                             <img
                               src={`${ROOT_URL}/${cat.file_name}`}
-                              className="img-fluid w-100 h-100 object-fit-cover"
+                              className="img-fluid w-100 rounded shadow-sm h-100"
                               alt={cat.name || "Category"}
                               onError={(e) => {
                                 e.target.onerror = null; // prevent infinite loop
@@ -134,8 +134,8 @@ const CategoryMain = ({ isHome, limit }) => {
                           )}
                           <div className="overlay d-flex justify-content-center align-items-end">
                             <a
-                              href={`sub-categories/${cat.slug}`}
-                              className="btn btn-danger btn-sm mb-3"
+                              href={`categories/${cat.slug}`}
+                              className="btn btn-danger btn-sm px-4"
                             >
                               View All
                             </a>
@@ -152,7 +152,7 @@ const CategoryMain = ({ isHome, limit }) => {
                                 <div className="card card-hover h-100 shadow-sm border-0">
                                   <div className="card-body">
                                     <a
-                                      href={`/item-categories/${sub.slug}`}
+                                      href={`/categories/${cat.slug}/${sub.slug}`}
                                       className="d-block"
                                     >
                                       <div className="d-flex justify-content-between align-items-start">
@@ -162,17 +162,19 @@ const CategoryMain = ({ isHome, limit }) => {
                                         <span>→</span>
                                       </div>
                                     </a>
-                                    <div className="d-flex justify-content-between align-items--center gap-1 gridulimgcontainer">
+                                    <div className="d-flex justify-content-between align-items--center gap-2 gridulimgcontainer">
                                       <ul className="list--unstyled ps-sm-2 ps-3 mb-0 categorylistul">
                                         {(sub.item_categories || [])
                                           .slice(0, 4)
                                           .map((item, i) => (
-                                            <li key={i} className="text-start"> 
+                                            <li key={i} className="text-start">
                                               <a
-                                                href={`/item-subcategory/${item.slug}`}
-                                                className="text-decoration-none text-primary small"
+                                                href={`/categories/${cat.slug}/${sub.slug}/${item.slug}`}
+                                                className="text-decoration-none text-primary small text-truncate"
                                               >
-                                                {item.name}
+                                                {item.name.length > 20
+                                                  ? item.name.slice(0, 20) + "..."
+                                                  : item.name}
                                               </a>
                                             </li>
                                           ))}
@@ -187,7 +189,7 @@ const CategoryMain = ({ isHome, limit }) => {
                                           onError={(e) => {
                                             e.target.onerror = null;
                                             e.target.src =
-                                              "https://www.glossyjewels.com/uploads/dummy.jpg";
+                                              "/default.png";
                                           }}
                                         />
                                       )}
