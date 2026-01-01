@@ -17,7 +17,7 @@ const HomeSettings = () => {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead="Home Settings" page="" title="Home Setting" />
+        <Breadcrumb mainhead="Home Settings" page="Settings" title="Home Setting" />
         <div className="row">
           <div className="col-md-3">
             <div className='card card-border mb-4'>

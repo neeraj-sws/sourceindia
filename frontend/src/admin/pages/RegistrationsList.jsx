@@ -320,7 +320,7 @@ const RegistrationsList = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Event 2024 Registrations" maincount={totalRecords} page="" title={getDeleted ? "Recently Deleted Event 2024 Registrations" : "Registration"}
+          <Breadcrumb mainhead="Event 2024 Registrations" maincount={totalRecords} page="Registrations" title={getDeleted ? "Recently Deleted Event 2024 Registrations" : "Registration List"}
             actions={
               <>
                 <button className="btn  btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

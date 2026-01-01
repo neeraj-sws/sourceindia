@@ -358,7 +358,7 @@ const ItemList = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title={getDeleted ? "Recently Deleted Item" : "Item"}
+          <Breadcrumb page="Category Master" title={getDeleted ? "Recently Deleted Item" : "Item"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Item</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>

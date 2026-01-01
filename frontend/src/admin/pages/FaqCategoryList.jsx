@@ -169,7 +169,7 @@ const FaqCategoryList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="FAQ Categories" maincount={totalRecords} page="" title="FAQ Category" />
+          <Breadcrumb mainhead="FAQ Categories" maincount={totalRecords} page="FAQ" title="FAQ Category" />
           <div className="card">
             <div className="card-body">
               <DataTable

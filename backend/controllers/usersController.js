@@ -1482,3 +1482,13 @@ exports.impersonateLogin = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+exports.getUsersCount = async (req, res) => {
+  try {
+    const total = await Users.count();
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

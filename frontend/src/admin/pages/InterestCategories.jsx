@@ -225,7 +225,7 @@ const InterestCategories = () => {
       <div className="page-wrapper">
         <div className="page-content">
           {/* <Breadcrumb mainhead="Interest Categories" maincount={totalRecords} page="" title="Interest Category" add_button="Add Interest Category" add_link="#" onClick={openAddModal} /> */}
-          <Breadcrumb mainhead="Interest Categories" maincount={totalRecords} page="" title="Interest Category" />
+          <Breadcrumb mainhead="Interest Categories" maincount={totalRecords} page="Category Master" title="Interest Category" />
           <div className="card">
             <div className="card-body">
               <DataTable

@@ -214,7 +214,7 @@ const ContactsList = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Contact List" maincount={totalRecords} page="" title={getDeleted ? "Recently Deleted Contact Us" : "Contact Us"}
+          <Breadcrumb mainhead="Contact List" maincount={totalRecords} page="Contacts" title={getDeleted ? "Recently Deleted Contact Us" : "Contact Us"}
             actions={
               <>
                 <button className="btn  btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

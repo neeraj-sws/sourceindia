@@ -111,7 +111,7 @@ setMenus(normalized);
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Front Menu" page="" title="Front Menus" />
+          <Breadcrumb mainhead="Front Menu" page="Settings" title="Front Menus" />
 
           <div className="card">
             <div className="card-body">

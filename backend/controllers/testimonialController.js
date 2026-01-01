@@ -214,3 +214,13 @@ exports.getAllTestimonialsServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getTestimonialsCount = async (req, res) => {
+  try {
+    const total = await Testimonials.count();
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

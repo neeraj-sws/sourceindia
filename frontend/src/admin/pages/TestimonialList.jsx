@@ -203,7 +203,7 @@ const TestimonialList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Testimonials" maincount={totalRecords} page=""  title="Testimonial" add_button={(<><i className="bx bxs-plus-square me-1" /> Add Testimonial</>)} add_link="#" onClick={() => openForm()} />
+          <Breadcrumb mainhead="Testimonials" maincount={totalRecords} page="Testimonial"  title="Testimonial List" add_button={(<><i className="bx bxs-plus-square me-1" /> Add Testimonial</>)} add_link="#" onClick={() => openForm()} />
           <div className="row">
             <div className="col-md-4">
               <div className="card">

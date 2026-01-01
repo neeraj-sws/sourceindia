@@ -282,7 +282,7 @@ const SubAdminList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Sub Admin" maincount={totalRecords} page="Settings" title="Sub Admin" add_button={<><i className="bx bxs-plus-square me-1" /> Add Sub Admin</>} add_link="#" onClick={() => openForm()}
+          <Breadcrumb mainhead="Sub Admin" maincount={totalRecords} page="Management Portal" title="Sub Admin" add_button={<><i className="bx bxs-plus-square me-1" /> Add Sub Admin</>} add_link="#" onClick={() => openForm()}
           actions={
             <>
             <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

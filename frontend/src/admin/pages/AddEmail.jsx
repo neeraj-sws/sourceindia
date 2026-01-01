@@ -99,7 +99,7 @@ const AddEmail = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Shop" title={isEditing ? "Edit Email" : "Add Email"} add_button="Back" add_link="/admin/emails-list" />
+          <Breadcrumb page="Emails" title={isEditing ? "Edit Email" : "Add Email"} add_button="Back" add_link="/admin/emails-list" />
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <div className="card">

@@ -3,10 +3,10 @@ const router = express.Router();
 const itemsController = require('../controllers/itemsController');
 
 router.post('/', itemsController.createItems);
-router.get('/count', itemsController.getItemsCount);
 router.get('/', itemsController.getAllItems);
 router.get('/server-side', itemsController.getAllItemsServerSide);
 router.get('/product-bar-graph', itemsController.getItemBarGraph);
+router.get('/count', itemsController.getAllCatalogCounts);
 router.delete('/delete-selected', itemsController.deleteSelectedItems);
 router.get(
   '/by-category-subcategory-itemcategory-itemsubcategory/:category_id/:subcategory_id/:item_category_id/:item_sub_category_id',

@@ -326,7 +326,7 @@ const HomeBanners = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Home Banner" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Home Banner" : "Home Banner"}
+          <Breadcrumb mainhead="Home Banner" maincount={totalRecords} page="Home Banner" title={getDeleted ? "Recently Deleted Home Banner" : "Home Banner List"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Home Banner</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>

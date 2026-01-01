@@ -400,7 +400,7 @@ if (formData.file) {
       <div className={excludeSellerSubCategories || excludeProductSubCategories ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
           {!excludeSellerSubCategories && !excludeProductSubCategories &&
-          <Breadcrumb mainhead="Sub Category" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Sub Category" : "Sub Category"}
+          <Breadcrumb mainhead="Sub Category" maincount={totalRecords} page="Category Master" title={getDeleted ? "Recently Deleted Sub Category" : "Sub Category"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Sub Category</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>

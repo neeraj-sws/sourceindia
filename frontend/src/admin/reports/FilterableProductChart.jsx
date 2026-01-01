@@ -99,10 +99,20 @@ const apiUrl = config.api;
         const res = await axios.get(apiUrl);
         setOriginalData(res.data);
 
-        const options = res.data.labels.map(label => ({ label, value: label }));
-        setAllItems(options);
+        // const options = res.data.labels.map(label => ({ label, value: label }));
+        // setAllItems(options);
 
-        setSelectedItems(options.length > 30 ? options.slice(0, 10) : options);
+        // setSelectedItems(options.length > 30 ? options.slice(0, 10) : options);
+        const nonZeroOptions = res.data.labels
+  .map((label, index) => ({
+    label,
+    value: label,
+    count: res.data.datasets[0].data[index],
+  }))
+  .filter(item => item.count > 0);
+
+setAllItems(nonZeroOptions.map(({ label, value }) => ({ label, value })));
+setSelectedItems(nonZeroOptions.slice(0, 10));
         setGraphData(res.data);
       } catch (err) {
         console.error(err);

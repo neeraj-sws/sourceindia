@@ -299,7 +299,7 @@ const MembershipPlan = ({ getDeleted }) => {
       <div className="page-wrapper">
         <div className="page-content">
 
-          <Breadcrumb mainhead="Membership Plan" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Membership Plan" : "Membership Plan"}
+          <Breadcrumb mainhead="Membership Plan" maincount={totalRecords} page="Membership Plan" title={getDeleted ? "Recently Deleted Membership Plan" : "Membership Plan List"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Membership Plan</>)} add_link="#" onClick={openAddModal}
           actions={
             <>

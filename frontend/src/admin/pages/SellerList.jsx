@@ -657,8 +657,8 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Sellers" maincount={totalRecords} page="Users"
-            title={getInactive ? "Inactive Sellers" : getNotApproved ? "Not Approved Sellers" : getNotCompleted ? "Not Completed Sellers" : getDeleted ? "Recently Deleted Sellers" : "Sellers"}
+          <Breadcrumb mainhead="Sellers" maincount={totalRecords} page="Sellers"
+            title={getInactive ? "Inactive Sellers" : getNotApproved ? "Not Approved Sellers" : getNotCompleted ? "Not Completed Sellers" : getDeleted ? "Recently Deleted Sellers" : "Sellers List"}
             add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Seller</>)} add_link="/admin/add_seller"
             actions={
               <>

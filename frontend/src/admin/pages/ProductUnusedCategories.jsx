@@ -9,7 +9,7 @@ import NewItems from "./NewItems";
 const ProductUnusedCategories = () => {
   return (
     <>
-        <Breadcrumb page="Settings" title="Reports" />
+        <Breadcrumb page="Products" title="Reports" />
         <div className="row">
           <div className="col-xl-12 mx-auto">
             <ProductCategoryList excludeProductCategories={true} />

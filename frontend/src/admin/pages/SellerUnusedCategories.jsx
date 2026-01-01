@@ -6,7 +6,7 @@ import ProductSubCategoryList from "./ProductSubCategoryList";
 const SellerUnusedCategories = () => {
   return (
     <>
-        <Breadcrumb page="Settings" title="Reports" />
+        <Breadcrumb page="Sellers" title="Reports" />
         <div className="row">
           <div className="col-xl-12 mx-auto">
             <ProductCategoryList excludeSellerCategories={true} />

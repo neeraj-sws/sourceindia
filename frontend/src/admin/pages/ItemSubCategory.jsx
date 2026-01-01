@@ -410,7 +410,7 @@ const ItemSubCategory = ({excludeItemSubCategories}) => {
       <div className={excludeItemSubCategories ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
           {!excludeItemSubCategories &&
-          <Breadcrumb mainhead="Item Sub Category" maincount={totalRecords} page="Settings" title="Item Sub Category" add_button={<><i className="bx bxs-plus-square me-1" /> Add Item Sub Category</>} add_link="#" onClick={() => openForm()}
+          <Breadcrumb mainhead="Item Sub Category" maincount={totalRecords} page="Category Master" title="Item Sub Category" add_button={<><i className="bx bxs-plus-square me-1" /> Add Item Sub Category</>} add_link="#" onClick={() => openForm()}
           actions={
             <>
             <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

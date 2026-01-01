@@ -10,7 +10,7 @@ const Reports = () => {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb page="Settings" title="Reports" />
+        <Breadcrumb page="Reports" title="Reports List" />
         <div className="row">
           <div className="col-xl-12 mx-auto">
             <SellerFilter />

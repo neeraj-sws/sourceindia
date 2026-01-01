@@ -486,16 +486,17 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
         )`)
       };
     }
+    const searchWhere = { ...where };
     if (search) {
-      where[Op.or] = [
+      searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         { '$Categories.name$': { [Op.like]: `%${search}%` } },
         { '$SubCategories.name$': { [Op.like]: `%${search}%` } },
       ];
     }
-    const totalRecords = await ItemCategory.count();
+    const totalRecords = await ItemCategory.count({ where });
     const { count: filteredRecords, rows } = await ItemCategory.findAndCountAll({
-      where,
+      where: searchWhere,
       order,
       limit: limitValue,
       offset,

@@ -271,7 +271,7 @@ const RolesList = () => {
     <>
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead="Roles" maincount={totalRecords} page="Settings" title="Roles" add_button={<><i className="bx bxs-plus-square me-1" /> Add Roles</>} add_link="#" onClick={() => openForm()}
+        <Breadcrumb mainhead="Roles" maincount={totalRecords} page="Management Portal" title="Roles" add_button={<><i className="bx bxs-plus-square me-1" /> Add Roles</>} add_link="#" onClick={() => openForm()}
         actions={
           <>
           <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

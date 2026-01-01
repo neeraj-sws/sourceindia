@@ -110,7 +110,7 @@ const EmailsList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Email" maincount={totalRecords} page="Settings" title="Email" 
+          <Breadcrumb mainhead="Email" maincount={totalRecords} page="Emails Templates" title="Email List" 
         //   add_button="Add Email" add_link="/admin/add_email"
           actions={
               <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

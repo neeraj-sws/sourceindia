@@ -61,7 +61,7 @@ const PageEdit = ({ pageId, title }) => {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead={title} page="Settings" title={title} />
+        <Breadcrumb mainhead={title} page="Pages" title={title} />
         <div className="card">
           <div className="card-body">
             <h5 className="card-title mb-3">Edit {title}</h5>
