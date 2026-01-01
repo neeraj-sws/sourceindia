@@ -402,17 +402,18 @@ exports.getAllItemSubCategoryServerSide = async (req, res) => {
         )`)
       };
     }
+    const searchWhere = { ...where };
     if (search) {
-      where[Op.or] = [
+      searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         /*{ '$Categories.name$': { [Op.like]: `%${search}%` } },
         { '$SubCategories.name$': { [Op.like]: `%${search}%` } },*/
         { '$ItemCategory.name$': { [Op.like]: `%${search}%` } },
       ];
     }
-    const totalRecords = await ItemSubCategory.count();
+    const totalRecords = await ItemSubCategory.count({ where });
     const { count: filteredRecords, rows } = await ItemSubCategory.findAndCountAll({
-      where,
+      where: searchWhere,
       order,
       limit: limitValue,
       offset,

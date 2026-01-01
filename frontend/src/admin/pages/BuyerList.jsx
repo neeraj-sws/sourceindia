@@ -432,8 +432,8 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Buyers" maincount={totalRecords} page=""
-            title={getInactive ? "Inactive Buyers" : getNotApproved ? "Not Approved Buyers" : getDeleted ? "Recently Deleted Buyers" : "Buyers"}
+          <Breadcrumb mainhead="Buyers" maincount={totalRecords} page="Buyers"
+            title={getInactive ? "Inactive Buyers" : getNotApproved ? "Not Approved Buyers" : getDeleted ? "Recently Deleted Buyers" : "Buyers List"}
             add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Buyer</>)} add_link="/admin/add_buyer"
             actions={
               <>

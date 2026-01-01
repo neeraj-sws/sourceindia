@@ -6,7 +6,7 @@ const SellerCategoriesGraph = () => {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb page="Products" title="Graph" />
+        <Breadcrumb page="Sellers" title="Graph" />
         <div className="row my-3">
           <div className="col-xl-12">
             <FilterableSellerChart type="category" />

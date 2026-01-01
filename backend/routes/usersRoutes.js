@@ -5,6 +5,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.get('/server-side', usersController.getAllUsersHistoriesServerSide);
 router.get('/all_users', usersController.getAllUsers);
+router.get('/count', usersController.getUsersCount);
 router.post('/send-otp', usersController.sendOtp);
 router.post('/verify-otp', usersController.verifyOtp);
 router.post('/login', usersController.login);

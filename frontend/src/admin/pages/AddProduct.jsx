@@ -529,7 +529,7 @@ const AddProduct = () => {
         await axios[method](endpoint, payload, { headers });
       }
       showNotification(`Product ${isEditing ? "updated" : "added"} successfully!`, "success");
-      navigate("/admin/products");
+      if (!isEditing) { navigate("/admin/products"); }
     } catch (error) {
       console.error("Error saving Product:", error);
       showNotification(`Failed to ${isEditing ? "update" : "add"} Product`, "error");
@@ -590,7 +590,7 @@ const AddProduct = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Product" title={isEditing ? "Edit Product" : "Add Product"} add_button="Back" add_link="/admin/products" />
+          <Breadcrumb  page="Products" title={isEditing ? "Edit Product" : "Add Product"} add_button="Back" add_link="/admin/products" />
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <form className="row g-3" onSubmit={handleSubmit}>

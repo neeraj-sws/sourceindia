@@ -273,8 +273,11 @@ exports.getAllFaqsServerSide = async (req, res) => {
 
 exports.getFaqCount = async (req, res) => {
   try {
-    const total = await Faq.count({where: { is_delete: 0 }});
-    res.json({ total });
+    const [faq, faqCategory] = await Promise.all([
+      Faq.count({ where: { is_delete: 0 } }),
+      FaqCategory.count()
+      ]);
+    res.json({ faq, faqCategory });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

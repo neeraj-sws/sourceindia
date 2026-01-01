@@ -316,7 +316,7 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Enquiry" maincount={totalRecords} page="Settings" title={ getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : getNotApprove ? "Pending Leads" : "Leads" }
+          <Breadcrumb mainhead="Enquiry" maincount={totalRecords} page="Leads Master" title={ getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : getNotApprove ? "Pending Leads" : "Leads" }
           actions={
             <>
             <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

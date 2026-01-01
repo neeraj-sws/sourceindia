@@ -274,7 +274,7 @@ const MailHistory = ({getDeleted}) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Mail History" maincount={totalRecords} page="" title={getDeleted ? "Recently Deleted Mail History" : "Mail History"}
+          <Breadcrumb mainhead="Mail History" maincount={totalRecords} page="" title={getDeleted ? "Recently Deleted Mail History" : "Mail History List"}
           actions={
               <>
                 <button className="btn  btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

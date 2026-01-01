@@ -337,7 +337,7 @@ const ActivityList = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Activity" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Activity" : "Activity"}
+          <Breadcrumb mainhead="Activity" maincount={totalRecords} page="Activities" title={getDeleted ? "Recently Deleted Activity" : "Activity List"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Activity</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>

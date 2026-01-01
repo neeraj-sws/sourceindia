@@ -560,7 +560,7 @@ const AddSeller = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
       showNotification(`Seller ${isEditing ? "updated" : "added"} successfully!`, "success");
-      navigate("/admin/sellers");
+      if (!isEditing) { navigate("/admin/sellers"); }
     } catch (error) {
       console.error("Error saving seller:", error);
       showNotification(`Failed to ${isEditing ? "update" : "add"} seller`, "error");
@@ -590,7 +590,7 @@ const AddSeller = () => {
     <>
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb page="Seller" title="Add Seller" add_button="Back" add_link="/admin/sellers" />
+        <Breadcrumb page="Sellers" title="Add Seller" add_button="Back" add_link="/admin/sellers" />
         <div className="row">
           <div className="col-xl-12 mx-auto">            
             <form className="" onSubmit={handleSubmit}>

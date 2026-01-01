@@ -241,7 +241,7 @@ const AddBuyer = () => {
       });
 
       showNotification(`Buyer ${isEditing ? 'updated' : 'added'} successfully!`, "success");
-      navigate('/admin/buyers');
+      if (!isEditing) { navigate('/admin/buyers'); }
     } catch (error) {
       console.error('Error saving buyer:', error);
       showNotification(`Failed to ${isEditing ? 'update' : 'add'} buyer`, "error");
@@ -253,7 +253,7 @@ const AddBuyer = () => {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb page="Users" title={isEditing ? "Edit Buyer" : "Add Buyer"} add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
+        <Breadcrumb page="Buyers" title={isEditing ? "Edit Buyer" : "Add Buyer"} add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
         <div className="row">
           <div className="col-xl-12 mx-auto">
             <form className="row g-3" onSubmit={handleSubmit}>

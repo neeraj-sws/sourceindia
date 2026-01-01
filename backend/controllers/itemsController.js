@@ -400,8 +400,9 @@ exports.getAllItemsServerSide = async (req, res) => {
         )`)
       };
     }
+    const searchWhere = { ...where };
     if (search) {
-      where[Op.or] = [
+      searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         /*{ '$Categories.name$': { [Op.like]: `%${search}%` } },
         { '$SubCategories.name$': { [Op.like]: `%${search}%` } },*/
@@ -409,9 +410,9 @@ exports.getAllItemsServerSide = async (req, res) => {
         { '$ItemSubCategory.name$': { [Op.like]: `%${search}%` } },
       ];
     }
-    const totalRecords = await Items.count();
+    const totalRecords = await Items.count({ where });
     const { count: filteredRecords, rows } = await Items.findAndCountAll({
-      where,
+      where: searchWhere,
       order,
       limit: limitValue,
       offset,
@@ -443,16 +444,6 @@ exports.getAllItemsServerSide = async (req, res) => {
       totalRecords,
       filteredRecords,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
-exports.getItemsCount = async (req, res) => {
-  try {
-    const total = await Items.count();
-    res.json({ total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -503,6 +494,35 @@ exports.getItemBarGraph = async (req, res) => {
       ],
     });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllCatalogCounts = async (req, res) => {
+  try {
+    const [
+      categories,
+      subCategories,
+      itemCategories,
+      itemSubCategories,
+      items
+    ] = await Promise.all([
+      Categories.count({ where: { is_delete: 0 } }),
+      SubCategories.count({ where: { is_delete: 0 } }),
+      ItemCategory.count(),
+      ItemSubCategory.count(),
+      Items.count()
+    ]);
+
+    res.json({
+      categories,
+      subCategories,
+      itemCategories,
+      itemSubCategories,
+      items
+    });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };

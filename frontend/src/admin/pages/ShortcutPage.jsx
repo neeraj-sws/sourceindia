@@ -71,7 +71,7 @@ const ShortcutPage = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Shortcut Menu" page="" title="Shortcut Menus" />
+          <Breadcrumb mainhead="Shortcut Menu" page="Settings" title="Shortcut Menus" />
 
           <div className="card">
             <div className="card-body">

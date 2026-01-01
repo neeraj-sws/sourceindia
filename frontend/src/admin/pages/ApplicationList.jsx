@@ -316,7 +316,7 @@ const ApplicationList = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Application" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Application" : "Application"}
+          <Breadcrumb mainhead="Application" maincount={totalRecords} page="Application" title={getDeleted ? "Recently Deleted Application" : "Application List"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Application</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>

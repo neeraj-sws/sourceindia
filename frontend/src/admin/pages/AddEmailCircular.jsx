@@ -200,7 +200,7 @@ const AddEmailCircular = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title={isEditing ? "Edit Email Circular" : "Add Email Circular"} add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
+          <Breadcrumb page="Email Circular" title={isEditing ? "Edit Email Circular" : "Add Email Circular"} add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <form className="row g-3" onSubmit={handleSubmit}>

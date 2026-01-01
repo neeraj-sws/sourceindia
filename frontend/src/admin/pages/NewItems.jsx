@@ -442,7 +442,7 @@ $('#item_sub_category_id')
       <div className={excludeItem ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
           {!excludeItem &&
-          <Breadcrumb mainhead="Items" maincount={totalRecords} page="Settings" title="Items" add_button={<><i className="bx bxs-plus-square me-1" /> Add Items</>} add_link="#" onClick={() => openForm()}
+          <Breadcrumb mainhead="Items" maincount={totalRecords} page="Category Master" title="Items" add_button={<><i className="bx bxs-plus-square me-1" /> Add Items</>} add_link="#" onClick={() => openForm()}
           actions={
             <>
             <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

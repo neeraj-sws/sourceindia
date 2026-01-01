@@ -271,7 +271,7 @@ const SourceInterestCategories = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Interest Category" maincount={totalRecords} page="Settings" title="Source interest category" add_button={<><i className="bx bxs-plus-square me-1" /> Add source interest category</>} add_link="#" onClick={() => openForm()}
+          <Breadcrumb mainhead="Interest Category" maincount={totalRecords} page="Category Master" title="Source interest category" add_button={<><i className="bx bxs-plus-square me-1" /> Add source interest category</>} add_link="#" onClick={() => openForm()}
           actions={
             <>
             <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

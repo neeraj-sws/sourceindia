@@ -324,7 +324,7 @@ const KnowledgeCenter = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Knowledge Center" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Knowledge Center" : "Knowledge Center"}
+          <Breadcrumb mainhead="Knowledge Center" maincount={totalRecords} page="Knowledge Center" title={getDeleted ? "Recently Deleted Knowledge Center" : "Knowledge Center List"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Knowledge Center</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>

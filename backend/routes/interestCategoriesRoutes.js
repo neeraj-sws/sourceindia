@@ -3,6 +3,7 @@ const router = express.Router();
 const interestCategoriesController = require('../controllers/interestCategoriesController');
 
 router.post('/', interestCategoriesController.createInterestCategories);
+router.get('/count', interestCategoriesController.getInterestCategoriesCount);
 router.get('/', interestCategoriesController.getAllInterestCategories);
 router.get('/server-side', interestCategoriesController.getAllInterestCategoriesServerSide);
 router.get('/:id', interestCategoriesController.getInterestCategoriesById);

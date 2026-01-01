@@ -56,7 +56,7 @@ const BuyerProfile = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Buyer" title="User Profile" add_button="Back" add_link="#" onClick={(e) => {e.preventDefault();navigate(-1);}} />
+          <Breadcrumb page="Buyers" title="User Profile" add_button="Back" add_link="#" onClick={(e) => {e.preventDefault();navigate(-1);}} />
           <div className="row">
             <div className="card shadow-sm mb-4">
               <div className="card-body d-flex align-items-center"

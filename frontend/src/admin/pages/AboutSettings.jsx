@@ -12,7 +12,7 @@ const AboutSettings = () => {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead="About Settings"  page="" title="About Setting" />
+        <Breadcrumb mainhead="About Settings" page="Settings" title="About Setting" />
         <div className="row">
           <div className="col-xl-3 mx-auto">
             <div className='card card-border mb-4'>

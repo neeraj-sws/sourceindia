@@ -223,7 +223,7 @@ const TicketCategoryList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Ticket Category" maincount={totalRecords} page="Settings" title="Ticket Category"
+          <Breadcrumb mainhead="Ticket Category" maincount={totalRecords} page="Support System" title="Ticket Category"
           add_button={<><i className="bx bxs-plus-square me-1" /> Add Ticket Category</>} add_link="#" onClick={() => openForm()}
           actions={
             <>

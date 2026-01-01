@@ -56,13 +56,15 @@ exports.getUserActivitiesCount = async (req, res) => {
       raw: true
     });
     const activeUserIds = userIdsInActivity.map(item => item.user_id);
-    const [UserInactiveStatus, UserActiveStatus, UserApprove, UserDeleted] = await Promise.all([
+    const [total, UserInactiveStatus, UserActiveStatus, UserApprove, UserDeleted] = await Promise.all([
+      UserActivity.count(),
       Users.count({ where: { id: activeUserIds, status: 0 } }),
       Users.count({ where: { id: activeUserIds, status: 1 } }),
       Users.count({ where: { id: activeUserIds, is_approve: 1 } }),
       Users.count({ where: { id: activeUserIds, is_delete: 1 } }),
     ]);
     res.json({
+      total,
       UserInactiveStatus,
       UserActiveStatus,
       UserApprove,
