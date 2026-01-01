@@ -284,10 +284,23 @@ exports.getAllSubSubCategoriesServerSide = async (req, res) => {
   }
 };
 
-exports.getSubSubCategoriesCount = async (req, res) => {
+exports.getAllInterestCounts = async (req, res) => {
   try {
-    const total = await SubSubCategories.count({where: { is_delete: 0 }});
-    res.json({ total });
+    const [
+      interestCategories,
+      interestSubCategories,
+      subSubCategories
+    ] = await Promise.all([
+      InterestCategories.count(),
+      InterestSubCategories.count(),
+      SubSubCategories.count({ where: { is_delete: 0 } })
+    ]);
+
+    res.json({
+      interestCategories,
+      interestSubCategories,
+      subSubCategories
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

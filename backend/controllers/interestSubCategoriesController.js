@@ -248,3 +248,13 @@ exports.getAllInterestSubCategoriesServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getInterestSubCategoriesCount = async (req, res) => {
+  try {
+    const total = await InterestSubCategories.count();
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

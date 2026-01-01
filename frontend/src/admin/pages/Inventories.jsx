@@ -140,7 +140,7 @@ const Inventories = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Inventories" maincount={totalRecords} page="Settings" title="Inventories"
+          <Breadcrumb mainhead="Inventories" maincount={totalRecords} page="Inventories" title="Inventories List"
             actions={(
               <>
               <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

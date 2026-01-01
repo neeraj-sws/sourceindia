@@ -413,3 +413,18 @@ exports.getOpenEnquiriesCountByUser = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getOpenEnquiriesCount = async (req, res) => {
+  try {
+    const [total, deleted] = await Promise.all([
+      OpenEnquiries.count({ where: { is_delete: 0 } }),
+      OpenEnquiries.count({ where: { is_delete: 1 } }),
+    ]);
+    res.json({
+      total, deleted
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

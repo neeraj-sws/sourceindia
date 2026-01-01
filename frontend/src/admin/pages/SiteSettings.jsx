@@ -10,7 +10,7 @@ const SiteSettings = () => {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead="Site Settings" page="" title="Site Setting" />
+        <Breadcrumb mainhead="Site Settings" page="Settings" title="Site Setting" />
         <div className='row'>
           <div className="col-xl-3 mx-auto">
             <div className='card card-border mb-4'>

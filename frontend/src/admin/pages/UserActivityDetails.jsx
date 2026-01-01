@@ -37,7 +37,7 @@ const UserActivityDetails = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="User Activity Details" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
+          <Breadcrumb page="User Activities" title="User Activity Details" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
           <div className="row">
             <div className="col mb-3">
               <div className="card radius-10 overflow-hidden  border border-blue">

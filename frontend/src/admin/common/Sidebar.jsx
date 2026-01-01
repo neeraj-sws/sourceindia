@@ -64,8 +64,8 @@ const menuData = [
     title: 'Management Portal',
     icon: 'bx bx-user',
     subMenu: [
-      { title: 'Roles List', link: '/admin/roles' },
-      { title: 'Sub Admin List', link: '/admin/sub_admin' },
+      { key: 'roles', title: 'Roles List', link: '/admin/roles' },
+      { key: 'sub_admin', title: 'Sub Admin List', link: '/admin/sub_admin' },
     ],
   },
   {
@@ -77,7 +77,7 @@ const menuData = [
       { key: 'sub_categories', title: 'Sub Categories', link: '/admin/product_sub_categories' },
       { key: 'interest_categories', title: 'Interest Categories', link: '/admin/interest_categories' },
       { key: 'source_interest_categories', title: 'Source Interest Categories', link: '/admin/source_interest_categories' },
-      { key: 'items', title: 'Items', link: '/admin/items' },
+      { key: 'sub_sub_categories', title: 'Items', link: '/admin/items' },
       { key: 'item_category', title: 'Item Categories', link: '/admin/item_category' },
       { key: 'item_sub_category', title: 'Item Sub Categories', link: '/admin/item_sub_category' },
       { key: 'new_items', title: 'New Items', link: '/admin/new_items' },
@@ -169,11 +169,13 @@ const menuData = [
   },
 
   {
+    key: 'applications',
     title: 'Applications',
     icon: 'bx bx-mobile',
     link: '/admin/applications',
   },
   {
+    key: 'testimonials',
     title: 'Testimonials',
     icon: 'bx bxs-quote-alt-left',
     link: '/admin/testimonials',
@@ -190,21 +192,25 @@ const menuData = [
     ],
   },
   {
+    key: 'seo_pages',
     title: 'Seo Pages',
     icon: 'bx bxs-file',
     link: '/admin/seo_pages',
   },
   {
+    key: 'inventories',
     title: 'Inventory',
     icon: 'bx bxs-cloud-upload',
     link: '/admin/inventory-list',
   },
   {
+    key: 'user_history',
     title: 'User History',
     icon: 'bx bxs-user',
     link: '/admin/user_history',
   },
   {
+    key: 'user_activity',
     title: 'User Activities',
     icon: 'bx bxs-user-check',
     link: '/admin/user_activity',
@@ -292,24 +298,56 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {
       return counts.enquiries?.getApprove || 0;
     case 'enquiries_list':
       return counts.enquiries?.getNotApprove || 0;
+    case 'open_enquiry_list':
+      return counts.openEnquiries?.total || 0;
+    case 'delete_open_enquiry':
+      return counts.openEnquiries?.deleted || 0;
+    case 'roles':
+      return counts.roles?.roles || 0;
+    case 'sub_admin':
+      return counts.roles?.admin || 0;
     case 'categories':
-      return counts.categories?.total || 0;
+      return counts.newItems?.categories || 0;
     case 'sub_categories':
-      return counts.subCategories?.total || 0;
-    case 'items':
-      return counts.items?.total || 0;
+      return counts.newItems?.subCategories || 0;
+    case 'item_category':
+      return counts.newItems?.itemCategories || 0;
+    case 'item_sub_category':
+      return counts.newItems?.itemSubCategories || 0;
+    case 'new_items':
+      return counts.newItems?.items || 0;
+    case 'interest_categories':
+      return counts.items?.interestCategories || 0;
+    case 'source_interest_categories':
+      return counts.items?.interestSubCategories || 0;
+    case 'sub_sub_categories':
+      return counts.items?.subSubCategories || 0;
     case 'tickets':
       return counts.tickets?.total || 0;
     case 'ticket_categories':
       return counts.ticket_categories?.total || 0;
     case 'faqs_list':
-      return counts.faqs?.total || 0;
+      return counts.faqs?.faq || 0;
     case 'faqs':
-      return counts.faqs?.total || 0;
+      return counts.faqs?.faq || 0;
+    case 'faq_categories':
+      return counts.faqs?.faqCategory || 0;
     case 'core_activities':
-      return counts.core_activities?.total || 0;
+      return counts.activities?.coreActivities || 0;
     case 'activities':
-      return counts.activities?.total || 0;
+      return counts.activities?.activities || 0;
+    case 'applications':
+      return counts.applications?.total || 0;
+    case 'testimonials':
+      return counts.testimonials?.total || 0;
+    case 'seo_pages':
+      return counts.seo_pages?.total || 0;
+    case 'inventories':
+      return counts.inventories?.total || 0;
+    case 'user_activity':
+      return counts.user_activity?.total || 0;
+    case 'user_history':
+      return counts.user_history?.total || 0;
     case 'home_banners':
       return counts.home_banners?.total || 0;
     case 'knowledge_center':
@@ -388,15 +426,26 @@ const Sidebar = () => {
   buyers: {},
   sellers: {},
   products: {},
-  categories: {},
-  subCategories: {},
+  // categories: {},
+  // subCategories: {},
+  // itemCategories: {},
+  // itemSubCategories: {},
+  newItems: {},
   enquiries: {},
+  openEnquiries: {},
+  roles: {},
   items: {},
   tickets: {},
   ticket_categories: {},
   faqs: {},
-  core_activities: {},
+  // core_activities: {},
   activities: {},
+  applications: {},
+  testimonials: {},
+  seo_pages: {},
+  inventories: {},
+  user_activity: {},
+  user_history: {},
   home_banners: {},
   knowledge_center: {},
   emails: {},
@@ -409,20 +458,34 @@ const Sidebar = () => {
 useEffect(() => {
   const fetchCounts = async () => {
     try {
-      const [buyers, sellers, products, categories, subCategories, enquiries, items, tickets, ticket_categories, 
-        faqs, core_activities, activities, home_banners, knowledge_center, emails, membership_plan, contacts, newsletters, registrations] = await Promise.all([
+      const [buyers, sellers, products, 
+        // categories, subCategories, itemCategories, itemSubCategories, 
+        newItems, enquiries, openEnquiries, roles, items, tickets, ticket_categories, 
+        faqs, activities, applications, testimonials, seo_pages, inventories, user_activity, user_history, home_banners, knowledge_center, emails, membership_plan, 
+        contacts, newsletters, registrations] = await Promise.all([
         axios.get(`${API_BASE_URL}/buyers/count`),
         axios.get(`${API_BASE_URL}/sellers/count`),
         axios.get(`${API_BASE_URL}/products/count`),
-        axios.get(`${API_BASE_URL}/categories/count`),
-        axios.get(`${API_BASE_URL}/sub_categories/count`),
+        // axios.get(`${API_BASE_URL}/categories/count`),
+        // axios.get(`${API_BASE_URL}/sub_categories/count`),
+        // axios.get(`${API_BASE_URL}/item_category/count`),
+        // axios.get(`${API_BASE_URL}/item_sub_category/count`),
+        axios.get(`${API_BASE_URL}/items/count`),
         axios.get(`${API_BASE_URL}/enquiries/count`),
+        axios.get(`${API_BASE_URL}/open_enquiries/count`),
+        axios.get(`${API_BASE_URL}/sub_admin/count`),
         axios.get(`${API_BASE_URL}/sub_sub_categories/count`),
         axios.get(`${API_BASE_URL}/tickets/count`),
         axios.get(`${API_BASE_URL}/ticket_categories/count`),
         axios.get(`${API_BASE_URL}/faqs/count`),
-        axios.get(`${API_BASE_URL}/core_activities/count`),
+        // axios.get(`${API_BASE_URL}/core_activities/count`),
         axios.get(`${API_BASE_URL}/activities/count`),
+        axios.get(`${API_BASE_URL}/applications/count`),
+        axios.get(`${API_BASE_URL}/testimonials/count`),
+        axios.get(`${API_BASE_URL}/seo_pages/count`),
+        axios.get(`${API_BASE_URL}/inventories/count`),
+        axios.get(`${API_BASE_URL}/user_activity/count`),
+        axios.get(`${API_BASE_URL}/signup/count`),
         axios.get(`${API_BASE_URL}/home_banners/count`),
         axios.get(`${API_BASE_URL}/knowledge_center/count`),
         axios.get(`${API_BASE_URL}/emails/count`),
@@ -435,15 +498,26 @@ useEffect(() => {
         buyers: buyers.data,
         sellers: sellers.data,
         products: products.data,
-        categories: categories.data,
-        subCategories: subCategories.data,
+        // categories: categories.data,
+        // subCategories: subCategories.data,
+        // itemCategories: itemCategories.data,
+        // itemSubCategories: itemSubCategories.data,
+        newItems: newItems.data,
+        openEnquiries: openEnquiries.data,
         enquiries: enquiries.data,
+        roles: roles.data,
         items: items.data,
         tickets: tickets.data,
         ticket_categories: ticket_categories.data,
         faqs: faqs.data,
-        core_activities: core_activities.data,
+        // core_activities: core_activities.data,
         activities: activities.data,
+        applications: applications.data,
+        testimonials: testimonials.data,
+        seo_pages: seo_pages.data,
+        inventories: inventories.data,
+        user_activity: user_activity.data,
+        user_history: user_history.data,
         home_banners: home_banners.data,
         knowledge_center: knowledge_center.data,
         emails: emails.data,

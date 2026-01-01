@@ -359,3 +359,13 @@ exports.getAllApplicationsServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getApplicationsCount = async (req, res) => {
+  try {
+    const total = await Applications.count({ where: { is_delete: 0 } });
+    res.json({ total });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

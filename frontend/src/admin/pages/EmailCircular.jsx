@@ -142,7 +142,7 @@ const EmailCircular = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Email Circular" maincount={totalRecords} page="Settings" title="Email Circular" add_button={<><i className="bx bxs-plus-square me-1" /> Add Email Circular</>} add_link="/admin/add_email_circular"
+          <Breadcrumb mainhead="Email Circular" maincount={totalRecords} page="Email Circular" title="Email Circular List" add_button={<><i className="bx bxs-plus-square me-1" /> Add Email Circular</>} add_link="/admin/add_email_circular"
           actions={
             <>
             <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>

@@ -193,3 +193,23 @@ exports.getAllSubAdminServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getRolesCounts = async (req, res) => {
+  try {
+    const [
+      admin,
+      roles,
+    ] = await Promise.all([
+      Admin.count(),
+      Roles.count()
+    ]);
+
+    res.json({
+      admin,
+      roles,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};

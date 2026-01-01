@@ -138,7 +138,7 @@ const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggl
     <>
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb page="Settings" title="View Enquiry" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
+        <Breadcrumb page="Leads Master" title="View Enquiry" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
         <div className="card mb-3">
           <div className="card-body">
             <div className="d-flex align-items-center justify-content-between flex-wrap">

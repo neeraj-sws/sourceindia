@@ -336,7 +336,7 @@ const ProductCategoryList = ({ getDeleted, excludeSellerCategories, excludeProdu
       <div className={excludeSellerCategories || excludeProductCategories ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
           {!excludeSellerCategories && !excludeProductCategories &&
-          <Breadcrumb mainhead="Category" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Category" : "Category"}
+          <Breadcrumb mainhead="Category" maincount={totalRecords} page="Category Master" title={getDeleted ? "Recently Deleted Category" : "Category"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Category</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>

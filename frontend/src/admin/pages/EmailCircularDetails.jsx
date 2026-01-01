@@ -117,7 +117,7 @@ const EmailCircularDetails = ({newsLatter_id}) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Email Circular Details" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
+          <Breadcrumb page="Email Circular" title="Email Circular Details" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
           <div className="card mb-3">
             <div className="card-body">
               <h2>{formData.subject}</h2>

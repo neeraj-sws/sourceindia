@@ -335,7 +335,7 @@ const FaqList = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="FAQ" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted FAQ" : "FAQ"}
+          <Breadcrumb mainhead="FAQ" maincount={totalRecords} page="FAQ" title={getDeleted ? "Recently Deleted FAQ" : "FAQ List"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add FAQ</>)} add_link="#" onClick={() => openForm()}
           actions={
             <>

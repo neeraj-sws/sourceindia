@@ -185,7 +185,7 @@ const OpenEnquiry = ({ getDeleted }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Open Enquiries" maincount={totalRecords} page="Settings" title={getDeleted ? "Recently Deleted Open Enquiries" : "Open Enquiries"}
+          <Breadcrumb mainhead="Open Enquiries" maincount={totalRecords} page="Open Enquiries" title={getDeleted ? "Recently Deleted Open Enquiries" : "Open Enquiries List"}
           actions={
             <>
             <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
