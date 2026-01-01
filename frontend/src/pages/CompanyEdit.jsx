@@ -362,11 +362,11 @@ const CompanyEdit = () => {
       errs.brief_company = "Company introduction must not exceed 1500 characters";
 
     // File validation (optional)
-    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024; // 2MB
     if (file) {
       if (!allowedImageTypes.includes(file.type))
-        errs.file = "Invalid image format (only JPG/PNG allowed)";
+        errs.file = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
       else if (file.size > maxSize)
         errs.file = "Image size must be under 2MB";
     }

@@ -15,14 +15,20 @@ exports.createKnowledgeCenter = async (req, res) => {
       /*if (!name || !video_url || !status || !req.file) {
         return res.status(400).json({ message: 'All fields (name, video_url, status, file) are required' });
       }*/
-      const uploadImage = await UploadImage.create({
-        file: `upload/knowledge_center/${req.file.filename}`,
-      });
+      let fileId = 0;
+
+      // Only upload image if file exists
+      if (req.file) {
+        const uploadImage = await UploadImage.create({
+          file: `upload/knowledge_center/${req.file.filename}`,
+        });
+        fileId = uploadImage.id;
+      }
       const knowledgeCenter = await KnowledgeCenter.create({
         name,
         video_url,
         status,
-        file_id: uploadImage.id,
+        file_id: fileId,
       });
       res.status(201).json({ message: 'Knowledge Center created', knowledgeCenter });
     } catch (err) {

@@ -39,13 +39,13 @@ const SystemSettingsForm = () => {
     if (!formData.address) errs.address = 'Address is required';
     if (!formData.seller_category_limit) errs.seller_category_limit = 'Seller category limit is required';
 
-    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
     if (!logoFile && !formData.logo_file) {
       errs.logo_file = 'Logo image is required';
     } else if (logoFile) {
       if (!allowedImageTypes.includes(logoFile.type)) {
-        errs.logo_file = 'Invalid image format (only JPG/PNG allowed)';
+        errs.logo_file = 'Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)';
       } else if (logoFile.size > maxSize) {
         errs.logo_file = 'Image size must be under 2MB';
       }
@@ -54,7 +54,7 @@ const SystemSettingsForm = () => {
       errs.favicon_file = 'Favicon image is required';
     } else if (faviconFile) {
       if (!allowedImageTypes.includes(faviconFile.type)) {
-        errs.favicon_file = 'Invalid image format (only JPG/PNG allowed)';
+        errs.favicon_file = 'Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)';
       } else if (faviconFile.size > maxSize) {
         errs.favicon_file = 'Image size must be under 2MB';
       }

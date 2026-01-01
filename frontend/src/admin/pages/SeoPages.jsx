@@ -93,22 +93,45 @@ const SeoPages = () => {
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
   };
 
-  const allowedImageTypes = ["image/jpeg", "image/png", "image/gif"];
+  const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (!allowedImageTypes.includes(file.type)) {
-        setErrors((prev) => ({ ...prev, file: "Please upload a valid image (JPG, PNG, GIF).", }));
-        setFormData((prev) => ({ ...prev, file: null, }));
-        return;
-      }
-      setErrors((prev) => ({ ...prev, file: null, }));
-      setFormData((prev) => ({ ...prev, file: file, file_name: file.name, }));
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Validate type
+  if (!allowedImageTypes.includes(file.type)) {
+    setErrors((prev) => ({
+      ...prev,
+      file: "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)",
+    }));
+    setFormData((prev) => ({ ...prev, file: null }));
+    return;
+  }
+
+  // Validate size (max 2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    setErrors((prev) => ({
+      ...prev,
+      file: "Image size must be under 2MB",
+    }));
+    setFormData((prev) => ({ ...prev, file: null }));
+    return;
+  }
+
+  setErrors((prev) => ({ ...prev, file: null }));
+  setFormData((prev) => ({ ...prev, file, file_name: file.name }));
+};
+useEffect(() => {
+  return () => {
+    if (formData.file) {
+      URL.revokeObjectURL(formData.file);
     }
   };
+}, [formData.file]);
 
   const validateForm = () => {
     const errs = {};
+    if (errors.file) errs.file = errors.file;
     if (!formData.title?.trim()) errs.title = "Title is required";
     if (!formData.slug?.trim()) {
       errs.slug = "Slug is required";
@@ -124,14 +147,14 @@ const SeoPages = () => {
     // if (!formData.file && !isEditing) {
     //   errs.file = "Image is required";
     // }
-    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
-    if (formData.file) {
-      if (!allowedImageTypes.includes(formData.file.type)) {
-        errs.file = "Invalid image format (only JPG/PNG allowed)";
-      } else if (formData.file.size > 2 * 1024 * 1024) {
-        errs.file = "Image size must be under 2MB";
-      }
-    }
+  //   if (formData.file) {
+  //   const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+  //   if (!allowedImageTypes.includes(formData.file.type)) {
+  //     errs.file = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
+  //   } else if (formData.file.size > 2 * 1024 * 1024) {
+  //     errs.file = "Image size must be under 2MB";
+  //   }
+  // }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
