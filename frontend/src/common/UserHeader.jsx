@@ -61,7 +61,7 @@ const UserHeader = () => {
                 {user.company_info && user.company_info.organization_name}
               </div>
               <div className="top-menu ms-auto me-3">
-                <button type="button" className="btn btn-info ms-2" data-bs-toggle="modal" data-bs-target="#buyerSourcing">
+                <button type="button" className="btn btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#buyerSourcing">
                   <span>Sourcing Interest</span>
                 </button>
                 <Link className="btn btn-primary ms-3" to="/">
