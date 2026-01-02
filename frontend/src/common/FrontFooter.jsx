@@ -76,7 +76,7 @@ const FrontFooter = () => {
               <ul className="list-unstyled mb-0">
                 {helpItems.map((item) => (
                   <li key={item.id}>
-                    <Link to={item.link}>{item.name}</Link>
+                    <Link to={item.link} onClick={() => window.scrollTo(0, 0)}>{item.name}</Link>
                   </li>
                 ))}
               </ul>

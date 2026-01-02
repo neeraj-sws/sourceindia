@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
@@ -200,9 +201,9 @@ const CreateTicket = () => {
                       )}
                     </button>
 
-                    <a href="/get-support" className="btn btn-secondary ms-2">
+                    <Link to="/get-support" className="btn btn-secondary ms-2">
                       Back
-                    </a>
+                    </Link>
                   </div>
                 </form>
               </>

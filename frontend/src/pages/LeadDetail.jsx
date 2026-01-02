@@ -262,24 +262,24 @@ const LeadDetail = () => {
                 <div className="card-body">
                   <ul className="nav nav-pills nav-justified mb-3" role="tablist">
                     <li className="nav-item" role="presentation">
-                      <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-system" role="tab" aria-selected="true">
+                      <Link className="nav-link active" data-bs-toggle="pill" to="#primary-pills-system" role="tab" aria-selected="true">
                         Awarded <span className="badge btn-primary ms-2">{counterCount?.awerded}</span>
-                      </a>
+                      </Link>
                     </li>
                     <li className="nav-item" role="presentation">
-                      <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-password" role="tab" aria-selected="false">
+                      <Link className="nav-link" data-bs-toggle="pill" to="#primary-pills-password" role="tab" aria-selected="false">
                         Accept <span className="badge btn-primary ms-2">{counterCount?.acceptCount}</span>
-                      </a>
+                      </Link>
                     </li>
                     <li className="nav-item" role="presentation">
-                      <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-meta" role="tab" aria-selected="false">
+                      <Link className="nav-link" data-bs-toggle="pill" to="#primary-pills-meta" role="tab" aria-selected="false">
                         Shortlisted <span className="badge btn-primary ms-2">{counterCount?.shortlisted}</span>
-                      </a>
+                      </Link>
                     </li>
                     <li className="nav-item" role="presentation">
-                      <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-email" role="tab" aria-selected="false">
+                      <Link className="nav-link" data-bs-toggle="pill" to="#primary-pills-email" role="tab" aria-selected="false">
                         Messages
-                      </a>
+                      </Link>
                     </li>
                   </ul>
                   <div className="tab-content" id="pills-tabContent">

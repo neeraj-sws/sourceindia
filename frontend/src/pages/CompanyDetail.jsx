@@ -181,11 +181,11 @@ const CompanyDetail = () => {
             <nav aria-label="breadcrumb" className="mb-3">
               <ol className="breadcrumb mb-0">
                 <li className="breadcrumb-item">
-                  <a href="/" className="text-decoration-none">Home</a>
+                  <Link to="/" className="text-decoration-none">Home</Link>
                 </li>
 
                 <li className="breadcrumb-item">
-                  <a href="/company-list" className="text-decoration-none">Seller</a>
+                  <Link to="/company-list" className="text-decoration-none">Seller</Link>
                 </li>
 
                 <li className="breadcrumb-item active" aria-current="page">
@@ -399,7 +399,7 @@ const CompanyDetail = () => {
               {company.recommended_companies.map((item) => (
                 <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
                   <div className='productContainer'>
-                    <Link to={`/companies/${item.organization_slug}`}>
+                    <a href={`/companies/${item.organization_slug}`}>
                       <ImageFront
                         src={`${ROOT_URL}/${item.company_logo_file}`}
                         width={180}
@@ -407,7 +407,7 @@ const CompanyDetail = () => {
                         showFallback
                       />
                       <p className="mt-3 mb-2">{item.organization_name}</p>
-                    </Link>
+                    </a>
                   </div>
                 </SwiperSlide>
               ))}

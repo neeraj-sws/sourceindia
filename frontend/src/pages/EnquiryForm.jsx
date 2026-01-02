@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from "react-router-dom";
 import API_BASE_URL from '../config'; // Ensure this is defined
 import { useAlert } from "../context/AlertContext";
 import axios from 'axios';
@@ -194,7 +195,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
               {exists ? (
                 <div className="text-center p-3">
                   <h5>Hey! Looks like you already have an account with us. Log in to continue!</h5>
-                  <a href="/login" className="btn btn-primary mt-3">Click here!</a>
+                  <Link to="/login" className="btn btn-primary mt-3">Click here!</Link>
                 </div>
               ) : (
                 <form onSubmit={step === 1 ? handleVerify : step === 2 ? handleSubmitOtp : handleSubmit}>

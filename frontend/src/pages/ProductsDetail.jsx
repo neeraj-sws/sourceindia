@@ -204,11 +204,11 @@ const ProductDetail = () => {
             <nav aria-label="breadcrumb" className="mb-3">
               <ol className="breadcrumb mb-0">
                 <li className="breadcrumb-item">
-                  <a href="/" className="text-decoration-none">Home</a>
+                  <Link to="/" className="text-decoration-none">Home</Link>
                 </li>
 
                 <li className="breadcrumb-item">
-                  <a href="/products" className="text-decoration-none">Products</a>
+                  <Link to="/products" className="text-decoration-none">Products</Link>
                 </li>
 
                 <li className="breadcrumb-item active" aria-current="page">
@@ -624,7 +624,7 @@ const ProductDetail = () => {
                 {product.recommended_companies.map((company) => (
                   <SwiperSlide key={company.id} className=' bg-white border rounded p-2 h-100 text-center'>
                     <div className='productContainer'>
-                      <Link to={`/companies/${company.organization_slug}`}>
+                      <a href={`/companies/${company.organization_slug}`}>
                         <div className="company-card">
                           <ImageFront
                             src={`${ROOT_URL}/${company.company_logo_file}`}
@@ -634,7 +634,7 @@ const ProductDetail = () => {
                           />
                           <p className='mt-3'>{company.organization_name}</p>
                         </div>
-                      </Link>
+                      </a>
                     </div>
                   </SwiperSlide>
                 ))}
