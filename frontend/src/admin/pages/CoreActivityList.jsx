@@ -147,12 +147,12 @@ const CoreActivityList = ({ getDeleted }) => {
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
   };
 
-  const allowedImageTypes = ["image/jpeg", "image/png", "image/gif"];
+  const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (!allowedImageTypes.includes(file.type)) {
-        setErrors((prev) => ({ ...prev, file: "Please upload a valid image (JPG, PNG, GIF).", }));
+        setErrors((prev) => ({ ...prev, file: "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)", }));
         setFormData((prev) => ({ ...prev, file: null, }));
         return;
       }
@@ -178,7 +178,16 @@ const CoreActivityList = ({ getDeleted }) => {
     if (!validateForm()) return;
     setSubmitting(true);
     const sColor = colors.find((c) => c.id.toString() === selectedColors.toString());
-    const payload = { ...formData, color: selectedColors, color_name: sColor?.title || "" };
+    // const payload = { ...formData, color: selectedColors, color_name: sColor?.title || "" };
+    const payload = new FormData();
+payload.append("name", formData.name);
+payload.append("status", formData.status);
+payload.append("color", selectedColors);
+payload.append("color_name", sColor?.title || "");
+
+if (formData.file) {
+  payload.append("file", formData.file);
+}
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/core_activities/${formData.id}`, payload, {
@@ -196,8 +205,15 @@ const CoreActivityList = ({ getDeleted }) => {
         const res = await axios.post(`${API_BASE_URL}/core_activities`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        const img = await axios.get(`${API_BASE_URL}/files/${res.data.coreActivity.file_id}`);
-        const updatedFileName = img.data.file;
+        // const img = await axios.get(`${API_BASE_URL}/files/${res.data.coreActivity.file_id}`);
+        // const updatedFileName = img.data.file;
+        let updatedFileName = null;
+const fileId = res.data.coreActivity.file_id;
+
+if (fileId && fileId !== 0) {
+  const img = await axios.get(`${API_BASE_URL}/files/${fileId}`);
+  updatedFileName = img.data.file;
+}
         const payload1 = { ...res.data.coreActivity, file_name: updatedFileName, color_name: sColor?.title || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);

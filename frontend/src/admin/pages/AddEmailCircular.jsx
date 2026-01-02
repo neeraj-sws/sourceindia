@@ -74,14 +74,14 @@ const AddEmailCircular = () => {
     if (!formData.subject.trim()) errs.subject = 'Subject is required';
     if (!formData.description) errs.description = 'Description is required';
 
-    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
     if (files.length === 0 && !isEditing) {
       errs.file = 'At least one email circular image is required';
     } else {
       files.forEach((file, index) => {
         if (!allowedImageTypes.includes(file.type)) {
-          errs.file = `Invalid format in image ${index + 1} (only JPG/PNG allowed)`;
+          errs.file = `Invalid format in image ${index + 1} (only JPG/JPEG/PNG/GIF/WEBP allowed)`;
         } else if (file.size > maxSize) {
           errs.file = `Image ${index + 1} must be under 2MB`;
         }
@@ -248,7 +248,7 @@ const AddEmailCircular = () => {
                       style={{ display: "none" }}
                       onChange={handleFileChange}
                       multiple
-                      accept="image/png, image/jpeg"
+                      accept="image/png, image/jpeg, image/jpg, image/gif, image/webp"
                     />
                     <button type="button" className="btn btn-primary btn-sm" onClick={() => fileInputRef.current.click()}>
                       <i className="bx bxs-plus-square me-1" />Add Attachment

@@ -9,8 +9,7 @@ const AnniversaryForm = () => {
   const [aboutFile, setAboutFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
-    year: '', about_heading: '', aboutshort_description: '',
-    about_description: '', about_file: ''
+    year: '', about_heading: '', aboutshort_description: '', about_file: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -34,13 +33,12 @@ const AnniversaryForm = () => {
     if (!formData.year.trim()) errs.year = 'Year is required';
     if (!formData.about_heading.trim()) errs.about_heading = 'Heading is required';
     if (!formData.aboutshort_description.trim()) errs.aboutshort_description = 'Short description is required';
-    if (!formData.about_description) errs.about_description = 'Description is required';
 
-    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
     if (aboutFile) {
       if (!allowedImageTypes.includes(aboutFile.type)) {
-        errs.about_file = 'Invalid image format (only JPG/PNG allowed)';
+        errs.about_file = 'Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)';
       } else if (aboutFile.size > maxSize) {
         errs.about_file = 'Image size must be under 2MB';
       }
@@ -90,8 +88,8 @@ const AnniversaryForm = () => {
 
         <div className="col-md-12">
           <label htmlFor="about_file" className="form-label">Logo</label>
-          <input className="form-control" type="file" id="about_file" onChange={handleAboutFileChange} />
-          {/* {errors.about_file && <div className="invalid-feedback">{errors.about_file}</div>} */}
+          <input className={`form-control ${errors.about_file ? 'is-invalid' : ''}`} type="file" id="about_file" onChange={handleAboutFileChange} />
+          {errors.about_file && <div className="invalid-feedback">{errors.about_file}</div>}
           {aboutFile ? (
             <img
               src={URL.createObjectURL(aboutFile)}
@@ -119,7 +117,7 @@ const AnniversaryForm = () => {
             placeholder="Short Description"
             rows={3}
             onChange={handleInputChange}
-            defaultValue={formData.aboutshort_description}
+            value={formData.aboutshort_description}
           />
           {errors.aboutshort_description && <div className="invalid-feedback">{errors.aboutshort_description}</div>}
         </div>

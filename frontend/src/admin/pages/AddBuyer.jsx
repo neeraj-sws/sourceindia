@@ -146,13 +146,13 @@ const AddBuyer = () => {
     if (!formData.address) errs.address = 'Address is required';
     // if (!formData.products) errs.products = 'Products is required';
 
-    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
     if (!file && !isEditing) {
       errs.file = 'Profile image is required';
     } else if (file) {
       if (!allowedImageTypes.includes(file.type)) {
-        errs.file = 'Invalid image format (only JPG/PNG allowed)';
+        errs.file = 'Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)';
       } else if (file.size > maxSize) {
         errs.file = 'Image size must be under 2MB';
       }
@@ -161,7 +161,7 @@ const AddBuyer = () => {
       errs.company_file = 'Company image is required';
     } else if (companyFile) {
       if (!allowedImageTypes.includes(companyFile.type)) {
-        errs.company_file = 'Invalid image format (only JPG/PNG allowed)';
+        errs.company_file = 'Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)';
       } else if (companyFile.size > maxSize) {
         errs.company_file = 'Image size must be under 2MB';
       }
@@ -433,13 +433,13 @@ const AddBuyer = () => {
                     <div className="col-md-6">
                       <label htmlFor="company_file" className="form-label required">Company Image</label>
                       <div className=''>
-                        <input className={`w-75 float-start form-control ${errors.company_file ? 'is-invalid' : ''}`} type="file"
+                        <input className={`float-start form-control ${errors.company_file ? 'is-invalid' : ''}`} type="file"
                           id="company_file" onChange={handleCompanyFileChange} />
                         {errors.company_file && <div className="invalid-feedback">{errors.company_file}</div>}
                         {companyFile ? (
                           <img
                             src={URL.createObjectURL(companyFile)}
-                            className="object-fit-cover float-end"
+                            className="img-preview object-fit-cover mt-3"
                             width={100}
                             height={80}
                             alt="Preview"

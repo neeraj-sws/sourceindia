@@ -394,15 +394,17 @@ const AddSeller = () => {
     if (!selectedCoreActivity) errs.core_activity = "Core Activity is required";
     if (!selectedActivity) errs.activity = "Activity is required";
 
-    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
-    const allowedFileTypes = ["image/jpeg", "image/jpg", "image/png", "application/pdf", "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"];
+    const imageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    const brochureTypes = [...imageTypes, "application/pdf"];
+    const pptTypes = ["application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"];
+    const videoTypes = ["video/mp4", "video/webm", "video/ogg", "video/mov", "video/avi"];
     const maxSize = 2 * 1024 * 1024;
 
     if (!file && !isEditing) {
       errs.file = "Profile image is required";
     } else if (file) {
-      if (!allowedImageTypes.includes(file.type)) {
-        errs.file = "Invalid image format (only JPG/PNG allowed)";
+      if (!imageTypes.includes(file.type)) {
+        errs.file = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
       } else if (file.size > maxSize) {
         errs.file = "Image size must be under 2MB";
       }
@@ -411,24 +413,23 @@ const AddSeller = () => {
     if (!companyFile && !isEditing) {
       errs.company_logo = "Company image is required";
     } else if (companyFile) {
-      if (!allowedImageTypes.includes(companyFile.type)) {
-        errs.company_logo = "Invalid image format (only JPG/PNG allowed)";
+      if (!imageTypes.includes(companyFile.type)) {
+        errs.company_logo = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
       } else if (companyFile.size > maxSize) {
         errs.company_logo = "Image size must be under 2MB";
       }
     }
 
     if (companyBrochure) {
-      if (!allowedFileTypes.includes(companyBrochure.type)) {
-        errs.sample_file_id =
-          "Invalid Brochure format (only JPG/PNG/PDF/PPT allowed)";
+      if (!brochureTypes.includes(companyBrochure.type)) {
+        errs.sample_file_id = "Invalid Brochure format (only JPG/JPEG/PNG/GIF/WEBP/PDF allowed)";
       } else if (companyBrochure.size > maxSize) {
         errs.sample_file_id = "Brochure size must be under 2MB";
       }
     }
 
     if (formData.company_sample_ppt_file) {
-      if (!allowedFileTypes.includes(formData.company_sample_ppt_file.type)) {
+      if (!pptTypes.includes(formData.company_sample_ppt_file.type)) {
         errs.company_sample_ppt_file = "Invalid file format for PPT";
       } else if (formData.company_sample_ppt_file.size > maxSize) {
         errs.company_sample_ppt_file = "File size must be under 2MB";
@@ -436,9 +437,8 @@ const AddSeller = () => {
     }
 
     if (formData.company_video) {
-      if (!allowedImageTypes.includes(formData.company_video.type)) {
-        errs.company_video =
-          "Invalid video format (only JPG/PNG allowed as placeholder)";
+      if (!videoTypes.includes(formData.company_video.type)) {
+        errs.company_video = "Invalid video format";
       } else if (formData.company_video.size > maxSize) {
         errs.company_video = "Video file must be under 2MB";
       }

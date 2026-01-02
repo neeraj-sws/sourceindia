@@ -163,7 +163,7 @@ const [statusLoading, setStatusLoading] = useState(false);
       $("#category").val(null).trigger("change");
     }
     if ($("#user_id").data("select2")) {
-      $("#user_id").val(userId).trigger("change");
+      $("#user_id").val('').trigger("change");
     }
   }, 100);
   };
@@ -176,6 +176,47 @@ const [statusLoading, setStatusLoading] = useState(false);
       setFormData((prev) => ({ ...prev, [id]: value }));
     }
   };
+
+  const allowedFileTypes = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+];
+
+const handleFileChange = (e) => {
+  const file = e.target.files[0];
+
+  if (file) {
+    if (!allowedFileTypes.includes(file.type)) {
+      setErrors((prev) => ({
+        ...prev,
+        attachment:
+          "Invalid file format (only JPG, JPEG, PNG, GIF, WEBP or PDF allowed)",
+      }));
+
+      // reset file
+      e.target.value = "";
+      setFormData((prev) => ({ ...prev, attachment: null }));
+      return;
+    }
+
+    // valid file
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.attachment;
+      return newErrors;
+    });
+
+    setFormData((prev) => ({
+      ...prev,
+      attachment: file,
+      attachment_name: file.name, // optional
+    }));
+  }
+};
 
   const validateForm = () => {
     const errs = {};
@@ -488,14 +529,18 @@ setStatusLoading(true);
                       {errors.message && <div className="invalid-feedback">{errors.message}</div>}
                     </div>
                     <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="attachment" className="form-label">Attachment</label>
-                      <input
-                        type="file"
-                        className="form-control"
-                        id="attachment"
-                        onChange={handleChange}
-                      />
-                    </div>
+  <label htmlFor="attachment" className="form-label">Attachment</label>
+  <input
+    type="file"
+    className={`form-control ${errors.attachment ? "is-invalid" : ""}`}
+    id="attachment"
+    onChange={handleFileChange}
+    accept=".jpg,.jpeg,.png,.gif,.webp,.pdf"
+  />
+  {errors.attachment && (
+    <div className="invalid-feedback">{errors.attachment}</div>
+  )}
+</div>
                     {/* <div className="form-group col-md-12 mb-3">
                       <label htmlFor="status" className="form-label required">Status</label>
                       <select
