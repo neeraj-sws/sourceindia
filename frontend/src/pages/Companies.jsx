@@ -1,7 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef } from 'react';
+import { Suspense, lazy } from 'react';
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
-import ImageWithFallback from "../admin/common/ImageWithFallback";
+const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
+
 import { Link } from 'react-router-dom';
 const Companies = () => {
   const [companies, setCompanies] = useState([]);
@@ -77,7 +79,8 @@ const Companies = () => {
 
       {/* Loader div observed for triggering next load */}
       <div ref={loaderRef} style={{ height: '100px', textAlign: 'center' }}>
-        {loading && <img src="/loading.gif" height={20} />}
+        {loading && <img src="/loading.gif" height={20} loading="lazy"
+          decoding="async" />}
         {!hasMore && <p>No more companies to load</p>}
       </div>
     </section>

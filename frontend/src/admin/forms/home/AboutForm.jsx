@@ -98,7 +98,7 @@ const AboutForm = () => {
             placeholder="Heading" value={formData.about_heading} onChange={handleInputChange} />
           {errors.about_heading && <div className="invalid-feedback">{errors.about_heading}</div>}
         </div>
-         <div className="col-md-6">
+        <div className="col-md-6">
           <label htmlFor="about_video_url" className="form-label required">Video Url</label>
           <input type="text" className={`form-control ${errors.about_video_url ? 'is-invalid' : ''}`} id="about_video_url"
             placeholder="Video Url" value={formData.about_video_url} onChange={handleInputChange} />
@@ -115,6 +115,8 @@ const AboutForm = () => {
               width={150}
               height={150}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.about_file ? (
             <ImageWithFallback
@@ -137,7 +139,7 @@ const AboutForm = () => {
           />
           {errors.aboutshort_description && <div className="invalid-feedback">{errors.aboutshort_description}</div>}
         </div>
-        
+
         <div className="col-md-12">
           <label htmlFor="about_description" className="form-label required">
             Long Description
@@ -152,7 +154,7 @@ const AboutForm = () => {
           />
           {errors.about_description && <div className="text-danger small mt-1">{errors.about_description}</div>}
         </div>
-       
+
         <div className="col-12 text-end mt-4">
           <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
             {submitting ? (

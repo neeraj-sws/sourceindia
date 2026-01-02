@@ -38,25 +38,25 @@ const AddEmailCircular = () => {
     fetchUserType();
   }, []);
 
-    const handleUserTypeChange = async (event) => {
+  const handleUserTypeChange = async (event) => {
     const userTypeId = event.target.value;
     setSelectedUserType(userTypeId);
   };
 
-  useEffect(() => {  
-      $('#user_type').select2({
-        theme: "bootstrap",
-        width: '100%',
-        placeholder: "Select Activity"
-      }).on("change", function () {
-        const userTypeId = $(this).val();
-        handleUserTypeChange({ target: { value: userTypeId } });
-      });
-  
-      return () => {
-        $('#user_type').off("change").select2('destroy');
-      };
-    }, [userType]);
+  useEffect(() => {
+    $('#user_type').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Activity"
+    }).on("change", function () {
+      const userTypeId = $(this).val();
+      handleUserTypeChange({ target: { value: userTypeId } });
+    });
+
+    return () => {
+      $('#user_type').off("change").select2('destroy');
+    };
+  }, [userType]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -210,15 +210,15 @@ const AddEmailCircular = () => {
                       <div className="col-md-6 mb-3">
                         <label htmlFor="user_type" className="form-label required">User</label>
                         <select
-                      id="user_type" className="form-control"
-                      value={selectedUserType}
-                      onChange={handleUserTypeChange}
-                    >
-                      <option value="">Select user type</option>
-                      {userType?.map((user) => (
-                        <option key={user.id} value={user.id}>{user.name.charAt(0).toUpperCase() + user.name.slice(1)}</option>
-                      ))}
-                    </select>
+                          id="user_type" className="form-control"
+                          value={selectedUserType}
+                          onChange={handleUserTypeChange}
+                        >
+                          <option value="">Select user type</option>
+                          {userType?.map((user) => (
+                            <option key={user.id} value={user.id}>{user.name.charAt(0).toUpperCase() + user.name.slice(1)}</option>
+                          ))}
+                        </select>
                         {errors.user_type && (<div className="text-danger small mt-1">{errors.user_type}</div>)}
                       </div>
                     </div>
@@ -264,6 +264,8 @@ const AddEmailCircular = () => {
                               className="object-fit-cover m-3"
                               width={80}
                               height={80}
+                              loading="lazy"
+                              decoding="async"
                             />
                             <button
                               type="button"
@@ -283,6 +285,8 @@ const AddEmailCircular = () => {
                               className="object-fit-cover m-3"
                               width={80}
                               height={80}
+                              loading="lazy"
+                              decoding="async"
                             />
                             <button
                               variant="danger"
@@ -307,6 +311,8 @@ const AddEmailCircular = () => {
                             className="object-fit-cover m-3"
                             width={80}
                             height={80}
+                            loading="lazy"
+                            decoding="async"
                           />
                           <button
                             variant="danger"
@@ -323,7 +329,7 @@ const AddEmailCircular = () => {
                       ))}
                     </div>
                   </div>
-                 
+
                   <div className="col-12 text-end">
                     <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
                       {submitting ? (

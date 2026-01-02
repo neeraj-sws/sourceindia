@@ -204,6 +204,8 @@ const ItemSubCategory = () => {
                                   className="img-fluid rounded mb-2 w-100"
                                   alt={item.name}
                                   style={{ height: "125px" }}
+                                  loading="lazy"
+                                  decoding="async"
                                   onError={(e) => {
                                     e.target.onerror = null;
                                     e.target.src =

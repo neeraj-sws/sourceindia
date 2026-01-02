@@ -94,6 +94,8 @@ const AboutSourceIndiaForm = () => {
               width={150}
               height={150}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.category_file ? (
             <ImageWithFallback

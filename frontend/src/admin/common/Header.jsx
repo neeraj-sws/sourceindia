@@ -109,7 +109,8 @@ const Header = () => {
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
-              <img src="/user.png" className="user-img" alt="user avatar" />
+              <img src="/user.png" className="user-img" alt="user avatar" loading="lazy"
+                decoding="async" />
               <div className="user-info ps-3">
                 <p className="user-name mb-0">Admin</p>
               </div>

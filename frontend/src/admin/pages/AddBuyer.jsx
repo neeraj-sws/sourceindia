@@ -358,6 +358,8 @@ const AddBuyer = () => {
                           width={150}
                           height={150}
                           alt="Preview"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : formData.file_name ? (
                         <ImageWithFallback
@@ -441,6 +443,8 @@ const AddBuyer = () => {
                             width={100}
                             height={80}
                             alt="Preview"
+                            loading="lazy"
+                            decoding="async"
                           />
                         ) : formData.file_name ? (
                           <ImageWithFallback

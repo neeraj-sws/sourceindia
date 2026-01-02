@@ -189,7 +189,7 @@ const SeoPages = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Seo Pages" maincount={totalRecords}  page="Seo Pages" title="Seo Pages List" add_button="Add Seo Pages" add_link="#" onClick={() => openForm()} />
+          <Breadcrumb mainhead="Seo Pages" maincount={totalRecords} page="Seo Pages" title="Seo Pages List" add_button="Add Seo Pages" add_link="#" onClick={() => openForm()} />
           <div className="row">
             <div className="col-md-4">
               <div className="card">
@@ -266,6 +266,8 @@ const SeoPages = () => {
                           width={150}
                           height={150}
                           alt="Preview"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : formData.meta_image ? (
                         <ImageWithFallback
@@ -339,7 +341,7 @@ const SeoPages = () => {
                         <td>{row.meta_description}</td>
                         <td>
                           <div className="dropdown">
-                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                               <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
                             <ul className="dropdown-menu">

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
-import ImageFront from "../admin/common/ImageFront";
+import { Suspense, lazy } from 'react';
+const ImageFront = lazy(() => import('../admin/common/ImageFront'));
 
 const Category = ({ isHome, limit }) => {
 
@@ -23,38 +24,37 @@ const Category = ({ isHome, limit }) => {
 
   return (
     <>
-      <section className="categorySection py-md-4 pt-2 my-4">
-        <div className="container">
-          <div className="firstHead text-center pb-5">
-            <h1 className="mb-0">Trending Categories</h1>
-          </div>
+      <Suspense fallback={<div></div>}>
+        <section className="categorySection py-md-4 pt-2 my-4">
+          <div className="container">
+            <div className="firstHead text-center pb-5">
+              <h1 className="mb-0">Trending Categories</h1>
+            </div>
 
-          <div className="categoriesGrid justify-content-center">
-            {categories.map((cat) => (
-              <div key={cat.id} className="cateBox text-center">
-                <div className="cateImg mb-3">
-                  <Link to={`/products?cate=${cat.id}`}>
-                    <ImageFront
-                      src={`${ROOT_URL}/${cat.file_name}`}
-                      width={180}
-                      height={180}
-                      showFallback={true}
-                    />
-                  </Link>
-                  <span className="countspan">{cat.product_count || 0}</span>
+            <div className="categoriesGrid justify-content-center">
+              {categories.map((cat) => (
+                <div key={cat.id} className="cateBox text-center">
+                  <div className="cateImg mb-3">
+                    <Link to={`/products?cate=${cat.id}`}>
+                      <ImageFront
+                        src={`${ROOT_URL}/${cat.file_name}`}
+                        width={180}
+                        height={180}
+                        showFallback={true}
+                      />
+                    </Link>
+                    <span className="countspan">{cat.product_count || 0}</span>
+                  </div>
+                  <p className="mb-1">{cat.name}</p>
                 </div>
-                <p className="mb-1">{cat.name}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-        {isHome &&
-          <div className="text-center mt-5"><Link to="/categories" className="btn btn-primary">View All Categories</Link></div>
-        }
-      </section>
-
-
-
+          {isHome &&
+            <div className="text-center mt-5"><Link to="/categories" className="btn btn-primary">View All Categories</Link></div>
+          }
+        </section>
+      </Suspense>
     </>
   );
 };

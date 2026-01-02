@@ -1,6 +1,7 @@
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import React, { useEffect, useState } from 'react';
-import ImageFront from "../admin/common/ImageFront";
+import { Suspense, lazy } from 'react';
+const ImageFront = lazy(() => import('../admin/common/ImageFront'));
 import axios from "axios";
 import { Link } from "react-router-dom";
 
@@ -21,44 +22,44 @@ const Product = () => {
 
   return (
     <>
-      <section className="productSection py-md-5 py-3 mb-4">
-        <div className="container">
-          <div className="firstHead text-center pb-md-5 pb-4">
-            <h1 className="mb-0">Latest Product</h1>
-          </div>
+      <Suspense fallback={<div></div>}>
+        <section className="productSection py-md-5 py-3 mb-4">
+          <div className="container">
+            <div className="firstHead text-center pb-md-5 pb-4">
+              <h1 className="mb-0">Latest Product</h1>
+            </div>
 
-          <div className="productGrid">
-            <div className="row">
-              {products.map((product, index) => (
-                <div className="col-lg-4 col-sm-6 col-12 mb-4" key={index}>
-                  <div key={product.id} className="productBox p-3 bg-white">
-                    <div className="cateproduct">
-                      <p>{product.category_name}</p>
-                    </div>
-                    <div className="middlepro">
-                      <div className="ProImg">
-                        <ImageFront
-                          src={`${ROOT_URL}/${product.file_name}`}
-                          width={180}
-                          height={180}
-                          showFallback={true}
-                        />
+            <div className="productGrid">
+              <div className="row">
+                {products.map((product, index) => (
+                  <div className="col-lg-4 col-sm-6 col-12 mb-4" key={index}>
+                    <div key={product.id} className="productBox p-3 bg-white">
+                      <div className="cateproduct">
+                        <p>{product.category_name}</p>
                       </div>
-                      <div className="productlink">
-                        <p className="mb-0">{product.title}</p>
-                        <Link to={`/products/${product.slug}`} className="d-inline-block pt-2"><span className="pe-2">View</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44"><path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path></svg></Link>
+                      <div className="middlepro">
+                        <div className="ProImg">
+                          <ImageFront
+                            src={`${ROOT_URL}/${product.file_name}`}
+                            width={180}
+                            height={180}
+                            showFallback={true}
+                          />
+                        </div>
+                        <div className="productlink">
+                          <p className="mb-0">{product.title}</p>
+                          <Link to={`/products/${product.slug}`} className="d-inline-block pt-2"><span className="pe-2">View</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44"><path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path></svg></Link>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-
-
+        </section>
+      </Suspense>
     </>
   );
 };

@@ -120,6 +120,8 @@ const SystemSettingsForm = () => {
               width={80}
               height={80}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.logo_file ? (
             <ImageWithFallback
@@ -141,6 +143,8 @@ const SystemSettingsForm = () => {
               width={80}
               height={80}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.favicon_file ? (
             <ImageWithFallback

@@ -34,7 +34,7 @@ const NotFound = () => {
                                     </div>
                                 </div>
                                 <div className="col-xl-7">
-                                    <img src="/404.png" className="img-fluid" alt="404" />
+                                    <img src="/404.png" className="img-fluid" alt="404" loading="lazy" decoding="async" />
                                 </div>
                             </div>
                         </div>

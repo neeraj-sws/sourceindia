@@ -11,8 +11,8 @@ import KnowledgeCenterModals from "./modal/KnowledgeCenterModals";
 const initialForm = { id: null, name: "", video_url: "", status: "1", file: null };
 import ExcelExport from "../common/ExcelExport";
 import { DateRangePicker } from 'react-date-range';
-import 'react-date-range/dist/styles.css'; 
-import 'react-date-range/dist/theme/default.css'; 
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 import { format } from 'date-fns';
 
 const KnowledgeCenter = ({ getDeleted }) => {
@@ -46,10 +46,10 @@ const KnowledgeCenter = ({ getDeleted }) => {
   const [tempEndDate, setTempEndDate] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [range, setRange] = useState([
-    {startDate: new Date(), endDate: new Date(), key: 'selection'}
+    { startDate: new Date(), endDate: new Date(), key: 'selection' }
   ]);
   const datePickerRef = useRef(null);
-          
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
@@ -261,7 +261,7 @@ const KnowledgeCenter = ({ getDeleted }) => {
 
   useEffect(() => {
     axios.get(`${API_BASE_URL}/knowledge_center`).then((res) => {
-      const filtered = res.data.filter((c) => c.is_delete=== (getDeleted ? 1 : 0));
+      const filtered = res.data.filter((c) => c.is_delete === (getDeleted ? 1 : 0));
       setKnowledgeCenterData(filtered);
     });
   }, []);
@@ -282,7 +282,7 @@ const KnowledgeCenter = ({ getDeleted }) => {
     try {
       await axios.patch(`${API_BASE_URL}/knowledge_center/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map((d) => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if(field=="delete_status"){
+      if (field == "delete_status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
@@ -310,7 +310,7 @@ const KnowledgeCenter = ({ getDeleted }) => {
     setEndDate(null);
     setPage(1);
   };
-  
+
   const handleRangeChange = (item) => {
     const start = item.selection.startDate;
     const end = item.selection.endDate;
@@ -325,190 +325,192 @@ const KnowledgeCenter = ({ getDeleted }) => {
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb mainhead="Knowledge Center" maincount={totalRecords} page="Knowledge Center" title={getDeleted ? "Recently Deleted Knowledge Center" : "Knowledge Center List"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Knowledge Center</>)} add_link="#" onClick={() => openForm()}
-          actions={
-            <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-            {!getDeleted ? (
+            add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Knowledge Center</>)} add_link="#" onClick={() => openForm()}
+            actions={
               <>
-                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedKnowledgeCenter.length === 0}>
-                  <i className="bx bx-trash me-1" /> Delete Selected
-                </button>
-                <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/KnowledgeCenter-remove-list">
-                  Recently Deleted Knowledge Center
-                </Link>
+                <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                {!getDeleted ? (
+                  <>
+                    <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedKnowledgeCenter.length === 0}>
+                      <i className="bx bx-trash me-1" /> Delete Selected
+                    </button>
+                    <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/KnowledgeCenter-remove-list">
+                      Recently Deleted Knowledge Center
+                    </Link>
+                  </>
+                ) : (
+                  <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                    Back
+                  </button>
+                )}
               </>
-            ) : (
-              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
-                Back
-              </button>
-            )}
-            </>
-          }
+            }
           />
           <div className="row">
             {!getDeleted && (
-            <div className="col-md-4">
-              <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">{isEditing ? "Edit Knowledge Center" : "Add Knowledge Center"}</h5>
-                  <form className="row" onSubmit={handleSubmit} noValidate>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="name" className="form-label required">Name</label>
-                      <input
-                        type="text"
-                        className={`form-control ${errors.name ? "is-invalid" : ""}`}
-                        id="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Name"
-                      />
-                      {errors.name && <div className="invalid-feedback">{errors.name}</div>}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="video_url" className="form-label required">Video Url</label>
-                      <input
-                        type="url"
-                        className={`form-control ${errors.video_url ? "is-invalid" : ""}`}
-                        id="video_url"
-                        value={formData.video_url}
-                        onChange={handleChange}
-                        placeholder="Video Url"
-                      />
-                      {errors.video_url && <div className="invalid-feedback">{errors.video_url}</div>}
-                    </div>
-                    <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="status" className="form-label required">Status</label>
-                      <select
-                        id="status"
-                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
-                        value={formData.status}
-                        onChange={handleChange}
-                      >
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                      </select>
-                      {errors.status && <div className="invalid-feedback">{errors.status}</div>}
-                    </div>
-                    <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="file" className="form-label">Image</label>
-                      <input
-                        type="file"
-                        className="form-control"
-                        id="file"
-                        onChange={handleFileChange}
-                      />
-                      {/* {errors.file && <div className="invalid-feedback">{errors.file}</div>} */}
-                      {formData.file ? (
-                        <img
-                          src={URL.createObjectURL(formData.file)}
-                          className="img-preview object-fit-cover mt-3"
-                          width={150}
-                          height={150}
-                          alt="Preview"
+              <div className="col-md-4">
+                <div className="card">
+                  <div className="card-body">
+                    <h5 className="card-title mb-3">{isEditing ? "Edit Knowledge Center" : "Add Knowledge Center"}</h5>
+                    <form className="row" onSubmit={handleSubmit} noValidate>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="name" className="form-label required">Name</label>
+                        <input
+                          type="text"
+                          className={`form-control ${errors.name ? "is-invalid" : ""}`}
+                          id="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          placeholder="Name"
                         />
-                      ) : formData.file_name ? (
-                        <ImageWithFallback
-                          src={`${ROOT_URL}/${formData.file_name}`}
-                          width={150}
-                          height={150}
-                          showFallback={false}
+                        {errors.name && <div className="invalid-feedback">{errors.name}</div>}
+                      </div>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="video_url" className="form-label required">Video Url</label>
+                        <input
+                          type="url"
+                          className={`form-control ${errors.video_url ? "is-invalid" : ""}`}
+                          id="video_url"
+                          value={formData.video_url}
+                          onChange={handleChange}
+                          placeholder="Video Url"
                         />
-                      ) : null}
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
-                        {isEditing ? "Cancel" : "Reset"}
-                      </button>
-                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            {isEditing ? "Updating..." : "Saving..."}
-                          </>
-                        ) : (
-                          isEditing ? "Update" : "Save"
-                        )}
-                      </button>
-                    </div>
-                  </form>
+                        {errors.video_url && <div className="invalid-feedback">{errors.video_url}</div>}
+                      </div>
+                      <div className="form-group col-md-12 mb-3">
+                        <label htmlFor="status" className="form-label required">Status</label>
+                        <select
+                          id="status"
+                          className={`form-select ${errors.status ? "is-invalid" : ""}`}
+                          value={formData.status}
+                          onChange={handleChange}
+                        >
+                          <option value="1">Active</option>
+                          <option value="0">Inactive</option>
+                        </select>
+                        {errors.status && <div className="invalid-feedback">{errors.status}</div>}
+                      </div>
+                      <div className="form-group col-md-12 mb-3">
+                        <label htmlFor="file" className="form-label">Image</label>
+                        <input
+                          type="file"
+                          className="form-control"
+                          id="file"
+                          onChange={handleFileChange}
+                        />
+                        {/* {errors.file && <div className="invalid-feedback">{errors.file}</div>} */}
+                        {formData.file ? (
+                          <img
+                            src={URL.createObjectURL(formData.file)}
+                            className="img-preview object-fit-cover mt-3"
+                            width={150}
+                            height={150}
+                            alt="Preview"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : formData.file_name ? (
+                          <ImageWithFallback
+                            src={`${ROOT_URL}/${formData.file_name}`}
+                            width={150}
+                            height={150}
+                            showFallback={false}
+                          />
+                        ) : null}
+                      </div>
+                      <div className="d-flex justify-content-between">
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
+                          {isEditing ? "Cancel" : "Reset"}
+                        </button>
+                        <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+                          {submitting ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                              {isEditing ? "Updating..." : "Saving..."}
+                            </>
+                          ) : (
+                            isEditing ? "Update" : "Save"
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
-            </div>
             )}
             <div className={!getDeleted ? "col-md-8" : "col-md-12"}>
-              
-                  {getDeleted && (
-                    <>
-                    <div className="card mb-3">
-                <div className="card-body">
-                    <h5 className="card-title mb-3">Recently Deleted Knowledge Center List</h5>
-                    <div className="row">
-                      <div className="col-md-8">
-                        <div className="d-flex align-items-center gap-2">
-                          <label className="form-label mb-0">Date Filter:</label>
-                          <div className="position-relative">
-                            <button className="form-control text-start" onClick={() => setShowPicker(!showPicker)}>
-                              <i className="bx bx-calendar me-2"></i>
-                              {format(range[0].startDate, 'MMMM dd, yyyy')} - {format(range[0].endDate, 'MMMM dd, yyyy')}
-                            </button>
-                            {showPicker && (
-                              <div
-                                ref={datePickerRef}
-                                className="position-absolute z-3 bg-white shadow p-3 rounded"
-                                style={{ top: '100%', left: 0, minWidth: '300px' }}
-                              >
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                  <h6 className="mb-0">Select Date Range</h6>
-                                  <button
-                                    type="button"
-                                    className="btn-close"
-                                    aria-label="Close"
-                                    onClick={() => setShowPicker(false)}
-                                  ></button>
+
+              {getDeleted && (
+                <>
+                  <div className="card mb-3">
+                    <div className="card-body">
+                      <h5 className="card-title mb-3">Recently Deleted Knowledge Center List</h5>
+                      <div className="row">
+                        <div className="col-md-8">
+                          <div className="d-flex align-items-center gap-2">
+                            <label className="form-label mb-0">Date Filter:</label>
+                            <div className="position-relative">
+                              <button className="form-control text-start" onClick={() => setShowPicker(!showPicker)}>
+                                <i className="bx bx-calendar me-2"></i>
+                                {format(range[0].startDate, 'MMMM dd, yyyy')} - {format(range[0].endDate, 'MMMM dd, yyyy')}
+                              </button>
+                              {showPicker && (
+                                <div
+                                  ref={datePickerRef}
+                                  className="position-absolute z-3 bg-white shadow p-3 rounded"
+                                  style={{ top: '100%', left: 0, minWidth: '300px' }}
+                                >
+                                  <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 className="mb-0">Select Date Range</h6>
+                                    <button
+                                      type="button"
+                                      className="btn-close"
+                                      aria-label="Close"
+                                      onClick={() => setShowPicker(false)}
+                                    ></button>
+                                  </div>
+                                  <DateRangePicker
+                                    ranges={range}
+                                    onChange={handleRangeChange}
+                                    showSelectionPreview={true}
+                                    moveRangeOnFirstSelection={false}
+                                    editableDateInputs={true}
+                                  />
+                                  <div className="text-end mt-2">
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-secondary"
+                                      onClick={() => setShowPicker(false)}
+                                    >
+                                      Close
+                                    </button>
+                                  </div>
                                 </div>
-                                <DateRangePicker
-                                  ranges={range}
-                                  onChange={handleRangeChange}
-                                  showSelectionPreview={true}
-                                  moveRangeOnFirstSelection={false}
-                                  editableDateInputs={true}
-                                />
-                                <div className="text-end mt-2">
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-secondary"
-                                    onClick={() => setShowPicker(false)}
-                                  >
-                                    Close
-                                  </button>
-                                </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         </div>
+                        <div className="col-md-4 d-flex justify-content-end gap-2">
+                          <button className="btn btn-primary" onClick={() => {
+                            setStartDate(tempStartDate);
+                            setEndDate(tempEndDate);
+                            setDateRange('customrange');
+                            setPage(1);
+                          }}>
+                            Apply
+                          </button>
+                          <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
+                        </div>
                       </div>
-                      <div className="col-md-4 d-flex justify-content-end gap-2">
-                        <button className="btn btn-primary" onClick={() => {
-                          setStartDate(tempStartDate);
-                          setEndDate(tempEndDate);
-                          setDateRange('customrange');
-                          setPage(1);
-                        }}>
-                          Apply
-                        </button>
-                        <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
-                      </div>
                     </div>
-                    </div>
-                    </div>
-                    </>
-                  )}
-                  <div className="card">
+                  </div>
+                </>
+              )}
+              <div className="card">
                 <div className="card-body">
                   <DataTable
                     columns={[
-                      ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),
+                      ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
@@ -532,9 +534,9 @@ const KnowledgeCenter = ({ getDeleted }) => {
                     renderRow={(row, index) => (
                       <tr key={row.id}>
                         {!getDeleted && (
-                        <td>                    
-                          <input type="checkbox" checked={selectedKnowledgeCenter.includes(row.id)} onChange={() => handleSelectKnowledgeCenter(row.id)} />
-                        </td>
+                          <td>
+                            <input type="checkbox" checked={selectedKnowledgeCenter.includes(row.id)} onChange={() => handleSelectKnowledgeCenter(row.id)} />
+                          </td>
                         )}
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td><ImageWithFallback
@@ -546,62 +548,62 @@ const KnowledgeCenter = ({ getDeleted }) => {
                         <td>{row.name}</td>
                         <td>
                           {!getDeleted ? (
-                          <div className="form-check form-switch">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`statusSwitch_${row.id}`}
-                              checked={row.status == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
-                              readOnly
-                            />
-                          </div>
-                          ):(
+                            <div className="form-check form-switch">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id={`statusSwitch_${row.id}`}
+                                checked={row.status == 1}
+                                onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
+                                readOnly
+                              />
+                            </div>
+                          ) : (
                             row.status == 1 ? (<span className="badge bg-success">Active</span>) : (<span className="badge bg-danger">InActive</span>)
                           )}
                         </td>
                         <td>
                           <div className="dropdown">
-                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                               <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
                             <ul className="dropdown-menu">
                               {!getDeleted ? (
-                              <>
-                              <li>
-                                <button className="dropdown-item" onClick={() => openForm(row)}>
-                                  <i className="bx bx-edit me-2"></i> Edit
-                                </button>
-                              </li>
-                              <li>
-                                <button className="dropdown-item text-danger" 
-                                  onClick={(e) => {
-                                    e.preventDefault(); 
-                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                                  }}
-                                >
-                                  <i className="bx bx-trash me-2"></i> Delete
-                                </button>
-                              </li>
-                              </>                          
+                                <>
+                                  <li>
+                                    <button className="dropdown-item" onClick={() => openForm(row)}>
+                                      <i className="bx bx-edit me-2"></i> Edit
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button className="dropdown-item text-danger"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                      }}
+                                    >
+                                      <i className="bx bx-trash me-2"></i> Delete
+                                    </button>
+                                  </li>
+                                </>
                               ) : (
-                              <>
-                              <li>
-                                <button className="dropdown-item" 
-                                  onClick={(e) => {
-                                    e.preventDefault(); 
-                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                                  }}
-                                >
-                                  <i className="bx bx-windows me-2"></i> Restore
-                                </button>
-                              </li>
-                              <li>
-                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                  <i className="bx bx-trash me-2"></i> Delete
-                                </button>
-                              </li>
-                              </>
+                                <>
+                                  <li>
+                                    <button className="dropdown-item"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                      }}
+                                    >
+                                      <i className="bx bx-windows me-2"></i> Restore
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                      <i className="bx bx-trash me-2"></i> Delete
+                                    </button>
+                                  </li>
+                                </>
                               )}
                             </ul>
                           </div>

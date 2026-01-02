@@ -99,6 +99,8 @@ const VisionForm = () => {
               width={150}
               height={150}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.vision_file ? (
             <ImageWithFallback
@@ -120,6 +122,8 @@ const VisionForm = () => {
               width={150}
               height={150}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.vision_icon ? (
             <ImageWithFallback

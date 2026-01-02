@@ -14,7 +14,7 @@ import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 import { formatDateTime } from '../../utils/formatDate';
 
-const ItemCategory = ({excludeItemCategories}) => {
+const ItemCategory = ({ excludeItemCategories }) => {
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -117,9 +117,9 @@ const ItemCategory = ({excludeItemCategories}) => {
     setSelectedSubCategory('');
     setSubCategories([]);
     setTimeout(() => {
-  if ($("#category_id").data("select2")) $("#category_id").val(null);
-  if ($("#subcategory_id").data("select2")) $("#subcategory_id").val(null);
-}, 100);
+      if ($("#category_id").data("select2")) $("#category_id").val(null);
+      if ($("#subcategory_id").data("select2")) $("#subcategory_id").val(null);
+    }, 100);
   };
 
   const handleChange = (e) => {
@@ -174,45 +174,45 @@ const ItemCategory = ({excludeItemCategories}) => {
 
         // showNotification("Item category updated successfully!", "success");
         await axios.put(`${API_BASE_URL}/item_category/${formData.id}`, formDataToSend, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+          headers: { "Content-Type": "multipart/form-data" },
+        });
 
-  // --- 2. Get updated item (to get new file_id) ---
-  const updatedItem = await axios.get(`${API_BASE_URL}/item_category/${formData.id}`);
-  const newFileId = updatedItem.data.file_id;
+        // --- 2. Get updated item (to get new file_id) ---
+        const updatedItem = await axios.get(`${API_BASE_URL}/item_category/${formData.id}`);
+        const newFileId = updatedItem.data.file_id;
 
-  let updatedFileName = formData.file_name || null;
+        let updatedFileName = formData.file_name || null;
 
-  // --- 3. If backend assigned new file id, fetch image file record ---
-  if (newFileId && newFileId !== 0) {
-    try {
-      const img = await axios.get(`${API_BASE_URL}/files/${newFileId}`);
-      updatedFileName = img.data.file;
-    } catch (error) {
-      console.warn("File record not found:", error);
-    }
-  }
-
-  // --- 4. Update DataTable without refresh ---
-  setData((prev) =>
-    prev.map((item) =>
-      item.id === formData.id
-        ? {
-            ...item,
-            name: formData.name,
-            category_id: selectedCategory,
-            subcategory_id: selectedSubCategory,
-            status: Number(formData.status),
-            file_id: newFileId,
-            file_name: updatedFileName,
-            updated_at: new Date().toISOString(),
+        // --- 3. If backend assigned new file id, fetch image file record ---
+        if (newFileId && newFileId !== 0) {
+          try {
+            const img = await axios.get(`${API_BASE_URL}/files/${newFileId}`);
+            updatedFileName = img.data.file;
+          } catch (error) {
+            console.warn("File record not found:", error);
           }
-        : item
-    )
-  );
+        }
 
-  showNotification("Item category updated successfully!", "success");
-  resetForm();
+        // --- 4. Update DataTable without refresh ---
+        setData((prev) =>
+          prev.map((item) =>
+            item.id === formData.id
+              ? {
+                ...item,
+                name: formData.name,
+                category_id: selectedCategory,
+                subcategory_id: selectedSubCategory,
+                status: Number(formData.status),
+                file_id: newFileId,
+                file_name: updatedFileName,
+                updated_at: new Date().toISOString(),
+              }
+              : item
+          )
+        );
+
+        showNotification("Item category updated successfully!", "success");
+        resetForm();
       } else {
         await axios.post(`${API_BASE_URL}/item_category`, formDataToSend, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -244,31 +244,31 @@ const ItemCategory = ({excludeItemCategories}) => {
   }, []);
 
   const handleCategoryChange = async (event) => {
-      const categoryId = event.target.value;
-      setSelectedCategory(categoryId);
-      try {
-        const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
-        setSubCategories(res.data);
-        setSelectedSubCategory('');
-      } catch (error) {
-        console.error("Error fetching sub categories:", error);
-      }
-    };
-  
-    const handleSubCategoryChange = (event) => {
-      setSelectedSubCategory(event.target.value);
-    };
+    const categoryId = event.target.value;
+    setSelectedCategory(categoryId);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
+      setSubCategories(res.data);
+      setSelectedSubCategory('');
+    } catch (error) {
+      console.error("Error fetching sub categories:", error);
+    }
+  };
+
+  const handleSubCategoryChange = (event) => {
+    setSelectedSubCategory(event.target.value);
+  };
 
   useEffect(() => {
-          $('#category_id').select2({
-            theme: "bootstrap",
-            width: '100%',
-            placeholder: "Select category"
-          }).on("change", function () {
-            const icId = $(this).val();
-            handleCategoryChange({ target: { value: icId } });
-          });
-      $('#subcategory_id').select2({
+    $('#category_id').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select category"
+    }).on("change", function () {
+      const icId = $(this).val();
+      handleCategoryChange({ target: { value: icId } });
+    });
+    $('#subcategory_id').select2({
       theme: "bootstrap",
       width: '100%',
       placeholder: "Select Sub Category"
@@ -276,11 +276,11 @@ const ItemCategory = ({excludeItemCategories}) => {
       const subCategoryId = $(this).val();
       handleSubCategoryChange({ target: { value: subCategoryId } });
     });
-          return () => {
-            if ($('#category_id').data('select2')) {$('#category_id').select2('destroy') };
-            if ($('#subcategory_id').data('select2')) {$('#subcategory_id').select2('destroy')};
-          };
-        }, [categories, subcategories]);
+    return () => {
+      if ($('#category_id').data('select2')) { $('#category_id').select2('destroy') };
+      if ($('#subcategory_id').data('select2')) { $('#subcategory_id').select2('destroy') };
+    };
+  }, [categories, subcategories]);
 
   const openDeleteModal = (itemCategoryId) => { setItemCategoryToDelete(itemCategoryId); setIsBulkDelete(false); setShowDeleteModal(true); };
   const openBulkDeleteModal = () => { setItemCategoryToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
@@ -359,10 +359,10 @@ const ItemCategory = ({excludeItemCategories}) => {
     //   setItemCategoryData(res.data);
     // });
     axios.get(`${API_BASE_URL}/item_category`, {
-  params: { excludeItemCategories: excludeItemCategories ? 'true' : 'false' }
-}).then((res) => {
-  setItemCategoryData(res.data);
-});
+      params: { excludeItemCategories: excludeItemCategories ? 'true' : 'false' }
+    }).then((res) => {
+      setItemCategoryData(res.data);
+    });
   }, []);
 
   const handleDownload = () => {
@@ -376,144 +376,146 @@ const ItemCategory = ({excludeItemCategories}) => {
       <div className={excludeItemCategories ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
           {!excludeItemCategories &&
-          <Breadcrumb mainhead="Item Category" maincount={totalRecords} page="Category Master" title="Item Category" add_button={<><i className="bx bxs-plus-square me-1" /> Add Item Category</>} add_link="#" onClick={() => openForm()}
-          actions={
-            <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-            <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItemCategory.length === 0}>
-              <i className="bx bx-trash me-1" /> Delete Selected
-            </button>
-            </>
+            <Breadcrumb mainhead="Item Category" maincount={totalRecords} page="Category Master" title="Item Category" add_button={<><i className="bx bxs-plus-square me-1" /> Add Item Category</>} add_link="#" onClick={() => openForm()}
+              actions={
+                <>
+                  <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                  <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItemCategory.length === 0}>
+                    <i className="bx bx-trash me-1" /> Delete Selected
+                  </button>
+                </>
+              }
+            />
           }
-          />
-        }
           <div className="row">
             {!excludeItemCategories && (
-            <div className="col-md-4">
-              <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">{isEditing ? "Edit Item Category" : "Add Item Category"}</h5>
-                  <form className="row" onSubmit={handleSubmit} noValidate>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="name" className="form-label required">Name</label>
-                      <input
-                        type="text"
-                        className={`form-control ${errors.name ? "is-invalid" : ""}`}
-                        id="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Name"
-                      />
-                      {errors.name && (<div className="invalid-feedback">{errors.name}</div>)}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="category_id" className="form-label required">Category</label>
-                      <select
-                        className="form-control select2"
-                        id="category_id"
-                        value={selectedCategory}
-                        onChange={handleCategoryChange}
-                      >
-                        <option value="">Select Category</option>
-                        {categories?.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.category_id && (<div className="text-danger small mt-1">{errors.category_id} </div>
-                      )}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="subcategory_id" className="form-label required">Sub Category</label>
-                      <select
-                        className="form-control select2"
-                        id="subcategory_id"
-                        value={selectedSubCategory}
-                        onChange={handleSubCategoryChange}
-                        disabled={!selectedCategory}
-                      >
-                        <option value="">Select Sub Category</option>
-                        {subcategories?.map((subcategory_id) => (
-                          <option key={subcategory_id.id} value={subcategory_id.id}>
-                            {subcategory_id.name}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.subcategory_id && (<div className="text-danger small mt-1">{errors.subcategory_id} </div>
-                      )}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="status" className="form-label required">Status</label>
-                      <select
-                        id="status"
-                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
-                        value={formData.status}
-                        onChange={handleChange}
-                      >
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                      </select>
-                      {errors.status && (<div className="invalid-feedback">{errors.status}</div>
-                      )}
-                    </div>
-                    <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="file" className="form-label required">Item Category Image</label>
-                      <input
-                        type="file"
-                        className={`form-control ${errors.file ? "is-invalid" : ""}`}
-                        id="file"
-                        onChange={handleFileChange}
-                      />
-                      {errors.file && <div className="invalid-feedback">{errors.file}</div>}
-                      {formData.file ? (
-                        <img
-                          src={URL.createObjectURL(formData.file)}
-                          className="img-preview object-fit-cover mt-3"
-                          width={150}
-                          height={150}
-                          alt="Preview"
+              <div className="col-md-4">
+                <div className="card">
+                  <div className="card-body">
+                    <h5 className="card-title mb-3">{isEditing ? "Edit Item Category" : "Add Item Category"}</h5>
+                    <form className="row" onSubmit={handleSubmit} noValidate>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="name" className="form-label required">Name</label>
+                        <input
+                          type="text"
+                          className={`form-control ${errors.name ? "is-invalid" : ""}`}
+                          id="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          placeholder="Name"
                         />
-                      ) : formData.file_name ? (
-                        <ImageWithFallback
-                          src={`${ROOT_URL}/${formData.file_name}`}
-                          width={150}
-                          height={150}
-                          showFallback={false}
-                        />
-                      ) : null}
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
-                        {isEditing ? "Cancel" : "Reset"}
-                      </button>
-                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            {isEditing ? "Updating..." : "Saving..."}
-                          </>
-                        ) : (
-                          isEditing ? "Update" : "Save"
+                        {errors.name && (<div className="invalid-feedback">{errors.name}</div>)}
+                      </div>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="category_id" className="form-label required">Category</label>
+                        <select
+                          className="form-control select2"
+                          id="category_id"
+                          value={selectedCategory}
+                          onChange={handleCategoryChange}
+                        >
+                          <option value="">Select Category</option>
+                          {categories?.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.category_id && (<div className="text-danger small mt-1">{errors.category_id} </div>
                         )}
-                      </button>
-                    </div>
-                  </form>
+                      </div>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="subcategory_id" className="form-label required">Sub Category</label>
+                        <select
+                          className="form-control select2"
+                          id="subcategory_id"
+                          value={selectedSubCategory}
+                          onChange={handleSubCategoryChange}
+                          disabled={!selectedCategory}
+                        >
+                          <option value="">Select Sub Category</option>
+                          {subcategories?.map((subcategory_id) => (
+                            <option key={subcategory_id.id} value={subcategory_id.id}>
+                              {subcategory_id.name}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.subcategory_id && (<div className="text-danger small mt-1">{errors.subcategory_id} </div>
+                        )}
+                      </div>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="status" className="form-label required">Status</label>
+                        <select
+                          id="status"
+                          className={`form-select ${errors.status ? "is-invalid" : ""}`}
+                          value={formData.status}
+                          onChange={handleChange}
+                        >
+                          <option value="1">Active</option>
+                          <option value="0">Inactive</option>
+                        </select>
+                        {errors.status && (<div className="invalid-feedback">{errors.status}</div>
+                        )}
+                      </div>
+                      <div className="form-group col-md-12 mb-3">
+                        <label htmlFor="file" className="form-label required">Item Category Image</label>
+                        <input
+                          type="file"
+                          className={`form-control ${errors.file ? "is-invalid" : ""}`}
+                          id="file"
+                          onChange={handleFileChange}
+                        />
+                        {errors.file && <div className="invalid-feedback">{errors.file}</div>}
+                        {formData.file ? (
+                          <img
+                            src={URL.createObjectURL(formData.file)}
+                            className="img-preview object-fit-cover mt-3"
+                            width={150}
+                            height={150}
+                            alt="Preview"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : formData.file_name ? (
+                          <ImageWithFallback
+                            src={`${ROOT_URL}/${formData.file_name}`}
+                            width={150}
+                            height={150}
+                            showFallback={false}
+                          />
+                        ) : null}
+                      </div>
+                      <div className="d-flex justify-content-between">
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
+                          {isEditing ? "Cancel" : "Reset"}
+                        </button>
+                        <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+                          {submitting ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                              {isEditing ? "Updating..." : "Saving..."}
+                            </>
+                          ) : (
+                            isEditing ? "Update" : "Save"
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
-            </div>
             )}
             <div className={!excludeItemCategories ? "col-md-8" : "col-md-12"}>
               {excludeItemCategories && (
-                  <div className="card mb-3">
-                <div className="card-body">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="card-title mb-3">Unused Item Category List of Product</h5>
-                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                <div className="card mb-3">
+                  <div className="card-body">
+                    <div className="d-flex align-items-center justify-content-between">
+                      <h5 className="card-title mb-3">Unused Item Category List of Product</h5>
+                      <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
                     </div>
-                    </div>
-                    </div>
-                  )}
+                  </div>
+                </div>
+              )}
               <div className="card">
                 <div className="card-body">
                   <DataTable
@@ -524,10 +526,10 @@ const ItemCategory = ({excludeItemCategories}) => {
                       { key: "name", label: "Name", sortable: true },
                       { key: "category_name", label: "Category", sortable: true },
                       { key: "subcategory_name", label: "Sub Category", sortable: true },
-                      ...(!excludeItemCategories ? [{ key: "status", label: "Status", sortable: false }]:[]),
-                      ...(!excludeItemCategories ? [{ key: "action", label: "Action", sortable: false }]:[]),
-                      ...(excludeItemCategories ? [{ key: "created_at", label: "Created", sortable: true }]:[]),
-                      ...(excludeItemCategories ? [{ key: "updated_at", label: "Last Update", sortable: true }]:[]),
+                      ...(!excludeItemCategories ? [{ key: "status", label: "Status", sortable: false }] : []),
+                      ...(!excludeItemCategories ? [{ key: "action", label: "Action", sortable: false }] : []),
+                      ...(excludeItemCategories ? [{ key: "created_at", label: "Created", sortable: true }] : []),
+                      ...(excludeItemCategories ? [{ key: "updated_at", label: "Last Update", sortable: true }] : []),
                     ]}
                     data={data}
                     loading={loading}
@@ -545,7 +547,7 @@ const ItemCategory = ({excludeItemCategories}) => {
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
                       <tr key={row.id}>
-                        <td>                    
+                        <td>
                           <input type="checkbox" checked={selectedItemCategory.includes(row.id)} onChange={() => handleSelectItemCategory(row.id)} />
                         </td>
                         <td>{(page - 1) * limit + index + 1}</td>
@@ -560,45 +562,45 @@ const ItemCategory = ({excludeItemCategories}) => {
                         <td>{row.subcategory_name}</td>
                         {!excludeItemCategories && (
                           <>
-                        <td>
-                          <div className="form-check form-switch">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`statusSwitch_${row.id}`}
-                              checked={row.status == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                              readOnly
-                            />
-                          </div>
-                        </td>
-                        <td>
-                          <div className="dropdown">
-                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                              <i className="bx bx-dots-vertical-rounded"></i>
-                            </button>
-                            <ul className="dropdown-menu">
-                              <li>
-                                <button className="dropdown-item" onClick={() => openForm(row)}>
-                                  <i className="bx bx-edit me-2"></i> Edit
+                            <td>
+                              <div className="form-check form-switch">
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id={`statusSwitch_${row.id}`}
+                                  checked={row.status == 1}
+                                  onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                                  readOnly
+                                />
+                              </div>
+                            </td>
+                            <td>
+                              <div className="dropdown">
+                                <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                  <i className="bx bx-dots-vertical-rounded"></i>
                                 </button>
-                              </li>
-                              <li>
-                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                  <i className="bx bx-trash me-2"></i> Delete
-                                </button>
-                              </li>
-                            </ul>
-                          </div>
-                        </td>
-                        </>
+                                <ul className="dropdown-menu">
+                                  <li>
+                                    <button className="dropdown-item" onClick={() => openForm(row)}>
+                                      <i className="bx bx-edit me-2"></i> Edit
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                      <i className="bx bx-trash me-2"></i> Delete
+                                    </button>
+                                  </li>
+                                </ul>
+                              </div>
+                            </td>
+                          </>
                         )}
                         {excludeItemCategories && (
-                                                                        <>
-                                                                      <td>{formatDateTime(row.created_at)}</td>
-                                                                                          <td>{formatDateTime(row.updated_at)}</td>
-                                                                                          </>
-                                                                      )}
+                          <>
+                            <td>{formatDateTime(row.created_at)}</td>
+                            <td>{formatDateTime(row.updated_at)}</td>
+                          </>
+                        )}
                       </tr>
                     )}
                   />

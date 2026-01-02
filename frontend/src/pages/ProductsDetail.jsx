@@ -8,7 +8,8 @@ import 'swiper/css'; // Core Swiper styles
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/thumbs';
-import ImageFront from "../admin/common/ImageFront";
+import { Suspense, lazy } from 'react';
+const ImageFront = lazy(() => import('../admin/common/ImageFront'));
 import EnquiryForm from "./EnquiryForm";
 import { useAlert } from "../context/AlertContext";
 import UseAuth from '../sections/UseAuth';
@@ -198,451 +199,453 @@ const ProductDetail = () => {
 
   return (
     <>
-      <section className="productDetail py-5">
-        <div className="container-xl">
-          <div className="row">
-            <nav aria-label="breadcrumb" className="mb-3">
-              <ol className="breadcrumb mb-0">
-                <li className="breadcrumb-item">
-                  <a href="/" className="text-decoration-none">Home</a>
-                </li>
+      <Suspense fallback={<div></div>}>
+        <section className="productDetail py-5">
+          <div className="container-xl">
+            <div className="row">
+              <nav aria-label="breadcrumb" className="mb-3">
+                <ol className="breadcrumb mb-0">
+                  <li className="breadcrumb-item">
+                    <a href="/" className="text-decoration-none">Home</a>
+                  </li>
 
-                <li className="breadcrumb-item">
-                  <a href="/products" className="text-decoration-none">Products</a>
-                </li>
+                  <li className="breadcrumb-item">
+                    <a href="/products" className="text-decoration-none">Products</a>
+                  </li>
 
-                <li className="breadcrumb-item active" aria-current="page">
-                  {product.title}
-                </li>
-              </ol>
-            </nav>
-            <div className="col-xl-9 col-lg-8 mb-lg-0 mb-3">
-              <div className="card">
-                <div className="card-body">
-                  <div className="row">
-                    <div className="col-md-5">
-                      {/* Main Swiper Slider with Hover Zoom */}
-                      <Swiper
-                        modules={[Navigation, Thumbs, Pagination]} // Added Thumbs for thumbnail sync
-                        thumbs={{ swiper: thumbsSwiper.current && !thumbsSwiper.current.destroyed ? thumbsSwiper.current : null }}
-                        navigation={true} // Arrows for navigation
-                        pagination={{ clickable: true }} // Dots for pagination
-                        loop={true} // Infinite loop
-                        grabCursor={true} // Cursor changes to grab when hovering
-                        style={{ maxWidth: '100%', height: '300px' }} // Adjust height as needed
-                        className="custom-swiper" // Custom class for styling
-                      >
-                        {allImages.map((image, index) => (
-                          <SwiperSlide key={image.id || index}>
-                            <div className="swiper-slide-content text-center">
+                  <li className="breadcrumb-item active" aria-current="page">
+                    {product.title}
+                  </li>
+                </ol>
+              </nav>
+              <div className="col-xl-9 col-lg-8 mb-lg-0 mb-3">
+                <div className="card">
+                  <div className="card-body">
+                    <div className="row">
+                      <div className="col-md-5">
+                        {/* Main Swiper Slider with Hover Zoom */}
+                        <Swiper
+                          modules={[Navigation, Thumbs, Pagination]} // Added Thumbs for thumbnail sync
+                          thumbs={{ swiper: thumbsSwiper.current && !thumbsSwiper.current.destroyed ? thumbsSwiper.current : null }}
+                          navigation={true} // Arrows for navigation
+                          pagination={{ clickable: true }} // Dots for pagination
+                          loop={true} // Infinite loop
+                          grabCursor={true} // Cursor changes to grab when hovering
+                          style={{ maxWidth: '100%', height: '300px' }} // Adjust height as needed
+                          className="custom-swiper" // Custom class for styling
+                        >
+                          {allImages.map((image, index) => (
+                            <SwiperSlide key={image.id || index}>
+                              <div className="swiper-slide-content text-center">
+
+                                <ImageFront
+                                  src={`${ROOT_URL}/${image.file}`}
+                                  alt={`${product.title} ${index + 1}`}
+
+                                  style={{ width: 'auto', height: '100%', objectFit: 'contain', transition: 'transform 0.3s ease' }}
+                                  showFallback={true}
+                                  className="swiper-zoom-image"
+                                />
+                              </div>
+                            </SwiperSlide>
+                          ))}
+                        </Swiper>
+
+                        {/* Thumbnail Swiper */}
+                        <Swiper
+                          onSwiper={(swiper) => (thumbsSwiper.current = swiper)} // Assign swiper instance to useRef
+                          spaceBetween={10}
+                          slidesPerView={4} // Show 4 thumbnails at a time
+                          watchSlidesProgress={true}
+                          modules={[Thumbs]}
+                          className="mt-3"
+                          style={{ maxWidth: '100%', height: '80px' }} // Adjust height for thumbnails
+                        >
+                          {allImages.map((image, index) => (
+                            <SwiperSlide key={image.id || index}>
 
                               <ImageFront
                                 src={`${ROOT_URL}/${image.file}`}
                                 alt={`${product.title} ${index + 1}`}
 
-                                style={{ width: 'auto', height: '100%', objectFit: 'contain', transition: 'transform 0.3s ease' }}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover',
+                                  border: '1px solid #ddd',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer'
+                                }}
                                 showFallback={true}
-                                className="swiper-zoom-image"
+
                               />
-                            </div>
-                          </SwiperSlide>
-                        ))}
-                      </Swiper>
 
-                      {/* Thumbnail Swiper */}
-                      <Swiper
-                        onSwiper={(swiper) => (thumbsSwiper.current = swiper)} // Assign swiper instance to useRef
-                        spaceBetween={10}
-                        slidesPerView={4} // Show 4 thumbnails at a time
-                        watchSlidesProgress={true}
-                        modules={[Thumbs]}
-                        className="mt-3"
-                        style={{ maxWidth: '100%', height: '80px' }} // Adjust height for thumbnails
-                      >
-                        {allImages.map((image, index) => (
-                          <SwiperSlide key={image.id || index}>
-
-                            <ImageFront
-                              src={`${ROOT_URL}/${image.file}`}
-                              alt={`${product.title} ${index + 1}`}
-
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                                border: '1px solid #ddd',
-                                borderRadius: '5px',
-                                cursor: 'pointer'
-                              }}
-                              showFallback={true}
-
-                            />
-
-                          </SwiperSlide>
-                        ))}
-                      </Swiper>
-                    </div>
-                    <div className="col-md-7">
-                      <div className="product-details mt-md-0 mt-3">
-                        <div className="detailhead">
-                          <h4 className="text-orange">{product.title}</h4>
-                        </div>
-                        <table className="table productTable">
-                          <tbody>
-                            <tr>
-                              <th>Category</th>
-                              <td>{product.category_name || 'N/A'}</td>
-                            </tr>
-                            <tr>
-                              <th>Sub Category</th>
-                              <td>{product.sub_category_name || 'N/A'}</td>
-                            </tr>
-                            <tr>
-                              <th>Item Category</th>
-                              <td>{product.item_category_name || 'N/A'}</td>
-                            </tr>
-                            <tr>
-                              <th>Item Type</th>
-                              <td>{product.item_subcategory_name || 'N/A'}</td>
-                            </tr>
-                            <tr>
-                              <th>Item </th>
-                              <td>{product.item_name || 'N/A'}</td>
-                            </tr>
-                            <tr>
-                              <th>Color</th>
-                              <td>{product.color_name || 'N/A'}</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                        <div>
-                          <p>{product.short_description || 'N/A'}</p>
-                        </div>
+                            </SwiperSlide>
+                          ))}
+                        </Swiper>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-3 col-lg-4 mb-lg-0 mb-3">
-              <div className="card h-100">
-                <div className="card-body">
-                  <div className="mb-3">
-                    <h6 className="mb-3">{product.company_name}</h6>
-                    <div className='text-center border rounded-2'>
-                      <ImageFront
-                        src={`${ROOT_URL}/${product.company_logo}`}
-                        alt={`${product.title}`}
-
-                        style={{
-                          width: 'auto',
-                          height: 'auto',
-                          objectFit: 'cover',
-                          borderRadius: '5px',
-                          cursor: 'pointer'
-                        }}
-                        showFallback={true}
-                        className=""
-                        defaultimg="/company.png"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="card-footer pt-0 bg-white border-0">
-                  <button className="btn btn-orange w-100" onClick={() => setShowModal(true)}>
-                    <i className="lni lni-phone pe-2"></i> Enquiry
-                  </button>
-
-                  <EnquiryForm
-                    show={showModal}
-                    onHide={() => setShowModal(false)}
-                    productId={`${product.id}`}
-                    companyId={`${product.company_id}`}
-                    productTitle={`${product.title}`}
-                    companyName={`${product.company_name}`}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="col-12">
-            <div className='card mt-5'>
-              <div className='card-body'>
-                <div className="tabs-container">
-                  {/* Tab Navigation */}
-                  <ul className="nav nav-tabs border-bottom" role="tablist" style={{ paddingBottom: '1px' }}>
-                    <li className="nav-item" role="presentation">
-                      <button
-                        className={`nav-link ${activeTab === 'productDetails' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('productDetails')}
-                        type="button"
-                        role="tab"
-                      >
-                        Product Details
-                      </button>
-                    </li>
-                    <li className="nav-item" role="presentation">
-                      <button
-                        className={`nav-link ${activeTab === 'companyDetails' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('companyDetails')}
-                        type="button"
-                        role="tab"
-                      >
-                        Company Details
-                      </button>
-                    </li>
-                    <li className="nav-item" role="presentation">
-                      <button
-                        className={`nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('reviews')}
-                        type="button"
-                        role="tab"
-                      >
-                        Reviews
-                      </button>
-                    </li>
-                  </ul>
-
-                  {/* Tab Content */}
-                  <div className="tab-content mt-3">
-                    {/* Product Details Tab */}
-                    {activeTab === 'productDetails' && (
-                      <div className="tab-pane fade show active" role="tabpanel">
-                        <div className="product-details">
+                      <div className="col-md-7">
+                        <div className="product-details mt-md-0 mt-3">
                           <div className="detailhead">
-                            <h5 className="">Product Specification:
-                            </h5>
+                            <h4 className="text-orange">{product.title}</h4>
                           </div>
+                          <table className="table productTable">
+                            <tbody>
+                              <tr>
+                                <th>Category</th>
+                                <td>{product.category_name || 'N/A'}</td>
+                              </tr>
+                              <tr>
+                                <th>Sub Category</th>
+                                <td>{product.sub_category_name || 'N/A'}</td>
+                              </tr>
+                              <tr>
+                                <th>Item Category</th>
+                                <td>{product.item_category_name || 'N/A'}</td>
+                              </tr>
+                              <tr>
+                                <th>Item Type</th>
+                                <td>{product.item_subcategory_name || 'N/A'}</td>
+                              </tr>
+                              <tr>
+                                <th>Item </th>
+                                <td>{product.item_name || 'N/A'}</td>
+                              </tr>
+                              <tr>
+                                <th>Color</th>
+                                <td>{product.color_name || 'N/A'}</td>
+                              </tr>
+                            </tbody>
+                          </table>
                           <div>
-                            <div
-                              dangerouslySetInnerHTML={{ __html: product.description || 'N/A' }}
-                            />
+                            <p>{product.short_description || 'N/A'}</p>
                           </div>
                         </div>
                       </div>
-                    )}
-
-                    {/* Company Details Tab */}
-                    {activeTab === 'companyDetails' && (
-                      <div className="tab-pane fade show active" role="tabpanel">
-                        <div className="company-details">
-                          <h5>About the Company:
-                          </h5>
-                          <div className="mb-3">
-                            <table className="table productTable">
-                              <tbody>
-                                <tr>
-                                  <th>Company Name</th>
-                                  <td>{product.company_name || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                  <th>Sub Category</th>
-                                  <td>{product.sub_category_name || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                  <th>Activity</th>
-                                  <td>{product.activity_name || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                  <th>Core Activity	</th>
-                                  <td>{product.core_activity_name || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                  <th>Location</th>
-                                  <td>{product.company_location || 'N/A'}</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                            <div className='companyInfo mt-4'>
-                              <h5>Company Details:</h5>
-                              <div
-                                dangerouslySetInnerHTML={{ __html: product.brief_company || 'N/A' }}
-                              />
-                            </div>
-
-                          </div>
-
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Reviews Tab */}
-                    {activeTab === 'reviews' && (
-                      <div className="tab-pane fade show active" role="tabpanel">
-                        <div className="reviews">
-                          <h5 className="">Reviews</h5>
-                          <div className="reviewSection text-start">
-                            <form onSubmit={handleSubmit}>
-                              <label className="form-label mt-2 mb-0">Rating</label>
-                              <div className="d-flex">
-                                {[...Array(5)].map((_, index) => {
-                                  const ratingValue = index + 1;
-                                  return (
-                                    <span
-                                      key={ratingValue}
-                                      onClick={() => setRating(ratingValue)}
-                                      onMouseEnter={() => setHover(ratingValue)}
-                                      onMouseLeave={() => setHover(0)}
-                                      style={{
-                                        cursor: "pointer",
-                                        fontSize: "28px",
-                                        color: ratingValue <= (hover || rating) ? "#ffc107" : "#ccc",
-                                      }}
-                                    >
-                                      ★
-                                    </span>
-                                  );
-                                })}
-                              </div>
-
-                              <div className="col-md-12 mt-2 mb-3">
-                                <label className="form-label">
-                                  Review <sup className="text-danger">*</sup>
-                                </label>
-                                <textarea
-                                  className="form-control"
-                                  name="review"
-                                  rows="3"
-                                  value={review}
-                                  onChange={(e) => setReview(e.target.value)}
-                                  required
-                                ></textarea>
-                              </div>
-
-                              <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? "Submitting..." : "Submit"}
-                              </button>
-                            </form>
-
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section >
-      <div className="product-detail-container">
-        <div className="container-xl">
-          <h2 className="color-primary">Similar Products</h2>
-          <Swiper
-            modules={[Navigation, Pagination]}
-            spaceBetween={20} // Space between slides
-            navigation={true} // Enable navigation arrows
-            loop={false} // Infinite loop
-            className="similar-products-carousel"
-            style={{ padding: '20px 0' }}
-            breakpoints={{
-              0: {
-                slidesPerView: 1,
-              },
-              576: {
-                slidesPerView: 2,
-              },
-              1024: {
-                slidesPerView: 3,
-              },
-            }}
-          >
-            {product.similar_products.map((similar) => (
-              <SwiperSlide key={similar.id}>
-                <div className="mb-4">
-                  <div className="productBox productBoxswiper p-3 bg-white">
-
-                    <div className="middlepro">
-                      <div className="ProImg">
+              <div className="col-xl-3 col-lg-4 mb-lg-0 mb-3">
+                <div className="card h-100">
+                  <div className="card-body">
+                    <div className="mb-3">
+                      <h6 className="mb-3">{product.company_name}</h6>
+                      <div className='text-center border rounded-2'>
                         <ImageFront
-                          src={`${ROOT_URL}/${similar.file_name}`}
-                          width={180}
-                          height={180}
+                          src={`${ROOT_URL}/${product.company_logo}`}
+                          alt={`${product.title}`}
+
+                          style={{
+                            width: 'auto',
+                            height: 'auto',
+                            objectFit: 'cover',
+                            borderRadius: '5px',
+                            cursor: 'pointer'
+                          }}
                           showFallback={true}
+                          className=""
+                          defaultimg="/company.png"
                         />
                       </div>
-                      <div className="productlink">
-                        <div className="">
-                          <div className="cateproduct">
-                            <h6 className={!similar.category_name ? "mb-0" : "mb-1"}>
-                              {similar.category_name || ""}
-                            </h6>
-                          </div>
+                    </div>
+                  </div>
+                  <div className="card-footer pt-0 bg-white border-0">
+                    <button className="btn btn-orange w-100" onClick={() => setShowModal(true)}>
+                      <i className="lni lni-phone pe-2"></i> Enquiry
+                    </button>
 
-                          <p className="mb-0">{similar.title}</p>
+                    <EnquiryForm
+                      show={showModal}
+                      onHide={() => setShowModal(false)}
+                      productId={`${product.id}`}
+                      companyId={`${product.company_id}`}
+                      productTitle={`${product.title}`}
+                      companyName={`${product.company_name}`}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="col-12">
+              <div className='card mt-5'>
+                <div className='card-body'>
+                  <div className="tabs-container">
+                    {/* Tab Navigation */}
+                    <ul className="nav nav-tabs border-bottom" role="tablist" style={{ paddingBottom: '1px' }}>
+                      <li className="nav-item" role="presentation">
+                        <button
+                          className={`nav-link ${activeTab === 'productDetails' ? 'active' : ''}`}
+                          onClick={() => setActiveTab('productDetails')}
+                          type="button"
+                          role="tab"
+                        >
+                          Product Details
+                        </button>
+                      </li>
+                      <li className="nav-item" role="presentation">
+                        <button
+                          className={`nav-link ${activeTab === 'companyDetails' ? 'active' : ''}`}
+                          onClick={() => setActiveTab('companyDetails')}
+                          type="button"
+                          role="tab"
+                        >
+                          Company Details
+                        </button>
+                      </li>
+                      <li className="nav-item" role="presentation">
+                        <button
+                          className={`nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
+                          onClick={() => setActiveTab('reviews')}
+                          type="button"
+                          role="tab"
+                        >
+                          Reviews
+                        </button>
+                      </li>
+                    </ul>
+
+                    {/* Tab Content */}
+                    <div className="tab-content mt-3">
+                      {/* Product Details Tab */}
+                      {activeTab === 'productDetails' && (
+                        <div className="tab-pane fade show active" role="tabpanel">
+                          <div className="product-details">
+                            <div className="detailhead">
+                              <h5 className="">Product Specification:
+                              </h5>
+                            </div>
+                            <div>
+                              <div
+                                dangerouslySetInnerHTML={{ __html: product.description || 'N/A' }}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <a href={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2">
-                          <span className="pe-2">View</span>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="15"
-                            viewBox="4 9.28 23.91 13.44"
-                            className="filtersvg">
-                            <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path>
-                          </svg>
-                        </a>
-                      </div>
+                      )}
+
+                      {/* Company Details Tab */}
+                      {activeTab === 'companyDetails' && (
+                        <div className="tab-pane fade show active" role="tabpanel">
+                          <div className="company-details">
+                            <h5>About the Company:
+                            </h5>
+                            <div className="mb-3">
+                              <table className="table productTable">
+                                <tbody>
+                                  <tr>
+                                    <th>Company Name</th>
+                                    <td>{product.company_name || 'N/A'}</td>
+                                  </tr>
+                                  <tr>
+                                    <th>Sub Category</th>
+                                    <td>{product.sub_category_name || 'N/A'}</td>
+                                  </tr>
+                                  <tr>
+                                    <th>Activity</th>
+                                    <td>{product.activity_name || 'N/A'}</td>
+                                  </tr>
+                                  <tr>
+                                    <th>Core Activity	</th>
+                                    <td>{product.core_activity_name || 'N/A'}</td>
+                                  </tr>
+                                  <tr>
+                                    <th>Location</th>
+                                    <td>{product.company_location || 'N/A'}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                              <div className='companyInfo mt-4'>
+                                <h5>Company Details:</h5>
+                                <div
+                                  dangerouslySetInnerHTML={{ __html: product.brief_company || 'N/A' }}
+                                />
+                              </div>
+
+                            </div>
+
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Reviews Tab */}
+                      {activeTab === 'reviews' && (
+                        <div className="tab-pane fade show active" role="tabpanel">
+                          <div className="reviews">
+                            <h5 className="">Reviews</h5>
+                            <div className="reviewSection text-start">
+                              <form onSubmit={handleSubmit}>
+                                <label className="form-label mt-2 mb-0">Rating</label>
+                                <div className="d-flex">
+                                  {[...Array(5)].map((_, index) => {
+                                    const ratingValue = index + 1;
+                                    return (
+                                      <span
+                                        key={ratingValue}
+                                        onClick={() => setRating(ratingValue)}
+                                        onMouseEnter={() => setHover(ratingValue)}
+                                        onMouseLeave={() => setHover(0)}
+                                        style={{
+                                          cursor: "pointer",
+                                          fontSize: "28px",
+                                          color: ratingValue <= (hover || rating) ? "#ffc107" : "#ccc",
+                                        }}
+                                      >
+                                        ★
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+
+                                <div className="col-md-12 mt-2 mb-3">
+                                  <label className="form-label">
+                                    Review <sup className="text-danger">*</sup>
+                                  </label>
+                                  <textarea
+                                    className="form-control"
+                                    name="review"
+                                    rows="3"
+                                    value={review}
+                                    onChange={(e) => setReview(e.target.value)}
+                                    required
+                                  ></textarea>
+                                </div>
+
+                                <button type="submit" className="btn btn-primary" disabled={loading}>
+                                  {loading ? "Submitting..." : "Submit"}
+                                </button>
+                              </form>
+
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
+              </div>
+            </div>
+          </div>
+        </section >
+        <div className="product-detail-container">
+          <div className="container-xl">
+            <h2 className="color-primary">Similar Products</h2>
+            <Swiper
+              modules={[Navigation, Pagination]}
+              spaceBetween={20} // Space between slides
+              navigation={true} // Enable navigation arrows
+              loop={false} // Infinite loop
+              className="similar-products-carousel"
+              style={{ padding: '20px 0' }}
+              breakpoints={{
+                0: {
+                  slidesPerView: 1,
+                },
+                576: {
+                  slidesPerView: 2,
+                },
+                1024: {
+                  slidesPerView: 3,
+                },
+              }}
+            >
+              {product.similar_products.map((similar) => (
+                <SwiperSlide key={similar.id}>
+                  <div className="mb-4">
+                    <div className="productBox productBoxswiper p-3 bg-white">
 
-        {/* Recommended Companies Section */}
-        <div className="recommended-companies">
-
-          <div className='container'>
-            <h2 className="color-primary">Recommended Companies</h2>
-            <div className="companygrid">
-              <Swiper
-                modules={[Navigation, Pagination]}
-                spaceBetween={20} // Space between slides
-                navigation={true}
-                loop={true} // Infinite loop
-                className="recommended-companies-carousel"
-                style={{ padding: '20px 0' }}
-                breakpoints={{
-                  0: {
-                    slidesPerView: 1,
-                  },
-                  480: {
-                    slidesPerView: 2,
-                  },
-                  768: {
-                    slidesPerView: 3,
-                  },
-                  1024: {
-                    slidesPerView: 4,
-                  },
-                  1280: {
-                    slidesPerView: 5,
-                  },
-                }}
-              >
-                {product.recommended_companies.map((company) => (
-                  <SwiperSlide key={company.id} className=' bg-white border rounded p-2 h-100 text-center'>
-                    <div className='productContainer'>
-                      <Link to={`/companies/${company.organization_slug}`}>
-                        <div className="company-card">
+                      <div className="middlepro">
+                        <div className="ProImg">
                           <ImageFront
-                            src={`${ROOT_URL}/${company.company_logo_file}`}
+                            src={`${ROOT_URL}/${similar.file_name}`}
                             width={180}
                             height={180}
                             showFallback={true}
                           />
-                          <p className='mt-3'>{company.organization_name}</p>
                         </div>
-                      </Link>
+                        <div className="productlink">
+                          <div className="">
+                            <div className="cateproduct">
+                              <h6 className={!similar.category_name ? "mb-0" : "mb-1"}>
+                                {similar.category_name || ""}
+                              </h6>
+                            </div>
+
+                            <p className="mb-0">{similar.title}</p>
+                          </div>
+                          <a href={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2">
+                            <span className="pe-2">View</span>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="15"
+                              viewBox="4 9.28 23.91 13.44"
+                              className="filtersvg">
+                              <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path>
+                            </svg>
+                          </a>
+                        </div>
+                      </div>
                     </div>
-                  </SwiperSlide>
-                ))}
-              </Swiper>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+
+          {/* Recommended Companies Section */}
+          <div className="recommended-companies">
+
+            <div className='container'>
+              <h2 className="color-primary">Recommended Companies</h2>
+              <div className="companygrid">
+                <Swiper
+                  modules={[Navigation, Pagination]}
+                  spaceBetween={20} // Space between slides
+                  navigation={true}
+                  loop={true} // Infinite loop
+                  className="recommended-companies-carousel"
+                  style={{ padding: '20px 0' }}
+                  breakpoints={{
+                    0: {
+                      slidesPerView: 1,
+                    },
+                    480: {
+                      slidesPerView: 2,
+                    },
+                    768: {
+                      slidesPerView: 3,
+                    },
+                    1024: {
+                      slidesPerView: 4,
+                    },
+                    1280: {
+                      slidesPerView: 5,
+                    },
+                  }}
+                >
+                  {product.recommended_companies.map((company) => (
+                    <SwiperSlide key={company.id} className=' bg-white border rounded p-2 h-100 text-center'>
+                      <div className='productContainer'>
+                        <Link to={`/companies/${company.organization_slug}`}>
+                          <div className="company-card">
+                            <ImageFront
+                              src={`${ROOT_URL}/${company.company_logo_file}`}
+                              width={180}
+                              height={180}
+                              showFallback={true}
+                            />
+                            <p className='mt-3'>{company.organization_name}</p>
+                          </div>
+                        </Link>
+                      </div>
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </Suspense>
     </>
   );
 };

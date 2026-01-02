@@ -18,13 +18,15 @@ const ImageFront = ({ src, alt = 'Image', width = 80, height = 80, showFallback 
   if (!imageExists) {
     if (showFallback) {
       const fallbackSrc = defaultimg || '/default.png';
-      return (<img className={`img-fluid ${className}`} src={fallbackSrc} alt="Fallback" style={style} />);
+      return (<img className={`img-fluid ${className}`} src={fallbackSrc} loading="lazy"
+        decoding="async" alt="Fallback" style={style} />);
     } else {
       return null;
     }
   }
 
-  return (<img className="img-fluid" src={src} alt={alt} />);
+  return (<img className="img-fluid" src={src} alt={alt} loading="lazy"
+    decoding="async" />);
 };
 
 export default ImageFront;

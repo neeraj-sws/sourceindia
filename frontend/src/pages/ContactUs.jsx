@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "../config";
-import ImageFront from "../admin/common/ImageFront";
 import { Link } from "react-router-dom";
 import { useAlert } from "../context/AlertContext";
 
@@ -131,21 +130,21 @@ const ContactUs = () => {
                       <div>
                         <h6 className="text-orange">Call Us Now</h6>
                         <div className="d-flex gap-2">
-                        <span className="pt-0"> <i className="lni lni-phone"></i> </span>
-                        <div className="d-flex align-items-center gap-2 flex-wrap">
-                          <p><a
-                            href={`tel:${footerData.contactphone_1}`}
-                            className="nav-link"
-                          >
-                            {footerData.contactphone_1},{" "}
-                          </a></p>
-                          <p><a
-                            href={`tel:${footerData.contactphone_2}`}
-                            className="nav-link"
-                          >
-                            {footerData.contactphone_2}
-                          </a></p>
-                        </div>
+                          <span className="pt-0"> <i className="lni lni-phone"></i> </span>
+                          <div className="d-flex align-items-center gap-2 flex-wrap">
+                            <p><a
+                              href={`tel:${footerData.contactphone_1}`}
+                              className="nav-link"
+                            >
+                              {footerData.contactphone_1},{" "}
+                            </a></p>
+                            <p><a
+                              href={`tel:${footerData.contactphone_2}`}
+                              className="nav-link"
+                            >
+                              {footerData.contactphone_2}
+                            </a></p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -189,9 +188,8 @@ const ContactUs = () => {
                               placeholder="Your First Name*"
                               value={formData.fname}
                               onChange={handleChange}
-                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${
-                                errors.fname ? "is-invalid" : ""
-                              }`}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.fname ? "is-invalid" : ""
+                                }`}
                             />
                             {errors.fname && (
                               <small className="text-danger">
@@ -210,9 +208,8 @@ const ContactUs = () => {
                               placeholder="Your Last Name*"
                               value={formData.lname}
                               onChange={handleChange}
-                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${
-                                errors.lname ? "is-invalid" : ""
-                              }`}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.lname ? "is-invalid" : ""
+                                }`}
                             />
                             {errors.lname && (
                               <small className="text-danger">
@@ -231,9 +228,8 @@ const ContactUs = () => {
                               placeholder="Your Email*"
                               value={formData.email}
                               onChange={handleChange}
-                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${
-                                errors.email ? "is-invalid" : ""
-                              }`}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.email ? "is-invalid" : ""
+                                }`}
                             />
                             {errors.email && (
                               <small className="text-danger">
@@ -252,9 +248,8 @@ const ContactUs = () => {
                               placeholder="Subject*"
                               value={formData.subject}
                               onChange={handleChange}
-                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${
-                                errors.subject ? "is-invalid" : ""
-                              }`}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.subject ? "is-invalid" : ""
+                                }`}
                             />
                             {errors.subject && (
                               <small className="text-danger">
@@ -273,9 +268,8 @@ const ContactUs = () => {
                               rows="6"
                               value={formData.message}
                               onChange={handleChange}
-                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${
-                                errors.message ? "is-invalid" : ""
-                              }`}
+                              className={`form-control bg-white rounded-2 shadow-sm p-2 ${errors.message ? "is-invalid" : ""
+                                }`}
                             ></textarea>
                             {errors.message && (
                               <small className="text-danger">

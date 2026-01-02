@@ -14,7 +14,7 @@ import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 import { formatDateTime } from '../../utils/formatDate';
 
-const NewItems = ({excludeItem}) => {
+const NewItems = ({ excludeItem }) => {
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -43,36 +43,36 @@ const NewItems = ({excludeItem}) => {
   const [itemCategories, setItemCategories] = useState([]);
   const [itemSubCategories, setItemSubCategories] = useState([]);
   const [selectedItemCategory, setSelectedItemCategory] = useState('');
-const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
+  const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
   const excelExportRef = useRef();
 
   useEffect(() => {
-  if (selectedCategory && selectedSubCategory) {
-    axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${selectedSubCategory}`)
-      .then(res => setItemCategories(res.data))
-      .catch(err => {
-        console.error("Error fetching item categories:", err);
-        setItemCategories([]);
-      });
-  } else {
-    setItemCategories([]);
-  }
-}, [selectedCategory, selectedSubCategory]);
+    if (selectedCategory && selectedSubCategory) {
+      axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${selectedSubCategory}`)
+        .then(res => setItemCategories(res.data))
+        .catch(err => {
+          console.error("Error fetching item categories:", err);
+          setItemCategories([]);
+        });
+    } else {
+      setItemCategories([]);
+    }
+  }, [selectedCategory, selectedSubCategory]);
 
-useEffect(() => {
-  if (selectedCategory && selectedSubCategory && selectedItemCategory) {
-    axios.get(
-      `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}`
-    )
-    .then(res => setItemSubCategories(res.data))
-    .catch(err => {
-      console.error("Error fetching item sub categories:", err);
+  useEffect(() => {
+    if (selectedCategory && selectedSubCategory && selectedItemCategory) {
+      axios.get(
+        `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}`
+      )
+        .then(res => setItemSubCategories(res.data))
+        .catch(err => {
+          console.error("Error fetching item sub categories:", err);
+          setItemSubCategories([]);
+        });
+    } else {
       setItemSubCategories([]);
-    });
-  } else {
-    setItemSubCategories([]);
-  }
-}, [selectedCategory, selectedSubCategory, selectedItemCategory]);
+    }
+  }, [selectedCategory, selectedSubCategory, selectedItemCategory]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -123,19 +123,19 @@ useEffect(() => {
     setErrors({});
 
     if (editData) {
-        try {
+      try {
         // Fetch complete item details from backend
         const res = await axios.get(`${API_BASE_URL}/items/${editData.id}`);
 
         const item = res.data;
         setFormData({
-            id: item.id,
-            name: item.name,
-            status: String(item.status),
-            file_name: item.file_name,
-            file: null,
-            item_category_id: item.item_category_id || "",
-            item_sub_category_id: item.item_sub_category_id || "",
+          id: item.id,
+          name: item.name,
+          status: String(item.status),
+          file_name: item.file_name,
+          file: null,
+          item_category_id: item.item_category_id || "",
+          item_sub_category_id: item.item_sub_category_id || "",
         });
 
         // STEP 1️⃣ — Set Category + fetch its subcategories
@@ -146,52 +146,52 @@ useEffect(() => {
 
         // STEP 2️⃣ — Fetch item categories
         const itemCatRes = await axios.get(
-            `${API_BASE_URL}/item_category/by-category-subcategory/${item.category_id}/${item.subcategory_id}`
+          `${API_BASE_URL}/item_category/by-category-subcategory/${item.category_id}/${item.subcategory_id}`
         );
         setItemCategories(itemCatRes.data);
         setSelectedItemCategory(item.item_category_id);
 
         // STEP 3️⃣ — Fetch item subcategories
         if (item.item_category_id) {
-            const itemSubCatRes = await axios.get(
+          const itemSubCatRes = await axios.get(
             `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${item.category_id}/${item.subcategory_id}/${item.item_category_id}`
-            );
-            setItemSubCategories(itemSubCatRes.data);
-            setSelectedItemSubCategory(item.item_sub_category_id);
+          );
+          setItemSubCategories(itemSubCatRes.data);
+          setSelectedItemSubCategory(item.item_sub_category_id);
         }
 
         // ✅ If using select2, update dropdowns manually
         setTimeout(() => {
-            if ($("#category_id").data("select2")) $("#category_id").val(item.category_id).trigger("change.select2");
-            if ($("#subcategory_id").data("select2")) $("#subcategory_id").val(item.subcategory_id).trigger("change.select2");
-            if ($("#item_category_id").data("select2")) $("#item_category_id").val(item.item_category_id).trigger("change.select2");
-            if ($("#item_sub_category_id").data("select2")) $("#item_sub_category_id").val(item.item_sub_category_id).trigger("change.select2");
+          if ($("#category_id").data("select2")) $("#category_id").val(item.category_id).trigger("change.select2");
+          if ($("#subcategory_id").data("select2")) $("#subcategory_id").val(item.subcategory_id).trigger("change.select2");
+          if ($("#item_category_id").data("select2")) $("#item_category_id").val(item.item_category_id).trigger("change.select2");
+          if ($("#item_sub_category_id").data("select2")) $("#item_sub_category_id").val(item.item_sub_category_id).trigger("change.select2");
         }, 400);
 
-        } catch (error) {
+      } catch (error) {
         console.error("Error loading item edit data:", error);
         showNotification("Failed to load item for editing", "error");
-        }
+      }
     } else {
-        // Reset for Add New
-        setFormData(initialForm);
-        setSelectedCategory("");
-        setSelectedSubCategory("");
-        setSelectedItemCategory("");
-        setSelectedItemSubCategory("");
-        setSubCategories([]);
-        setItemCategories([]);
-        setItemSubCategories([]);
+      // Reset for Add New
+      setFormData(initialForm);
+      setSelectedCategory("");
+      setSelectedSubCategory("");
+      setSelectedItemCategory("");
+      setSelectedItemSubCategory("");
+      setSubCategories([]);
+      setItemCategories([]);
+      setItemSubCategories([]);
 
-        // Clear select2 fields
-        setTimeout(() => {
+      // Clear select2 fields
+      setTimeout(() => {
         if ($("#category_id").data("select2")) $("#category_id").val(null).trigger("change.select2");
         if ($("#subcategory_id").data("select2")) $("#subcategory_id").val(null).trigger("change.select2");
         if ($("#item_category_id").data("select2")) $("#item_category_id").val(null).trigger("change.select2");
         if ($("#item_sub_category_id").data("select2")) $("#item_sub_category_id").val(null).trigger("change.select2");
-        }, 300);
+      }, 300);
     }
-    };
+  };
 
   const resetForm = () => {
     setFormData(initialForm);
@@ -201,9 +201,9 @@ useEffect(() => {
     setSelectedSubCategory('');
     setSubCategories([]);
     setTimeout(() => {
-  if ($("#category_id").data("select2")) $("#category_id").val(null);
-  if ($("#subcategory_id").data("select2")) $("#subcategory_id").val(null);
-}, 100);
+      if ($("#category_id").data("select2")) $("#category_id").val(null);
+      if ($("#subcategory_id").data("select2")) $("#subcategory_id").val(null);
+    }, 100);
   };
 
   const handleChange = (e) => {
@@ -230,7 +230,7 @@ useEffect(() => {
     if (!formData.name.trim()) errs.name = "Name is required";
     if (!selectedCategory) errs.category_id = "Category is required";
     if (!selectedItemCategory) errs.item_category_id = "Item Category is required";
-if (!selectedItemSubCategory) errs.item_sub_category_id = "Item Sub Category is required";
+    if (!selectedItemSubCategory) errs.item_sub_category_id = "Item Sub Category is required";
     if (!["0", "1"].includes(formData.status)) errs.status = "Invalid status";
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -242,9 +242,11 @@ if (!selectedItemSubCategory) errs.item_sub_category_id = "Item Sub Category is 
     setSubmitting(true);
     const sCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
     const ssCategory = subcategories.find((c) => c.id.toString() === selectedSubCategory.toString());
-    const payload = { ...formData, category_id: selectedCategory, category_name: sCategory?.name || "", subcategory_id: selectedSubCategory, subcategory_name: ssCategory?.name || "", item_category_id: selectedItemCategory,
-  item_sub_category_id: selectedItemSubCategory,
-  status: formData.status, };
+    const payload = {
+      ...formData, category_id: selectedCategory, category_name: sCategory?.name || "", subcategory_id: selectedSubCategory, subcategory_name: ssCategory?.name || "", item_category_id: selectedItemCategory,
+      item_sub_category_id: selectedItemSubCategory,
+      status: formData.status,
+    };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/items/${formData.id}`, payload, {
@@ -265,7 +267,7 @@ if (!selectedItemSubCategory) errs.item_sub_category_id = "Item Sub Category is 
           headers: { "Content-Type": "multipart/form-data" },
         });
         const img = await axios.get(`${API_BASE_URL}/files/${res.data.items.file_id}`);
-                const updatedFileName = img.data.file;
+        const updatedFileName = img.data.file;
         const payload1 = { ...res.data.items, file_name: updatedFileName, category_name: sCategory?.name || "", subcategory_name: ssCategory?.name || "" };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
@@ -294,31 +296,31 @@ if (!selectedItemSubCategory) errs.item_sub_category_id = "Item Sub Category is 
   }, []);
 
   const handleCategoryChange = async (event) => {
-      const categoryId = event.target.value;
-      setSelectedCategory(categoryId);
-      try {
-        const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
-        setSubCategories(res.data);
-        setSelectedSubCategory('');
-      } catch (error) {
-        console.error("Error fetching sub categories:", error);
-      }
-    };
-  
-    const handleSubCategoryChange = (event) => {
-      setSelectedSubCategory(event.target.value);
-    };
+    const categoryId = event.target.value;
+    setSelectedCategory(categoryId);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
+      setSubCategories(res.data);
+      setSelectedSubCategory('');
+    } catch (error) {
+      console.error("Error fetching sub categories:", error);
+    }
+  };
+
+  const handleSubCategoryChange = (event) => {
+    setSelectedSubCategory(event.target.value);
+  };
 
   useEffect(() => {
-          $('#category_id').select2({
-            theme: "bootstrap",
-            width: '100%',
-            placeholder: "Select category"
-          }).on("change", function () {
-            const icId = $(this).val();
-            handleCategoryChange({ target: { value: icId } });
-          });
-      $('#subcategory_id').select2({
+    $('#category_id').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select category"
+    }).on("change", function () {
+      const icId = $(this).val();
+      handleCategoryChange({ target: { value: icId } });
+    });
+    $('#subcategory_id').select2({
       theme: "bootstrap",
       width: '100%',
       placeholder: "Select Sub Category"
@@ -326,27 +328,27 @@ if (!selectedItemSubCategory) errs.item_sub_category_id = "Item Sub Category is 
       const subCategoryId = $(this).val();
       handleSubCategoryChange({ target: { value: subCategoryId } });
     });
-      $('#item_category_id')
-  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
-  .on("change", function () {
-    const val = $(this).val();
-    setSelectedItemCategory(val);
-    setSelectedItemSubCategory('');
-  });
+    $('#item_category_id')
+      .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
+      .on("change", function () {
+        const val = $(this).val();
+        setSelectedItemCategory(val);
+        setSelectedItemSubCategory('');
+      });
 
-$('#item_sub_category_id')
-  .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
-  .on("change", function () {
-    const val = $(this).val();
-    setSelectedItemSubCategory(val);
-  });
-          return () => {
-            if ($('#category_id').data('select2')) {$('#category_id').select2('destroy') };
-            if ($('#subcategory_id').data('select2')) {$('#subcategory_id').select2('destroy')};
-            if ($('#item_category_id').data('select2')) $('#item_category_id').select2('destroy');
-            if ($('#item_sub_category_id').data('select2')) $('#item_sub_category_id').select2('destroy');
-          };
-        }, [categories, subcategories]);
+    $('#item_sub_category_id')
+      .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
+      .on("change", function () {
+        const val = $(this).val();
+        setSelectedItemSubCategory(val);
+      });
+    return () => {
+      if ($('#category_id').data('select2')) { $('#category_id').select2('destroy') };
+      if ($('#subcategory_id').data('select2')) { $('#subcategory_id').select2('destroy') };
+      if ($('#item_category_id').data('select2')) $('#item_category_id').select2('destroy');
+      if ($('#item_sub_category_id').data('select2')) $('#item_sub_category_id').select2('destroy');
+    };
+  }, [categories, subcategories]);
 
   const openDeleteModal = (itemsId) => { setItemsToDelete(itemsId); setIsBulkDelete(false); setShowDeleteModal(true); };
   const openBulkDeleteModal = () => { setItemsToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
@@ -425,10 +427,10 @@ $('#item_sub_category_id')
     //   setItemsData(res.data);
     // });
     axios.get(`${API_BASE_URL}/items`, {
-          params: { excludeItem: excludeItem ? 'true' : 'false' }
-        }).then((res) => {
-          setItemsData(res.data);
-        });
+      params: { excludeItem: excludeItem ? 'true' : 'false' }
+    }).then((res) => {
+      setItemsData(res.data);
+    });
   }, []);
 
   const handleDownload = () => {
@@ -442,187 +444,189 @@ $('#item_sub_category_id')
       <div className={excludeItem ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
           {!excludeItem &&
-          <Breadcrumb mainhead="Items" maincount={totalRecords} page="Category Master" title="Items" add_button={<><i className="bx bxs-plus-square me-1" /> Add Items</>} add_link="#" onClick={() => openForm()}
-          actions={
-            <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-            <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItems.length === 0}>
-              <i className="bx bx-trash me-1" /> Delete Selected
-            </button>
-            </>
+            <Breadcrumb mainhead="Items" maincount={totalRecords} page="Category Master" title="Items" add_button={<><i className="bx bxs-plus-square me-1" /> Add Items</>} add_link="#" onClick={() => openForm()}
+              actions={
+                <>
+                  <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                  <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItems.length === 0}>
+                    <i className="bx bx-trash me-1" /> Delete Selected
+                  </button>
+                </>
+              }
+            />
           }
-          />
-        }
           <div className="row">
             {!excludeItem && (
-            <div className="col-md-4">
-              <div className="card">
-                <div className="card-body">
-                  <h5 className="card-title mb-3">{isEditing ? "Edit Items" : "Add Items"}</h5>
-                  <form className="row" onSubmit={handleSubmit} noValidate>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="name" className="form-label required">Name</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        id="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Name"
-                      />
-                      {errors.name && (<div className="invalid-feedback">{errors.name}</div>)}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="category_id" className="form-label required">Category</label>
-                      <select
-                        className="form-control"
-                        id="category_id"
-                        value={selectedCategory}
-                        onChange={handleCategoryChange}
-                      >
-                        <option value="">Select Category</option>
-                        {categories?.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.category_id && (<div className="text-danger small">{errors.category_id} </div>
-                      )}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="subcategory_id" className="form-label required">Sub Category</label>
-                      <select
-                        className="form-control"
-                        id="subcategory_id"
-                        value={selectedSubCategory}
-                        onChange={handleSubCategoryChange}
-                        disabled={!selectedCategory}
-                      >
-                        <option value="">Select Sub Category</option>
-                        {subcategories?.map((subcategory_id) => (
-                          <option key={subcategory_id.id} value={subcategory_id.id}>
-                            {subcategory_id.name}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.subcategory_id && (<div className="text-danger small">{errors.subcategory_id} </div>
-                      )}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-  <label htmlFor="item_category_id" className="form-label required">Item Category</label>
-  <select
-    className="form-control"
-    id="item_category_id"
-    value={selectedItemCategory}
-    onChange={(e) => {
-      setSelectedItemCategory(e.target.value);
-      setSelectedItemSubCategory(''); // reset subcategory when category changes
-    }}
-    disabled={!selectedCategory || !selectedSubCategory}
-  >
-    <option value="">Select Item Category</option>
-    {itemCategories.map(ic => (
-      <option key={ic.id} value={ic.id}>
-        {ic.name}
-      </option>
-    ))}
-  </select>
-  {errors.item_category_id && (
-    <div className="text-danger small">{errors.item_category_id}</div>
-  )}
-</div>
-                    <div className="form-group mb-3 col-md-12">
-  <label htmlFor="item_sub_category_id" className="form-label required">Item Sub Category</label>
-  <select
-    className="form-control"
-    id="item_sub_category_id"
-    value={selectedItemSubCategory}
-    onChange={(e) => setSelectedItemSubCategory(e.target.value)}
-    disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
-  >
-    <option value="">Select Item Sub Category</option>
-    {itemSubCategories.map(isc => (
-      <option key={isc.id} value={isc.id}>
-        {isc.name}
-      </option>
-    ))}
-  </select>
-  {errors.item_sub_category_id && (
-    <div className="text-danger small">{errors.item_sub_category_id}</div>
-  )}
-</div>
-<div className="form-group col-md-12 mb-3">
-                      <label htmlFor="file" className="form-label required">Item Sub Category Image</label>
-                      <input
-                        type="file"
-                        className={`form-control ${errors.file ? "is-invalid" : ""}`}
-                        id="file"
-                        onChange={handleFileChange}
-                      />
-                      {errors.file && <div className="invalid-feedback">{errors.file}</div>}
-                      {formData.file ? (
-                        <img
-                          src={URL.createObjectURL(formData.file)}
-                          className="img-preview object-fit-cover mt-3"
-                          width={150}
-                          height={150}
-                          alt="Preview"
+              <div className="col-md-4">
+                <div className="card">
+                  <div className="card-body">
+                    <h5 className="card-title mb-3">{isEditing ? "Edit Items" : "Add Items"}</h5>
+                    <form className="row" onSubmit={handleSubmit} noValidate>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="name" className="form-label required">Name</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          placeholder="Name"
                         />
-                      ) : formData.file_name ? (
-                        <ImageWithFallback
-                          src={`${ROOT_URL}/${formData.file_name}`}
-                          width={150}
-                          height={150}
-                          showFallback={false}
-                        />
-                      ) : null}
-                    </div>
-                    <div className="form-group mb-3 col-md-12">
-                      <label htmlFor="status" className="form-label required">Status</label>
-                      <select
-                        id="status"
-                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
-                        value={formData.status}
-                        onChange={handleChange}
-                      >
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                      </select>
-                      {errors.status && (<div className="invalid-feedback">{errors.status}</div>
-                      )}
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
-                        {isEditing ? "Cancel" : "Reset"}
-                      </button>
-                      <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
-                        {submitting ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            {isEditing ? "Updating..." : "Saving..."}
-                          </>
-                        ) : (
-                          isEditing ? "Update" : "Save"
+                        {errors.name && (<div className="invalid-feedback">{errors.name}</div>)}
+                      </div>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="category_id" className="form-label required">Category</label>
+                        <select
+                          className="form-control"
+                          id="category_id"
+                          value={selectedCategory}
+                          onChange={handleCategoryChange}
+                        >
+                          <option value="">Select Category</option>
+                          {categories?.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.category_id && (<div className="text-danger small">{errors.category_id} </div>
                         )}
-                      </button>
-                    </div>
-                  </form>
+                      </div>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="subcategory_id" className="form-label required">Sub Category</label>
+                        <select
+                          className="form-control"
+                          id="subcategory_id"
+                          value={selectedSubCategory}
+                          onChange={handleSubCategoryChange}
+                          disabled={!selectedCategory}
+                        >
+                          <option value="">Select Sub Category</option>
+                          {subcategories?.map((subcategory_id) => (
+                            <option key={subcategory_id.id} value={subcategory_id.id}>
+                              {subcategory_id.name}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.subcategory_id && (<div className="text-danger small">{errors.subcategory_id} </div>
+                        )}
+                      </div>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="item_category_id" className="form-label required">Item Category</label>
+                        <select
+                          className="form-control"
+                          id="item_category_id"
+                          value={selectedItemCategory}
+                          onChange={(e) => {
+                            setSelectedItemCategory(e.target.value);
+                            setSelectedItemSubCategory(''); // reset subcategory when category changes
+                          }}
+                          disabled={!selectedCategory || !selectedSubCategory}
+                        >
+                          <option value="">Select Item Category</option>
+                          {itemCategories.map(ic => (
+                            <option key={ic.id} value={ic.id}>
+                              {ic.name}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.item_category_id && (
+                          <div className="text-danger small">{errors.item_category_id}</div>
+                        )}
+                      </div>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="item_sub_category_id" className="form-label required">Item Sub Category</label>
+                        <select
+                          className="form-control"
+                          id="item_sub_category_id"
+                          value={selectedItemSubCategory}
+                          onChange={(e) => setSelectedItemSubCategory(e.target.value)}
+                          disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
+                        >
+                          <option value="">Select Item Sub Category</option>
+                          {itemSubCategories.map(isc => (
+                            <option key={isc.id} value={isc.id}>
+                              {isc.name}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.item_sub_category_id && (
+                          <div className="text-danger small">{errors.item_sub_category_id}</div>
+                        )}
+                      </div>
+                      <div className="form-group col-md-12 mb-3">
+                        <label htmlFor="file" className="form-label required">Item Sub Category Image</label>
+                        <input
+                          type="file"
+                          className={`form-control ${errors.file ? "is-invalid" : ""}`}
+                          id="file"
+                          onChange={handleFileChange}
+                        />
+                        {errors.file && <div className="invalid-feedback">{errors.file}</div>}
+                        {formData.file ? (
+                          <img
+                            src={URL.createObjectURL(formData.file)}
+                            className="img-preview object-fit-cover mt-3"
+                            width={150}
+                            height={150}
+                            alt="Preview"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : formData.file_name ? (
+                          <ImageWithFallback
+                            src={`${ROOT_URL}/${formData.file_name}`}
+                            width={150}
+                            height={150}
+                            showFallback={false}
+                          />
+                        ) : null}
+                      </div>
+                      <div className="form-group mb-3 col-md-12">
+                        <label htmlFor="status" className="form-label required">Status</label>
+                        <select
+                          id="status"
+                          className={`form-select ${errors.status ? "is-invalid" : ""}`}
+                          value={formData.status}
+                          onChange={handleChange}
+                        >
+                          <option value="1">Active</option>
+                          <option value="0">Inactive</option>
+                        </select>
+                        {errors.status && (<div className="invalid-feedback">{errors.status}</div>
+                        )}
+                      </div>
+                      <div className="d-flex justify-content-between">
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
+                          {isEditing ? "Cancel" : "Reset"}
+                        </button>
+                        <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
+                          {submitting ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                              {isEditing ? "Updating..." : "Saving..."}
+                            </>
+                          ) : (
+                            isEditing ? "Update" : "Save"
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
-            </div>
             )}
             <div className={!excludeItem ? "col-md-8" : "col-md-12"}>
               {excludeItem && (
-                  <div className="card mb-3">
-                <div className="card-body">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <h5 className="card-title mb-3">Unused Item List of Product</h5>
-                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                <div className="card mb-3">
+                  <div className="card-body">
+                    <div className="d-flex align-items-center justify-content-between">
+                      <h5 className="card-title mb-3">Unused Item List of Product</h5>
+                      <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
                     </div>
-                    </div>
-                    </div>
-                  )}
+                  </div>
+                </div>
+              )}
               <div className="card">
                 <div className="card-body">
                   <DataTable
@@ -633,10 +637,10 @@ $('#item_sub_category_id')
                       { key: "name", label: "Name", sortable: true },
                       { key: "itemcategory_name", label: "Item Category", sortable: true },
                       { key: "item_subcategory_name", label: "Item Sub Category", sortable: true },
-                      ...(!excludeItem ? [{ key: "status", label: "Status", sortable: false }]:[]),
-                      ...(!excludeItem ? [{ key: "action", label: "Action", sortable: false }]:[]),
-                      ...(excludeItem ? [{ key: "created_at", label: "Created", sortable: true }]:[]),
-                      ...(excludeItem ? [{ key: "updated_at", label: "Last Update", sortable: true }]:[]),
+                      ...(!excludeItem ? [{ key: "status", label: "Status", sortable: false }] : []),
+                      ...(!excludeItem ? [{ key: "action", label: "Action", sortable: false }] : []),
+                      ...(excludeItem ? [{ key: "created_at", label: "Created", sortable: true }] : []),
+                      ...(excludeItem ? [{ key: "updated_at", label: "Last Update", sortable: true }] : []),
                     ]}
                     data={data}
                     loading={loading}
@@ -654,59 +658,59 @@ $('#item_sub_category_id')
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
                       <tr key={row.id}>
-                        <td>                    
+                        <td>
                           <input type="checkbox" checked={selectedItems.includes(row.id)} onChange={() => handleSelectItems(row.id)} />
                         </td>
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td><ImageWithFallback
-                                src={`${ROOT_URL}/${row.file_name}`}
-                                width={50}
-                                height={50}
-                                showFallback={true}
-                            /></td>
+                          src={`${ROOT_URL}/${row.file_name}`}
+                          width={50}
+                          height={50}
+                          showFallback={true}
+                        /></td>
                         <td>{row.name}</td>
                         <td>{row.itemcategory_name}</td>
                         <td>{row.item_subcategory_name}</td>
                         {!excludeItem && (
                           <>
-                        <td>
-                          <div className="form-check form-switch">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              id={`statusSwitch_${row.id}`}
-                              checked={row.status == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                              readOnly
-                            />
-                          </div>
-                        </td>
-                        <td>
-                          <div className="dropdown">
-                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                              <i className="bx bx-dots-vertical-rounded"></i>
-                            </button>
-                            <ul className="dropdown-menu">
-                              <li>
-                                <button className="dropdown-item" onClick={() => openForm(row)}>
-                                  <i className="bx bx-edit me-2"></i> Edit
+                            <td>
+                              <div className="form-check form-switch">
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  id={`statusSwitch_${row.id}`}
+                                  checked={row.status == 1}
+                                  onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                                  readOnly
+                                />
+                              </div>
+                            </td>
+                            <td>
+                              <div className="dropdown">
+                                <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                  <i className="bx bx-dots-vertical-rounded"></i>
                                 </button>
-                              </li>
-                              <li>
-                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                  <i className="bx bx-trash me-2"></i> Delete
-                                </button>
-                              </li>
-                            </ul>
-                          </div>
-                        </td>
-                        </>
+                                <ul className="dropdown-menu">
+                                  <li>
+                                    <button className="dropdown-item" onClick={() => openForm(row)}>
+                                      <i className="bx bx-edit me-2"></i> Edit
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                      <i className="bx bx-trash me-2"></i> Delete
+                                    </button>
+                                  </li>
+                                </ul>
+                              </div>
+                            </td>
+                          </>
                         )}
                         {excludeItem && (
                           <>
-                        <td>{formatDateTime(row.created_at)}</td>
-                                            <td>{formatDateTime(row.updated_at)}</td>
-                                            </>
+                            <td>{formatDateTime(row.created_at)}</td>
+                            <td>{formatDateTime(row.updated_at)}</td>
+                          </>
                         )}
                       </tr>
                     )}

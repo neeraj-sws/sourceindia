@@ -83,6 +83,8 @@ const Item = () => {
                                     ? `${ROOT_URL}/${item.file_name}`
                                     : "/default.png"
                                 }
+                                loading="lazy"
+                                decoding="async"
                                 className="img-fluid rounded mb-2"
                                 alt={item.name}
                               />

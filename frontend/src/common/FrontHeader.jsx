@@ -304,6 +304,8 @@ const FrontHeader = () => {
                     height="40"
                     className="me-2"
                     style={{ width: "auto" }}
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = "/logo.png";

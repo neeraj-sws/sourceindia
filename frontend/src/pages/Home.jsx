@@ -1,22 +1,22 @@
 import React from 'react'
-import Banner from '../sections/Banner';
-import CommonSection from '../pages/CommonSection';
-import Category from '../sections/Category';
-import Product from '../sections/Product';
-import Company from '../sections/Company';
-import CategoryMain from '../sections/CategoryMain';
+import { Suspense, lazy } from 'react';
+const Banner = lazy(() => import('../sections/Banner'));
+const CommonSection = lazy(() => import('../pages/CommonSection'));
+const Product = lazy(() => import('../sections/Product'));
+const Company = lazy(() => import('../sections/Company'));
+const CategoryMain = lazy(() => import('../sections/CategoryMain'));
 
 const Home = () => {
 
   return (
     <>
-      {/* Hero Section */}
-      <Banner />
-      <CommonSection />
-      {/* <Category limit={12} isHome={true} /> */}
-      <Product />
-      <CategoryMain limit={6} />
-      <Company limit={11} />
+      <Suspense fallback={<div></div>}>
+        <Banner />
+        <CommonSection />
+        <Product />
+        <CategoryMain limit={6} />
+        <Company limit={11} />
+      </Suspense>
     </>
   )
 }

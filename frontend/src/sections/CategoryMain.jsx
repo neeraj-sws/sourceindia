@@ -118,13 +118,15 @@ const CategoryMain = ({ isHome, limit }) => {
                   <div className="card-body">
                     <div className="row g-4 align-items-center">
                       {/* ✅ LEFT IMAGE BLOCK */}
-                      <div className="col-lg-4">
+                      <div className="col-lg-3">
                         <div className="position-relative  overflow-hidden  h-100 categorytopimg">
                           {cat.file_name && (
                             <img
                               src={`${ROOT_URL}/${cat.file_name}`}
                               className="img-fluid w-100 rounded shadow-sm h-100"
                               alt={cat.name || "Category"}
+                              loading="lazy"
+                              decoding="async"
                               onError={(e) => {
                                 e.target.onerror = null; // prevent infinite loop
                                 e.target.src =
@@ -144,7 +146,7 @@ const CategoryMain = ({ isHome, limit }) => {
                       </div>
 
                       {/* ✅ RIGHT SIDE GRID (SUBCATEGORIES) */}
-                      <div className="col-lg-8">
+                      <div className="col-lg-9">
                         <div className="row g-3">
                           {cat.subcategories?.length > 0 ? (
                             cat.subcategories.map((sub) => (
@@ -163,7 +165,7 @@ const CategoryMain = ({ isHome, limit }) => {
                                       </div>
                                     </a>
                                     <div className="d-flex justify-content-between align-items--center gap-2 gridulimgcontainer">
-                                      <ul className="list--unstyled ps-sm-2 ps-3 mb-0 categorylistul">
+                                      <ul className="list-unstyled ps-0 mb-0 categorylistul">
                                         {(sub.item_categories || [])
                                           .slice(0, 4)
                                           .map((item, i) => (
@@ -186,6 +188,8 @@ const CategoryMain = ({ isHome, limit }) => {
                                           className="img-fluid categoryimagebox"
                                           alt={sub.name || "SubCategory"}
                                           width="100"
+                                          loading="lazy"
+                                          decoding="async"
                                           onError={(e) => {
                                             e.target.onerror = null;
                                             e.target.src =

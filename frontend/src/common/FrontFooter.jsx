@@ -44,7 +44,8 @@ const FrontFooter = () => {
             <div className="col-md-3 col-sm-4 order-1">
               <p className="fw-semibold mb-1">Developed and Managed by</p>
               <div className="footer-logo mb-2">
-                <img src="/footer_new_img.jpeg" alt="ELCINA Logo" />
+                <img src="/footer_new_img.jpeg" alt="ELCINA Logo" loading="lazy"
+                  decoding="async" />
               </div>
             </div>
 
@@ -61,8 +62,10 @@ const FrontFooter = () => {
               <div className="supportclass">
                 <p className="fw-semibold mb-1">Supporting Associations</p>
                 <div className="supporting-logos">
-                  <img src="/mait.jpg" alt="MAIT" className="mb-1" />
-                  <img src="/cimei.png" alt="CIMEI" className="mb-1" />
+                  <img src="/mait.jpg" alt="MAIT" className="mb-1" loading="lazy"
+                    decoding="async" />
+                  <img src="/cimei.png" alt="CIMEI" className="mb-1" loading="lazy"
+                    decoding="async" />
                 </div>
               </div>
             </div>
@@ -139,7 +142,7 @@ const FrontFooter = () => {
                   >
                     {footerData.contactphone_2}
                   </Link>
-              </div>
+                </div>
               </div>
               <p className="d-flex mb-1">
                 <i className="bx bx-envelope me-1"></i>{" "}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import ImageWithFallback from '../../admin/common/ImageWithFallback';
+import { Suspense, lazy } from 'react';
+const ImageWithFallback = lazy(() => import('../../admin/common/ImageWithFallback'));
 import { ROOT_URL } from '../../config';
 
 const chunkArray = (arr, size) => {
@@ -40,40 +41,42 @@ const CompaniesCarousel = ({ companies }) => {
   if (companies.length === 0) return null;
 
   return (
-    <div className="multi-carousel-container my-5">
-      <h2 className="text-center mb-4">Featured Companies</h2>
-      <div className="carousel-wrapper">
-        <button className="carousel-control left" onClick={prevSlide}>
-          <i className="bx bx-chevron-left" aria-hidden="true" />
-        </button>
-        <div className="carousel-viewport">
-          <div
-            className="carousel-track"
-            style={{
-              transform: `translateX(-${currentIndex * 100}%)`,
-            }}
-          >
-            {slides.map((slide, slideIndex) => (
-              <div className="carousel-slide" key={slideIndex}>
-                {slide.map((company) => (
-                  <div className="carousel-item-custom" key={company.id}>
-                    <ImageWithFallback
-                      src={`${ROOT_URL}/${company.company_logo_file}`}
-                      width={180}
-                      height={180}
-                      showFallback={true}
-                    />
-                  </div>
-                ))}
-              </div>
-            ))}
+    <Suspense fallback={<div></div>}>
+      <div className="multi-carousel-container my-5">
+        <h2 className="text-center mb-4">Featured Companies</h2>
+        <div className="carousel-wrapper">
+          <button className="carousel-control left" onClick={prevSlide}>
+            <i className="bx bx-chevron-left" aria-hidden="true" />
+          </button>
+          <div className="carousel-viewport">
+            <div
+              className="carousel-track"
+              style={{
+                transform: `translateX(-${currentIndex * 100}%)`,
+              }}
+            >
+              {slides.map((slide, slideIndex) => (
+                <div className="carousel-slide" key={slideIndex}>
+                  {slide.map((company) => (
+                    <div className="carousel-item-custom" key={company.id}>
+                      <ImageWithFallback
+                        src={`${ROOT_URL}/${company.company_logo_file}`}
+                        width={180}
+                        height={180}
+                        showFallback={true}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
+          <button className="carousel-control right" onClick={nextSlide}>
+            <i className="bx bx-chevron-right" aria-hidden="true" />
+          </button>
         </div>
-        <button className="carousel-control right" onClick={nextSlide}>
-          <i className="bx bx-chevron-right" aria-hidden="true" />
-        </button>
       </div>
-    </div>
+    </Suspense>
   );
 };
 

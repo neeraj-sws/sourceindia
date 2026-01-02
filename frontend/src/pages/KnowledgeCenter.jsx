@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "../config";
-import ImageFront from "../admin/common/ImageFront";
+import { Suspense, lazy } from 'react';
+const ImageFront = lazy(() => import('../admin/common/ImageFront'));
 import { Link } from "react-router-dom";
 
 const KnowledgeCenter = () => {
@@ -20,45 +21,47 @@ const KnowledgeCenter = () => {
   }, []);
 
   return (
-    <section className="my-5">
-      <div className="container-xl">
-        <div className="card mb-lg-5 mb-3 commonHead border shodow-none">
-          <div className="card-body py-5 d-flex align-items-center justify-content-center">
-            <div className="firstHead text-center">
-              <h1 className="mb-0 text-white">Knowledge sessions for the Electronics Industry</h1>
+    <Suspense fallback={<div></div>}>
+      <section className="my-5">
+        <div className="container-xl">
+          <div className="card mb-lg-5 mb-3 commonHead border shodow-none">
+            <div className="card-body py-5 d-flex align-items-center justify-content-center">
+              <div className="firstHead text-center">
+                <h1 className="mb-0 text-white">Knowledge sessions for the Electronics Industry</h1>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="knowledgeBox">
-          <div className="row">
-            {knowledgeCenter
-              .filter((item) => item.is_delete === 0 && item.status === 1)
-              .map((item, index) => (
-                <div className="col-lg-4 col-sm-6 mb-4 d-flex" key={index}>
-                  <div className="ContentBox bg-white shadow-sm border w-100 d-flex flex-column rounded-2">
-                    <div className="innervideo text-center p-3 pb-0">
-                      <ImageFront
-                        src={`${ROOT_URL}/${item.file_name}`}
-                        width={180}
-                        height={180}
-                        showFallback={true}
-                      />
-                    </div>
-                    <div className="videobox d-flex flex-column flex-grow-1">
-                      <div className="p-3 d-flex flex-column flex-grow-1">
-                        <p className="flex-grow-1">{item.name}</p>
-                        <Link to={item.video_url} className="btn btn-sm btn-primary w-100 mt-auto" target="_blank">
-                          View ➜
-                        </Link>
+          <div className="knowledgeBox">
+            <div className="row">
+              {knowledgeCenter
+                .filter((item) => item.is_delete === 0 && item.status === 1)
+                .map((item, index) => (
+                  <div className="col-lg-4 col-sm-6 mb-4 d-flex" key={index}>
+                    <div className="ContentBox bg-white shadow-sm border w-100 d-flex flex-column rounded-2">
+                      <div className="innervideo text-center p-3 pb-0">
+                        <ImageFront
+                          src={`${ROOT_URL}/${item.file_name}`}
+                          width={180}
+                          height={180}
+                          showFallback={true}
+                        />
+                      </div>
+                      <div className="videobox d-flex flex-column flex-grow-1">
+                        <div className="p-3 d-flex flex-column flex-grow-1">
+                          <p className="flex-grow-1">{item.name}</p>
+                          <Link to={item.video_url} className="btn btn-sm btn-primary w-100 mt-auto" target="_blank">
+                            View ➜
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </Suspense>
   );
 };
 

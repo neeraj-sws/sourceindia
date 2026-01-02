@@ -99,6 +99,8 @@ const ValuesForm = () => {
               width={150}
               height={150}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.value_file ? (
             <ImageWithFallback
@@ -120,6 +122,8 @@ const ValuesForm = () => {
               width={150}
               height={150}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.value_icon ? (
             <ImageWithFallback

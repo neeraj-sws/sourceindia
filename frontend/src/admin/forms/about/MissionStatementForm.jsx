@@ -87,7 +87,7 @@ const MissionStatementForm = () => {
             value={formData.mission_heading} onChange={handleInputChange} />
           {errors.mission_heading && <div className="invalid-feedback">{errors.mission_heading}</div>}
         </div>
-        
+
         <div className="col-md-6">
           <label htmlFor="mission_file" className="form-label">Logo</label>
           <input className="form-control" type="file" id="mission_file" onChange={handleMissionFileChange} />
@@ -99,6 +99,8 @@ const MissionStatementForm = () => {
               width={150}
               height={150}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.mission_file ? (
             <ImageWithFallback
@@ -120,6 +122,8 @@ const MissionStatementForm = () => {
               width={150}
               height={150}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.mission_icon ? (
             <ImageWithFallback

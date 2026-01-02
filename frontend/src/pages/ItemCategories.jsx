@@ -1,12 +1,13 @@
 import React from 'react'
-import Category from '../sections/Category';
-import ItemCategory from '../sections/ItemCategory';
+import { Suspense, lazy } from 'react';
+const ItemCategory = lazy(() => import('../sections/ItemCategory'));
 
 const ItemCategories = () => {
   return (
     <>
-      {/* <Category /> */}
-      <ItemCategory />
+      <Suspense fallback={<div></div>}>
+        <ItemCategory />
+      </Suspense>
     </>
   )
 }

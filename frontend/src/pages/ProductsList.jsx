@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
-import ImageWithFallback from "../admin/common/ImageWithFallback";
+import { Suspense, lazy } from 'react';
+const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
 import { Link, useSearchParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 
@@ -489,696 +490,698 @@ const ProductsList = () => {
   };
 
   return (
-    <div className="container-xl my-4">
-      <div className="row">
-        {/* Filters */}
-        <div className="col-12 col-lg-3">
-          {/* <aside className="filter-sidebar d-lg-inline-block d-none mb-4"> */}
-          <aside className={`filter-sidebar mb-4 ${showFilter ? "show" : ""}`}>
-            <div className="d-flex align-items-center justify-content-between mb-3 d-lg-none">
-              <h6 className="mb-0 fw-semibold text-dark">Filters:</h6>
-              <button
-                type="button"
-                className="filter-close-btn fs-2 bg-white border-0"
-                onClick={() => setShowFilter(false)}
-                aria-label="Close filters"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                Product Title
-              </h3>
-              <div className="input-group flex-nowrap ps-2 pe-4">
-                <i className="bx bx-search input-group-text" />
-                <input
-                  type="text"
-                  className="form-control"
-                  value={searchTerm}
-                  onChange={handleSearch}
-                  placeholder="Search products..."
-                />
+    <Suspense fallback={<div></div>}>
+      <div className="container-xl my-4">
+        <div className="row">
+          {/* Filters */}
+          <div className="col-12 col-lg-3">
+            {/* <aside className="filter-sidebar d-lg-inline-block d-none mb-4"> */}
+            <aside className={`filter-sidebar mb-4 ${showFilter ? "show" : ""}`}>
+              <div className="d-flex align-items-center justify-content-between mb-3 d-lg-none">
+                <h6 className="mb-0 fw-semibold text-dark">Filters:</h6>
+                <button
+                  type="button"
+                  className="filter-close-btn fs-2 bg-white border-0"
+                  onClick={() => setShowFilter(false)}
+                  aria-label="Close filters"
+                >
+                  &times;
+                </button>
               </div>
-            </div>
-            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                Category
-              </h3>
-              <div className="d-flex flex-column gap-2">
+              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
+                  Product Title
+                </h3>
                 <div className="input-group flex-nowrap ps-2 pe-4">
                   <i className="bx bx-search input-group-text" />
                   <input
                     type="text"
-                    placeholder="Search categories..."
-                    onChange={(e) =>
-                      setCategorySearchTerm(e.target.value.toLowerCase())
-                    }
                     className="form-control"
+                    value={searchTerm}
+                    onChange={handleSearch}
+                    placeholder="Search products..."
                   />
                 </div>
-                <div
-                  className="px-2"
-                  style={{
-                    maxHeight: "190px",
-                    overflowY:
-                      filteredCategories.length >= 5 ? "auto" : "visible",
-                  }}
-                >
-                  {filteredCategories.map((cat) => (
-                    <div className="form-check mb-2" key={cat.id}>
-                      <input
-                        type="checkbox"
-                        id={`cat-${cat.id}`}
-                        className="form-check-input"
-                        checked={selectedCategories.includes(cat.id)}
-                        onChange={() => handleCategoryCheckboxChange(cat.id)}
-                      />
-                      <label
-                        htmlFor={`cat-${cat.id}`}
-                        className="form-check-label text-capitalize"
-                      >
-                        {cat.name} ({cat.product_count})
-                      </label>
-                    </div>
-                  ))}
+              </div>
+              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
+                  Category
+                </h3>
+                <div className="d-flex flex-column gap-2">
+                  <div className="input-group flex-nowrap ps-2 pe-4">
+                    <i className="bx bx-search input-group-text" />
+                    <input
+                      type="text"
+                      placeholder="Search categories..."
+                      onChange={(e) =>
+                        setCategorySearchTerm(e.target.value.toLowerCase())
+                      }
+                      className="form-control"
+                    />
+                  </div>
+                  <div
+                    className="px-2"
+                    style={{
+                      maxHeight: "190px",
+                      overflowY:
+                        filteredCategories.length >= 5 ? "auto" : "visible",
+                    }}
+                  >
+                    {filteredCategories.map((cat) => (
+                      <div className="form-check mb-2" key={cat.id}>
+                        <input
+                          type="checkbox"
+                          id={`cat-${cat.id}`}
+                          className="form-check-input"
+                          checked={selectedCategories.includes(cat.id)}
+                          onChange={() => handleCategoryCheckboxChange(cat.id)}
+                        />
+                        <label
+                          htmlFor={`cat-${cat.id}`}
+                          className="form-check-label text-capitalize"
+                        >
+                          {cat.name} ({cat.product_count})
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-            {filteredSubCategories.length > 0 && (
-              <>
+              {filteredSubCategories.length > 0 && (
+                <>
+                  <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                    <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
+                      Sub Category
+                    </h3>
+                    <div className="d-flex flex-column gap-2">
+                      <div className="input-group flex-nowrap ps-2 pe-4">
+                        <i className="bx bx-search input-group-text" />
+                        <input
+                          type="text"
+                          placeholder="Search sub-categories..."
+                          onChange={(e) =>
+                            setSubCategorySearchTerm(e.target.value.toLowerCase())
+                          }
+                          className="form-control"
+                        />
+                      </div>
+                      <div
+                        className="px-2"
+                        style={{
+                          maxHeight: "190px",
+                          overflowY:
+                            filteredSubCategories.length >= 5
+                              ? "auto"
+                              : "visible",
+                        }}
+                      >
+                        {filteredSubCategories.map((sub) => (
+                          <div className="form-check mb-2" key={sub.id}>
+                            <input
+                              type="checkbox"
+                              id={`subcat-${sub.id}`}
+                              className="form-check-input"
+                              checked={selectedSubCategories.includes(sub.id)}
+                              onChange={() =>
+                                handleSubCategoryCheckboxChange(sub.id)
+                              }
+                            />
+                            <label
+                              htmlFor={`subcat-${sub.id}`}
+                              className="form-check-label text-capitalize"
+                            >
+                              {sub.name} ({sub.product_count})
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+              {/* Item Category Filter */}
+              {itemCategories.length > 0 && (
                 <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
                   <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                    Sub Category
+                    Item Category
                   </h3>
-                  <div className="d-flex flex-column gap-2">
-                    <div className="input-group flex-nowrap ps-2 pe-4">
-                      <i className="bx bx-search input-group-text" />
-                      <input
-                        type="text"
-                        placeholder="Search sub-categories..."
-                        onChange={(e) =>
-                          setSubCategorySearchTerm(e.target.value.toLowerCase())
-                        }
-                        className="form-control"
-                      />
-                    </div>
-                    <div
-                      className="px-2"
-                      style={{
-                        maxHeight: "190px",
-                        overflowY:
-                          filteredSubCategories.length >= 5
-                            ? "auto"
-                            : "visible",
-                      }}
-                    >
-                      {filteredSubCategories.map((sub) => (
-                        <div className="form-check mb-2" key={sub.id}>
+                  <div className="input-group flex-nowrap ps-2 pe-4">
+                    <i className="bx bx-search input-group-text" />
+                    <input
+                      type="text"
+                      placeholder="Search item categories..."
+                      onChange={(e) =>
+                        setItemCategorySearchTerm(e.target.value.toLowerCase())
+                      }
+                      className="form-control"
+                    />
+                  </div>
+                  <div
+                    className="px-2"
+                    style={{
+                      maxHeight: "190px",
+                      overflowY: itemCategories.length >= 5 ? "auto" : "visible",
+                    }}
+                  >
+                    {itemCategories
+                      .filter((itemCat) =>
+                        itemCat.name
+                          .toLowerCase()
+                          .includes(itemCategorySearchTerm)
+                      )
+                      .map((itemCat) => (
+                        <div className="form-check mb-2" key={itemCat.id}>
                           <input
                             type="checkbox"
-                            id={`subcat-${sub.id}`}
+                            id={`itemCat-${itemCat.id}`}
                             className="form-check-input"
-                            checked={selectedSubCategories.includes(sub.id)}
+                            checked={selectedItemCategories.includes(itemCat.id)}
                             onChange={() =>
-                              handleSubCategoryCheckboxChange(sub.id)
+                              setSelectedItemCategories((prev) =>
+                                prev.includes(itemCat.id)
+                                  ? prev.filter((id) => id !== itemCat.id)
+                                  : [...prev, itemCat.id]
+                              )
                             }
                           />
                           <label
-                            htmlFor={`subcat-${sub.id}`}
+                            htmlFor={`itemCat-${itemCat.id}`}
                             className="form-check-label text-capitalize"
                           >
-                            {sub.name} ({sub.product_count})
+                            {itemCat.name} ({itemCat.product_count || 0})
                           </label>
                         </div>
                       ))}
-                    </div>
                   </div>
                 </div>
-              </>
-            )}
-            {/* Item Category Filter */}
-            {itemCategories.length > 0 && (
-              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                  Item Category
-                </h3>
-                <div className="input-group flex-nowrap ps-2 pe-4">
-                  <i className="bx bx-search input-group-text" />
-                  <input
-                    type="text"
-                    placeholder="Search item categories..."
-                    onChange={(e) =>
-                      setItemCategorySearchTerm(e.target.value.toLowerCase())
-                    }
-                    className="form-control"
-                  />
-                </div>
-                <div
-                  className="px-2"
-                  style={{
-                    maxHeight: "190px",
-                    overflowY: itemCategories.length >= 5 ? "auto" : "visible",
-                  }}
-                >
-                  {itemCategories
-                    .filter((itemCat) =>
-                      itemCat.name
-                        .toLowerCase()
-                        .includes(itemCategorySearchTerm)
-                    )
-                    .map((itemCat) => (
-                      <div className="form-check mb-2" key={itemCat.id}>
-                        <input
-                          type="checkbox"
-                          id={`itemCat-${itemCat.id}`}
-                          className="form-check-input"
-                          checked={selectedItemCategories.includes(itemCat.id)}
-                          onChange={() =>
-                            setSelectedItemCategories((prev) =>
-                              prev.includes(itemCat.id)
-                                ? prev.filter((id) => id !== itemCat.id)
-                                : [...prev, itemCat.id]
-                            )
-                          }
-                        />
-                        <label
-                          htmlFor={`itemCat-${itemCat.id}`}
-                          className="form-check-label text-capitalize"
-                        >
-                          {itemCat.name} ({itemCat.product_count || 0})
-                        </label>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
+              )}
 
-            {/* Item Sub Category Filter */}
-            {itemSubCategories.length > 0 && (
-              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                  Item Sub Category
-                </h3>
-                <div className="input-group flex-nowrap ps-2 pe-4">
-                  <i className="bx bx-search input-group-text" />
-                  <input
-                    type="text"
-                    placeholder="Search item sub-categories..."
-                    onChange={(e) =>
-                      setItemSubCategorySearchTerm(e.target.value.toLowerCase())
-                    }
-                    className="form-control"
-                  />
-                </div>
-                <div
-                  className="px-2"
-                  style={{
-                    maxHeight: "190px",
-                    overflowY:
-                      itemSubCategories.length >= 5 ? "auto" : "visible",
-                  }}
-                >
-                  {itemSubCategories
-                    .filter((itemSub) =>
-                      itemSub.name
-                        .toLowerCase()
-                        .includes(itemSubCategorySearchTerm)
-                    )
-                    .map((itemSub) => (
-                      <div className="form-check mb-2" key={itemSub.id}>
-                        <input
-                          type="checkbox"
-                          id={`itemSub-${itemSub.id}`}
-                          className="form-check-input"
-                          checked={selectedItemSubCategories.includes(
-                            itemSub.id
-                          )}
-                          onChange={() =>
-                            setSelectedItemSubCategories((prev) =>
-                              prev.includes(itemSub.id)
-                                ? prev.filter((id) => id !== itemSub.id)
-                                : [...prev, itemSub.id]
-                            )
-                          }
-                        />
-                        <label
-                          htmlFor={`itemSub-${itemSub.id}`}
-                          className="form-check-label text-capitalize"
-                        >
-                          {itemSub.name} ({itemSub.product_count || 0})
-                        </label>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Items Filter */}
-            {items.length > 0 && (
-              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                  Items
-                </h3>
-                <div className="input-group flex-nowrap ps-2 pe-4">
-                  <i className="bx bx-search input-group-text" />
-                  <input
-                    type="text"
-                    placeholder="Search items..."
-                    onChange={(e) =>
-                      setItemSearchTerm(e.target.value.toLowerCase())
-                    }
-                    className="form-control"
-                  />
-                </div>
-                <div
-                  className="px-2"
-                  style={{
-                    maxHeight: "190px",
-                    overflowY: items.length >= 5 ? "auto" : "visible",
-                  }}
-                >
-                  {items
-                    .filter((item) =>
-                      item.name.toLowerCase().includes(itemSearchTerm)
-                    )
-                    .map((item) => (
-                      <div className="form-check mb-2" key={item.id}>
-                        <input
-                          type="checkbox"
-                          id={`item-${item.id}`}
-                          className="form-check-input"
-                          checked={selectedItems.includes(item.id)}
-                          onChange={() =>
-                            setSelectedItems((prev) =>
-                              prev.includes(item.id)
-                                ? prev.filter((id) => id !== item.id)
-                                : [...prev, item.id]
-                            )
-                          }
-                        />
-                        <label
-                          htmlFor={`item-${item.id}`}
-                          className="form-check-label text-capitalize"
-                        >
-                          {item.name} ({item.product_count || 0})
-                        </label>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                State
-              </h3>
-              <div className="d-flex flex-column gap-2">
-                <div className="input-group flex-nowrap ps-2 pe-4">
-                  <i className="bx bx-search input-group-text" />
-                  <input
-                    type="text"
-                    placeholder="Search states..."
-                    onChange={(e) =>
-                      setStatesSearchTerm(e.target.value.toLowerCase())
-                    }
-                    className="form-control"
-                  />
-                </div>
-                <div
-                  className="px-2"
-                  style={{
-                    maxHeight: "190px",
-                    overflowY: filteredStates.length >= 5 ? "auto" : "visible",
-                  }}
-                >
-                  {filteredStates.map((state) => (
-                    <div className="form-check mb-2" key={state.id}>
-                      <input
-                        type="checkbox"
-                        id={`state-${state.id}`}
-                        className="form-check-input"
-                        checked={selectedStates.includes(state.id)}
-                        onChange={() => handleStatesCheckboxChange(state.id)}
-                      />
-                      <label
-                        htmlFor={`state-${state.id}`}
-                        className="form-check-label text-capitalize"
-                      >
-                        {state.name} ({state.product_count})
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
-              <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
-                Companies
-              </h3>
-              <div className="d-flex flex-column gap-2">
-                <div className="input-group flex-nowrap ps-2 pe-4">
-                  <i className="bx bx-search input-group-text" />
-                  <input
-                    type="text"
-                    placeholder="Search companies..."
-                    onChange={(e) =>
-                      setCompaniesSearchTerm(e.target.value.toLowerCase())
-                    }
-                    className="form-control"
-                  />
-                </div>
-                <div
-                  className="px-2"
-                  style={{
-                    maxHeight: "190px",
-                    overflowY:
-                      filteredCompanies.length >= 5 ? "auto" : "visible",
-                  }}
-                >
-                  {filteredCompanies.map((company) => (
-                    <div className="form-check mb-2" key={company.id}>
-                      <input
-                        type="checkbox"
-                        id={`company-${company.id}`}
-                        className="form-check-input"
-                        checked={selectedCompanies.includes(company.id)}
-                        onChange={() =>
-                          handleCompaniesCheckboxChange(company.id)
-                        }
-                      />
-                      <label
-                        htmlFor={`company-${company.id}`}
-                        className="form-check-label text-capitalize"
-                      >
-                        {company.organization_name} ({company.product_count})
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          {showFilter && (
-            <div
-              className="filter-overlay"
-              onClick={() => setShowFilter(false)}
-            ></div>
-          )}
-        </div>
-        {/* Products grid */}
-        <section className="col-12 col-lg-9 mb-4">
-          <div className="mb-2 text-end d-sm-none d-block">
-            <button
-              className="filterbutton btn btn-primary w-100"
-              type="button"
-              onClick={() => setShowFilter(true)}
-            >
-              <i className="bx bx-filter-alt pe-2"></i> Filters
-            </button>
-          </div>
-          <div className="d-sm-flex align-items-center justify-content-between mb-2 primary-color-bg px-3 py-2 rounded-2 text-white">
-            <div className="d-flex mobileblock mb-0">
-              <strong>Sort By :</strong>
-              <ul className="list-unstyled filterLst d-flex flex-wrap mb-0">
-                <li className="sortPopular px-sm-2 ps-0 pe-2">
-                  <label
-                    htmlFor="sortByPopularAtoZ"
-                    className="m-0 cursor-pointer"
-                  >
+              {/* Item Sub Category Filter */}
+              {itemSubCategories.length > 0 && (
+                <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                  <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
+                    Item Sub Category
+                  </h3>
+                  <div className="input-group flex-nowrap ps-2 pe-4">
+                    <i className="bx bx-search input-group-text" />
                     <input
-                      type="radio"
-                      className="invisible d-none"
-                      id="sortByPopularAtoZ"
-                      name="sortBy"
-                      value="a_to_z"
-                      checked={sortBy === "a_to_z"}
-                      onChange={(e) => setSortBy(e.target.value)}
+                      type="text"
+                      placeholder="Search item sub-categories..."
+                      onChange={(e) =>
+                        setItemSubCategorySearchTerm(e.target.value.toLowerCase())
+                      }
+                      className="form-control"
                     />
-                    A to Z
-                    <i className="bx bx-sort-a-z ms-1" aria-hidden="true" />
-                  </label>
-                </li>
-                <li className="sortPopular px-2 border-0 border-start border-end">
-                  <label
-                    htmlFor="sortByPopularZtoA"
-                    className="m-0 cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      className="invisible d-none"
-                      id="sortByPopularZtoA"
-                      name="sortBy"
-                      value="z_to_a"
-                      checked={sortBy === "z_to_a"}
-                      onChange={(e) => setSortBy(e.target.value)}
-                    />
-                    Z to A
-                    <i className="bx bx-sort-z-a ms-1" aria-hidden="true" />
-                  </label>
-                </li>
-                <li className="sortPopular px-2">
-                  <label
-                    htmlFor="sortByPopularNewest"
-                    className="m-0 cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      className="invisible d-none"
-                      id="sortByPopularNewest"
-                      name="sortBy"
-                      value="newest"
-                      checked={sortBy === "newest"}
-                      onChange={(e) => setSortBy(e.target.value)}
-                    />
-                    Newest First
-                    <i className="bx bx-sort ms-1" aria-hidden="true" />
-                  </label>
-                </li>
-              </ul>
-            </div>
-            <div className="ms-auto d-flex gap-2 align-items-center justify-content-between mobileblock">
-              <p className="mb-0 text-nowrap">{productsTotal} Products</p>
-              <div className="text-end d-lg-none d-sm-block d-none">
-                <button
-                  className="filterbutton btn btn-primary"
-                  type="button"
-                  onClick={() => setShowFilter(true)}
-                >
-                  <i className="bx bx-filter-alt pe-2"></i> Filters
-                </button>
-              </div>
-              <div className="d-lg-flex d-none gap-2 align-items-center">
-                <button
-                  className={`btn btn-sm text-nowrap ${!isListView ? "btn-orange" : "btn-outline-white text-white"
-                    }`}
-                  style={{ padding: "0.188rem 0.625rem" }}
-                  onClick={() => setIsListView(false)}
-                >
-                  <i className="bx bx-grid-alt me-2"></i> Grid View
-                </button>
-
-                <button
-                  className={`btn btn-sm text-nowrap ${isListView ? "btn-orange" : "btn-outline-white text-white"
-                    }`}
-                  style={{ padding: "0.188rem 0.625rem" }}
-                  onClick={() => setIsListView(true)}
-                >
-                  <i className="bx bx-list-ul me-2"></i> List View
-                </button>
-              </div>
-            </div>
-          </div>
-          {(selectedCategories.length > 0 ||
-            selectedSubCategories.length > 0 ||
-            selectedStates.length > 0 ||
-            selectedCompanies.length > 0) && (
-              <div className="mb-3 border px-3 py-2 bg-white rounded-2">
-                <strong className="pb-2">Filter:</strong>
-                <div className="d-flex align-items-baseline justify-content-between gap-2 mb-2">
-                  <div className="d-flex align-items-center gap-2 flex-wrap">
-                    {selectedCategories.map(id => (
-                      <span key={`cat-${id}`} className="badge bg-primary text-white d-flex align-items-center">
-                        {getNameById(categories, id)}
-                        <button
-                          onClick={() => handleCategoryCheckboxChange(id)}
-                          className="btn-close btn-close-white ms-2"
-                          style={{ fontSize: '0.6em' }}
-                          aria-label="Remove"
-                        />
-                      </span>
-                    ))}
-                    {selectedSubCategories.map(id => (
-                      <span key={`sub-${id}`} className="badge bg-secondary text-white d-flex align-items-center">
-                        {getNameById(subCategories, id)}
-                        <button
-                          onClick={() => handleSubCategoryCheckboxChange(id)}
-                          className="btn-close btn-close-white ms-2"
-                          style={{ fontSize: '0.6em' }}
-                          aria-label="Remove"
-                        />
-                      </span>
-                    ))}
-                    {selectedItemCategories.map(id => (
-                      <span key={`itemcat-${id}`} className="badge bg-warning text-dark d-flex align-items-center">
-                        {getNameById(itemCategories, id)}
-                        <button
-                          onClick={() => setSelectedItemCategories(prev => prev.filter(cid => cid !== id))}
-                          className="btn-close btn-close-white ms-2"
-                          style={{ fontSize: '0.6em' }}
-                          aria-label="Remove"
-                        />
-                      </span>
-                    ))}
-                    {selectedItemSubCategories.map(id => (
-                      <span key={`itemsub-${id}`} className="badge bg-info text-white d-flex align-items-center">
-                        {getNameById(itemSubCategories, id)}
-                        <button
-                          onClick={() => setSelectedItemSubCategories(prev => prev.filter(cid => cid !== id))}
-                          className="btn-close btn-close-white ms-2"
-                          style={{ fontSize: '0.6em' }}
-                          aria-label="Remove"
-                        />
-                      </span>
-                    ))}
-                    {selectedItems.map(id => (
-                      <span key={`itm-${id}`} className="badge bg-dark text-white d-flex align-items-center">
-                        {getNameById(items, id)}
-                        <button
-                          onClick={() => setSelectedItems(prev => prev.filter(cid => cid !== id))}
-                          className="btn-close btn-close-white ms-2"
-                          style={{ fontSize: '0.6em' }}
-                          aria-label="Remove"
-                        />
-                      </span>
-                    ))}
-                    {selectedStates.map(id => (
-                      <span key={`state-${id}`} className="badge bg-success text-white d-flex align-items-center">
-                        {getNameById(states, id)}
-                        <button
-                          onClick={() => handleStatesCheckboxChange(id)}
-                          className="btn-close btn-close-white ms-2"
-                          style={{ fontSize: '0.6em' }}
-                          aria-label="Remove"
-                        />
-                      </span>
-                    ))}
-                    {selectedCompanies.map(id => (
-                      <span key={`comp-${id}`} className="badge bg-info text-white d-flex align-items-center">
-                        {getNameById(companies, id)}
-                        <button
-                          onClick={() => handleCompaniesCheckboxChange(id)}
-                          className="btn-close btn-close-white ms-2"
-                          style={{ fontSize: '0.6em' }}
-                          aria-label="Remove"
-                        />
-                      </span>
-                    ))}
-
                   </div>
+                  <div
+                    className="px-2"
+                    style={{
+                      maxHeight: "190px",
+                      overflowY:
+                        itemSubCategories.length >= 5 ? "auto" : "visible",
+                    }}
+                  >
+                    {itemSubCategories
+                      .filter((itemSub) =>
+                        itemSub.name
+                          .toLowerCase()
+                          .includes(itemSubCategorySearchTerm)
+                      )
+                      .map((itemSub) => (
+                        <div className="form-check mb-2" key={itemSub.id}>
+                          <input
+                            type="checkbox"
+                            id={`itemSub-${itemSub.id}`}
+                            className="form-check-input"
+                            checked={selectedItemSubCategories.includes(
+                              itemSub.id
+                            )}
+                            onChange={() =>
+                              setSelectedItemSubCategories((prev) =>
+                                prev.includes(itemSub.id)
+                                  ? prev.filter((id) => id !== itemSub.id)
+                                  : [...prev, itemSub.id]
+                              )
+                            }
+                          />
+                          <label
+                            htmlFor={`itemSub-${itemSub.id}`}
+                            className="form-check-label text-capitalize"
+                          >
+                            {itemSub.name} ({itemSub.product_count || 0})
+                          </label>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Items Filter */}
+              {items.length > 0 && (
+                <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                  <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
+                    Items
+                  </h3>
+                  <div className="input-group flex-nowrap ps-2 pe-4">
+                    <i className="bx bx-search input-group-text" />
+                    <input
+                      type="text"
+                      placeholder="Search items..."
+                      onChange={(e) =>
+                        setItemSearchTerm(e.target.value.toLowerCase())
+                      }
+                      className="form-control"
+                    />
+                  </div>
+                  <div
+                    className="px-2"
+                    style={{
+                      maxHeight: "190px",
+                      overflowY: items.length >= 5 ? "auto" : "visible",
+                    }}
+                  >
+                    {items
+                      .filter((item) =>
+                        item.name.toLowerCase().includes(itemSearchTerm)
+                      )
+                      .map((item) => (
+                        <div className="form-check mb-2" key={item.id}>
+                          <input
+                            type="checkbox"
+                            id={`item-${item.id}`}
+                            className="form-check-input"
+                            checked={selectedItems.includes(item.id)}
+                            onChange={() =>
+                              setSelectedItems((prev) =>
+                                prev.includes(item.id)
+                                  ? prev.filter((id) => id !== item.id)
+                                  : [...prev, item.id]
+                              )
+                            }
+                          />
+                          <label
+                            htmlFor={`item-${item.id}`}
+                            className="form-check-label text-capitalize"
+                          >
+                            {item.name} ({item.product_count || 0})
+                          </label>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
+                  State
+                </h3>
+                <div className="d-flex flex-column gap-2">
+                  <div className="input-group flex-nowrap ps-2 pe-4">
+                    <i className="bx bx-search input-group-text" />
+                    <input
+                      type="text"
+                      placeholder="Search states..."
+                      onChange={(e) =>
+                        setStatesSearchTerm(e.target.value.toLowerCase())
+                      }
+                      className="form-control"
+                    />
+                  </div>
+                  <div
+                    className="px-2"
+                    style={{
+                      maxHeight: "190px",
+                      overflowY: filteredStates.length >= 5 ? "auto" : "visible",
+                    }}
+                  >
+                    {filteredStates.map((state) => (
+                      <div className="form-check mb-2" key={state.id}>
+                        <input
+                          type="checkbox"
+                          id={`state-${state.id}`}
+                          className="form-check-input"
+                          checked={selectedStates.includes(state.id)}
+                          onChange={() => handleStatesCheckboxChange(state.id)}
+                        />
+                        <label
+                          htmlFor={`state-${state.id}`}
+                          className="form-check-label text-capitalize"
+                        >
+                          {state.name} ({state.product_count})
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
+                  Companies
+                </h3>
+                <div className="d-flex flex-column gap-2">
+                  <div className="input-group flex-nowrap ps-2 pe-4">
+                    <i className="bx bx-search input-group-text" />
+                    <input
+                      type="text"
+                      placeholder="Search companies..."
+                      onChange={(e) =>
+                        setCompaniesSearchTerm(e.target.value.toLowerCase())
+                      }
+                      className="form-control"
+                    />
+                  </div>
+                  <div
+                    className="px-2"
+                    style={{
+                      maxHeight: "190px",
+                      overflowY:
+                        filteredCompanies.length >= 5 ? "auto" : "visible",
+                    }}
+                  >
+                    {filteredCompanies.map((company) => (
+                      <div className="form-check mb-2" key={company.id}>
+                        <input
+                          type="checkbox"
+                          id={`company-${company.id}`}
+                          className="form-check-input"
+                          checked={selectedCompanies.includes(company.id)}
+                          onChange={() =>
+                            handleCompaniesCheckboxChange(company.id)
+                          }
+                        />
+                        <label
+                          htmlFor={`company-${company.id}`}
+                          className="form-check-label text-capitalize"
+                        >
+                          {company.organization_name} ({company.product_count})
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            {showFilter && (
+              <div
+                className="filter-overlay"
+                onClick={() => setShowFilter(false)}
+              ></div>
+            )}
+          </div>
+          {/* Products grid */}
+          <section className="col-12 col-lg-9 mb-4">
+            <div className="mb-2 text-end d-sm-none d-block">
+              <button
+                className="filterbutton btn btn-primary w-100"
+                type="button"
+                onClick={() => setShowFilter(true)}
+              >
+                <i className="bx bx-filter-alt pe-2"></i> Filters
+              </button>
+            </div>
+            <div className="d-sm-flex align-items-center justify-content-between mb-2 primary-color-bg px-3 py-2 rounded-2 text-white">
+              <div className="d-flex mobileblock mb-0">
+                <strong>Sort By :</strong>
+                <ul className="list-unstyled filterLst d-flex flex-wrap mb-0">
+                  <li className="sortPopular px-sm-2 ps-0 pe-2">
+                    <label
+                      htmlFor="sortByPopularAtoZ"
+                      className="m-0 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        className="invisible d-none"
+                        id="sortByPopularAtoZ"
+                        name="sortBy"
+                        value="a_to_z"
+                        checked={sortBy === "a_to_z"}
+                        onChange={(e) => setSortBy(e.target.value)}
+                      />
+                      A to Z
+                      <i className="bx bx-sort-a-z ms-1" aria-hidden="true" />
+                    </label>
+                  </li>
+                  <li className="sortPopular px-2 border-0 border-start border-end">
+                    <label
+                      htmlFor="sortByPopularZtoA"
+                      className="m-0 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        className="invisible d-none"
+                        id="sortByPopularZtoA"
+                        name="sortBy"
+                        value="z_to_a"
+                        checked={sortBy === "z_to_a"}
+                        onChange={(e) => setSortBy(e.target.value)}
+                      />
+                      Z to A
+                      <i className="bx bx-sort-z-a ms-1" aria-hidden="true" />
+                    </label>
+                  </li>
+                  <li className="sortPopular px-2">
+                    <label
+                      htmlFor="sortByPopularNewest"
+                      className="m-0 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        className="invisible d-none"
+                        id="sortByPopularNewest"
+                        name="sortBy"
+                        value="newest"
+                        checked={sortBy === "newest"}
+                        onChange={(e) => setSortBy(e.target.value)}
+                      />
+                      Newest First
+                      <i className="bx bx-sort ms-1" aria-hidden="true" />
+                    </label>
+                  </li>
+                </ul>
+              </div>
+              <div className="ms-auto d-flex gap-2 align-items-center justify-content-between mobileblock">
+                <p className="mb-0 text-nowrap">{productsTotal} Products</p>
+                <div className="text-end d-lg-none d-sm-block d-none">
                   <button
-                    onClick={() => {
-                      setSelectedCategories([]);
-                      setSelectedSubCategories([]);
-                      setSelectedItemCategories([]);
-                      setSelectedItemSubCategories([]);
-                      setSelectedItems([]);
-                      setSelectedStates([]);
-                      setSelectedCompanies([]);
-                    }}
-                    className="btn btn-sm btn-outline-danger text-nowrap" style={{
-                      padding: '0.188rem 0.625rem'
-                    }}
+                    className="filterbutton btn btn-primary"
+                    type="button"
+                    onClick={() => setShowFilter(true)}
                   >
-                    Clear All
+                    <i className="bx bx-filter-alt pe-2"></i> Filters
                   </button>
                 </div>
+                <div className="d-lg-flex d-none gap-2 align-items-center">
+                  <button
+                    className={`btn btn-sm text-nowrap ${!isListView ? "btn-orange" : "btn-outline-white text-white"
+                      }`}
+                    style={{ padding: "0.188rem 0.625rem" }}
+                    onClick={() => setIsListView(false)}
+                  >
+                    <i className="bx bx-grid-alt me-2"></i> Grid View
+                  </button>
 
-              </div>
-
-            )}
-          <div className="py-3 rounded-2 pb-0 mt-2">
-            <div className="row">
-              {loading ? (
-                <ProductSkeletonLoader count={9} isListView={isListView} />
-              ) : filteredProducts.length > 0 ? (
-                filteredProducts.map(product => (
-
-                  <div key={product.id} className={isListView ? "col-md-6 mb-4" : "col-lg-4 col-sm-6 mb-4"}>
-                    <div
-                      className={`card text-dark border overflow-hidden products-list-cards ${isListView ? "flex-row" : "h-100"
-                        }`}
-                      style={{ height: isListView ? 200 : "auto" }}
-                    >
-                      <div
-                        className={`d-flex justify-content-center align-items-center ${isListView
-                          ? "border-end listviewimg"
-                          : "border-bottom gridviewimg"
-                          }`}
-                        style={{
-                          width: isListView ? "200px" : "100%",
-                          height: isListView ? "100%" : "200px",
-                        }}
-                      >
-                        <ImageWithFallback
-                          src={`${ROOT_URL}/${product.file_name}`}
-                          width={180}
-                          height={180}
-                          showFallback={true}
-                        />
-                      </div>
-
-                      <div
-                        className={`card-body ${isListView
-                          ? "d-flex flex-column justify-content-between py-2 px-3"
-                          : "pb-0"
-                          }`}
-                        style={{ flex: 1 }}
-                      >
-                        <h5 className="card-title">{product.title}</h5>
-                        <p className="card-text">
-                          <i className="bx bx-building" />{" "}
-                          {product.company_name}
-                        </p>
-                        <p className="card-text">
-                          <i className="bx bx-map" /> {product.state_name}
-                        </p>
-
-                        {isListView ? (
-                          <div className="mt-auto">
-                            <button className="btn btn-sm btn-orange text-white w-100 text-nowrap py-1 fw-medium orange-hoverbtn">
-                              View Details
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-
-                      {!isListView && (
-                        <div className="card-footer">
-                          <Link
-                            to={`/products/${product.slug}`}
-                            className="btn btn-sm btn-orange text-white w-100 text-nowrap py-1 fw-medium orange-hoverbtn d-inline-block pt-2"
-                          >
-                            <span className="pe-2">View</span>
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="col-12">
-                  <p className="text-center">No products found.</p>
+                  <button
+                    className={`btn btn-sm text-nowrap ${isListView ? "btn-orange" : "btn-outline-white text-white"
+                      }`}
+                    style={{ padding: "0.188rem 0.625rem" }}
+                    onClick={() => setIsListView(true)}
+                  >
+                    <i className="bx bx-list-ul me-2"></i> List View
+                  </button>
                 </div>
-              )}
-              {!loading && scrollLoading && (
-                <ProductSkeletonLoader count={3} isListView={isListView} />
-              )}
+              </div>
             </div>
-          </div>
-        </section>
+            {(selectedCategories.length > 0 ||
+              selectedSubCategories.length > 0 ||
+              selectedStates.length > 0 ||
+              selectedCompanies.length > 0) && (
+                <div className="mb-3 border px-3 py-2 bg-white rounded-2">
+                  <strong className="pb-2">Filter:</strong>
+                  <div className="d-flex align-items-baseline justify-content-between gap-2 mb-2">
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                      {selectedCategories.map(id => (
+                        <span key={`cat-${id}`} className="badge bg-primary text-white d-flex align-items-center">
+                          {getNameById(categories, id)}
+                          <button
+                            onClick={() => handleCategoryCheckboxChange(id)}
+                            className="btn-close btn-close-white ms-2"
+                            style={{ fontSize: '0.6em' }}
+                            aria-label="Remove"
+                          />
+                        </span>
+                      ))}
+                      {selectedSubCategories.map(id => (
+                        <span key={`sub-${id}`} className="badge bg-secondary text-white d-flex align-items-center">
+                          {getNameById(subCategories, id)}
+                          <button
+                            onClick={() => handleSubCategoryCheckboxChange(id)}
+                            className="btn-close btn-close-white ms-2"
+                            style={{ fontSize: '0.6em' }}
+                            aria-label="Remove"
+                          />
+                        </span>
+                      ))}
+                      {selectedItemCategories.map(id => (
+                        <span key={`itemcat-${id}`} className="badge bg-warning text-dark d-flex align-items-center">
+                          {getNameById(itemCategories, id)}
+                          <button
+                            onClick={() => setSelectedItemCategories(prev => prev.filter(cid => cid !== id))}
+                            className="btn-close btn-close-white ms-2"
+                            style={{ fontSize: '0.6em' }}
+                            aria-label="Remove"
+                          />
+                        </span>
+                      ))}
+                      {selectedItemSubCategories.map(id => (
+                        <span key={`itemsub-${id}`} className="badge bg-info text-white d-flex align-items-center">
+                          {getNameById(itemSubCategories, id)}
+                          <button
+                            onClick={() => setSelectedItemSubCategories(prev => prev.filter(cid => cid !== id))}
+                            className="btn-close btn-close-white ms-2"
+                            style={{ fontSize: '0.6em' }}
+                            aria-label="Remove"
+                          />
+                        </span>
+                      ))}
+                      {selectedItems.map(id => (
+                        <span key={`itm-${id}`} className="badge bg-dark text-white d-flex align-items-center">
+                          {getNameById(items, id)}
+                          <button
+                            onClick={() => setSelectedItems(prev => prev.filter(cid => cid !== id))}
+                            className="btn-close btn-close-white ms-2"
+                            style={{ fontSize: '0.6em' }}
+                            aria-label="Remove"
+                          />
+                        </span>
+                      ))}
+                      {selectedStates.map(id => (
+                        <span key={`state-${id}`} className="badge bg-success text-white d-flex align-items-center">
+                          {getNameById(states, id)}
+                          <button
+                            onClick={() => handleStatesCheckboxChange(id)}
+                            className="btn-close btn-close-white ms-2"
+                            style={{ fontSize: '0.6em' }}
+                            aria-label="Remove"
+                          />
+                        </span>
+                      ))}
+                      {selectedCompanies.map(id => (
+                        <span key={`comp-${id}`} className="badge bg-info text-white d-flex align-items-center">
+                          {getNameById(companies, id)}
+                          <button
+                            onClick={() => handleCompaniesCheckboxChange(id)}
+                            className="btn-close btn-close-white ms-2"
+                            style={{ fontSize: '0.6em' }}
+                            aria-label="Remove"
+                          />
+                        </span>
+                      ))}
+
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedCategories([]);
+                        setSelectedSubCategories([]);
+                        setSelectedItemCategories([]);
+                        setSelectedItemSubCategories([]);
+                        setSelectedItems([]);
+                        setSelectedStates([]);
+                        setSelectedCompanies([]);
+                      }}
+                      className="btn btn-sm btn-outline-danger text-nowrap" style={{
+                        padding: '0.188rem 0.625rem'
+                      }}
+                    >
+                      Clear All
+                    </button>
+                  </div>
+
+                </div>
+
+              )}
+            <div className="py-3 rounded-2 pb-0 mt-2">
+              <div className="row">
+                {loading ? (
+                  <ProductSkeletonLoader count={9} isListView={isListView} />
+                ) : filteredProducts.length > 0 ? (
+                  filteredProducts.map(product => (
+
+                    <div key={product.id} className={isListView ? "col-md-6 mb-4" : "col-lg-4 col-sm-6 mb-4"}>
+                      <div
+                        className={`card text-dark border overflow-hidden products-list-cards ${isListView ? "flex-row" : "h-100"
+                          }`}
+                        style={{ height: isListView ? 200 : "auto" }}
+                      >
+                        <div
+                          className={`d-flex justify-content-center align-items-center ${isListView
+                            ? "border-end listviewimg"
+                            : "border-bottom gridviewimg"
+                            }`}
+                          style={{
+                            width: isListView ? "200px" : "100%",
+                            height: isListView ? "100%" : "200px",
+                          }}
+                        >
+                          <ImageWithFallback
+                            src={`${ROOT_URL}/${product.file_name}`}
+                            width={180}
+                            height={180}
+                            showFallback={true}
+                          />
+                        </div>
+
+                        <div
+                          className={`card-body ${isListView
+                            ? "d-flex flex-column justify-content-between py-2 px-3"
+                            : "pb-0"
+                            }`}
+                          style={{ flex: 1 }}
+                        >
+                          <h5 className="card-title">{product.title}</h5>
+                          <p className="card-text">
+                            <i className="bx bx-building" />{" "}
+                            {product.company_name}
+                          </p>
+                          <p className="card-text">
+                            <i className="bx bx-map" /> {product.state_name}
+                          </p>
+
+                          {isListView ? (
+                            <div className="mt-auto">
+                              <button className="btn btn-sm btn-orange text-white w-100 text-nowrap py-1 fw-medium orange-hoverbtn">
+                                View Details
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        {!isListView && (
+                          <div className="card-footer">
+                            <Link
+                              to={`/products/${product.slug}`}
+                              className="btn btn-sm btn-orange text-white w-100 text-nowrap py-1 fw-medium orange-hoverbtn d-inline-block pt-2"
+                            >
+                              <span className="pe-2">View</span>
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-12">
+                    <p className="text-center">No products found.</p>
+                  </div>
+                )}
+                {!loading && scrollLoading && (
+                  <ProductSkeletonLoader count={3} isListView={isListView} />
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
-    </div>
+    </Suspense>
   );
 };
 

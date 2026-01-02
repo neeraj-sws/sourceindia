@@ -9,7 +9,6 @@ import { useAlert } from "./../context/AlertContext";
 import { formatDateTime } from './../utils/formatDate';
 import LeadsModals from "../admin/pages/modal/LeadsModals";
 import ExcelExport from "../admin/common/ExcelExport";
-import { DateRangePicker } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { format } from "date-fns";

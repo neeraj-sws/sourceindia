@@ -171,7 +171,7 @@ const ItemCategory = () => {
                       </div>
                     </a>
                     <div className="d-flex justify-content-between align-items--center gap-1 gridulimgcontainer">
-                      <ul className="list--unstyled ps-sm-2 ps-3 mb-0 categorylistul">
+                      <ul className="list-unstyled ps-0 mb-0 categorylistul">
                         {(cat.items || []).length > 0 ? (
                           cat.items.map((item) => (
                             <li className="text-start">
@@ -194,6 +194,8 @@ const ItemCategory = () => {
                           src={`${ROOT_URL}/${cat.file_name}`}
                           className="img-fluid categoryimagebox"
                           alt={cat.name || "Category"}
+                          loading="lazy"
+                          decoding="async"
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.src =

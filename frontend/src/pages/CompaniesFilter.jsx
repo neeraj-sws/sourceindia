@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { Suspense, lazy } from 'react';
+const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
-import ImageWithFallback from "../admin/common/ImageWithFallback";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import UseAuth from "../sections/UseAuth";
 import ConnectForm from "./ConnectForm";

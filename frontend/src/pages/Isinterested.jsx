@@ -3,7 +3,6 @@ import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
 import { useNavigate } from "react-router-dom";
-import StepProgress from "./StepProgress";
 import UseAuth from "../sections/UseAuth";
 
 const Isinterested = () => {

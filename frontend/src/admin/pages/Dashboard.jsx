@@ -45,21 +45,23 @@ const Dashboard = () => {
           src={imgSrc}
           className="img-fluid position-absolute top-0 start-0"
           alt="logo icon"
+          loading="lazy"
+          decoding="async"
         />
       </div>
     );
 
     return (
       <div className="col mb-4">
-      {onClick ? (
-        <div style={{ cursor: "pointer" }} onClick={onClick}>
-          {content}
-        </div>
-      ) : link && link !== "#" ? (
-        <Link to={link}>{content}</Link>
-      ) : (
-        <div style={{ cursor: "pointer" }}>{content}</div>
-      )}
+        {onClick ? (
+          <div style={{ cursor: "pointer" }} onClick={onClick}>
+            {content}
+          </div>
+        ) : link && link !== "#" ? (
+          <Link to={link}>{content}</Link>
+        ) : (
+          <div style={{ cursor: "pointer" }}>{content}</div>
+        )}
       </div>
     );
   };

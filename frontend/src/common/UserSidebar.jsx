@@ -95,7 +95,7 @@ const UserSidebar = () => {
     { title: "Dashboard", icon: "bx bx-home-circle", link: "/dashboard" },
     { title: "Profile", icon: "bx bx-user", link: "/profile" },
 
-   
+
 
     // My Products (member_role == 1 or 3) && is_seller == 1 && is_company == 1
     {
@@ -190,10 +190,11 @@ const UserSidebar = () => {
       <div className="simplebar-content" style={{ padding: 0 }}>
         <div className="sidebar-header">
           <div>
-            <img src={logoUrl} className="logo-icon" alt="logo icon" onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "/logo.png";
-            }} />
+            <img src={logoUrl} className="logo-icon" alt="logo icon" loading="lazy"
+              decoding="async" onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "/logo.png";
+              }} />
           </div>
           <div className="toggle-icon ms-auto">
             <i className="bx bx-arrow-to-left" />

@@ -76,19 +76,19 @@ const TicketView = () => {
       showNotification(error.response?.data?.message || "Error submitting reply", "error");
     }
   };
-  
-  useEffect(() => {
-  const fetchNextTicket = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/tickets/${number}/next`);
-      setNextTicket(res.data);
-    } catch (error) {
-      console.error("Error fetching next ticket:", error);
-    }
-  };
 
-  if (number) fetchNextTicket();
-}, [number]);
+  useEffect(() => {
+    const fetchNextTicket = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/tickets/${number}/next`);
+        setNextTicket(res.data);
+      } catch (error) {
+        console.error("Error fetching next ticket:", error);
+      }
+    };
+
+    if (number) fetchNextTicket();
+  }, [number]);
 
   if (loading) {
     return (
@@ -183,7 +183,7 @@ const TicketView = () => {
                 {nextTicket && nextTicket.id != null && (
                   <div>
                     <h5>My Previous Tickets</h5>
-                    <Link 
+                    <Link
                       to={`/ticket/view/${nextTicket.next}?token=${nextTicket.token}`}
                       className="text-decoration-none"
                     >
@@ -275,6 +275,8 @@ const TicketView = () => {
                                           src={`${ROOT_URL}/upload/tickets/${reply.attachment}`}
                                           alt="Attachment"
                                           className="img-fluid"
+                                          loading="lazy"
+                                          decoding="async"
                                           style={{ maxWidth: '150px', maxHeight: '100px' }} // Adjust size as needed
                                         />
                                         <p className="mt-2 mb-0"> <small>{reply.attachment}</small></p>

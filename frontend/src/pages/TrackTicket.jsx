@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "../config";
-import ImageFront from "../admin/common/ImageFront";
 import { Link } from "react-router-dom";
 import { useAlert } from "../context/AlertContext";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +23,7 @@ const TrackTicket = () => {
 
       const form = new FormData();
       Object.entries(formData).forEach(([key, value]) => form.append(key, value));
-     
+
 
       const response = await axios.post(`${API_BASE_URL}/tickets/track-ticket`, form, {
 

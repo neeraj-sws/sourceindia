@@ -17,13 +17,14 @@ const ImageWithFallback = ({ src, alt = 'Image', width = 80, height = 80, showFa
 
   if (!imageExists) {
     if (showFallback) {
-      return (<img className="object-fit-cover  img-fluid img-thumbnail" src="/default.png" width={width} height={height} alt="Fallback" />);
+      return (<img className="object-fit-cover  img-fluid img-thumbnail" src="/default.png" width={width} height={height} alt="Fallback" loading="lazy"
+        decoding="async" />);
     } else {
       return null;
     }
   }
 
-  return (<img className="object-fit-cover  img-fluid img-thumbnail" src={src} width={width} height={height} alt={alt} />);
+  return (<img className="object-fit-cover  img-fluid img-thumbnail" src={src} width={width} height={height} alt={alt} loading="lazy" decoding="async" />);
 };
 
 export default ImageWithFallback;

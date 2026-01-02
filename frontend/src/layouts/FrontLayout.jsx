@@ -67,11 +67,11 @@ function FrontLayout() {
         <AlertProvider>
           <GlobalSeo />
           <ToastContainer position="top-right" autoClose={2000} hideProgressBar={true} />
-          <Suspense fallback={<div>Loading layout...</div>}>
+          <Suspense fallback={<div></div>}>
             {isUserLayout ? <><UserHeader /><UserSidebar /></> : <FrontHeader />}
           </Suspense>
           <main>
-            <Suspense fallback={<div>Loading page...</div>}>
+            <Suspense fallback={<div></div>}>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />

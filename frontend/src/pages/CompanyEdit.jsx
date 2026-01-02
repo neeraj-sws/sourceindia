@@ -2,7 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from "./../config";
-import ImageWithFallback from "../admin/common/ImageWithFallback";
+import { Suspense, lazy } from 'react';
+const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../context/AlertContext';
 
@@ -40,7 +41,7 @@ const CompanyEdit = () => {
   const [companyBrochure, setCompanyBrochure] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [categoryLimit, setCategoryLimit] = useState(null);
-    const isBlockingRef = useRef(false);
+  const isBlockingRef = useRef(false);
 
   useEffect(() => {
     const fetchCoreActivities = async () => {
@@ -86,7 +87,7 @@ const CompanyEdit = () => {
     const selectedOptions = Array.from(event.target.selectedOptions, (option) => Number(option.value));
     if (categoryLimit && selectedOptions.length > categoryLimit) {
       showNotification(`You can select up to ${categoryLimit} categories only.`, "error");
-      return;  
+      return;
     }
     setSelectedCategory(selectedOptions);
     if (selectedOptions.length > 0) {
@@ -129,7 +130,7 @@ const CompanyEdit = () => {
         $(this).val(currentSelected).trigger("change");
         showNotification(`You can select maximum ${categoryLimit} categories.`, "error");
         return;
-    }
+      }
       const previousSelectedCategories = previousSelectedCategoriesRef.current;
       const addedCategories = currentSelected.filter(cat => !previousSelectedCategories.includes(cat));
       const removedCategories = previousSelectedCategories.filter(cat => !currentSelected.includes(cat));
@@ -414,7 +415,7 @@ const CompanyEdit = () => {
       // formData.append("category_sell", selectedCategory.join(","));
       // formData.append("sub_category", selectedSubCategory.join(","));
       formData.append("categories", selectedCategory.join(",")); // Append categories as comma-separated string
-  formData.append("subcategory_ids", selectedSubCategory.join(","));
+      formData.append("subcategory_ids", selectedSubCategory.join(","));
       formData.append("brief_company", user.company_info?.brief_company || "");
       formData.append("company_video_second", user.company_info?.company_video_second || "");
 
@@ -551,7 +552,7 @@ const CompanyEdit = () => {
                               <option key={category.id} value={category.id}>{category.name}</option>
                             ))}
                           </select>
-                          {errors.category_sell && (<div className= "text-danger small mt-1">{errors.category_sell}</div>)}
+                          {errors.category_sell && (<div className="text-danger small mt-1">{errors.category_sell}</div>)}
                         </div>
                         <div className="col-md-6">
                           <label htmlFor="sub_category" className="form-label">Sub Category</label>
@@ -580,6 +581,8 @@ const CompanyEdit = () => {
                               width={150}
                               height={150}
                               alt="Preview"
+                              loading="lazy"
+                              decoding="async"
                             />
                           ) : user.company_info?.companyLogo?.file ? (
                             <ImageWithFallback
@@ -603,7 +606,7 @@ const CompanyEdit = () => {
                             value={user.company_info?.brief_company || ""}
                             onChange={handleChange}
                           />
-                          {errors.brief_company && <div className= "text-danger small mt-1">{errors.brief_company}</div>}
+                          {errors.brief_company && <div className="text-danger small mt-1">{errors.brief_company}</div>}
                           <p className="pt-3">
                             Total Words Limit <span className="about">1500 </span>{" "}
                           </p>

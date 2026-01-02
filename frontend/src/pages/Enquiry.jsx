@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "../config";
-import ImageFront from "../admin/common/ImageFront";
+import { Suspense, lazy } from 'react';
+const ImageFront = lazy(() => import('../admin/common/ImageFront'));
 import { Link, useNavigate } from "react-router-dom";
 import AddEnquiryModal from "./AddEnquiryModal";
 import UseAuth from "../sections/UseAuth";
@@ -185,25 +186,23 @@ const Enquiry = () => {
           <div className="card mb-4">
             <div className="card-body">
               <div className="d-flex align-items-center justify-content-md-between gap-1 enquirybtnscontainer">
-                  <button
-                    className={`enquirybtns text-nowrap btn ${
-                      activeTab === "all"
-                        ? "btn-primary"
-                        : "btn-outline-primary"
+                <button
+                  className={`enquirybtns text-nowrap btn ${activeTab === "all"
+                      ? "btn-primary"
+                      : "btn-outline-primary"
                     }`}
-                    onClick={() => setActiveTab("all")}
-                  >
-                    All Enquiry
-                  </button>
+                  onClick={() => setActiveTab("all")}
+                >
+                  All Enquiry
+                </button>
 
                 <div className="d-flex align-items-center gap-1 justify-content-between enquirybtnscontainer">
                   {user && (
                     <button
-                      className={`enquirybtns btn ${
-                        activeTab === "my"
+                      className={`enquirybtns btn ${activeTab === "my"
                           ? "btn-primary"
                           : "btn-outline-primary"
-                      }`}
+                        }`}
                       onClick={() => setActiveTab("my")}
                     >
                       My Enquiry

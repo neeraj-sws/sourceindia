@@ -69,7 +69,7 @@ const menuData = [
     ],
   },
   {
-    key: 'categories_total', 
+    key: 'categories_total',
     title: 'Category Master',
     icon: 'bx bx-cart',
     subMenu: [
@@ -247,134 +247,134 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {
   const shouldExpand = isOpen;
 
   const getCount = (key) => {
-  switch (key) {
-    case 'buyers':
-      return (
-        (counts.buyers?.statusActive || 0) +
-        (counts.buyers?.statusInactive || 0) +
-        (counts.buyers?.notApproved || 0) +
-        (counts.buyers?.deleted || 0)
-      );
-    case 'sellers':
-      return (
-        (counts.sellers?.statusActive || 0) +
-        (counts.sellers?.statusInactive || 0) +
-        (counts.sellers?.notApproved || 0) +
-        (counts.sellers?.notCompleted || 0) +
-        (counts.sellers?.deleted || 0)
-      );
-    case 'buyers_list':
-      return counts.buyers?.statusActive || 0;
-    case 'inactive_buyers':
-      return counts.buyers?.statusInactive || 0;
-    case 'not_approved_buyers':
-      return counts.buyers?.notApproved || 0;
-    case 'removed_buyers':
-      return counts.buyers?.deleted || 0;
-    case 'sellers_list':
-      return counts.sellers?.statusActive || 0;
-    case 'inactive_sellers':
-      return counts.sellers?.statusInactive || 0;
-    case 'not_approved_sellers':
-      return counts.sellers?.notApproved || 0;
-    case 'not_completed_sellers':
-      return counts.sellers?.notCompleted || 0;
-    case 'removed_sellers':
-      return counts.sellers?.deleted || 0;
-    case 'total_product':
-      return counts.products?.total || 0;
-    case 'approve_product':
-      return counts.products?.statusPublic || 0;
-    case 'notapprove_product':
-      return counts.products?.statusDraft || 0;
-    case 'leads':
-      return (
-        (counts.enquiries?.getApprove || 0) +
-        (counts.enquiries?.getNotApprove || 0)
-      );
-    case 'public_enquiries':
-      return counts.enquiries?.getPublic || 0;
-    case 'approve_leads':
-      return counts.enquiries?.getApprove || 0;
-    case 'enquiries_list':
-      return counts.enquiries?.getNotApprove || 0;
-    case 'open_enquiry_list':
-      return counts.openEnquiries?.total || 0;
-    case 'delete_open_enquiry':
-      return counts.openEnquiries?.deleted || 0;
-    case 'roles':
-      return counts.roles?.roles || 0;
-    case 'sub_admin':
-      return counts.roles?.admin || 0;
-    case 'categories':
-      return counts.newItems?.categories || 0;
-    case 'sub_categories':
-      return counts.newItems?.subCategories || 0;
-    case 'item_category':
-      return counts.newItems?.itemCategories || 0;
-    case 'item_sub_category':
-      return counts.newItems?.itemSubCategories || 0;
-    case 'new_items':
-      return counts.newItems?.items || 0;
-    case 'interest_categories':
-      return counts.items?.interestCategories || 0;
-    case 'source_interest_categories':
-      return counts.items?.interestSubCategories || 0;
-    case 'sub_sub_categories':
-      return counts.items?.subSubCategories || 0;
-    case 'tickets':
-      return counts.tickets?.total || 0;
-    case 'ticket_categories':
-      return counts.ticket_categories?.total || 0;
-    case 'faqs_list':
-      return counts.faqs?.faq || 0;
-    case 'faqs':
-      return counts.faqs?.faq || 0;
-    case 'faq_categories':
-      return counts.faqs?.faqCategory || 0;
-    case 'core_activities':
-      return counts.activities?.coreActivities || 0;
-    case 'activities':
-      return counts.activities?.activities || 0;
-    case 'applications':
-      return counts.applications?.total || 0;
-    case 'testimonials':
-      return counts.testimonials?.total || 0;
-    case 'seo_pages':
-      return counts.seo_pages?.total || 0;
-    case 'inventories':
-      return counts.inventories?.total || 0;
-    case 'user_activity':
-      return counts.user_activity?.total || 0;
-    case 'user_history':
-      return counts.user_history?.total || 0;
-    case 'home_banners':
-      return counts.home_banners?.total || 0;
-    case 'knowledge_center':
-      return counts.knowledge_center?.total || 0;
-    case 'emails':
-      return counts.emails?.total || 0;
-    case 'membership_plan':
-      return counts.membership_plan?.total || 0;
-    case 'contacts':
-      return counts.contacts?.total || 0;
-    case 'newsletters_list':
-      return counts.newsletters?.total || 0;
-    case 'newsletters':
-      return counts.newsletters?.total || 0;
-    case 'registrations_all':
-      return (
-        (counts.registrations?.total || 0) +
-        (counts.registrations?.deleted || 0)
-      );
-    case 'registrations':
-      return counts.registrations?.total || 0;
-    case 'registrations_deleted':
-      return counts.registrations?.deleted || 0;
-    default:
-      return null;
-  }
-};
+    switch (key) {
+      case 'buyers':
+        return (
+          (counts.buyers?.statusActive || 0) +
+          (counts.buyers?.statusInactive || 0) +
+          (counts.buyers?.notApproved || 0) +
+          (counts.buyers?.deleted || 0)
+        );
+      case 'sellers':
+        return (
+          (counts.sellers?.statusActive || 0) +
+          (counts.sellers?.statusInactive || 0) +
+          (counts.sellers?.notApproved || 0) +
+          (counts.sellers?.notCompleted || 0) +
+          (counts.sellers?.deleted || 0)
+        );
+      case 'buyers_list':
+        return counts.buyers?.statusActive || 0;
+      case 'inactive_buyers':
+        return counts.buyers?.statusInactive || 0;
+      case 'not_approved_buyers':
+        return counts.buyers?.notApproved || 0;
+      case 'removed_buyers':
+        return counts.buyers?.deleted || 0;
+      case 'sellers_list':
+        return counts.sellers?.statusActive || 0;
+      case 'inactive_sellers':
+        return counts.sellers?.statusInactive || 0;
+      case 'not_approved_sellers':
+        return counts.sellers?.notApproved || 0;
+      case 'not_completed_sellers':
+        return counts.sellers?.notCompleted || 0;
+      case 'removed_sellers':
+        return counts.sellers?.deleted || 0;
+      case 'total_product':
+        return counts.products?.total || 0;
+      case 'approve_product':
+        return counts.products?.statusPublic || 0;
+      case 'notapprove_product':
+        return counts.products?.statusDraft || 0;
+      case 'leads':
+        return (
+          (counts.enquiries?.getApprove || 0) +
+          (counts.enquiries?.getNotApprove || 0)
+        );
+      case 'public_enquiries':
+        return counts.enquiries?.getPublic || 0;
+      case 'approve_leads':
+        return counts.enquiries?.getApprove || 0;
+      case 'enquiries_list':
+        return counts.enquiries?.getNotApprove || 0;
+      case 'open_enquiry_list':
+        return counts.openEnquiries?.total || 0;
+      case 'delete_open_enquiry':
+        return counts.openEnquiries?.deleted || 0;
+      case 'roles':
+        return counts.roles?.roles || 0;
+      case 'sub_admin':
+        return counts.roles?.admin || 0;
+      case 'categories':
+        return counts.newItems?.categories || 0;
+      case 'sub_categories':
+        return counts.newItems?.subCategories || 0;
+      case 'item_category':
+        return counts.newItems?.itemCategories || 0;
+      case 'item_sub_category':
+        return counts.newItems?.itemSubCategories || 0;
+      case 'new_items':
+        return counts.newItems?.items || 0;
+      case 'interest_categories':
+        return counts.items?.interestCategories || 0;
+      case 'source_interest_categories':
+        return counts.items?.interestSubCategories || 0;
+      case 'sub_sub_categories':
+        return counts.items?.subSubCategories || 0;
+      case 'tickets':
+        return counts.tickets?.total || 0;
+      case 'ticket_categories':
+        return counts.ticket_categories?.total || 0;
+      case 'faqs_list':
+        return counts.faqs?.faq || 0;
+      case 'faqs':
+        return counts.faqs?.faq || 0;
+      case 'faq_categories':
+        return counts.faqs?.faqCategory || 0;
+      case 'core_activities':
+        return counts.activities?.coreActivities || 0;
+      case 'activities':
+        return counts.activities?.activities || 0;
+      case 'applications':
+        return counts.applications?.total || 0;
+      case 'testimonials':
+        return counts.testimonials?.total || 0;
+      case 'seo_pages':
+        return counts.seo_pages?.total || 0;
+      case 'inventories':
+        return counts.inventories?.total || 0;
+      case 'user_activity':
+        return counts.user_activity?.total || 0;
+      case 'user_history':
+        return counts.user_history?.total || 0;
+      case 'home_banners':
+        return counts.home_banners?.total || 0;
+      case 'knowledge_center':
+        return counts.knowledge_center?.total || 0;
+      case 'emails':
+        return counts.emails?.total || 0;
+      case 'membership_plan':
+        return counts.membership_plan?.total || 0;
+      case 'contacts':
+        return counts.contacts?.total || 0;
+      case 'newsletters_list':
+        return counts.newsletters?.total || 0;
+      case 'newsletters':
+        return counts.newsletters?.total || 0;
+      case 'registrations_all':
+        return (
+          (counts.registrations?.total || 0) +
+          (counts.registrations?.deleted || 0)
+        );
+      case 'registrations':
+        return counts.registrations?.total || 0;
+      case 'registrations_deleted':
+        return counts.registrations?.deleted || 0;
+      default:
+        return null;
+    }
+  };
 
   const mainCount = getCount(item.key);
 
@@ -391,7 +391,7 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {
         <div className="parent-icon"><i className={item.icon}></i></div>
         <div className="menu-title">
           {item.title}
-          {mainCount !== null && ( <span className="badge bg-primary ms-1">{mainCount}</span> )}
+          {mainCount !== null && (<span className="badge bg-primary ms-1">{mainCount}</span>)}
         </div>
       </Link>
 
@@ -423,116 +423,116 @@ const Sidebar = () => {
   const [openIndex, setOpenIndex] = useState(null);
   const [logoUrl, setLogoUrl] = useState('/logo.png');
   const [counts, setCounts] = useState({
-  buyers: {},
-  sellers: {},
-  products: {},
-  // categories: {},
-  // subCategories: {},
-  // itemCategories: {},
-  // itemSubCategories: {},
-  newItems: {},
-  enquiries: {},
-  openEnquiries: {},
-  roles: {},
-  items: {},
-  tickets: {},
-  ticket_categories: {},
-  faqs: {},
-  // core_activities: {},
-  activities: {},
-  applications: {},
-  testimonials: {},
-  seo_pages: {},
-  inventories: {},
-  user_activity: {},
-  user_history: {},
-  home_banners: {},
-  knowledge_center: {},
-  emails: {},
-  membership_plan: {},
-  contacts: {},
-  newsletters: {},
-  registrations: {},
-});
+    buyers: {},
+    sellers: {},
+    products: {},
+    // categories: {},
+    // subCategories: {},
+    // itemCategories: {},
+    // itemSubCategories: {},
+    newItems: {},
+    enquiries: {},
+    openEnquiries: {},
+    roles: {},
+    items: {},
+    tickets: {},
+    ticket_categories: {},
+    faqs: {},
+    // core_activities: {},
+    activities: {},
+    applications: {},
+    testimonials: {},
+    seo_pages: {},
+    inventories: {},
+    user_activity: {},
+    user_history: {},
+    home_banners: {},
+    knowledge_center: {},
+    emails: {},
+    membership_plan: {},
+    contacts: {},
+    newsletters: {},
+    registrations: {},
+  });
 
-useEffect(() => {
-  const fetchCounts = async () => {
-    try {
-      const [buyers, sellers, products, 
-        // categories, subCategories, itemCategories, itemSubCategories, 
-        newItems, enquiries, openEnquiries, roles, items, tickets, ticket_categories, 
-        faqs, activities, applications, testimonials, seo_pages, inventories, user_activity, user_history, home_banners, knowledge_center, emails, membership_plan, 
-        contacts, newsletters, registrations] = await Promise.all([
-        axios.get(`${API_BASE_URL}/buyers/count`),
-        axios.get(`${API_BASE_URL}/sellers/count`),
-        axios.get(`${API_BASE_URL}/products/count`),
-        // axios.get(`${API_BASE_URL}/categories/count`),
-        // axios.get(`${API_BASE_URL}/sub_categories/count`),
-        // axios.get(`${API_BASE_URL}/item_category/count`),
-        // axios.get(`${API_BASE_URL}/item_sub_category/count`),
-        axios.get(`${API_BASE_URL}/items/count`),
-        axios.get(`${API_BASE_URL}/enquiries/count`),
-        axios.get(`${API_BASE_URL}/open_enquiries/count`),
-        axios.get(`${API_BASE_URL}/sub_admin/count`),
-        axios.get(`${API_BASE_URL}/sub_sub_categories/count`),
-        axios.get(`${API_BASE_URL}/tickets/count`),
-        axios.get(`${API_BASE_URL}/ticket_categories/count`),
-        axios.get(`${API_BASE_URL}/faqs/count`),
-        // axios.get(`${API_BASE_URL}/core_activities/count`),
-        axios.get(`${API_BASE_URL}/activities/count`),
-        axios.get(`${API_BASE_URL}/applications/count`),
-        axios.get(`${API_BASE_URL}/testimonials/count`),
-        axios.get(`${API_BASE_URL}/seo_pages/count`),
-        axios.get(`${API_BASE_URL}/inventories/count`),
-        axios.get(`${API_BASE_URL}/user_activity/count`),
-        axios.get(`${API_BASE_URL}/signup/count`),
-        axios.get(`${API_BASE_URL}/home_banners/count`),
-        axios.get(`${API_BASE_URL}/knowledge_center/count`),
-        axios.get(`${API_BASE_URL}/emails/count`),
-        axios.get(`${API_BASE_URL}/membership_plan/count`),
-        axios.get(`${API_BASE_URL}/contacts/count`),
-        axios.get(`${API_BASE_URL}/newsletters/count`),
-        axios.get(`${API_BASE_URL}/registrations/count`),
-      ]);
-      setCounts({
-        buyers: buyers.data,
-        sellers: sellers.data,
-        products: products.data,
-        // categories: categories.data,
-        // subCategories: subCategories.data,
-        // itemCategories: itemCategories.data,
-        // itemSubCategories: itemSubCategories.data,
-        newItems: newItems.data,
-        openEnquiries: openEnquiries.data,
-        enquiries: enquiries.data,
-        roles: roles.data,
-        items: items.data,
-        tickets: tickets.data,
-        ticket_categories: ticket_categories.data,
-        faqs: faqs.data,
-        // core_activities: core_activities.data,
-        activities: activities.data,
-        applications: applications.data,
-        testimonials: testimonials.data,
-        seo_pages: seo_pages.data,
-        inventories: inventories.data,
-        user_activity: user_activity.data,
-        user_history: user_history.data,
-        home_banners: home_banners.data,
-        knowledge_center: knowledge_center.data,
-        emails: emails.data,
-        membership_plan: membership_plan.data,
-        contacts: contacts.data,
-        newsletters: newsletters.data,
-        registrations: registrations.data,
-      });
-    } catch (err) {
-      console.error("Error fetching sidebar counts:", err);
-    }
-  };
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const [buyers, sellers, products,
+          // categories, subCategories, itemCategories, itemSubCategories, 
+          newItems, enquiries, openEnquiries, roles, items, tickets, ticket_categories,
+          faqs, activities, applications, testimonials, seo_pages, inventories, user_activity, user_history, home_banners, knowledge_center, emails, membership_plan,
+          contacts, newsletters, registrations] = await Promise.all([
+            axios.get(`${API_BASE_URL}/buyers/count`),
+            axios.get(`${API_BASE_URL}/sellers/count`),
+            axios.get(`${API_BASE_URL}/products/count`),
+            // axios.get(`${API_BASE_URL}/categories/count`),
+            // axios.get(`${API_BASE_URL}/sub_categories/count`),
+            // axios.get(`${API_BASE_URL}/item_category/count`),
+            // axios.get(`${API_BASE_URL}/item_sub_category/count`),
+            axios.get(`${API_BASE_URL}/items/count`),
+            axios.get(`${API_BASE_URL}/enquiries/count`),
+            axios.get(`${API_BASE_URL}/open_enquiries/count`),
+            axios.get(`${API_BASE_URL}/sub_admin/count`),
+            axios.get(`${API_BASE_URL}/sub_sub_categories/count`),
+            axios.get(`${API_BASE_URL}/tickets/count`),
+            axios.get(`${API_BASE_URL}/ticket_categories/count`),
+            axios.get(`${API_BASE_URL}/faqs/count`),
+            // axios.get(`${API_BASE_URL}/core_activities/count`),
+            axios.get(`${API_BASE_URL}/activities/count`),
+            axios.get(`${API_BASE_URL}/applications/count`),
+            axios.get(`${API_BASE_URL}/testimonials/count`),
+            axios.get(`${API_BASE_URL}/seo_pages/count`),
+            axios.get(`${API_BASE_URL}/inventories/count`),
+            axios.get(`${API_BASE_URL}/user_activity/count`),
+            axios.get(`${API_BASE_URL}/signup/count`),
+            axios.get(`${API_BASE_URL}/home_banners/count`),
+            axios.get(`${API_BASE_URL}/knowledge_center/count`),
+            axios.get(`${API_BASE_URL}/emails/count`),
+            axios.get(`${API_BASE_URL}/membership_plan/count`),
+            axios.get(`${API_BASE_URL}/contacts/count`),
+            axios.get(`${API_BASE_URL}/newsletters/count`),
+            axios.get(`${API_BASE_URL}/registrations/count`),
+          ]);
+        setCounts({
+          buyers: buyers.data,
+          sellers: sellers.data,
+          products: products.data,
+          // categories: categories.data,
+          // subCategories: subCategories.data,
+          // itemCategories: itemCategories.data,
+          // itemSubCategories: itemSubCategories.data,
+          newItems: newItems.data,
+          openEnquiries: openEnquiries.data,
+          enquiries: enquiries.data,
+          roles: roles.data,
+          items: items.data,
+          tickets: tickets.data,
+          ticket_categories: ticket_categories.data,
+          faqs: faqs.data,
+          // core_activities: core_activities.data,
+          activities: activities.data,
+          applications: applications.data,
+          testimonials: testimonials.data,
+          seo_pages: seo_pages.data,
+          inventories: inventories.data,
+          user_activity: user_activity.data,
+          user_history: user_history.data,
+          home_banners: home_banners.data,
+          knowledge_center: knowledge_center.data,
+          emails: emails.data,
+          membership_plan: membership_plan.data,
+          contacts: contacts.data,
+          newsletters: newsletters.data,
+          registrations: registrations.data,
+        });
+      } catch (err) {
+        console.error("Error fetching sidebar counts:", err);
+      }
+    };
 
-  fetchCounts();
-}, []);
+    fetchCounts();
+  }, []);
 
   useEffect(() => {
     const fetchSiteSettings = async () => {
@@ -557,21 +557,21 @@ useEffect(() => {
   };
 
   useEffect(() => {
-  // Find the menu index that matches the currentPath
-  const activeIndex = menuData.findIndex((item) => {
-    if (item.subMenu) {
-      return item.subMenu.some((sub) => sub.link === currentPath);
-    }
-    if (Array.isArray(item.link)) {
-      return item.link.includes(currentPath);
-    }
-    return item.link === currentPath;
-  });
+    // Find the menu index that matches the currentPath
+    const activeIndex = menuData.findIndex((item) => {
+      if (item.subMenu) {
+        return item.subMenu.some((sub) => sub.link === currentPath);
+      }
+      if (Array.isArray(item.link)) {
+        return item.link.includes(currentPath);
+      }
+      return item.link === currentPath;
+    });
 
-  if (activeIndex !== -1) {
-    setOpenIndex(activeIndex);
-  }
-}, [currentPath]);
+    if (activeIndex !== -1) {
+      setOpenIndex(activeIndex);
+    }
+  }, [currentPath]);
 
   return (
     <div className="sidebar-wrapper" data-simplebar="init">
@@ -588,10 +588,11 @@ useEffect(() => {
               <div className="simplebar-content mm-active" style={{ padding: 0 }}>
                 <div className="sidebar-header">
                   <div>
-                    <img src={logoUrl} className="logo-icon" alt="logo icon" onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "/logo.png";
-                    }} />
+                    <img src={logoUrl} className="logo-icon" alt="logo icon" loading="lazy"
+                      decoding="async" onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "/logo.png";
+                      }} />
                   </div>
                   <div className="toggle-icon ms-auto">
                     <i className="bx bx-arrow-to-left" />

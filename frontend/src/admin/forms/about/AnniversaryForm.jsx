@@ -99,6 +99,8 @@ const AnniversaryForm = () => {
               width={150}
               height={150}
               alt="Preview"
+              loading="lazy"
+              decoding="async"
             />
           ) : formData.about_file ? (
             <ImageWithFallback

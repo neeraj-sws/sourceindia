@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
-import Breadcrumb from "../admin/common/Breadcrumb";
-import DataTable from "../admin/common/DataTable";
-import ImageWithFallback from "../admin/common/ImageWithFallback";
+import { Suspense, lazy } from 'react';
+const Breadcrumb = lazy(() => import('../admin/common/Breadcrumb'));
+const DataTable = lazy(() => import('../admin/common/DataTable'));
+const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import { useAlert } from "./../context/AlertContext";
 import { formatDateTime } from './../utils/formatDate';
-import ProductModals from "../admin/pages/modal/ProductModals";
+const ProductModals = lazy(() => import('../admin/pages/modal/ProductModals'));
 import UseAuth from '../sections/UseAuth';
 
-const MyProducts = ({user_id}) => {
+const MyProducts = ({ user_id }) => {
   const navigate = useNavigate();
-  const {user, loading} = UseAuth();
+  const { user, loading } = UseAuth();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -76,15 +77,15 @@ const MyProducts = ({user_id}) => {
 
   const handleDeleteConfirm = async () => {
     try {
-    await axios.delete(`${API_BASE_URL}/products/${productToDelete}`);
-    setData((prevData) => prevData.filter((item) => item.id !== productToDelete));
-    setTotalRecords((prev) => prev - 1);
-    setFilteredRecords((prev) => prev - 1);
-    closeDeleteModal();
-    showNotification("Product deleted successfully!", "success");
+      await axios.delete(`${API_BASE_URL}/products/${productToDelete}`);
+      setData((prevData) => prevData.filter((item) => item.id !== productToDelete));
+      setTotalRecords((prev) => prev - 1);
+      setFilteredRecords((prev) => prev - 1);
+      closeDeleteModal();
+      showNotification("Product deleted successfully!", "success");
     } catch (error) {
-    console.error("Error deleting Product:", error);
-    showNotification("Failed to delete Product.", "error");
+      console.error("Error deleting Product:", error);
+      showNotification("Failed to delete Product.", "error");
     }
   };
 
@@ -92,82 +93,84 @@ const MyProducts = ({user_id}) => {
 
   return (
     <>
-      <div className="page-wrapper">
-        <div className="page-content">
-          <Breadcrumb mainhead="Products" maincount={totalRecords} page="Shop" title="Products"
-          add_button={(<><i className="bx bxs-plus-square me-1" /> Add Product</>)} add_link="/add_product"
-          />
-          <div className="card">
-            <div className="card-body">
-              <DataTable
-                columns={[
-                  { key: "id", label: "S.No.", sortable: true },
-                  { key: "image", label: "Image", sortable: false },
-                  { key: "title", label: "Title", sortable: true },
-                  { key: "category_name", label: "Category", sortable: true },
-                  { key: "created_at", label: "Created At", sortable: true },
-                  { key: "updated_at", label: "Updated At", sortable: true },
-                  { key: "action", label: "Action", sortable: false },
-                ]}
-                data={data}
-                loading={isLoading}
-                page={page}
-                totalRecords={totalRecords}
-                filteredRecords={filteredRecords}
-                limit={limit}
-                sortBy={sortBy}
-                sortDirection={sortDirection}
-                onPageChange={(newPage) => setPage(newPage)}
-                onSortChange={handleSortChange}
-                onSearchChange={(val) => { setSearch(val); setPage(1); }}
-                search={search}
-                onLimitChange={(val) => { setLimit(val); setPage(1); }}
-                getRangeText={getRangeText}
-                renderRow={(row, index) => (
-                  <tr key={row.id}>
-                    <td>{(page - 1) * limit + index + 1}</td>
-                    <td><ImageWithFallback
-                      src={`${ROOT_URL}/${row.file_name}`}
-                      width={40}
-                      height={40}
-                      showFallback={true}
-                    /></td>
-                    <td>{row.title}</td>
-                    <td>{row.category_name}</td>
-                    <td>{formatDateTime(row.created_at)}</td>
-                    <td>{formatDateTime(row.updated_at)}</td>
-                    <td>
-                      <div className="dropdown">
-                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i className="bx bx-dots-vertical-rounded"></i>
-                        </button>
-                        <ul className="dropdown-menu">
-                          <li>
-                            <button className="dropdown-item" onClick={(e) => navigate(`/edit_product/${row.id}`)}>
-                              <i className="bx bx-edit me-2"></i> Edit
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              />
+      <Suspense fallback={<div></div>}>
+        <div className="page-wrapper">
+          <div className="page-content">
+            <Breadcrumb mainhead="Products" maincount={totalRecords} page="Shop" title="Products"
+              add_button={(<><i className="bx bxs-plus-square me-1" /> Add Product</>)} add_link="/add_product"
+            />
+            <div className="card">
+              <div className="card-body">
+                <DataTable
+                  columns={[
+                    { key: "id", label: "S.No.", sortable: true },
+                    { key: "image", label: "Image", sortable: false },
+                    { key: "title", label: "Title", sortable: true },
+                    { key: "category_name", label: "Category", sortable: true },
+                    { key: "created_at", label: "Created At", sortable: true },
+                    { key: "updated_at", label: "Updated At", sortable: true },
+                    { key: "action", label: "Action", sortable: false },
+                  ]}
+                  data={data}
+                  loading={isLoading}
+                  page={page}
+                  totalRecords={totalRecords}
+                  filteredRecords={filteredRecords}
+                  limit={limit}
+                  sortBy={sortBy}
+                  sortDirection={sortDirection}
+                  onPageChange={(newPage) => setPage(newPage)}
+                  onSortChange={handleSortChange}
+                  onSearchChange={(val) => { setSearch(val); setPage(1); }}
+                  search={search}
+                  onLimitChange={(val) => { setLimit(val); setPage(1); }}
+                  getRangeText={getRangeText}
+                  renderRow={(row, index) => (
+                    <tr key={row.id}>
+                      <td>{(page - 1) * limit + index + 1}</td>
+                      <td><ImageWithFallback
+                        src={`${ROOT_URL}/${row.file_name}`}
+                        width={40}
+                        height={40}
+                        showFallback={true}
+                      /></td>
+                      <td>{row.title}</td>
+                      <td>{row.category_name}</td>
+                      <td>{formatDateTime(row.created_at)}</td>
+                      <td>{formatDateTime(row.updated_at)}</td>
+                      <td>
+                        <div className="dropdown">
+                          <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i className="bx bx-dots-vertical-rounded"></i>
+                          </button>
+                          <ul className="dropdown-menu">
+                            <li>
+                              <button className="dropdown-item" onClick={(e) => navigate(`/edit_product/${row.id}`)}>
+                                <i className="bx bx-edit me-2"></i> Edit
+                              </button>
+                            </li>
+                            <li>
+                              <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                <i className="bx bx-trash me-2"></i> Delete
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <ProductModals
-        showDeleteModal={showDeleteModal}
-        closeDeleteModal={closeDeleteModal}
-        handleDeleteConfirm={handleDeleteConfirm}
-        deleteType="product"
-      />
+        <ProductModals
+          showDeleteModal={showDeleteModal}
+          closeDeleteModal={closeDeleteModal}
+          handleDeleteConfirm={handleDeleteConfirm}
+          deleteType="product"
+        />
+      </Suspense>
     </>
   );
 };

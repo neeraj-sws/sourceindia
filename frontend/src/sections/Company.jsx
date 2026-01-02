@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import API_BASE_URL, { ROOT_URL } from "./../config";
-import ImageFront from "../admin/common/ImageFront";
+import { Suspense, lazy } from 'react';
+const ImageFront = lazy(() => import('../admin/common/ImageFront'));
 import axios from "axios";
 
 const Company = ({ limit }) => {
@@ -31,44 +32,47 @@ const Company = ({ limit }) => {
 
   return (
     <>
-      <section className="companySection py-md-5 pt-2 pb-3 mb-4">
-        <div className="container-xl">
-          <div className="firstHead text-center pb-md-5">
-            <h1 className="mb-0">FEATURED COMPANIES</h1>
-          </div>
-          <div className="companyGrid">
-            <div className="row gx-3">
-              {companies.map((item, index) => (
-                <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3" key={index}>
-                  <Link to={`/companies/${item.organization_slug}`} className="d-block h-100">
-                    <div key={item.id} className="companyBox px-3 py-4 bg-white border h-100 text-center">
-                      <div className="ComImg">
-                        <ImageFront
-                          src={`${ROOT_URL}/${item.company_logo_file}`}
-                          width={180}
-                          height={180}
-                          showFallback={true}
-                        />
+      <Suspense fallback={<div></div>}>
+        <section className="companySection py-md-5 pt-2 pb-3 mb-4">
+          <div className="container-xl">
+            <div className="firstHead text-center pb-md-5">
+              <h1 className="mb-0">FEATURED COMPANIES</h1>
+            </div>
+            <div className="companyGrid">
+              <div className="row gx-3">
+                {companies.map((item, index) => (
+                  <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3" key={index}>
+                    <Link to={`/companies/${item.organization_slug}`} className="d-block h-100">
+                      <div key={item.id} className="companyBox px-3 py-4 bg-white border h-100 text-center">
+                        <div className="ComImg">
+                          <ImageFront
+                            src={`${ROOT_URL}/${item.company_logo_file}`}
+                            width={180}
+                            height={180}
+                            showFallback={true}
+                          />
+                        </div>
+                        <p className='mb-0'><small>{item.organization_name}</small></p>
                       </div>
-                      <p className='mb-0'><small>{item.organization_name}</small></p>
+                    </Link>
+                  </div>
+                ))}
+                <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
+                  <Link to="/companies" className="d-block h-100">
+                    <div className="companyBox px-3 py-4 bg-white border text-center h-100">
+                      <div className="ComImg">
+                        <img src="/morecompany.jpg" alt="company" className="img-fluid p-3" loading="lazy"
+                          decoding="async" />
+                        <p>More Companies</p>
+                      </div>
                     </div>
                   </Link>
                 </div>
-              ))}
-              <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-3">
-                <Link to="/companies" className="d-block h-100">
-                  <div className="companyBox px-3 py-4 bg-white border text-center h-100">
-                    <div className="ComImg">
-                      <img src="/morecompany.jpg" alt="company" className="img-fluid p-3" />
-                      <p>More Companies</p>
-                    </div>
-                  </div>
-                </Link>
               </div>
             </div>
           </div>
-        </div>
-      </section >
+        </section >
+      </Suspense>
     </>
   );
 };

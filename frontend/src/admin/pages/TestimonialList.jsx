@@ -203,7 +203,7 @@ const TestimonialList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Testimonials" maincount={totalRecords} page="Testimonial"  title="Testimonial List" add_button={(<><i className="bx bxs-plus-square me-1" /> Add Testimonial</>)} add_link="#" onClick={() => openForm()} />
+          <Breadcrumb mainhead="Testimonials" maincount={totalRecords} page="Testimonial" title="Testimonial List" add_button={(<><i className="bx bxs-plus-square me-1" /> Add Testimonial</>)} add_link="#" onClick={() => openForm()} />
           <div className="row">
             <div className="col-md-4">
               <div className="card">
@@ -262,6 +262,8 @@ const TestimonialList = () => {
                           width={150}
                           height={150}
                           alt="Preview"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : formData.file_name ? (
                         <ImageWithFallback
@@ -329,20 +331,20 @@ const TestimonialList = () => {
                         <td>{row.name}</td>
                         <td>{row.description.length > 25 ? row.description.slice(0, 25) + '...' : row.description}</td>
                         <td>
-                            <div className="form-check form-switch">
+                          <div className="form-check form-switch">
                             <input
-                                className="form-check-input"
-                                type="checkbox"
-                                id={`statusSwitch_${row.id}`}
-                                checked={row.status == 1}
-                                onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                                readOnly
+                              className="form-check-input"
+                              type="checkbox"
+                              id={`statusSwitch_${row.id}`}
+                              checked={row.status == 1}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                              readOnly
                             />
-                            </div>
+                          </div>
                         </td>
                         <td>
                           <div className="dropdown">
-                            <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                               <i className="bx bx-dots-vertical-rounded"></i>
                             </button>
                             <ul className="dropdown-menu">

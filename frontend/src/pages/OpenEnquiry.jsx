@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Breadcrumb from "../admin/common/Breadcrumb";
 import API_BASE_URL from "./../config";
-import DataTable from "../admin/common/DataTable";
+import { Suspense, lazy } from 'react';
+const DataTable = lazy(() => import('../admin/common/DataTable'));
 import { formatDateTime } from "./../utils/formatDate";
 import UseAuth from '../sections/UseAuth';
-import ExcelExport from "../admin/common/ExcelExport";
-import 'react-date-range/dist/styles.css'; 
-import 'react-date-range/dist/theme/default.css'; 
+const ExcelExport = lazy(() => import('../admin/common/ExcelExport'));
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 
 const OpenEnquiry = ({ showAll = false }) => {
   const navigate = useNavigate();
@@ -76,7 +77,7 @@ const OpenEnquiry = ({ showAll = false }) => {
       setOpenEnquiryData(filtered);
     });
   }, [user, showAll]);
-  
+
   const handleDownload = () => {
     if (excelExportRef.current) {
       excelExportRef.current.exportToExcel();
@@ -87,96 +88,100 @@ const OpenEnquiry = ({ showAll = false }) => {
 
   return (
     <>
-    <div className="page-wrapper">
-      <div className="page-content">
-        <Breadcrumb mainhead="Open Enquiries" maincount={totalRecords} page="Settings" title="My Open Enquiries"
-          actions={
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-          }
-        />
-        <div className="card">
-          <div className="card-body">
-            <DataTable
-              columns={[
-                { key: "id", label: "S.No.", sortable: true },
-                { key: "name", label: "Name", sortable: true },
-                { key: "title", label: "Title", sortable: true },
-                { key: "description", label: "Description", sortable: true },
-                { key: "created_at", label: "Created At", sortable: true },
-                { key: "updated_at", label: "Updated At", sortable: true },
-                { key: "is_home", label: "Show Home", sortable: false },
-                { key: "action", label: "Action", sortable: false },
-              ]}
-              data={data}
-              loading={isLoading}
-              page={page}
-              totalRecords={totalRecords}
-              filteredRecords={filteredRecords}
-              limit={limit}
-              sortBy={sortBy}
-              sortDirection={sortDirection}
-              onPageChange={setPage}
-              onSortChange={handleSortChange}
-              onSearchChange={(val) => {
-                setSearch(val);
-                setPage(1);
-              }}
-              search={search}
-              onLimitChange={(val) => {
-                setLimit(val);
-                setPage(1);
-              }}
-              getRangeText={getRangeText}
-              renderRow={(row, index) => (
-                <tr key={row.id}>
-                  <td>{(page - 1) * limit + index + 1}</td>
-                  <td>{row.name}<br />{row.email}</td>
-                  <td>{row.title}</td>
-                  <td>{row.description}</td>
-                  <td>{formatDateTime(row.created_at)}</td>
-                  <td>{formatDateTime(row.updated_at)}</td>
-                  <td>{row.is_home === 1 ? "Yes" : "No"}</td>
-                  <td>
-                    <div className="dropdown">
-                      <button
-                        className="btn btn-sm btn-light"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                      >
-                        <i className="bx bx-dots-vertical-rounded"></i>
-                      </button>
-                      <ul className="dropdown-menu">
-                        <li>
-                          <button className="dropdown-item" onClick={() => navigate(`/Inbox/${row.id}`)}>
-                            <i className="bx bx-eye me-2"></i> View
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-              )}
+      <Suspense fallback={<div></div>}>
+        <div className="page-wrapper">
+          <div className="page-content">
+            <Breadcrumb mainhead="Open Enquiries" maincount={totalRecords} page="Settings" title="My Open Enquiries"
+              actions={
+                <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+              }
             />
+            <div className="card">
+              <div className="card-body">
+                <DataTable
+                  columns={[
+                    { key: "id", label: "S.No.", sortable: true },
+                    { key: "name", label: "Name", sortable: true },
+                    { key: "title", label: "Title", sortable: true },
+                    { key: "description", label: "Description", sortable: true },
+                    { key: "created_at", label: "Created At", sortable: true },
+                    { key: "updated_at", label: "Updated At", sortable: true },
+                    { key: "is_home", label: "Show Home", sortable: false },
+                    { key: "action", label: "Action", sortable: false },
+                  ]}
+                  data={data}
+                  loading={isLoading}
+                  page={page}
+                  totalRecords={totalRecords}
+                  filteredRecords={filteredRecords}
+                  limit={limit}
+                  sortBy={sortBy}
+                  sortDirection={sortDirection}
+                  onPageChange={setPage}
+                  onSortChange={handleSortChange}
+                  onSearchChange={(val) => {
+                    setSearch(val);
+                    setPage(1);
+                  }}
+                  search={search}
+                  onLimitChange={(val) => {
+                    setLimit(val);
+                    setPage(1);
+                  }}
+                  getRangeText={getRangeText}
+                  renderRow={(row, index) => (
+                    <tr key={row.id}>
+                      <td>{(page - 1) * limit + index + 1}</td>
+                      <td>{row.name}<br />{row.email}</td>
+                      <td>{row.title}</td>
+                      <td>{row.description}</td>
+                      <td>{formatDateTime(row.created_at)}</td>
+                      <td>{formatDateTime(row.updated_at)}</td>
+                      <td>{row.is_home === 1 ? "Yes" : "No"}</td>
+                      <td>
+                        <div className="dropdown">
+                          <button
+                            className="btn btn-sm btn-light"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                          >
+                            <i className="bx bx-dots-vertical-rounded"></i>
+                          </button>
+                          <ul className="dropdown-menu">
+                            <li>
+                              <button className="dropdown-item" onClick={() => navigate(`/Inbox/${row.id}`)}>
+                                <i className="bx bx-eye me-2"></i> View
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-    <ExcelExport
-      ref={excelExportRef}
-      columnWidth={34.29}
-      fileName={!showAll ? "My Open Enquiry List Export.xlsx" : "Open Enquiry List Export.xlsx"}
-      data={openEnquiryData}
-      columns={[
-        {label: "User Name", key: "name", format: (val, row) => {
-          const fname = row.fname || "";
-          const lname = row.lname || "";
-          return `${fname} ${lname}`;
-        }},
-        { label: "Title", key: "title" },
-        { label: "Description", key: "description" },
-      ]}
-    />
+        <ExcelExport
+          ref={excelExportRef}
+          columnWidth={34.29}
+          fileName={!showAll ? "My Open Enquiry List Export.xlsx" : "Open Enquiry List Export.xlsx"}
+          data={openEnquiryData}
+          columns={[
+            {
+              label: "User Name", key: "name", format: (val, row) => {
+                const fname = row.fname || "";
+                const lname = row.lname || "";
+                return `${fname} ${lname}`;
+              }
+            },
+            { label: "Title", key: "title" },
+            { label: "Description", key: "description" },
+          ]}
+        />
+      </Suspense>
     </>
   );
 };
