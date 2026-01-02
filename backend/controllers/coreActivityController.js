@@ -17,7 +17,7 @@ exports.createCoreActivity = async (req, res) => {
     }
     try {
       const { name, color, status } = req.body;
-      let file_id = null;
+      let file_id = 0;
       if (req.file) {
         const uploadImage = await UploadImage.create({
           file: `upload/coreactivity/${req.file.filename}`,

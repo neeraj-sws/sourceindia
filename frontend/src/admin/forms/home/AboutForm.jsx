@@ -47,11 +47,11 @@ const AboutForm = () => {
       }
     }
 
-    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
     if (aboutFile) {
       if (!allowedImageTypes.includes(aboutFile.type)) {
-        errs.about_file = 'Invalid image format (only JPG/PNG allowed)';
+        errs.about_file = 'Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)';
       } else if (aboutFile.size > maxSize) {
         errs.about_file = 'Image size must be under 2MB';
       }
@@ -106,8 +106,8 @@ const AboutForm = () => {
         </div>
         <div className="col-md-6">
           <label htmlFor="about_file" className="form-label">About Image</label>
-          <input className="form-control" type="file" id="about_file" onChange={handleAboutFileChange} />
-          {/* {errors.about_file && <div className="invalid-feedback">{errors.about_file}</div>} */}
+          <input className={`form-control ${errors.about_file ? 'is-invalid' : ''}`} type="file" id="about_file" onChange={handleAboutFileChange} />
+          {errors.about_file && <div className="invalid-feedback">{errors.about_file}</div>}
           {aboutFile ? (
             <img
               src={URL.createObjectURL(aboutFile)}

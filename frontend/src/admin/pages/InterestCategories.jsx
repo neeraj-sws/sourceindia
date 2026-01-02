@@ -104,12 +104,12 @@ const InterestCategories = () => {
     }));
   };
 
-  const allowedImageTypes = ["image/jpeg", "image/png", "image/gif"];
+  const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (!allowedImageTypes.includes(file.type)) {
-        setErrors((prev) => ({ ...prev, file: "Please upload a valid image (JPG, PNG, GIF).", }));
+        setErrors((prev) => ({ ...prev, file: "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)", }));
         setFormData((prev) => ({ ...prev, file: null, }));
         return;
       }

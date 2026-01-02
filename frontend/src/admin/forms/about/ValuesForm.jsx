@@ -34,18 +34,18 @@ const ValuesForm = () => {
     if (!formData.value_heading.trim()) errs.value_heading = 'Heading is required';
     if (!formData.value_description) errs.value_description = 'Description is required';
 
-    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
     if (valueFile) {
       if (!allowedImageTypes.includes(valueFile.type)) {
-        errs.value_file = 'Invalid image format (only JPG/PNG allowed)';
+        errs.value_file = 'Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)';
       } else if (valueFile.size > maxSize) {
         errs.value_file = 'Image size must be under 2MB';
       }
     }
     if (valueIcon) {
       if (!allowedImageTypes.includes(valueIcon.type)) {
-        errs.value_icon = 'Invalid image format (only JPG/PNG allowed)';
+        errs.value_icon = 'Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)';
       } else if (valueIcon.size > maxSize) {
         errs.value_icon = 'Image size must be under 2MB';
       }
@@ -90,8 +90,8 @@ const ValuesForm = () => {
 
         <div className="col-md-6">
           <label htmlFor="value_file" className="form-label">Logo</label>
-          <input className="form-control" type="file" id="value_file" onChange={handleValueFileChange} />
-          {/* {errors.value_file && <div className="invalid-feedback">{errors.value_file}</div>} */}
+          <input className={`form-control ${errors.value_file ? 'is-invalid' : ''}`} type="file" id="value_file" onChange={handleValueFileChange} />
+          {errors.value_file && <div className="invalid-feedback">{errors.value_file}</div>}
           {valueFile ? (
             <img
               src={URL.createObjectURL(valueFile)}
@@ -111,8 +111,8 @@ const ValuesForm = () => {
         </div>
         <div className="col-md-6">
           <label htmlFor="value_icon" className="form-label">Icon</label>
-          <input className="form-control" type="file" id="value_icon" onChange={handleValueIconChange} />
-          {/* {errors.value_icon && <div className="invalid-feedback">{errors.value_icon}</div>} */}
+          <input className={`form-control ${errors.value_icon ? 'is-invalid' : ''}`} type="file" id="value_icon" onChange={handleValueIconChange} />
+          {errors.value_icon && <div className="invalid-feedback">{errors.value_icon}</div>}
           {valueIcon ? (
             <img
               src={URL.createObjectURL(valueIcon)}

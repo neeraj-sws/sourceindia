@@ -32,11 +32,11 @@ const AboutSourceIndiaForm = () => {
     if (!formData.category_heading.trim()) errs.category_heading = 'Heading is required';
     if (!formData.categoryshort_description.trim()) errs.categoryshort_description = 'Short description is required';
 
-    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
     if (aboutFile) {
       if (!allowedImageTypes.includes(aboutFile.type)) {
-        errs.category_file = 'Invalid image format (only JPG/PNG allowed)';
+        errs.category_file = 'Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)';
       } else if (aboutFile.size > maxSize) {
         errs.category_file = 'Image size must be under 2MB';
       }
@@ -85,8 +85,8 @@ const AboutSourceIndiaForm = () => {
         </div>
         <div className="col-md-12">
           <label htmlFor="category_file" className="form-label">Image</label>
-          <input className="form-control" type="file" id="category_file" onChange={handleAboutFileChange} />
-          {/* {errors.category_file && <div className="invalid-feedback">{errors.category_file}</div>} */}
+          <input className={`form-control ${errors.category_file ? 'is-invalid' : ''}`} type="file" id="category_file" onChange={handleAboutFileChange} />
+          {errors.category_file && <div className="invalid-feedback">{errors.category_file}</div>}
           {aboutFile ? (
             <img
               src={URL.createObjectURL(aboutFile)}

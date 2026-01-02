@@ -21,10 +21,35 @@ exports.createTickets = async (req, res) => {
     try {
       const { user_id, title, message, priority, category, status } = req.body;
       const attachment = req.file ? req.file.filename : null;
+
+      // Fetch user details
+      const user = await Users.findByPk(user_id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Generate ticket ID
       const dateStr = moment().format('YYYYMMDD');
       const randomNum = Math.floor(100 + Math.random() * 900);
       const ticket_id = `SOURCE-INDIA-${dateStr}-${randomNum}`;
-      const ticket = await Tickets.create({ user_id, ticket_id, title, message, priority, category, status, attachment });
+
+      // Create ticket with user info and added_by="admin"
+      const ticket = await Tickets.create({
+        user_id,
+        ticket_id,
+        title,
+        message,
+        priority,
+        category,
+        status,
+        attachment,
+        fname: user.fname,
+        lname: user.lname,
+        email: user.email,
+        phone: user.mobile,
+        added_by: 'admin',
+      });
+
       res.status(201).json({ message: 'Ticket created successfully', ticket });
     } catch (err) {
       console.error('Error creating ticket:', err);

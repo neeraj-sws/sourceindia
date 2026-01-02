@@ -132,22 +132,25 @@ const KnowledgeCenter = ({ getDeleted }) => {
     setFormData((prev) => ({ ...prev, [id]: value.toString() }));
   };
 
-  const allowedImageTypes = ["image/jpeg", "image/png", "image/gif"];
+  const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (!allowedImageTypes.includes(file.type)) {
-        setErrors((prev) => ({ ...prev, file: "Please upload a valid image (JPG, PNG, GIF).", }));
+        setErrors((prev) => ({ ...prev, file: "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)", }));
         setFormData((prev) => ({ ...prev, file: null, }));
         return;
       }
       setErrors((prev) => ({ ...prev, file: null, }));
-      setFormData((prev) => ({ ...prev, file: file, file_name: file.name, }));
+      setFormData((prev) => ({ ...prev, file, file_name: file.name, }));
     }
   };
 
   const validateForm = () => {
     const errs = {};
+    if (errors.file) {
+    errs.file = errors.file;
+  }
     if (!formData.name?.trim()) errs.name = "Name is required";
     if (!formData.video_url?.trim()) {
       errs.video_url = "Video URL is required";
@@ -170,7 +173,14 @@ const KnowledgeCenter = ({ getDeleted }) => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    const payload = { ...formData };
+    const payload = new FormData();
+payload.append("name", formData.name);
+payload.append("video_url", formData.video_url);
+payload.append("status", formData.status);
+
+if (formData.file) {
+  payload.append("file", formData.file);
+}
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/knowledge_center/${formData.id}`, payload, {
@@ -190,8 +200,14 @@ const KnowledgeCenter = ({ getDeleted }) => {
         const res = await axios.post(`${API_BASE_URL}/knowledge_center`, payload, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        const img = await axios.get(`${API_BASE_URL}/files/${res.data.knowledgeCenter.file_id}`);
-        const updatedFileName = img.data.file;
+        // const img = await axios.get(`${API_BASE_URL}/files/${res.data.knowledgeCenter.file_id}`);
+        // const updatedFileName = img.data.file;
+        let updatedFileName = null;
+const fileId = res.data.knowledgeCenter.file_id;
+if (fileId && fileId !== 0) {
+  const img = await axios.get(`${API_BASE_URL}/files/${fileId}`);
+  updatedFileName = img.data.file;
+}
         const payload1 = { ...res.data.knowledgeCenter, file_name: updatedFileName };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
@@ -394,11 +410,11 @@ const KnowledgeCenter = ({ getDeleted }) => {
                       <label htmlFor="file" className="form-label">Image</label>
                       <input
                         type="file"
-                        className="form-control"
+                        className={`form-control ${errors.file ? "is-invalid" : ""}`}
                         id="file"
                         onChange={handleFileChange}
                       />
-                      {/* {errors.file && <div className="invalid-feedback">{errors.file}</div>} */}
+                      {errors.file && <div className="invalid-feedback">{errors.file}</div>}
                       {formData.file ? (
                         <img
                           src={URL.createObjectURL(formData.file)}
