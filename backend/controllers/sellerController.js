@@ -58,7 +58,7 @@ exports.createSeller = async (req, res) => {
 
     try {
       const {
-        fname, lname, email, password, mobile, country, state, city, zipcode,
+        fname, lname, email, password, mobile, country_code, country, state, city, zipcode,
         address, status, is_trading, elcina_member, user_company, website, products,
         step, mode, real_password, remember_token, payment_status, is_email_verify, featured_company, is_approve,
         organization_name, organization_slug, user_type, core_activity, activity, categories, subcategory_ids, // Added subcategory_ids
@@ -92,7 +92,7 @@ exports.createSeller = async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
       // const organization_slug = createSlug(user_company);
       const user = await Users.create({
-        fname, lname, email, mobile, country, state, city, zipcode, address, products,
+        fname, lname, email, mobile, country_code, country, state, city, zipcode, address, products,
         status: status || 1, is_trading: is_trading || 0, is_approve: is_approve || 1,
         elcina_member: elcina_member || 2, user_company, website, step: step || 0, mode: mode || 0,
         password: hashedPassword, real_password: real_password || '', remember_token: remember_token || '',
@@ -101,7 +101,7 @@ exports.createSeller = async (req, res) => {
         is_email_verify: is_email_verify || 1, is_profile: is_profile || 1, is_company: is_company || 1,
         is_intrest: is_intrest || 0, request_admin: request_admin || 0, is_complete: is_complete || 1
       });
-
+     
       // Create company info (unchanged)
       const companyInfo = await CompanyInfo.create({
         organization_name: user_company, organization_slug: createSlug(user_company), role, user_type: user_type || 9,
@@ -496,6 +496,7 @@ exports.updateSeller = async (req, res) => {
         lname: req.body.lname,
         email: req.body.email,
         mobile: req.body.mobile,
+        country_code: req.body.country_code,
         country: req.body.country,
         state: req.body.state,
         city: req.body.city,
@@ -1696,22 +1697,22 @@ exports.getSellerChartData = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 
-// Fetch earliest seller record for MAX period
-const earliestUser = await Users.findOne({
-  where: { is_seller: 1 },
-  order: [["created_at", "ASC"]],
-});
+    // Fetch earliest seller record for MAX period
+    const earliestUser = await Users.findOne({
+      where: { is_seller: 1 },
+      order: [["created_at", "ASC"]],
+    });
 
-const start = startDate
-  ? new Date(startDate)
-  : earliestUser
-    ? new Date(earliestUser.created_at)
-    : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // fallback 1 year ago
+    const start = startDate
+      ? new Date(startDate)
+      : earliestUser
+        ? new Date(earliestUser.created_at)
+        : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // fallback 1 year ago
 
-const end = endDate ? new Date(endDate) : new Date();
+    const end = endDate ? new Date(endDate) : new Date();
 
-start.setHours(0, 0, 0, 0);
-end.setHours(23, 59, 59, 999);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
 
     // Fetch grouped data
     const chartData = await Users.findAll({
@@ -1775,56 +1776,56 @@ end.setHours(23, 59, 59, 999);
     const dataMap = {};
     chartData.forEach(row => {
       const rowDateStr = row.getDataValue("date"); // already 'YYYY-MM-DD'
-dataMap[rowDateStr] = {
-  Active: parseInt(row.getDataValue("active")),
-  Inactive: parseInt(row.getDataValue("inactive")),
-  NotApproved: parseInt(row.getDataValue("notApproved")),
-  NotCompleted: parseInt(row.getDataValue("notCompleted")),
-  Deleted: parseInt(row.getDataValue("deleted")),
-};
+      dataMap[rowDateStr] = {
+        Active: parseInt(row.getDataValue("active")),
+        Inactive: parseInt(row.getDataValue("inactive")),
+        NotApproved: parseInt(row.getDataValue("notApproved")),
+        NotCompleted: parseInt(row.getDataValue("notCompleted")),
+        Deleted: parseInt(row.getDataValue("deleted")),
+      };
     });
 
     // Fill missing dates
     const chartArray = [];
-const currentDate = new Date(start);
-let cumulativeActive = 0;
-let cumulativeInactive = 0;
-let cumulativeNotApproved = 0;
-let cumulativeNotCompleted = 0;
-let cumulativeDeleted = 0;
+    const currentDate = new Date(start);
+    let cumulativeActive = 0;
+    let cumulativeInactive = 0;
+    let cumulativeNotApproved = 0;
+    let cumulativeNotCompleted = 0;
+    let cumulativeDeleted = 0;
 
-while (currentDate <= end) {
-  const dateStr = currentDate.toISOString().split("T")[0];
+    while (currentDate <= end) {
+      const dateStr = currentDate.toISOString().split("T")[0];
 
-  const entry = dataMap[dateStr] || { 
-    Active: 0, 
-    Inactive: 0, 
-    NotApproved: 0, 
-    NotCompleted: 0, 
-    Deleted: 0 
-  };
+      const entry = dataMap[dateStr] || {
+        Active: 0,
+        Inactive: 0,
+        NotApproved: 0,
+        NotCompleted: 0,
+        Deleted: 0
+      };
 
-  // Update cumulative totals
-  cumulativeActive += entry.Active;
-  cumulativeInactive += entry.Inactive;
-  cumulativeNotApproved += entry.NotApproved;
-  cumulativeNotCompleted += entry.NotCompleted;
-  cumulativeDeleted += entry.Deleted;
+      // Update cumulative totals
+      cumulativeActive += entry.Active;
+      cumulativeInactive += entry.Inactive;
+      cumulativeNotApproved += entry.NotApproved;
+      cumulativeNotCompleted += entry.NotCompleted;
+      cumulativeDeleted += entry.Deleted;
 
-  const total = cumulativeActive + cumulativeInactive + cumulativeNotApproved + cumulativeNotCompleted + cumulativeDeleted;
+      const total = cumulativeActive + cumulativeInactive + cumulativeNotApproved + cumulativeNotCompleted + cumulativeDeleted;
 
-  chartArray.push({
-    date: dateStr,
-    Active: cumulativeActive,
-    Inactive: cumulativeInactive,
-    NotApproved: cumulativeNotApproved,
-    NotCompleted: cumulativeNotCompleted,
-    Deleted: cumulativeDeleted,
-    Total: total
-  });
+      chartArray.push({
+        date: dateStr,
+        Active: cumulativeActive,
+        Inactive: cumulativeInactive,
+        NotApproved: cumulativeNotApproved,
+        NotCompleted: cumulativeNotCompleted,
+        Deleted: cumulativeDeleted,
+        Total: total
+      });
 
-  currentDate.setDate(currentDate.getDate() + 1);
-}
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
 
     return res.json(chartArray);
 

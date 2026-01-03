@@ -20,6 +20,9 @@ const ProfileEdit = () => {
     city: "",
     zipcode: "",
     address: "",
+    user_category: "",
+    company_website: "",
+    products: "",
     file: null,
   });
   const [loading, setLoading] = useState(true);
@@ -121,13 +124,21 @@ const ProfileEdit = () => {
     fetchProfile();
   }, [navigate]);
 
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
+  const handleCompanyChange = (e) => {
+    const { name, value } = e.target;
+
     setUser((prev) => ({
       ...prev,
-      [name]: files ? files[0] : value,
+      company_info: {
+        ...prev.company_info,
+        [name]: value,
+      },
     }));
   };
+
+  const handleChange = (e) => { const { name, value } = e.target; setUser((prev) => ({ ...prev, [name]: value, })); };
+
+
 
   useEffect(() => {
     const fetchDesignations = async () => {
@@ -157,6 +168,8 @@ const ProfileEdit = () => {
     else if (!/^\d{5,6}$/.test(user.zipcode))
       errs.zipcode = "Invalid pincode format";
     if (!user.address?.trim()) errs.address = "Address is required";
+    // if (!user.company_info?.user_category?.trim()) errs.user_category = "User Category is required";
+    if (!user.website?.trim()) errs.website = "Website is required";
     const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
     if (file) {
@@ -192,6 +205,9 @@ const ProfileEdit = () => {
       formData.append("city", selectedCity || "");
       formData.append("zipcode", user.zipcode || "");
       formData.append("address", user.address || "");
+      formData.append("website", user.website || "");
+      formData.append("user_category", user.user_category || "");
+      formData.append("products", user.products || "");
 
       // designation (from company_info)
       formData.append("designation", user.company_info?.designation || "");
@@ -357,7 +373,61 @@ const ProfileEdit = () => {
                         />
                         {errors.zipcode && <div className="invalid-feedback">{errors.zipcode}</div>}
                       </div>
-                      <div className="row g-3 mt-2">
+                      <div className="row g-3 mt-0">
+                        {user.is_seller == 0 && (
+                          <>
+                            <div className="col-md-6">
+                              <label className="form-label">
+                                Website<sup className="text-danger">*</sup>
+                              </label>
+                              <input
+                                type="text"
+                                name="website"   // ✅ SAME as state key
+                                value={user.website || ""}
+                                onChange={handleChange}
+                                className={`form-control ${errors.website ? "is-invalid" : ""}`}
+                                placeholder="Enter Website"
+                              />
+
+                              {errors.website && <div className="invalid-feedback">{errors.website}</div>}
+                            </div>
+                            <div className="col-md-6">
+                              <label className="form-label">
+                                User Category<sup className="text-danger">*</sup>
+                              </label>
+                              <select
+                                className={`form-select ${errors.user_category ? "is-invalid" : ""}`}
+                                name="user_category"
+                                value={user.company_info?.user_category || ""}
+                                onChange={handleChange}
+                              >
+                                <option value="">Select User Category</option>
+                                <option value="brand">Brand</option>
+                                <option value="ems">EMS</option>
+                                <option value="oem">OEM</option>
+                                <option value="component_manufacturer">Component Manufacturer</option>
+                              </select>
+
+                              {errors.user_category && (
+                                <div className="invalid-feedback">{errors.user_category}</div>
+                              )}
+                            </div>
+                            <div className="col-md-12">
+                              <label className="form-label">
+                                Products<sup className="text-danger">*</sup>
+                              </label>
+                              <textarea
+                                name="products"
+                                rows={3}
+                                value={user.products || ""}
+                                onChange={handleChange}
+                                className={`form-control ${errors.products ? 'is-invalid' : ''}`}
+                                placeholder="Enter Products"
+                              />
+                              {errors.products && <div className="invalid-feedback">{errors.products}</div>}
+                            </div>
+                          </>
+                        )}
                         <div className="col-md-12">
                           <label className="form-label">
                             Address<sup className="text-danger">*</sup>

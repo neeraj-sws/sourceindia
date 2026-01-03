@@ -8,7 +8,8 @@ import { useAlert } from "../../context/AlertContext";
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
-
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/bootstrap.css"; 
 const AddSeller = () => {
   const { showNotification } = useAlert();
   const { sellerId } = useParams();
@@ -31,7 +32,7 @@ const AddSeller = () => {
   // const [roles, setRoles] = useState([]);
   // const [selectedRoles, setSelectedRoles] = useState('');
   const [formData, setFormData] = useState({
-    fname: "", lname: "", email: "", password: "", mobile: "", zipcode: "", website: "", is_trading: "", elcina_member: "",
+    fname: "", lname: "", email: "", password: "", mobile: "", country_code: "", zipcode: "", website: "", is_trading: "", elcina_member: "",
     address: "", file: null, company_logo: null, user_company: "", company_location: "",
     is_star_seller: "", is_verified: "", company_meta_title: "", company_video_second: "", brief_company: "", products: "",
     designation: "", featured_company: "", company_sample_ppt_file: null, company_video: null, sample_file_id: null,
@@ -370,7 +371,7 @@ const AddSeller = () => {
       }
     }
     if (!formData.mobile?.trim()) errs.mobile = "Mobile is required";
-    else if (!/^[6-9]\d{9}$/.test(formData.mobile)) errs.mobile = "Mobile Number is invalid";
+    // else if (!/^[6-9]\d{9}$/.test(formData.mobile)) errs.mobile = "Mobile Number is invalid";
     if (!selectedCountry) errs.country = "Country is required";
     if (!selectedState) errs.state = "State is required";
     if (!selectedCity) errs.city = "City is required";
@@ -460,6 +461,7 @@ const AddSeller = () => {
           email: data.email || "",
           password: "",
           mobile: data.mobile || "",
+          country_code: data.country_code || "+91",
           zipcode: data.zipcode || "",
           user_company: data.organization_name || "",
           is_trading: String(data.is_trading),
@@ -906,15 +908,38 @@ const AddSeller = () => {
                         {errors.lname && (<div className="invalid-feedback">{errors.lname}</div>)}
                       </div>
                       <div className="col-md-4 mb-3">
-                        <label htmlFor="mobile" className="form-label required">Mobile</label>
-                        <input
-                          type="text" className={`form-control ${errors.mobile ? "is-invalid" : ""}`}
-                          id="mobile"
+                        <label htmlFor="mobile" className="form-label required">
+                          Mobile
+                        </label>
+
+                        <PhoneInput
+                          country="in"
+                          value={
+                            (formData.country_code || "").replace("+", "") +
+                            (formData.mobile || "")
+                          }
+                          onChange={(value, country) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              country_code: `+${country.dialCode}`,
+                              mobile: value.slice(country.dialCode.length)
+                            }))
+                          }
+                          containerClass="w-100"
+                          inputClass={`form-control ${errors.mobile ? "is-invalid" : ""}`}
+                          inputProps={{
+                            name: "mobile",
+                            id: "mobile",
+                            required: true
+                          }}
                           placeholder="Mobile"
-                          value={formData.mobile}
-                          onChange={handleInputChange}
                         />
-                        {errors.mobile && (<div className="invalid-feedback">{errors.mobile}</div>)}
+
+                        {errors.mobile && (
+                          <div className="invalid-feedback d-block">
+                            {errors.mobile}
+                          </div>
+                        )}
                       </div>
                       <div className="col-md-4 mb-3">
                         <label htmlFor="email" className="form-label required">Email</label>

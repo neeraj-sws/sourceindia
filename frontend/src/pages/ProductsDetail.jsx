@@ -307,10 +307,10 @@ const ProductDetail = () => {
                                 <th>Item Type</th>
                                 <td>{product.item_subcategory_name || 'N/A'}</td>
                               </tr>
-                              <tr>
+                              {/* <tr>
                                 <th>Item </th>
                                 <td>{product.item_name || 'N/A'}</td>
-                              </tr>
+                              </tr> */}
                               <tr>
                                 <th>Color</th>
                                 <td>{product.color_name || 'N/A'}</td>

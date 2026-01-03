@@ -158,7 +158,7 @@ const ItemCategory = () => {
         <div className="row g-3">
           {subcategory.item_categories?.length > 0 ? (
             subcategory.item_categories.map((cat) => (
-              <div key={cat.id} className="col-sm-6 col-lg-4 text-center">
+              <div key={cat.id} className="col-12 text-center">
                 <div className="card h-100">
                   <div className="card-body">
                     <a
@@ -170,39 +170,48 @@ const ItemCategory = () => {
                         <span>→</span>
                       </div>
                     </a>
-                    <div className="d-flex justify-content-between align-items--center gap-1 gridulimgcontainer">
-                      <ul className="list-unstyled ps-0 mb-0 categorylistul">
+                    <div className="d--flex justify-content-between align-items--center gap-1 gridulimgcontainer">
+                      <div className="row categorylistul">
                         {(cat.items || []).length > 0 ? (
                           cat.items.map((item) => (
-                            <li className="text-start">
-                              <a
-                                href={`/categories/${subcategory.category.slug}/${subcategory.slug}/${cat.slug}`}
-                                className="text-decoration-none text-primary small"
-                              >
-                                {item.name.length > 45
-                                  ? item.name.slice(0, 45) + "..."
-                                  : item.name}
-                              </a>
-                            </li>
+                            <div className="col-6 col-sm-4 col-md-3 col-lg-2 text-center itemcolblock mb-3">
+                              <div className="border rounded p-3">
+                                <a href={`/products?category_id=${subcategory.category.id}&subcategory_id=${subcategory.id}&item_category_id=${cat.id}&item_subcategory_id=${item.id}`}>
+                                  <img
+                                    src={
+                                      item.file_name
+                                        ? `${ROOT_URL}/${item.file_name}`
+                                        : "/default.png"
+                                    }
+                                    className="img-fluid rounded mb-2 w-100"
+                                    alt={item.name}
+                                    style={{ height: "125px" }}
+                                    loading="lazy"
+                                    decoding="async"
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src =
+                                        "/default.png";
+                                    }}
+                                  />
+                                  <h6 className="small fw-semibold mb-1">
+                                    {item.name.length > 45
+                                      ? item.name.slice(0, 45) + "..."
+                                      : item.name}</h6>
+                                  {item.product_count > 0 && (
+                                    <div className="text-success small">
+                                      ({item.product_count})
+                                    </div>
+                                  )}
+                                </a>
+                              </div>
+                            </div>
                           ))
                         ) : (
                           <p className="text-muted small">No items found.</p>
                         )}
-                      </ul>
-                      {cat.file_name && (
-                        <img
-                          src={`${ROOT_URL}/${cat.file_name}`}
-                          className="img-fluid categoryimagebox"
-                          alt={cat.name || "Category"}
-                          loading="lazy"
-                          decoding="async"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src =
-                              "https://learn-attachment.microsoft.com/api/attachments/8954256a-cc48-4d73-a863-5c8ebe3c426c?platform=QnA";
-                          }}
-                        />
-                      )}
+                      </div>
+
                     </div>
                   </div>
                 </div>

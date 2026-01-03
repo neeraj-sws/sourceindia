@@ -24,6 +24,7 @@ const Users = sequelize.define('Users', {
   lname: { type: DataTypes.STRING, allowNull: false },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   mobile: { type: DataTypes.STRING, allowNull: true, },
+  country_code: { type: DataTypes.STRING, allowNull: true, },
   step: { type: DataTypes.INTEGER, allowNull: false, },
   mode: { type: DataTypes.INTEGER, allowNull: false, comment: "0='online',1='offline'" },
   password: { type: DataTypes.STRING, allowNull: false },

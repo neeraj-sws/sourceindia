@@ -7,6 +7,8 @@ import { useAuth } from "../context/AuthContext";
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/bootstrap.css"; // Bootstrap look
 
 const Registration = () => {
     const { showNotification } = useAlert();
@@ -18,6 +20,7 @@ const Registration = () => {
         cname: "",
         website: "",
         mobile: "",
+        country_code: "+91",
         email: "",
         category: "",
         elcina_member: "",
@@ -35,8 +38,8 @@ const Registration = () => {
     const [states, setStates] = useState([]);
     const [cities, setCities] = useState([]);
     const [selectedCountry, setSelectedCountry] = useState('');
-      const [selectedState, setSelectedState] = useState('');
-      const [selectedCity, setSelectedCity] = useState('');
+    const [selectedState, setSelectedState] = useState('');
+    const [selectedCity, setSelectedCity] = useState('');
 
     const [emailVerified, setEmailVerified] = useState(false);
     const [otpSent, setOtpSent] = useState(false);
@@ -71,111 +74,111 @@ const Registration = () => {
     }, []);
 
     const handleCountryChange = async (event) => {
-    const countryId = event.target.value;
-    setSelectedCountry(countryId);
+        const countryId = event.target.value;
+        setSelectedCountry(countryId);
 
-    setForm(prev => ({
-        ...prev,
-        country: countryId,
-        state: "",
-        city: ""
-    }));
+        setForm(prev => ({
+            ...prev,
+            country: countryId,
+            state: "",
+            city: ""
+        }));
 
-    try {
-        const res = await axios.get(`${API_BASE_URL}/signup/states?country_id=${countryId}`);
-        setStates(res.data);
-        setSelectedState("");
-        setSelectedCity("");
-        setCities([]);
-    } catch (error) {
-        console.error("Error fetching states:", error);
-    }
-};
-    
-      const handleStateChange = async (event) => {
-    const stateId = event.target.value;
-    setSelectedState(stateId);
-
-    setForm(prev => ({
-        ...prev,
-        state: stateId,
-        city: ""
-    }));
-
-    try {
-        const res = await axios.get(`${API_BASE_URL}/signup/cities?state_id=${stateId}`);
-        setCities(res.data);
-        setSelectedCity("");
-    } catch (error) {
-        console.error("Error fetching cities:", error);
-    }
-};
-    
-      const handleCityChange = (event) => {
-    const cityId = event.target.value;
-    setSelectedCity(cityId);
-
-    setForm(prev => ({
-        ...prev,
-        city: cityId
-    }));
-};
-    
-      useEffect(() => {
-    if (!emailVerified) return; // Selects exist only when emailVerified is true
-
-    const $country = $('#country');
-    const $state = $('#state');
-    const $city = $('#city');
-
-    // ---- COUNTRY ----
-    if (!$country.data("select2")) {
-        $country.select2({
-            theme: "bootstrap",
-            width: "100%",
-            placeholder: "Select Country"
-        }).on("change", function () {
-            handleCountryChange({ target: { value: $(this).val() } });
-        });
-    } else {
-        // Sync React state to Select2 UI
-        $country.val(selectedCountry);
-    }
-
-    // ---- STATE ----
-    if (!$state.data("select2")) {
-        $state.select2({
-            theme: "bootstrap",
-            width: "100%",
-            placeholder: "Select State"
-        }).on("change", function () {
-            handleStateChange({ target: { value: $(this).val() } });
-        });
-    } else {
-        $state.val(selectedState).trigger("change.select2");
-    }
-
-    // ---- CITY ----
-    if (!$city.data("select2")) {
-        $city.select2({
-            theme: "bootstrap",
-            width: "100%",
-            placeholder: "Select City"
-        }).on("change", function () {
-            handleCityChange({ target: { value: $(this).val() } });
-        });
-    } else {
-        $city.val(selectedCity).trigger("change.select2");
-    }
-
-    // Cleanup only when component unmounts or emailVerified becomes false
-    return () => {
-        if ($country.data("select2")) $country.off().select2("destroy");
-        if ($state.data("select2")) $state.off().select2("destroy");
-        if ($city.data("select2")) $city.off().select2("destroy");
+        try {
+            const res = await axios.get(`${API_BASE_URL}/signup/states?country_id=${countryId}`);
+            setStates(res.data);
+            setSelectedState("");
+            setSelectedCity("");
+            setCities([]);
+        } catch (error) {
+            console.error("Error fetching states:", error);
+        }
     };
 
-}, [emailVerified, selectedCountry, selectedState, selectedCity]);
+    const handleStateChange = async (event) => {
+        const stateId = event.target.value;
+        setSelectedState(stateId);
+
+        setForm(prev => ({
+            ...prev,
+            state: stateId,
+            city: ""
+        }));
+
+        try {
+            const res = await axios.get(`${API_BASE_URL}/signup/cities?state_id=${stateId}`);
+            setCities(res.data);
+            setSelectedCity("");
+        } catch (error) {
+            console.error("Error fetching cities:", error);
+        }
+    };
+
+    const handleCityChange = (event) => {
+        const cityId = event.target.value;
+        setSelectedCity(cityId);
+
+        setForm(prev => ({
+            ...prev,
+            city: cityId
+        }));
+    };
+
+    useEffect(() => {
+        if (!emailVerified) return; // Selects exist only when emailVerified is true
+
+        const $country = $('#country');
+        const $state = $('#state');
+        const $city = $('#city');
+
+        // ---- COUNTRY ----
+        if (!$country.data("select2")) {
+            $country.select2({
+                theme: "bootstrap",
+                width: "100%",
+                placeholder: "Select Country"
+            }).on("change", function () {
+                handleCountryChange({ target: { value: $(this).val() } });
+            });
+        } else {
+            // Sync React state to Select2 UI
+            $country.val(selectedCountry);
+        }
+
+        // ---- STATE ----
+        if (!$state.data("select2")) {
+            $state.select2({
+                theme: "bootstrap",
+                width: "100%",
+                placeholder: "Select State"
+            }).on("change", function () {
+                handleStateChange({ target: { value: $(this).val() } });
+            });
+        } else {
+            $state.val(selectedState).trigger("change.select2");
+        }
+
+        // ---- CITY ----
+        if (!$city.data("select2")) {
+            $city.select2({
+                theme: "bootstrap",
+                width: "100%",
+                placeholder: "Select City"
+            }).on("change", function () {
+                handleCityChange({ target: { value: $(this).val() } });
+            });
+        } else {
+            $city.val(selectedCity).trigger("change.select2");
+        }
+
+        // Cleanup only when component unmounts or emailVerified becomes false
+        return () => {
+            if ($country.data("select2")) $country.off().select2("destroy");
+            if ($state.data("select2")) $state.off().select2("destroy");
+            if ($city.data("select2")) $city.off().select2("destroy");
+        };
+
+    }, [emailVerified, selectedCountry, selectedState, selectedCity]);
 
     // Handle input changes
     const handleChange = (e) => {
@@ -313,17 +316,17 @@ const Registration = () => {
                 // city: cityId || "",
             });
             setSelectedCountry(countryId || '');
-        setSelectedState(stateId || '');
-        setSelectedCity(cityId || '');
+            setSelectedState(stateId || '');
+            setSelectedCity(cityId || '');
 
-        if (countryId) {
-          const stRes = await axios.get(`${API_BASE_URL}/location/states/${countryId}`);
-          setStates(stRes.data);
-        }
-        if (stateId) {
-          const ctRes = await axios.get(`${API_BASE_URL}/location/cities/${stateId}`);
-          setCities(ctRes.data);
-        }
+            if (countryId) {
+                const stRes = await axios.get(`${API_BASE_URL}/location/states/${countryId}`);
+                setStates(stRes.data);
+            }
+            if (stateId) {
+                const ctRes = await axios.get(`${API_BASE_URL}/location/cities/${stateId}`);
+                setCities(ctRes.data);
+            }
         } catch (err) {
             console.error(err);
             showNotification("Failed to fetch location from PIN code", "error");
@@ -345,13 +348,13 @@ const Registration = () => {
         setVerifyMessage("");
 
         try {
-            const payload = { 
-    ...form, 
-    cname: form.cname,
-    country: selectedCountry,
-    state: selectedState,
-    city: selectedCity
-};
+            const payload = {
+                ...form,
+                cname: form.cname,
+                country: selectedCountry,
+                state: selectedState,
+                city: selectedCity
+            };
 
             const res = await axios.post(`${API_BASE_URL}/signup/register`, payload);
 
@@ -364,6 +367,7 @@ const Registration = () => {
                     cname: "",
                     website: "",
                     mobile: "",
+                    country_code: "+91",
                     email: "",
                     category: "",
                     elcina_member: "",
@@ -377,36 +381,36 @@ const Registration = () => {
                     pinCode: "",
                 });
                 setSelectedCountry('');
-        setSelectedState('');
-        setSelectedCity('');
+                setSelectedState('');
+                setSelectedCity('');
                 setEmailVerified(false);
                 setOtp("");
                 setOtpSent(false);
                 setUserId(null);
                 // navigate('/login');
                 const generatedPassword = res.data.password;   // auto-generated password
-    const email = form.email;
+                const email = form.email;
 
-    // 🔥 AUTO LOGIN using generated backend password
-    const loginResponse = await axios.post(`${API_BASE_URL}/signup/login`, {
-        email: email,
-        password: generatedPassword
-    });
+                // 🔥 AUTO LOGIN using generated backend password
+                const loginResponse = await axios.post(`${API_BASE_URL}/signup/login`, {
+                    email: email,
+                    password: generatedPassword
+                });
 
-    if (loginResponse.data.token) {
-        // Save token & user to AuthContext
-        login(loginResponse.data.token);
-        setUser(loginResponse.data.user);
+                if (loginResponse.data.token) {
+                    // Save token & user to AuthContext
+                    login(loginResponse.data.token);
+                    setUser(loginResponse.data.user);
 
-        // 🔥 Redirect based on type
-        if (loginResponse.data.user.is_seller == 1) {
-            navigate("/company-edit", { replace: true });
-        } else {
-            navigate("/profile-edit", { replace: true });
-        }
-    }
+                    // 🔥 Redirect based on type
+                    if (loginResponse.data.user.is_seller == 1) {
+                        navigate("/company-edit", { replace: true });
+                    } else {
+                        navigate("/profile-edit", { replace: true });
+                    }
+                }
 
-    return;
+                return;
             } else if (res.data.errors) {
                 setErrors(res.data.errors);
             } else {
@@ -471,19 +475,31 @@ const Registration = () => {
 
                             {/* Mobile */}
                             <div className="col-md-6 mb-3">
-                                <label>Mobile<sup className="text-danger">*</sup></label>
-                                <input
-                                    type="text"
-                                    name="mobile"
-                                    className="form-control"
-                                    value={form.mobile}
-                                    onChange={handleChange}
-                                    maxLength={10}                    // max 10 digits
-                                    pattern="\d{10}"                  // exactly 10 digits
-                                    placeholder="Enter 10-digit mobile"
+                                <label>
+                                    Mobile <sup className="text-danger">*</sup>
+                                </label>
+
+                                <PhoneInput
+                                    country="in"
+                                    value={
+                                        form.country_code.replace("+", "") + form.mobile
+                                    }
+                                    onChange={(value, country) => {
+                                        setForm(prev => ({
+                                            ...prev,
+                                            country_code: `+${country.dialCode}`,
+                                            mobile: value.slice(country.dialCode.length)
+                                        }));
+                                    }}
+                                    containerClass="w-100"
+                                    inputClass="form-control"
                                 />
-                                {errors.mobile && <small className="text-danger">{errors.mobile}</small>}
+
+                                {errors.mobile && (
+                                    <small className="text-danger">{errors.mobile}</small>
+                                )}
                             </div>
+
 
 
                             {/* Email + OTP */}
@@ -592,16 +608,16 @@ const Registration = () => {
                                             {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                         </select> */}
                                         <select
-                        id="country"
-                        className="form-control select2"
-                        value={selectedCountry}
-                        onChange={handleCountryChange}
-                      >
-                        <option value="">Select Country</option>
-                        {countries.map(country => (
-                          <option key={country.id} value={country.id}>{country.name}</option>
-                        ))}
-                      </select>
+                                            id="country"
+                                            className="form-control select2"
+                                            value={selectedCountry}
+                                            onChange={handleCountryChange}
+                                        >
+                                            <option value="">Select Country</option>
+                                            {countries.map(country => (
+                                                <option key={country.id} value={country.id}>{country.name}</option>
+                                            ))}
+                                        </select>
                                         {errors.country && <small className="text-danger">{errors.country}</small>}
                                     </div>
                                     <div className="col-md-3 mb-3">
@@ -611,16 +627,16 @@ const Registration = () => {
                                             {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                         </select> */}
                                         <select
-                        id="state"
-                        className="form-control select2"
-                        value={selectedState}
-                        onChange={handleStateChange}
-                      >
-                        <option value="">Select State</option>
-                        {states.map((s) => (
-                          <option key={s.id} value={s.id}>{s.name}</option>
-                        ))}
-                      </select>
+                                            id="state"
+                                            className="form-control select2"
+                                            value={selectedState}
+                                            onChange={handleStateChange}
+                                        >
+                                            <option value="">Select State</option>
+                                            {states.map((s) => (
+                                                <option key={s.id} value={s.id}>{s.name}</option>
+                                            ))}
+                                        </select>
                                         {errors.state && <small className="text-danger">{errors.state}</small>}
                                     </div>
                                     <div className="col-md-3 mb-3">
@@ -630,16 +646,16 @@ const Registration = () => {
                                             {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                         </select> */}
                                         <select
-                        id="city"
-                        className="form-control select2"
-                        value={selectedCity}
-                        onChange={handleCityChange}
-                      >
-                        <option value="">Select City</option>
-                        {cities.map((city) => (
-                          <option key={city.id} value={city.id}>{city.name}</option>
-                        ))}
-                      </select>
+                                            id="city"
+                                            className="form-control select2"
+                                            value={selectedCity}
+                                            onChange={handleCityChange}
+                                        >
+                                            <option value="">Select City</option>
+                                            {cities.map((city) => (
+                                                <option key={city.id} value={city.id}>{city.name}</option>
+                                            ))}
+                                        </select>
                                         {errors.city && <small className="text-danger">{errors.city}</small>}
                                     </div>
 

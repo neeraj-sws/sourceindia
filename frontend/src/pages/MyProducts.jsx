@@ -134,7 +134,7 @@ const MyProducts = ({ user_id }) => {
                         height={40}
                         showFallback={true}
                       /></td>
-                      <td>{row.title}</td>
+                      <td><a href={`/products/${row.slug}`} target="_blank">{row.title}</a></td>
                       <td>{row.category_name}</td>
                       <td>{formatDateTime(row.created_at)}</td>
                       <td>{formatDateTime(row.updated_at)}</td>

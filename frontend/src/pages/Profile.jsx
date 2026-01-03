@@ -112,35 +112,71 @@ const Profile = () => {
                             <p>{user.mobile}</p>
                           </div>
                         </div>
-                        <div className="col-sm-6">
-                          <div className="pt-3 border-bottom">
-                            <h6>Designation</h6>
-                            <p>{user.company_info?.designation}</p>
+                        {user.company_info?.designation && (
+                          <div className="col-sm-6">
+                            <div className="pt-3 border-bottom">
+                              <h6>Designation</h6>
+                              <p>{user.company_info?.designation}</p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="pt-3 border-bottom">
-                            <h6>State</h6>
-                            <p>{user.state_data?.name}</p>
+                        )}
+                        {user.is_seller == 0 && (
+                          <>
+                            {user.company_info?.user_category && (
+                              <div className="col-sm-6">
+                                <div className="pt-3 border-bottom">
+                                  <h6>User Category:</h6>
+                                  <p>{user.company_info?.user_category?.toUpperCase()}</p>
+                                </div>
+                              </div>
+                            )}
+                            {user.company_info?.company_website && (
+                              <div className="col-sm-6">
+                                <div className="pt-3 border-bottom">
+                                  <h6>Website:</h6>
+                                  <p>{user.company_info?.company_website}</p>
+                                </div>
+                              </div>
+                            )}
+                            {user.products && (
+                              <div className="col-sm-6">
+                                <div className="pt-3 border-bottom">
+                                  <h6>Products:</h6>
+                                  <p>{user.products}</p>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {user.state_data?.name && (
+                          <div className="col-sm-6">
+                            <div className="pt-3 border-bottom">
+                              <h6>State</h6>
+                              <p>{user.state_data?.name}</p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="col-sm-6">
-                          <div className="pt-3 border-bottom">
-                            <h6>City</h6>
-                            <p>{user.city_data?.name}</p>
+                        )}
+                        {user.city_data?.name && (
+                          <div className="col-sm-6">
+                            <div className="pt-3 border-bottom">
+                              <h6>City</h6>
+                              <p>{user.city_data?.name}</p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="col-sm-12">
-                          <div className="pt-3 border-bottom">
-                            <h6>Address</h6>
-                            <p>{user.address}</p>
+                        )}
+                        {user.address && (
+                          <div className="col-sm-12">
+                            <div className="pt-3 border-bottom">
+                              <h6>Address</h6>
+                              <p>{user.address}</p>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
-                {user.company_info && (
+                {user.company_info && user.is_seller == 1 && (
                   <div className="col-lg-12 mt-3">
                     <div className="card">
                       <div className="card-body">

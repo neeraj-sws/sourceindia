@@ -8,6 +8,8 @@ import { useAlert } from "../../context/AlertContext";
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/bootstrap.css";
 
 const AddBuyer = () => {
   const { showNotification } = useAlert();
@@ -21,7 +23,7 @@ const AddBuyer = () => {
   const [selectedState, setSelectedState] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [formData, setFormData] = useState({
-    fname: '', lname: '', email: '', password: '', mobile: '', zipcode: '', user_company: '', website: '', is_trading: '',
+    fname: '', lname: '', email: '', password: '', mobile: '', country_code: '', zipcode: '', user_company: '', website: '', is_trading: '',
     elcina_member: '', user_category: '', address: '', products: '', file: null, company_file: null
   });
   const [file, setFile] = useState(null);
@@ -184,6 +186,7 @@ const AddBuyer = () => {
           email: data.email || '',
           password: '',
           mobile: data.mobile || '',
+          country_code: data.country_code || '',
           zipcode: data.zipcode || '',
           user_company: data.user_company || '',
           website: data.website || '',
@@ -290,11 +293,40 @@ const AddBuyer = () => {
                       </div>
                     }
                     <div className="col-md-4 mb-3">
-                      <label htmlFor="mobile" className="form-label required">Mobile</label>
-                      <input type="text" className={`form-control ${errors.mobile ? 'is-invalid' : ''}`} id="mobile"
-                        placeholder="Mobile" value={formData.mobile} onChange={handleInputChange} />
-                      {errors.mobile && <div className="invalid-feedback">{errors.mobile}</div>}
+                      <label htmlFor="mobile" className="form-label required">
+                        Mobile
+                      </label>
+
+                      <PhoneInput
+                        country="in"
+                        value={
+                          (formData.country_code || "").replace("+", "") +
+                          (formData.mobile || "")
+                        }
+                        onChange={(value, country) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            country_code: `+${country.dialCode}`,        // +91
+                            mobile: value.slice(country.dialCode.length) // 9876543210
+                          }))
+                        }
+                        containerClass="w-100"
+                        inputClass={`form-control ${errors.mobile ? "is-invalid" : ""}`}
+                        inputProps={{
+                          name: "mobile",
+                          id: "mobile",
+                          required: true
+                        }}
+                        placeholder="Mobile"
+                      />
+
+                      {errors.mobile && (
+                        <div className="invalid-feedback d-block">
+                          {errors.mobile}
+                        </div>
+                      )}
                     </div>
+
                     <div className="col-md-3 mb-3">
                       <label htmlFor="country" className="form-label required">Country</label>
                       <select

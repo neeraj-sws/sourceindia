@@ -61,29 +61,30 @@ const ProductsList = () => {
       setSelectedSubCategories([Number(subcateIdParam)]);
     }
     if (itemcateIdParam) {
+
       setSelectedItemCategories([Number(itemcateIdParam)]);
     }
     if (itemsubcateIdParam) {
       setSelectedItemSubCategories([Number(itemsubcateIdParam)]);
     }
 
-    if (itemIdParam) {
-      // setSelectedItems([Number(itemIdParam)]);
-      const itemId = parseInt(itemIdParam, 10);
-      (async () => {
-        try {
-          const res = await axios.get(`${API_BASE_URL}/products/item-hierarchy/${itemId}`);
-          const data = res.data;
-          setSelectedCategories(data.category_id ? [data.category_id] : []);
-          setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
-          setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
-          setSelectedItemSubCategories(data.item_subcategory_id ? [data.item_subcategory_id] : []);
-          setSelectedItems(data.item_id ? [data.item_id] : [Number(itemId)]);
-        } catch (err) {
-          console.error("Error fetching item hierarchy:", err);
-        }
-      })();
-    }
+    // if (itemIdParam) {
+
+    const itemId = parseInt(itemsubcateIdParam, 10);
+    (async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/products/item-hierarchy/${itemId}`);
+        const data = res.data;
+        setSelectedCategories(data.category_id ? [data.category_id] : []);
+        setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
+        setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
+        setSelectedItemSubCategories(data.item_subcategory_id ? [data.item_subcategory_id] : []);
+        setSelectedItems(data.item_id ? [data.item_id] : [Number(itemId)]);
+      } catch (err) {
+        console.error("Error fetching item hierarchy:", err);
+      }
+    })();
+    // }
   }, [location.search]);
 
 
@@ -254,7 +255,7 @@ const ProductsList = () => {
   useEffect(() => {
     const fetchStates = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/location/states/101`);
+        const res = await axios.get(`${API_BASE_URL}/location/states/101?category_ids=${selectedCategories}&subcategory_ids=${selectedSubCategories}&item_category_ids=${selectedItemCategories}&item_subcategory_ids=${selectedItemSubCategories}`);
         const states = res.data || [];
         const filtered = states.filter((state) => state.product_count > 0);
         setStates(filtered);
@@ -263,7 +264,7 @@ const ProductsList = () => {
       }
     };
     fetchStates();
-  }, []);
+  }, [selectedCategories, selectedSubCategories, selectedItemCategories, selectedItemSubCategories]);
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -738,7 +739,7 @@ const ProductsList = () => {
 
               {/* Items Filter */}
               {items.length > 0 && (
-                <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside">
+                <div className="mb-4 border pb-2 rounded-2 bg-white borderbox-aside d-none">
                   <h3 className="fs-6 mb-2 primary-color-bg text-white p-2 rounded-top-2">
                     Items
                   </h3>

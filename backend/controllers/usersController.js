@@ -238,6 +238,7 @@ exports.register = async (req, res) => {
       cname,
       website,
       mobile,
+      country_code,
       email,
       category,
       elcina_member,
@@ -260,6 +261,7 @@ exports.register = async (req, res) => {
     if (!fname) errors.fname = "First name is required";
     if (!lname) errors.lname = "Last name is required";
     if (!mobile) errors.mobile = "Mobile number is required";
+    // if (!country_code) errors.country_code = "Mobile number is required";
     if (!email) errors.email = "Email is required";
     if (!category) errors.category = "Category is required";
     if (!elcina_member) errors.elcina_member = "Elcina membership field is required";
@@ -316,6 +318,7 @@ exports.register = async (req, res) => {
       fname,
       lname,
       mobile,
+      country_code,
       email,
       password: hashedPassword,
       real_password: otp,
@@ -945,7 +948,14 @@ exports.updateProfile = async (req, res) => {
         zipcode: req.body.zipcode,
         address: req.body.address,
         website: req.body.website,
+        products: req.body.products
       };
+      if (user.is_seller == 0) {
+        await companyInfo.update({
+          company_website: req.body.company_website,
+          user_category: req.body.user_category,
+        });
+      }
 
       // Handle profile image update
       const profileImage = req.files?.file?.[0];
@@ -1094,59 +1104,59 @@ exports.updateProfile = async (req, res) => {
         await SellerCategory.destroy({ where: { user_id: user.id } });
         await SellerCategory.bulkCreate(sellerCategoryData);*/
         if (req.body.categories !== undefined || req.body.subcategory_ids !== undefined) {
-    
-    let categoryIds = [];
-    let subcategoryIds = [];
 
-    if (req.body.categories) {
-        categoryIds = req.body.categories.split(',').map(id => parseInt(id.trim()));
-    }
+          let categoryIds = [];
+          let subcategoryIds = [];
 
-    if (req.body.subcategory_ids) {
-        subcategoryIds = req.body.subcategory_ids.split(',').map(id => parseInt(id.trim()));
-    }
+          if (req.body.categories) {
+            categoryIds = req.body.categories.split(',').map(id => parseInt(id.trim()));
+          }
 
-    // ---------- SAFE because both are arrays now ----------
-    const existingCategories = await SellerCategory.findAll({ where: { user_id: userId } });
-    const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
-    const incomingCategoryMap = [];
+          if (req.body.subcategory_ids) {
+            subcategoryIds = req.body.subcategory_ids.split(',').map(id => parseInt(id.trim()));
+          }
 
-    // ADD categories
-    for (const categoryId of categoryIds) {
-        const key = `${categoryId}-null`;
-        incomingCategoryMap.push(key);
-        if (!existingCategoryMap.includes(key)) {
-            await SellerCategory.create({ user_id: userId, category_id: categoryId, subcategory_id: null });
-        }
-    }
+          // ---------- SAFE because both are arrays now ----------
+          const existingCategories = await SellerCategory.findAll({ where: { user_id: userId } });
+          const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
+          const incomingCategoryMap = [];
 
-    // ADD subcategories
-    for (const subcategoryId of subcategoryIds) {
-        const subCategory = await SubCategories.findOne({ where: { id: subcategoryId, is_delete: 0 } });
-        if (subCategory) {
-            const categoryId = subCategory.category;
-            const key = `${categoryId}-${subcategoryId}`;
+          // ADD categories
+          for (const categoryId of categoryIds) {
+            const key = `${categoryId}-null`;
             incomingCategoryMap.push(key);
             if (!existingCategoryMap.includes(key)) {
-                await SellerCategory.create({ user_id: userId, category_id: categoryId, subcategory_id: subcategoryId });
+              await SellerCategory.create({ user_id: userId, category_id: categoryId, subcategory_id: null });
             }
-        }
-    }
+          }
 
-    // REMOVE only categories that are missing
-    const nullSubcategoryRows = await SellerCategory.findAll({
-        where: { user_id: userId, subcategory_id: null },
-    });
+          // ADD subcategories
+          for (const subcategoryId of subcategoryIds) {
+            const subCategory = await SubCategories.findOne({ where: { id: subcategoryId, is_delete: 0 } });
+            if (subCategory) {
+              const categoryId = subCategory.category;
+              const key = `${categoryId}-${subcategoryId}`;
+              incomingCategoryMap.push(key);
+              if (!existingCategoryMap.includes(key)) {
+                await SellerCategory.create({ user_id: userId, category_id: categoryId, subcategory_id: subcategoryId });
+              }
+            }
+          }
 
-    for (const existing of nullSubcategoryRows) {
-        const categoryId = existing.category_id;
-        if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
-            await SellerCategory.destroy({
+          // REMOVE only categories that are missing
+          const nullSubcategoryRows = await SellerCategory.findAll({
+            where: { user_id: userId, subcategory_id: null },
+          });
+
+          for (const existing of nullSubcategoryRows) {
+            const categoryId = existing.category_id;
+            if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
+              await SellerCategory.destroy({
                 where: { user_id: userId, category_id: categoryId, subcategory_id: null },
-            });
+              });
+            }
+          }
         }
-    }
-}
       }
 
       return res.status(200).json({
@@ -1391,7 +1401,7 @@ exports.getAllUsersHistoriesServerSide = async (req, res) => {
         {
           model: CompanyInfo,
           as: 'company_info',
-          attributes: ['organization_name','organization_slug'],
+          attributes: ['organization_name', 'organization_slug'],
           required: false,
         },
         { model: Countries, as: 'country_data', attributes: ['id', 'name'] },

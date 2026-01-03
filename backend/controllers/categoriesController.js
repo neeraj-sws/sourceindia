@@ -54,25 +54,25 @@ exports.getAllCategories = async (req, res) => {
       whereCondition.status = parseInt(status);
     }
     if (req.query.excludeSellerCategories === 'true') {
-  whereCondition.id = {
-    [Op.notIn]: literal(`(
+      whereCondition.id = {
+        [Op.notIn]: literal(`(
       SELECT DISTINCT category_id
       FROM seller_categories
       WHERE category_id IS NOT NULL
     )`)
-  };
-}
+      };
+    }
 
-// ✅ NEW: exclude product categories
-if (req.query.excludeProductCategories === 'true') {
-  whereCondition.id = {
-    [Op.notIn]: literal(`(
+    // ✅ NEW: exclude product categories
+    if (req.query.excludeProductCategories === 'true') {
+      whereCondition.id = {
+        [Op.notIn]: literal(`(
       SELECT DISTINCT category
       FROM products
       WHERE category IS NOT NULL
     )`)
-  };
-}
+      };
+    }
 
     const categories = await Categories.findAll({
       order: [['id', 'ASC']], // ✅ fixed
@@ -693,7 +693,7 @@ exports.getItemSubCategories = async (req, res) => {
     // 2️⃣ Fetch subcategories (pagination applied)
     const subcategories = await SubCategories.findAll({
       where: { category: categoryIds, is_delete: 0, status: 1 },
-      attributes: ['id', 'name', 'category', 'slug','file_id'],
+      attributes: ['id', 'name', 'category', 'slug', 'file_id'],
       order: [['id', 'ASC']],
       offset: offset,
       limit: limit,
@@ -788,14 +788,14 @@ exports.getItemCategory = async (req, res) => {
       where: { slug: slug, is_delete: 0, status: 1 },
       attributes: ["id", "name", "category", "slug"],
       include: [
-    {
-      model: Categories,
-      as: "Categories",
-      attributes: ["id", "name", "slug"],
-    }
-  ],
-  raw: true,
-  nest: true
+        {
+          model: Categories,
+          as: "Categories",
+          attributes: ["id", "name", "slug"],
+        }
+      ],
+      raw: true,
+      nest: true
     });
 
     if (!subcategory) {
@@ -829,17 +829,17 @@ exports.getItemCategory = async (req, res) => {
     // 5️⃣ Fetch real product count from products table
     const productCounts = await Products.findAll({
       attributes: [
-        "item_id",
+        "item_subcategory_id",
         [sequelize.fn("COUNT", sequelize.col("product_id")), "product_count"],
       ],
       where: { status: 1 },
-      group: ["item_id"],
+      group: ["item_subcategory_id"],
       raw: true,
     });
 
     const productCountMap = {};
     productCounts.forEach((row) => {
-      productCountMap[row.item_id] = row.product_count;
+      productCountMap[row.item_subcategory_id] = row.product_count;
     });
 
     // 6️⃣ Group items by item_category_id
@@ -874,10 +874,10 @@ exports.getItemCategory = async (req, res) => {
         name: subcategory.name,
         slug: subcategory.slug,
         category: {
-      id: subcategory.Categories.id,
-      name: subcategory.Categories.name,
-      slug: subcategory.Categories.slug
-    },
+          id: subcategory.Categories.id,
+          name: subcategory.Categories.name,
+          slug: subcategory.Categories.slug
+        },
         item_categories: items,
       },
       pagination: {
@@ -905,20 +905,20 @@ exports.getItemSubcategory = async (req, res) => {
     const subcategory = await ItemCategory.findOne({
       where: { slug: slug, status: 1 },
       attributes: ["id", "name", "slug"],
-  include: [
-    {
-      model: Categories,
-      as: "Categories",
-      attributes: ["id", "name", "slug"],
-    },
-    {
-      model: SubCategories,
-      as: "SubCategories",
-      attributes: ["id", "name", "slug"],
-    }
-  ],
-  raw: true,
-  nest: true
+      include: [
+        {
+          model: Categories,
+          as: "Categories",
+          attributes: ["id", "name", "slug"],
+        },
+        {
+          model: SubCategories,
+          as: "SubCategories",
+          attributes: ["id", "name", "slug"],
+        }
+      ],
+      raw: true,
+      nest: true
     });
 
     if (!subcategory) {
@@ -997,16 +997,16 @@ exports.getItemSubcategory = async (req, res) => {
         name: subcategory.name,
         slug: subcategory.slug,
         category: {
-      id: subcategory.Categories.id,
-      name: subcategory.Categories.name,
-      slug: subcategory.Categories.slug
-    },
+          id: subcategory.Categories.id,
+          name: subcategory.Categories.name,
+          slug: subcategory.Categories.slug
+        },
 
-    sub_category: {
-      id: subcategory.SubCategories.id,
-      name: subcategory.SubCategories.name,
-      slug: subcategory.SubCategories.slug
-    },
+        sub_category: {
+          id: subcategory.SubCategories.id,
+          name: subcategory.SubCategories.name,
+          slug: subcategory.SubCategories.slug
+        },
         item_categories: items,
       },
       pagination: {

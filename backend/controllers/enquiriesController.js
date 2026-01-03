@@ -317,9 +317,9 @@ exports.getEnquiriesCount = async (req, res) => {
       Enquiries.count({ where: { status: 1 } }),
       Enquiries.count({ where: { status: 2 } }),
       Enquiries.count({ where: { status: 0 } }),
-      Enquiries.count({ where: {user_id: null, is_delete: 0} }),
-      Enquiries.count({ where: {is_approve: 1, is_delete: 0} }),
-      Enquiries.count({ where: {is_approve: 0, is_delete: 0} }),
+      Enquiries.count({ where: { user_id: null, is_delete: 0 } }),
+      Enquiries.count({ where: { is_approve: 1, is_delete: 0 } }),
+      Enquiries.count({ where: { is_approve: 0, is_delete: 0 } }),
     ]);
     res.json({
       total, all, status1, status2, status0, getPublic, getApprove, getNotApprove
@@ -496,19 +496,19 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
     if (search) {
       searchWhere[Op.or] = [];
       /*if (viewType === 'leads') {*/
-        searchWhere[Op.or].push(
-          { enquiry_number: { [Op.like]: `%${search}%` } },
-          { quantity: { [Op.like]: `%${search}%` } },
-          { category_name: { [Op.like]: `%${search}%` } },
-          literal(`CONCAT(from_user.fname, ' ', from_user.lname) LIKE '%${search}%'`),
-          { '$from_user.email$': { [Op.like]: `%${search}%` } },
-          { '$from_user.mobile$': { [Op.like]: `%${search}%` } },
-          { '$from_user.company_info.organization_name$': { [Op.like]: `%${search}%` } },
-          literal(`CONCAT(to_user.fname, ' ', to_user.lname) LIKE '%${search}%'`),
-          { '$to_user.email$': { [Op.like]: `%${search}%` } },
-          { '$to_user.mobile$': { [Op.like]: `%${search}%` } },
-          { '$to_user.company_info.organization_name$': { [Op.like]: `%${search}%` } }
-        );
+      searchWhere[Op.or].push(
+        { enquiry_number: { [Op.like]: `%${search}%` } },
+        { quantity: { [Op.like]: `%${search}%` } },
+        { category_name: { [Op.like]: `%${search}%` } },
+        literal(`CONCAT(from_user.fname, ' ', from_user.lname) LIKE '%${search}%'`),
+        { '$from_user.email$': { [Op.like]: `%${search}%` } },
+        { '$from_user.mobile$': { [Op.like]: `%${search}%` } },
+        { '$from_user.company_info.organization_name$': { [Op.like]: `%${search}%` } },
+        literal(`CONCAT(to_user.fname, ' ', to_user.lname) LIKE '%${search}%'`),
+        { '$to_user.email$': { [Op.like]: `%${search}%` } },
+        { '$to_user.mobile$': { [Op.like]: `%${search}%` } },
+        { '$to_user.company_info.organization_name$': { [Op.like]: `%${search}%` } }
+      );
       /*} else {
         searchWhere[Op.or].push(
           { enquiry_number: { [Op.like]: `%${search}%` } },
@@ -562,7 +562,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           as: 'from_user',
           attributes: ['id', 'email', 'mobile', 'company_id', 'is_seller', 'fname', 'lname',
             [fn('CONCAT', col('from_user.fname'), ' ', col('from_user.lname')), 'full_name']],
-          include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name'],['organization_slug', 'organization_slug']], required: false }],
+          include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name'], ['organization_slug', 'organization_slug']], required: false }],
           required: false,
         },
         {
@@ -571,7 +571,7 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           attributes: [['user_id', 'id'], ['email', 'to_email'], ['mobile', 'to_mobile'],
           ['company_id', 'to_company_id'], 'is_seller', 'fname', 'lname',
           [fn('CONCAT', col('to_user.fname'), ' ', col('to_user.lname')), 'to_full_name']],
-          include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name'],['organization_slug', 'organization_slug']], required: false }],
+          include: [{ model: CompanyInfo, as: 'company_info', attributes: [['organization_name', 'organization_name'], ['organization_slug', 'organization_slug']], required: false }],
           required: false,
         },
         {
@@ -849,24 +849,24 @@ exports.verifyEmail = async (req, res) => {
       password: hashedPassword,
       real_password: password,
       fname: "",
-  lname: "",
-  step: 0,
-  mode: 0,
-  country: "",
-  state: "",
-  city: "",
-  address: "",
-  remember_token: "",
-  is_seller: 0,
-  status: 1,
-  payment_status: 1,
-  is_approve: 0,
-  is_email_verify: 0,
-  featured_company: 0,
-  is_intrest: 0,
-  website: "",
-  products: "",
-  request_admin: 0,
+      lname: "",
+      step: 0,
+      mode: 0,
+      country: "",
+      state: "",
+      city: "",
+      address: "",
+      remember_token: "",
+      is_seller: 0,
+      status: 1,
+      payment_status: 1,
+      is_approve: 0,
+      is_email_verify: 0,
+      featured_company: 0,
+      is_intrest: 0,
+      website: "",
+      products: "",
+      request_admin: 0,
     });
     await newUser.save();
     await sendOtpEmail(email, otp);
@@ -1235,9 +1235,9 @@ exports.submitEnquiry = async (req, res) => {
       if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email))
         errors.email = 'Valid email is required';
 
-      const phoneDigits = formData.phone?.replace(/\D/g, '') || '';
-      if (!phoneDigits || phoneDigits.length !== 10)
-        errors.phone = 'Phone number must be 10 digits';
+      // const phoneDigits = formData.phone?.replace(/\D/g, '') || '';
+      // if (!phoneDigits || phoneDigits.length !== 10)
+      //   errors.phone = 'Phone number must be 10 digits';
 
       if (!formData.company?.trim()) errors.company = 'Company name is required';
     }
@@ -2065,21 +2065,21 @@ exports.updateEnquiriesApproveStatus = async (req, res) => {
 exports.getEnquiryChartData = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-const earliestUser = await Enquiries.findOne({
-  where: { is_delete: 0 },
-  order: [["created_at", "ASC"]],
-});
+    const earliestUser = await Enquiries.findOne({
+      where: { is_delete: 0 },
+      order: [["created_at", "ASC"]],
+    });
 
-const start = startDate
-  ? new Date(startDate)
-  : earliestUser
-    ? new Date(earliestUser.created_at)
-    : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // fallback 1 year ago
+    const start = startDate
+      ? new Date(startDate)
+      : earliestUser
+        ? new Date(earliestUser.created_at)
+        : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // fallback 1 year ago
 
-const end = endDate ? new Date(endDate) : new Date();
+    const end = endDate ? new Date(endDate) : new Date();
 
-start.setHours(0, 0, 0, 0);
-end.setHours(23, 59, 59, 999);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
 
     // Fetch grouped data
     const chartData = await Enquiries.findAll({
@@ -2116,41 +2116,41 @@ end.setHours(23, 59, 59, 999);
     const dataMap = {};
     chartData.forEach(row => {
       const rowDateStr = row.getDataValue("date"); // already 'YYYY-MM-DD'
-dataMap[rowDateStr] = {
-  Approved: parseInt(row.getDataValue("approved")),
-  NotApproved: parseInt(row.getDataValue("notApproved")),
-};
+      dataMap[rowDateStr] = {
+        Approved: parseInt(row.getDataValue("approved")),
+        NotApproved: parseInt(row.getDataValue("notApproved")),
+      };
     });
 
     // Fill missing dates
     const chartArray = [];
-const currentDate = new Date(start);
-let cumulativeApproved = 0;
-let cumulativeNotApproved = 0;
+    const currentDate = new Date(start);
+    let cumulativeApproved = 0;
+    let cumulativeNotApproved = 0;
 
-while (currentDate <= end) {
-  const dateStr = currentDate.toISOString().split("T")[0];
+    while (currentDate <= end) {
+      const dateStr = currentDate.toISOString().split("T")[0];
 
-  const entry = dataMap[dateStr] || {
-    Approved: 0, 
-    NotApproved: 0,
-  };
+      const entry = dataMap[dateStr] || {
+        Approved: 0,
+        NotApproved: 0,
+      };
 
-  // Update cumulative totals
-  cumulativeApproved += entry.Approved;
-  cumulativeNotApproved += entry.NotApproved;
+      // Update cumulative totals
+      cumulativeApproved += entry.Approved;
+      cumulativeNotApproved += entry.NotApproved;
 
-  const total = cumulativeApproved + cumulativeNotApproved;
+      const total = cumulativeApproved + cumulativeNotApproved;
 
-  chartArray.push({
-    date: dateStr,
-    Approved: cumulativeApproved,
-    NotApproved: cumulativeNotApproved,
-    Total: total
-  });
+      chartArray.push({
+        date: dateStr,
+        Approved: cumulativeApproved,
+        NotApproved: cumulativeNotApproved,
+        Total: total
+      });
 
-  currentDate.setDate(currentDate.getDate() + 1);
-}
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
 
     return res.json(chartArray);
 

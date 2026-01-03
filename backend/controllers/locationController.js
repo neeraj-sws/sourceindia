@@ -6,6 +6,7 @@ const Cities = require('../models/Cities');
 const Products = require('../models/Products');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
+const Categories = require('../models/Categories');
 
 exports.getAllCountries = async (req, res) => {
   try {
@@ -37,6 +38,14 @@ exports.getAllCities = async (req, res) => {
 exports.getStatesByCountry = async (req, res) => {
   try {
     const { country_id } = req.params;
+
+    const {
+      category_ids,
+      subcategory_ids,
+      item_category_ids,
+      item_subcategory_ids
+    } = req.query;
+
     if (!country_id) {
       return res.status(400).json({ error: 'country_id is required' });
     }
@@ -60,11 +69,22 @@ exports.getStatesByCountry = async (req, res) => {
           attributes: [],
           where: { country: country_id },
         },
+        ...(category_ids ? [{
+          model: Categories,
+          as: 'Categories',
+          attributes: [],
+          where: {
+            id: category_ids.split(','),
+          },
+        }] : []),
       ],
       where: {
         is_delete: 0,
         is_approve: 1,
         status: 1,
+        ...(subcategory_ids && { sub_category_id: subcategory_ids.split(',') }),
+        ...(item_category_ids && { item_category_id: item_category_ids.split(',') }),
+        ...(item_subcategory_ids && { item_subcategory_id: item_subcategory_ids.split(',') }),
       },
       group: ['Users.state'],
       raw: true,
