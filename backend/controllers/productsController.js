@@ -659,6 +659,8 @@ exports.getAllCompanyInfo = async (req, res) => {
       interest_sub_categories
     } = req.query;
 
+
+
     // ✅ Sorting
     let order = [['id', 'ASC']];
     if (sort_by === 'newest') order = [['created_at', 'DESC']];
@@ -680,7 +682,7 @@ exports.getAllCompanyInfo = async (req, res) => {
 
       if (catIds.length) sellerWhere.push(`sc.category_id IN (${catIds.join(',')})`);
       if (subIds.length) sellerWhere.push(`sc.subcategory_id IN (${subIds.join(',')})`);
-
+     
       if (sellerWhere.length) {
         whereClause[Op.and] = whereClause[Op.and] || [];
         whereClause[Op.and].push(
@@ -1429,7 +1431,7 @@ exports.getItemHierarchy = async (req, res) => {
         { model: Items, as: 'Items', attributes: ['id', 'name'] },
       ]
     });
-    const singleItem = await Items.findOne({
+    const singleItem = await ItemSubCategory.findOne({
       where: { id: itemId }
     });
 
@@ -1438,8 +1440,8 @@ exports.getItemHierarchy = async (req, res) => {
       category_id: product?.category_id ?? singleItem?.category_id ?? '',
       sub_category_id: product?.sub_category_id ?? singleItem?.subcategory_id ?? '',
       item_category_id: product?.item_category_id ?? singleItem?.item_category_id ?? '',
-      item_subcategory_id: product?.item_subcategory_id ?? singleItem?.item_sub_category_id ?? '',
-      item_id: product?.item_id ?? singleItem?.item_id ?? '',
+      item_subcategory_id: product?.item_subcategory_id ?? singleItem?.id ?? '',
+      // item_id: product?.item_id ?? singleItem?.item_id ?? '',
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

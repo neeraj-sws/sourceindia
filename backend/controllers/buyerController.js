@@ -42,7 +42,7 @@ exports.createBuyer = async (req, res) => {
     };
     try {
       const {
-        fname, lname, email, password, mobile, country, state, city, zipcode,
+        fname, lname, email, password, mobile, country_code, country, state, city, zipcode,
         user_company, website, is_trading, elcina_member, address, status, is_approve, step, products, is_seller,
         mode, real_password, remember_token, payment_status, is_email_verify, featured_company, user_category, is_complete,
         organization_name, company_website, organizations_product_description, is_star_seller, is_verified, is_intrest, request_admin,
@@ -69,6 +69,7 @@ exports.createBuyer = async (req, res) => {
         lname,
         email,
         mobile,
+        country_code,
         country,
         state,
         city,
@@ -177,26 +178,26 @@ exports.getBuyerById = async (req, res) => {
   try {
     const buyers = await Users.findByPk(req.params.id, {
       include: [
-        {model: UploadImage, as: 'file', attributes: ['file']},
-        {model: UploadImage, as: 'company_file', attributes: ['file']},
-        {model: Countries, as: 'country_data', attributes: ['name']},
-        {model: States, as: 'state_data', attributes: ['name']},
-        {model: Cities, as: 'city_data', attributes: ['name']}
+        { model: UploadImage, as: 'file', attributes: ['file'] },
+        { model: UploadImage, as: 'company_file', attributes: ['file'] },
+        { model: Countries, as: 'country_data', attributes: ['name'] },
+        { model: States, as: 'state_data', attributes: ['name'] },
+        { model: Cities, as: 'city_data', attributes: ['name'] }
       ]
-    });    
+    });
     if (!buyers) {
       return res.status(404).json({ message: 'Buyer not found' });
     }
     let companyInfo = null;
     if (buyers.company_id) {
       companyInfo = await CompanyInfo.findByPk(buyers.company_id, {
-      include: [
-        {model: CoreActivity, as: 'CoreActivity', attributes: ['name']},
-        {model: Activity, as: 'Activity', attributes: ['name']},
-        {model: Categories, as: 'Categories', attributes: ['name']},
-        {model: MembershipPlan, as: 'MembershipPlan', attributes: ['name']}
-      ]
-    });
+        include: [
+          { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
+          { model: Activity, as: 'Activity', attributes: ['name'] },
+          { model: Categories, as: 'Categories', attributes: ['name'] },
+          { model: MembershipPlan, as: 'MembershipPlan', attributes: ['name'] }
+        ]
+      });
     }
     const response = {
       ...buyers.toJSON(),
@@ -224,35 +225,35 @@ exports.getBuyerCount = async (req, res) => {
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
-   const [total, addedToday, statusActive, statusInactive, notApproved, deleted] = await Promise.all([
-  Users.count({
-    where: { is_seller: 0 },
-  }),
+    const [total, addedToday, statusActive, statusInactive, notApproved, deleted] = await Promise.all([
+      Users.count({
+        where: { is_seller: 0 },
+      }),
 
-  // Sellers added today
-  Users.count({
-    where: { created_at: { [Op.between]: [todayStart, todayEnd] } },
-  }),
+      // Sellers added today
+      Users.count({
+        where: { created_at: { [Op.between]: [todayStart, todayEnd] } },
+      }),
 
-  // Active sellers
-  Users.count({
-    where: { is_seller: 0, status: 1, is_delete: 0, is_approve: 1 },
-  }),
+      // Active sellers
+      Users.count({
+        where: { is_seller: 0, status: 1, is_delete: 0, is_approve: 1 },
+      }),
 
-  // Inactive sellers
-  Users.count({
-    where: { is_seller: 0, status: 0, is_delete: 0 },
-  }),
+      // Inactive sellers
+      Users.count({
+        where: { is_seller: 0, status: 0, is_delete: 0 },
+      }),
 
-  // Not approved sellers
-  Users.count({
-    where: { is_seller: 0, is_approve: 0, is_delete: 0, is_complete: 1, status: 1 },
-  }),
+      // Not approved sellers
+      Users.count({
+        where: { is_seller: 0, is_approve: 0, is_delete: 0, is_complete: 1, status: 1 },
+      }),
 
-  Users.count({
-    where: { is_seller: 0, is_delete: 1 }
-  }),
-]);
+      Users.count({
+        where: { is_seller: 0, is_delete: 1 }
+      }),
+    ]);
 
     res.json({
       total,
@@ -287,6 +288,7 @@ exports.updateBuyer = async (req, res) => {
         lname: req.body.lname,
         email: req.body.email,
         mobile: req.body.mobile,
+        country_code: req.body.country_code,
         country: req.body.country,
         state: req.body.state,
         city: req.body.city,
@@ -501,8 +503,8 @@ exports.getAllBuyerServerSide = async (req, res) => {
       full_name,
       customerId
     } = req.query;
-    const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'mobile', 'country_name', 'state_name', 
-      'city_name', 'zipcode', 'user_company', 'website', 'is_trading', 'elcina_member', 'address', 'products', 
+    const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'mobile', 'country_name', 'state_name',
+      'city_name', 'zipcode', 'user_company', 'website', 'is_trading', 'elcina_member', 'address', 'products',
       'status', 'is_approve', 'is_seller', 'walkin_buyer', 'user_category', 'created_at', 'updated_at'];
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -831,9 +833,9 @@ exports.getFilteredBuyers = async (req, res) => {
         designation: s.company_info?.designation || null,
         coreactivity_name: s.company_info?.CoreActivity?.name || 'NA',
         activity_name: s.company_info?.Activity?.name || 'NA',
-        status: s.status==1?'Active':'Inactive',
-        is_approve: s.is_approve==1?'Approved':'Pending',
-        member_role: s.member_role==1?'Admin':'',
+        status: s.status == 1 ? 'Active' : 'Inactive',
+        is_approve: s.is_approve == 1 ? 'Approved' : 'Pending',
+        member_role: s.member_role == 1 ? 'Admin' : '',
         created_at: s.created_at
       };
     });
@@ -850,22 +852,22 @@ exports.getBuyerChartData = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
 
-// Fetch earliest seller record for MAX period
-const earliestUser = await Users.findOne({
-  where: { is_seller: 0 },
-  order: [["created_at", "ASC"]],
-});
+    // Fetch earliest seller record for MAX period
+    const earliestUser = await Users.findOne({
+      where: { is_seller: 0 },
+      order: [["created_at", "ASC"]],
+    });
 
-const start = startDate
-  ? new Date(startDate)
-  : earliestUser
-    ? new Date(earliestUser.created_at)
-    : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // fallback 1 year ago
+    const start = startDate
+      ? new Date(startDate)
+      : earliestUser
+        ? new Date(earliestUser.created_at)
+        : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // fallback 1 year ago
 
-const end = endDate ? new Date(endDate) : new Date();
+    const end = endDate ? new Date(endDate) : new Date();
 
-start.setHours(0, 0, 0, 0);
-end.setHours(23, 59, 59, 999);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
 
     // Fetch grouped data
     const chartData = await Users.findAll({
@@ -920,51 +922,51 @@ end.setHours(23, 59, 59, 999);
     const dataMap = {};
     chartData.forEach(row => {
       const rowDateStr = row.getDataValue("date"); // already 'YYYY-MM-DD'
-dataMap[rowDateStr] = {
-  Active: parseInt(row.getDataValue("active")),
-  Inactive: parseInt(row.getDataValue("inactive")),
-  NotApproved: parseInt(row.getDataValue("notApproved")),
-  Deleted: parseInt(row.getDataValue("deleted")),
-};
+      dataMap[rowDateStr] = {
+        Active: parseInt(row.getDataValue("active")),
+        Inactive: parseInt(row.getDataValue("inactive")),
+        NotApproved: parseInt(row.getDataValue("notApproved")),
+        Deleted: parseInt(row.getDataValue("deleted")),
+      };
     });
 
     // Fill missing dates
     const chartArray = [];
-const currentDate = new Date(start);
-let cumulativeActive = 0;
-let cumulativeInactive = 0;
-let cumulativeNotApproved = 0;
-let cumulativeDeleted = 0;
+    const currentDate = new Date(start);
+    let cumulativeActive = 0;
+    let cumulativeInactive = 0;
+    let cumulativeNotApproved = 0;
+    let cumulativeDeleted = 0;
 
-while (currentDate <= end) {
-  const dateStr = currentDate.toISOString().split("T")[0];
+    while (currentDate <= end) {
+      const dateStr = currentDate.toISOString().split("T")[0];
 
-  const entry = dataMap[dateStr] || { 
-    Active: 0, 
-    Inactive: 0, 
-    NotApproved: 0,
-    Deleted: 0 
-  };
+      const entry = dataMap[dateStr] || {
+        Active: 0,
+        Inactive: 0,
+        NotApproved: 0,
+        Deleted: 0
+      };
 
-  // Update cumulative totals
-  cumulativeActive += entry.Active;
-  cumulativeInactive += entry.Inactive;
-  cumulativeNotApproved += entry.NotApproved;
-  cumulativeDeleted += entry.Deleted;
+      // Update cumulative totals
+      cumulativeActive += entry.Active;
+      cumulativeInactive += entry.Inactive;
+      cumulativeNotApproved += entry.NotApproved;
+      cumulativeDeleted += entry.Deleted;
 
-  const total = cumulativeActive + cumulativeInactive + cumulativeNotApproved + cumulativeDeleted;
+      const total = cumulativeActive + cumulativeInactive + cumulativeNotApproved + cumulativeDeleted;
 
-  chartArray.push({
-    date: dateStr,
-    Active: cumulativeActive,
-    Inactive: cumulativeInactive,
-    NotApproved: cumulativeNotApproved,
-    Deleted: cumulativeDeleted,
-    Total: total
-  });
+      chartArray.push({
+        date: dateStr,
+        Active: cumulativeActive,
+        Inactive: cumulativeInactive,
+        NotApproved: cumulativeNotApproved,
+        Deleted: cumulativeDeleted,
+        Total: total
+      });
 
-  currentDate.setDate(currentDate.getDate() + 1);
-}
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
 
     return res.json(chartArray);
 

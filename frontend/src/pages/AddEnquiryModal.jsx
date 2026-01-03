@@ -3,7 +3,8 @@ import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from "../config";
 import UseAuth from '../sections/UseAuth';
 import { useAlert } from "../context/AlertContext";
-
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/bootstrap.css";
 const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
     const { user } = UseAuth();
     const { showNotification } = useAlert();
@@ -13,6 +14,7 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
         name: '',
         email: '',
         phone: '',
+        country_code: '+91',
         company: '',
     });
     const [errors, setErrors] = useState({});
@@ -241,16 +243,31 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                                     </div>
                                     <div className="col-lg-12">
                                         <div className="mb-3">
-                                            <input
-                                                type="text"
-                                                className="form-control open_enq"
-                                                name="phone"
+                                            <PhoneInput
+                                                country="in"
+                                                value={
+                                                    (formData.country_code || "").replace("+", "") +
+                                                    (formData.phone || "")
+                                                }
+                                                onChange={(value, country) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        country_code: `+${country.dialCode}`,
+                                                        phone: value.slice(country.dialCode.length),
+                                                    }))
+                                                }
+                                                containerClass="w-100"
+                                                inputClass={`form-control open_enq ${errors.phone ? "is-invalid" : ""}`}
+                                                inputProps={{
+                                                    name: "phone",
+                                                    required: true,
+                                                }}
                                                 placeholder="Phone"
-                                                value={formData.phone}
-                                                onChange={handleChange}
-                                                required
                                             />
-                                            {errors.phone && <div className="text-danger">{errors.phone}</div>}
+
+                                            {errors.phone && (
+                                                <div className="text-danger mt-1">{errors.phone}</div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="col-lg-12">
