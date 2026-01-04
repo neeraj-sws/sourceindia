@@ -556,6 +556,7 @@ const ProductsList = () => {
                           className="form-check-input"
                           checked={selectedCategories.includes(cat.id)}
                           onChange={() => handleCategoryCheckboxChange(cat.id)}
+                          disabled={cat.product_count === 0}
                         />
                         <label
                           htmlFor={`cat-${cat.id}`}
@@ -584,6 +585,7 @@ const ProductsList = () => {
                             setSubCategorySearchTerm(e.target.value.toLowerCase())
                           }
                           className="form-control"
+
                         />
                       </div>
                       <div
@@ -603,6 +605,7 @@ const ProductsList = () => {
                               id={`subcat-${sub.id}`}
                               className="form-check-input"
                               checked={selectedSubCategories.includes(sub.id)}
+                              disabled={sub.product_count === 0}
                               onChange={() =>
                                 handleSubCategoryCheckboxChange(sub.id)
                               }
@@ -657,6 +660,7 @@ const ProductsList = () => {
                             id={`itemCat-${itemCat.id}`}
                             className="form-check-input"
                             checked={selectedItemCategories.includes(itemCat.id)}
+                            disabled={itemCat.product_count === 0}
                             onChange={() =>
                               setSelectedItemCategories((prev) =>
                                 prev.includes(itemCat.id)
@@ -714,6 +718,7 @@ const ProductsList = () => {
                             type="checkbox"
                             id={`itemSub-${itemSub.id}`}
                             className="form-check-input"
+                            disabled={itemSub.product_count === 0}
                             checked={selectedItemSubCategories.includes(
                               itemSub.id
                             )}
@@ -822,6 +827,7 @@ const ProductsList = () => {
                           className="form-check-input"
                           checked={selectedStates.includes(state.id)}
                           onChange={() => handleStatesCheckboxChange(state.id)}
+                          disabled={state.product_count === 0}
                         />
                         <label
                           htmlFor={`state-${state.id}`}
@@ -865,6 +871,7 @@ const ProductsList = () => {
                           id={`company-${company.id}`}
                           className="form-check-input"
                           checked={selectedCompanies.includes(company.id)}
+                          disabled={company.product_count === 0}
                           onChange={() =>
                             handleCompaniesCheckboxChange(company.id)
                           }
