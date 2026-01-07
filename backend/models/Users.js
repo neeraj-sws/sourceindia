@@ -43,6 +43,7 @@ const Users = sequelize.define('Users', {
   status: { type: DataTypes.INTEGER, allowNull: false, comment: '1 = Active, 0 = Inactive' },
   payment_status: { type: DataTypes.INTEGER, allowNull: false, comment: '0="Payment done",1="Payment Pending"' },
   is_approve: { type: DataTypes.INTEGER, allowNull: false, },
+  is_otp: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   approve_date: { type: DataTypes.DATE, allowNull: true, },
   email_token: { type: DataTypes.STRING, allowNull: true },
   is_email_verify: { type: DataTypes.INTEGER, allowNull: false, },

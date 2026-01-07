@@ -835,13 +835,25 @@ exports.verifyEmail = async (req, res) => {
     const { email } = req.body;
     const user = await Users.findOne({ where: { email } });
 
-    if (user) {
-      return res.status(200).json({ exists: true, message: 'User exists, please login' });
-    }
+
 
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     const password = 'SI' + new Date().getFullYear() + Math.floor(1000 + Math.random() * 9000).toString();
     const hashedPassword = await bcrypt.hash(password, 10);
+
+
+
+    if (user) {
+      await user.update({ otp });
+      await sendOtpEmail(email, otp);
+
+      return res.status(200).json({
+        exists: true,
+        otpSent: true,
+        userId: user.id,   // Sequelize uses `id`, not `_id`
+        message: 'OTP sent to registered email'
+      });
+    }
 
     const newUser = new Users({
       email,
@@ -900,77 +912,86 @@ exports.submitOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
     const user = await Users.findOne({ where: { email } });
+
+    let exists = true
+
+
+    // if (user) {
+    //   return res.status(200).json({ exists: true, message: 'User exists, please login' });
+    // }
     if (!user || user.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
 
     user.otp = null;
+    user.is_otp = 1;
+
     await user.save();
-    res.status(200).json({ verified: true, userId: user.id });
+    if (user.is_otp === 1) {
+      exists = false;
+    }
+    res.status(200).json({ verified: true, userId: user.id, exists: exists });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Store Enquiry
 exports.storeEnquiry = async (req, res) => {
   try {
-    const { userId, name, company, phone, description, product_id, enq_company_id } = req.body;
+    const {
+      userId,
+      name,
+      company,
+      phone,
+      description,
+      product_id,
+      enq_company_id
+    } = req.body;
 
-    let category_ids = '';
-    let subcategory_names = '';
-    let subcategory_ids = '';
-    let category_names = '';
-
+    /* -------------------- 1. Fetch product safely -------------------- */
     const product = await Products.findByPk(product_id);
-    const sellerUsers = await Users.findAll({
-  where: {
-    company_id: product.company_id,
-    is_delete: 0,
-    status: 1,
-    is_approve: 1,
-  },
-  attributes: ['id'],
-  raw: true,
-});
-
-const sellerUserIds = sellerUsers.map(u => u.id);
-
-if (sellerUserIds.length) {
-  const sellerCategories = await SellerCategory.findAll({
-    where: {
-      user_id: sellerUserIds,
-    },
-    include: [
-      {
-        model: Categories,
-        as: 'category',
-        attributes: ['id', 'name'],
-      },
-      {
-        model: SubCategories,
-        as: 'subcategory',
-        attributes: ['id', 'name'],
-      },
-    ],
-  });
-
-  const categoryIdSet = new Set();
-  const categoryNameSet = new Set();
-  const subCategoryIdSet = new Set();
-  const subCategoryNameSet = new Set();
-
-  sellerCategories.forEach(sc => {
-    if (sc.category) {
-      categoryIdSet.add(sc.category.id);
-      categoryNameSet.add(sc.category.name);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
     }
 
-    // match only product subcategory
-    if (
-      sc.subcategory &&
-      sc.subcategory.id === product.sub_category
-    ) {
-      subCategoryIdSet.add(sc.subcategory.id);
-      subCategoryNameSet.add(sc.subcategory.name.trim());
+    /* -------------------- 2. Fetch seller company -------------------- */
+    const companyinfo = await CompanyInfo.findByPk(product.company_id);
+
+    let category_ids = '';
+    let category_names = '';
+    let subcategory_ids = '';
+    let subcategory_names = '';
+
+    /* -------------------- 3. Categories & subcategories -------------------- */
+    if (companyinfo && companyinfo.category_sell) {
+      const catIds = companyinfo.category_sell
+        .split(',')
+        .map(id => id.trim())
+        .filter(id => id && !isNaN(id));
+
+      const categories = await Categories.findAll({
+        where: { id: catIds },
+        attributes: [
+          'id',
+          'name',
+          'cat_file_id',
+          'stock_file_id',
+          'slug'
+        ]
+      });
+
+      category_ids = categories.map(c => c.id).join(', ');
+      category_names = categories.map(c => c.name).join(', ');
+
+      if (product.sub_category) {
+        const subCategories = await SubCategories.findAll({
+          where: {
+            id: product.sub_category,
+            category: catIds
+          }
+        });
+
+        subcategory_ids = subCategories.map(sc => sc.id).join(', ');
+        subcategory_names = subCategories.map(sc => sc.name.trim()).join(', ');
+      }
     }
   });
 
@@ -980,64 +1001,79 @@ if (sellerUserIds.length) {
   subcategory_names = [...subCategoryNameSet].join(', ');
 }
 
-    const newCompany = new CompanyInfo({ organization_name: company });
-    await newCompany.save();
+    /* -------------------- 4. Create buyer company -------------------- */
+    const newCompany = await CompanyInfo.create({
+      organization_name: company
+    });
 
+    /* -------------------- 5. Update user -------------------- */
     const user = await Users.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-    user.fname = name;
-    user.company_id = newCompany.id;
-    user.mobile = phone;
-    user.is_new = 1;
-    user.is_profile = 1;
-    user.is_complete = 1;
-    await user.save();
+    await user.update({
+      fname: name,
+      company_id: newCompany.id,
+      mobile: phone,
+      is_new: 1,
+      is_profile: 1,
+      is_complete: 1
+    });
 
-    if (!product) return res.status(404).json({ message: 'Product not found' });
+    /* -------------------- 6. Create enquiry -------------------- */
+    const enquiry_number = Math.random()
+      .toString(36)
+      .substring(2, 10)
+      .toUpperCase();
 
-    const enquiry_number = Math.random().toString(36).substring(2, 10).toUpperCase();
-    const enquiry = new Enquiries({
+    const enquiry = await Enquiries.create({
       enquiry_number,
       company_id: enq_company_id,
       user_id: user.id,
-      buyer_company_id: "",
+      buyer_company_id: newCompany.id,
       description,
-      type: 1,                        // e.g., 1 = product
+      type: 1,
       quantity: 1,
-      // category: category_ids,  // Fetch real data as needed
-      // sub_category: subcategory_ids,
-      // category_name: category_names,
-      // sub_category_name: subcategory_names,
+      category: category_ids,
+      sub_category: subcategory_ids,
+      category_name: category_names,
+      sub_category_name: subcategory_names
     });
-    await enquiry.save();
 
-    const enquiryUser = new EnquiryUsers({
+    /* -------------------- 7. Enquiry product mapping -------------------- */
+    await EnquiryUsers.create({
       enquiry_id: enquiry.id,
       company_id: enq_company_id,
       product_id,
-      product_name: product.title,
+      product_name: product.title
     });
-    await enquiryUser.save();
 
-    const enquiryMessage = new EnquiryMessage({
+    /* -------------------- 8. Enquiry message -------------------- */
+    const enquiryMessage = await EnquiryMessage.create({
       seller_company_id: enq_company_id,
       enquiry_id: enquiry.id,
-      buyer_company_id: newCompany.id,
+      buyer_company_id: newCompany.id
     });
-    await enquiryMessage.save();
 
-    const userMessage = new UserMessage({
+    await UserMessage.create({
       user_id: user.id,
       message: description,
       message_id: enquiryMessage.id,
-      company_id: newCompany.id,
+      company_id: newCompany.id
     });
-    await userMessage.save();
 
+    /* -------------------- 9. Send confirmation mail -------------------- */
     await sendEnquiryConfirmation(user.email, name);
-    res.status(200).json({ message: 'Enquiry submitted successfully' });
+
+    res.status(200).json({
+      message: 'Enquiry submitted successfully',
+      enquiry_number
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Store Enquiry Error:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
