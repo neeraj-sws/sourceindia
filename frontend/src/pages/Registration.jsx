@@ -20,6 +20,7 @@ const Registration = () => {
         cname: "",
         website: "",
         mobile: "",
+        alternate_number: "",
         country_code: "+91",
         email: "",
         category: "",
@@ -367,6 +368,7 @@ const Registration = () => {
                     cname: "",
                     website: "",
                     mobile: "",
+                    alternate_number: "",
                     country_code: "+91",
                     email: "",
                     category: "",
@@ -533,8 +535,14 @@ const Registration = () => {
                             {/* Show rest of form only after email verification */}
                             {emailVerified && (
                                 <>
+                                <div className="col-md-3 mb-3">
+                                    <label>Alternate Number</label>
+                                    <input type="number" name="alternate_number" className="form-control" id="alternate_number"
+                                        placeholder="Alternate Number" value={form.alternate_number} onChange={handleChange} min={0} />
+                                    {errors.alternate_number && <div className="text-danger">{errors.alternate_number}</div>}
+                                    </div>
                                     {/* Category */}
-                                    <div className="col-md-6 mb-3">
+                                    <div className="col-md-3 mb-3">
                                         <label>Category<sup className="text-danger">*</sup></label>
                                         <select name="category" className="form-select" value={form.category} onChange={handleChange}>
                                             <option value="">Select Category</option>

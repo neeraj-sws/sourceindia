@@ -24,9 +24,21 @@ const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
 const parseCsv2 = (value) => value.split(',').map(item => item.trim());
 
-function createSlug(inputString) {
-  if (!inputString) return '';
-  return inputString.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+async function createUniqueProductSlug(title) {
+  if (!title) return '';
+  const baseSlug = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+  let uniqueSlug = baseSlug;
+  let counter = 1;
+  while (await Products.findOne({ where: { slug: uniqueSlug } })) {
+    uniqueSlug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+  return uniqueSlug;
 }
 
 exports.allProduct = async (req, res) => {
@@ -118,7 +130,7 @@ exports.createProducts = async (req, res) => {
         application,
         short_description,
         description,
-        slug: createSlug(title),
+        slug: await createUniqueProductSlug(title),
         core_activity: core_activity || 0,
         activity: activity || 0,
         segment: segment || 0,
@@ -272,8 +284,7 @@ exports.getProductsById = async (req, res) => {
         {
           model: CompanyInfo,
           as: 'company_info',
-          attributes: ['id', 'organization_name', 'category_sell', 'company_logo', 'brief_company', 'company_location', 'activity', 'core_activity'
-          ],
+          attributes: ['id', 'organization_name', 'company_logo', 'brief_company', 'company_location', 'activity', 'core_activity'],
           include: [
             { model: UploadImage, as: 'companyLogo', attributes: ['file'] },
             { model: Activity, as: 'Activity', attributes: ['name'] },
@@ -289,29 +300,41 @@ exports.getProductsById = async (req, res) => {
     }
 
     const productData = product.toJSON();
-    const categorySellString = productData.company_info?.category_sell || '';
-    const allowedCategories = categorySellString.split(',').map(id => id.trim());
 
+    // Fetch seller categories based on user_id (company owner)
+    const sellerCategories = await SellerCategory.findAll({
+      where: { user_id: productData.company_info?.id }, // assuming company_info.id = user_id in SellerCategory
+      include: [
+        { model: Categories, as: 'category', attributes: ['id', 'name'] },
+        { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'] },
+      ]
+    });
 
+    const allowedCategoryIds = sellerCategories.map(sc => sc.category_id.toString());
+
+    // Fetch all other companies excluding current
     const allCompanies = await CompanyInfo.findAll({
       where: {
         id: { [Op.ne]: productData.company_info?.id }
       },
-      attributes: ['id', 'organization_name', 'organization_slug', 'category_sell'],
+      attributes: ['id', 'organization_name', 'organization_slug'],
       include: [
-        {
-          model: UploadImage,
-          as: 'companyLogo',
-          attributes: ['file']
-        }
+        { model: UploadImage, as: 'companyLogo', attributes: ['file'] }
       ]
     });
 
-    const recommendedCompanies = allCompanies.filter(company => {
-      if (!company.category_sell) return false;
-      const companyCategories = company.category_sell.split(',').map(id => id.trim());
-      return companyCategories.some(cat => allowedCategories.includes(cat));
-    });
+    // Filter recommended companies based on seller_categories
+    const recommendedCompanies = [];
+    for (const company of allCompanies) {
+      const companySellerCategories = await SellerCategory.findAll({
+        where: { user_id: company.id }
+      });
+      const companyCategoryIds = companySellerCategories.map(sc => sc.category_id.toString());
+
+      if (companyCategoryIds.some(catId => allowedCategoryIds.includes(catId))) {
+        recommendedCompanies.push(company);
+      }
+    }
 
     const fileIds = productData.file_ids ? productData.file_ids.split(',') : [];
 
@@ -323,11 +346,7 @@ exports.getProductsById = async (req, res) => {
     const reviews = await ReviewRating.findAll({
       where: { product_id: product.id },
       attributes: ['id', 'rating', 'review', 'created_at'],
-      include: [{
-        model: Users,
-        as: 'reviewer',
-        attributes: ['id', 'fname', 'lname']
-      }]
+      include: [{ model: Users, as: 'reviewer', attributes: ['id', 'fname', 'lname'] }]
     });
 
     const formattedReviews = reviews.map(r => ({
@@ -344,18 +363,14 @@ exports.getProductsById = async (req, res) => {
         id: { [Op.ne]: product.id }
       },
       attributes: ['id', 'title', 'file_ids', 'slug'],
-      include: [
-        { model: UploadImage, as: 'file', attributes: ['file'] }
-      ],
+      include: [{ model: UploadImage, as: 'file', attributes: ['file'] }],
     });
 
-    const formattedSimilarProducts = await Promise.all(similarProducts.map(async (p) => {
-      return {
-        id: p.id,
-        slug: p.slug,
-        title: p.title,
-        file_name: p.file?.file || null,
-      };
+    const formattedSimilarProducts = similarProducts.map(p => ({
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      file_name: p.file?.file || null,
     }));
 
     const response = {
@@ -380,8 +395,13 @@ exports.getProductsById = async (req, res) => {
         id: c.id,
         organization_name: c.organization_name,
         organization_slug: c.organization_slug,
-        category_sell: c.category_sell,
         company_logo_file: c.companyLogo?.file || null
+      })),
+      seller_categories: sellerCategories.map(sc => ({
+        category_id: sc.category_id,
+        category_name: sc.category?.name || null,
+        subcategory_id: sc.subcategory_id,
+        subcategory_name: sc.subcategory?.name || null
       }))
     };
 
@@ -461,7 +481,7 @@ exports.updateProducts = async (req, res) => {
     await product.update({
       user_id,
       title,
-      slug: createSlug(title),
+      slug: await createUniqueProductSlug(title),
       code,
       article_number,
       category,
@@ -1418,7 +1438,7 @@ exports.updateProductsDeleteStatus = async (req, res) => {
   }
 };
 
-exports.getItemHierarchy = async (req, res) => {
+/*exports.getItemHierarchy = async (req, res) => {
   try {
     const itemId = req.params.item_id;
     const product = await Products.findOne({
@@ -1443,6 +1463,83 @@ exports.getItemHierarchy = async (req, res) => {
       item_subcategory_id: product?.item_subcategory_id ?? singleItem?.id ?? '',
       // item_id: product?.item_id ?? singleItem?.item_id ?? '',
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};*/
+exports.getItemHierarchy = async (req, res) => {
+  try {
+    const { type, item_id } = req.params;
+
+    switch (type) {
+      case 'category': {
+        const c = await Categories.findByPk(item_id);
+        if (!c) break;
+
+        return res.json({
+          category_id: c.id,
+          sub_category_id: '',
+          item_category_id: '',
+          item_subcategory_id: '',
+          item_id: ''
+        });
+      }
+
+      case 'subcategory': {
+        const sc = await SubCategories.findByPk(item_id);
+        if (!sc) break;
+
+        return res.json({
+          category_id: sc.category_id,
+          sub_category_id: sc.id,
+          item_category_id: '',
+          item_subcategory_id: '',
+          item_id: ''
+        });
+      }
+
+      case 'item_category': {
+        const ic = await ItemCategory.findByPk(item_id);
+        if (!ic) break;
+
+        return res.json({
+          category_id: ic.category_id,
+          sub_category_id: ic.subcategory_id,
+          item_category_id: ic.id,
+          item_subcategory_id: '',
+          item_id: ''
+        });
+      }
+
+      case 'item_subcategory': {
+        const isc = await ItemSubCategory.findByPk(item_id);
+        if (!isc) break;
+
+        return res.json({
+          category_id: isc.category_id,
+          sub_category_id: isc.subcategory_id,
+          item_category_id: isc.item_category_id,
+          item_subcategory_id: isc.id,
+          item_id: ''
+        });
+      }
+
+      case 'item': {
+        const item = await Items.findByPk(item_id);
+        if (!item) break;
+
+        return res.json({
+          category_id: item.category_id,
+          sub_category_id: item.subcategory_id,
+          item_category_id: item.item_category_id,
+          item_subcategory_id: item.item_subcategory_id,
+          item_id: item.id
+        });
+      }
+    }
+
+    return res.status(404).json({ message: 'Invalid type or not found' });
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

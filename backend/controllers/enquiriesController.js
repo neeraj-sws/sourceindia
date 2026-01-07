@@ -993,6 +993,13 @@ exports.storeEnquiry = async (req, res) => {
         subcategory_names = subCategories.map(sc => sc.name.trim()).join(', ');
       }
     }
+  });
+
+  category_ids = [...categoryIdSet].join(', ');
+  category_names = [...categoryNameSet].join(', ');
+  subcategory_ids = [...subCategoryIdSet].join(', ');
+  subcategory_names = [...subCategoryNameSet].join(', ');
+}
 
     /* -------------------- 4. Create buyer company -------------------- */
     const newCompany = await CompanyInfo.create({

@@ -32,7 +32,7 @@ const AddSeller = () => {
   // const [roles, setRoles] = useState([]);
   // const [selectedRoles, setSelectedRoles] = useState('');
   const [formData, setFormData] = useState({
-    fname: "", lname: "", email: "", password: "", mobile: "", country_code: "", zipcode: "", website: "", is_trading: "", elcina_member: "",
+    fname: "", lname: "", email: "", password: "", mobile: "", alternate_number: "", country_code: "", zipcode: "", website: "", is_trading: "", elcina_member: "",
     address: "", file: null, company_logo: null, user_company: "", company_location: "",
     is_star_seller: "", is_verified: "", company_meta_title: "", company_video_second: "", brief_company: "", products: "",
     designation: "", featured_company: "", company_sample_ppt_file: null, company_video: null, sample_file_id: null,
@@ -372,6 +372,7 @@ const AddSeller = () => {
     }
     if (!formData.mobile?.trim()) errs.mobile = "Mobile is required";
     // else if (!/^[6-9]\d{9}$/.test(formData.mobile)) errs.mobile = "Mobile Number is invalid";
+    if (formData.alternate_number && !/^[6-9]\d{9}$/.test(formData.alternate_number)) errs.alternate_number = "Alternate Number is invalid";
     if (!selectedCountry) errs.country = "Country is required";
     if (!selectedState) errs.state = "State is required";
     if (!selectedCity) errs.city = "City is required";
@@ -461,6 +462,7 @@ const AddSeller = () => {
           email: data.email || "",
           password: "",
           mobile: data.mobile || "",
+          alternate_number: data.alternate_number || "",
           country_code: data.country_code || "+91",
           zipcode: data.zipcode || "",
           user_company: data.organization_name || "",
@@ -907,7 +909,7 @@ const AddSeller = () => {
                         />
                         {errors.lname && (<div className="invalid-feedback">{errors.lname}</div>)}
                       </div>
-                      <div className="col-md-4 mb-3">
+                      <div className="col-md-3 mb-3">
                         <label htmlFor="mobile" className="form-label required">
                           Mobile
                         </label>
@@ -941,7 +943,13 @@ const AddSeller = () => {
                           </div>
                         )}
                       </div>
-                      <div className="col-md-4 mb-3">
+                      <div className="col-md-3 mb-3">
+                        <label htmlFor="alternate_number" className="form-label required">Alternate Number</label>
+                        <input type="number" className={`form-control ${errors.alternate_number ? 'is-invalid' : ''}`} id="alternate_number"
+                          placeholder="Alternate Number" value={formData.alternate_number} onChange={handleInputChange} min={0} />
+                        {errors.alternate_number && <div className="invalid-feedback">{errors.alternate_number}</div>}
+                      </div>
+                      <div className="col-md-3 mb-3">
                         <label htmlFor="email" className="form-label required">Email</label>
                         <input
                           type="email" className={`form-control ${errors.email ? "is-invalid" : ""}`}
@@ -953,7 +961,7 @@ const AddSeller = () => {
                         {errors.email && (<div className="invalid-feedback">{errors.email}</div>)}
                       </div>
                       {!isEditing && (
-                        <div className="col-md-4 mb-3">
+                        <div className="col-md-3 mb-3">
                           <label htmlFor="password" className="form-label required">Password</label>
                           <input
                             type="password"

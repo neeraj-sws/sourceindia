@@ -19,8 +19,19 @@ const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 
-function createSlug(inputString) {
-  return inputString.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+async function createUniqueSlug(name) {
+  if (!name) return '';
+  let slug = name.toLowerCase().trim()
+    .replace(/[^a-z0-9\s-]/g, '')  // remove invalid chars
+    .replace(/\s+/g, '-')          // replace spaces with -
+    .replace(/-+/g, '-');
+  let uniqueSlug = slug;
+  let counter = 1;
+  while (await CompanyInfo.findOne({ where: { organization_slug: uniqueSlug } })) {
+    uniqueSlug = `${slug}-${counter}`;
+    counter++;
+  }
+  return uniqueSlug;
 }
 
 exports.createBuyer = async (req, res) => {
@@ -42,7 +53,7 @@ exports.createBuyer = async (req, res) => {
     };
     try {
       const {
-        fname, lname, email, password, mobile, country_code, country, state, city, zipcode,
+        fname, lname, email, password, mobile, alternate_number, country_code, country, state, city, zipcode,
         user_company, website, is_trading, elcina_member, address, status, is_approve, step, products, is_seller,
         mode, real_password, remember_token, payment_status, is_email_verify, featured_company, user_category, is_complete,
         organization_name, company_website, organizations_product_description, is_star_seller, is_verified, is_intrest, request_admin,
@@ -63,12 +74,13 @@ exports.createBuyer = async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
       const profileImage = await UploadImage.create({ file: `upload/users/${req.files.file[0].filename}` });
       const companyLogoImage = await UploadImage.create({ file: `upload/users/${req.files.company_file[0].filename}` });
-      const organization_slug = createSlug(user_company);
+      const organization_slug = await createUniqueSlug(user_company);
       const user = await Users.create({
         fname,
         lname,
         email,
         mobile,
+        alternate_number,
         country_code,
         country,
         state,
@@ -136,7 +148,7 @@ exports.getAllBuyer = async (req, res) => {
         {
           model: CompanyInfo,
           as: 'company_info',
-          attributes: ['id', 'organization_name', 'category_sell'],
+          attributes: ['id', 'organization_name'],
           include: [
             { model: MembershipPlan, as: 'MembershipPlan', attributes: ['id', 'name'] },
           ]
@@ -288,6 +300,7 @@ exports.updateBuyer = async (req, res) => {
         lname: req.body.lname,
         email: req.body.email,
         mobile: req.body.mobile,
+        alternate_number: req.body.alternate_number,
         country_code: req.body.country_code,
         country: req.body.country,
         state: req.body.state,
@@ -337,7 +350,7 @@ exports.updateBuyer = async (req, res) => {
       if (companyInfo) {
         await companyInfo.update({
           organization_name: req.body.user_company,
-          organization_slug: createSlug(req.body.user_company),
+          organization_slug: await createUniqueSlug(req.body.user_company),
           company_website: req.body.website,
           organizations_product_description: req.body.products,
           user_category: req.body.user_category,

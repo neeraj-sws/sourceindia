@@ -103,20 +103,6 @@ exports.insertFromCompany = async (req, res) => {
   }
 };
 
-
-
-
-
-function createSlug(inputString) {
-  if (!inputString) return ''; // Return empty string or handle as needed
-  return inputString
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
-}
-
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -238,6 +224,7 @@ exports.register = async (req, res) => {
       cname,
       website,
       mobile,
+      alternate_number,
       country_code,
       email,
       category,
@@ -318,6 +305,7 @@ exports.register = async (req, res) => {
       fname,
       lname,
       mobile,
+      alternate_number,
       country_code,
       email,
       password: hashedPassword,
@@ -850,7 +838,7 @@ exports.updateProfileold = async (req, res) => {
         // console.log(req.body.sub_category);
         await companyInfo.update({
           organization_name: req.body.organization_name,
-          organization_slug: createSlug(req.body.organization_name),
+          organization_slug: await generateUniqueSlug(CompanyInfo, req.body.organization_name),
           core_activity: req.body.core_activity,
           activity: req.body.activity,
           // category_sell: req.body.category_sell,
@@ -943,6 +931,7 @@ exports.updateProfile = async (req, res) => {
         lname: req.body.lname,
         email: req.body.email,
         mobile: req.body.mobile,
+        alternate_number: req.body.alternate_number,
         state: req.body.state,
         city: req.body.city,
         zipcode: req.body.zipcode,
@@ -1050,7 +1039,7 @@ exports.updateProfile = async (req, res) => {
         // 🧾 Update company info
         await companyInfo.update({
           organization_name: req.body.organization_name,
-          organization_slug: createSlug(req.body.organization_name),
+          organization_slug: await generateUniqueSlug(CompanyInfo, req.body.organization_name),
           core_activity: req.body.core_activity,
           activity: req.body.activity,
           company_email: req.body.company_email,

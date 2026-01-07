@@ -116,10 +116,11 @@ const searchSellers = async (q) => {
         Sequelize.literal(`
           EXISTS (
             SELECT 1
-            FROM categories c
+            FROM seller_categories sc
+            INNER JOIN categories c ON c.category_id = sc.category_id
             WHERE
-              c.name LIKE '%${q}%'
-              AND FIND_IN_SET(c.category_id, company_info.category_sell)
+              sc.user_id = Users.user_id
+              AND c.name LIKE '%${q}%'
           )
         `),
 
@@ -127,11 +128,11 @@ const searchSellers = async (q) => {
         Sequelize.literal(`
           EXISTS (
             SELECT 1
-            FROM sub_categories sc
+            FROM seller_categories sc
+            INNER JOIN sub_categories s ON s.sub_category_id = sc.subcategory_id
             WHERE
-              sc.name LIKE '%${q}%'
-              AND FIND_IN_SET(sc.sub_category_id, company_info.sub_category)
-          )
+              sc.user_id = Users.user_id
+              AND s.name LIKE '%${q}%'
         `),
       ],
     },
@@ -139,17 +140,21 @@ const searchSellers = async (q) => {
     order: [
       [
         Sequelize.literal(`
-          CASE
+           CASE
             WHEN company_info.organization_name LIKE '%${q}%' THEN 1
             WHEN EXISTS (
-              SELECT 1 FROM categories c
-              WHERE c.name LIKE '%${q}%'
-              AND FIND_IN_SET(c.category_id, company_info.category_sell)
+              SELECT 1
+              FROM seller_categories sc
+              INNER JOIN categories c ON c.category_id = sc.category_id
+              WHERE sc.user_id = Users.user_id
+              AND c.name LIKE '%${q}%'
             ) THEN 2
             WHEN EXISTS (
-              SELECT 1 FROM sub_categories sc
-              WHERE sc.name LIKE '%${q}%'
-              AND FIND_IN_SET(sc.sub_category_id, company_info.sub_category)
+              SELECT 1
+              FROM seller_categories sc
+              INNER JOIN sub_categories s ON s.sub_category_id = sc.subcategory_id
+              WHERE sc.user_id = Users.user_id
+              AND s.name LIKE '%${q}%'
             ) THEN 3
             ELSE 4
           END

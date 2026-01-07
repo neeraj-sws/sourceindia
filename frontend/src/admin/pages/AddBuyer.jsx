@@ -23,7 +23,7 @@ const AddBuyer = () => {
   const [selectedState, setSelectedState] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [formData, setFormData] = useState({
-    fname: '', lname: '', email: '', password: '', mobile: '', country_code: '', zipcode: '', user_company: '', website: '', is_trading: '',
+    fname: '', lname: '', email: '', password: '', mobile: '', alternate_number: '', country_code: '', zipcode: '', user_company: '', website: '', is_trading: '',
     elcina_member: '', user_category: '', address: '', products: '', file: null, company_file: null
   });
   const [file, setFile] = useState(null);
@@ -136,6 +136,7 @@ const AddBuyer = () => {
     }
     if (!formData.mobile.trim()) errs.mobile = 'Mobile is required';
     else if (!/^[6-9]\d{9}$/.test(formData.mobile)) errs.mobile = "Mobile Number is invalid";
+    if (formData.alternate_number && !/^[6-9]\d{9}$/.test(formData.alternate_number)) errs.alternate_number = "Alternate Number is invalid";
     if (!selectedCountry) errs.country = 'Country is required';
     if (!selectedState) errs.state = 'State is required';
     if (!selectedCity) errs.city = 'City is required';
@@ -186,6 +187,7 @@ const AddBuyer = () => {
           email: data.email || '',
           password: '',
           mobile: data.mobile || '',
+          alternate_number: data.alternate_number || '',
           country_code: data.country_code || '',
           zipcode: data.zipcode || '',
           user_company: data.user_company || '',
@@ -375,10 +377,16 @@ const AddBuyer = () => {
                     <div className="col-md-3 mb-3">
                       <label htmlFor="zipcode" className="form-label required">Post Code</label>
                       <input type="number" className={`form-control ${errors.zipcode ? 'is-invalid' : ''}`} id="zipcode"
-                        placeholder="Post Code" value={formData.zipcode} onChange={handleInputChange} />
+                        placeholder="Post Code" value={formData.zipcode} onChange={handleInputChange} min={0} />
                       {errors.zipcode && <div className="invalid-feedback">{errors.zipcode}</div>}
                     </div>
-                    <div className="col-md-6">
+                    <div className="col-md-4 mb-3">
+                      <label htmlFor="alternate_number" className="form-label required">Alternate Number</label>
+                      <input type="number" className={`form-control ${errors.alternate_number ? 'is-invalid' : ''}`} id="alternate_number"
+                        placeholder="Alternate Number" value={formData.alternate_number} onChange={handleInputChange} min={0} />
+                      {errors.alternate_number && <div className="invalid-feedback">{errors.alternate_number}</div>}
+                    </div>
+                    <div className="col-md-4">
                       <label htmlFor="file" className="form-label required">Image</label>
                       <input className={`form-control ${errors.file ? 'is-invalid' : ''}`} type="file"
                         id="file" onChange={handleFileChange} />
@@ -402,7 +410,7 @@ const AddBuyer = () => {
                         />
                       ) : null}
                     </div>
-                    <div className="col-md-6">
+                    <div className="col-md-4">
                       <label htmlFor="user_category" className="form-label">User Category</label>
                       <select
                         id="user_category" className="form-control"

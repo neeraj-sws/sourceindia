@@ -14,6 +14,7 @@ const ProfileEdit = () => {
     fname: "",
     lname: "",
     mobile: "",
+    alternate_number: "",
     email: "",
     designation: "",
     state: "",
@@ -162,6 +163,7 @@ const ProfileEdit = () => {
     if (!user.mobile?.trim()) errs.mobile = "Mobile is required";
     else if (!/^[6-9]\d{9}$/.test(user.mobile))
       errs.mobile = "Invalid mobile number";
+    if (user.alternate_number && !/^[6-9]\d{9}$/.test(user.alternate_number)) errs.alternate_number = "Alternate Number is invalid";
     if (!selectedState) errs.state = "State is required";
     if (!selectedCity) errs.city = "City is required";
     if (!user.zipcode?.trim()) errs.zipcode = "Pincode is required";
@@ -169,7 +171,7 @@ const ProfileEdit = () => {
       errs.zipcode = "Invalid pincode format";
     if (!user.address?.trim()) errs.address = "Address is required";
     // if (!user.company_info?.user_category?.trim()) errs.user_category = "User Category is required";
-    if (!user.website?.trim()) errs.website = "Website is required";
+    if (user.is_seller == 0 && !user.website?.trim()) errs.website = "Website is required";
     const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
     if (file) {
@@ -179,6 +181,7 @@ const ProfileEdit = () => {
         errs.file = "Image size must be under 2MB";
       }
     }
+    console.log(errs)
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -201,6 +204,7 @@ const ProfileEdit = () => {
       formData.append("lname", user.lname || "");
       formData.append("email", user.email || "");
       formData.append("mobile", user.mobile || "");
+      formData.append("alternate_number", user.alternate_number || "");
       formData.append("state", selectedState || "");
       formData.append("city", selectedCity || "");
       formData.append("zipcode", user.zipcode || "");
@@ -291,6 +295,20 @@ const ProfileEdit = () => {
                           placeholder="Enter Mobile"
                         />
                         {errors.mobile && <div className="invalid-feedback">{errors.mobile}</div>}
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">
+                          Alternate Number
+                        </label>
+                        <input
+                          type="text"
+                          name="alternate_number"
+                          value={user.alternate_number || ""}
+                          onChange={handleChange}
+                          className={`form-control ${errors.alternate_number ? 'is-invalid' : ''}`}
+                          placeholder="Enter Alternate Number"
+                        />
+                        {errors.alternate_number && <div className="invalid-feedback">{errors.alternate_number}</div>}
                       </div>
                       <div className="col-md-6">
                         <label className="form-label">

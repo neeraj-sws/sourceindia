@@ -112,6 +112,12 @@ const Profile = () => {
                             <p>{user.mobile}</p>
                           </div>
                         </div>
+                        <div className="col-sm-6">
+                          <div className="pt-3 border-bottom">
+                            <h6>Alternate Number</h6>
+                            <p>{user.alternate_number}</p>
+                          </div>
+                        </div>
                         {user.company_info?.designation && (
                           <div className="col-sm-6">
                             <div className="pt-3 border-bottom">

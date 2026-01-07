@@ -5,11 +5,12 @@ import { useParams } from "react-router-dom";
 
 const ItemCategory = () => {
   const { slug } = useParams();
-  console.log(slug);
+  // console.log(slug);
   const [subcategory, setSubcategory] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  const [categoryCounts, setCategoryCounts] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,6 +112,46 @@ const ItemCategory = () => {
     </>
   );
 
+  const visibleCategoriesCount =
+  subcategory?.item_categories?.filter(
+    (cat) =>
+      (cat.items || []).some((item) => item.product_count > 0)
+  ).length || 0;
+
+  const fetchCategoryCount = async (catId) => {
+  const res = await axios.get(
+    `${API_BASE_URL}/item_category/${catId}`
+  );
+  return res.data.product_count || 0;
+};
+useEffect(() => {
+  if (!subcategory?.item_categories?.length) return;
+
+  const loadCounts = async () => {
+    try {
+      const promises = subcategory.item_categories.map((cat) =>
+        fetchCategoryCount(cat.id).then((count) => ({
+          id: cat.id,
+          count,
+        }))
+      );
+
+      const results = await Promise.all(promises);
+
+      const countMap = {};
+      results.forEach((r) => {
+        countMap[r.id] = r.count;
+      });
+
+      setCategoryCounts((prev) => ({ ...prev, ...countMap }));
+    } catch (err) {
+      console.error("Error fetching category counts", err);
+    }
+  };
+
+  loadCounts();
+}, [subcategory]);
+
   if (showSkeleton && page === 1) {
     return <ItemCategorySkeleton />;
   }
@@ -156,25 +197,40 @@ const ItemCategory = () => {
 
         {/* 🟢 Item Categories */}
         <div className="row g-3">
-          {subcategory.item_categories?.length > 0 ? (
-            subcategory.item_categories.map((cat) => (
+          {subcategory.item_categories
+  ?.filter(
+    (cat) =>
+      (cat.items || []).some((item) => item.product_count > 0)
+  )
+  .map((cat) => (
               <div key={cat.id} className="col-12 text-center">
                 <div className="card h-100">
                   <div className="card-body">
-                    <a
+                    {/* <a
                       href={`/categories/${subcategory.category.slug}/${subcategory.slug}/${cat.slug}`}
                       className="d-block text-decoration-none"
                     >
                       <div className="d-flex justify-content-between align-items-start">
-                        <h6 className="fw-semibold mb-3">{cat.name}</h6>
+                        <h6 className="fw-semibold mb-3">{cat.name} ({cat.product_count})</h6>
+                        <span>→</span>
+                      </div>
+                    </a> */}
+                    <a
+                      href={`/products?category_id=${subcategory.category.id}&subcategory_id=${subcategory.id}&item_category_id=${cat.id}`}
+                      className="d-block text-decoration-none"
+                    >
+                      <div className="d-flex justify-content-between align-items-start">
+                        <h6 className="fw-semibold mb-3">{cat.name} ({categoryCounts[cat.id] ?? 0})</h6>
                         <span>→</span>
                       </div>
                     </a>
                     <div className="d--flex justify-content-between align-items--center gap-1 gridulimgcontainer">
                       <div className="row categorylistul">
                         {(cat.items || []).length > 0 ? (
-                          cat.items.map((item) => (
-                            <div className="col-6 col-sm-4 col-md-3 col-lg-2 text-center itemcolblock mb-3">
+                          cat.items
+  .filter((item) => item.product_count > 0)
+  .map((item) => (
+                            <div key={item.id} className="col-6 col-sm-4 col-md-3 col-lg-2 text-center itemcolblock mb-3">
                               <div className="border rounded p-3">
                                 <a href={`/products?category_id=${subcategory.category.id}&subcategory_id=${subcategory.id}&item_category_id=${cat.id}&item_subcategory_id=${item.id}`}>
                                   <img
@@ -216,14 +272,11 @@ const ItemCategory = () => {
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
-            <p className="text-center text-muted">No item categories found.</p>
-          )}
+            ))}
         </div>
 
         {/* 🟢 Load More Button */}
-        {hasMore && (
+        {hasMore && visibleCategoriesCount > 0 && (
           <div className="text-center mt-4">
             <button
               className="btn btn-outline-primary btn-sm px-4"
