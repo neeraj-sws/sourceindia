@@ -871,7 +871,7 @@ const ProductsList = () => {
                           id={`company-${company.id}`}
                           className="form-check-input"
                           checked={selectedCompanies.includes(company.id)}
-                          disabled={company.product_count === 0}
+                           disabled={company.product_count === 0}
                           onChange={() =>
                             handleCompaniesCheckboxChange(company.id)
                           }
