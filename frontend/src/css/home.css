@@ -914,6 +914,13 @@ button.nav-link:hover {
     width: 100% !important;
 }
 
+#enquiryModal .form-control,
+#enquiryModal .form-select {
+    box-shadow: none;
+    border-radius: 0;
+    font-size: 0.875rem;
+    height: 40px;
+}
 
 /* Responsive */
 @media (max-width: 1200px) {
