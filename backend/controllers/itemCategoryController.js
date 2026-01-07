@@ -10,6 +10,7 @@ const UploadImage = require('../models/UploadImage');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const getMulterUpload = require('../utils/upload');
 const ItemSubCategory = require('../models/ItemSubCategory');
+const sequelize = require('../config/database');
 
 exports.createItemCategory = async (req, res) => {
   const upload = getMulterUpload('item_category');
@@ -112,11 +113,30 @@ exports.getItemCategoryById = async (req, res) => {
         attributes: ['file'],
       }],
     });
-    if (!itemCategory) return res.status(404).json({ message: 'Item Category not found' });
+
+    if (!itemCategory) {
+      return res.status(404).json({ message: 'Item Category not found' });
+    }
+
+    // 🔹 Manual SQL query for product count
+    const [result] = await sequelize.query(
+      `
+      SELECT COUNT(*) AS product_count
+      FROM products
+      WHERE item_category_id = :itemCategoryId
+      `,
+      {
+        replacements: { itemCategoryId: itemCategory.id },
+        type: sequelize.QueryTypes.SELECT,
+      }
+    );
+
     const response = {
       ...itemCategory.toJSON(),
-      file_name: itemCategory.UploadImage ? itemCategory.UploadImage.file : null,
+      file_name: itemCategory.UploadImage?.file || null,
+      product_count: result.product_count,
     };
+
     res.json(response);
   } catch (err) {
     res.status(500).json({ error: err.message });

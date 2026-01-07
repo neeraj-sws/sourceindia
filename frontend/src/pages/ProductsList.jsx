@@ -45,49 +45,45 @@ const ProductsList = () => {
 
   const location = useLocation();
   const [showFilter, setShowFilter] = useState(false);
+  const [filtersReady, setFiltersReady] = useState(false);
 
-  useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const itemIdParam = queryParams.get("item_id");
-    const cateIdParam = queryParams.get("category_id");
-    const subcateIdParam = queryParams.get("subcategory_id");
-    const itemcateIdParam = queryParams.get("item_category_id");
-    const itemsubcateIdParam = queryParams.get("item_subcategory_id");
+useEffect(() => {
+  const queryParams = new URLSearchParams(location.search);
 
-    if (cateIdParam) {
-      setSelectedCategories([Number(cateIdParam)]);
+  const mapping = [
+    { key: 'item_id', type: 'item' },
+    { key: 'item_subcategory_id', type: 'item_subcategory' },
+    { key: 'item_category_id', type: 'item_category' },
+    { key: 'subcategory_id', type: 'subcategory' },
+    { key: 'category_id', type: 'category' }
+  ];
+
+  const found = mapping.find(m => queryParams.get(m.key));
+
+  if (!found) return;
+
+  const id = Number(queryParams.get(found.key));
+
+  (async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/products/item-hierarchy/${found.type}/${id}`
+      );
+
+      const data = res.data;
+
+      setSelectedCategories(data.category_id ? [data.category_id] : []);
+      setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
+      setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
+      setSelectedItemSubCategories(
+        data.item_subcategory_id ? [data.item_subcategory_id] : []
+      );
+      setSelectedItems(data.item_id ? [data.item_id] : []);
+    } catch (err) {
+      console.error("Error fetching item hierarchy:", err);
     }
-    if (subcateIdParam) {
-      setSelectedSubCategories([Number(subcateIdParam)]);
-    }
-    if (itemcateIdParam) {
-
-      setSelectedItemCategories([Number(itemcateIdParam)]);
-    }
-    if (itemsubcateIdParam) {
-      setSelectedItemSubCategories([Number(itemsubcateIdParam)]);
-    }
-
-    // if (itemIdParam) {
-
-    const itemId = parseInt(itemsubcateIdParam, 10);
-    (async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/products/item-hierarchy/${itemId}`);
-        const data = res.data;
-        setSelectedCategories(data.category_id ? [data.category_id] : []);
-        setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
-        setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
-        setSelectedItemSubCategories(data.item_subcategory_id ? [data.item_subcategory_id] : []);
-        setSelectedItems(data.item_id ? [data.item_id] : [Number(itemId)]);
-      } catch (err) {
-        console.error("Error fetching item hierarchy:", err);
-      }
-    })();
-    // }
-  }, [location.search]);
-
-
+  })();
+}, [location.search]);
 
 
   useEffect(() => {
@@ -98,17 +94,47 @@ const ProductsList = () => {
   }, [searchParams]);
 
   useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const cateParam = queryParams.get("cate");
+  const queryParams = new URLSearchParams(location.search);
 
-    if (cateParam) {
-      // For URLs like ?cate=3 or ?cate=3,5
-      const selectedFromUrl = cateParam
-        .split(",")
-        .map((v) => parseInt(v.trim(), 10));
-      setSelectedCategories(selectedFromUrl);
+  const mapping = [
+    { key: 'item_id', type: 'item' },
+    { key: 'item_subcategory_id', type: 'item_subcategory' },
+    { key: 'item_category_id', type: 'item_category' },
+    { key: 'subcategory_id', type: 'subcategory' },
+    { key: 'category_id', type: 'category' }
+  ];
+
+  const found = mapping.find(m => queryParams.get(m.key));
+
+  if (!found) {
+    setFiltersReady(true); // no URL filters
+    return;
+  }
+
+  const id = Number(queryParams.get(found.key));
+
+  (async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/products/item-hierarchy/${found.type}/${id}`
+      );
+
+      const data = res.data;
+
+      setSelectedCategories(data.category_id ? [data.category_id] : []);
+      setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
+      setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
+      setSelectedItemSubCategories(
+        data.item_subcategory_id ? [data.item_subcategory_id] : []
+      );
+      setSelectedItems(data.item_id ? [data.item_id] : []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFiltersReady(true); // ✅ important
     }
-  }, [location.search]);
+  })();
+}, [location.search]);
 
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(categorySearchTerm)
@@ -350,19 +376,22 @@ const ProductsList = () => {
   };
 
   useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchProducts(1, false);
-  }, [
-    selectedCategories,
-    selectedSubCategories,
-    selectedItemCategories,
-    selectedItemSubCategories,
-    selectedItems,
-    selectedStates,
-    selectedCompanies,
-    sortBy
-  ]);
+  if (!filtersReady) return; // 🚫 block early call
+
+  setPage(1);
+  setHasMore(true);
+  fetchProducts(1, false);
+}, [
+  filtersReady,
+  selectedCategories,
+  selectedSubCategories,
+  selectedItemCategories,
+  selectedItemSubCategories,
+  selectedItems,
+  selectedStates,
+  selectedCompanies,
+  sortBy
+]);
 
   useEffect(() => {
     const handleScroll = () => {

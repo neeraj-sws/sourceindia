@@ -103,26 +103,21 @@ exports.getAllCategories = async (req, res) => {
 
     // company count per category (simplified for now)
     const companyCountsRaw = await sequelize.query(
-      `SELECT ci.category_sell, COUNT(ci.company_id) AS count
-      FROM company_info ci
-      INNER JOIN users u 
-          ON ci.company_id = u.company_id
-          AND u.is_delete = 0
-          AND u.status = 1
-          AND u.is_approve = 1
-      WHERE ci.is_delete = 0
-      GROUP BY ci.category_sell`, { type: QueryTypes.SELECT });
+      `SELECT 
+    sc.category_id AS category_id,
+    COUNT(DISTINCT u.company_id) AS count
+  FROM seller_categories sc
+  INNER JOIN users u 
+    ON u.user_id = sc.user_id
+   AND u.is_delete = 0
+   AND u.status = 1
+   AND u.is_approve = 1
+  WHERE u.company_id IS NOT NULL
+  GROUP BY sc.category_id`, { type: QueryTypes.SELECT });
 
     const companyCountMap = {};
     companyCountsRaw.forEach(item => {
-      const csv = item.category_sell || '';
-      const count = parseInt(item.count) || 0;
-      csv.split(',').forEach(catIdStr => {
-        const catId = parseInt(catIdStr);
-        if (!isNaN(catId)) {
-          companyCountMap[catId] = (companyCountMap[catId] || 0) + count;
-        }
-      });
+      companyCountMap[item.category_id] = parseInt(item.count) || 0;
     });
 
     const modifiedCategories = categories.map(category => {

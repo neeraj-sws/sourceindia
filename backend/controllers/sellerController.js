@@ -28,9 +28,19 @@ const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const logSQL = false;
 
-function createSlug(inputString) {
-  if (!inputString) return '';
-  return inputString.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+async function createUniqueSlug(name) {
+  if (!name) return '';
+  let slug = name.toLowerCase().trim()
+    .replace(/[^a-z0-9\s-]/g, '')  // remove invalid chars
+    .replace(/\s+/g, '-')          // replace spaces with -
+    .replace(/-+/g, '-');
+  let uniqueSlug = slug;
+  let counter = 1;
+  while (await CompanyInfo.findOne({ where: { organization_slug: uniqueSlug } })) {
+    uniqueSlug = `${slug}-${counter}`;
+    counter++;
+  }
+  return uniqueSlug;
 }
 
 exports.createSeller = async (req, res) => {
@@ -58,7 +68,7 @@ exports.createSeller = async (req, res) => {
 
     try {
       const {
-        fname, lname, email, password, mobile, country_code, country, state, city, zipcode,
+        fname, lname, email, password, mobile, alternate_number, country_code, country, state, city, zipcode,
         address, status, is_trading, elcina_member, user_company, website, products,
         step, mode, real_password, remember_token, payment_status, is_email_verify, featured_company, is_approve,
         organization_name, organization_slug, user_type, core_activity, activity, categories, subcategory_ids, // Added subcategory_ids
@@ -90,9 +100,8 @@ exports.createSeller = async (req, res) => {
 
       // Create user (unchanged)
       const hashedPassword = await bcrypt.hash(password, 10);
-      // const organization_slug = createSlug(user_company);
       const user = await Users.create({
-        fname, lname, email, mobile, country_code, country, state, city, zipcode, address, products,
+        fname, lname, email, mobile, alternate_number, country_code, country, state, city, zipcode, address, products,
         status: status || 1, is_trading: is_trading || 0, is_approve: is_approve || 1,
         elcina_member: elcina_member || 2, user_company, website, step: step || 0, mode: mode || 0,
         password: hashedPassword, real_password: real_password || '', remember_token: remember_token || '',
@@ -104,7 +113,7 @@ exports.createSeller = async (req, res) => {
      
       // Create company info (unchanged)
       const companyInfo = await CompanyInfo.create({
-        organization_name: user_company, organization_slug: createSlug(user_company), role, user_type: user_type || 9,
+        organization_name: user_company, organization_slug: await createUniqueSlug(user_company), role, user_type: user_type || 9,
         core_activity, activity, company_website: website, company_location,
         is_star_seller: is_star_seller || 0, is_verified: is_verified || 0, company_meta_title,
         company_video_second, brief_company, organizations_product_description: products, designation,
@@ -496,6 +505,7 @@ exports.updateSeller = async (req, res) => {
         lname: req.body.lname,
         email: req.body.email,
         mobile: req.body.mobile,
+        alternate_number: req.body.alternate_number,
         country_code: req.body.country_code,
         country: req.body.country,
         state: req.body.state,
@@ -547,7 +557,7 @@ exports.updateSeller = async (req, res) => {
       if (companyInfo) {
         await companyInfo.update({
           organization_name: req.body.user_company,
-          organization_slug: createSlug(req.body.user_company),
+          organization_slug: await createUniqueSlug(req.body.user_company),
           role: req.body.role,
           // user_type: req.body.user_type,
           core_activity: req.body.core_activity,

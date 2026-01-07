@@ -921,46 +921,64 @@ exports.storeEnquiry = async (req, res) => {
     let category_names = '';
 
     const product = await Products.findByPk(product_id);
-    const companyinfo = await CompanyInfo.findByPk(product.company_id);
-    if (companyinfo.category_sell) {
-      const catIds = companyinfo.category_sell.split(",");
-      const categoryDataArr = [];
-      const categoryNameArr = [];
+    const sellerUsers = await Users.findAll({
+  where: {
+    company_id: product.company_id,
+    is_delete: 0,
+    status: 1,
+    is_approve: 1,
+  },
+  attributes: ['id'],
+  raw: true,
+});
 
-      for (const catId of catIds) {
-        const category = await Categories.findByPk(catId);
-        if (category) {
-          categoryDataArr.push(category.id);
-          categoryNameArr.push(category.name);
-        }
-      }
-      category_ids = categoryDataArr.join(", ");
-      category_names = categoryNameArr.join(", ");
+const sellerUserIds = sellerUsers.map(u => u.id);
 
+if (sellerUserIds.length) {
+  const sellerCategories = await SellerCategory.findAll({
+    where: {
+      user_id: sellerUserIds,
+    },
+    include: [
+      {
+        model: Categories,
+        as: 'category',
+        attributes: ['id', 'name'],
+      },
+      {
+        model: SubCategories,
+        as: 'subcategory',
+        attributes: ['id', 'name'],
+      },
+    ],
+  });
 
-      let sub_cat_data_arr = [];
-      let sub_cat_name_arr = [];
+  const categoryIdSet = new Set();
+  const categoryNameSet = new Set();
+  const subCategoryIdSet = new Set();
+  const subCategoryNameSet = new Set();
 
-      for (const cat_id of catIds) {
-        if (cat_id !== "38") {
-          const sub_cat = await SubCategories.findOne({
-            where: {
-              id: product.sub_category,
-              category: cat_id,
-            },
-          });
-
-          if (sub_cat) {
-            sub_cat_data_arr.push(sub_cat.id);
-            sub_cat_name_arr.push(sub_cat.name.trim());
-          }
-        }
-      }
-
-      subcategory_ids = sub_cat_data_arr.filter(Boolean).join(", ");
-      subcategory_names = sub_cat_name_arr.filter(Boolean).join(", ");
-
+  sellerCategories.forEach(sc => {
+    if (sc.category) {
+      categoryIdSet.add(sc.category.id);
+      categoryNameSet.add(sc.category.name);
     }
+
+    // match only product subcategory
+    if (
+      sc.subcategory &&
+      sc.subcategory.id === product.sub_category
+    ) {
+      subCategoryIdSet.add(sc.subcategory.id);
+      subCategoryNameSet.add(sc.subcategory.name.trim());
+    }
+  });
+
+  category_ids = [...categoryIdSet].join(', ');
+  category_names = [...categoryNameSet].join(', ');
+  subcategory_ids = [...subCategoryIdSet].join(', ');
+  subcategory_names = [...subCategoryNameSet].join(', ');
+}
 
     const newCompany = new CompanyInfo({ organization_name: company });
     await newCompany.save();
