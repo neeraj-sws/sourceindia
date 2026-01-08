@@ -3220,3 +3220,17 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	border-radius: 0.375rem !important;
 	padding: 5.5px 14px 5.5px 60px !important
 }
+
+.chat-content {
+	overflow-x: scroll;
+}
+
+.chat-content-rightside .chat-right-msg,
+.chat-content-leftside .chat-left-msg {
+	padding: 8px 12px;
+}
+
+.allMessages .active {
+	background-color: #eaf2fb;
+	border-bottom: 2px solid var(--primary-color) !important;
+}

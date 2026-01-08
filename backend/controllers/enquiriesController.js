@@ -1,4 +1,5 @@
-const { Op, fn, col, literal, Sequelize } = require('sequelize');
+const { Op, fn, col, literal, Sequelize, QueryTypes } = require('sequelize');
+const sequelize = require('../config/database');
 const moment = require('moment');
 const Enquiries = require('../models/Enquiries');
 const OpenEnquriy = require('../models/OpenEnquiries');
@@ -18,6 +19,7 @@ const { getTransporter } = require('../helpers/mailHelper');
 const { getCategoryNames } = require('../helpers/mailHelper');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const UploadImage = require('../models/UploadImage');
 
 exports.getAllEnquiries = async (req, res) => {
   try {
@@ -97,101 +99,6 @@ exports.getAllEnquiries = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
-exports.getEnquiriesByNumberold = async (req, res) => {
-  try {
-    const enquiry = await Enquiries.findOne({
-      where: { enquiry_number: req.params.enquiry_number },
-      include: [
-        {
-          model: Users,
-          as: 'from_user',
-          attributes: ['id', 'email', 'mobile', 'company_id', 'fname', 'lname'],
-          include: [{
-            model: CompanyInfo,
-            as: 'company_info',
-            attributes: ['organization_name'],
-          }],
-        },
-        {
-          model: Users,
-          as: 'to_user',
-          attributes: ['id', 'email', 'mobile', 'company_id', 'fname', 'lname'],
-          include: [{
-            model: CompanyInfo,
-            as: 'company_info',
-            attributes: ['organization_name'],
-          }],
-        },
-        {
-          model: EnquiryUsers,
-          as: 'enquiry_users',
-          attributes: ['id', 'product_name', 'product_id', 'company_id', 'enquiry_status'],
-          include: [
-            {
-              model: Products,
-              as: 'Products',
-              attributes: ['id', 'title', 'description', 'user_id', 'category', 'sub_category'],
-              include: [
-                { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
-                { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
-                { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
-              ],
-              required: false,
-            },
-          ],
-          required: false,
-        },
-      ],
-    });
-
-    if (!enquiry) return res.status(404).json({ message: 'Enquiry not found' });
-
-    // Fix: AWAIT findByPk
-    const eu = enquiry.enquiry_users[0];
-    let single_product = null;
-
-    if (eu?.product_id) {
-      single_product = await Products.findByPk(eu.product_id, {
-        attributes: ['id', 'title', 'description', 'user_id', 'category', 'sub_category'],
-        include: [
-          { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
-          { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
-          { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
-        ],
-      });
-    }
-
-
-
-    res.json({
-      ...enquiry.toJSON(),
-      from_full_name: enquiry.from_user ? `${enquiry.from_user.fname} ${enquiry.from_user.lname}`.trim() : null,
-      from_email: enquiry.from_user?.email || null,
-      from_mobile: enquiry.from_user?.mobile || null,
-      from_company_id: enquiry.from_user?.company_id || null,
-      from_organization_name: enquiry.from_user?.company_info?.organization_name || null,
-
-      to_full_name: enquiry.to_user ? `${enquiry.to_user.fname} ${enquiry.to_user.lname}`.trim() : null,
-      to_email: enquiry.to_user?.email || null,
-      to_mobile: enquiry.to_user?.mobile || null,
-      to_company_id: enquiry.to_user?.company_id || null,
-      to_organization_name: enquiry.to_user?.company_info?.organization_name || null,
-
-      enquiry_product: eu?.product_name || null,
-      enquiryUser: eu || null,
-      product_details: single_product || eu?.Products || null, // Dono se best try karo
-
-      // Debug
-      product_source: single_product ? 'from_findByPk' : (eu?.Products ? 'from_include' : 'not_found'),
-    });
-
-  } catch (err) {
-    console.error('Error in getEnquiriesByNumber:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
 
 exports.getEnquiriesByNumber = async (req, res) => {
   try {
@@ -305,9 +212,6 @@ exports.getEnquiriesByNumber = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
-
-
 
 exports.getEnquiriesCount = async (req, res) => {
   try {
@@ -1705,7 +1609,6 @@ exports.getAcceptEnquiries = async (req, res) => {
   }
 };
 
-
 exports.getShortlistedenquiries = async (req, res) => {
   try {
     const { enq_id } = req.query;
@@ -1765,6 +1668,223 @@ exports.getShortlistedenquiries = async (req, res) => {
     });
   }
 };
+
+exports.getMessageenquiries = async (req, res) => {
+  try {
+
+    const { enq_id } = req.query;
+
+    const enquiry = await Enquiries.findOne({
+      where: { id: enq_id }
+    });
+    const user = await Users.findOne({
+      where: { id: enquiry.user_id }
+    });
+
+
+    if (!enquiry) {
+      return res.status(404).json({
+        success: false,
+        message: "Enquiry not found"
+      });
+    }
+
+    const companyId = user.company_id;
+
+    const data = await sequelize.query(
+      `
+  SELECT 
+    user_messages.*,
+    enquiry_messages.enquiry_message_id AS mid,
+    user_images.file AS user_file,
+    seller_images.file AS seller_file,
+    user_mid.fname AS user_fname,
+    user_mid.lname AS user_lname,
+    user_seller.fname AS seller_fname,
+    user_seller.lname AS seller_lname
+  FROM user_messages
+  LEFT JOIN enquiry_messages 
+    ON user_messages.message_id = enquiry_messages.enquiry_message_id
+  LEFT JOIN users AS user_mid 
+    ON user_messages.user_id = user_mid.user_id
+  LEFT JOIN users AS user_seller 
+    ON user_messages.company_id = user_seller.company_id
+  LEFT JOIN upload_images AS user_images 
+    ON user_mid.file_id = user_images.upload_image_id
+  LEFT JOIN upload_images AS seller_images 
+    ON user_seller.file_id = seller_images.upload_image_id
+  WHERE user_messages.is_delete = 0
+    AND enquiry_messages.enquiry_id = :messageId
+  ORDER BY user_messages.updated_at ASC
+  `,
+      {
+        replacements: {
+          messageId: enq_id
+        },
+        type: QueryTypes.SELECT
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      data,
+      user
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong"
+    });
+  }
+};
+
+exports.getAllLeads = async (req, res) => {
+  try {
+    const { companyId, is_type } = req.query;
+    let enquiryMessages;
+    if (is_type == 'myenquiry') {
+      enquiryMessages = await sequelize.query(
+        `
+  SELECT 
+    enquiry_messages.*,
+    enquiries.enquiry_number,
+    company_info.organization_name,
+    s_user.fname,
+    s_user.lname,
+    upload_images.file
+  FROM enquiry_messages
+  LEFT JOIN enquiries 
+    ON enquiry_messages.enquiry_id = enquiries.enquiry_id
+  LEFT JOIN company_info 
+    ON enquiry_messages.seller_company_id = company_info.company_id
+  LEFT JOIN users 
+    ON enquiry_messages.buyer_company_id = users.company_id
+  LEFT JOIN users AS s_user 
+    ON enquiry_messages.seller_company_id = s_user.company_id
+  LEFT JOIN upload_images 
+    ON s_user.file_id = upload_images.upload_image_id
+  WHERE enquiries.is_delete = 0
+    AND enquiry_messages.buyer_company_id = :company_id
+  GROUP BY enquiry_messages.enquiry_id
+  `,
+        {
+          replacements: {
+            company_id: companyId
+          },
+          type: Sequelize.QueryTypes.SELECT
+        }
+      );
+    } else {
+      enquiryMessages = await sequelize.query(
+        `
+  SELECT 
+    enquiry_messages.*,
+    enquiries.enquiry_number,
+    company_info.organization_name,
+    s_user.fname,
+    s_user.lname,
+    upload_images.file
+  FROM enquiry_messages
+  LEFT JOIN enquiries 
+    ON enquiry_messages.enquiry_id = enquiries.enquiry_id
+  LEFT JOIN company_info 
+    ON enquiry_messages.seller_company_id = company_info.company_id
+  LEFT JOIN users 
+    ON enquiry_messages.buyer_company_id = users.company_id
+  LEFT JOIN users AS s_user 
+    ON enquiry_messages.seller_company_id = s_user.company_id
+  LEFT JOIN upload_images 
+    ON s_user.file_id = upload_images.upload_image_id
+  WHERE enquiries.is_delete = 0
+    AND enquiry_messages.seller_company_id = :company_id
+  GROUP BY enquiry_messages.enquiry_id
+  `,
+        {
+          replacements: {
+            company_id: companyId
+          },
+          type: Sequelize.QueryTypes.SELECT
+        }
+      );
+    }
+
+
+    return res.json({ success: true, data: enquiryMessages });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false });
+  }
+};
+
+
+exports.postSendMessage = async (req, res) => {
+  try {
+    const { enquiry_id, message, user } = req.body;
+
+    const enq_msg = await EnquiryMessage.findOne({
+      where: { enquiry_id: enquiry_id }
+    });
+    const user_messages = await UserMessage.findOne({
+      where: { is_delete: 0 },
+      include: [
+        {
+          model: EnquiryMessage,
+          as: 'EnquiryMessage',
+          required: true,
+          where: { enquiry_id },
+          attributes: []
+        }
+      ],
+      attributes: [
+        'id',
+        'user_id',
+        'company_id',
+        [Sequelize.col('EnquiryMessage.enquiry_message_id'), 'mid']
+      ]
+    });
+
+    if (!user_messages) {
+      return res.status(400).json({ success: false, message: "No base message found" });
+    }
+
+    const uid = user_messages.user_id;
+    const userid = user.id;
+
+    // ❗ yahan 0 nahi, NULL
+    let user_id = 0;
+    let company_id = 0;
+    let seller_id = 0;
+    let user_company_id = 0;
+
+    user_id = user.id;
+    company_id = user.company_id;
+
+
+    const message_id = enq_msg.id;
+
+
+    const data = await UserMessage.create({
+      user_id,
+      company_id,
+      enquiry_id,
+      message,
+      message_id,
+      user_company_id,
+      seller_id,
+      is_delete: 0
+    });
+
+    return res.json({ success: true, data });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false });
+  }
+};
+
 
 exports.getEnquiriesByEnquiryServerSide = async (req, res) => {
   try {

@@ -42,6 +42,7 @@ const Enquiry = lazy(() => import('../pages/Enquiry'));
 const TicketView = lazy(() => import('../pages/TicketView'));
 const EnquiryList = lazy(() => import('../pages/EnquiryList'));
 const MyAllEnquiryChat = lazy(() => import('../pages/MyAllEnquiryChat'));
+const AllLeadsChat = lazy(() => import('../pages/AllLeadsChat'));
 const TermsConditions = lazy(() => import('../pages/TermsConditions'));
 const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
 const Impersonate = lazy(() => import('../pages/Impersonate'));
@@ -58,7 +59,7 @@ function FrontLayout() {
   const location = useLocation();
   const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit', '/my-product',
     '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/inbox',
-    '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', 'open-enquiry-dashboard'];
+    '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', '/all-leads-chats', 'open-enquiry-dashboard'];
   const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -103,6 +104,7 @@ function FrontLayout() {
                 <Route path="/edit_product/:productId" element={<PrivateRoute><AddProduct /></PrivateRoute>} />
                 <Route path="/seller_enquiry" element={<PrivateRoute><LeadsList /></PrivateRoute>} />
                 <Route path="/my_enquiry" element={<PrivateRoute><EnquiryList /></PrivateRoute>} />
+                <Route path="/all-leads-chats" element={<PrivateRoute><AllLeadsChat /></PrivateRoute>} />
                 <Route path="/my-all-enquiries-chats" element={<PrivateRoute><MyAllEnquiryChat /></PrivateRoute>} />
                 <Route path="/lead-detail/:enquiry_number" element={<PrivateRoute><LeadDetail /></PrivateRoute>} />
                 <Route path="/my-open-enquiry-dashboard" element={<PrivateRoute><OpenEnquiry /></PrivateRoute>} />

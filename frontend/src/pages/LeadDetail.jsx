@@ -3,7 +3,7 @@ import { useNavigate, Link, useParams, useLocation } from "react-router-dom";
 import axios from "axios";
 import { Suspense, lazy } from 'react';
 import Breadcrumb from "../admin/common/Breadcrumb";
-import API_BASE_URL from "./../config";
+import API_BASE_URL, { ROOT_URL } from "./../config";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import UseAuth from '../sections/UseAuth';
@@ -20,6 +20,9 @@ const LeadDetail = () => {
   const [awardedList, setAwardedList] = useState([]);
   const [acceptList, setAcceptList] = useState([]);
   const [shortList, setShortList] = useState([]);
+  const [enquiryMessages, setEnquiryMessages] = useState([]);
+  const [message, setMessage] = useState("");
+
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     enquiry_number: '', from_full_name: '', from_email: '', from_mobile: '',
@@ -53,10 +56,11 @@ const LeadDetail = () => {
     status = "Closed";
     color = "danger";
   }
-
+  const loggedCompanyId = user?.id;
 
   useEffect(() => {
     if (!user?.company_id || !formData?.id) return;
+    // auth se
 
     // 🟢 Lead count
     axios
@@ -116,7 +120,57 @@ const LeadDetail = () => {
         console.error("Error fetching awarded companies:", err);
         setShortList([]); // fallback
       });
+
+    // 🟣 message companies
+
+    axios
+      .get(`${API_BASE_URL}/enquiries/messages?enq_id=${formData.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+      .then((res) => {
+        const data = res.data?.data || [];
+
+        setEnquiryMessages(data);
+      })
+      .catch((err) => {
+        console.error("Error fetching awarded companies:", err);
+        setEnquiryMessages([]); // fallback
+      });
   }, [user?.company_id, formData?.id]);
+
+
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || !formData?.id) return;
+
+    try {
+      const payload = {
+        enquiry_id: formData.id,
+        message: message,
+        user: user
+      };
+
+      const res = await axios.post(
+        `${API_BASE_URL}/enquiries/send-message`,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        }
+      );
+
+      // UI me turant message add
+      if (res.data?.data) {
+        setEnquiryMessages((prev) => [...prev, res.data.data]);
+      }
+
+      setMessage("");
+    } catch (error) {
+      console.error("Send message error:", error);
+    }
+  };
+
+
+
 
   return (
     <>
@@ -254,112 +308,119 @@ const LeadDetail = () => {
               <div className="col-md-8">
                 <div className="card mb-3">
                   <div className="card-body">
-                    <ul className="nav nav-pills nav-justified mb-3" role="tablist">
+                    <ul className="nav nav-pills mb-3 border-bottom pb-2" role="tablist">
                       <li className="nav-item" role="presentation">
-                        <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-system" role="tab" aria-selected="true">
-                          Awarded <span className="badge btn-primary ms-2">{counterCount?.awerded}</span>
-                        </a>
-                      </li>
-                      <li className="nav-item" role="presentation">
-                        <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-password" role="tab" aria-selected="false">
-                          Accept <span className="badge btn-primary ms-2">{counterCount?.acceptCount}</span>
-                        </a>
-                      </li>
-                      <li className="nav-item" role="presentation">
-                        <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-meta" role="tab" aria-selected="false">
-                          Shortlisted <span className="badge btn-primary ms-2">{counterCount?.shortlisted}</span>
-                        </a>
-                      </li>
-                      <li className="nav-item" role="presentation">
-                        <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-email" role="tab" aria-selected="false">
+                        <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-email" role="tab" aria-selected="false">
                           Messages
                         </a>
                       </li>
                     </ul>
                     <div className="tab-content" id="pills-tabContent">
-                      <div className="tab-pane fade show active" id="primary-pills-system" role="tabpanel">
-                        {awardedList.length > 0 ? (
-                          <table className="table table-striped table-bordered w-100">
-                            <thead>
-                              <tr>
-                                <th>S.No.</th>
-                                <th>Company Name</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {awardedList.map((company, index) => (
-                                <tr key={company.id || index}>
-                                  <td>{index + 1}</td>
-                                  <td>{company.company_name}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        ) : (
-                          <div className="text-center bg-white py-4">
-                            <span><i className="bx bxs-group me-3 font-20"></i></span>
-                            <p>- No Enquiry Awarded. -</p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="tab-pane fade" id="primary-pills-password" role="tabpanel">
-                        {acceptList.length > 0 ? (
-                          <table className="table table-striped table-bordered w-100">
-                            <thead>
-                              <tr>
-                                <th>S.No.</th>
-                                <th>Company Name</th>
-                                <th>Status</th>
-                                <th>Shortlist</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {acceptList.map((company, index) => (
-                                <tr key={company.id || index}>
-                                  <td>{index + 1}</td>
-                                  <td>{company.name}</td>
-                                  <td dangerouslySetInnerHTML={{ __html: company.status }}></td>
-                                  <td dangerouslySetInnerHTML={{ __html: company.shortlist }}></td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        ) : (
-                          <div className="text-center bg-white py-4">
-                            <span><i className="bx bxs-group me-3 font-20"></i></span>
-                            <p>- No Enquiry Accepted. -</p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="tab-pane fade" id="primary-pills-meta" role="tabpanel">
-                        {shortList.length > 0 ? (
-                          <table className="table table-striped table-bordered w-100">
-                            <thead>
-                              <tr>
-                                <th>S.No.</th>
-                                <th>Company Name</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {shortList.map((company, index) => (
-                                <tr key={company.id || index}>
-                                  <td>{index + 1}</td>
-                                  <td>{company.name}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        ) : (
-                          <div className="text-center bg-white py-4">
-                            <span><i className="bx bxs-group me-3 font-20"></i></span>
-                            <p>- No Enquiry Shortlisted. -</p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="tab-pane fade" id="primary-pills-email" role="tabpanel">
-                        <div className="text-center">
+                      <div className="tab-pane fade show active" id="primary-pills-email" role="tabpanel">
+                        {/* <div className="text-center">
                           <i className="font-30 bx bxs-message-check" /><br />
                           <p>- No Enquiry Messages -</p>
+                        </div> */}
+                        <div className="MainChat">
+                          <div className="chat-content ps ps--active-y start-0 m-0 pt-2 mb-4">
+                            {enquiryMessages.length > 0 &&
+                              enquiryMessages.map((msg, index) => {
+                                const time = new Date(msg.updated_at).toLocaleTimeString("en-IN", {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true
+                                });
+
+                                return (
+                                  <div key={index}>
+                                    {/* LEFT SIDE (Buyer/User) */}
+                                    {msg.user_id !== loggedCompanyId && (
+                                      <div className="chat-content-leftside">
+                                        <div className="d-flex">
+                                          <img
+                                            src={
+                                              msg.user_file
+                                                ? `${ROOT_URL}/${msg.user_file}`
+                                                : "/user-demo.png"
+                                            }
+
+
+                                            width="40"
+                                            height="40"
+                                            className="rounded-circle border"
+                                            style={{ objectFit: "cover" }}
+                                            alt=""
+                                            onError={(e) => {
+                                              e.target.onerror = null; // prevent infinite loop
+                                              e.target.src = "/user-demo.png";
+                                            }}
+                                          />
+                                          <div className="flex-grow-1 ms-2">
+                                            <p className="mb-0 chat-time">
+                                              {msg.user_fname} {msg.user_lname}, {time}
+                                            </p>
+                                            <p className="chat-left-msg">{msg.message}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* RIGHT SIDE (Seller) */}
+                                    {msg.user_id == loggedCompanyId && (
+                                      <div className="chat-content-rightside">
+                                        <div className="d-flex ms-auto">
+                                          <div className="flex-grow-1 me-2">
+                                            <p className="mb-0 chat-time text-end">
+                                              {msg.seller_fname} {msg.seller_lname}, {time}
+                                            </p>
+                                            <p className="chat-right-msg">{msg.message}</p>
+                                          </div>
+                                          <img
+                                            src={
+                                              msg.seller_file
+                                                ? `${ROOT_URL}/${msg.seller_file}`
+                                                : "/user-demo.png"
+                                            }
+                                            width="40"
+                                            height="40"
+                                            className="rounded-circle border"
+                                            style={{ objectFit: "cover" }}
+                                            alt=""
+                                            onError={(e) => {
+                                              e.target.onerror = null; // prevent infinite loop
+                                              e.target.src = "/user-demo.png";
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                          </div>
+                          <div className="chat-footer d-flex align-items-center start-0">
+                            <div className="flex-grow-1 pe-2">
+                              <div className="input-group">	<span className="input-group-text"><i className="bx bx-envelope"></i></span>
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  placeholder="Type a message"
+                                  value={message}
+                                  onChange={(e) => setMessage(e.target.value)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                                />
+
+                                <button
+                                  className="btn btn-primary"
+                                  onClick={handleSendMessage}
+                                  disabled={!message.trim()}
+                                >
+                                  Send
+                                </button>
+                              </div>
+                            </div>
+
+                          </div>
                         </div>
                       </div>
                     </div>
