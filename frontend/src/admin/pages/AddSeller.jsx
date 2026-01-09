@@ -47,6 +47,7 @@ const AddSeller = () => {
   const [designations, setDesignations] = useState([]);
   const [categoryLimit, setCategoryLimit] = useState(null);
   const isBlockingRef = useRef(false);
+  const [updateSection, setUpdateSection] = useState(null);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -224,15 +225,6 @@ const AddSeller = () => {
       handleActivityChange({ target: { value: activityId } });
     });
 
-    /*$('#user_type').select2({
-      theme: "bootstrap",
-      width: '100%',
-      placeholder: "Select Activity"
-    }).on("change", function () {
-      const rolesId = $(this).val();
-      handleRolesChange({ target: { value: rolesId } });
-    });*/
-
     return () => {
       $('#country').off("change").select2('destroy');
       $('#state').off("change").select2('destroy');
@@ -344,6 +336,14 @@ const AddSeller = () => {
 
   const handleCompanyBrochureChange = (e) => { setCompanyBrochure(e.target.files[0]); };
 
+  const handlePptChange = (e) => {
+  setFormData({ ...formData, company_sample_ppt_file: e.target.files[0] });
+};
+
+const handleVideoChange = (e) => {
+  setFormData({ ...formData, company_video: e.target.files[0] });
+};
+
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -357,8 +357,14 @@ const AddSeller = () => {
     fetchSettings();
   }, []);
 
-  const validateForm = () => {
+  const validateForm = (section = null) => {
     const errs = {};
+    const imageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    const brochureTypes = [...imageTypes, "application/pdf"];
+    const pptTypes = ["application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"];
+    const videoTypes = ["video/mp4", "video/webm", "video/ogg", "video/mov", "video/avi"];
+    const maxSize = 2 * 1024 * 1024;
+    if (!section || section === "basic") {
     if (!formData.fname?.trim()) errs.fname = "First Name is required";
     if (!formData.lname?.trim()) errs.lname = "Last Name is required";
     if (!formData.email?.trim()) errs.email = "Email is required";
@@ -371,13 +377,22 @@ const AddSeller = () => {
       }
     }
     if (!formData.mobile?.trim()) errs.mobile = "Mobile is required";
-    // else if (!/^[6-9]\d{9}$/.test(formData.mobile)) errs.mobile = "Mobile Number is invalid";
-    if (formData.alternate_number && !/^[6-9]\d{9}$/.test(formData.alternate_number)) errs.alternate_number = "Alternate Number is invalid";
     if (!selectedCountry) errs.country = "Country is required";
     if (!selectedState) errs.state = "State is required";
     if (!selectedCity) errs.city = "City is required";
     if (!formData.zipcode?.trim()) errs.zipcode = "Post Code is required";
     if (!formData.address?.trim()) errs.address = "Address is required";
+    if (!file && !isEditing) {
+      errs.file = "Profile image is required";
+    } else if (file) {
+      if (!imageTypes.includes(file.type)) {
+        errs.file = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
+      } else if (file.size > maxSize) {
+        errs.file = "Image size must be under 2MB";
+      }
+    }
+  }
+  if (!section || section === "company") {
     if (!formData.user_company?.trim()) errs.user_company = "Organization Name is required";
     // if (!formData.designation?.trim()) errs.designation = "Designation is required";
     if (!formData.company_location?.trim()) errs.company_location = "Company Location is required";
@@ -395,22 +410,6 @@ const AddSeller = () => {
     }
     if (!selectedCoreActivity) errs.core_activity = "Core Activity is required";
     if (!selectedActivity) errs.activity = "Activity is required";
-
-    const imageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-    const brochureTypes = [...imageTypes, "application/pdf"];
-    const pptTypes = ["application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"];
-    const videoTypes = ["video/mp4", "video/webm", "video/ogg", "video/mov", "video/avi"];
-    const maxSize = 2 * 1024 * 1024;
-
-    if (!file && !isEditing) {
-      errs.file = "Profile image is required";
-    } else if (file) {
-      if (!imageTypes.includes(file.type)) {
-        errs.file = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
-      } else if (file.size > maxSize) {
-        errs.file = "Image size must be under 2MB";
-      }
-    }
 
     if (!companyFile && !isEditing) {
       errs.company_logo = "Company image is required";
@@ -445,7 +444,8 @@ const AddSeller = () => {
         errs.company_video = "Video file must be under 2MB";
       }
     }
-
+  }
+  console.log(errs)
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -482,15 +482,13 @@ const AddSeller = () => {
           featured_company: String(data.featured_company) || "",
           company_sample_file_name: data.company_sample_file_name || "",
           company_sample_ppt_file_name: data.company_sample_ppt_file_name || "",
+          company_video_file_name: data.company_video_file_name || "",
           is_star_seller: String(data.is_star_seller) || "",
           is_verified: String(data.is_verified) || "",
         });
         setSelectedCountry(data.country || "");
         setSelectedState(data.state || "");
         setSelectedCity(data.city || "");
-        // setSelectedCategory(data.category_sell ? data.category_sell.split(',') : []);
-        // setSelectedSubCategory(data.sub_category ? data.sub_category.split(',') : []);
-        // Extract only unique category_id values
         if (data.categories && Array.isArray(data.categories)) {
           const categoryIds = [...new Set(data.categories.map(c => c.category_id).filter(Boolean))];
           const subCategoryIds = data.categories.map(c => c.subcategory_id).filter(Boolean);
@@ -518,16 +516,6 @@ const AddSeller = () => {
         if (data.state) {
           const ctRes = await axios.get(`${API_BASE_URL}/location/cities/${data.state}`); setCities(ctRes.data);
         }
-        /*if (data.category_sell) {
-          const categoriesArray = data.category_sell.split(',').map(Number);
-          setSelectedCategory(categoriesArray);
-          const cRes = await axios.post(`${API_BASE_URL}/sub_categories/categories`, { categories: categoriesArray });
-          setSubCategories(cRes.data);
-          const subCatArray = data.sub_category ? data.sub_category.split(',').map(Number) : [];
-          setSelectedSubCategory(subCatArray);
-          $('#sub_category').val(subCatArray).trigger('change');
-          $('#category_sell').val(categoriesArray).trigger('change');
-        }*/
         if (data.core_activity) {
           const aRes = await axios.get(`${API_BASE_URL}/activities/coreactivity/${data.core_activity}`); setActivities(aRes.data);
         }
@@ -538,7 +526,7 @@ const AddSeller = () => {
     fetchSeller();
   }, [sellerId]);
 
-  const handleSubmit = async (e) => {
+  /*const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
@@ -547,8 +535,6 @@ const AddSeller = () => {
     data.append("country", selectedCountry);
     data.append("state", selectedState);
     data.append("city", selectedCity);
-    // data.append("category_sell", selectedCategory.join(","));
-    // data.append("sub_category", selectedSubCategory.join(","));
     data.append("categories", selectedCategory.join(','));
     data.append("subcategory_ids", selectedSubCategory.join(','));
     data.append("core_activity", selectedCoreActivity);
@@ -571,24 +557,72 @@ const AddSeller = () => {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  /*useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/roles`);
-        setRoles(res.data);
-      } catch (error) {
-        console.error("Error fetching core activities:", error);
-      }
-    };
-    fetchRoles();
-  }, []);
-
-  const handleRolesChange = async (event) => {
-    const rolesId = event.target.value;
-    setSelectedRoles(rolesId);
   };*/
+  const handleSubmit = async (e, section = null) => {
+  e.preventDefault();
+
+  if (!validateForm(section)) return;
+
+  setSubmitting(true);
+  const data = new FormData();
+
+  // Append only relevant fields based on section
+  Object.entries(formData).forEach(([key, value]) => {
+    if (!section || section === "basic") {
+      // basic fields
+      if (["fname","lname","email","password","mobile","alternate_number","zipcode","country_code","address","designation"].includes(key)) {
+        data.append(key, value);
+      }
+    }
+    if (!section || section === "company") {
+      // company fields
+      if (["user_company","website","is_trading","elcina_member","user_category","brief_company","products","featured_company",
+        "company_location","is_star_seller","is_verified","company_meta_title","company_video_second"].includes(key)) {
+        data.append(key, value);
+      }
+    }
+  });
+
+  // location always
+  if (!section || section === "basic") {
+    data.append("country", selectedCountry);
+    data.append("state", selectedState);
+    data.append("city", selectedCity);
+  }
+if (!section || section === "company") {
+  data.append("categories", selectedCategory.join(','));
+    data.append("subcategory_ids", selectedSubCategory.join(','));
+    data.append("core_activity", selectedCoreActivity);
+    data.append("activity", selectedActivity);
+}
+
+  if ((!section || section === "basic") && file) data.append("file", file);
+  if ((!section || section === "company") && companyFile) data.append("company_logo", companyFile);
+  if ((!section || section === "company") && companyBrochure) data.append("sample_file_id", companyBrochure);
+  if ((!section || section === "company") && formData.company_sample_ppt_file) {
+    data.append("company_sample_ppt_file", formData.company_sample_ppt_file);
+  }
+  if ((!section || section === "company") && formData.company_video) {
+    data.append("company_video", formData.company_video);
+  }
+
+  try {
+    const endpoint = isEditing ? `${API_BASE_URL}/sellers/${sellerId}` : `${API_BASE_URL}/sellers`;
+    const method = isEditing ? "put" : "post";
+
+    await axios[method](endpoint, data, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
+
+    showNotification(`Seller ${isEditing ? "updated" : "added"} successfully!`, "success");
+    if (!isEditing) navigate("/admin/sellers");
+  } catch (err) {
+    showNotification("Failed to save seller", "error");
+  } finally {
+    setSubmitting(false);
+    setUpdateSection(null);
+  }
+};
 
   return (
     <>
@@ -598,7 +632,231 @@ const AddSeller = () => {
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <form className="" onSubmit={handleSubmit}>
+                <div className="card card-border mb-4">
+                  <div className='card-header py-3 px-3'>
+                    <h6 className="mb-0 fw-bold">User Details</h6>
+                  </div>
+                  <div className="card-body px-4 mb-4">
+                    <div className="row">
+                      <div className="col-md-6 mb-3">
+                        <label htmlFor="fname" className="form-label required">First Name</label>
+                        <input
+                          type="text" className={`form-control ${errors.fname ? "is-invalid" : ""}`}
+                          id="fname"
+                          placeholder="First Name"
+                          value={formData.fname}
+                          onChange={handleInputChange}
+                        />
+                        {errors.fname && (<div className="invalid-feedback">{errors.fname}</div>)}
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label htmlFor="lname" className="form-label required">Last Name</label>
+                        <input
+                          type="text" className={`form-control ${errors.lname ? "is-invalid" : ""}`}
+                          id="lname"
+                          placeholder="Last Name"
+                          value={formData.lname}
+                          onChange={handleInputChange}
+                        />
+                        {errors.lname && (<div className="invalid-feedback">{errors.lname}</div>)}
+                      </div>
+                      <div className="col-md-3 mb-3">
+                        <label htmlFor="mobile" className="form-label required">
+                          Mobile
+                        </label>
+
+                        <PhoneInput
+                          country="in"
+                          value={
+                            (formData.country_code || "").replace("+", "") +
+                            (formData.mobile || "")
+                          }
+                          onChange={(value, country) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              country_code: `+${country.dialCode}`,
+                              mobile: value.slice(country.dialCode.length)
+                            }))
+                          }
+                          containerClass="w-100"
+                          inputClass={`form-control ${errors.mobile ? "is-invalid" : ""}`}
+                          inputProps={{
+                            name: "mobile",
+                            id: "mobile",
+                            required: true
+                          }}
+                          placeholder="Mobile"
+                        />
+
+                        {errors.mobile && (
+                          <div className="invalid-feedback d-block">
+                            {errors.mobile}
+                          </div>
+                        )}
+                      </div>
+                      <div className="col-md-3 mb-3">
+                        <label htmlFor="alternate_number" className="form-label">Alternate Number</label>
+                        <input type="text" className="form-control" id="alternate_number"
+                          placeholder="Alternate Number" value={formData.alternate_number} onChange={handleInputChange} min={0} />
+                      </div>
+                      <div className="col-md-3 mb-3">
+                        <label htmlFor="email" className="form-label required">Email</label>
+                        <input
+                          type="email" className={`form-control ${errors.email ? "is-invalid" : ""}`}
+                          id="email"
+                          placeholder="Email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                        />
+                        {errors.email && (<div className="invalid-feedback">{errors.email}</div>)}
+                      </div>
+                      {!isEditing && (
+                        <div className="col-md-3 mb-3">
+                          <label htmlFor="password" className="form-label required">Password</label>
+                          <input
+                            type="password"
+                            className={`form-control ${errors.password ? "is-invalid" : ""}`}
+                            id="password"
+                            placeholder="Password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                          />
+                          {errors.password && (<div className="invalid-feedback">{errors.password}</div>)}
+                        </div>
+                      )}
+                      <div className="col-md-3 mb-3">
+                        <label htmlFor="country" className="form-label required">Country</label>
+                        <select
+                          id="country"
+                          className="form-control select2"
+                          value={selectedCountry}
+                          onChange={handleCountryChange}
+                        >
+                          <option value="">Select Country</option>
+                          {countries.map(country => (
+                            <option key={country.id} value={country.id}>{country.name}</option>
+                          ))}
+                        </select>
+                        {errors.country && <div className="text-danger small">{errors.country}</div>}
+                      </div>
+                      <div className="col-md-3 mb-3">
+                        <label htmlFor="state" className="form-label required">State</label>
+                        <select
+                          id="state"
+                          className="form-control select2"
+                          value={selectedState}
+                          onChange={handleStateChange}
+                        >
+                          <option value="">Select State</option>
+                          {states.map((s) => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                        {errors.state && <div className="text-danger small">{errors.state}</div>}
+                      </div>
+                      <div className="col-md-3 mb-3">
+                        <label htmlFor="city" className="form-label required">City</label>
+                        <select
+                          id="city"
+                          className="form-control select2"
+                          value={selectedCity}
+                          onChange={handleCityChange}
+                        >
+                          <option value="">Select City</option>
+                          {cities.map((city) => (
+                            <option key={city.id} value={city.id}>{city.name}</option>
+                          ))}
+                        </select>
+                        {errors.city && <div className="text-danger small">{errors.city}</div>}
+                      </div>
+                      <div className="col-md-3 mb-3">
+                        <label htmlFor="zipcode" className="form-label required">Post Code</label>
+                        <input
+                          type="number" className={`form-control ${errors.zipcode ? "is-invalid" : ""}`}
+                          id="zipcode"
+                          placeholder="Post Code"
+                          value={formData.zipcode}
+                          onChange={handleInputChange}
+                        />
+                        {errors.zipcode && (<div className="invalid-feedback">{errors.zipcode}</div>)}
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label htmlFor="designation" className="form-label">Designation</label>
+                        <input
+                          type="text" className="form-control"
+                          list="browsers"
+                          id="designation"
+                          placeholder="Designation"
+                          value={formData.designation}
+                          onChange={handleInputChange}
+                        />
+                        <datalist id="browsers">
+                          {designations.map((d, index) => (
+                            <option value={d.name} if="" key={index}></option>
+                          ))}
+                        </datalist>
+                        {/* {errors.designation && (<div className="invalid-feedback">{errors.designation}</div>)} */}
+                      </div>
+                      <div className="col-md-6 mb-3">
+                        <label htmlFor="file" className="form-label required">
+                          Image
+                        </label>
+                        <input
+                          className={`form-control ${errors.file ? "is-invalid" : ""}`}
+                          type="file"
+                          id="file"
+                          onChange={handleFileChange}
+                        />
+                        {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
+                        {file ? (
+                          <img
+                            src={URL.createObjectURL(file)}
+                            className="object-fit-cover mt-3"
+                            width={100}
+                            height={100}
+                            alt="Preview"
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : formData.file_name ? (
+                          <ImageWithFallback
+                            src={`${ROOT_URL}/${formData.file_name}`}
+                            width={100}
+                            height={100}
+                            showFallback={false}
+                          />
+                        ) : null}
+                      </div>
+                      <div className="col-md-12">
+                        <label htmlFor="address" className="form-label required">Address</label>
+                        <textarea
+                          className={`form-control ${errors.address ? "is-invalid" : ""}`}
+                          id="address"
+                          placeholder="Address"
+                          rows={3}
+                          value={formData.address}
+                          onChange={handleInputChange}
+                        />
+                        {errors.address && (<div className="invalid-feedback">{errors.address}</div>)}
+                      </div>
+                      {isEditing && (
+                        <div className="col-12 text-end mt-3">
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={(e) => handleSubmit(e, "basic")}
+                          >
+                            {submitting ? "Updating..." : "Update User"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
                 <div className="card mb-4">
+                  <div className='card-header py-3 px-2 bg-white'>
+                    <h6 className="mb-0 fw-bold">Company Details</h6>
+                  </div>
                   <div className="card-body px-4 row g-3">
                     <div className="col-md-4">
                       <label htmlFor="user_company" className="form-label required">Organization Name</label>
@@ -611,20 +869,6 @@ const AddSeller = () => {
                       />
                       {errors.user_company && (<div className="invalid-feedback">{errors.user_company}</div>)}
                     </div>
-                    {/* <div className="col-md-4">
-                    <label htmlFor="user_type" className="form-label required">User Type</label>
-                    <select
-                      id="user_type" className="form-control select2"
-                      value={selectedRoles}
-                      onChange={handleRolesChange}
-                    >
-                      <option value="">Select user type</option>
-                      {roles?.map((role) => (
-                        <option key={role.id} value={role.id}>{role.name}</option>
-                      ))}
-                    </select>
-                    {errors.user_type && (<div className="text-danger small">{errors.user_type}</div>)}
-                  </div> */}
                     <div className="col-md-4">
                       <label htmlFor="core_activity" className="form-label required">Core Activity</label>
                       <select
@@ -801,7 +1045,7 @@ const AddSeller = () => {
                       <input
                         type="file" className="form-control"
                         id="company_sample_ppt_file"
-                        onChange={handleInputChange}
+                        onChange={handlePptChange}
                       />
                       {formData.company_sample_ppt_file_name &&
                         <a className="mt-2" href={`${ROOT_URL}/${formData.company_sample_ppt_file_name}`} target="_blank">Sample PPT File</a>
@@ -839,10 +1083,13 @@ const AddSeller = () => {
                     <div className="col-md-6">
                       <label htmlFor="company_video" className="form-label">Upload Video</label>
                       <input
-                        type="file" className="form-control"
+                        type="file" className={`form-control ${errors.company_video ? "is-invalid" : ""}`}
                         id="company_video"
-                        onChange={handleInputChange}
+                        onChange={handleVideoChange}
                       />
+                      {formData.company_video_file_name &&
+                        <a className="mt-2" href={`${ROOT_URL}/${formData.company_video_file_name}`} target="_blank">Sample Video</a>
+                      }
                       {errors.company_video && (<div className="invalid-feedback">{errors.company_video}</div>)}
                     </div>
                     <div className="col-md-6">
@@ -879,231 +1126,34 @@ const AddSeller = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                  </div>
-                </div>
-                <div className="card card-border mb-4">
-                  <div className='card-header py-3 px-3'>
-                    <h6 className="mb-0 fw-bold">Company User</h6>
-                  </div>
-                  <div className="card-body px-4 mb-4">
-                    <div className="row">
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="fname" className="form-label required">First Name</label>
-                        <input
-                          type="text" className={`form-control ${errors.fname ? "is-invalid" : ""}`}
-                          id="fname"
-                          placeholder="First Name"
-                          value={formData.fname}
-                          onChange={handleInputChange}
-                        />
-                        {errors.fname && (<div className="invalid-feedback">{errors.fname}</div>)}
-                      </div>
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="lname" className="form-label required">Last Name</label>
-                        <input
-                          type="text" className={`form-control ${errors.lname ? "is-invalid" : ""}`}
-                          id="lname"
-                          placeholder="Last Name"
-                          value={formData.lname}
-                          onChange={handleInputChange}
-                        />
-                        {errors.lname && (<div className="invalid-feedback">{errors.lname}</div>)}
-                      </div>
-                      <div className="col-md-3 mb-3">
-                        <label htmlFor="mobile" className="form-label required">
-                          Mobile
-                        </label>
-
-                        <PhoneInput
-                          country="in"
-                          value={
-                            (formData.country_code || "").replace("+", "") +
-                            (formData.mobile || "")
-                          }
-                          onChange={(value, country) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              country_code: `+${country.dialCode}`,
-                              mobile: value.slice(country.dialCode.length)
-                            }))
-                          }
-                          containerClass="w-100"
-                          inputClass={`form-control ${errors.mobile ? "is-invalid" : ""}`}
-                          inputProps={{
-                            name: "mobile",
-                            id: "mobile",
-                            required: true
-                          }}
-                          placeholder="Mobile"
-                        />
-
-                        {errors.mobile && (
-                          <div className="invalid-feedback d-block">
-                            {errors.mobile}
-                          </div>
-                        )}
-                      </div>
-                      <div className="col-md-3 mb-3">
-                        <label htmlFor="alternate_number" className="form-label required">Alternate Number</label>
-                        <input type="number" className={`form-control ${errors.alternate_number ? 'is-invalid' : ''}`} id="alternate_number"
-                          placeholder="Alternate Number" value={formData.alternate_number} onChange={handleInputChange} min={0} />
-                        {errors.alternate_number && <div className="invalid-feedback">{errors.alternate_number}</div>}
-                      </div>
-                      <div className="col-md-3 mb-3">
-                        <label htmlFor="email" className="form-label required">Email</label>
-                        <input
-                          type="email" className={`form-control ${errors.email ? "is-invalid" : ""}`}
-                          id="email"
-                          placeholder="Email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                        />
-                        {errors.email && (<div className="invalid-feedback">{errors.email}</div>)}
-                      </div>
-                      {!isEditing && (
-                        <div className="col-md-3 mb-3">
-                          <label htmlFor="password" className="form-label required">Password</label>
-                          <input
-                            type="password"
-                            className={`form-control ${errors.password ? "is-invalid" : ""}`}
-                            id="password"
-                            placeholder="Password"
-                            value={formData.password}
-                            onChange={handleInputChange}
-                          />
-                          {errors.password && (<div className="invalid-feedback">{errors.password}</div>)}
-                        </div>
-                      )}
-                      <div className="col-md-3 mb-3">
-                        <label htmlFor="country" className="form-label required">Country</label>
-                        <select
-                          id="country"
-                          className="form-control select2"
-                          value={selectedCountry}
-                          onChange={handleCountryChange}
-                        >
-                          <option value="">Select Country</option>
-                          {countries.map(country => (
-                            <option key={country.id} value={country.id}>{country.name}</option>
-                          ))}
-                        </select>
-                        {errors.country && <div className="text-danger small">{errors.country}</div>}
-                      </div>
-                      <div className="col-md-3 mb-3">
-                        <label htmlFor="state" className="form-label required">State</label>
-                        <select
-                          id="state"
-                          className="form-control select2"
-                          value={selectedState}
-                          onChange={handleStateChange}
-                        >
-                          <option value="">Select State</option>
-                          {states.map((s) => (
-                            <option key={s.id} value={s.id}>{s.name}</option>
-                          ))}
-                        </select>
-                        {errors.state && <div className="text-danger small">{errors.state}</div>}
-                      </div>
-                      <div className="col-md-3 mb-3">
-                        <label htmlFor="city" className="form-label required">City</label>
-                        <select
-                          id="city"
-                          className="form-control select2"
-                          value={selectedCity}
-                          onChange={handleCityChange}
-                        >
-                          <option value="">Select City</option>
-                          {cities.map((city) => (
-                            <option key={city.id} value={city.id}>{city.name}</option>
-                          ))}
-                        </select>
-                        {errors.city && <div className="text-danger small">{errors.city}</div>}
-                      </div>
-                      <div className="col-md-3 mb-3">
-                        <label htmlFor="zipcode" className="form-label required">Post Code</label>
-                        <input
-                          type="number" className={`form-control ${errors.zipcode ? "is-invalid" : ""}`}
-                          id="zipcode"
-                          placeholder="Post Code"
-                          value={formData.zipcode}
-                          onChange={handleInputChange}
-                        />
-                        {errors.zipcode && (<div className="invalid-feedback">{errors.zipcode}</div>)}
-                      </div>
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="designation" className="form-label">Designation</label>
-                        <input
-                          type="text" className="form-control"
-                          list="browsers"
-                          id="designation"
-                          placeholder="Designation"
-                          value={formData.designation}
-                          onChange={handleInputChange}
-                        />
-                        <datalist id="browsers">
-                          {designations.map((d, index) => (
-                            <option value={d.name} if="" key={index}></option>
-                          ))}
-                        </datalist>
-                        {/* {errors.designation && (<div className="invalid-feedback">{errors.designation}</div>)} */}
-                      </div>
-                      <div className="col-md-6 mb-3">
-                        <label htmlFor="file" className="form-label required">
-                          Image
-                        </label>
-                        <input
-                          className={`form-control ${errors.file ? "is-invalid" : ""}`}
-                          type="file"
-                          id="file"
-                          onChange={handleFileChange}
-                        />
-                        {errors.file && (<div className="invalid-feedback">{errors.file}</div>)}
-                        {file ? (
-                          <img
-                            src={URL.createObjectURL(file)}
-                            className="object-fit-cover mt-3"
-                            width={100}
-                            height={100}
-                            alt="Preview"
-                            loading="lazy"
-                            decoding="async"
-                          />
-                        ) : formData.file_name ? (
-                          <ImageWithFallback
-                            src={`${ROOT_URL}/${formData.file_name}`}
-                            width={100}
-                            height={100}
-                            showFallback={false}
-                          />
-                        ) : null}
-                      </div>
-                      <div className="col-md-12">
-                        <label htmlFor="address" className="form-label required">Address</label>
-                        <textarea
-                          className={`form-control ${errors.address ? "is-invalid" : ""}`}
-                          id="address"
-                          placeholder="Address"
-                          rows={3}
-                          value={formData.address}
-                          onChange={handleInputChange}
-                        />
-                        {errors.address && (<div className="invalid-feedback">{errors.address}</div>)}
-                      </div>
+                    {isEditing && (
                       <div className="col-12 text-end mt-3">
-                        <button type="submit" className="btn btn-primary px-4 mt-3" disabled={submitting}>
-                          {submitting ? (
-                            <>
-                              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                              {isEditing ? "Updating..." : "Saving..."}
-                            </>
-                          ) : (
-                            isEditing ? "Update" : "Save"
-                          )}
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={(e) => handleSubmit(e, "company")}
+                        >
+                          {submitting ? "Updating..." : "Update Company"}
                         </button>
                       </div>
-                    </div>
+                    )}
+                      {!isEditing && (
+                        <div className="col-md-12 text-end">
+                          <button type="submit" className="btn btn-primary px-4 mt-4">
+                            {submitting ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm me-2" />
+                                Saving...
+                              </>
+                            ) : (
+                              "Save"
+                            )}
+                          </button>
+                        </div>
+                      )}
                   </div>
                 </div>
+                
               </form>
               {/*end row*/}
             </div>

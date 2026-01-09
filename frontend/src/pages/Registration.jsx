@@ -537,9 +537,8 @@ const Registration = () => {
                                 <>
                                 <div className="col-md-3 mb-3">
                                     <label>Alternate Number</label>
-                                    <input type="number" name="alternate_number" className="form-control" id="alternate_number"
+                                    <input type="text" name="alternate_number" className="form-control" id="alternate_number"
                                         placeholder="Alternate Number" value={form.alternate_number} onChange={handleChange} min={0} />
-                                    {errors.alternate_number && <div className="text-danger">{errors.alternate_number}</div>}
                                     </div>
                                     {/* Category */}
                                     <div className="col-md-3 mb-3">
