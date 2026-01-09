@@ -117,7 +117,7 @@ const LeadsList = ({ user_id }) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/enquiries/by-user`, {
         params: {
-          page, limit, search, sortBy, sort: sortDirection, user_id: user?.id || null,
+          page, limit, search, sortBy, sort: sortDirection, user_id: user?.id || null, company_id: user?.company_id || null, type: "lead"
         },
       });
 

@@ -14,6 +14,9 @@ router.get('/by-enquiry', enquiriesController.getEnquiriesByEnquiryServerSide);
 router.post('/prove-enquiry', enquiriesController.dashboardEnquiryProve);
 router.get('/awarded', enquiriesController.getAwardedEnquiries);
 router.get('/accept', enquiriesController.getAcceptEnquiries);
+router.get('/messages', enquiriesController.getMessageenquiries);
+router.get('/all-leads', enquiriesController.getAllLeads);
+router.post('/send-message', enquiriesController.postSendMessage);
 router.get('/shortlisted', enquiriesController.getShortlistedenquiries);
 router.get('/chart', enquiriesController.getEnquiryChartData);
 router.delete('/delete-selected', enquiriesController.deleteSelectedEnquiries);
@@ -23,7 +26,6 @@ router.get("/:enquiry_number/previous", enquiriesController.getPreviousUnapprove
 router.delete('/:id', enquiriesController.deleteEnquiries);
 router.patch('/:id/delete_status', enquiriesController.updateEnquiriesDeleteStatus);
 router.patch('/:id/account_status', enquiriesController.updateEnquiriesApproveStatus);
-
 
 router.post('/verify', enquiriesController.verifyEmail);
 router.post('/resend-otp', enquiriesController.resendOtp);

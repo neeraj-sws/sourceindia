@@ -1,42 +1,44 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import axios from "axios";
-import API_BASE_URL from "../../config";
+import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import Breadcrumb from '../common/Breadcrumb';
 import LeadsModals from "./modal/LeadsModals";
 
 const ViewEnquiry = () => {
-    const { enquiry_number } = useParams();
-    const navigate = useNavigate();
-    const { showNotification } = useAlert();
-    const [formData, setFormData] = useState({ enquiry_number: '', from_full_name: '', from_email: '', from_mobile: '',
-        from_organization_name: '', to_full_name: '', to_email: '', to_mobile: '', to_organization_name: '',
-        category_name: '', sub_category_name: '', description: '', enquiry_product: '', is_approve: '', is_delete: ''
-     });
-    const [counterCount, setcounterCount] = useState(null);
-    const [awardedList, setAwardedList] = useState([]);
-    const [acceptList, setAcceptList] = useState([]);
-    const [shortList, setShortList] = useState([]);
-    const [nextEnquiry, setNextEnquiry] = useState(null);
-    const [previousEnquiry, setPreviousEnquiry] = useState(null);
-    const [showStatusModal, setShowStatusModal] = useState(false);
-    const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null, field: '', valueKey: '' });
+  const { enquiry_number } = useParams();
+  const navigate = useNavigate();
+  const { showNotification } = useAlert();
+  const [formData, setFormData] = useState({
+    enquiry_number: '', from_full_name: '', from_email: '', from_mobile: '',
+    from_organization_name: '', to_full_name: '', to_email: '', to_mobile: '', to_organization_name: '',
+    category_name: '', sub_category_name: '', description: '', enquiry_product: '', is_approve: '', is_delete: ''
+  });
+  const [counterCount, setcounterCount] = useState(null);
+  const [awardedList, setAwardedList] = useState([]);
+  const [acceptList, setAcceptList] = useState([]);
+  const [shortList, setShortList] = useState([]);
+  const [nextEnquiry, setNextEnquiry] = useState(null);
+  const [previousEnquiry, setPreviousEnquiry] = useState(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null, field: '', valueKey: '' });
+  const [enquiryMessages, setEnquiryMessages] = useState([]);
 
-    useEffect(() => {
-      const fetchLeads = async () => {
-        try {
-          const res = await axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}`);
-          const data = res.data;
-          setFormData(data);
-        } catch (error) {
-          console.error('Error fetching Leads:', error);
-        }
-      };
-      fetchLeads();
-    }, [enquiry_number]);
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}`);
+        const data = res.data;
+        setFormData(data);
+      } catch (error) {
+        console.error('Error fetching Leads:', error);
+      }
+    };
+    fetchLeads();
+  }, [enquiry_number]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (!formData?.company_id || !formData?.id) return;
 
     // 🟢 Lead count
@@ -91,22 +93,41 @@ const ViewEnquiry = () => {
         console.error("Error fetching awarded companies:", err);
         setShortList([]); // fallback
       });
+
+    // 🟣 message companies
+
+    axios
+      .get(`${API_BASE_URL}/enquiries/messages?enq_id=${formData.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+      .then((res) => {
+        const data = res.data?.data || [];
+
+        setEnquiryMessages(data);
+      })
+      .catch((err) => {
+        console.error("Error fetching awarded companies:", err);
+        setEnquiryMessages([]); // fallback
+      });
+
+
+    // console.log(formData);
   }, [formData?.company_id, formData?.id]);
 
   useEffect(() => {
-  if (!enquiry_number) return;
+    if (!enquiry_number) return;
 
-  axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}/next`)
-    .then(res => setNextEnquiry(res.data.next))
-    .catch(() => setNextEnquiry(null));
+    axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}/next`)
+      .then(res => setNextEnquiry(res.data.next))
+      .catch(() => setNextEnquiry(null));
 
-  axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}/previous`)
-    .then(res => setPreviousEnquiry(res.data.prev))
-    .catch(() => setPreviousEnquiry(null));
+    axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}/previous`)
+      .then(res => setPreviousEnquiry(res.data.prev))
+      .catch(() => setPreviousEnquiry(null));
 
-}, [enquiry_number]);
+  }, [enquiry_number]);
 
-const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggleInfo({ id, currentStatus, field, valueKey }); setShowStatusModal(true); };
+  const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggleInfo({ id, currentStatus, field, valueKey }); setShowStatusModal(true); };
 
   const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
 
@@ -136,77 +157,77 @@ const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggl
 
   return (
     <>
-    <div className="page-wrapper">
-      <div className="page-content">
-        <Breadcrumb page="Leads Master" title="View Enquiry" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
-        <div className="card mb-3">
-          <div className="card-body">
-            <div className="d-flex align-items-center justify-content-between flex-wrap">
-              <div className="d-flex align-items-center mb-2">
-                <div className="avatar avatar-xxl avatar-rounded border border-warning bg-soft-warning me-3 flex-shrink-0">
-                  {formData.from_full_name && (() => {
-                    const parts = formData.from_full_name.trim().split(" ");
-                    const initials = parts
-                      .map(p => p.charAt(0).toUpperCase())
-                      .slice(0, 2) // sirf first 2 letters (first name + last name)
-                      .join("");
-                    return (
-                      <h6 className="mb-0 text-warning">
-                        {initials}
-                      </h6>
-                    );
-                  })()}
+      <div className="page-wrapper">
+        <div className="page-content">
+          <Breadcrumb page="Leads Master" title="View Enquiry" add_button="Back" add_link="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} />
+          <div className="card mb-3">
+            <div className="card-body">
+              <div className="d-flex align-items-center justify-content-between flex-wrap">
+                <div className="d-flex align-items-center mb-2">
+                  <div className="avatar avatar-xxl avatar-rounded border border-warning bg-soft-warning me-3 flex-shrink-0">
+                    {formData.from_full_name && (() => {
+                      const parts = formData.from_full_name.trim().split(" ");
+                      const initials = parts
+                        .map(p => p.charAt(0).toUpperCase())
+                        .slice(0, 2) // sirf first 2 letters (first name + last name)
+                        .join("");
+                      return (
+                        <h6 className="mb-0 text-warning">
+                          {initials}
+                        </h6>
+                      );
+                    })()}
+                  </div>
+                  <div>
+                    {formData.from_full_name && <h5 className="mb-0"><i className="bx bx-user"></i> {formData.from_full_name} </h5>}
+                    {formData.from_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.from_email}</p>}
+                    {formData.from_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.from_mobile}</p>}
+                    {formData.from_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.from_organization_name}</p>}
+                  </div>
                 </div>
-                <div>
-                  {formData.from_full_name && <h5 className="mb-0"><i className="bx bx-user"></i> {formData.from_full_name} </h5>}
-                  {formData.from_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.from_email}</p>}
-                  {formData.from_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.from_mobile}</p>}
-                  {formData.from_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.from_organization_name}</p>}
-                </div>
+                {formData.is_approve === 0 && (
+                  <>
+                    <div className="d-flex align-items-center mb-2">
+                      <button
+                        className="btn btn-success me-2"
+                        onClick={(e) => { e.preventDefault(); openStatusModal(formData.id, formData.is_approve, "account_status", "is_approve"); }}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="btn btn-danger"
+                        onClick={(e) => { e.preventDefault(); openStatusModal(formData.id, formData.is_delete, "delete_status", "is_delete"); }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    <div className="d-flex align-items-center mb-2">
+                      {/* Previous Button */}
+                      {previousEnquiry && (
+                        <button
+                          className="btn btn-secondary me-2"
+                          onClick={() => navigate(`/admin/admin-view-enquiry/${previousEnquiry}`)}
+                        >
+                          <i className="bx bx-left-arrow-alt"></i> Previous
+                        </button>
+                      )}
+                      {/* Next Button */}
+                      {nextEnquiry && (
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => navigate(`/admin/admin-view-enquiry/${nextEnquiry}`)}
+                        >
+                          Next <i className="bx bx-right-arrow-alt"></i>
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
-              {formData.is_approve === 0 && (
-                <>
-                <div className="d-flex align-items-center mb-2">
-                  <button
-                    className="btn btn-success me-2"
-                    onClick={(e) => { e.preventDefault(); openStatusModal( formData.id, formData.is_approve, "account_status", "is_approve" ); }}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={(e) => { e.preventDefault(); openStatusModal(formData.id, formData.is_delete, "delete_status", "is_delete"); }}
-                  >
-                    Delete
-                  </button>
-                </div>
-                <div className="d-flex align-items-center mb-2">
-                  {/* Previous Button */}
-                  {previousEnquiry && (
-                    <button
-                      className="btn btn-secondary me-2"
-                      onClick={() => navigate(`/admin/admin-view-enquiry/${previousEnquiry}`)}
-                    >
-                      <i className="bx bx-left-arrow-alt"></i> Previous
-                    </button>
-                  )}
-                  {/* Next Button */}
-                  {nextEnquiry && (
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => navigate(`/admin/admin-view-enquiry/${nextEnquiry}`)}
-                    >
-                      Next <i className="bx bx-right-arrow-alt"></i>
-                    </button>
-                  )}
-                </div>
-                </>
-              )}
             </div>
           </div>
-        </div>
-        <div className="row">
-          <div className="col-md-4">
+          <div className="row">
+            <div className="col-md-4">
               <div className="card mb-3">
                 <div className="card-body">
                   <h6 className="mb-3 fw-semibold">Lead Information</h6>
@@ -304,130 +325,112 @@ const openStatusModal = (id, currentStatus, field, valueKey) => { setStatusToggl
               </div>
             </div>
             <div className="col-md-8">
-                    <div className="card mb-3">
-          <div className="card-body">
-            <ul className="nav nav-pills nav-justified mb-3" role="tablist">
-              <li className="nav-item" role="presentation">
-                <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-system" role="tab" aria-selected="true">
-                  Awarded <span className="badge btn-primary ms-2">{counterCount?.awerded}</span>
-                </a>
-              </li>
-              <li className="nav-item" role="presentation">
-                <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-password" role="tab" aria-selected="false">
-                  Accept <span className="badge btn-primary ms-2">{counterCount?.acceptCount}</span>
-                </a>
-              </li>
-              <li className="nav-item" role="presentation">
-                <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-meta" role="tab" aria-selected="false">
-                  Shortlisted <span className="badge btn-primary ms-2">{counterCount?.shortlisted}</span>
-                </a>
-              </li>
-              <li className="nav-item" role="presentation">
-                <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-email" role="tab" aria-selected="false">
-                  Messages
-                </a>
-              </li>
-            </ul>
-            <div className="tab-content" id="pills-tabContent">
-              <div className="tab-pane fade show active" id="primary-pills-system" role="tabpanel">
-                {awardedList.length > 0 ? (
-                        <table className="table table-striped table-bordered w-100">
-                          <thead>
-                            <tr>
-                              <th>S.No.</th>
-                              <th>Company Name</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {awardedList.map((company, index) => (
-                              <tr key={company.id || index}>
-                                <td>{index + 1}</td>
-                                <td>{company.company_name}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      ) : (
-                        <div className="text-center bg-white py-4">
-                          <span><i className="bx bxs-group me-3 font-20"></i></span>
-                          <p>- No Enquiry Awarded. -</p>
+              <div className="card mb-3">
+                <div className="card-body">
+                  <ul className="nav nav-pills  mb-3" role="tablist">
+                    <li className="nav-item" role="presentation">
+                      <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-email" role="tab" aria-selected="false">
+                        Messages
+                      </a>
+                    </li>
+                  </ul>
+                  <div className="tab-content" id="pills-tabContent">
+                    <div className="tab-pane fade show active" id="primary-pills-email" role="tabpanel">
+                      <div className="MainChat">
+                        <div className="chat-content ps ps--active-y start-0 m-0 pt-2 mb-4">
+                          {enquiryMessages.length > 0 &&
+                            enquiryMessages.map((msg, index) => {
+
+                              const time = new Date(msg.updated_at).toLocaleTimeString("en-IN", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true
+                              });
+
+                              return (
+                                <div key={index}>
+                                  {/* LEFT SIDE (Buyer/User) */}
+                                  {msg.user_id !== formData.user_id && (
+                                    <div className="chat-content-leftside">
+                                      <div className="d-flex">
+                                        <img
+                                          src={
+                                            msg.user_file
+                                              ? `${ROOT_URL}/${msg.user_file}`
+                                              : "/user-demo.png"
+                                          }
+
+
+                                          width="40"
+                                          height="40"
+                                          className="rounded-circle border"
+                                          style={{ objectFit: "cover" }}
+                                          alt=""
+                                          onError={(e) => {
+                                            e.target.onerror = null; // prevent infinite loop
+                                            e.target.src = "/user-demo.png";
+                                          }}
+                                        />
+                                        <div className="flex-grow-1 ms-2">
+                                          <p className="mb-0 chat-time">
+                                            {msg.user_fname} {msg.user_lname}, {time}
+                                          </p>
+                                          <p className="chat-left-msg">{msg.message}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* RIGHT SIDE (Seller) */}
+                                  {msg.user_id == formData.user_id && (
+                                    <div className="chat-content-rightside">
+                                      <div className="d-flex ms-auto">
+                                        <div className="flex-grow-1 me-2">
+                                          <p className="mb-0 chat-time text-end">
+                                            You, {time}
+                                          </p>
+                                          <p className="chat-right-msg">{msg.message}</p>
+                                        </div>
+                                        <img
+                                          src={
+                                            msg.seller_file
+                                              ? `${ROOT_URL}/${msg.seller_file}`
+                                              : "/user-demo.png"
+                                          }
+                                          width="40"
+                                          height="40"
+                                          className="rounded-circle border"
+                                          style={{ objectFit: "cover" }}
+                                          alt=""
+                                          onError={(e) => {
+                                            e.target.onerror = null; // prevent infinite loop
+                                            e.target.src = "/user-demo.png";
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                         </div>
-                      )}
-              </div>
-              <div className="tab-pane fade" id="primary-pills-password" role="tabpanel">
-                {acceptList.length > 0 ? (
-                        <table className="table table-striped table-bordered w-100">
-                          <thead>
-                            <tr>
-                              <th>S.No.</th>
-                              <th>Company Name</th>
-                              <th>Status</th>
-                              <th>Shortlist</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {acceptList.map((company, index) => (
-                              <tr key={company.id || index}>
-                                <td>{index + 1}</td>
-                                <td>{company.name}</td>
-                                <td dangerouslySetInnerHTML={{ __html: company.status }}></td>
-                                <td dangerouslySetInnerHTML={{ __html: company.shortlist }}></td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      ) : (
-                        <div className="text-center bg-white py-4">
-                          <span><i className="bx bxs-group me-3 font-20"></i></span>
-                          <p>- No Enquiry Accepted. -</p>
-                        </div>
-                      )}
-              </div>
-              <div className="tab-pane fade" id="primary-pills-meta" role="tabpanel">
-                {shortList.length > 0 ? (
-                        <table className="table table-striped table-bordered w-100">
-                          <thead>
-                            <tr>
-                              <th>S.No.</th>
-                              <th>Company Name</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {shortList.map((company, index) => (
-                              <tr key={company.id || index}>
-                                <td>{index + 1}</td>
-                                <td>{company.name}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      ) : (
-                        <div className="text-center bg-white py-4">
-                          <span><i className="bx bxs-group me-3 font-20"></i></span>
-                          <p>- No Enquiry Shortlisted. -</p>
-                        </div>
-                      )}
-              </div>
-              <div className="tab-pane fade" id="primary-pills-email" role="tabpanel">
-                <div className="text-center">
-                  <i className="font-30 bx bxs-message-check" /><br />
-                  <p>- No Enquiry Messages -</p>
+
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
         </div>
-            </div>
-        </div>
-        
       </div>
-    </div>
-    <LeadsModals
-            showStatusModal={showStatusModal}
-            statusToggleInfo={statusToggleInfo}
-            closeStatusModal={closeStatusModal}
-            handleStatusConfirm={handleStatusConfirm}
-          />
+      <LeadsModals
+        showStatusModal={showStatusModal}
+        statusToggleInfo={statusToggleInfo}
+        closeStatusModal={closeStatusModal}
+        handleStatusConfirm={handleStatusConfirm}
+      />
     </>
   )
 }

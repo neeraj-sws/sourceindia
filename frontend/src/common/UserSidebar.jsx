@@ -123,7 +123,7 @@ const UserSidebar = () => {
     {
       title: "Lead Messages",
       icon: "bx bx-chat",
-      link: "/my-all-enquiries-chats",
+      link: "/all-leads-chats",
       show:
         (user?.member_role === 1 || user?.member_role === 3) &&
         user?.is_seller === 1 &&
@@ -177,7 +177,7 @@ const UserSidebar = () => {
 
     // ✅ Always visible (common)
     { title: "Add Open Enquiries", icon: "bx bx-plus", link: "/open-enquiry" },
-    { title: "My All Enquiries Chats", icon: "bx bx-message", link: "/my-all-enquiries-chats" },
+    // { title: "My All Enquiries Chats", icon: "bx bx-message", link: "/my-all-enquiries-chats" },
   ];
 
   // ✅ Filtering logic
