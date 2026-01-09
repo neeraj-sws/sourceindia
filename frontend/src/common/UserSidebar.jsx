@@ -177,7 +177,7 @@ const UserSidebar = () => {
 
     // ✅ Always visible (common)
     { title: "Add Open Enquiries", icon: "bx bx-plus", link: "/open-enquiry" },
-    { title: "My All Enquiries Chats", icon: "bx bx-message", link: "/my-all-enquiries-chats" },
+    // { title: "My All Enquiries Chats", icon: "bx bx-message", link: "/my-all-enquiries-chats" },
   ];
 
   // ✅ Filtering logic

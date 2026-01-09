@@ -210,7 +210,7 @@ const FrontFooter = () => {
       <div className="copyrightsection bg-white">
         <div className="container">
           <div className="footer-bottom py-2 mt-0">
-            © Copyright 2025{" "}
+            © Copyright 2026{" "}
             <a href="/" className="fw-bolder">
               ELCINA
             </a>

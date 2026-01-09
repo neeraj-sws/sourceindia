@@ -55,6 +55,7 @@ const MyAllEnquiryChat = ({ user_id }) => {
   const [enquiryUsers, setEnquiryUsers] = useState(null);
   const [message, setMessage] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const chatContentRef = useRef(null);
 
   const loggedCompanyId = user?.id;
 
@@ -269,6 +270,14 @@ const MyAllEnquiryChat = ({ user_id }) => {
     }
   };
 
+  const scrollToBottom = () => {
+    if (chatContentRef.current) {
+      chatContentRef.current.scrollTop =
+        chatContentRef.current.scrollHeight;
+    }
+  };
+
+
   const handleSendMessage = async () => {
     if (!message.trim() || !activeEnquiry) return;
 
@@ -294,7 +303,7 @@ const MyAllEnquiryChat = ({ user_id }) => {
         setEnquiryMessages((prev) => [...prev, res.data.data]);
 
       }
-
+      setTimeout(scrollToBottom, 100);
       setMessage("");
     } catch (error) {
       console.error("Send message error:", error);
@@ -309,186 +318,214 @@ const MyAllEnquiryChat = ({ user_id }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Enquiry Chat"
+          <Breadcrumb page="" title="Enquiry Chat"
           />
-          {allleads && allleads.length > 0 && (
-            <div className="row">
-              <div className="col-4">
-                <div className="card border">
-                  <div className="card-header">
-                    <h6 className="mb-0">Chat</h6>
-                  </div>
-                  <div className="card-body p-0">
-                    <div className="allMessages">
-                      {allleads.map(item => (
-                        <a
-                          key={item.enquiry_id}
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            enquiry_message_data(item.enquiry_id, item.buyer_company_id);
-                          }}
-                          className={`text-dark border-bottom d-block p-3 
+          <div className="card">
+            <div className="card-body p-0">
+              {allleads && allleads.length > 0 && (
+                <div className="row">
+                  <div className="col-4 pe-lg-0">
+                    <div className="card border rounded-0 h-100">
+                      <div className="card-header">
+                        <h6 className="mb-0">Chat</h6>
+                      </div>
+                      <div className="card-body p-0">
+                        <div className="allMessages chat-content m-0 p-0">
+                          {allleads.map(item => (
+                            <a
+                              key={item.enquiry_id}
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                enquiry_message_data(item.enquiry_id, item.buyer_company_id);
+                              }}
+                              className={`text-dark border-bottom d-block p-3 
       ${activeEnquiry === item.enquiry_id ? 'active' : ''}`}
-                        >
-                          <div className="d-flex gap-2">
-                            <div className="chat_user">
-                              <img
-                                src={item.file || "/user-demo.png"}
-                                alt="" className="img-fluid img-thumbnail" width="40"
-                              />
-                            </div>
-
-                            <div className="menquiry">
-                              <b> Enquiry :</b>
-                              <span>{item.enquiry_number}</span>
-                              <p className="mb-0"><b>User :</b> {item.fname} {item.lname}</p>
-                              <p className="mb-0"><b>Company :</b> {item.organization_name}</p>
-                            </div>
-                          </div>
-                        </a>
-                      ))}
-
-
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="col-8">
-                <div className="card mb-3 border">
-                  <div className="card-body">
-                    <div className="MainChat">
-                      <div class="chat-header d-flex align-items-center start-0">
-
-                        <div>
-                          {/* <h4 class="mb-1 font-weight-bold">{enquiryUsers?.fname} {enquiryUsers?.lname}</h4> */}
-                          <h4 class="mb-1 font-weight-bold">Conversation</h4>
-
-                        </div>
-
-                      </div>
-                      <div className="chat-content ps ps--active-y start-0 m-0 mb-4">
-
-                        {chatLoading ? (
-                          <div className="text-center py-5">
-                            <div className="spinner-border text-primary" role="status">
-                              <span className="visually-hidden">Loading...</span>
-                            </div>
-                            <p className="mt-2 mb-0">Loading conversation...</p>
-                          </div>
-                        ) : enquiryMessages.length > 0 ? (
-
-                          enquiryMessages.map((msg, index) => {
-                            const time = new Date(msg.updated_at).toLocaleTimeString("en-IN", {
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: true
-                            });
-
-                            return (
-                              <div key={index}>
-                                {/* LEFT SIDE */}
-                                {msg.user_id !== loggedCompanyId && (
-                                  <div className="chat-content-leftside">
-                                    <div className="d-flex">
-                                      <img
-                                        src={
-                                          msg.user_file
-                                            ? `${ROOT_URL}/${msg.user_file}`
-                                            : "/user-demo.png"
-                                        }
-
-
-                                        width="40"
-                                        height="40"
-                                        className="rounded-circle border"
-                                        style={{ objectFit: "cover" }}
-                                        alt=""
-                                        onError={(e) => {
-                                          e.target.onerror = null; // prevent infinite loop
-                                          e.target.src = "/user-demo.png";
-                                        }}
-                                      />
-                                      <div className="flex-grow-1 ms-2">
-                                        <p className="mb-0 chat-time">
-                                          {msg.user_fname} {msg.user_lname}, {time}
-                                        </p>
-                                        <p className="chat-left-msg">{msg.message}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* RIGHT SIDE */}
-                                {msg.user_id == loggedCompanyId && (
-                                  <div className="chat-content-rightside">
-                                    <div className="d-flex ms-auto">
-                                      <div className="flex-grow-1 me-2">
-                                        <p className="mb-0 chat-time text-end">
-                                          {msg.seller_fname} {msg.seller_lname}, {time}
-                                        </p>
-                                        <p className="chat-right-msg">{msg.message}</p>
-                                      </div>
-                                      <img
-                                        src={
-                                          msg.seller_file
-                                            ? `${ROOT_URL}/${msg.seller_file}`
-                                            : "/user-demo.png"
-                                        }
-                                        width="40"
-                                        height="40"
-                                        className="rounded-circle border"
-                                        style={{ objectFit: "cover" }}
-                                        alt=""
-                                        onError={(e) => {
-                                          e.target.onerror = null; // prevent infinite loop
-                                          e.target.src = "/user-demo.png";
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })
-
-                        ) : (
-                          <p className="text-center text-muted mt-4">
-                            No messages found
-                          </p>
-                        )}
-
-                      </div>
-
-                      <div className="chat-footer d-flex align-items-center start-0">
-                        <div className="flex-grow-1 pe-2">
-                          <div className="input-group">	<span className="input-group-text"><i className="bx bx-envelope"></i></span>
-                            <input
-                              type="text"
-                              className="form-control"
-                              placeholder="Type a message"
-                              value={message}
-                              onChange={(e) => setMessage(e.target.value)}
-                              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                            />
-
-                            <button
-                              className="btn btn-primary"
-                              onClick={handleSendMessage}
-                              disabled={!message.trim()}
                             >
-                              Send
-                            </button>
+                              <div className="d-flex gap-2">
+                                <div className="chat_user">
+                                  <img
+                                    src={
+                                      item.company_logo_new
+                                        ? `${ROOT_URL}/${item.company_logo_new}`
+                                        : "/user-demo.png"
+                                    }
+                                    alt=""
+                                    className="img-fluid img-thumbnail"
+                                    width="40"
+                                    onError={(e) => {
+                                      e.target.onerror = null; // prevent infinite loop
+                                      e.target.src = "/user-demo.png";
+                                    }}
+                                  />
+                                </div>
+
+                                <div className="menquiry">
+                                  <p className="mb-0 fw-bold"> {item.org_name}</p>
+                                  <small> <i class="bx bx-map"></i>{item.com_location
+                                  }</small>
+                                </div>
+                              </div>
+                            </a>
+                          ))}
+
+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-8 ps-lg-0">
+                    <div className="card mb-3 border-0">
+                      <div className="card-body">
+                        <div className="MainChat">
+                          <div class="chat-header d-flex align-items-center start-0">
+
+                            <div className="d-flex gap-2 align-items-center">
+                              <div>
+                                <img
+                                  src={
+                                    enquiryUsers?.company_info?.companyLogo.file
+                                      ? `${ROOT_URL}/${enquiryUsers?.company_info?.companyLogo.file}`
+                                      : "/user-demo.png"
+                                  }
+                                  alt=""
+                                  className="img-fluid rounded"
+                                  width="40"
+                                  onError={(e) => {
+                                    e.target.onerror = null; // prevent infinite loop
+                                    e.target.src = "/user-demo.png";
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <h5 class="mb-0 font-weight-bold">{enquiryUsers?.company_info?.organization_name}</h5><small className="small"><i class="bx bx-map me-1"></i>{enquiryUsers?.company_info?.company_location}</small>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="chat-content ps ps--active-y start-0 m-0 mb-4" ref={chatContentRef}>
+
+                            {chatLoading ? (
+                              <div className="text-center py-5">
+                                <div className="spinner-border text-primary" role="status">
+                                  <span className="visually-hidden">Loading...</span>
+                                </div>
+                                <p className="mt-2 mb-0">Loading conversation...</p>
+                              </div>
+                            ) : enquiryMessages.length > 0 ? (
+
+                              enquiryMessages.map((msg, index) => {
+                                const time = new Date(msg.updated_at).toLocaleTimeString("en-IN", {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true
+                                });
+
+                                return (
+                                  <div key={index}>
+                                    {/* LEFT SIDE */}
+                                    {msg.user_id !== loggedCompanyId && (
+                                      <div className="chat-content-leftside">
+                                        <div className="d-flex">
+                                          <img
+                                            src={
+                                              msg.user_file
+                                                ? `${ROOT_URL}/${msg.user_file}`
+                                                : "/user-demo.png"
+                                            }
+
+
+                                            width="40"
+                                            height="40"
+                                            className="rounded-circle border"
+                                            style={{ objectFit: "cover" }}
+                                            alt=""
+                                            onError={(e) => {
+                                              e.target.onerror = null; // prevent infinite loop
+                                              e.target.src = "/user-demo.png";
+                                            }}
+                                          />
+                                          <div className="flex-grow-1 ms-2">
+                                            <p className="mb-0 chat-time">
+                                              {msg.user_fname} {msg.user_lname}, {time}
+                                            </p>
+                                            <p className="chat-left-msg">{msg.message}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* RIGHT SIDE */}
+                                    {msg.user_id == loggedCompanyId && (
+                                      <div className="chat-content-rightside">
+                                        <div className="d-flex ms-auto">
+                                          <div className="flex-grow-1 me-2">
+                                            <p className="mb-0 chat-time text-end">
+                                              You, {time}
+                                            </p>
+                                            <p className="chat-right-msg">{msg.message}</p>
+                                          </div>
+                                          <img
+                                            src={
+                                              msg.seller_file
+                                                ? `${ROOT_URL}/${msg.seller_file}`
+                                                : "/user-demo.png"
+                                            }
+                                            width="40"
+                                            height="40"
+                                            className="rounded-circle border"
+                                            style={{ objectFit: "cover" }}
+                                            alt=""
+                                            onError={(e) => {
+                                              e.target.onerror = null; // prevent infinite loop
+                                              e.target.src = "/user-demo.png";
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+
+                            ) : (
+                              <p className="text-center text-muted mt-4">
+                                No messages found
+                              </p>
+                            )}
+
+                          </div>
+
+                          <div className="chat-footer d-flex align-items-center start-0">
+                            <div className="flex-grow-1 pe-2">
+                              <div className="input-group">	<span className="input-group-text"><i className="bx bx-envelope"></i></span>
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  placeholder="Type a message"
+                                  value={message}
+                                  onChange={(e) => setMessage(e.target.value)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                                />
+
+                                <button
+                                  className="btn btn-primary"
+                                  onClick={handleSendMessage}
+                                  disabled={!message.trim()}
+                                >
+                                  Send
+                                </button>
+                              </div>
+                            </div>
+
                           </div>
                         </div>
-
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
+            </div >
+          </div >
         </div >
       </div >
 

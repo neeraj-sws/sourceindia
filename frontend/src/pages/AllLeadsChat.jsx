@@ -55,6 +55,7 @@ const AllLeadsChat = ({ user_id }) => {
   const [enquiryUsers, setEnquiryUsers] = useState(null);
   const [message, setMessage] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
+  const chatContentRef = useRef(null);
 
   const loggedCompanyId = user?.id;
 
@@ -269,6 +270,13 @@ const AllLeadsChat = ({ user_id }) => {
     }
   };
 
+  const scrollToBottom = () => {
+    if (chatContentRef.current) {
+      chatContentRef.current.scrollTop =
+        chatContentRef.current.scrollHeight;
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim() || !activeEnquiry) return;
 
@@ -292,7 +300,7 @@ const AllLeadsChat = ({ user_id }) => {
       if (res.data?.data) {
 
         setEnquiryMessages((prev) => [...prev, res.data.data]);
-
+        setTimeout(scrollToBottom, 100);
       }
 
       setMessage("");
@@ -309,17 +317,17 @@ const AllLeadsChat = ({ user_id }) => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb page="Settings" title="Leads Message"
+          <Breadcrumb page="" title="Leads Message"
           />
           {allleads && allleads.length > 0 && (
             <div className="row">
-              <div className="col-4">
-                <div className="card border">
+              <div className="col-4 pe-lg-0">
+                <div className="card border rounded-0 h-100">
                   <div className="card-header">
                     <h6 className="mb-0">Chat</h6>
                   </div>
                   <div className="card-body p-0">
-                    <div className="allMessages">
+                    <div className="allMessages chat-content m-0 p-0">
                       {allleads.map(item => (
                         <a
                           key={item.enquiry_id}
@@ -334,16 +342,26 @@ const AllLeadsChat = ({ user_id }) => {
                           <div className="d-flex gap-2">
                             <div className="chat_user">
                               <img
-                                src={item.file || "/user-demo.png"}
-                                alt="" className="img-fluid img-thumbnail" width="40"
+                                src={
+                                  item.company_logo_new
+                                    ? `${ROOT_URL}/${item.company_logo_new}`
+                                    : "/user-demo.png"
+                                }
+                                alt=""
+                                className="img-fluid img-thumbnail"
+                                width="40"
+                                onError={(e) => {
+                                  e.target.onerror = null; // prevent infinite loop
+                                  e.target.src = "/user-demo.png";
+                                }}
                               />
+
                             </div>
 
                             <div className="menquiry">
-                              <b> Enquiry :</b>
-                              <span>{item.enquiry_number}</span>
-                              <p className="mb-0"><b>User :</b> {item.fname} {item.lname}</p>
-                              <p className="mb-0"><b>Company :</b> {item.organization_name}</p>
+                              <p className="mb-0 fw-bold"> {item.org_name}</p>
+                              <small> <i class="bx bx-map"></i>{item.com_location
+                              }</small>
                             </div>
                           </div>
                         </a>
@@ -354,20 +372,36 @@ const AllLeadsChat = ({ user_id }) => {
                   </div>
                 </div>
               </div>
-              <div className="col-8">
-                <div className="card mb-3 border">
+              <div className="col-8 ps-lg-0">
+                <div className="card mb-3 border-0">
                   <div className="card-body">
                     <div className="MainChat">
                       <div class="chat-header d-flex align-items-center start-0">
 
-                        <div>
-                          {/* <h4 class="mb-1 font-weight-bold">{enquiryUsers?.fname} {enquiryUsers?.lname}</h4> */}
-                          <h4 class="mb-1 font-weight-bold">Conversation</h4>
-
+                        <div className="d-flex gap-2 align-items-center">
+                          <div>
+                            <img
+                              src={
+                                enquiryUsers?.company_info?.companyLogo.file
+                                  ? `${ROOT_URL}/${enquiryUsers?.company_info?.companyLogo.file}`
+                                  : "/user-demo.png"
+                              }
+                              alt=""
+                              className="img-fluid rounded"
+                              width="40"
+                              onError={(e) => {
+                                e.target.onerror = null; // prevent infinite loop
+                                e.target.src = "/user-demo.png";
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <h5 class="mb-0 font-weight-bold">{enquiryUsers?.company_info?.organization_name}</h5><small className="small"><i class="bx bx-map me-1"></i>{enquiryUsers?.company_info?.company_location}</small>
+                          </div>
                         </div>
 
                       </div>
-                      <div className="chat-content ps ps--active-y start-0 m-0 mb-4">
+                      <div className="chat-content ps ps--active-y start-0 m-0 mb-4" ref={chatContentRef}>
 
                         {chatLoading ? (
                           <div className="text-center py-5">
@@ -423,7 +457,7 @@ const AllLeadsChat = ({ user_id }) => {
                                     <div className="d-flex ms-auto">
                                       <div className="flex-grow-1 me-2">
                                         <p className="mb-0 chat-time text-end">
-                                          {msg.seller_fname} {msg.seller_lname}, {time}
+                                          You, {time}
                                         </p>
                                         <p className="chat-right-msg">{msg.message}</p>
                                       </div>

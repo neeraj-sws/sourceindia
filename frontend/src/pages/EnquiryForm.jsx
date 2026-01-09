@@ -546,10 +546,11 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             required
+                            style={{ height: "100px" }}
                           />
                         </div>
                       </form>
-                      <div className="modal-footer border-0 mt-5 p-0 pt-5">
+                      <div className="modal-footer border-0 mt-3 p-0 pt-5">
                         <button
                           type="submit"
                           className="btn btn-primary"

@@ -57,6 +57,7 @@ const LeadDetail = () => {
     color = "danger";
   }
   const loggedCompanyId = user?.id;
+  const chatContentRef = useRef(null);
 
   useEffect(() => {
     if (!user?.company_id || !formData?.id) return;
@@ -121,23 +122,41 @@ const LeadDetail = () => {
         setShortList([]); // fallback
       });
 
-    // 🟣 message companies
 
-    axios
-      .get(`${API_BASE_URL}/enquiries/messages?enq_id=${formData.id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
-      .then((res) => {
-        const data = res.data?.data || [];
-
-        setEnquiryMessages(data);
-      })
-      .catch((err) => {
-        console.error("Error fetching awarded companies:", err);
-        setEnquiryMessages([]); // fallback
-      });
   }, [user?.company_id, formData?.id]);
 
+  useEffect(() => {
+    if (formData?.id) {
+      fetchEnquiryMessages();
+    }
+  }, [formData?.id, user?.company_id]);
+
+  const fetchEnquiryMessages = async () => {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/enquiries/messages?enq_id=${formData.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      setEnquiryMessages(res.data?.data || []);
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+      setEnquiryMessages([]);
+    }
+  };
+
+
+
+  const scrollToBottom = () => {
+    if (chatContentRef.current) {
+      chatContentRef.current.scrollTop =
+        chatContentRef.current.scrollHeight;
+    }
+  };
 
 
   const handleSendMessage = async () => {
@@ -158,10 +177,8 @@ const LeadDetail = () => {
         }
       );
 
-      // UI me turant message add
-      if (res.data?.data) {
-        setEnquiryMessages((prev) => [...prev, res.data.data]);
-      }
+      fetchEnquiryMessages();
+      setTimeout(scrollToBottom, 100);
 
       setMessage("");
     } catch (error) {
@@ -322,7 +339,7 @@ const LeadDetail = () => {
                           <p>- No Enquiry Messages -</p>
                         </div> */}
                         <div className="MainChat">
-                          <div className="chat-content ps ps--active-y start-0 m-0 pt-2 mb-4">
+                          <div className="chat-content ps ps--active-y start-0 m-0 pt-2 mb-4" ref={chatContentRef}>
                             {enquiryMessages.length > 0 &&
                               enquiryMessages.map((msg, index) => {
                                 const time = new Date(msg.updated_at).toLocaleTimeString("en-IN", {
@@ -371,7 +388,7 @@ const LeadDetail = () => {
                                         <div className="d-flex ms-auto">
                                           <div className="flex-grow-1 me-2">
                                             <p className="mb-0 chat-time text-end">
-                                              {msg.seller_fname} {msg.seller_lname}, {time}
+                                              You, {time}
                                             </p>
                                             <p className="chat-right-msg">{msg.message}</p>
                                           </div>
