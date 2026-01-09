@@ -58,7 +58,7 @@ import PublicRoute from '../routes/PublicRoute';
 function FrontLayout() {
   const location = useLocation();
   const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit', '/my-product',
-    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/inbox',
+    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/Inbox',
     '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', '/all-leads-chats', 'open-enquiry-dashboard'];
   const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
 

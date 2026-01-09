@@ -387,7 +387,7 @@ const ViewEnquiry = () => {
                                       <div className="d-flex ms-auto">
                                         <div className="flex-grow-1 me-2">
                                           <p className="mb-0 chat-time text-end">
-                                            {msg.seller_fname} {msg.seller_lname}, {time}
+                                            You, {time}
                                           </p>
                                           <p className="chat-right-msg">{msg.message}</p>
                                         </div>
