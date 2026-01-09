@@ -221,6 +221,7 @@ const LeadDetail = () => {
                       {formData.from_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.from_email}</p>}
                       {formData.from_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.from_mobile}</p>}
                       {formData.from_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.from_organization_name}</p>}
+
                     </div>
                   </div>
                 </div>
@@ -231,53 +232,26 @@ const LeadDetail = () => {
               <div className="col-md-4">
                 <div className="card mb-3">
                   <div className="card-body">
-                    <h6 className="mb-3 fw-semibold">Lead Information</h6>
+                    <h6 className="mb-3 fw-semibold">Company Detail</h6>
                     <div className="border-bottom mb-3 pb-3">
-                      <div className="d-flex align-items-center justify-content-between mb-2">
-                        <p className="mb-0 text-secondary">Date Created</p>
-                        <p className="mb-0 text-dark">
-                          {formData.created_at && (() => {
-                            const date = new Date(formData.created_at);
-                            const formatted = date.toLocaleString('en-GB', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true,
-                            }).replace(',', '');
-                            return <span>{formatted}</span>;
-                          })()}
-                        </p>
-                      </div>
-                      <div className="d-flex align-items-center justify-content-between mb-2">
-                        <p className="mb-0 text-secondary">Enquiry Number</p>
-                        <p className="mb-0 text-dark">
-                          <b> {formData.enquiry_number}</b>
-                        </p>
-                      </div>
-                    </div>
-                    <h6 className="mb-3 fw-semibold">Enquiry Detail</h6>
-                    <div className="border-bottom mb-3 pb-3">
-                      {formData.seller_category_names &&
-                        <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
-                          <p className="mb-0 text-secondary">Category</p>
-                          <p className="mb-0 text-dark">
-                            {formData.seller_category_names}
-                          </p>
-                        </div>
-                      }
-                      {formData.seller_subcategory_names &&
-                        <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
-                          <p className="mb-0 text-secondary">Sub Category</p>
-                          <p className="mb-0 text-dark">
-                            {formData.seller_subcategory_names}
-                          </p>
-                        </div>
-                      }
                       <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Company Name</p>
                         <p className="mb-0 text-dark">
-                          {formData.description}
+                          <a href={`/companies/${formData.from_organization_slug}`} target="_blank" className="">
+                            {formData.from_organization_name}
+                          </a>
+                        </p>
+                      </div>
+                      <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Core Activity</p>
+                        <p className="mb-0 text-dark">
+                          {formData.from_core_activity_name}
+                        </p>
+                      </div>
+                      <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Activity</p>
+                        <p className="mb-0 text-dark">
+                          {formData.from_activity_name}
                         </p>
                       </div>
                     </div>
@@ -286,7 +260,9 @@ const LeadDetail = () => {
                       <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Product Name</p>
                         <p className="mb-0 text-dark">
-                          {formData.product_details?.title}
+                          <a href={`/products/${formData.product_details?.slug}`} target="_blank" className="">
+                            {formData.product_details?.title}
+                          </a>
                         </p>
                       </div>
                       {formData.product_details?.Categories &&

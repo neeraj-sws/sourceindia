@@ -20,6 +20,8 @@ const { getCategoryNames } = require('../helpers/mailHelper');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const UploadImage = require('../models/UploadImage');
+const CoreActivity = require('../models/CoreActivity');
+const Activity = require('../models/Activity');
 
 exports.getAllEnquiries = async (req, res) => {
   try {
@@ -112,7 +114,17 @@ exports.getEnquiriesByNumber = async (req, res) => {
           include: [{
             model: CompanyInfo,
             as: 'company_info',
-            attributes: ['organization_name'],
+            attributes: ['organization_name', 'organization_slug'],
+            include: [{
+              model: CoreActivity,
+              as: 'CoreActivity',
+              attributes: ['name'],
+            }, {
+              model: Activity,
+              as: 'Activity',
+              attributes: ['name'],
+            }
+            ]
           }],
         },
         {
@@ -133,7 +145,7 @@ exports.getEnquiriesByNumber = async (req, res) => {
             {
               model: Products,
               as: 'Products',
-              attributes: ['id', 'title', 'description', 'user_id', 'category', 'sub_category'],
+              attributes: ['id', 'title', 'slug', 'description', 'user_id', 'category', 'sub_category'],
               include: [
                 { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
                 { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
@@ -154,7 +166,7 @@ exports.getEnquiriesByNumber = async (req, res) => {
 
     if (eu?.product_id) {
       single_product = await Products.findByPk(eu.product_id, {
-        attributes: ['id', 'title', 'description', 'user_id', 'category', 'sub_category'],
+        attributes: ['id', 'title', 'slug', 'description', 'user_id', 'category', 'sub_category'],
         include: [
           { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
           { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
@@ -189,6 +201,9 @@ exports.getEnquiriesByNumber = async (req, res) => {
       from_mobile: enquiry.from_user?.mobile || null,
       from_company_id: enquiry.from_user?.company_id || null,
       from_organization_name: enquiry.from_user?.company_info?.organization_name || null,
+      from_organization_slug: enquiry.from_user?.company_info?.organization_slug || null,
+      from_core_activity_name: enquiry.from_user?.company_info?.CoreActivity?.name || null,
+      from_activity_name: enquiry.from_user?.company_info?.Activity?.name || null,
 
       to_full_name: enquiry.to_user ? `${enquiry.to_user.fname} ${enquiry.to_user.lname}`.trim() : null,
       to_email: enquiry.to_user?.email || null,
