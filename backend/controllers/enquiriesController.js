@@ -588,8 +588,10 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
       sortBy = 'id',
       sort = 'DESC',
       user_id,
+      company_id,
       isAdmin,
-      all = false // optional query param ?all=true to get all data
+      type,
+      all = false
     } = req.query;
 
     if (!user_id) {
@@ -606,7 +608,13 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
     const where = { is_delete: 0 };
     if (!isAdmin) {
       where.is_approve = 1;
-      where.user_id = user_id;
+      if (type == "lead") {
+        where.company_id = company_id;
+      } else {
+        where.user_id = user_id;
+      }
+
+
     }
 
     const user = await Users.findByPk(user_id, {
@@ -1675,10 +1683,21 @@ exports.getMessageenquiries = async (req, res) => {
     const { enq_id } = req.query;
 
     const enquiry = await Enquiries.findOne({
-      where: { id: enq_id }
+      where: { id: enq_id },
+      include: { model: Users, as: 'from_user' }
     });
     const user = await Users.findOne({
-      where: { id: enquiry.user_id }
+      where: { id: enquiry.user_id },
+      include: {
+        model: CompanyInfo, as: 'company_info',
+        include: [
+          {
+            model: UploadImage,
+            as: 'companyLogo', // 👈 alias same hona chahiye
+            required: false
+          }
+        ]
+      }
     });
 
 
@@ -1728,7 +1747,8 @@ exports.getMessageenquiries = async (req, res) => {
     return res.status(200).json({
       success: true,
       data,
-      user
+      user,
+      enquiry
     });
 
   } catch (error) {
@@ -1744,72 +1764,50 @@ exports.getAllLeads = async (req, res) => {
   try {
     const { companyId, is_type } = req.query;
     let enquiryMessages;
-    if (is_type == 'myenquiry') {
-      enquiryMessages = await sequelize.query(
-        `
-  SELECT 
-    enquiry_messages.*,
-    enquiries.enquiry_number,
-    company_info.organization_name,
-    s_user.fname,
-    s_user.lname,
-    upload_images.file
-  FROM enquiry_messages
-  LEFT JOIN enquiries 
-    ON enquiry_messages.enquiry_id = enquiries.enquiry_id
-  LEFT JOIN company_info 
-    ON enquiry_messages.seller_company_id = company_info.company_id
-  LEFT JOIN users 
-    ON enquiry_messages.buyer_company_id = users.company_id
-  LEFT JOIN users AS s_user 
-    ON enquiry_messages.seller_company_id = s_user.company_id
-  LEFT JOIN upload_images 
-    ON s_user.file_id = upload_images.upload_image_id
-  WHERE enquiries.is_delete = 0
-    AND enquiry_messages.buyer_company_id = :company_id
-  GROUP BY enquiry_messages.enquiry_id
-  `,
-        {
-          replacements: {
-            company_id: companyId
-          },
-          type: Sequelize.QueryTypes.SELECT
-        }
-      );
-    } else {
-      enquiryMessages = await sequelize.query(
-        `
-  SELECT 
-    enquiry_messages.*,
-    enquiries.enquiry_number,
-    company_info.organization_name,
-    s_user.fname,
-    s_user.lname,
-    upload_images.file
-  FROM enquiry_messages
-  LEFT JOIN enquiries 
-    ON enquiry_messages.enquiry_id = enquiries.enquiry_id
-  LEFT JOIN company_info 
-    ON enquiry_messages.seller_company_id = company_info.company_id
-  LEFT JOIN users 
-    ON enquiry_messages.buyer_company_id = users.company_id
-  LEFT JOIN users AS s_user 
-    ON enquiry_messages.seller_company_id = s_user.company_id
-  LEFT JOIN upload_images 
-    ON s_user.file_id = upload_images.upload_image_id
-  WHERE enquiries.is_delete = 0
-    AND enquiry_messages.seller_company_id = :company_id
-  GROUP BY enquiry_messages.enquiry_id
-  `,
-        {
-          replacements: {
-            company_id: companyId
-          },
-          type: Sequelize.QueryTypes.SELECT
-        }
-      );
-    }
 
+    const condition =
+      is_type === 'myenquiry'
+        ? 'enquiry_messages.buyer_company_id = :company_id'
+        : 'enquiry_messages.seller_company_id = :company_id';
+
+    enquiryMessages = await sequelize.query(
+      `
+      SELECT 
+        enquiry_messages.*,
+        enquiries.enquiry_number,
+        company_info.organization_name,
+        company_info.company_location,
+        companyinformation.organization_name as org_name,
+        companyinformation.company_location as com_location,
+        s_user.fname,
+        s_user.lname,
+        upload_images.file,
+        company_images.file as company_logo,
+        company_images_new.file as company_logo_new
+      FROM enquiry_messages
+      LEFT JOIN enquiries 
+        ON enquiry_messages.enquiry_id = enquiries.enquiry_id
+      LEFT JOIN company_info 
+        ON enquiry_messages.seller_company_id = company_info.company_id
+        LEFT JOIN company_info as companyinformation
+        ON enquiry_messages.buyer_company_id = companyinformation.company_id
+      LEFT JOIN users AS s_user 
+        ON enquiry_messages.seller_company_id = s_user.company_id
+      LEFT JOIN upload_images 
+        ON s_user.file_id = upload_images.upload_image_id
+        LEFT JOIN upload_images AS company_images 
+        ON company_info.company_logo = company_images.upload_image_id
+        LEFT JOIN upload_images AS company_images_new 
+        ON companyinformation.company_logo = company_images_new.upload_image_id
+      WHERE enquiries.is_delete = 0
+        AND ${condition}
+      ORDER BY enquiry_messages.enquiry_message_id DESC
+      `,
+      {
+        replacements: { company_id: companyId },
+        type: Sequelize.QueryTypes.SELECT
+      }
+    );
 
     return res.json({ success: true, data: enquiryMessages });
 
