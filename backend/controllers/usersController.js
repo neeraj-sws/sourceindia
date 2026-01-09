@@ -1038,8 +1038,10 @@ exports.updateProfile = async (req, res) => {
 
         // 🧾 Update company info
         await companyInfo.update({
-          organization_name: req.body.organization_name,
-          organization_slug: await generateUniqueSlug(CompanyInfo, req.body.organization_name),
+          organization_name: req.body.organization_name || companyInfo.organization_name,
+          organization_slug: req.body.organization_name
+    ? await generateUniqueSlug(CompanyInfo, req.body.organization_name)
+    : companyInfo.organization_slug,
           core_activity: req.body.core_activity,
           activity: req.body.activity,
           company_email: req.body.company_email,

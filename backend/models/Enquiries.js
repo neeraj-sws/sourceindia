@@ -43,7 +43,8 @@ const Enquiries = sequelize.define('Enquiries', {
 
 Enquiries.belongsTo(Users, { foreignKey: 'user_id', as: 'from_user', constraints: false });
 Enquiries.belongsTo(Users, {
-  foreignKey: 'company_id',
+  foreignKey: 'company_id',   // enquiry.company_id
+  targetKey: 'company_id',    // users.company_id
   as: 'to_user',
   constraints: false
 });

@@ -758,60 +758,87 @@ const sendEnquiryConfirmation = async (to, name) => {
 
 
 exports.verifyEmail = async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const { email } = req.body;
+
     const user = await Users.findOne({ where: { email } });
 
-
-
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    const password = 'SI' + new Date().getFullYear() + Math.floor(1000 + Math.random() * 9000).toString();
+    const password =
+      'SI' +
+      new Date().getFullYear() +
+      Math.floor(1000 + Math.random() * 9000).toString();
     const hashedPassword = await bcrypt.hash(password, 10);
 
-
-
+    // ✅ If user already exists
     if (user) {
-      await user.update({ otp });
+      await user.update({ otp }, { transaction });
       await sendOtpEmail(email, otp);
 
+      await transaction.commit();
       return res.status(200).json({
         exists: true,
         otpSent: true,
-        userId: user.id,   // Sequelize uses `id`, not `_id`
-        message: 'OTP sent to registered email'
+        userId: user.id,
+        message: 'OTP sent to registered email',
       });
     }
 
-    const newUser = new Users({
-      email,
-      otp,
-      password: hashedPassword,
-      real_password: password,
-      fname: "",
-      lname: "",
-      step: 0,
-      mode: 0,
-      country: "",
-      state: "",
-      city: "",
-      address: "",
-      remember_token: "",
-      is_seller: 0,
-      status: 1,
-      payment_status: 1,
-      is_approve: 0,
-      is_email_verify: 0,
-      featured_company: 0,
-      is_intrest: 0,
-      website: "",
-      products: "",
-      request_admin: 0,
-    });
-    await newUser.save();
+    // ✅ 1. Create Company first
+    const company = await CompanyInfo.create(
+      {
+        company_email: email,
+        is_verified: 0,
+      },
+      { transaction }
+    );
+
+    // ✅ 2. Create User with company_id
+    const newUser = await Users.create(
+      {
+        email,
+        otp,
+        password: hashedPassword,
+        real_password: password,
+        company_id: company.id, // 🔥 IMPORTANT
+        fname: '',
+        lname: '',
+        step: 0,
+        mode: 0,
+        country: '',
+        state: '',
+        city: '',
+        address: '',
+        remember_token: '',
+        is_seller: 0,
+        status: 1,
+        payment_status: 1,
+        is_approve: 0,
+        is_email_verify: 0,
+        featured_company: 0,
+        is_intrest: 0,
+        website: '',
+        products: '',
+        request_admin: 0,
+      },
+      { transaction }
+    );
+
     await sendOtpEmail(email, otp);
-    res.status(200).json({ exists: false, otpSent: true, userId: newUser._id });
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      exists: false,
+      otpSent: true,
+      userId: newUser.id,
+      companyId: company.id,
+      message: 'User and company created successfully',
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    await transaction.rollback();
+    return res.status(500).json({ error: err.message });
   }
 };
 
@@ -838,24 +865,33 @@ exports.resendOtp = async (req, res) => {
 exports.submitOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
+
     const user = await Users.findOne({ where: { email } });
-
-    let exists = true
-
-
-    // if (user) {
-    //   return res.status(200).json({ exists: true, message: 'User exists, please login' });
-    // }
-    if (!user || user.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
+    if (!user || user.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
 
     user.otp = null;
     user.is_otp = 1;
-
+    user.is_email_verify = 1;
     await user.save();
-    if (user.is_otp === 1) {
-      exists = false;
-    }
-    res.status(200).json({ verified: true, userId: user.id, exists: exists });
+
+    // 🔐 Generate JWT
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+      },
+      process.env.JWT_SECRET || 'your_jwt_secret_key',
+      { expiresIn: "7d" }
+    );
+
+    return res.status(200).json({
+      verified: true,
+      exists: true,
+      token,
+      user,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

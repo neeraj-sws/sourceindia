@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import { useAlert } from "../context/AlertContext";
 import axios from 'axios';
-import UseAuth from '../sections/UseAuth';
+// import UseAuth from '../sections/UseAuth';
+import { useAuth } from "../context/AuthContext";
 import { Suspense, lazy } from 'react';
 
 const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, companyName }) => {
@@ -27,7 +28,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
   const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
 
   const [selectedProductId, setSelectedProductId] = useState(productId || '');
-  const { user } = UseAuth();
+  const { user, login } = useAuth();
 
   useEffect(() => {
     if (!productId && companyId) {
@@ -110,14 +111,16 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
     try {
       const res = await axios.post(`${API_BASE_URL}/enquiries/submit-otp`, { email, otp });
 
-      if (res.data.verified) {
-        if (res.data.exists) {
-          setExists(true);
-        }
-        setMessage('OTP verified!');
-        showNotification('OTP verified!', 'success');
-        setUserId(res.data.userId);
-        setStep(3);
+        if (res.data.verified) {
+
+    login(res.data.token, res.data.user);
+  setUserId(res.data.user.id);
+  showNotification("OTP verified & logged in!", "success");
+  setStep(3);
+        // setMessage('OTP verified!');
+        // showNotification('OTP verified!', 'success');
+        // setUserId(res.data.userId);
+        // setStep(3);
       }
     } catch (err) {
       setError('Invalid OTP');

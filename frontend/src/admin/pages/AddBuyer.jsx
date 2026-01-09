@@ -30,6 +30,7 @@ const AddBuyer = () => {
   const [companyFile, setCompanyFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [updateSection, setUpdateSection] = useState(null);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -121,8 +122,11 @@ const AddBuyer = () => {
     setCompanyFile(e.target.files[0]);
   };
 
-  const validateForm = () => {
+  const validateForm = (section = null) => {
     const errs = {};
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+    const maxSize = 2 * 1024 * 1024;
+    if (!section || section === "basic") {
     if (!formData.fname.trim()) errs.fname = 'First Name is required';
     if (!formData.lname.trim()) errs.lname = 'Last Name is required';
     if (!formData.email.trim()) errs.email = 'Email is required';
@@ -136,21 +140,11 @@ const AddBuyer = () => {
     }
     if (!formData.mobile.trim()) errs.mobile = 'Mobile is required';
     else if (!/^[6-9]\d{9}$/.test(formData.mobile)) errs.mobile = "Mobile Number is invalid";
-    if (formData.alternate_number && !/^[6-9]\d{9}$/.test(formData.alternate_number)) errs.alternate_number = "Alternate Number is invalid";
+    // if (formData.alternate_number && !/^[6-9]\d{9}$/.test(formData.alternate_number)) errs.alternate_number = "Alternate Number is invalid";
     if (!selectedCountry) errs.country = 'Country is required';
     if (!selectedState) errs.state = 'State is required';
     if (!selectedCity) errs.city = 'City is required';
     if (!formData.zipcode) errs.zipcode = 'Post Code is required';
-    if (!formData.user_company) errs.user_company = 'Company Name is required';
-    // if (!formData.website) errs.website = 'Website is required';
-    // if (!formData.is_trading) errs.is_trading = 'Trader is required';
-    if (!formData.elcina_member) errs.elcina_member = 'ELCINA Member is required';
-    // if (!formData.user_category) errs.user_category = 'User Category is required';
-    if (!formData.address) errs.address = 'Address is required';
-    // if (!formData.products) errs.products = 'Products is required';
-
-    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-    const maxSize = 2 * 1024 * 1024;
     if (!file && !isEditing) {
       errs.file = 'Profile image is required';
     } else if (file) {
@@ -160,6 +154,15 @@ const AddBuyer = () => {
         errs.file = 'Image size must be under 2MB';
       }
     }
+  }
+  if (!section || section === "company") {
+    if (!formData.user_company) errs.user_company = 'Company Name is required';
+    // if (!formData.website) errs.website = 'Website is required';
+    // if (!formData.is_trading) errs.is_trading = 'Trader is required';
+    if (!formData.elcina_member) errs.elcina_member = 'ELCINA Member is required';
+    // if (!formData.user_category) errs.user_category = 'User Category is required';
+    if (!formData.address) errs.address = 'Address is required';
+    // if (!formData.products) errs.products = 'Products is required';
     if (!companyFile && !isEditing) {
       errs.company_file = 'Company image is required';
     } else if (companyFile) {
@@ -169,7 +172,7 @@ const AddBuyer = () => {
         errs.company_file = 'Image size must be under 2MB';
       }
     }
-
+  }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -221,39 +224,57 @@ const AddBuyer = () => {
     fetchBuyer();
   }, [buyerId]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setSubmitting(true);
-    const data = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      data.append(key, value);
+  const handleSubmit = async (e, section = null) => {
+  e.preventDefault();
+
+  if (!validateForm(section)) return;
+
+  setSubmitting(true);
+  const data = new FormData();
+
+  // Append only relevant fields based on section
+  Object.entries(formData).forEach(([key, value]) => {
+    if (!section || section === "basic") {
+      // basic fields
+      if (["fname","lname","email","password","mobile","alternate_number","zipcode","country_code"].includes(key)) {
+        data.append(key, value);
+      }
+    }
+    if (!section || section === "company") {
+      // company fields
+      if (["user_company","website","is_trading","elcina_member","user_category","address","products"].includes(key)) {
+        data.append(key, value);
+      }
+    }
+  });
+
+  // location always
+  if (!section || section === "basic") {
+    data.append("country", selectedCountry);
+    data.append("state", selectedState);
+    data.append("city", selectedCity);
+  }
+
+  if ((!section || section === "basic") && file) data.append("file", file);
+  if ((!section || section === "company") && companyFile) data.append("company_file", companyFile);
+
+  try {
+    const endpoint = isEditing ? `${API_BASE_URL}/buyers/${buyerId}` : `${API_BASE_URL}/buyers`;
+    const method = isEditing ? "put" : "post";
+
+    await axios[method](endpoint, data, {
+      headers: { "Content-Type": "multipart/form-data" }
     });
 
-    data.append('country', selectedCountry);
-    data.append('state', selectedState);
-    data.append('city', selectedCity);
-
-    if (file) data.append('file', file);
-    if (companyFile) data.append('company_file', companyFile);
-
-    try {
-      const endpoint = isEditing ? `${API_BASE_URL}/buyers/${buyerId}` : `${API_BASE_URL}/buyers`;
-      const method = isEditing ? 'put' : 'post';
-
-      await axios[method](endpoint, data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-
-      showNotification(`Buyer ${isEditing ? 'updated' : 'added'} successfully!`, "success");
-      if (!isEditing) { navigate('/admin/buyers'); }
-    } catch (error) {
-      console.error('Error saving buyer:', error);
-      showNotification(`Failed to ${isEditing ? 'update' : 'add'} buyer`, "error");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    showNotification(`Buyer ${isEditing ? "updated" : "added"} successfully!`, "success");
+    if (!isEditing) navigate("/admin/buyers");
+  } catch (err) {
+    showNotification("Failed to save buyer", "error");
+  } finally {
+    setSubmitting(false);
+    setUpdateSection(null);
+  }
+};
 
   return (
     <div className="page-wrapper">
@@ -264,7 +285,7 @@ const AddBuyer = () => {
             <form className="row g-3" onSubmit={handleSubmit}>
               <div className="card mb-2">
                 <div className='card-header py-3 px-2 bg-white'>
-                  <h6 className="mb-0 fw-bold">Basic Information</h6>
+                  <h6 className="mb-0 fw-bold">User Details</h6>
                 </div>
                 <div className="card-body mb-3">
                   <div className='row'>
@@ -381,10 +402,9 @@ const AddBuyer = () => {
                       {errors.zipcode && <div className="invalid-feedback">{errors.zipcode}</div>}
                     </div>
                     <div className="col-md-4 mb-3">
-                      <label htmlFor="alternate_number" className="form-label required">Alternate Number</label>
-                      <input type="number" className={`form-control ${errors.alternate_number ? 'is-invalid' : ''}`} id="alternate_number"
+                      <label htmlFor="alternate_number" className="form-label">Alternate Number</label>
+                      <input type="text" className="form-control" id="alternate_number"
                         placeholder="Alternate Number" value={formData.alternate_number} onChange={handleInputChange} min={0} />
-                      {errors.alternate_number && <div className="invalid-feedback">{errors.alternate_number}</div>}
                     </div>
                     <div className="col-md-4">
                       <label htmlFor="file" className="form-label required">Image</label>
@@ -425,13 +445,24 @@ const AddBuyer = () => {
                       </select>
                       {/* {errors.user_category && (<div className="invalid-feedback">{errors.user_category}</div>)} */}
                     </div>
+                    {isEditing && (
+  <div className="col-12 text-end mt-3">
+    <button
+      type="button"
+      className="btn btn-primary"
+      onClick={(e) => handleSubmit(e, "basic")}
+    >
+      {submitting ? "Updating..." : "Update User"}
+    </button>
+  </div>
+)}
                   </div>
                 </div>
               </div>
 
               <div className="card">
                 <div className='card-header py-3 px-2 bg-white'>
-                  <h6 className="mb-0 fw-bold">Company Information</h6>
+                  <h6 className="mb-0 fw-bold">Company Details</h6>
                 </div>
                 <div className="card-body">
                   <div className="row">
@@ -523,23 +554,35 @@ const AddBuyer = () => {
                       />
                       {/* {errors.products && <div className="invalid-feedback">{errors.products}</div>} */}
                     </div>
-                    <div className="col-md-12 text-end">
-                      <button type="submit" className="btn btn-primary px-4 mt-4">
-                        {submitting ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            {isEditing ? "Updating..." : "Saving..."}
-                          </>
-                        ) : (
-                          isEditing ? "Update" : "Save"
-                        )}
-                      </button>
-                    </div>
+                    {isEditing && (
+  <div className="col-12 text-end mt-3">
+    <button
+      type="button"
+      className="btn btn-primary"
+      onClick={(e) => handleSubmit(e, "company")}
+    >
+      {submitting ? "Updating..." : "Update Company"}
+    </button>
+  </div>
+)}
+                    {!isEditing && (
+  <div className="col-md-12 text-end">
+    <button type="submit" className="btn btn-primary px-4 mt-4">
+      {submitting ? (
+        <>
+          <span className="spinner-border spinner-border-sm me-2" />
+          Saving...
+        </>
+      ) : (
+        "Save"
+      )}
+    </button>
+  </div>
+)}
                   </div>
                 </div>
               </div>
             </form>
-
           </div>
         </div>
       </div>

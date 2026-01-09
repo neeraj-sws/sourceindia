@@ -44,7 +44,7 @@ async function createUniqueSlug(name) {
 }
 
 exports.createSeller = async (req, res) => {
-  const upload = getMulterUpload('seller'); // Fixed: Add 'users' param like updateSeller
+  const upload = getMulterUpload('users'); // Fixed: Add 'users' param like updateSeller
   upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'company_logo', maxCount: 1 },
@@ -269,7 +269,6 @@ exports.getSellerById = async (req, res) => {
     const seller = await Users.findByPk(req.params.id, {
       include: [
         { model: UploadImage, as: 'file', attributes: ['file'] },
-        { model: UploadImage, as: 'company_file', attributes: ['file'] },
         { model: Countries, as: 'country_data', attributes: ['name'] },
         { model: States, as: 'state_data', attributes: ['name'] },
         { model: Cities, as: 'city_data', attributes: ['name'] },
@@ -282,6 +281,7 @@ exports.getSellerById = async (req, res) => {
 
     const companyInfo = await CompanyInfo.findByPk(seller.company_id, {
       include: [
+        { model: UploadImage, as: 'companyLogo', attributes: ['file'] },
         { model: UploadImage, as: 'companySamplePptFile', attributes: ['file'] },
         { model: UploadImage, as: 'companySampleFile', attributes: ['file'] },
         { model: UploadImage, as: 'companyVideo', attributes: ['file'] },
@@ -311,7 +311,7 @@ exports.getSellerById = async (req, res) => {
       ...seller.toJSON(),
       ...companyInfo.toJSON(),
       file_name: seller.file ? seller.file.file : null,
-      company_file_name: seller.company_file ? seller.company_file.file : null,
+      company_file_name: companyInfo.companyLogo ? companyInfo.companyLogo.file : null,
       country_name: seller.country_data ? seller.country_data.name : null,
       state_name: seller.state_data ? seller.state_data.name : null,
       city_name: seller.city_data ? seller.city_data.name : null,
@@ -522,34 +522,50 @@ exports.updateSeller = async (req, res) => {
       };
 
       const fileFields = [
-        { field: 'file', idField: 'file_id', folder: 'users' },
-        { field: 'company_logo', idField: 'company_file_id', folder: 'users' },
-        { field: 'sample_file_id', idField: 'sample_file_id', folder: 'users' },
-        { field: 'company_sample_ppt_file', idField: 'company_sample_ppt_file', folder: 'users' },
-        { field: 'company_video', idField: 'company_video', folder: 'users/video' }
-      ];
+  { field: 'file', model: 'user', column: 'file_id', folder: 'users' },
+  { field: 'company_logo', model: 'company', column: 'company_logo', folder: 'users' },
+  { field: 'sample_file_id', model: 'company', column: 'sample_file_id', folder: 'users' },
+  { field: 'company_sample_ppt_file', model: 'company', column: 'company_sample_ppt_file', folder: 'users' },
+  { field: 'company_video', model: 'company', column: 'company_video', folder: 'users/video' }
+];
 
       // Handling file uploads
       for (const f of fileFields) {
-        const uploadedFile = req.files?.[f.field]?.[0];
-        if (uploadedFile) {
-          const existing = await UploadImage.findByPk(user[f.idField] || companyInfo?.[f.idField]);
-          if (existing) {
-            const oldPath = path.resolve(existing.file);
-            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-            existing.file = `upload/${f.folder}/${uploadedFile.filename}`;
-            existing.updated_at = new Date();
-            await existing.save();
-          } else {
-            const newImage = await UploadImage.create({ file: `upload/${f.folder}/${uploadedFile.filename}` });
-            if (f.idField in updatedData) {
-              updatedData[f.idField] = newImage.id;
-            } else if (companyInfo) {
-              await companyInfo.update({ [f.idField]: newImage.id });
-            }
-          }
-        }
+  const uploadedFile = req.files?.[f.field]?.[0];
+  if (!uploadedFile) continue;
+
+  const filePath = `upload/${f.folder}/${uploadedFile.filename}`;
+
+  if (f.model === 'user') {
+    const oldImageId = user[f.column];
+    const oldImage = oldImageId ? await UploadImage.findByPk(oldImageId) : null;
+
+    if (oldImage) {
+      if (fs.existsSync(path.resolve(oldImage.file))) {
+        fs.unlinkSync(path.resolve(oldImage.file));
       }
+      await oldImage.update({ file: filePath });
+    } else {
+      const newImage = await UploadImage.create({ file: filePath });
+      await user.update({ [f.column]: newImage.id });
+    }
+  }
+
+  if (f.model === 'company' && companyInfo) {
+    const oldImageId = companyInfo[f.column];
+    const oldImage = oldImageId ? await UploadImage.findByPk(oldImageId) : null;
+
+    if (oldImage) {
+      if (fs.existsSync(path.resolve(oldImage.file))) {
+        fs.unlinkSync(path.resolve(oldImage.file));
+      }
+      await oldImage.update({ file: filePath });
+    } else {
+      const newImage = await UploadImage.create({ file: filePath });
+      await companyInfo.update({ [f.column]: newImage.id });
+    }
+  }
+}
 
       await user.update(updatedData);
 
@@ -576,7 +592,9 @@ exports.updateSeller = async (req, res) => {
       }
 
       // Step 1: Add Categories without Subcategories first
-      const categoryIds = req.body.categories.split(',').map(id => parseInt(id.trim()));
+      const categoryIds = req.body.categories
+  ? req.body.categories.split(',').map(id => parseInt(id.trim()))
+  : [];
       const existingCategories = await SellerCategory.findAll({ where: { user_id: sellerId } });
       const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
       const incomingCategoryMap = [];
@@ -1116,30 +1134,30 @@ exports.sendMail = async (req, res) => {
     // send mails
     for (const seller of sellers) {
 
-      //       let verification_link = `<a class='back_to' href='/'  
-      //   style='background: linear-gradient(90deg, rgb(248 143 66) 45%, #38a15a 100%);
-      //   border: 1px solid transparent; padding: 4px 10px; font-size: 12px; 
-      //   border-radius: 4px; color: #fff;'>
-      //   Click and Login Account
-      // </a>`;
+            let verification_link = `<a class='back_to' href='/'  
+        style='background: linear-gradient(90deg, rgb(248 143 66) 45%, #38a15a 100%);
+        border: 1px solid transparent; padding: 4px 10px; font-size: 12px; 
+        border-radius: 4px; color: #fff;'>
+        Click and Login Account
+      </a>`;
 
-      //       const APP_URL = process.env.APP_URL
+            const APP_URL = process.env.APP_URL
 
-      //       const msgStr = template.message.toString('utf8');
-      //       let userMessage = msgStr
-      //         .replace("{{ USER_NAME }}", `${seller.fname} ${seller.lname}`)
-      //         .replace("{{ USER_EMAIL }}", seller.email)
-      //         .replace("{{ USER_PASSWORD }}", seller.real_password)
-      //         .replace("{{ APP_URL }}", APP_URL)
-      //         .replace("{{ VERIFICATION_LINK }}", verification_link);
+            const msgStr = template.message.toString('utf8');
+            let userMessage = msgStr
+              .replace("{{ USER_NAME }}", `${seller.fname} ${seller.lname}`)
+              .replace("{{ USER_EMAIL }}", seller.email)
+              .replace("{{ USER_PASSWORD }}", seller.real_password)
+              .replace("{{ APP_URL }}", APP_URL)
+              .replace("{{ VERIFICATION_LINK }}", verification_link);
 
-      //       const { transporter } = await getTransporter();
-      //       await transporter.sendMail({
-      //         from: `<info@sourceindia-electronics.com>`,
-      //         to: seller.email,
-      //         subject: template?.subject,
-      //         html: userMessage,
-      //       });
+            const { transporter } = await getTransporter();
+            await transporter.sendMail({
+              from: `<info@sourceindia-electronics.com>`,
+              to: seller.email,
+              subject: template?.subject,
+              html: userMessage,
+            });
 
 
 
@@ -1173,6 +1191,7 @@ exports.sendMail = async (req, res) => {
         location: location || '',
         mail_send_time: now,
         is_sent: 0,
+        is_failed: 0,
         created_at: new Date(),
         updated_at: new Date(),
       });

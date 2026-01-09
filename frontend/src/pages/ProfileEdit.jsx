@@ -163,7 +163,6 @@ const ProfileEdit = () => {
     if (!user.mobile?.trim()) errs.mobile = "Mobile is required";
     else if (!/^[6-9]\d{9}$/.test(user.mobile))
       errs.mobile = "Invalid mobile number";
-    if (user.alternate_number && !/^[6-9]\d{9}$/.test(user.alternate_number)) errs.alternate_number = "Alternate Number is invalid";
     if (!selectedState) errs.state = "State is required";
     if (!selectedCity) errs.city = "City is required";
     if (!user.zipcode?.trim()) errs.zipcode = "Pincode is required";
@@ -308,7 +307,6 @@ const ProfileEdit = () => {
                           className={`form-control ${errors.alternate_number ? 'is-invalid' : ''}`}
                           placeholder="Enter Alternate Number"
                         />
-                        {errors.alternate_number && <div className="invalid-feedback">{errors.alternate_number}</div>}
                       </div>
                       <div className="col-md-6">
                         <label className="form-label">
