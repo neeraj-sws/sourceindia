@@ -26,7 +26,9 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
   const [products, setProducts] = useState([]); // Initialize as empty array
   const [singleProduct, setSingleProduct] = useState(null);
   const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
-
+const isValidEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
   const [selectedProductId, setSelectedProductId] = useState(productId || '');
   const { user, login } = useAuth();
 
@@ -74,6 +76,15 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
 
   const handleVerify = async (e) => {
     e.preventDefault();
+    if (!email) {
+    showNotification('Email is required', 'error');
+    return;
+  }
+
+  if (!isValidEmail(email)) {
+    showNotification('Please enter a valid email address', 'error');
+    return;
+  }
     setLoadingVerify(true);
     try {
       const res = await axios.post(`${API_BASE_URL}/enquiries/verify`, { email });
@@ -340,7 +351,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                               className="form-control"
                               placeholder="Enter OTP"
                               value={otp}
-                              onChange={(e) => setOtp(e.target.value)}
+                              onChange={(e) => setOtp(e.target.value.replace(/\s/g, ''))}
                               required
                             />
                             <div className='text-center'>

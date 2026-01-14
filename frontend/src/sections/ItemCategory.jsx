@@ -10,7 +10,7 @@ const ItemCategory = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
-  const [categoryCounts, setCategoryCounts] = useState({});
+  // const [categoryCounts, setCategoryCounts] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -118,39 +118,39 @@ const ItemCategory = () => {
       (cat.items || []).some((item) => item.product_count > 0)
   ).length || 0;
 
-  const fetchCategoryCount = async (catId) => {
-  const res = await axios.get(
-    `${API_BASE_URL}/item_category/${catId}`
-  );
-  return res.data.product_count || 0;
-};
-useEffect(() => {
-  if (!subcategory?.item_categories?.length) return;
+//   const fetchCategoryCount = async (catId) => {
+//   const res = await axios.get(
+//     `${API_BASE_URL}/item_category/${catId}`
+//   );
+//   return res.data.product_count || 0;
+// };
+// useEffect(() => {
+//   if (!subcategory?.item_categories?.length) return;
 
-  const loadCounts = async () => {
-    try {
-      const promises = subcategory.item_categories.map((cat) =>
-        fetchCategoryCount(cat.id).then((count) => ({
-          id: cat.id,
-          count,
-        }))
-      );
+//   const loadCounts = async () => {
+//     try {
+//       const promises = subcategory.item_categories.map((cat) =>
+//         fetchCategoryCount(cat.id).then((count) => ({
+//           id: cat.id,
+//           count,
+//         }))
+//       );
 
-      const results = await Promise.all(promises);
+//       const results = await Promise.all(promises);
 
-      const countMap = {};
-      results.forEach((r) => {
-        countMap[r.id] = r.count;
-      });
+//       const countMap = {};
+//       results.forEach((r) => {
+//         countMap[r.id] = r.count;
+//       });
 
-      setCategoryCounts((prev) => ({ ...prev, ...countMap }));
-    } catch (err) {
-      console.error("Error fetching category counts", err);
-    }
-  };
+//       setCategoryCounts((prev) => ({ ...prev, ...countMap }));
+//     } catch (err) {
+//       console.error("Error fetching category counts", err);
+//     }
+//   };
 
-  loadCounts();
-}, [subcategory]);
+//   loadCounts();
+// }, [subcategory]);
 
   if (showSkeleton && page === 1) {
     return <ItemCategorySkeleton />;
@@ -198,11 +198,7 @@ useEffect(() => {
         {/* 🟢 Item Categories */}
         <div className="row g-3">
           {subcategory.item_categories
-  ?.filter(
-    (cat) =>
-      (cat.items || []).some((item) => item.product_count > 0)
-  )
-  .map((cat) => (
+  ?.filter(cat => cat.product_count > 0).map(cat => (
               <div key={cat.id} className="col-12 text-center">
                 <div className="card h-100">
                   <div className="card-body">
@@ -220,7 +216,7 @@ useEffect(() => {
                       className="d-block text-decoration-none"
                     >
                       <div className="d-flex justify-content-between align-items-start">
-                        <h6 className="fw-semibold mb-3">{cat.name} ({categoryCounts[cat.id] ?? 0})</h6>
+                        <h6 className="fw-semibold mb-3">{cat.name} ({cat.product_count})</h6>
                         <span>→</span>
                       </div>
                     </a>

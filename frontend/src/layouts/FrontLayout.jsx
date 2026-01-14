@@ -46,6 +46,7 @@ const AllLeadsChat = lazy(() => import('../pages/AllLeadsChat'));
 const TermsConditions = lazy(() => import('../pages/TermsConditions'));
 const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
 const Impersonate = lazy(() => import('../pages/Impersonate'));
+const SubscriptionPlans = lazy(() => import('../pages/SubscriptionPlans'));
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AlertProvider } from '../context/AlertContext';
@@ -116,6 +117,7 @@ function FrontLayout() {
                 <Route path="/terms_conditions" element={<TermsConditions />} />
                 <Route path="/privacy_policy" element={<PrivacyPolicy />} />
                 <Route path="/impersonate" element={<Impersonate />} />
+                <Route path="/plans" element={<SubscriptionPlans />} />
               </Routes>
             </Suspense>
           </main>
