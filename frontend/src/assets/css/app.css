@@ -3235,7 +3235,7 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	border-bottom: 2px solid var(--primary-color) !important;
 }
 
-<<<<<<< HEAD
+
 .sign_logo {
 	width: 22px;
 	height: 22px;
@@ -3252,7 +3252,6 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	border: 1px solid #a9a9a9;
 }
 
-=======
 .planBox tr th {
     text-align: center;
 }
@@ -3289,4 +3288,3 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 .planpart:hover .continuebtn {
     display: block;
 }
->>>>>>> 1eb1991828405c020914e346a7f706d0763443a7
