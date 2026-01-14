@@ -29,7 +29,7 @@ const Enquiry = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = UseAuth();
   const navigate = useNavigate();
-
+  const user_id = (user ? user.id : 0);
   // Fetch Enquiries
   const fetchEnquiries = useCallback(async () => {
     setIsLoading(true);
@@ -49,6 +49,7 @@ const Enquiry = () => {
       const responsePromise = axios.get(url);
 
       const [response] = await Promise.all([responsePromise, delay]); // wait for both
+
       setEnquiries(response.data);
     } catch (error) {
       console.error("Error fetching enquiries:", error);
@@ -78,7 +79,8 @@ const Enquiry = () => {
       const { success, enquiry_id } = res.data;
 
       if (success === 1 || success === 2) {
-        navigate(`/inbox/${enquiry_id}`);
+        // navigate(`/open-enquiry`);
+        navigate(`/open-enquiry/${enquiry_id}?type=1`);
       }
     } catch (err) {
       console.error("cheakUserchats failed:", err);
@@ -188,8 +190,8 @@ const Enquiry = () => {
               <div className="d-flex align-items-center justify-content-md-between gap-1 enquirybtnscontainer">
                 <button
                   className={`enquirybtns text-nowrap btn ${activeTab === "all"
-                      ? "btn-primary"
-                      : "btn-outline-primary"
+                    ? "btn-primary"
+                    : "btn-outline-primary"
                     }`}
                   onClick={() => setActiveTab("all")}
                 >
@@ -200,8 +202,8 @@ const Enquiry = () => {
                   {user && (
                     <button
                       className={`enquirybtns btn ${activeTab === "my"
-                          ? "btn-primary"
-                          : "btn-outline-primary"
+                        ? "btn-primary"
+                        : "btn-outline-primary"
                         }`}
                       onClick={() => setActiveTab("my")}
                     >
@@ -277,7 +279,11 @@ const Enquiry = () => {
                             </p>
                             <p className="card-text mb-1">
                               <b className="fw-semibold">Name:</b>{" "}
-                              {enquiry.fname} {enquiry.lname}
+                              {enquiry.fname || enquiry.lname ? (
+                                <>
+                                  {enquiry.fname} {enquiry.lname}
+                                </>
+                              ) : enquiry.name}
                             </p>
 
                             {(enquiry.organization_name || enquiry.company) && (
@@ -315,24 +321,28 @@ const Enquiry = () => {
                     </div>
 
                     {/* Footer: View / Reply */}
-                    <div className="card-footer text-center">
-                      {enquiry.user_id === user?.id ? (
-                        <Link
-                          to={`/Inbox/${enquiry.id}`}
-                          className="btn btn-sm btn-primary w-50 text-nowrap py-1 fw-medium d-inline-block pt-2"
-                        >
-                          View
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => cheakUserchats(enquiry.id)}
-                          className="btn btn-sm btn-primary w-50 text-nowrap py-1 fw-medium orange-hoverbtn d-inline-block pt-2"
-                        >
-                          Reply
-                        </button>
-                      )}
-                    </div>
+                    {enquiry.user_id != null && (
+                      <div className="card-footer text-center">
+                        {enquiry.user_id === user?.id ? (
+                          <Link
+                            to={`/open-enquiry/${enquiry.id}`}
+                            className="btn btn-sm btn-primary w-50 text-nowrap py-1 fw-medium d-inline-block pt-2"
+                          >
+                            View
+                          </Link>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => cheakUserchats(enquiry.id)}
+                            className="btn btn-sm btn-primary w-50 text-nowrap py-1 fw-medium orange-hoverbtn d-inline-block pt-2"
+                          >
+                            Reply
+                          </button>
+                        )}
+
+                      </div>
+                    )}
+
                   </div>
                 </div>
               ))}

@@ -34,6 +34,7 @@ const LeadDetail = lazy(() => import('../pages/LeadDetail'));
 const OpenEnquiry = lazy(() => import('../pages/OpenEnquiry'));
 const OpenEnquiryAll = lazy(() => import('../pages/OpenEnquiryAll'));
 const OpenEnquiryDetails = lazy(() => import('../pages/OpenEnquiryDetails'));
+const Inbox = lazy(() => import('../pages/Inbox'));
 const CreateTicket = lazy(() => import('../pages/CreateTicket'));
 const TrackTicket = lazy(() => import('../pages/TrackTicket'));
 const ProductDetail = lazy(() => import('../pages/ProductsDetail'));
@@ -59,7 +60,7 @@ import PublicRoute from '../routes/PublicRoute';
 function FrontLayout() {
   const location = useLocation();
   const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit', '/my-product',
-    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/Inbox',
+    '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/open-enquiry',
     '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', '/all-leads-chats', 'open-enquiry-dashboard'];
   const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
 
@@ -110,9 +111,10 @@ function FrontLayout() {
                 <Route path="/lead-detail/:enquiry_number" element={<PrivateRoute><LeadDetail /></PrivateRoute>} />
                 <Route path="/my-open-enquiry-dashboard" element={<PrivateRoute><OpenEnquiry /></PrivateRoute>} />
                 <Route path="/open-enquiry-dashboard" element={<PrivateRoute><OpenEnquiryAll showAll={true} /></PrivateRoute>} />
-                <Route path="/Inbox/:OpenEnquiryId" element={<PrivateRoute><OpenEnquiryDetails /></PrivateRoute>} />
+                <Route path="/open-enquiry/:OpenEnquiryId" element={<PrivateRoute><OpenEnquiryDetails /></PrivateRoute>} />
+
                 <Route path="/get-support/trackticket" element={<TrackTicket />} />
-                <Route path="/open-enquiry" element={<Enquiry />} />
+                <Route path="/enquiry" element={<Enquiry />} />
                 <Route path="/ticket/view/:number" element={<TicketView />} />
                 <Route path="/terms_conditions" element={<TermsConditions />} />
                 <Route path="/privacy_policy" element={<PrivacyPolicy />} />

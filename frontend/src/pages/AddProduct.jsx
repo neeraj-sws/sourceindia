@@ -518,7 +518,7 @@ const AddProduct = () => {
                           {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
                         </div>
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="short_description" className="form-label required">Short Description</label>
+                          <label htmlFor="short_description" className="form-label">Short Description</label>
                           <textarea
                             className={`form-control ${errors.brief_company ? "is-invalid" : ""}`}
                             id="short_description"

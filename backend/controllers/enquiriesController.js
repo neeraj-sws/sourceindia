@@ -1225,7 +1225,6 @@ exports.submitEnquiry = async (req, res) => {
   const clientIp = getClientIp(req);
   const errors = {};
 
-
   try {
     // ========== VALIDATION ==========
     if (!formData.title?.trim()) {
@@ -1245,10 +1244,6 @@ exports.submitEnquiry = async (req, res) => {
       if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email))
         errors.email = 'Valid email is required';
 
-      // const phoneDigits = formData.phone?.replace(/\D/g, '') || '';
-      // if (!phoneDigits || phoneDigits.length !== 10)
-      //   errors.phone = 'Phone number must be 10 digits';
-
       if (!formData.company?.trim()) errors.company = 'Company name is required';
     }
 
@@ -1264,7 +1259,7 @@ exports.submitEnquiry = async (req, res) => {
       status: 'pending',
     };
 
-    const enquiryPayload = isAuthenticated
+    let enquiryPayload = isAuthenticated
       ? { ...commonEnquiryFields, user_id: parseInt(formData.user_id, 10) }
       : {
         ...commonEnquiryFields,
@@ -1274,6 +1269,38 @@ exports.submitEnquiry = async (req, res) => {
         company: formData.company.trim(),
       };
     const user = await Users.findByPk(formData.user_id);
+
+
+    if (isAuthenticated) {
+      let suser = await Users.findByPk(formData.user_id);
+      enquiryPayload = { ...commonEnquiryFields, user_id: parseInt(formData.user_id, 10) };
+    } else {
+      let password =
+        'SI' +
+        new Date().getFullYear() +
+        Math.floor(1000 + Math.random() * 9000).toString();
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const company = await CompanyInfo.create({
+        organization_name: formData.company.trim()
+      });
+      let suser = await Users.create({
+        fname: formData.name.trim(),
+        lname: "",
+        company_id: company.id,
+        email: formData.email.trim(),
+        phone: formData.phone?.trim() || null,
+        user_company: formData.company.trim(),
+        password: hashedPassword,
+      });
+      console.log(suser.id);
+
+      enquiryPayload = { ...commonEnquiryFields, user_id: parseInt(suser.id, 10) };
+    }
+
+
+
+
+
 
 
 
@@ -1291,8 +1318,6 @@ exports.submitEnquiry = async (req, res) => {
       );
     }
 
-
-
     if (isAuthenticated) {
       const emailTemplate = await Emails.findByPk(88);
       const msgStr = emailTemplate.message.toString('utf8');
@@ -1308,7 +1333,6 @@ exports.submitEnquiry = async (req, res) => {
         html: userMessage,
       });
     } else {
-
       const emailTemplate = await Emails.findByPk(88);
       const msgStr = emailTemplate.message.toString('utf8');
       const full_name = formData.name.trim();
@@ -1360,7 +1384,7 @@ exports.getLeadsCount = async (req, res) => {
       where: { company_id: companyId }
     });
     const whereAwarded = { is_delete: 0 };
-    const whereShortlisted = { shortlist: 1 };
+    const whereShortlisted = { is_delete: 0 };
     const whereAccepted = {
       is_delete: 0, enquiry_status: 1,
       ...(enquiryId ? { enquiry_id: enquiryId } : {}),
@@ -1596,7 +1620,7 @@ exports.getAcceptEnquiries = async (req, res) => {
           attributes: ["organization_name"],
         },
       ],
-      attributes: ["id", "company_id", "enquiry_id", "enquiry_status", "shortlist"],
+      attributes: ["id", "company_id", "enquiry_id", "enquiry_status"],
       order: [["id", "ASC"]],
     });
 
@@ -1636,10 +1660,7 @@ exports.getAcceptEnquiries = async (req, res) => {
       const disabled = mainenquiry.status === 3 ? "disabled" : "";
 
       // ✅ Checkbox logic (shortlist)
-      const checked =
-        enquiry.shortlist === 1
-          ? `<input className="form-check-input me-3 filed_check" checked ${disabled} name="check[]" type="checkbox" value="1" onchange="shortlist(${enquiry.id},0)">`
-          : `<input className="form-check-input me-3 filed_check" name="check[]" ${disabled} type="checkbox" value="0" onchange="shortlist(${enquiry.id},1)">`;
+      const checked = '';
 
       // ✅ Badge HTML
       const statusHTML = `<div className="badge rounded-pill text-${color} bg-light-${color} p-2 px-3" style="font-size:10px;">${status}</div>`;
@@ -1680,7 +1701,6 @@ exports.getShortlistedenquiries = async (req, res) => {
     const enquiries = await EnquiryUsers.findAll({
       where: {
         enquiry_id: enq_id,
-        shortlist: 1,
         enquiry_status: 1,
         is_delete: 0,
       },

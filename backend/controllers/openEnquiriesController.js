@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
+const bcrypt = require('bcryptjs');
 const OpenEnquiries = require('../models/OpenEnquiries');
 const OpenEnquiriesChats = require('../models/OpenEnquiriesChats');
-
 const Categories = require('../models/Categories');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
@@ -93,7 +93,7 @@ exports.getFrontOpenEnquiries = async (req, res) => {
 
     const openEnquiries = await OpenEnquiries.findAll({
       where: whereConditions,
-      order: [['id', 'ASC']],
+      order: [['id', 'DESC']],
       include: [
         {
           model: Users,
@@ -113,6 +113,134 @@ exports.getFrontOpenEnquiries = async (req, res) => {
               ]
             }
           ]
+        }
+      ],
+      raw: false,
+      nest: true,
+
+    });
+
+
+
+    const transformed = openEnquiries.map(item => {
+      const enquiry = item.toJSON();
+      const flattened = {
+        ...enquiry,
+        ...enquiry.Users && {
+          fname: enquiry.Users.fname,
+          lname: enquiry.Users.lname,
+          email: enquiry.Users.email,
+          company_id: enquiry.Users.company_id,
+          organization_name: enquiry.Users.company_info?.organization_name || null,
+          company_logo: enquiry.Users.company_info?.companyLogo?.file || null,
+          organization_slug: enquiry.Users.company_info?.organization_slug || null
+        }
+      };
+      delete flattened.Users;
+      return flattened;
+    });
+
+    res.json(transformed);
+  } catch (err) {
+    console.error('Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getUserOpenEnquiries = async (req, res) => {
+  try {
+    const { enquiry_id, user_id } = req.query;
+    const whereConditions = {};
+
+    const openEnquiry = await OpenEnquiries.findByPk(enquiry_id);
+    whereConditions.enquiry_id = enquiry_id;
+    if (openEnquiry) {
+      whereConditions.user_id = {
+        [Op.ne]: openEnquiry.user_id
+      };
+      whereConditions.enquiry_user_id = openEnquiry.user_id;
+    }
+
+    const openEnquiries = await OpenEnquiriesChats.findAll({
+      where: whereConditions,
+      order: [['created_at', 'DESC']],
+      include: [
+        {
+          model: Users,
+          as: 'Users',
+          attributes: ['fname', 'lname', 'email', 'company_id'],
+          include: [
+            {
+              model: UploadImage,
+              as: 'file',
+              attributes: ['file']
+            }
+          ]
+        }, {
+          model: OpenEnquiries,
+          as: 'OpenEnquiries',
+          attributes: ['title'],
+        }
+      ],
+      group: ['Users.user_id'],
+      raw: false,
+      nest: true,
+
+    });
+
+    const transformed = openEnquiries.map(item => {
+      const enquiry = item.toJSON();
+      const flattened = {
+        ...enquiry,
+        ...enquiry.Users && {
+          fname: enquiry.Users.fname,
+          lname: enquiry.Users.lname,
+          email: enquiry.Users.email,
+          company_id: enquiry.Users.company_id,
+          organization_name: enquiry.Users.company_info?.organization_name || null,
+          company_logo: enquiry.Users.company_info?.companyLogo?.file || null,
+          organization_slug: enquiry.Users.company_info?.organization_slug || null
+        }
+      };
+      delete flattened.Users;
+      return flattened;
+    });
+
+    res.json(transformed);
+  } catch (err) {
+    console.error('Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getMessages = async (req, res) => {
+  try {
+    const { replyUserId, enquiryId } = req.query;
+    const whereConditions = {};
+
+    if (replyUserId !== undefined) {
+      whereConditions.reply_user_id = replyUserId;
+    }
+
+    whereConditions.enquiry_id = enquiryId;
+    const openEnquiries = await OpenEnquiriesChats.findAll({
+      where: whereConditions,
+      include: [
+        {
+          model: Users,
+          as: 'Users',
+          attributes: ['fname', 'lname', 'email', 'company_id'],
+          include: [
+            {
+              model: UploadImage,
+              as: 'file',
+              attributes: ['file']
+            }
+          ]
+        }, {
+          model: OpenEnquiries,
+          as: 'OpenEnquiries',
+          attributes: ['title'],
         }
       ],
       raw: false,
@@ -320,17 +448,21 @@ exports.getAllOpenEnquiriesServerSide = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
-
 exports.cheakUserchats = async (req, res) => {
-
-  const { id, user } = req.body;
-
-  const userId = user.id;
-  console.log(userId);
   try {
+    const { id, user } = req.body;
+
+    if (!id || !user || !user.id) {
+      return res.status(400).json({
+        error: "Invalid enquiry or user id",
+      });
+    }
+    const userId = user.id;
     const existing = await OpenEnquiriesChats.findOne({
-      where: { enquiry_id: id, user_id: userId },
+      where: {
+        enquiry_id: id,
+        user_id: user.id,
+      },
     });
 
     if (!existing) {
@@ -347,13 +479,17 @@ exports.cheakUserchats = async (req, res) => {
 
       return res.json({ success: 1, enquiry_id: id });
     }
-
-    res.json({ success: 2, enquiry_id: id });
+    return res.json({ success: 2, enquiry_id: id });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    console.error(
+      "MYSQL REAL ERROR 👉",
+      err.original?.message || err
+    );
+    return res.status(500).json({ error: "DB error" });
   }
 };
+
+
 
 exports.getOpenEnquiriesById = async (req, res) => {
   try {
@@ -428,3 +564,117 @@ exports.getOpenEnquiriesCount = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+exports.sendMessage = async (req, res) => {
+  try {
+    const { enquiry_id, message, user } = req.body;
+    const enq_msg = await OpenEnquiries.findOne({
+      where: { id: enquiry_id }
+    });
+    let reply_user_id = '';
+    if (user.id != '') {
+      reply_user_id = user.id;
+    } else {
+      reply_user_id = enq_msg.user_id;
+    }
+    const user_id = user.id;
+    const enquiry_user_id = enq_msg.user_id;
+    const data = await OpenEnquiriesChats.create({
+      user_id,
+      enquiry_user_id,
+      enquiry_id,
+      message,
+      reply_user_id
+    });
+    return res.json({ success: true, data });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false });
+  }
+};
+
+exports.getOpenenquiryEntry = async (req, res) => {
+  try {
+    // 1️⃣ Get all open enquiries jinke user_id null hai
+    const openEnquiries = await OpenEnquiries.findAll({
+      where: { user_id: null }
+    });
+
+    if (!openEnquiries.length) {
+      return res.json({
+        message: 'No open enquiries found',
+        count: 0
+      });
+    }
+
+    let processed = 0;
+
+    for (const enquiry of openEnquiries) {
+      const { name, email, phone, company } = enquiry;
+
+      // ❌ Skip if essential data missing
+      if (!email || !company || !name) continue;
+
+      // 2️⃣ Company: find or create
+      const [companyRecord] = await CompanyInfo.findOrCreate({
+        where: {
+          organization_name: company.trim()
+        }
+      });
+
+      // 3️⃣ User: check existing by email
+      let user = await Users.findOne({
+        where: {
+          email: email.trim()
+        }
+      });
+
+      // 4️⃣ Create user only if not exists
+      if (!user) {
+        const password =
+          'SI' +
+          new Date().getFullYear() +
+          Math.floor(1000 + Math.random() * 9000);
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        user = await Users.create({
+          fname: name.trim(),
+          lname: '',
+          company_id: companyRecord.id,
+          email: email.trim(),
+          phone: phone?.trim() || null,
+          user_company: company.trim(),
+          password: hashedPassword
+        });
+
+        // (optional) send password email here
+      }
+
+      // 5️⃣ Update enquiry with user_id
+      enquiry.user_id = user.id;
+      enquiry.enquiry_user_id = user.id; // agar aap use kar rahe ho
+      await enquiry.save();
+
+      processed++;
+    }
+
+    return res.json({
+      message: 'Open enquiries processed successfully',
+      processed
+    });
+
+  } catch (err) {
+    console.error('getOpenenquiryEntry error:', err);
+    console.error('DB error:', err?.parent);
+
+    return res.status(500).json({
+      error: err.message
+    });
+  }
+
+
+
+}

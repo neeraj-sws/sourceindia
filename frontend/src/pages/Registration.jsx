@@ -186,7 +186,6 @@ const Registration = () => {
 
     // Handle input changes
     const handleChange = (e) => {
-
         const { name, value } = e.target;
         if (name === "mobile") {
             // remove non-digits
@@ -197,8 +196,6 @@ const Registration = () => {
         } else {
             setForm({ ...form, [name]: value });
         }
-
-
     };
 
     // When country changes, load states
@@ -238,11 +235,12 @@ const Registration = () => {
             setVerifyMessage("Please enter email first");
             return;
         }
-        if (!isValidEmail(form.email)) {
-        setVerifyMessage("Please enter a valid email address");
-        return;
-    }
-    setVerifyMessage("");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+        if (!emailRegex.test(form.email)) {
+            alert("Please enter a valid email address");
+            return;
+        }
         setVerifyLoading(true);
         try {
             const res = await axios.post(`${API_BASE_URL}/signup/send-otp`, { email: form.email });
@@ -479,7 +477,16 @@ const Registration = () => {
                             {/* Website */}
                             <div className="col-md-6 mb-3">
                                 <label>Website</label>
-                                <input type="text" name="website" className="form-control" value={form.website} onChange={handleChange} />
+                                <input
+                                    type="url"
+                                    name="website"
+                                    className="form-control"
+                                    placeholder="https://example.com"
+                                    value={form.website}
+                                    onChange={handleChange}
+                                    pattern="^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(/.*)?$"
+                                    title="Enter a valid website URL (e.g. https://example.com)"
+                                />
 
                             </div>
 
@@ -516,7 +523,18 @@ const Registration = () => {
                             <div className="col-md-6 mb-3">
                                 <label>Email<sup className="text-danger">*</sup></label>
                                 <div className="d-flex gap-2 align-items-start">
-                                    <input type="email" name="email" className="form-control w-50" value={form.email} onChange={handleChange} disabled={emailVerified} />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        className="form-control w-50"
+                                        placeholder="example@email.com"
+                                        value={form.email}
+                                        onChange={handleChange}
+                                        disabled={emailVerified}
+                                        pattern="^[^\s@]+@[^\s@]+\.[^\s@]{2,}$"
+                                        title="Enter a valid email address (example@email.com)"
+                                    />
+
 
                                     {!emailVerified && !otpSent && (
                                         <button type="button" className="btn btn-success" onClick={sendOtp} disabled={verifyLoading}>
@@ -543,10 +561,10 @@ const Registration = () => {
                             {/* Show rest of form only after email verification */}
                             {emailVerified && (
                                 <>
-                                <div className="col-md-3 mb-3">
-                                    <label>Alternate Number</label>
-                                    <input type="text" name="alternate_number" className="form-control" id="alternate_number"
-                                        placeholder="Alternate Number" value={form.alternate_number} onChange={handleChange} min={0} />
+                                    <div className="col-md-3 mb-3">
+                                        <label>Alternate Number</label>
+                                        <input type="text" name="alternate_number" className="form-control" id="alternate_number"
+                                            placeholder="Alternate Number" value={form.alternate_number} onChange={handleChange} min={0} />
                                     </div>
                                     {/* Category */}
                                     <div className="col-md-3 mb-3">
@@ -571,7 +589,7 @@ const Registration = () => {
                                         {errors.elcina_member && <small className="text-danger">{errors.elcina_member}</small>}
                                     </div>
                                     <div className="col-md-3 mb-3">
-                                        <label>Trader<sup className="text-danger">*</sup></label>
+                                        <label>Trader</label>
                                         <select name="is_trading" className="form-select" value={form.is_trading} onChange={handleChange}>
                                             <option value="">Select</option>
                                             <option value="0">No</option>

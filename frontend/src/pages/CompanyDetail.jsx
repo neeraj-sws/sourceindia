@@ -281,8 +281,8 @@ const CompanyDetail = () => {
                       <tr><th>Activity</th><td>{company.activity_name || "N/A"}</td></tr>
                       <tr><th>Category</th><td>{company.category_name || "N/A"}</td></tr>
                       <tr><th>Sub Category</th><td>{company.sub_category_name || "N/A"}</td></tr>
-                      <tr><th className="text-nowrap">Item Category</th><td>{company.item_category_name || "N/A"}</td></tr>
-                      <tr><th className="text-nowrap">Item Type</th><td>{company.item_subcategory_name || "N/A"}</td></tr>
+                      {/* <tr><th className="text-nowrap">Item Category</th><td>{company.item_category_name || "N/A"}</td></tr> */}
+                      {/* <tr><th className="text-nowrap">Item Type</th><td>{company.item_subcategory_name || "N/A"}</td></tr> */}
                     </tbody>
                   </table>
                   <p>{company.brief_company || ""}</p>

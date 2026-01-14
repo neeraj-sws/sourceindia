@@ -43,6 +43,15 @@ const CompanyEdit = () => {
   const [categoryLimit, setCategoryLimit] = useState(null);
   const isBlockingRef = useRef(false);
 
+  const countWords = (text) => {
+    return text
+      .trim()
+      .split(/\s+/)
+      .filter(word => word.length > 0).length;
+  };
+
+
+
   useEffect(() => {
     const fetchCoreActivities = async () => {
       try {
@@ -286,7 +295,25 @@ const CompanyEdit = () => {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
-    // Check if the field belongs to company_info
+    // 📝 1500 words limit for Company Introduction
+    if (name === "brief_company") {
+      const words = countWords(value);
+
+      if (words > 1500) {
+        setErrors(prev => ({
+          ...prev,
+          brief_company: "Company Introduction cannot exceed 1500 words"
+        }));
+        return; // ❌ stop update
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          brief_company: ""
+        }));
+      }
+    }
+
+    // 📌 Check if field belongs to company_info
     if (user.company_info && name in user.company_info) {
       setUser((prev) => ({
         ...prev,
@@ -296,13 +323,14 @@ const CompanyEdit = () => {
         },
       }));
     } else {
-      // For fields directly under user
+      // 📌 Fields directly under user
       setUser((prev) => ({
         ...prev,
         [name]: files ? files[0] : value,
       }));
     }
   };
+
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -606,10 +634,15 @@ const CompanyEdit = () => {
                             value={user.company_info?.brief_company || ""}
                             onChange={handleChange}
                           />
-                          {errors.brief_company && <div className="text-danger small mt-1">{errors.brief_company}</div>}
                           <p className="pt-3">
-                            Total Words Limit <span className="about">1500 </span>{" "}
+                            Total Words Limit <span className="about">1500</span> |
+                            Used: <strong>{countWords(user.company_info?.brief_company || "")}</strong>
                           </p>
+
+                          {errors.brief_company && (
+                            <div className="text-danger small mt-1">{errors.brief_company}</div>
+                          )}
+
                         </div>
                         <div className="col-md-12 mt-3">
                           <label className="form-label">Ppt file</label>
