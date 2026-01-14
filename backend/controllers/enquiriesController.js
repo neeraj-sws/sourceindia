@@ -801,7 +801,7 @@ exports.verifyEmail = async (req, res) => {
         otp,
         password: hashedPassword,
         real_password: password,
-        company_id: company.id, // 🔥 IMPORTANT
+        company_id: company.id, 
         fname: '',
         lname: '',
         step: 0,
@@ -1291,6 +1291,7 @@ exports.submitEnquiry = async (req, res) => {
         phone: formData.phone?.trim() || null,
         user_company: formData.company.trim(),
         password: hashedPassword,
+        real_password: password,
       });
       console.log(suser.id);
 

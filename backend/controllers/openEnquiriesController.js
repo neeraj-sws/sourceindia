@@ -420,14 +420,14 @@ exports.getAllOpenEnquiriesServerSide = async (req, res) => {
       limit: limitValue,
       offset,
       include: [
-        { model: Users, attributes: ['is_seller'], as: 'Users' },
+        { model: Users, as: 'Users' },
       ],
     });
     const mappedRows = rows.map(row => ({
       id: row.id,
       user_id: row.user_id,
       title: row.title,
-      name: row.name,
+      name: row.Users.fname + " " + row.Users.lname,
       email: row.email,
       phone: row.phone,
       description: row.description,
@@ -647,7 +647,8 @@ exports.getOpenenquiryEntry = async (req, res) => {
           email: email.trim(),
           phone: phone?.trim() || null,
           user_company: company.trim(),
-          password: hashedPassword
+          password: hashedPassword,
+          real_password: password,
         });
 
         // (optional) send password email here

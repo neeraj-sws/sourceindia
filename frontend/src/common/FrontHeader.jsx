@@ -184,7 +184,7 @@ const FrontHeader = () => {
                       setTimeout(() => {
                         setSearchFocused(false);               // ⭐ remove overlay
                         setShowDropdown(false);
-                      }, 200); // click allow for suggestions
+                      }, 2000); // click allow for suggestions
                     }}
                   />
 
