@@ -166,7 +166,7 @@ const CategoryMain = ({ isHome, limit }) => {
                                     </a>
                                     <div className="d-flex justify-content-between align-items--center gap-2 gridulimgcontainer">
                                       <ul className="list-unstyled ps-0 mb-0 categorylistul">
-                                        {(sub.item_categories || [])
+                                        {(sub.item_categories || []).filter(item => item.product_count > 0)
                                           .slice(0, 4)
                                           .map((item, i) => (
                                             <li key={i} className="text-start">
