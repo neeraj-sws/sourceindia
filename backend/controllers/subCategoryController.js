@@ -158,7 +158,9 @@ exports.getSubCategoriesByCategories = async (req, res) => {
     // 2. Product counts per subcategory
     const productCounts = await Products.findAll({
       attributes: ['sub_category', [fn('COUNT', col('product_id')), 'count']],
-      where: { is_delete: 0, is_approve: 1, status: 1 },
+      where: { is_delete: 0, 
+        // is_approve: 1, 
+        status: 1, category: { [Op.in]: categories } },
       group: ['sub_category'],
       raw: true,
     });

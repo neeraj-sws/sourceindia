@@ -435,8 +435,10 @@ exports.getItemCategoriesBySelectedCategoryAndSubCategory = async (req, res) => 
       attributes: ['item_category_id', [fn('COUNT', col('product_id')), 'count']],
       where: {
         is_delete: 0,
-        is_approve: 1,
+        // is_approve: 1,
         status: 1,
+        category: { [Op.in]: categories },
+    sub_category: { [Op.in]: subcategories },
       },
       group: ['item_category_id'],
       raw: true,

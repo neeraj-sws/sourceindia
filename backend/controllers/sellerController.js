@@ -181,8 +181,18 @@ exports.createSeller = async (req, res) => {
 
 exports.getAllSeller = async (req, res) => {
   try {
+    const { is_delete, status, is_approve, is_complete } = req.query;
+
+    // 🔹 Build dynamic where condition
+    const sellerWhere = { is_seller: 1 };
+
+    if (is_delete !== undefined) { sellerWhere.is_delete = is_delete; }
+    if (status !== undefined) { sellerWhere.status = status; }
+    if (is_approve !== undefined) { sellerWhere.is_approve = is_approve; }
+    if (is_complete !== undefined) { sellerWhere.is_complete = is_complete; }
+
     const sellers = await Users.findAll({
-      where: { is_seller: 1 },
+      where: sellerWhere,
       order: [['id', 'ASC']],
       include: [
         { model: Countries, as: 'country_data', attributes: ['id', 'name'] },

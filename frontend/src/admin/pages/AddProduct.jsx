@@ -107,7 +107,7 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchSellers = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/sellers`);
+        const res = await axios.get(`${API_BASE_URL}/sellers?is_delete=0&status=1&is_approve=1&is_complete=1`);
         setSellers(res.data);
       } catch (error) {
         console.error("Error fetching sellers:", error);

@@ -50,6 +50,9 @@ const Registration = () => {
     const [verifyLoading, setVerifyLoading] = useState(false);
     const [verifyMessage, setVerifyMessage] = useState("");
     const [errors, setErrors] = useState({});
+    const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
 
     useEffect(() => {
         if (isLoggedIn && user) {
@@ -232,12 +235,20 @@ const Registration = () => {
             setVerifyMessage("Please enter email first");
             return;
         }
+<<<<<<< HEAD
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
         if (!emailRegex.test(form.email)) {
             alert("Please enter a valid email address");
             return;
         }
+=======
+        if (!isValidEmail(form.email)) {
+        setVerifyMessage("Please enter a valid email address");
+        return;
+    }
+    setVerifyMessage("");
+>>>>>>> 1eb1991828405c020914e346a7f706d0763443a7
         setVerifyLoading(true);
         try {
             const res = await axios.post(`${API_BASE_URL}/signup/send-otp`, { email: form.email });

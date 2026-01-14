@@ -3235,6 +3235,7 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	border-bottom: 2px solid var(--primary-color) !important;
 }
 
+<<<<<<< HEAD
 .sign_logo {
 	width: 22px;
 	height: 22px;
@@ -3251,3 +3252,41 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	border: 1px solid #a9a9a9;
 }
 
+=======
+.planBox tr th {
+    text-align: center;
+}
+
+.planBox tr td {
+    text-align: right;
+}
+
+.planpart {
+    position: relative;
+}
+
+.gif_left {
+    width: 20px;
+    position: absolute;
+    left: -27px;
+    right: 0;
+    margin: 0 auto;
+    transform: rotate(90deg);
+}
+
+.continuebtn {
+    display: none;
+    transition: 1s;
+    position: absolute;
+    right: 0;
+    top: 0;
+    padding: 2px 8px;
+    background: #ff6600;
+    color: #fff;
+    font-size: 12px;
+}
+
+.planpart:hover .continuebtn {
+    display: block;
+}
+>>>>>>> 1eb1991828405c020914e346a7f706d0763443a7

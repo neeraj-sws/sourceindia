@@ -318,7 +318,7 @@ useEffect(() => {
       setLoading(true);
     }
     try {
-      let url = `${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=9&page=${pageNumber}`;
+      let url = `${API_BASE_URL}/products?is_delete=0&status=1&limit=15&page=${pageNumber}`;
       if (selectedCategories.length > 0) {
         url += `&category=${selectedCategories.join(",")}`;
       }
@@ -355,7 +355,7 @@ useEffect(() => {
       }
       if (
         newProducts.length === 0 ||
-        (!append && newProducts.length < 9) ||
+        (!append && newProducts.length < 15) ||
         (append && productsData.length + newProducts.length >= res.data.total)
       ) {
         setHasMore(false);
@@ -455,7 +455,7 @@ useEffect(() => {
     const item = array.find((el) => el.id === id);
     return item ? item.name || item.organization_name : "";
   };
-  const ProductSkeletonLoader = ({ count = 9, isListView = false }) => {
+  const ProductSkeletonLoader = ({ count = 15, isListView = false }) => {
     const items = Array.from({ length: count });
 
     return (
@@ -1139,7 +1139,7 @@ useEffect(() => {
             <div className="py-3 rounded-2 pb-0 mt-2">
               <div className="row">
                 {loading ? (
-                  <ProductSkeletonLoader count={9} isListView={isListView} />
+                  <ProductSkeletonLoader count={15} isListView={isListView} />
                 ) : filteredProducts.length > 0 ? (
                   filteredProducts.map(product => (
 

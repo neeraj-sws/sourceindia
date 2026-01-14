@@ -328,8 +328,11 @@ exports.getItemSubCategoriesBySelectedCategorySubCategoryItemCategory = async (r
       attributes: ['item_subcategory_id', [fn('COUNT', col('product_id')), 'count']],
       where: {
         is_delete: 0,
-        is_approve: 1,
+        // is_approve: 1,
         status: 1,
+        category: { [Op.in]: categories },
+    sub_category: { [Op.in]: subcategories },
+    item_category_id: { [Op.in]: itemCategories },
       },
       group: ['item_subcategory_id'],
       raw: true,

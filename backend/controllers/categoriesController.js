@@ -605,7 +605,7 @@ exports.getItemCategories = async (req, res) => {
     // 3️⃣ Fetch all item categories
     const itemcategories = await ItemCategory.findAll({
       where: { status: 1 },
-      attributes: ['id', ['item_category_id', 'id'], 'name', 'subcategory_id', 'slug'],
+      attributes: ['id', ['item_category_id', 'id'], 'name', 'category_id', 'subcategory_id', 'slug'],
       raw: true
     });
 
@@ -621,15 +621,37 @@ exports.getItemCategories = async (req, res) => {
       imageMap[img.id] = img.file;
     });
 
+    const productCounts = await Products.findAll({
+  attributes: [
+    'category',
+    'sub_category',
+    'item_category_id',
+    [sequelize.fn('COUNT', sequelize.col('product_id')), 'product_count']
+  ],
+  where: {
+    status: 1,
+    is_delete: 0
+  },
+  group: ['category', 'sub_category', 'item_category_id'],
+  raw: true
+});
+    const productCountMap = {};
+productCounts.forEach(p => {
+  const key = `${p.category}_${p.sub_category}_${p.item_category_id}`;
+  productCountMap[key] = Number(p.product_count);
+});
+
     // ✅ Item categories grouped by subcategory_id
     const itemBySubcategory = {};
     itemcategories.forEach(item => {
       if (!itemBySubcategory[item.subcategory_id]) itemBySubcategory[item.subcategory_id] = [];
+      const key = `${item.category_id}_${item.subcategory_id}_${item.id}`;
       itemBySubcategory[item.subcategory_id].push({
         id: item.id,
         name: item.name,
         slug: item.slug,
-        file_name: imageMap[item.file_id] || null
+        file_name: imageMap[item.file_id] || null,
+        product_count: productCountMap[key] || 0
       });
     });
 
@@ -771,6 +793,7 @@ exports.getItemSubCategories = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 exports.getItemCategory = async (req, res) => {
   try {
     const slug = req.query.slug || null;
@@ -780,17 +803,17 @@ exports.getItemCategory = async (req, res) => {
 
     // 1️⃣ Find subcategory
     const subcategory = await SubCategories.findOne({
-      where: { slug: slug, is_delete: 0, status: 1 },
+      where: { slug, is_delete: 0, status: 1 },
       attributes: ["id", "name", "category", "slug"],
       include: [
         {
           model: Categories,
           as: "Categories",
           attributes: ["id", "name", "slug"],
-        }
+        },
       ],
       raw: true,
-      nest: true
+      nest: true,
     });
 
     if (!subcategory) {
@@ -798,80 +821,101 @@ exports.getItemCategory = async (req, res) => {
     }
 
     // 2️⃣ Fetch paginated item categories
-    const { count: totalItems, rows: itemcategories } = await ItemCategory.findAndCountAll({
-      where: { status: 1, subcategory_id: subcategory.id },
-      attributes: ["id", "name", "subcategory_id", "slug", "file_id"],
-      offset,
-      limit,
-      raw: true,
-    });
+    const { count: totalItems, rows: itemcategories } =
+      await ItemCategory.findAndCountAll({
+        where: { status: 1, subcategory_id: subcategory.id },
+        attributes: ["id", "name", "subcategory_id", "slug", "file_id"],
+        offset,
+        limit,
+        raw: true,
+      });
 
     // 3️⃣ Fetch all images
     const uploadImages = await UploadImage.findAll({
       attributes: ["id", "file"],
       raw: true,
     });
-    const imageMap = {};
-    uploadImages.forEach((img) => (imageMap[img.id] = img.file));
 
-    // 4️⃣ Fetch items
+    const imageMap = {};
+    uploadImages.forEach((img) => {
+      imageMap[img.id] = img.file;
+    });
+
+    // 4️⃣ Fetch item subcategories
     const itemData = await ItemSubCategory.findAll({
       attributes: ["id", "name", "slug", "file_id", "item_category_id"],
       where: { status: 1 },
       raw: true,
     });
 
-    // 5️⃣ Fetch real product count from products table
+    // ✅ 5️⃣ CORRECT product count query (SCOPED)
     const productCounts = await Products.findAll({
       attributes: [
+        "item_category_id",
         "item_subcategory_id",
-        [sequelize.fn("COUNT", sequelize.col("product_id")), "product_count"],
+        [sequelize.fn("COUNT", sequelize.col("product_id")), "count"],
       ],
-      where: { status: 1 },
-      group: ["item_subcategory_id"],
+      where: {
+        status: 1,
+        is_delete: 0,
+        category: subcategory.category,   // 🔥 IMPORTANT
+        sub_category: subcategory.id,     // 🔥 IMPORTANT
+      },
+      group: ["item_category_id", "item_subcategory_id"],
       raw: true,
     });
 
-    const productCountMap = {};
+    // 6️⃣ Build count maps
+    const itemCategoryCountMap = {};
+    const itemSubcategoryCountMap = {};
+
     productCounts.forEach((row) => {
-      productCountMap[row.item_subcategory_id] = row.product_count;
+      const count = Number(row.count);
+
+      itemCategoryCountMap[row.item_category_id] =
+        (itemCategoryCountMap[row.item_category_id] || 0) + count;
+
+      itemSubcategoryCountMap[row.item_subcategory_id] = count;
     });
 
-    // 6️⃣ Group items by item_category_id
+    // 7️⃣ Group items by item_category_id
     const itemsByCategory = {};
     itemData.forEach((itm) => {
       if (!itemsByCategory[itm.item_category_id]) {
         itemsByCategory[itm.item_category_id] = [];
       }
+
       itemsByCategory[itm.item_category_id].push({
         id: itm.id,
         name: itm.name,
         slug: itm.slug,
         file_name: imageMap[itm.file_id] || null,
-        product_count: productCountMap[itm.id] || 0, // ✅ Real product count
+        product_count: itemSubcategoryCountMap[itm.id] || 0, // ✅ EXACT COUNT
       });
     });
 
-    // 7️⃣ Final list
+    // 8️⃣ Build final response
     const items = itemcategories.map((item) => ({
       id: item.id,
       name: item.name,
       slug: item.slug,
       file_name: imageMap[item.file_id] || null,
-      product_count: (itemsByCategory[item.id] || []).length,
+      product_count: itemCategoryCountMap[item.id] || 0,
       items: itemsByCategory[item.id] || [],
     }));
 
-    // 8️⃣ Response
+    // 9️⃣ Send response
     res.json({
       subcategory: {
         id: subcategory.id,
         name: subcategory.name,
         slug: subcategory.slug,
+        product_count:
+          Object.values(itemCategoryCountMap).reduce((a, b) => a + b, 0),
         category: {
           id: subcategory.Categories.id,
           name: subcategory.Categories.name,
-          slug: subcategory.Categories.slug
+          slug: subcategory.Categories.slug,
         },
         item_categories: items,
       },
@@ -887,7 +931,6 @@ exports.getItemCategory = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
 
 exports.getItemSubcategory = async (req, res) => {
   try {

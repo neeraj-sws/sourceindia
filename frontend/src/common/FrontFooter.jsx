@@ -116,7 +116,7 @@ const FrontFooter = () => {
                   <a href="#">Work With Us</a>
                 </li>
                 <li>
-                  <a href="#">Subscription Plans</a>
+                  <Link to="/plans">Subscription Plans</Link>
                 </li>
                 <li>
                   <a href="https://elcina.com/testlab-india">
