@@ -76,7 +76,9 @@ const TrackTicket = () => {
                           <div className="form-group ">
                             <label className="form-label">Email<sup className="text-danger">*</sup></label>
                             <input type="text" name="email" id="otp-email" className="form-control" placeholder="Enter Email" value={formData.email}
-                              onChange={handleChange} />
+                              onChange={handleChange} pattern="^[^\s@]+@[^\s@]+\.[^\s@]{2,}$"
+                              title="Enter a valid email address (example@email.com)"
+                            />
                           </div>
                         </div>
                         <div className="col-md-4">

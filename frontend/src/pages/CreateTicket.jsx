@@ -26,19 +26,19 @@ const CreateTicket = () => {
   const { user } = UseAuth();
 
   useEffect(() => {
-  if (user) {
-    setFormData((prev) => ({
-      ...prev,
-      first_name: user.fname || "",
-      last_name: user.lname || "",
-      phone: user.mobile || "",
-    }));
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        first_name: user.fname || "",
+        last_name: user.lname || "",
+        phone: user.mobile || "",
+      }));
 
-    if (user.email) {
-      setEmail(user.email);
+      if (user.email) {
+        setEmail(user.email);
+      }
     }
-  }
-}, [user]);
+  }, [user]);
 
   // ✅ Handle OTP send/verify
   const handleOtpSubmit = async (e) => {
@@ -50,8 +50,10 @@ const CreateTicket = () => {
 
       if (!showOtpInput) {
         // Step 1: Send OTP
-        response = await axios.post(`${API_BASE_URL}/tickets/send-otp`, { email, user_id: user ? user.id : 0, 
-          created_by: user ? user.is_seller === 1 ? "Seller" : "Buyer" : "Guest" });
+        response = await axios.post(`${API_BASE_URL}/tickets/send-otp`, {
+          email, user_id: user ? user.id : 0,
+          created_by: user ? user.is_seller === 1 ? "Seller" : "Buyer" : "Guest"
+        });
       } else {
         // Step 2: Verify OTP
         response = await axios.post(`${API_BASE_URL}/tickets/verify-otp`, { email, otp });
@@ -89,6 +91,9 @@ const CreateTicket = () => {
   // ✅ Handle Ticket Form submit
   const handleTicketSubmit = async (e) => {
     e.preventDefault();
+
+
+
     setLoading(true);
 
     try {
@@ -160,6 +165,8 @@ const CreateTicket = () => {
                           className="form-control"
                           placeholder="Enter Email"
                           value={email}
+                          pattern="^[^\s@]+@[^\s@]+\.[^\s@]{2,}$"
+                          title="Enter a valid email address (example@email.com)"
                           onChange={(e) => setEmail(e.target.value)}
                           required
                         />

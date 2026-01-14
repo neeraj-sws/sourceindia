@@ -56,7 +56,7 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                     isAuthenticated: false,
                 };
 
-            console.log('Cleaned Payload:', payload);
+            
 
             const response = await axios.post(
                 `${API_BASE_URL}/enquiries/submit-enquiry`,
@@ -205,7 +205,7 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                                                 type="text"
                                                 className="form-control open_enq"
                                                 name="name"
-                                                placeholder="Name"
+                                                placeholder="Name *"
                                                 value={formData.name}
                                                 onChange={handleChange}
                                                 required
@@ -219,9 +219,11 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                                                 type="email"
                                                 className="form-control open_enq"
                                                 name="email"
-                                                placeholder="Email"
+                                                placeholder="Email *"
                                                 value={formData.email}
                                                 onChange={handleChange}
+                                                pattern="^[^\s@]+@[^\s@]+\.[^\s@]{2,}$"
+                                                title="Enter a valid email address (example@email.com)"
                                                 required
                                             />
                                             {errors.email && <div className="text-danger">{errors.email}</div>}
@@ -233,7 +235,7 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                                                 type="text"
                                                 className="form-control open_enq"
                                                 name="company"
-                                                placeholder="Company"
+                                                placeholder="Company *"
                                                 value={formData.company}
                                                 onChange={handleChange}
                                                 required
@@ -276,7 +278,7 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                                                 type="text"
                                                 className="form-control open_enq"
                                                 name="title"
-                                                placeholder="Enquiry Title"
+                                                placeholder="Enquiry Title *"
                                                 value={formData.title}
                                                 onChange={handleChange}
                                                 required
@@ -290,7 +292,7 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                                                 className="form-control open_enq"
                                                 name="description"
                                                 rows="2"
-                                                placeholder="Description"
+                                                placeholder="Description *"
                                                 value={formData.description}
                                                 onChange={handleChange}
                                                 required

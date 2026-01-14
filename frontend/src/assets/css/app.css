@@ -3234,3 +3234,20 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	background-color: #eaf2fb;
 	border-bottom: 2px solid var(--primary-color) !important;
 }
+
+.sign_logo {
+	width: 22px;
+	height: 22px;
+	display: inline-block;
+	background: #fbaa54;
+	border-radius: 100%;
+	text-align: center;
+	line-height: 22px;
+	color: #fff;
+	position: absolute;
+	bottom: -4px;
+	right: -4px;
+	font-size: 8px;
+	border: 1px solid #a9a9a9;
+}
+

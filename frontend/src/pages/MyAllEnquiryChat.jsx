@@ -422,7 +422,6 @@ const MyAllEnquiryChat = ({ user_id }) => {
 
                                 return (
                                   <div key={index}>
-                                    {/* LEFT SIDE */}
                                     {msg.user_id !== loggedCompanyId && (
                                       <div className="chat-content-leftside">
                                         <div className="d-flex">
@@ -432,8 +431,6 @@ const MyAllEnquiryChat = ({ user_id }) => {
                                                 ? `${ROOT_URL}/${msg.user_file}`
                                                 : "/user-demo.png"
                                             }
-
-
                                             width="40"
                                             height="40"
                                             className="rounded-circle border"
@@ -454,7 +451,6 @@ const MyAllEnquiryChat = ({ user_id }) => {
                                       </div>
                                     )}
 
-                                    {/* RIGHT SIDE */}
                                     {msg.user_id == loggedCompanyId && (
                                       <div className="chat-content-rightside">
                                         <div className="d-flex ms-auto">

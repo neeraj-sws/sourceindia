@@ -1,13 +1,14 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const Users = require('./Users');
+const OpenEnquiries = require('./OpenEnquiries');
 
 const OpenEnquiriesChats = sequelize.define('OpenEnquiriesChats', {
-   id: {
+  id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
-    field: 'open_enquriy_chat_id',
+    field: 'open_enquriychats_id',
   },
   uuid: {
     type: DataTypes.UUID,
@@ -28,5 +29,6 @@ const OpenEnquiriesChats = sequelize.define('OpenEnquiriesChats', {
 });
 
 OpenEnquiriesChats.belongsTo(Users, { foreignKey: 'user_id', targetKey: 'id', as: 'Users', constraints: false });
+OpenEnquiriesChats.belongsTo(OpenEnquiries, { foreignKey: 'enquiry_id', targetKey: 'id', as: 'OpenEnquiries', constraints: false });
 
 module.exports = OpenEnquiriesChats;

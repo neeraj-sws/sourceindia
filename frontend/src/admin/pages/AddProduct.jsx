@@ -268,7 +268,7 @@ const AddProduct = () => {
   const handleItemSubCategoryChange = async (event) => {
     const itemSubCategoryId = event.target.value;
     setSelectedItemSubCategory(itemSubCategoryId);
-
+    console.log(itemSubCategoryId);
     // Reset lower dropdown
     setSelectedItem('');
     setItems([]);
@@ -332,6 +332,7 @@ const AddProduct = () => {
       .on("change", function () {
         handleItemCategoryChange({ target: { value: $(this).val() } });
       });
+
 
     $('#item_sub_category_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
@@ -452,7 +453,7 @@ const AddProduct = () => {
         setSelectedItemCategory(data.item_category_id || '');
 
         let itemSubCatRes = [];
-        if (data.category && data.sub_category && data.item_category_id) {
+        if (data.category && data.sub_category && data.item_category_id && data.item_subcategory_id) {
           try {
             const resISC = await axios.get(
               `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${data.category}/${data.sub_category}/${data.item_category_id}`
@@ -586,11 +587,24 @@ const AddProduct = () => {
     }
   };
 
+  useEffect(() => {
+    if ($('#item_sub_category_id').data('select2')) {
+      $('#item_sub_category_id').select2('destroy');
+    }
+
+    $('#item_sub_category_id').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Item Sub Category"
+    });
+
+  }, [itemSubCategories]);
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb  page="Products" title={isEditing ? "Edit Product" : "Add Product"} add_button="Back" add_link="/admin/products" />
+          <Breadcrumb page="Products" title={isEditing ? "Edit Product" : "Add Product"} add_button="Back" add_link="/admin/products" />
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <form className="row g-3" onSubmit={handleSubmit}>
@@ -712,7 +726,7 @@ const AddProduct = () => {
                           </select>
                         </div>
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="short_description" className="form-label required">Short Description</label>
+                          <label htmlFor="short_description" className="form-label">Short Description</label>
                           <textarea
                             className={`form-control ${errors.brief_company ? "is-invalid" : ""}`}
                             id="short_description"
@@ -794,11 +808,11 @@ const AddProduct = () => {
                             className="form-control"
                             value={selectedItemSubCategory}
                             onChange={handleItemSubCategoryChange}
-                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
+
                           >
                             <option value="">Select Item Sub Category</option>
                             {itemSubCategories.map((isc) => (
-                              <option key={isc.id} value={isc.id}>{isc.name}</option>
+                              <option key={isc.id} value={String(isc.id)}>{isc.name}</option>
                             ))}
                           </select>
                         </div>

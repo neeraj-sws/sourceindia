@@ -21,7 +21,6 @@ const EnquiryUsers = sequelize.define('EnquiryUsers', {
   enquiry_id: { type: DataTypes.INTEGER, allowNull: true },
   product_name: { type: DataTypes.STRING, allowNull: true },
   enquiry_status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-  shortlist: { type: DataTypes.INTEGER, allowNull: true },
   is_delete: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
 }, {
   tableName: 'enquiry_users',

@@ -91,7 +91,7 @@ const OpenEnquiry = ({ showAll = false }) => {
       <Suspense fallback={<div></div>}>
         <div className="page-wrapper">
           <div className="page-content">
-            <Breadcrumb mainhead="Open Enquiries" maincount={totalRecords} page="Settings" title="My Open Enquiries"
+            <Breadcrumb mainhead="My Open Enquiries" maincount={totalRecords} page="" title="My Open Enquiries"
               actions={
                 <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
               }
@@ -150,7 +150,7 @@ const OpenEnquiry = ({ showAll = false }) => {
                           </button>
                           <ul className="dropdown-menu">
                             <li>
-                              <button className="dropdown-item" onClick={() => navigate(`/Inbox/${row.id}`)}>
+                              <button className="dropdown-item" onClick={() => navigate(`/open-enquiry/${row.id}`)}>
                                 <i className="bx bx-eye me-2"></i> View
                               </button>
                             </li>
