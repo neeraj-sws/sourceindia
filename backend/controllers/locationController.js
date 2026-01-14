@@ -80,9 +80,9 @@ exports.getStatesByCountry = async (req, res) => {
       ],
       where: {
         is_delete: 0,
-        is_approve: 1,
+        // is_approve: 1,
         status: 1,
-        ...(subcategory_ids && { sub_category_id: subcategory_ids.split(',') }),
+        ...(subcategory_ids && { sub_category: subcategory_ids.split(',') }),
         ...(item_category_ids && { item_category_id: item_category_ids.split(',') }),
         ...(item_subcategory_ids && { item_subcategory_id: item_subcategory_ids.split(',') }),
       },

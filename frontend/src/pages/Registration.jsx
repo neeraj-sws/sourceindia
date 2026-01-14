@@ -50,6 +50,9 @@ const Registration = () => {
     const [verifyLoading, setVerifyLoading] = useState(false);
     const [verifyMessage, setVerifyMessage] = useState("");
     const [errors, setErrors] = useState({});
+    const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
 
     useEffect(() => {
         if (isLoggedIn && user) {

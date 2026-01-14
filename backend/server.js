@@ -47,6 +47,7 @@ const itemsRoutes = require('./routes/itemsRoutes');
 const shortcutRoutes = require('./routes/shortcutRoutes');
 const pagesRoutes = require('./routes/pagesRoutes');
 const frontMenuRoutes = require('./routes/frontMenuRoutes');
+const membershipPlansRoutes = require('./routes/membershipPlansRoutes');
 
 const app = express();
 const basePath = '/v2'; // All APIs will start with /v2
@@ -108,6 +109,7 @@ app.use(basePath + '/api/items', itemsRoutes);
 app.use(basePath + '/api/shortcut', shortcutRoutes);
 app.use(basePath + '/api/pages', pagesRoutes);
 app.use(basePath + '/api/front_menu', frontMenuRoutes);
+app.use(basePath + '/api/membership_plans', membershipPlansRoutes);
 
 sequelize
   .sync()
