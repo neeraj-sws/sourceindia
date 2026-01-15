@@ -194,6 +194,44 @@ const CompanyDetail = () => {
               </ol>
             </nav>
             {/* Company Info */}
+            
+
+            {/* Company Details */}
+            <div className="col-xl-9 col-md-8 mb-md-0 mb-3">
+              <div className="card h-100 shadow-sm">
+                <div className="card-body p-4">
+                  <h4 className="text-orange">{company.organization_name}</h4>
+                  <table className="table productTable mt-3">
+                    <tbody>
+                      <tr><th className="text-wrap">Location</th><td>{company.company_location || "N/A"}</td></tr>
+                      <tr><th>Website</th><td>{company.company_website || "N/A"}</td></tr>
+                      <tr><th>Core Activity</th><td>{company.coreactivity_name || "N/A"}</td></tr>
+                      <tr><th>Activity</th><td>{company.activity_name || "N/A"}</td></tr>
+                      <tr><th>Category</th><td>{company.category_name || "N/A"}</td></tr>
+                      <tr><th>Sub Category</th><td>{company.sub_category_name || "N/A"}</td></tr>
+                      {/* <tr><th className="text-nowrap">Item Category</th><td>{company.item_category_name || "N/A"}</td></tr> */}
+                      {/* <tr><th className="text-nowrap">Item Type</th><td>{company.item_subcategory_name || "N/A"}</td></tr> */}
+                    </tbody>
+                  </table>
+                  <p>{company.brief_company || ""}</p>
+                  <p>{company.organizations_product_description || ""}</p>
+                  <div className='w-25 mt-4'>
+                    <button className="btn btn-orange w-100 enquirybtnwidth" onClick={() => setShowModal(true)}>
+                      <i className="lni lni-phone pe-2"></i> Enquiry
+                    </button>
+                  </div>
+                  <EnquiryForm
+                    show={showModal}
+                    onHide={() => setShowModal(false)}
+                    productId=''
+                    companyId={`${company.id}`}
+                    productTitle=''
+                    companyName={`${company.organization_name}`}
+                  />
+
+                </div>
+              </div>
+            </div>
             <div className="col-xl-3 col-md-4 mb-md-0 mb-3">
               <div className="card h-100 shadow-sm">
                 <div className="card-body text-center p-4">
@@ -219,7 +257,6 @@ const CompanyDetail = () => {
                   <div className="reviewSection pt-3 text-start">
 
                     <form onSubmit={handleSubmit}>
-                      <h5>Review</h5>
 
                       <label className="form-label mt-2 mb-0">Rating</label>
                       <div className="d-flex">
@@ -266,43 +303,6 @@ const CompanyDetail = () => {
               </div>
 
 
-            </div>
-
-            {/* Company Details */}
-            <div className="col-xl-9 col-md-8 mb-md-0 mb-3">
-              <div className="card h-100 shadow-sm">
-                <div className="card-body p-4">
-                  <h4 className="text-orange">{company.organization_name}</h4>
-                  <table className="table productTable mt-3">
-                    <tbody>
-                      <tr><th className="text-wrap">Location</th><td>{company.company_location || "N/A"}</td></tr>
-                      <tr><th>Website</th><td>{company.company_website || "N/A"}</td></tr>
-                      <tr><th>Core Activity</th><td>{company.coreactivity_name || "N/A"}</td></tr>
-                      <tr><th>Activity</th><td>{company.activity_name || "N/A"}</td></tr>
-                      <tr><th>Category</th><td>{company.category_name || "N/A"}</td></tr>
-                      <tr><th>Sub Category</th><td>{company.sub_category_name || "N/A"}</td></tr>
-                      {/* <tr><th className="text-nowrap">Item Category</th><td>{company.item_category_name || "N/A"}</td></tr> */}
-                      {/* <tr><th className="text-nowrap">Item Type</th><td>{company.item_subcategory_name || "N/A"}</td></tr> */}
-                    </tbody>
-                  </table>
-                  <p>{company.brief_company || ""}</p>
-                  <p>{company.organizations_product_description || ""}</p>
-                  <div className='w-25 mt-4'>
-                    <button className="btn btn-orange w-100 enquirybtnwidth" onClick={() => setShowModal(true)}>
-                      <i className="lni lni-phone pe-2"></i> Enquiry
-                    </button>
-                  </div>
-                  <EnquiryForm
-                    show={showModal}
-                    onHide={() => setShowModal(false)}
-                    productId=''
-                    companyId={`${company.id}`}
-                    productTitle=''
-                    companyName={`${company.organization_name}`}
-                  />
-
-                </div>
-              </div>
             </div>
           </div>
         </div>

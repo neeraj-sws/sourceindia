@@ -595,8 +595,8 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
-exports.getOpenenquiryEntry = async (req, res) => {
-  try {
+exports.getOpenenquiryEntryold = async (req, res) => {
+//   try {
     // 1️⃣ Get all open enquiries jinke user_id null hai
     const openEnquiries = await OpenEnquiries.findAll({
       where: { user_id: null }
@@ -667,15 +667,84 @@ exports.getOpenenquiryEntry = async (req, res) => {
       processed
     });
 
-  } catch (err) {
-    console.error('getOpenenquiryEntry error:', err);
-    console.error('DB error:', err?.parent);
+//   } catch (err) {
+//     console.error('getOpenenquiryEntry error:', err);
+//     console.error('DB error:', err?.parent);
 
-    return res.status(500).json({
-      error: err.message
-    });
-  }
+//     return res.status(500).json({
+//       error: err.message
+//     });
+//   }
 
 
 
 }
+
+
+exports.getOpenenquiryEntry = async (req, res) => {
+  try {
+    const openEnquiries = await OpenEnquiries.findAll({
+      where: { user_id: null }
+    });
+
+    if (!openEnquiries.length) {
+      return res.json({ message: 'No open enquiries found', count: 0 });
+    }
+
+    let processed = 0;
+
+    for (const enquiry of openEnquiries) {
+      const { name, email, phone, company } = enquiry;
+
+      if (!email || !company || !name) continue;
+
+      const cleanEmail = email.trim().toLowerCase();
+
+      const [companyRecord] = await CompanyInfo.findOrCreate({
+        where: { organization_name: company.trim() }
+      });
+
+      if (!companyRecord?.id) continue;
+
+      let user = await Users.findOne({
+        where: { email: cleanEmail }
+      });
+
+      if (!user) {
+        const password =
+          'SI' + new Date().getFullYear() + Math.floor(1000 + Math.random() * 9000);
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        user = await Users.create({
+          fname: name.trim(),
+          lname: '',
+          step: 0,
+          mode: 0,
+          company_id: companyRecord.id,
+          email: cleanEmail,
+          phone: phone?.trim() || null,
+          user_company: company.trim(),
+          password: hashedPassword,
+          real_password: password
+        });
+      }
+
+      enquiry.user_id = user.id;
+      enquiry.enquiry_user_id = user.id;
+      await enquiry.save();
+
+      processed++;
+    }
+
+    return res.json({
+      message: 'Open enquiries processed successfully',
+      processed
+    });
+
+  } catch (err) {
+    console.error('ERROR:', err);
+    console.error('MYSQL:', err?.parent?.sqlMessage);
+    return res.status(500).json({ error: err.message });
+  }
+};

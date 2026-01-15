@@ -284,7 +284,7 @@ exports.getProductsById = async (req, res) => {
         {
           model: CompanyInfo,
           as: 'company_info',
-          attributes: ['id', 'organization_name', 'company_logo', 'brief_company', 'company_location', 'activity', 'core_activity'],
+          attributes: ['id', 'organization_name', 'company_logo', 'brief_company', 'company_location', 'activity', 'core_activity', 'organization_slug'],
           include: [
             { model: UploadImage, as: 'companyLogo', attributes: ['file'] },
             { model: Activity, as: 'Activity', attributes: ['name'] },
@@ -303,7 +303,7 @@ exports.getProductsById = async (req, res) => {
 
     // Fetch seller categories based on user_id (company owner)
     const sellerCategories = await SellerCategory.findAll({
-      where: { user_id: productData.company_info?.id }, // assuming company_info.id = user_id in SellerCategory
+      where: { user_id: productData.company_info?.id },
       include: [
         { model: Categories, as: 'category', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'] },
@@ -311,6 +311,21 @@ exports.getProductsById = async (req, res) => {
     });
 
     const allowedCategoryIds = sellerCategories.map(sc => sc.category_id.toString());
+
+
+
+    const avgRating = await ReviewRating.findOne({
+      where: { product_id: productData.id },
+      attributes: [
+        [Sequelize.fn('AVG', Sequelize.col('rating')), 'averageRating']
+      ],
+      raw: true
+    });
+
+    const averageRating = avgRating.averageRating
+      ? Number(avgRating.averageRating)
+      : 0;
+
 
     // Fetch all other companies excluding current
     const allCompanies = await CompanyInfo.findAll({
@@ -382,6 +397,7 @@ exports.getProductsById = async (req, res) => {
       item_name: productData.Items?.name || null,
       color_name: productData.Color?.title || null,
       company_name: productData.company_info?.organization_name || null,
+      company_slug: productData.company_info?.organization_slug || null,
       company_logo: productData.company_info?.companyLogo?.file || null,
       brief_company: productData.company_info?.brief_company || null,
       company_location: productData.company_info?.company_location || null,
@@ -390,6 +406,7 @@ exports.getProductsById = async (req, res) => {
       file_name: productData.file?.file || null,
       images: associatedImages.map(image => ({ id: image.id, file: image.file })),
       reviews: formattedReviews,
+      averageRating: averageRating,
       similar_products: formattedSimilarProducts,
       recommended_companies: recommendedCompanies.map(c => ({
         id: c.id,
@@ -702,7 +719,7 @@ exports.getAllCompanyInfo = async (req, res) => {
 
       if (catIds.length) sellerWhere.push(`sc.category_id IN (${catIds.join(',')})`);
       if (subIds.length) sellerWhere.push(`sc.subcategory_id IN (${subIds.join(',')})`);
-     
+
       if (sellerWhere.length) {
         whereClause[Op.and] = whereClause[Op.and] || [];
         whereClause[Op.and].push(

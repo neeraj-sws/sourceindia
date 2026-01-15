@@ -197,6 +197,9 @@ const ProductDetail = () => {
     }
   };
 
+  const fullStars = Math.floor(product.averageRating);
+  const hasHalfStar = product.averageRating % 1 !== 0;
+
   return (
     <>
       <Suspense fallback={<div></div>}>
@@ -311,15 +314,29 @@ const ProductDetail = () => {
                                 <th>Item </th>
                                 <td>{product.item_name || 'N/A'}</td>
                               </tr> */}
-                              <tr>
+                              {/* <tr>
                                 <th>Color</th>
                                 <td>{product.color_name || 'N/A'}</td>
-                              </tr>
+                              </tr> */}
                             </tbody>
                           </table>
                           <div>
                             <p>{product.short_description || 'N/A'}</p>
                           </div>
+                        </div>
+                        <div className="card-footer ps-0 bg-white border-0">
+                          <button className="btn btn-orange w-50" onClick={() => setShowModal(true)}>
+                            <i className="lni lni-phone pe-2"></i> Enquiry
+                          </button>
+
+                          <EnquiryForm
+                            show={showModal}
+                            onHide={() => setShowModal(false)}
+                            productId={`${product.id}`}
+                            companyId={`${product.company_id}`}
+                            productTitle={`${product.title}`}
+                            companyName={`${product.company_name}`}
+                          />
                         </div>
                       </div>
                     </div>
@@ -330,42 +347,62 @@ const ProductDetail = () => {
                 <div className="card h-100">
                   <div className="card-body">
                     <div className="mb-3">
-                      <h6 className="mb-3">{product.company_name}</h6>
-                      <div className='text-center border rounded-2'>
-                        <ImageFront
-                          src={`${ROOT_URL}/${product.company_logo}`}
-                          alt={`${product.title}`}
+                      <div className='gap-2 d-flex rounded-2'>
+                        <Link to={`/companies/${product.company_slug}`}>
+                          <ImageFront
+                            src={`${ROOT_URL}/${product.company_logo}`}
+                            alt={`${product.title}`}
+                            style={{
+                              width: 'auto',
+                              height: '60px',
+                              objectFit: 'cover',
+                              border: '1px solid rgb(221, 221, 221)',
+                              borderRadius: '5px',
+                              cursor: 'pointer'
+                            }}
+                            showFallback={true}
+                            className=""
+                            defaultimg="/company.png"
+                          />
+                        </Link>
 
-                          style={{
-                            width: 'auto',
-                            height: 'auto',
-                            objectFit: 'cover',
-                            borderRadius: '5px',
-                            cursor: 'pointer'
-                          }}
-                          showFallback={true}
-                          className=""
-                          defaultimg="/company.png"
-                        />
+                        <div>
+                          <Link to={`/companies/${product.company_slug}`}>
+                            <h6 className="mb-0">{product.company_name}</h6>
+                          </Link>
+                          <small><i class="bx bx-map me-1"></i>{product.company_location || 'N/A'}</small>
+                          <div style={{ color: "#f5c518", fontSize: "18px", lineHeight: "14px" }}>
+                            {[...Array(5)].map((_, index) => {
+                              if (index < fullStars) return <span key={index}>★</span>;
+                              if (index === fullStars && hasHalfStar) return <span key={index}>☆</span>;
+                              return <span key={index}>☆</span>;
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      <div className='d-flex gap-2 mt-4 align-items-center'>
+                        <i class="lni lni-network text-secondary"></i>
+                        <div>
+                          <b className='d-block'>Activity</b>
+                          <small className='text-secondary'>{product.activity_name || 'N/A'}</small>
+                        </div>
+                      </div>
+                      <div className='d-flex gap-2 mt-2 align-items-center'>
+                        <i class="lni lni-cogs text-secondary"></i>
+                        <div>
+                          <b className='d-block'>Core Activity</b>
+                          <small className='text-secondary'>{product.core_activity_name || 'N/A'}</small>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="card-footer pt-0 bg-white border-0">
-                    <button className="btn btn-orange w-100" onClick={() => setShowModal(true)}>
-                      <i className="lni lni-phone pe-2"></i> Enquiry
-                    </button>
 
-                    <EnquiryForm
-                      show={showModal}
-                      onHide={() => setShowModal(false)}
-                      productId={`${product.id}`}
-                      companyId={`${product.company_id}`}
-                      productTitle={`${product.title}`}
-                      companyName={`${product.company_name}`}
-                    />
                   </div>
+
+
                 </div>
               </div>
+
+
             </div>
             <div className="col-12">
               <div className='card mt-5'>
@@ -430,31 +467,29 @@ const ProductDetail = () => {
                           <div className="company-details">
                             <h5>About the Company:
                             </h5>
+                            <table className="table productTable">
+                              <tbody>
+
+                                <tr>
+                                  <th className='text-nowrap'>Sub Category</th>
+                                  <td className='text-nowrap'>{product.sub_category_name || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                  <th className='text-nowrap'>Activity</th>
+                                  <td className='text-nowrap'>{product.activity_name || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                  <th className='text-nowrap'>Core Activity	</th>
+                                  <td className='text-nowrap'>{product.core_activity_name || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                  <th className='text-nowrap'>Location</th>
+                                  <td className='text-nowrap'>{product.company_location || 'N/A'}</td>
+                                </tr>
+                              </tbody>
+                            </table>
                             <div className="mb-3">
-                              <table className="table productTable">
-                                <tbody>
-                                  <tr>
-                                    <th>Company Name</th>
-                                    <td>{product.company_name || 'N/A'}</td>
-                                  </tr>
-                                  <tr>
-                                    <th>Sub Category</th>
-                                    <td>{product.sub_category_name || 'N/A'}</td>
-                                  </tr>
-                                  <tr>
-                                    <th>Activity</th>
-                                    <td>{product.activity_name || 'N/A'}</td>
-                                  </tr>
-                                  <tr>
-                                    <th>Core Activity	</th>
-                                    <td>{product.core_activity_name || 'N/A'}</td>
-                                  </tr>
-                                  <tr>
-                                    <th>Location</th>
-                                    <td>{product.company_location || 'N/A'}</td>
-                                  </tr>
-                                </tbody>
-                              </table>
+
                               <div className='companyInfo mt-4'>
                                 <h5>Company Details:</h5>
                                 <div
@@ -645,7 +680,7 @@ const ProductDetail = () => {
             </div>
           </div>
         </div>
-      </Suspense>
+      </Suspense >
     </>
   );
 };

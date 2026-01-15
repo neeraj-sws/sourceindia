@@ -199,7 +199,7 @@ const OpenEnquiryDetails = () => {
             </div>
           </div>
 
-          {enquiries && (
+          {enquiries.length > 0 && (
             <div className="row mt-4">
               <div className={`col-md-4 pe-lg-0 ${type == 1 ? "d-none" : ""}`}>
                 <div className="card border rounded-0 h-100 myopenchat">
