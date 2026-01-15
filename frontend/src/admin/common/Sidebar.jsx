@@ -46,7 +46,6 @@ const menuData = [
     title: 'Leads Master',
     icon: 'bx bx-user',
     subMenu: [
-      // { title: 'Leads', link: '/admin/leads' },
       { key: 'approve_leads', title: 'Approve Leads', link: '/admin/approve_leads' },
       { key: 'enquiries_list', title: 'Pending Leads', link: '/admin/enquiries-list' },
     ],
@@ -77,7 +76,6 @@ const menuData = [
       { key: 'sub_categories', title: 'Sub Categories', link: '/admin/product_sub_categories' },
       { key: 'interest_categories', title: 'Interest Categories', link: '/admin/interest_categories' },
       { key: 'source_interest_categories', title: 'Source Interest Categories', link: '/admin/source_interest_categories' },
-      { key: 'sub_sub_categories', title: 'Items', link: '/admin/items' },
       { key: 'item_category', title: 'Item Categories', link: '/admin/item_category' },
       { key: 'item_sub_category', title: 'Item Sub Categories', link: '/admin/item_sub_category' },
       { key: 'new_items', title: 'New Items', link: '/admin/new_items' },
@@ -317,11 +315,9 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {
       case 'new_items':
         return counts.newItems?.items || 0;
       case 'interest_categories':
-        return counts.items?.interestCategories || 0;
+        return counts.interestCategories?.total || 0;
       case 'source_interest_categories':
-        return counts.items?.interestSubCategories || 0;
-      case 'sub_sub_categories':
-        return counts.items?.subSubCategories || 0;
+        return counts.interestSubCategories?.total || 0;
       case 'tickets':
         return counts.tickets?.total || 0;
       case 'ticket_categories':
@@ -426,19 +422,15 @@ const Sidebar = () => {
     buyers: {},
     sellers: {},
     products: {},
-    // categories: {},
-    // subCategories: {},
-    // itemCategories: {},
-    // itemSubCategories: {},
     newItems: {},
     enquiries: {},
     openEnquiries: {},
     roles: {},
-    items: {},
+    interestCategories: {},
+    interestSubCategories: {},
     tickets: {},
     ticket_categories: {},
     faqs: {},
-    // core_activities: {},
     activities: {},
     applications: {},
     testimonials: {},
@@ -458,27 +450,21 @@ const Sidebar = () => {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const [buyers, sellers, products,
-          // categories, subCategories, itemCategories, itemSubCategories, 
-          newItems, enquiries, openEnquiries, roles, items, tickets, ticket_categories,
+        const [buyers, sellers, products, newItems, enquiries, openEnquiries, roles, interestCategories, interestSubCategories, tickets, ticket_categories,
           faqs, activities, applications, testimonials, seo_pages, inventories, user_activity, user_history, home_banners, knowledge_center, emails, membership_plan,
           contacts, newsletters, registrations] = await Promise.all([
             axios.get(`${API_BASE_URL}/buyers/count`),
             axios.get(`${API_BASE_URL}/sellers/count`),
             axios.get(`${API_BASE_URL}/products/count`),
-            // axios.get(`${API_BASE_URL}/categories/count`),
-            // axios.get(`${API_BASE_URL}/sub_categories/count`),
-            // axios.get(`${API_BASE_URL}/item_category/count`),
-            // axios.get(`${API_BASE_URL}/item_sub_category/count`),
             axios.get(`${API_BASE_URL}/items/count`),
             axios.get(`${API_BASE_URL}/enquiries/count`),
             axios.get(`${API_BASE_URL}/open_enquiries/count`),
             axios.get(`${API_BASE_URL}/sub_admin/count`),
-            axios.get(`${API_BASE_URL}/sub_sub_categories/count`),
+            axios.get(`${API_BASE_URL}/interest_categories/count`),
+            axios.get(`${API_BASE_URL}/interest_sub_categories/count`),
             axios.get(`${API_BASE_URL}/tickets/count`),
             axios.get(`${API_BASE_URL}/ticket_categories/count`),
             axios.get(`${API_BASE_URL}/faqs/count`),
-            // axios.get(`${API_BASE_URL}/core_activities/count`),
             axios.get(`${API_BASE_URL}/activities/count`),
             axios.get(`${API_BASE_URL}/applications/count`),
             axios.get(`${API_BASE_URL}/testimonials/count`),
@@ -498,19 +484,15 @@ const Sidebar = () => {
           buyers: buyers.data,
           sellers: sellers.data,
           products: products.data,
-          // categories: categories.data,
-          // subCategories: subCategories.data,
-          // itemCategories: itemCategories.data,
-          // itemSubCategories: itemSubCategories.data,
           newItems: newItems.data,
           openEnquiries: openEnquiries.data,
           enquiries: enquiries.data,
           roles: roles.data,
-          items: items.data,
+          interestCategories: interestCategories.data,
+          interestSubCategories: interestSubCategories.data,
           tickets: tickets.data,
           ticket_categories: ticket_categories.data,
           faqs: faqs.data,
-          // core_activities: core_activities.data,
           activities: activities.data,
           applications: applications.data,
           testimonials: testimonials.data,

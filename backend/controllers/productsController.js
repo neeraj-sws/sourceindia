@@ -1230,6 +1230,9 @@ exports.getAllProductsServerSide = async (req, res) => {
       endDate,
       category,
       sub_category,
+      item_category_id,
+      item_subcategory_id,
+      item_id,
       company,
       product_status,
       is_approve
@@ -1318,6 +1321,15 @@ exports.getAllProductsServerSide = async (req, res) => {
     if (sub_category) {
       baseWhere.sub_category = sub_category;
     }
+    if (item_category_id) {
+      baseWhere.item_category_id = item_category_id;
+    }
+    if (item_subcategory_id) {
+      baseWhere.item_subcategory_id = item_subcategory_id;
+    }
+    if (item_id) {
+      baseWhere.item_id = item_id;
+    }
     if (company) {
       baseWhere.company_id = company;
     }
@@ -1364,6 +1376,8 @@ exports.getAllProductsServerSide = async (req, res) => {
       category_name: row.Categories ? row.Categories.name : null,
       sub_category: row.sub_category,
       subcategory_name: row.SubCategories ? row.SubCategories.name : null,
+      item_category_id: row.item_category_id,
+      item_subcategory_id: row.item_subcategory_id,
       company_id: row.company_id,
       company_name: row.company_info ? row.company_info.organization_name : null,
       company_slug: row.company_info ? row.company_info.organization_slug : null,

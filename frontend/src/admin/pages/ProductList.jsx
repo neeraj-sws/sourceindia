@@ -50,6 +50,15 @@ const ProductList = ({ getDeleted, isApprove }) => {
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const [appliedCategory, setAppliedCategory] = useState("");
   const [appliedSubCategory, setAppliedSubCategory] = useState("");
+  const [itemCategories, setItemCategories] = useState([]);
+const [itemSubCategories, setItemSubCategories] = useState([]);
+const [selectedItemCategory, setSelectedItemCategory] = useState("");
+const [selectedItemSubCategory, setSelectedItemSubCategory] = useState("");
+const [appliedItemCategory, setAppliedItemCategory] = useState("");
+const [appliedItemSubCategory, setAppliedItemSubCategory] = useState("");
+const [items, setItems] = useState([]);
+const [selectedItem, setSelectedItem] = useState("");
+const [appliedItem, setAppliedItem] = useState("");
   const [companies, setCompanies] = useState([]);
   const [selectedCompanies, setSelectedCompanies] = useState("");
   const [appliedCompanies, setAppliedCompanies] = useState("");
@@ -90,22 +99,129 @@ const userIdFromUrl = queryParams.get("id");
   }, []);
 
   const handleCategoryChange = async (event) => {
-    const categoryId = event.target.value;
-    setSelectedCategory(categoryId);
-    try {
-      if (categoryId) {
-        const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
-        setSubCategories(res.data);
-      } else {
-        setSubCategories([]);
-      }
-      setSelectedSubCategory("");
-    } catch (err) {
-      console.error("Error fetching sub categories:", err);
-    }
-  };
+  const categoryId = event.target.value;
+  setSelectedCategory(categoryId);
+  setSelectedSubCategory("");
+  setSelectedItemCategory("");
+  setSelectedItemSubCategory("");
+  setSelectedItem("");
+  setSubCategories([]);
+  setItemCategories([]);
+  setItemSubCategories([]);
+  setItems([]);
 
-  const handleSubCategoryChange = (event) => { setSelectedSubCategory(event.target.value); };
+  $("#sub_category").val("").trigger("change");
+  $("#item_category").val("").trigger("change");
+  $("#item_subcategory").val("").trigger("change");
+  $("#item").val("").trigger("change");
+
+  if (categoryId) {
+    const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
+    setSubCategories(res.data);
+  } else {
+    setSubCategories([]);
+  }
+};
+
+const handleSubCategoryChange = async (event) => {
+  const subCategoryId = event.target.value;
+  setSelectedSubCategory(subCategoryId);
+  setSelectedItemCategory("");
+  setSelectedItemSubCategory("");
+  setSelectedItem("");
+  setItemCategories([]);
+  setItemSubCategories([]);
+  setItems([]);
+  $("#item_category").val("").trigger("change");
+  $("#item_subcategory").val("").trigger("change");
+  $("#item").val("").trigger("change");
+  await fetchItemCategories(selectedCategory, subCategoryId);
+};
+
+  const fetchItemCategories = async (categoryId, subCategoryId) => {
+  if (!categoryId || !subCategoryId) {
+    setItemCategories([]);
+    return;
+  }
+
+  try {
+    const res = await axios.get(
+      `${API_BASE_URL}/item_category/by-category-subcategory/${categoryId}/${subCategoryId}`
+    );
+    setItemCategories(res.data || []);
+  } catch (err) {
+    console.error("Error fetching item categories:", err);
+  }
+};
+
+const fetchItemSubCategories = async (itemCategoryId) => {
+  if (!selectedCategory || !selectedSubCategory || !itemCategoryId) {
+    setItemSubCategories([]);
+    return;
+  }
+
+  try {
+    const res = await axios.get(
+      `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
+    );
+    setItemSubCategories(res.data || []);
+  } catch (err) {
+    console.error("Error fetching item sub categories:", err);
+  }
+};
+
+const fetchItems = async (itemSubCategoryId) => {
+  if (
+    !selectedCategory ||
+    !selectedSubCategory ||
+    !selectedItemCategory ||
+    !itemSubCategoryId
+  ) {
+    setItems([]);
+    return;
+  }
+
+  try {
+    const res = await axios.get(
+      `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
+    );
+    setItems(res.data || []);
+  } catch (err) {
+    console.error("Error fetching items:", err);
+  }
+};
+
+const handleItemCategoryChange = async (event) => {
+  const value = event.target.value;
+
+  setSelectedItemCategory(value);
+  setSelectedItemSubCategory("");
+  setSelectedItem("");
+
+  setItemSubCategories([]);
+  setItems([]);
+
+  $("#item_subcategory").val("").trigger("change");
+  $("#item").val("").trigger("change");
+
+  await fetchItemSubCategories(value);
+};
+
+const handleItemSubCategoryChange = async (event) => {
+  const value = event.target.value;
+
+  setSelectedItemSubCategory(value);
+  setSelectedItem("");
+  setItems([]);
+
+  $("#item").val("").trigger("change");
+
+  await fetchItems(value);
+};
+
+const handleItemChange = (event) => {
+  setSelectedItem(event.target.value);
+};
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -144,6 +260,27 @@ const userIdFromUrl = queryParams.get("id");
     .on("change", function () {
       handleSubCategoryChange({ target: { value: $(this).val() } });
     });
+    $("#item_category").select2({
+  theme: "bootstrap",
+  width: "100%",
+  placeholder: "Select Item Category",
+}).on("change", function () {
+  handleItemCategoryChange({ target: { value: $(this).val() } });
+});
+$("#item_subcategory").select2({
+  theme: "bootstrap",
+  width: "100%",
+  placeholder: "Select Item Sub Category",
+}).on("change", function () {
+  handleItemSubCategoryChange({ target: { value: $(this).val() } });
+});
+$("#item").select2({
+  theme: "bootstrap",
+  width: "100%",
+  placeholder: "Select Item",
+}).on("change", function () {
+  handleItemChange({ target: { value: $(this).val() } });
+});
     $("#company").select2({
       theme: "bootstrap",
       width: "100%",
@@ -163,18 +300,21 @@ const userIdFromUrl = queryParams.get("id");
     return () => {
       $("#category").off("change").select2("destroy");
       $("#sub_category").off("change").select2("destroy");
+      $("#item_category").off("change").select2("destroy");
+  $("#item_subcategory").off("change").select2("destroy");
+  $("#item").off("change").select2("destroy");
       $("#company").off("change").select2("destroy");
       $("#product_status").off("change").select2("destroy");
     };
-  }, [categories, subCategories, companies, productStatus]);
+  }, [categories, subCategories, itemCategories, itemSubCategories, items, companies, productStatus]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/products/server-side`, {
         params: { page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false',
-        dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "",
-        company: appliedCompanies || "", product_status: appliedProductStatus, is_approve: isApprove, user_id: userIdFromUrl || ""
+        dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "", item_category_id: appliedItemCategory || "",
+  item_subcategory_id: appliedItemSubCategory || "", item_id: appliedItem || "", company: appliedCompanies || "", product_status: appliedProductStatus, is_approve: isApprove, user_id: userIdFromUrl || ""
       },
       });
       setData(response.data.data);
@@ -329,8 +469,17 @@ const userIdFromUrl = queryParams.get("id");
     setSelectedCategory("");
     setSelectedSubCategory("");
     setSubCategories([]);
+    setSelectedItemCategory("");
+setSelectedItemSubCategory("");
+setAppliedItemCategory("");
+setAppliedItemSubCategory("");
+setItemCategories([]);
+setItemSubCategories([]);
     setAppliedCategory("");
     setAppliedSubCategory("");
+    setSelectedItem("");
+setAppliedItem("");
+setItems([]);
     setSelectedCompanies("");
     setAppliedCompanies("");
     setSelectedProductStatus("");
@@ -338,6 +487,9 @@ const userIdFromUrl = queryParams.get("id");
     setPage(1);
     $("#category").val("").trigger("change");
     $("#sub_category").val("").trigger("change");
+    $("#item_category").val("").trigger("change");
+$("#item_subcategory").val("").trigger("change");
+$("#item").val("").trigger("change");
     $("#company").val("").trigger("change");
     $("#product_status").val("").trigger("change");
   };
@@ -401,6 +553,35 @@ const userIdFromUrl = queryParams.get("id");
                     ))}
                   </select>
                 </div>
+                <div className="col-md-3 mb-3">
+  <label className="form-label">Item Category</label>
+  <select id="item_category" className="form-control select2">
+    <option value="">All</option>
+    {itemCategories.map((i) => (
+      <option key={i.id} value={i.id}>{i.name}</option>
+    ))}
+  </select>
+</div>
+<div className="col-md-3 mb-3">
+  <label className="form-label">Item Sub Category</label>
+  <select id="item_subcategory" className="form-control select2">
+    <option value="">All</option>
+    {itemSubCategories.map((i) => (
+      <option key={i.id} value={i.id}>{i.name}</option>
+    ))}
+  </select>
+</div>
+<div className="col-md-3 mb-3">
+  <label className="form-label">Item</label>
+  <select id="item" className="form-control select2">
+    <option value="">All</option>
+    {items.map((i) => (
+      <option key={i.id} value={i.id}>
+        {i.name}
+      </option>
+    ))}
+  </select>
+</div>
                 <div className="col-md-3 mb-3">
                   <label className="form-label">Company</label>
                   <select id="company" className="form-control select2" value={selectedCompanies} onChange={handleCompaniesChange}>
@@ -472,6 +653,9 @@ const userIdFromUrl = queryParams.get("id");
                       setDateRange('customrange');
                       setAppliedCategory(selectedCategory);
                       setAppliedSubCategory(selectedSubCategory);
+                      setAppliedItemCategory(selectedItemCategory);
+setAppliedItemSubCategory(selectedItemSubCategory);
+setAppliedItem(selectedItem);
                       setAppliedCompanies(selectedCompanies);
                       setAppliedProductStatus(selectedProductStatus);
                       setPage(1);

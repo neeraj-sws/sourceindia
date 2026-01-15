@@ -44,7 +44,6 @@ const SubAdminList = lazy(() => import('../admin/pages/SubAdminList'));
 const RolesList = lazy(() => import('../admin/pages/RolesList'));
 const CoreActivityList = lazy(() => import('../admin/pages/CoreActivityList'));
 const ActivityList = lazy(() => import('../admin/pages/ActivityList'));
-const ItemList = lazy(() => import('../admin/pages/ItemList'));
 const SourceInterestCategories = lazy(() => import('../admin/pages/SourceInterestCategories'));
 const ApplicationList = lazy(() => import('../admin/pages/ApplicationList'));
 const Reports = lazy(() => import('../admin/pages/Reports'));
@@ -149,8 +148,6 @@ function AdminLayout() {
               <Route path="/coreactivity-remove-list" element={<ProtectedRoute><CoreActivityList getDeleted={true} /></ProtectedRoute>} />
               <Route path="/activity" element={<ProtectedRoute><ActivityList /></ProtectedRoute>} />
               <Route path="/activity-remove-list" element={<ProtectedRoute><ActivityList getDeleted={true} /></ProtectedRoute>} />
-              <Route path="/items" element={<ProtectedRoute><ItemList /></ProtectedRoute>} />
-              <Route path="/item-remove-list" element={<ProtectedRoute><ItemList getDeleted={true} /></ProtectedRoute>} />
               <Route path="/source_interest_categories" element={<ProtectedRoute><SourceInterestCategories /></ProtectedRoute>} />
               <Route path="/applications" element={<ProtectedRoute><ApplicationList /></ProtectedRoute>} />
               <Route path="/application-remove-list" element={<ProtectedRoute><ApplicationList getDeleted={true} /></ProtectedRoute>} />
