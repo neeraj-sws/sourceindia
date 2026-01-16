@@ -8,7 +8,6 @@ const UserHeader = lazy(() => import('../common/UserHeader'));
 const UserSidebar = lazy(() => import('../common/UserSidebar'));
 const UserFooter = lazy(() => import('../common/UserFooter'));
 const Home = lazy(() => import('../pages/Home'));
-const About = lazy(() => import('../pages/About'));
 const Login = lazy(() => import('../pages/Login'));
 const Companies = lazy(() => import('../pages/Companies'));
 const CompaniesFilter = lazy(() => import('../pages/CompaniesFilter'));
@@ -79,7 +78,6 @@ function FrontLayout() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                 <Route path="/registration" element={<Registration />} />
-                <Route path="/about" element={<About />} />
                 <Route path="/companies" element={<Companies />} />
                 <Route path="/companies/:slug" element={<CompanyDetail />} />
                 <Route path="/company-list" element={<CompaniesFilter isSeller="1" />} />

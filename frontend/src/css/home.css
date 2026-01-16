@@ -922,6 +922,9 @@ button.nav-link:hover {
     height: 40px;
 }
 
+.company_logo img {
+    width: 60px;
+}
 
 /* Responsive */
 @media (max-width: 1200px) {

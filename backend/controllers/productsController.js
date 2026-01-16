@@ -17,7 +17,6 @@ const SellerCategory = require('../models/SellerCategory');
 const ItemCategory = require('../models/ItemCategory');
 const ItemSubCategory = require('../models/ItemSubCategory');
 const Items = require('../models/Items');
-const ProductServices = require('../models/ProductServices');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
@@ -1793,7 +1792,6 @@ exports.getFilteredProducts = async (req, res) => {
         { model: Categories, as: 'Categories', attributes: ['name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['name'] },
         { model: CompanyInfo, as: 'company_info', attributes: ['organization_name'] },
-        { model: ProductServices, as: 'ProductServices', attributes: ['title'] },
       ]
     });
 
@@ -1810,8 +1808,8 @@ exports.getFilteredProducts = async (req, res) => {
         company_name: s.company_info?.organization_name || 'NA',
         code: s.code,
         article_number: s.article_number,
-        product_service: s.product_service,
-        product_service_name: s.ProductServices?.title || '',
+        product_service: '',
+        product_service_name: '',
         is_gold: s.is_gold == 1 ? 'Yes' : 'No',
         is_featured: s.is_featured == 1 ? 'Yes' : 'No',
         is_recommended: s.is_recommended == 1 ? 'Yes' : 'No',

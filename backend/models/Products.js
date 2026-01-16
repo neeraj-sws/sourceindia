@@ -12,7 +12,6 @@ const ReviewRating = require('./ReviewRating');
 const ItemCategory = require('./ItemCategory');
 const ItemSubCategory = require('./ItemSubCategory');
 const Items = require('./Items');
-const ProductServices = require('./ProductServices');
 
 const Products = sequelize.define('Products', {
   id: {
@@ -37,14 +36,8 @@ const Products = sequelize.define('Products', {
   quantity: { type: DataTypes.INTEGER, allowNull: true },
   size: { type: DataTypes.INTEGER, allowNull: true },
   unit: { type: DataTypes.INTEGER, allowNull: true },
-  color: { type: DataTypes.STRING, allowNull: true },
   category: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   sub_category: { type: DataTypes.INTEGER, allowNull: true },
-  sub_item: { type: DataTypes.INTEGER, allowNull: true },
-  core_activity: { type: DataTypes.INTEGER, allowNull: false },
-  activity: { type: DataTypes.INTEGER, allowNull: false },
-  segment: { type: DataTypes.INTEGER, allowNull: false },
-  product_service: { type: DataTypes.INTEGER, allowNull: false },
   short_description: { type: DataTypes.TEXT, allowNull: false },
   description: { type: DataTypes.TEXT, allowNull: true },
   file_id: { type: DataTypes.INTEGER, allowNull: true },
@@ -86,6 +79,5 @@ Products.belongsTo(Color, { foreignKey: 'color', targetKey: 'id', as: 'Color', c
 Products.belongsTo(ItemCategory, { foreignKey: 'item_category_id', targetKey: 'id', as: 'ItemCategory', constraints: false });
 Products.belongsTo(ItemSubCategory, { foreignKey: 'item_subcategory_id', targetKey: 'id', as: 'ItemSubCategory', constraints: false });
 Products.belongsTo(Items, { foreignKey: 'item_id', targetKey: 'id', as: 'Items', constraints: false });
-Products.belongsTo(ProductServices, { foreignKey: 'product_service', targetKey: 'id', as: 'ProductServices', constraints: false });
 
 module.exports = Products;

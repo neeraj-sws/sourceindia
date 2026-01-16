@@ -33,7 +33,6 @@ const SiteSettings = lazy(() => import('../admin/pages/SiteSettings'));
 const FaqList = lazy(() => import('../admin/pages/FaqList'));
 const FaqCategoryList = lazy(() => import('../admin/pages/FaqCategoryList'));
 const KnowledgeCenter = lazy(() => import('../admin/pages/KnowledgeCenter'));
-const AboutSettings = lazy(() => import('../admin/pages/AboutSettings'));
 const HomeBanners = lazy(() => import('../admin/pages/HomeBanners'));
 import MembershipPlan from '../admin/pages/MembershipPlan';
 const EmailCircular = lazy(() => import('../admin/pages/EmailCircular'));
@@ -59,8 +58,6 @@ const MailHistory = lazy(() => import('../admin/pages/MailHistory'));
 const EmailsList = lazy(() => import('../admin/pages/EmailsList'));
 const AddEmail = lazy(() => import('../admin/pages/AddEmail'));
 const ContactsList = lazy(() => import('../admin/pages/ContactsList'));
-const Inventories = lazy(() => import('../admin/pages/Inventories'));
-const RegistrationsList = lazy(() => import('../admin/pages/RegistrationsList'));
 const UsersHistory = lazy(() => import('../admin/pages/UsersHistory'));
 const ItemCategory = lazy(() => import('../admin/pages/ItemCategory'));
 const ItemSubCategory = lazy(() => import('../admin/pages/ItemSubCategory'));
@@ -131,7 +128,6 @@ function AdminLayout() {
               <Route path="/faq_categories" element={<ProtectedRoute><FaqCategoryList /></ProtectedRoute>} />
               <Route path="/knowledge_center" element={<ProtectedRoute><KnowledgeCenter /></ProtectedRoute>} />
               <Route path="/knowledgecenter-remove-list" element={<ProtectedRoute><KnowledgeCenter getDeleted={true} /></ProtectedRoute>} />
-              <Route path="/about_settings" element={<ProtectedRoute><AboutSettings /></ProtectedRoute>} />
               <Route path="/home_banners" element={<ProtectedRoute><HomeBanners /></ProtectedRoute>} />
               <Route path="/homebanner-remove-list" element={<ProtectedRoute><HomeBanners getDeleted={true} /></ProtectedRoute>} />
               <Route path="/membership_plan" element={<ProtectedRoute><MembershipPlan /></ProtectedRoute>} />
@@ -172,9 +168,7 @@ function AdminLayout() {
               <Route path="/email-edit/:emailId" element={<ProtectedRoute><AddEmail /></ProtectedRoute>} />
               <Route path="/contacts-list" element={<ProtectedRoute><ContactsList /></ProtectedRoute>} />
               <Route path="/contact-remove-list" element={<ProtectedRoute><ContactsList getDeleted={true} /></ProtectedRoute>} />
-              <Route path="/inventory-list" element={<ProtectedRoute><Inventories /></ProtectedRoute>} />
-              <Route path="/registrations-list" element={<ProtectedRoute><RegistrationsList /></ProtectedRoute>} />
-              <Route path="/registrations-remove-list" element={<ProtectedRoute><RegistrationsList getDeleted={true} /></ProtectedRoute>} />
+
               <Route path="/user_history" element={<ProtectedRoute><UsersHistory /></ProtectedRoute>} />
               <Route path="/item_category" element={<ProtectedRoute><ItemCategory /></ProtectedRoute>} />
               <Route path="/item_sub_category" element={<ProtectedRoute><ItemSubCategory /></ProtectedRoute>} />

@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import Breadcrumb from '../common/Breadcrumb';
-import AboutForm from '../forms/home/AboutForm';
 import TopCategoriesForm from '../forms/home/TopCategoriesForm';
 import WhyChooseForm from '../forms/home/WhyChooseForm';
 import ProductSectionForm from '../forms/home/ProductSectionForm';
@@ -25,15 +24,7 @@ const HomeSettings = () => {
                 <h6 className="mb-3 fw-bold">About  Settings</h6>
                 <ul className="nav nav-pills pb-0 customnavbar d-block" role="tablist">
                   <li className="nav-item mb-1" role="presentation">
-                    <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-about" role="tab" aria-selected="true">
-                      <div className="d-flex align-items-center">
-                        <div className="tab-icon"><i className="bx bx-info-circle font-18 me-1" /></div>
-                        <div className="tab-title">About</div>
-                      </div>
-                    </a>
-                  </li>
-                  <li className="nav-item mb-1" role="presentation">
-                    <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-category" role="tab" aria-selected="false">
+                    <a className="nav-link active" data-bs-toggle="pill" href="#primary-pills-category" role="tab" aria-selected="false">
                       <div className="d-flex align-items-center">
                         <div className="tab-icon"><i className="bx bx-category font-18 me-1" /></div>
                         <div className="tab-title">Top Categories</div>
@@ -122,10 +113,8 @@ const HomeSettings = () => {
             <div className="card">
               <div className="card-body">
                 <div className="tab-content" id="pills-tabContent">
-                  <div className="tab-pane fade show active" id="primary-pills-about" role="tabpanel">
-                    <AboutForm />
-                  </div>
-                  <div className="tab-pane fade" id="primary-pills-category" role="tabpanel">
+
+                  <div className="tab-pane fade show active" id="primary-pills-category" role="tabpanel">
                     <TopCategoriesForm />
                   </div>
                   <div className="tab-pane fade" id="primary-pills-choose" role="tabpanel">

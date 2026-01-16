@@ -348,12 +348,12 @@ const ProductDetail = () => {
                   <div className="card-body">
                     <div className="mb-3">
                       <div className='gap-2 d-flex rounded-2'>
-                        <Link to={`/companies/${product.company_slug}`}>
+                        <Link to={`/companies/${product.company_slug}`} className='company_logo'>
                           <ImageFront
                             src={`${ROOT_URL}/${product.company_logo}`}
                             alt={`${product.title}`}
                             style={{
-                              width: 'auto',
+                              width: '60px',
                               height: '60px',
                               objectFit: 'cover',
                               border: '1px solid rgb(221, 221, 221)',

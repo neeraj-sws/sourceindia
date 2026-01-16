@@ -6,5 +6,6 @@ export default defineConfig({
   plugins: [react()],
   build: {
     sourcemap: true, // 🔑 important
+    chunkSizeWarningLimit: 1500 // in kB
   },
 })
