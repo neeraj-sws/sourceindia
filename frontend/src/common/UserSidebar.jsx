@@ -175,6 +175,14 @@ const UserSidebar = () => {
         user?.is_seller === 0,
     },
 
+    // My Buyer Enquiries (complete == 1 && approve == 1)
+    {
+      title: "My Buyer Enquiries",
+      icon: "bx bx-message-square-dots",
+      link: "/my-buyer-enquiries",
+      show: user?.is_complete === 1 && user?.is_approve === 1,
+    },
+
     // ✅ Always visible (common)
     { title: "Add Open Enquiries", icon: "bx bx-plus", link: "/open-enquiry" },
     // { title: "My All Enquiries Chats", icon: "bx bx-message", link: "/my-all-enquiries-chats" },
