@@ -867,17 +867,11 @@ exports.getAllSellerServerSide = async (req, res) => {
     }
 
     // 🧾 WHERE Clauses
-    // const where = { is_seller: 1, is_delete: 0 };
     const where = {};
     where.is_seller = 1; where.is_delete = 0;
     where.status = 1;
     where.member_role = 1;
     where.is_complete = 1;
-    /*if (req.query.getDeleted !== 'true') {
-      where.status = 1;
-      where.member_role = 1;
-      where.is_complete = 1;
-    }*/
 
     if (req.query.getNotCompleted !== 'true') where.is_approve = 1;
     if (req.query.getInactive === 'true') where.status = 0;
@@ -908,23 +902,51 @@ exports.getAllSellerServerSide = async (req, res) => {
     if (state) searchWhere.state = state;
     if (city) searchWhere.city = city;
     if (elcina_member) searchWhere.elcina_member = elcina_member;
-    if (core_activity) searchWhere['$company_info.CoreActivity.id$'] = core_activity;
-    if (activity) searchWhere['$company_info.Activity.id$'] = activity;
-    if (nature_business) searchWhere['$company_info.NatureBusinesses.id$'] = nature_business;
+    if (core_activity) searchWhere['$company_info.CoreActivity.core_activity_id$'] = core_activity;
+    if (activity) searchWhere['$company_info.Activity.activity_id$'] = activity;
+    if (nature_business) searchWhere['$company_info.NatureBusinesses.nature_business_id$'] = nature_business;
 
     // 🔍 Search
     if (search) {
-      searchWhere[Op.or] = [
-        Sequelize.where(fn('concat', col('fname'), ' ', col('lname')), { [Op.like]: `%${search}%` }),
-        { email: { [Op.like]: `%${search}%` } },
-        { mobile: { [Op.like]: `%${search}%` } },
-        // { website: { [Op.like]: `%${search}%` } },
-        { '$company_info.organization_name$': { [Op.like]: `%${search}%` } },
-        // { '$company_info.designation$': { [Op.like]: `%${search}%` } },
-        // { '$seller_categories.category.name$': { [Op.like]: `%${search}%` } },
-        // { '$seller_categories.subcategory.name$': { [Op.like]: `%${search}%` } },
-        { '$city_data.name$': { [Op.like]: `%${search}%` } },
-        { '$state_data.name$': { [Op.like]: `%${search}%` } }
+      const escapedSearch = search.replace(/[%_]/g, '\\$&');
+
+  searchWhere[Op.or] = [
+    Sequelize.where(
+      fn('concat', col('fname'), ' ', col('lname')),
+      { [Op.like]: `%${escapedSearch}%` }
+    ),
+    { email: { [Op.like]: `%${escapedSearch}%` } },
+    { mobile: { [Op.like]: `%${escapedSearch}%` } },
+    { '$company_info.organization_name$': { [Op.like]: `%${escapedSearch}%` } },
+    { '$company_info.designation$': { [Op.like]: `%${escapedSearch}%` } },
+    { '$company_info.company_website$': { [Op.like]: `%${escapedSearch}%` } },
+    { '$company_info.organization_quality_certification$': { [Op.like]: `%${escapedSearch}%` } },
+    { '$company_info.CoreActivity.name$': { [Op.like]: `%${escapedSearch}%` } },
+    { '$company_info.Activity.name$': { [Op.like]: `%${escapedSearch}%` } },
+    { '$city_data.name$': { [Op.like]: `%${search}%` } },
+    { '$state_data.name$': { [Op.like]: `%${search}%` } },
+
+    // ✅ CATEGORY NAME SEARCH
+    Sequelize.literal(`
+      EXISTS (
+        SELECT 1
+        FROM seller_categories sc
+        JOIN categories c ON c.category_id = sc.category_id
+        WHERE sc.user_id = users.user_id
+        AND c.name LIKE '%${escapedSearch}%'
+      )
+    `),
+
+    // ✅ SUB-CATEGORY NAME SEARCH (NEW)
+    Sequelize.literal(`
+      EXISTS (
+        SELECT 1
+        FROM seller_categories sc
+        JOIN sub_categories s ON s.sub_category_id = sc.subcategory_id
+        WHERE sc.user_id = users.user_id
+        AND s.name LIKE '%${escapedSearch}%'
+      )
+    `),
       ];
     }
 
@@ -974,40 +996,65 @@ exports.getAllSellerServerSide = async (req, res) => {
 
     // 🏢 Include Relationships (with category/subcategory filter fix)
     const sellerCategoryInclude = {
-      model: SellerCategory,
-      as: 'seller_categories',
-      separate: true, // fetch in separate query to prevent row multiplication
-      required: false, // still include users even if they have no categories
-      attributes: ['category_id', 'subcategory_id'],
-      include: [
-        { model: Categories, as: 'category', attributes: ['id', 'name'], required: false },
-        { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'], required: false },
-      ],
-    };
+  model: SellerCategory,
+  as: 'seller_categories',
+  required: false, separate: true,
+  attributes: ['category_id', 'subcategory_id'],
+  include: [
+    { model: Categories, as: 'category', attributes: ['id', 'name'], required: false },
+    { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'], required: false },
+  ],
+};
 
-    // ✅ apply category/subcategory filters inside include (correct SQL alias)
-    if (categoryId || subCategoryId) {
-      sellerCategoryInclude.required = true;
-      sellerCategoryInclude.where = {};
-      if (categoryId) sellerCategoryInclude.where.category_id = categoryId;
-      if (subCategoryId) sellerCategoryInclude.where.subcategory_id = subCategoryId;
-    }
+    if (categoryId) {
+  searchWhere[Op.and] = searchWhere[Op.and] || [];
+
+  searchWhere[Op.and].push(
+    Sequelize.literal(`
+      EXISTS (
+        SELECT 1
+        FROM seller_categories sc
+        WHERE sc.user_id = users.user_id
+        AND sc.category_id = ${Number(categoryId)}
+      )
+    `)
+  );
+}
+
+if (subCategoryId) {
+  searchWhere[Op.and] = searchWhere[Op.and] || [];
+
+  searchWhere[Op.and].push(
+    Sequelize.literal(`
+      EXISTS (
+        SELECT 1
+        FROM seller_categories sc
+        WHERE sc.user_id = users.user_id
+        AND sc.subcategory_id = ${Number(subCategoryId)}
+      )
+    `)
+  );
+}
+
+if (!categoryId && !subCategoryId) {
+  delete sellerCategoryInclude.where; // avoid empty WHERE {}
+}
 
     const companyInfoInclude = {
       model: CompanyInfo,
       as: 'company_info',
-      attributes: ['organization_name', 'organization_slug', 'company_location', 'designation', 'company_website', 'organization_quality_certification'],
+      attributes: ['organization_name', 'organization_slug', 'company_location', 'designation', 'company_website', 'organization_quality_certification', 'company_email'],
       include: [
         { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
         { model: Activity, as: 'Activity', attributes: ['name'] },
-        { model: NatureBusinesses, as: 'NatureBusinesses', attributes: ['name'] }
+        { model: NatureBusinesses, as: 'NatureBusinesses', attributes: ['name'] },
+        { model: MembershipPlan, as: 'MembershipPlan', attributes: ['name'] }
       ],
       required: false
     };
 
     const totalRecords = await Users.count({
       where,
-      // include: [sellerCategoryInclude],
     });
 
     const { count: filteredRecords, rows } = await Users.findAndCountAll({
@@ -1042,10 +1089,15 @@ exports.getAllSellerServerSide = async (req, res) => {
       return {
         id: row.id,
         full_name: `${row.fname} ${row.lname}`,
+        fname: row.fname,
+        lname: row.lname,
         email: row.email,
         mobile: row.mobile,
+        address: row.address,
+        zipcode: row.zipcode,
         organization_name: row.company_info?.organization_name || null,
         organization_slug: row.company_info?.organization_slug || null,
+        company_email: row.company_info?.company_email || null,
         designation: row.company_info?.designation || null,
         company_website: row.company_info?.company_website || null,
         organization_quality_certification: row.company_info?.organization_quality_certification || null,
@@ -1053,13 +1105,16 @@ exports.getAllSellerServerSide = async (req, res) => {
         sub_category_name: subCategoryNames,
         coreactivity_name: row.company_info?.CoreActivity?.name || null,
         activity_name: row.company_info?.Activity?.name || null,
+        membership_plan_name: row.company_info?.MembershipPlan?.name || null,
         country_name: row.country_data?.name || null,
         state_name: row.state_data?.name || null,
         city_name: row.city_data?.name || null,
         elcina_member: row.elcina_member,
         user_count: productCount,
         status: row.status,
+        getStatus: row.status === 1 ? 'Active' : 'Inactive',
         is_approve: row.is_approve,
+        getApproved: row.is_approve === 1 ? 'Approved' : 'Not Approved',
         is_delete: row.is_delete,
         created_at: row.created_at,
         updated_at: row.updated_at,
