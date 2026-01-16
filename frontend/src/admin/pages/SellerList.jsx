@@ -480,11 +480,52 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     });
   }, [getInactive, getNotApproved, getNotCompleted, getDeleted]);
 
-  const handleDownload = () => {
-    if (excelExportRef.current) {
-      excelExportRef.current.exportToExcel();
-    }
-  };
+  // const handleDownload = () => {
+  //   if (excelExportRef.current) {
+  //     excelExportRef.current.exportToExcel();
+  //   }
+  // };
+
+  const handleDownload = async () => {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/sellers/server-side`, {
+      params: {
+        page: 1,
+        limit: 100000, // large limit for export
+        search,
+        sortBy,
+        sort: sortDirection,
+
+        getInactive: getInactive ? "true" : "false",
+        getNotApproved: getNotApproved ? "true" : "false",
+        getNotCompleted: getNotCompleted ? "true" : "false",
+        getDeleted: getDeleted ? "true" : "false",
+
+        dateRange,
+        startDate,
+        endDate,
+
+        state: appliedState || "",
+        city: appliedCity || "",
+        customerId: customerId || "",
+        firstName: firstName || "",
+        lastName: lastName || "",
+        organizationName: organizationName || "",
+        core_activity: appliedCoreActivity || "",
+        activity: appliedActivity || "",
+        designation: appliedDesignation || "",
+        categoryId: appliedCategories || "",
+        nature_business: appliedNatureBusiness || "",
+        elcina_member: appliedElcinaMember || "",
+      }
+    });
+
+    excelExportRef.current.exportWithData(res.data.data);
+  } catch (error) {
+    console.error("Seller Excel export failed", error);
+    showNotification("Failed to export sellers", "error");
+  }
+};
 
   const openStatusModal = (id, currentStatus, field, valueKey) => {
     setStatusToggleInfo({ id, currentStatus, field, valueKey });
@@ -1139,28 +1180,27 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
           { label: "Last Name", key: "lname" },
           { label: "Email", key: "email" },
           { label: "Phone", key: "mobile" },
-          ...(!getNotCompleted || !getDeleted ? [{ label: "Address", key: "address" }] : []),
-          ...(!getInactive || !getNotApproved || !getNotCompleted || !getDeleted ? [{ label: "Country Name", key: "country_name" }] : []),
-          ...(!getNotCompleted || !getDeleted ? [{ label: "State Name", key: "state_name" }] : []),
-          ...(!getNotCompleted || !getDeleted ? [{ label: "City Name", key: "city_name" }] : []),
-          ...(!getDeleted ? [{ label: "Membership Plan", key: "membership_plan_name" }] : []),
-          ...(!getInactive || !getNotCompleted || !getNotApproved ? [{ label: "Designation", key: "designation" }] : []),
-          ...(!getNotCompleted || !getDeleted ? [{ label: "Zipcode", key: "zipcode" }] : []),
-          { label: "Organization Name", key: "company_name" },
-          ...(getNotCompleted ? [{ label: "Core Activity", key: "coreactivity_name" }] : []),
-          ...(getNotCompleted ? [{ label: "Activity", key: "activity_name" }] : []),
-          ...(getNotCompleted ? [{ label: "Category", key: "category_names" }] : []),
-          ...(getNotCompleted ? [{ label: "Sub Category", key: "sub_category_names" }] : []),
-          ...(!getInactive || !getNotApproved || !getNotCompleted ? [{ label: "Company Email", key: "company_email" }] : []),
-          ...(!getInactive || !getNotApproved || !getNotCompleted || !getDeleted ? [{ label: "Company Website", key: "company_website" }] : []),
-          ...(getDeleted ? [{ label: "Quality Certification", key: "quality_certification" }] : []),
-          ...(getNotCompleted ? [{ label: "Products", key: "products" }] : []),
-          ...(!getInactive || !getNotApproved || !getNotCompleted || !getDeleted ? [{ label: "Product Count", key: "user_count" }] : []),
-          ...(!getNotApproved || !getDeleted || !getNotCompleted || !getDeleted ? [{ label: "Status", key: "getStatus" }] : []),
-          ...(!getNotApproved || !getDeleted || !getNotCompleted || !getDeleted ? [{ label: "Approve", key: "getApproved" }] : []),
+          { label: "Address", key: "address" },
+          { label: "Country Name", key: "country_name" },
+          { label: "State Name", key: "state_name" },
+          { label: "City Name", key: "city_name" },
+          { label: "Membership Plan", key: "membership_plan_name" },
+          { label: "Designation", key: "designation" },
+          { label: "Zipcode", key: "zipcode" },
+          { label: "Organization Name", key: "organization_name" },
+          { label: "Core Activity", key: "coreactivity_name" },
+          { label: "Activity", key: "activity_name" },
+          { label: "Category", key: "category_name" },
+          { label: "Sub Category", key: "sub_category_name" },
+          { label: "Company Email", key: "company_email" },
+          { label: "Company Website", key: "company_website" },
+          { label: "Quality Certification", key: "organization_quality_certification" },
+          { label: "Product Count", key: "user_count" },
+          { label: "Status", key: "getStatus" },
+          { label: "Approve", key: "getApproved" },
           { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
           { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
-          ...(!getNotApproved || !getNotCompleted || !getDeleted ? [{ label: "Approve Update", key: "approve_date", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") }] : []),
+          { label: "Approve Update", key: "approve_date", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
         ]}
       />
     </>

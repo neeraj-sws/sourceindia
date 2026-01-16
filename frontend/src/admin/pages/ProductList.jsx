@@ -421,11 +421,42 @@ $("#item").select2({
     });
   }, []);
 
-  const handleDownload = () => {
-    if (excelExportRef.current) {
-      excelExportRef.current.exportToExcel();
-    }
-  };
+  // const handleDownload = () => {
+  //   if (excelExportRef.current) {
+  //     excelExportRef.current.exportToExcel();
+  //   }
+  // };
+
+  const handleDownload = async () => {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/products/server-side`, {
+      params: {
+        page: 1,
+        limit: 100000,
+        search,
+        sortBy,
+        sort: sortDirection,
+        getDeleted: getDeleted ? "true" : "false",
+        dateRange,
+        startDate,
+        endDate,
+        category: appliedCategory || "",
+        sub_category: appliedSubCategory || "",
+        item_category_id: appliedItemCategory || "",
+        item_subcategory_id: appliedItemSubCategory || "",
+        item_id: appliedItem || "",
+        company: appliedCompanies || "",
+        product_status: appliedProductStatus || "",
+        is_approve: isApprove,
+        user_id: userIdFromUrl || ""
+      }
+    });
+
+    excelExportRef.current.exportWithData(res.data.data);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const openStatusModal = (id, currentStatus, field, valueKey) => {
     setStatusToggleInfo({ id, currentStatus, field, valueKey });
@@ -812,7 +843,10 @@ setAppliedItem(selectedItem);
           { label: "Title", key: "title" },
           { label: "Code", key: "code" },
           { label: "Category", key: "category_name" },
-          { label: "SubCategory", key: "sub_category_name" },
+          { label: "SubCategory", key: "subcategory_name" },
+          { label: "Item Category", key: "item_category_name" },
+          { label: "Item SubCategory", key: "item_subcategory_name" },
+          { label: "Item", key: "item_name" },
           { label: "Color", key: "color_name" },
           { label: "Status", key: "getStatus" },
           { label: "Organization Name", key: "company_name" },
