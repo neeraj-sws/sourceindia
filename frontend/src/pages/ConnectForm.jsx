@@ -20,7 +20,7 @@ const ConnectForm = ({ show, onHide, companyId, companyName, receiverName }) => 
 
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/enquiries/send-message`, {
+      await axios.post(`${API_BASE_URL}/enquiries/send-message-connect`, {
         logged_in_user_id: user.id,
         company_id: companyId,
         title,
@@ -48,7 +48,7 @@ const ConnectForm = ({ show, onHide, companyId, companyName, receiverName }) => 
     <div className={`modal fade ${show ? 'show' : ''}`} id="enquiryModal" tabIndex="-1" role="dialog" aria-labelledby="enquiryModalLabel" aria-hidden={!show} style={{ display: show ? 'block' : 'none', backgroundColor: show ? '#0606068c' : 'none' }}>
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
-          <div className="modal-header">
+          <div className="modal-header justify-content-between">
             <h5 className="modal-title">Connect with {companyName || 'Company'}</h5>
             <button type="button" className="close btn" onClick={handleClose}>
               <span aria-hidden="true"><i className="bx bx-x" /></span>
@@ -73,6 +73,7 @@ const ConnectForm = ({ show, onHide, companyId, companyName, receiverName }) => 
                 rows="4"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                style={{ height: '80px' }}
                 required
               />
             </div>

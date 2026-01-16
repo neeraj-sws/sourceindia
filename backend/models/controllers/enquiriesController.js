@@ -22,7 +22,6 @@ const bcrypt = require('bcryptjs');
 const UploadImage = require('../models/UploadImage');
 const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
-const BuyerEnquiry = require('../models/BuyerEnquiry');
 
 exports.getAllEnquiries = async (req, res) => {
   try {
@@ -802,7 +801,7 @@ exports.verifyEmail = async (req, res) => {
         otp,
         password: hashedPassword,
         real_password: password,
-        company_id: company.id,
+        company_id: company.id, 
         fname: '',
         lname: '',
         step: 0,
@@ -2206,31 +2205,37 @@ exports.sendMessage = async (req, res) => {
 
 
 
-    const data = await BuyerEnquiry.create({
-      user_id: logged_in_user_id,
-      reciever_id: company_id,
-      title,
+const data = await BuyerEnquiry.create({
+      user_id,
+      company_id,
+      enquiry_id,
       message,
+      message_id,
+      user_company_id,
+      seller_id,
+      is_delete: 0
     });
 
 
-    const emailTemplate = await Emails.findByPk(67);
-   
-    const msgStr = emailTemplate.message.toString('utf8');
 
-    let userMessage = msgStr
-      .replace("{{ USER_NAME }}", `${sender.fname} ${sender.lname}`)
-      .replace("{{ RECIEVED_USER }}", `${companyUser.fname} ${companyUser.lname}`)
-      .replace("{{ TITTLE }}", title)
-      .replace("{{ MESSAGE }}", message);
+
+    // email format template
+    const html = `
+    <div style="background-color:#fff; padding:10px; margin:15px; border:1px dashed #ccc;">
+        <p>Dear ${receiver_name},</p>
+        <p style="text-align:right;">You have received a new message from user ${sender.fname} ${sender.lname}</p>
+        <p>${title}</p>
+        <p style="text-align:center;">${message}</p>
+    </div>
+    `;
 
     const { transporter } = await getTransporter();
 
     await transporter.sendMail({
-      from: sender.email,
+      from: `"SourceIndia Electronics" <info@sourceindia-electronics.com>`,
       to: companyUser.email,
-      subject: emailTemplate?.subject,
-      html: userMessage,
+      subject: title,
+      html
     });
 
     return res.status(200).json({ message: "Mail sent successfully" });

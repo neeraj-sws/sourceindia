@@ -33,6 +33,6 @@ router.post('/submit-otp', enquiriesController.submitOtp);
 router.post('/store', enquiriesController.storeEnquiry);
 router.post('/submit-enquiry', enquiriesController.submitEnquiry);
 router.post('/user-submit-enquiry', enquiriesController.submitEnquiryuser);
-router.post("/send-message", enquiriesController.sendMessage);
+router.post("/send-message-connect", enquiriesController.sendMessage);
 
 module.exports = router;
