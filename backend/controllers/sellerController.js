@@ -1928,3 +1928,56 @@ exports.getSellerChartData = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+
+exports.getSellerSubCategoriesByUser = async (req, res) => {
+  try {
+    const { user_id } = req.query;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    const rows = await SellerCategory.findAll({
+      where: {
+        user_id,
+        subcategory_id: { [require('sequelize').Op.ne]: null },
+      },
+      attributes: [],
+      include: [
+        {
+          model: SubCategories,
+          as: 'subcategory',
+          attributes: ['id', 'name', 'slug'],
+        },
+        {
+          model: Categories,
+          as: 'category',
+          attributes: ['id', 'name', 'slug'],
+        },
+      ],
+      raw: true,
+    });
+
+    // Deduplicate by subcategory id
+    const subCategoryMap = {};
+
+    rows.forEach(row => {
+      const subId = row['subcategory.id'];
+      if (!subId || subCategoryMap[subId]) return;
+
+      subCategoryMap[subId] = {
+        id: row['subcategory.id'],
+        name: row['subcategory.name'],
+        slug: row['subcategory.slug'],
+        category_id: row['category.id'] || '',
+        category_name: row['category.name'] || '',
+        category_slug: row['category.slug'] || '',
+      };
+    });
+
+    res.json(Object.values(subCategoryMap));
+  } catch (err) {
+    console.error('getSellerSubCategoriesByUser error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};

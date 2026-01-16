@@ -87,7 +87,11 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/categories`);
+        // const res = await axios.get(`${API_BASE_URL}/categories`);
+        const res = await axios.get(
+                  `${API_BASE_URL}/sellers/seller-categories`,
+                  { params: { user_id: user?.id } }
+                );
         setCategories(res.data);
       } catch (error) {
         console.error("Error fetching categories:", error);
@@ -96,58 +100,53 @@ const AddProduct = () => {
     fetchCategories();
   }, []);
 
-  const handleCategoryChange = async (event) => {
-    const categoryId = event.target.value;
-    setSelectedCategory(categoryId);
+  useEffect(() => {
+  if (!user?.id) return;
 
-    // Reset all dependent dropdowns to blank
-    setSelectedSubCategory('');
-    setSelectedItemCategory('');
-    setSelectedItemSubCategory('');
-    setSelectedItem('');
-
-    setSubCategories([]);
-    setItemCategories([]);
-    setItemSubCategories([]);
-    setItems([]);
-
+  const fetchSubCategories = async () => {
     try {
-      if (categoryId) {
-        const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
-        setSubCategories(res.data);
-      } else {
-        setSubCategories([]);
-      }
-    } catch (error) {
-      console.error("Error fetching sub categories:", error);
+      const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
+        params: { user_id: user.id }
+      });
+      setSubCategories(res.data || []);
+    } catch (err) {
+      console.error("Error fetching seller subcategories:", err);
       setSubCategories([]);
     }
   };
 
+  fetchSubCategories();
+}, [user]);
+
   const handleSubCategoryChange = async (event) => {
-    const subCategoryId = event.target.value;
-    setSelectedSubCategory(subCategoryId);
+  const subCategoryId = event.target.value;
 
-    // Reset all dependent dropdowns to blank
-    setSelectedItemCategory('');
-    setSelectedItemSubCategory('');
-    setSelectedItem('');
-    setItemCategories([]);
-    setItemSubCategories([]);
-    setItems([]);
+  // Find subcategory object
+  const subCat = subCategories.find(sc => String(sc.id) === subCategoryId);
 
-    if (selectedCategory && subCategoryId) {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${subCategoryId}`
-        );
-        setItemCategories(res.data);
-      } catch (error) {
-        console.error("Error fetching item categories:", error);
-        setItemCategories([]);
-      }
+  setSelectedSubCategory(subCategoryId);
+  setSelectedCategory(subCat ? String(subCat.category_id) : "");
+
+  // Reset dependent dropdowns
+  setSelectedItemCategory('');
+  setSelectedItemSubCategory('');
+  setSelectedItem('');
+  setItemCategories([]);
+  setItemSubCategories([]);
+  setItems([]);
+
+  if (subCat) {
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/item_category/by-category-subcategory/${subCat.category_id}/${subCategoryId}`
+      );
+      setItemCategories(res.data);
+    } catch (error) {
+      console.error("Error fetching item categories:", error);
+      setItemCategories([]);
     }
-  };
+  }
+};
 
   // Handle Item Category Change
   const handleItemCategoryChange = async (event) => {
@@ -204,14 +203,6 @@ const AddProduct = () => {
   };
 
   useEffect(() => {
-    $('#category').select2({
-      theme: "bootstrap",
-      width: '100%',
-      placeholder: "Select Category"
-    }).on("change", function () {
-      const categoryId = $(this).val();
-      handleCategoryChange({ target: { value: categoryId } });
-    });
 
     $('#sub_category').select2({
       theme: "bootstrap",
@@ -306,13 +297,11 @@ const AddProduct = () => {
 
         // Set category & subcategory first
         setSelectedCategory(data.category || "");
-        setSelectedSubCategory(data.sub_category || "");
-
-        // Fetch dependent dropdowns sequentially in correct order
-        if (data.category) {
-          const cRes = await axios.get(`${API_BASE_URL}/sub_categories/category/${data.category}`);
-          setSubCategories(cRes.data);
-        }
+        if (data.sub_category) {
+  setSelectedSubCategory(String(data.sub_category));
+  const subCatObj = subCategories.find(sc => String(sc.id) === String(data.sub_category));
+  setSelectedCategory(subCatObj ? String(subCatObj.category_id) : "");
+}
 
         let itemCatRes = [];
         if (data.category && data.sub_category) {
@@ -549,7 +538,7 @@ const AddProduct = () => {
                   <div className="card">
                     <div className="card-body p-4">
                       <div className="row">
-                        <div className="form-group mb-3 col-md-12">
+                        {/* <div className="form-group mb-3 col-md-12">
                           <label htmlFor="category" className="form-label required">Category</label>
                           <select
                             id="category" className="form-control select2"
@@ -562,21 +551,21 @@ const AddProduct = () => {
                             ))}
                           </select>
                           {errors.category && (<div className="text-danger small">{errors.category}</div>)}
-                        </div>
+                        </div> */}
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="sub_category" className="form-label">Sub Category</label>
-                          <select
-                            id="sub_category" className="form-control"
-                            value={selectedSubCategory}
-                            onChange={handleSubCategoryChange}
-                            disabled={!selectedCategory}
-                          >
-                            <option value="">Select Sub Category</option>
-                            {subCategories?.map((sub_category) => (
-                              <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
-                            ))}
-                          </select>
-                        </div>
+  <label htmlFor="sub_category" className="form-label required">Sub Category</label>
+  <select
+    id="sub_category"
+    className="form-control select2"
+    value={selectedSubCategory}
+    onChange={handleSubCategoryChange}
+  >
+    <option value="">Select Sub Category</option>
+    {subCategories.map(sc => (
+      <option key={sc.id} value={sc.id}>{sc.name}</option>
+    ))}
+  </select>
+</div>
                         <div className="form-group mb-3 col-md-12">
                           <label htmlFor="item_category_id" className="form-label">Item Category</label>
                           <select

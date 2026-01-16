@@ -19,6 +19,7 @@ router.get('/nature_business', sellerController.getAllNatureBusinesses);
 router.get('/with-messages', sellerController.getSellersWithMessages);
 router.get('/seller-categories', sellerController.getSellerCategories); // expects ?user_id=...
 router.get('/seller-subcategories', sellerController.getSellerSubCategories);
+router.get('/seller-subcategories-by-user', sellerController.getSellerSubCategoriesByUser);
 router.get('/trends', sellerController.getSellerTrends);
 router.get('/chart', sellerController.getSellerChartData);
 router.get('/seller-message/:user_id', sellerController.getSellerMessage);
