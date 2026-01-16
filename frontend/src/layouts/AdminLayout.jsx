@@ -58,6 +58,7 @@ const MailHistory = lazy(() => import('../admin/pages/MailHistory'));
 const EmailsList = lazy(() => import('../admin/pages/EmailsList'));
 const AddEmail = lazy(() => import('../admin/pages/AddEmail'));
 const ContactsList = lazy(() => import('../admin/pages/ContactsList'));
+const RegistrationsList = lazy(() => import('../admin/pages/RegistrationsList'));
 const UsersHistory = lazy(() => import('../admin/pages/UsersHistory'));
 const ItemCategory = lazy(() => import('../admin/pages/ItemCategory'));
 const ItemSubCategory = lazy(() => import('../admin/pages/ItemSubCategory'));
@@ -168,7 +169,8 @@ function AdminLayout() {
               <Route path="/email-edit/:emailId" element={<ProtectedRoute><AddEmail /></ProtectedRoute>} />
               <Route path="/contacts-list" element={<ProtectedRoute><ContactsList /></ProtectedRoute>} />
               <Route path="/contact-remove-list" element={<ProtectedRoute><ContactsList getDeleted={true} /></ProtectedRoute>} />
-
+              <Route path="/registrations-list" element={<ProtectedRoute><RegistrationsList /></ProtectedRoute>} />
+              <Route path="/registrations-remove-list" element={<ProtectedRoute><RegistrationsList getDeleted={true} /></ProtectedRoute>} />
               <Route path="/user_history" element={<ProtectedRoute><UsersHistory /></ProtectedRoute>} />
               <Route path="/item_category" element={<ProtectedRoute><ItemCategory /></ProtectedRoute>} />
               <Route path="/item_sub_category" element={<ProtectedRoute><ItemSubCategory /></ProtectedRoute>} />

@@ -148,7 +148,15 @@ const menuData = [
       { key: 'add_email_circular', title: 'Add Email Circular', link: '/admin/add_email_circular' },
     ],
   },
-  
+  {
+    key: 'registrations_all',
+    title: 'Event 2024 Registrations',
+    icon: 'bx bx-envelope',
+    subMenu: [
+      { key: 'registrations', title: 'Registrations', link: '/admin/registrations-list' },
+      { key: 'registrations_deleted', title: 'Deleted Registrations', link: '/admin/registrations-remove-list' },
+    ],
+  },
   {
     title: 'Activity',
     icon: 'bx bx-task',
@@ -341,7 +349,15 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {
         return counts.newsletters?.total || 0;
       case 'newsletters':
         return counts.newsletters?.total || 0;
-  
+      case 'registrations_all':
+        return (
+          (counts.registrations?.total || 0) +
+          (counts.registrations?.deleted || 0)
+        );
+      case 'registrations':
+        return counts.registrations?.total || 0;
+      case 'registrations_deleted':
+        return counts.registrations?.deleted || 0;
       default:
         return null;
     }
@@ -418,6 +434,7 @@ const Sidebar = () => {
     membership_plan: {},
     contacts: {},
     newsletters: {},
+    registrations: {},
   });
 
   useEffect(() => {
@@ -425,7 +442,7 @@ const Sidebar = () => {
       try {
         const [buyers, sellers, products, newItems, enquiries, openEnquiries, roles, interestCategories, interestSubCategories, tickets, ticket_categories,
           faqs, activities, applications, testimonials, seo_pages, user_activity, user_history, home_banners, knowledge_center, emails, membership_plan,
-          contacts, newsletters] = await Promise.all([
+          contacts, newsletters, registrations] = await Promise.all([
             axios.get(`${API_BASE_URL}/buyers/count`),
             axios.get(`${API_BASE_URL}/sellers/count`),
             axios.get(`${API_BASE_URL}/products/count`),
@@ -450,6 +467,7 @@ const Sidebar = () => {
             axios.get(`${API_BASE_URL}/membership_plan/count`),
             axios.get(`${API_BASE_URL}/contacts/count`),
             axios.get(`${API_BASE_URL}/newsletters/count`),
+            axios.get(`${API_BASE_URL}/registrations/count`),
           ]);
         setCounts({
           buyers: buyers.data,
@@ -476,6 +494,7 @@ const Sidebar = () => {
           membership_plan: membership_plan.data,
           contacts: contacts.data,
           newsletters: newsletters.data,
+          registrations: registrations.data,
         });
       } catch (err) {
         console.error("Error fetching sidebar counts:", err);
