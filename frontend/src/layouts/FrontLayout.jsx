@@ -48,6 +48,7 @@ const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
 const Impersonate = lazy(() => import('../pages/Impersonate'));
 const SubscriptionPlans = lazy(() => import('../pages/SubscriptionPlans'));
 const MyBuyerEnquiries = lazy(() => import('../pages/MyBuyerEnquiries'));
+const FAQPage = lazy(() => import('../pages/FAQPage'));
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AlertProvider } from '../context/AlertContext';
@@ -120,6 +121,7 @@ function FrontLayout() {
                 <Route path="/impersonate" element={<Impersonate />} />
                 <Route path="/plans" element={<SubscriptionPlans />} />
                 <Route path="/my-buyer-enquiries" element={<PrivateRoute><MyBuyerEnquiries /></PrivateRoute>} />
+                <Route path="/faq" element={<FAQPage />} />
               </Routes>
             </Suspense>
           </main>

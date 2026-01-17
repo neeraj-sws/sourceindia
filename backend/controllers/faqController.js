@@ -18,12 +18,16 @@ exports.createFaq = async (req, res) => {
 
 exports.getAllFaqs = async (req, res) => {
   try {
-    const faqs = await Faq.findAll({ order: [['id', 'ASC']],
+    const faqs = await Faq.findAll({
+      where: { status: 1 },
+      order: [['id', 'ASC']],
       include: [
         {
           model: FaqCategory,
           as: 'FaqCategory',
           attributes: ['id', 'name'],
+          where: { status: 1 },
+          required: false,
         },
       ],
     });
@@ -276,7 +280,7 @@ exports.getFaqCount = async (req, res) => {
     const [faq, faqCategory] = await Promise.all([
       Faq.count({ where: { is_delete: 0 } }),
       FaqCategory.count()
-      ]);
+    ]);
     res.json({ faq, faqCategory });
   } catch (err) {
     console.error(err);
