@@ -2208,14 +2208,14 @@ exports.sendMessage = async (req, res) => {
 
     const data = await BuyerEnquiry.create({
       user_id: logged_in_user_id,
-      reciever_id: company_id,
+      reciever_id: companyUser.id,
       title,
       message,
     });
 
 
     const emailTemplate = await Emails.findByPk(67);
-   
+
     const msgStr = emailTemplate.message.toString('utf8');
 
     let userMessage = msgStr

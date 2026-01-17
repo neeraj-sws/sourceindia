@@ -1,7 +1,19 @@
+
 const express = require('express');
 const router = express.Router();
+const Users = require('../models/Users');
 const usersController = require('../controllers/usersController');
 const authMiddleware = require('../middleware/authMiddleware');
+
+// Admin: Get all users (id, fname, lname)
+router.get('/all', async (req, res) => {
+    try {
+        const users = await Users.findAll({ attributes: ['id', 'fname', 'lname'] });
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 router.get('/server-side', usersController.getAllUsersHistoriesServerSide);
 router.get('/all_users', usersController.getAllUsers);

@@ -47,6 +47,7 @@ const TermsConditions = lazy(() => import('../pages/TermsConditions'));
 const PrivacyPolicy = lazy(() => import('../pages/PrivacyPolicy'));
 const Impersonate = lazy(() => import('../pages/Impersonate'));
 const SubscriptionPlans = lazy(() => import('../pages/SubscriptionPlans'));
+const MyBuyerEnquiries = lazy(() => import('../pages/MyBuyerEnquiries'));
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AlertProvider } from '../context/AlertContext';
@@ -60,7 +61,7 @@ function FrontLayout() {
   const location = useLocation();
   const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit', '/my-product',
     '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/open-enquiry',
-    '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', '/all-leads-chats', 'open-enquiry-dashboard'];
+    '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', '/all-leads-chats', 'open-enquiry-dashboard', '/my-buyer-enquiries'];
   const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -118,6 +119,7 @@ function FrontLayout() {
                 <Route path="/privacy_policy" element={<PrivacyPolicy />} />
                 <Route path="/impersonate" element={<Impersonate />} />
                 <Route path="/plans" element={<SubscriptionPlans />} />
+                <Route path="/my-buyer-enquiries" element={<PrivateRoute><MyBuyerEnquiries /></PrivateRoute>} />
               </Routes>
             </Suspense>
           </main>

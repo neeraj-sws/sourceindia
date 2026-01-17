@@ -1,6 +1,8 @@
+
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const companiesRoutes = require('./routes/companiesRoutes');
 
 const sequelize = require('./config/database');
 const fileRoutes = require('./routes/fileRoutes');
@@ -46,9 +48,12 @@ const shortcutRoutes = require('./routes/shortcutRoutes');
 const pagesRoutes = require('./routes/pagesRoutes');
 const frontMenuRoutes = require('./routes/frontMenuRoutes');
 const membershipPlansRoutes = require('./routes/membershipPlansRoutes');
+const buyerEnquiryRoutes = require('./routes/buyerEnquiryRoutes');
+
 
 const app = express();
 const basePath = '/v2'; // All APIs will start with /v2
+// Companies route (must be after app is defined)
 
 app.use(cors());
 app.use(express.json());
@@ -96,7 +101,7 @@ app.use(basePath + '/api/seller_mail_histories', sellerMailHistoriesRoutes);
 app.use(basePath + '/api/contacts', contactsRoutes);
 app.use(basePath + '/api/emails', emailsRoutes);
 app.use(basePath + '/api/newsletter_histories', newsletterHistoriesRoutes);
-app.use(basePath + '/api/signup', usersRoutes);
+app.use(basePath + '/api/users', usersRoutes);
 app.use(basePath + '/api/dashboard', usersDashboardRoutes);
 app.use(basePath + '/api/registrations', registrationsRoutes);
 app.use(basePath + '/api/item_category', itemCategoryRoutes);
@@ -106,6 +111,8 @@ app.use(basePath + '/api/shortcut', shortcutRoutes);
 app.use(basePath + '/api/pages', pagesRoutes);
 app.use(basePath + '/api/front_menu', frontMenuRoutes);
 app.use(basePath + '/api/membership_plans', membershipPlansRoutes);
+app.use(basePath + '/api/buyerenquiry', buyerEnquiryRoutes);
+app.use(basePath + '/api/companies', companiesRoutes);
 
 sequelize
   .sync()

@@ -35,6 +35,7 @@ const FaqCategoryList = lazy(() => import('../admin/pages/FaqCategoryList'));
 const KnowledgeCenter = lazy(() => import('../admin/pages/KnowledgeCenter'));
 const HomeBanners = lazy(() => import('../admin/pages/HomeBanners'));
 import MembershipPlan from '../admin/pages/MembershipPlan';
+const AdminBuyerEnquiries = lazy(() => import('../admin/pages/AdminBuyerEnquiries'));
 const EmailCircular = lazy(() => import('../admin/pages/EmailCircular'));
 const AddEmailCircular = lazy(() => import('../admin/pages/AddEmailCircular'));
 const EmailCircularDetails = lazy(() => import('../admin/pages/EmailCircularDetails'));
@@ -183,6 +184,7 @@ function AdminLayout() {
               <Route path="/product_category_graph" element={<ProtectedRoute><ProductCategoriesGraph /></ProtectedRoute>} />
               <Route path="/seller_category_graph" element={<ProtectedRoute><SellerCategoriesGraph /></ProtectedRoute>} />
               <Route path="/sourcing_interest_graph" element={<ProtectedRoute><SourcingInterestsGraph /></ProtectedRoute>} />
+              <Route path="/buyer-enquiries" element={<ProtectedRoute><Suspense fallback={<div></div>}><AdminBuyerEnquiries /></Suspense></ProtectedRoute>} />
             </Routes>
           </Suspense>
         </div>

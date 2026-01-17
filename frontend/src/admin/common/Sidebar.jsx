@@ -1,3 +1,4 @@
+// ...existing code...
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
@@ -20,6 +21,7 @@ const menuData = [
       { key: 'inactive_buyers', title: 'Inactive Buyers', link: '/admin/inactive_buyers' },
       { key: 'not_approved_buyers', title: 'Not Approved Buyers', link: '/admin/not_approved_buyers' },
       { key: 'removed_buyers', title: 'Recently Deleted Buyers', link: '/admin/removed_buyers' },
+      { key: 'buyer_enquiries', title: 'Buyer Enquiry List', link: '/admin/buyer-enquiries' },
     ],
   },
   {
