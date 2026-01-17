@@ -17,7 +17,10 @@ exports.createFaqCategory = async (req, res) => {
 
 exports.getAllFaqCategories = async (req, res) => {
   try {
-    const faqCategory = await FaqCategory.findAll({ order: [['id', 'ASC']] });
+    const faqCategory = await FaqCategory.findAll({
+      where: { status: 1 },
+      order: [['id', 'ASC']]
+    });
     res.json(faqCategory);
   } catch (err) {
     res.status(500).json({ error: err.message });

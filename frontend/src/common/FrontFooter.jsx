@@ -36,6 +36,14 @@ const FrontFooter = () => {
     (item) => item.parent_id === 0 && item.type === 2
   );
 
+  // Add FAQ link manually at the top of Help section, but avoid duplicate if already present
+  const helpLinks = [
+    // Only add manual FAQ if not present in helpItems
+    ...(!helpItems.some(item => item.link === '/faq' || item.name.toLowerCase() === 'faq')
+      ? [{ id: 'faq', name: 'FAQ', link: '/faq' }] : []),
+    ...helpItems
+  ];
+
   return (
     <footer>
       <div className="mainFooter">
@@ -77,7 +85,7 @@ const FrontFooter = () => {
             <div className="col-lg-2 col-sm-5">
               <p className="footer-section-title">Need Help?</p>
               <ul className="list-unstyled mb-0">
-                {helpItems.map((item) => (
+                {helpLinks.map((item) => (
                   <li key={item.id}>
                     <Link to={item.link}>{item.name}</Link>
                   </li>

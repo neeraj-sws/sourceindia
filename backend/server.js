@@ -75,6 +75,7 @@ app.use(basePath + '/api/core_activities', coreActivityRoutes);
 app.use(basePath + '/api/ticket_categories', ticketCategoryRoutes);
 app.use(basePath + '/api/testimonials', testimonialRoutes);
 app.use(basePath + '/api/faq_categories', faqCategoryRoutes);
+app.use(basePath + '/api/faqcategories', faqCategoryRoutes); // alias for compatibility
 app.use(basePath + '/api/faqs', faqRoutes);
 app.use(basePath + '/api/home_banners', homeBannerRoutes);
 app.use(basePath + '/api/roles', rolesRoutes);
