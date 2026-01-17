@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const Users = require('./Users');
 
 const BuyerEnquiry = sequelize.define('BuyerEnquiry', {
   id: {
@@ -46,5 +47,8 @@ const BuyerEnquiry = sequelize.define('BuyerEnquiry', {
   tableName: 'buyerenquiry',
   timestamps: false,
 });
+
+BuyerEnquiry.belongsTo(Users, { foreignKey: 'reciever_id', targetKey: 'id', as: 'receiver' });
+BuyerEnquiry.belongsTo(Users, { foreignKey: 'user_id', as: 'sender', targetKey: 'id' });
 
 module.exports = BuyerEnquiry;
