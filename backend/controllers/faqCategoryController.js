@@ -17,8 +17,13 @@ exports.createFaqCategory = async (req, res) => {
 
 exports.getAllFaqCategories = async (req, res) => {
   try {
+    let where = {};
+    // If ?all=1 is passed, do not filter by status (for admin)
+    if (!req.query.all) {
+      where.status = 1;
+    }
     const faqCategory = await FaqCategory.findAll({
-      where: { status: 1 },
+      where,
       order: [['id', 'ASC']]
     });
     res.json(faqCategory);
