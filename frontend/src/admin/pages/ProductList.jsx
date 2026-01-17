@@ -539,7 +539,7 @@ $("#item").val("").trigger("change");
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb mainhead="Products" maincount={totalRecords} page="Products" 
-          title={getDeleted ? "Recently Deleted Product" : isApprove==1 ? "Approve Product List" : isApprove==0 ? "Not Approve Product List" : "Products List"}
+          title={getDeleted ? "Recently Deleted Product" : isApprove==0 ? "Not Approve Product List" : "Products List"}
           add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Product</>)} add_link="/admin/add_product"
           actions={
             <>

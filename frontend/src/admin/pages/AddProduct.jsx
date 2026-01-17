@@ -117,27 +117,35 @@ const AddProduct = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedSellers) {
-      setCategories([]);
-      setSelectedCategory('');
-      return;
+  if (!selectedSellers) {
+    setSubCategories([]);
+    setSelectedSubCategory("");
+    setSelectedCategory("");
+    return;
+  }
+
+  const fetchSellerSubcategories = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
+        params: { user_id: selectedSellers }
+      });
+      setSubCategories(res.data);
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+      setSubCategories([]);
     }
+  };
 
-    const fetchSellerCategories = async () => {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/sellers/seller-categories`,
-          { params: { user_id: selectedSellers } }
-        );
-        setCategories(res.data);
-      } catch (error) {
-        console.error("Error fetching seller categories:", error);
-        setCategories([]);
-      }
-    };
+  fetchSellerSubcategories();
+}, [selectedSellers]);
 
-    fetchSellerCategories();
-  }, [selectedSellers]);
+useEffect(() => {
+  if (subCategories.length > 0 && selectedSubCategory) {
+    $('#sub_category')
+      .val(selectedSubCategory)
+      .trigger('change.select2');
+  }
+}, [subCategories, selectedSubCategory]);
 
   const handleSellersChange = (event) => {
     const userId = event.target.value;
@@ -170,75 +178,31 @@ const AddProduct = () => {
 
   const handleApplicationsChange = (event) => { setSelectedApplications(event.target.value); };
 
-  /*useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/categories`);
-        setCategories(res.data);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
-    };
-    fetchCategories();
-  }, []);*/
+  const handleSubCategoryChange = (event) => {
+  const subCategoryId = event.target.value;
+  const subCat = subCategories.find(sc => String(sc.id) === subCategoryId);
 
-  const handleCategoryChange = async (event) => {
-    const categoryId = event.target.value;
-    setSelectedCategory(categoryId);
+  setSelectedSubCategory(subCategoryId);
+  setSelectedCategory(subCat ? String(subCat.category_id) : "");
 
-    // reset dependent fields
-    setSelectedSubCategory('');
-    setSelectedItemCategory('');
-    setSelectedItemSubCategory('');
-    setSelectedItem('');
-    setSubCategories([]);
-    setItemCategories([]);
-    setItemSubCategories([]);
-    setItems([]);
+  // Reset dependent dropdowns
+  setSelectedItemCategory('');
+  setSelectedItemSubCategory('');
+  setSelectedItem('');
+  setItemCategories([]);
+  setItemSubCategories([]);
+  setItems([]);
 
-    if (!selectedSellers || !categoryId) return;
-
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/sellers/seller-subcategories`,
-        {
-          params: {
-            user_id: selectedSellers,
-            category_id: categoryId
-          }
-        }
-      );
-      setSubCategories(res.data);
-    } catch (error) {
-      console.error("Error fetching seller sub categories:", error);
-      setSubCategories([]);
-    }
-  };
-
-  const handleSubCategoryChange = async (event) => {
-    const subCategoryId = event.target.value;
-    setSelectedSubCategory(subCategoryId);
-
-    // Reset all dependent dropdowns to blank
-    setSelectedItemCategory('');
-    setSelectedItemSubCategory('');
-    setSelectedItem('');
-    setItemCategories([]);
-    setItemSubCategories([]);
-    setItems([]);
-
-    if (selectedCategory && subCategoryId) {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${subCategoryId}`
-        );
-        setItemCategories(res.data);
-      } catch (error) {
-        console.error("Error fetching item categories:", error);
+  // fetch item categories for this subcategory
+  if (subCat) {
+    axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${subCat.category_id}/${subCategoryId}`)
+      .then(res => setItemCategories(res.data))
+      .catch(err => {
+        console.error("Error fetching item categories:", err);
         setItemCategories([]);
-      }
-    }
-  };
+      });
+  }
+};
 
   // Handle Item Category Change
   const handleItemCategoryChange = async (event) => {
@@ -310,15 +274,6 @@ const AddProduct = () => {
       handleApplicationsChange({ target: { value: applicationId } });
     });
 
-    $('#category').select2({
-      theme: "bootstrap",
-      width: '100%',
-      placeholder: "Select Category"
-    }).on("change", function () {
-      const categoryId = $(this).val();
-      handleCategoryChange({ target: { value: categoryId } });
-    });
-
     $('#sub_category').select2({
       theme: "bootstrap",
       width: '100%',
@@ -349,13 +304,12 @@ const AddProduct = () => {
     return () => {
       $('#user_id').off("change").select2('destroy');
       $('#application').off("change").select2('destroy');
-      $('#category').off("change").select2('destroy');
       $('#sub_category').off("change").select2('destroy');
       if ($('#item_category_id').data('select2')) $('#item_category_id').select2('destroy');
       if ($('#item_sub_category_id').data('select2')) $('#item_sub_category_id').select2('destroy');
       if ($('#item_id').data('select2')) $('#item_id').select2('destroy');
     };
-  }, [sellers, applications, categories, subCategories]);
+  }, [sellers, applications, subCategories]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -413,7 +367,7 @@ const AddProduct = () => {
         setSelectedApplications(String(data.application || ""));
         // Set category & subcategory first
         setSelectedCategory(data.category || "");
-        setSelectedSubCategory(data.sub_category || "");
+        setSelectedSubCategory(String(data.sub_category || ""));
         setSelectedItemCategory(data.item_category_id || '');
         setSelectedItemSubCategory(data.item_subcategory_id || '');
         setSelectedItem(data.item_id || '');
@@ -425,18 +379,17 @@ const AddProduct = () => {
           );
           setCategories(catRes.data);
         }
-        if (data.user_id && data.category) {
-          const subRes = await axios.get(
-            `${API_BASE_URL}/sellers/seller-subcategories`,
-            {
-              params: {
-                user_id: data.user_id,
-                category_id: data.category
-              }
-            }
-          );
-          setSubCategories(subRes.data);
-        }
+        if (data.user_id) {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
+      params: { user_id: data.user_id }
+    });
+    setSubCategories(res.data || []);
+  } catch (err) {
+    console.error("Error fetching subcategories:", err);
+    setSubCategories([]);
+  }
+}
 
         setSelectedSubCategory(data.sub_category || "");
 
@@ -757,34 +710,21 @@ const AddProduct = () => {
                     <div className="card-body p-4">
                       <div className="row">
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="category" className="form-label required">Category</label>
-                          <select
-                            id="category" className="form-control select2"
-                            value={selectedCategory}
-                            onChange={handleCategoryChange}
-                            disabled={!selectedSellers}
-                          >
-                            <option value="">Select Category</option>
-                            {categories?.map((category) => (
-                              <option key={category.id} value={category.id}>{category.name}</option>
-                            ))}
-                          </select>
-                          {errors.category && (<div className="text-danger small">{errors.category}</div>)}
-                        </div>
-                        <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="sub_category" className="form-label">Sub Category</label>
-                          <select
-                            id="sub_category" className="form-control"
-                            value={selectedSubCategory}
-                            onChange={handleSubCategoryChange}
-                            disabled={!selectedCategory}
-                          >
-                            <option value="">Select Sub Category</option>
-                            {subCategories?.map((sub_category) => (
-                              <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
-                            ))}
-                          </select>
-                        </div>
+  <label htmlFor="sub_category" className="form-label required">Sub Category</label>
+  <select
+    id="sub_category"
+    className="form-control select2"
+    value={selectedSubCategory}
+    onChange={handleSubCategoryChange}
+    disabled={!selectedSellers}
+  >
+    <option value="">Select Sub Category</option>
+    {subCategories?.map((sub_category) => (
+      <option key={sub_category.id} value={String(sub_category.id)}>{sub_category.name}</option>
+    ))}
+  </select>
+  {errors.sub_category && (<div className="text-danger small">{errors.sub_category}</div>)}
+</div>
                         <div className="form-group mb-3 col-md-12">
                           <label htmlFor="item_category_id" className="form-label">Item Category</label>
                           <select

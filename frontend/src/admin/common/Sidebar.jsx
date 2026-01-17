@@ -84,12 +84,12 @@ const menuData = [
     ],
   },
   {
+    key: 'total_product',
     title: 'Products',
     icon: 'bx bx-cart',
     subMenu: [
       { key: 'add_product', title: 'Add Product', link: '/admin/add_product' },
-      { key: 'total_product', title: 'Product List', link: '/admin/products' },
-      { key: 'approve_product', title: 'Approve Products', link: '/admin/approve-product-list' },
+      { key: 'approve_product', title: 'Product List', link: '/admin/approve-product-list' },
       { key: 'notapprove_product', title: 'Not Approve Products', link: '/admin/notapprove-product-list' },
     ],
   },
