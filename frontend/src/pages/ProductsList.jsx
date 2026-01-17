@@ -576,8 +576,10 @@ useEffect(() => {
                       overflowY:
                         filteredCategories.length >= 5 ? "auto" : "visible",
                     }}
-                  >
-                    {filteredCategories.map((cat) => (
+                    >
+                    {filteredCategories
+                      .filter((cat) => cat.product_count > 0)
+                      .map((cat) => (
                       <div className="form-check mb-2" key={cat.id}>
                         <input
                           type="checkbox"
@@ -594,7 +596,7 @@ useEffect(() => {
                           {cat.name} ({cat.product_count})
                         </label>
                       </div>
-                    ))}
+                        ))}
                   </div>
                 </div>
               </div>
@@ -627,7 +629,9 @@ useEffect(() => {
                               : "visible",
                         }}
                       >
-                        {filteredSubCategories.map((sub) => (
+                        {filteredSubCategories
+                          .filter((sub) => sub.product_count > 0)
+                          .map((sub) => (
                           <div className="form-check mb-2" key={sub.id}>
                             <input
                               type="checkbox"
@@ -682,6 +686,7 @@ useEffect(() => {
                           .toLowerCase()
                           .includes(itemCategorySearchTerm)
                       )
+                      .filter((itemCat) => itemCat.product_count > 0)
                       .map((itemCat) => (
                         <div className="form-check mb-2" key={itemCat.id}>
                           <input
@@ -741,6 +746,7 @@ useEffect(() => {
                           .toLowerCase()
                           .includes(itemSubCategorySearchTerm)
                       )
+                      .filter((itemSub) => itemSub.product_count > 0)
                       .map((itemSub) => (
                         <div className="form-check mb-2" key={itemSub.id}>
                           <input
@@ -848,7 +854,9 @@ useEffect(() => {
                       overflowY: filteredStates.length >= 5 ? "auto" : "visible",
                     }}
                   >
-                    {filteredStates.map((state) => (
+                    {filteredStates
+                      .filter((state) => state.product_count > 0)
+                      .map((state) => (
                       <div className="form-check mb-2" key={state.id}>
                         <input
                           type="checkbox"
@@ -893,7 +901,9 @@ useEffect(() => {
                         filteredCompanies.length >= 5 ? "auto" : "visible",
                     }}
                   >
-                    {filteredCompanies.map((company) => (
+                    {filteredCompanies
+                      .filter((company) => company.product_count > 0)
+                      .map((company) => (
                       <div className="form-check mb-2" key={company.id}>
                         <input
                           type="checkbox"
