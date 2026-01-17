@@ -7,7 +7,6 @@ const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
 const Users = require('../models/Users');
-const Color = require('../models/Color');
 const CompanyInfo = require('../models/CompanyInfo');
 const States = require('../models/States');
 const ReviewRating = require('../models/ReviewRating');
@@ -218,7 +217,6 @@ exports.getAllProducts = async (req, res) => {
         { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
         { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
         { model: Items, as: 'Items', attributes: ['id', 'name'] },
-        { model: Color, as: 'Color', attributes: ['id', 'title'] },
         { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
         { model: UploadImage, as: 'file', attributes: ['file'] },
         {
@@ -238,7 +236,7 @@ exports.getAllProducts = async (req, res) => {
       productsData.item_category_name = productsData.ItemCategory?.name || null;
       productsData.item_subcategory_name = productsData.ItemSubCategory?.name || null;
       productsData.item_name = productsData.Items?.name || null;
-      productsData.color_name = productsData.Color?.title || null;
+      productsData.color_name = null;
       productsData.company_name = productsData.company_info?.organization_name || null;
       productsData.file_name = productsData.file?.file || null;
       productsData.state_name = productsData.Users?.state_data?.name || null;
@@ -279,7 +277,6 @@ exports.getProductsById = async (req, res) => {
         { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
         { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
         { model: Items, as: 'Items', attributes: ['id', 'name'] },
-        { model: Color, as: 'Color', attributes: ['id', 'title'] },
         {
           model: CompanyInfo,
           as: 'company_info',
@@ -394,7 +391,7 @@ exports.getProductsById = async (req, res) => {
       item_category_name: productData.ItemCategory?.name || null,
       item_subcategory_name: productData.ItemSubCategory?.name || null,
       item_name: productData.Items?.name || null,
-      color_name: productData.Color?.title || null,
+      color_name:  null,
       company_name: productData.company_info?.organization_name || null,
       company_slug: productData.company_info?.organization_slug || null,
       company_logo: productData.company_info?.companyLogo?.file || null,
@@ -1382,7 +1379,6 @@ exports.getAllProductsServerSide = async (req, res) => {
         { model: ItemCategory, attributes: ['name'], as: 'ItemCategory' },
         { model: ItemSubCategory, attributes: ['name'], as: 'ItemSubCategory' },
         { model: Items, attributes: ['name'], as: 'Items' },
-        { model: Color, attributes: ['title'], as: 'Color' },
         { model: CompanyInfo, attributes: ['organization_name', 'organization_slug'], as: 'company_info' },
         { model: UploadImage, attributes: ['file'], as: 'file' },
       ],
@@ -1403,7 +1399,7 @@ exports.getAllProductsServerSide = async (req, res) => {
       item_subcategory_name: row.ItemSubCategory ? row.ItemSubCategory.name : null,
       item_id: row.item_id,
       item_name: row.Items ? row.Items.name : null,
-      color_name: row.Color ? row.Color.title : null,
+      color_name: null,
       company_id: row.company_id,
       company_name: row.company_info ? row.company_info.organization_name : null,
       company_slug: row.company_info ? row.company_info.organization_slug : null,

@@ -102,6 +102,7 @@ app.use(basePath + '/api/contacts', contactsRoutes);
 app.use(basePath + '/api/emails', emailsRoutes);
 app.use(basePath + '/api/newsletter_histories', newsletterHistoriesRoutes);
 app.use(basePath + '/api/users', usersRoutes);
+app.use(basePath + '/api/signup', usersRoutes);
 app.use(basePath + '/api/dashboard', usersDashboardRoutes);
 app.use(basePath + '/api/registrations', registrationsRoutes);
 app.use(basePath + '/api/item_category', itemCategoryRoutes);

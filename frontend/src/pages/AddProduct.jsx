@@ -89,9 +89,9 @@ const AddProduct = () => {
       try {
         // const res = await axios.get(`${API_BASE_URL}/categories`);
         const res = await axios.get(
-                  `${API_BASE_URL}/sellers/seller-categories`,
-                  { params: { user_id: user?.id } }
-                );
+          `${API_BASE_URL}/sellers/seller-categories`,
+          { params: { user_id: user?.id } }
+        );
         setCategories(res.data);
       } catch (error) {
         console.error("Error fetching categories:", error);
@@ -101,52 +101,52 @@ const AddProduct = () => {
   }, []);
 
   useEffect(() => {
-  if (!user?.id) return;
+    if (!user?.id) return;
 
-  const fetchSubCategories = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
-        params: { user_id: user.id }
-      });
-      setSubCategories(res.data || []);
-    } catch (err) {
-      console.error("Error fetching seller subcategories:", err);
-      setSubCategories([]);
-    }
-  };
+    const fetchSubCategories = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
+          params: { user_id: user.id }
+        });
+        setSubCategories(res.data || []);
+      } catch (err) {
+        console.error("Error fetching seller subcategories:", err);
+        setSubCategories([]);
+      }
+    };
 
-  fetchSubCategories();
-}, [user]);
+    fetchSubCategories();
+  }, [user]);
 
   const handleSubCategoryChange = async (event) => {
-  const subCategoryId = event.target.value;
+    const subCategoryId = event.target.value;
 
-  // Find subcategory object
-  const subCat = subCategories.find(sc => String(sc.id) === subCategoryId);
+    // Find subcategory object
+    const subCat = subCategories.find(sc => String(sc.id) === subCategoryId);
 
-  setSelectedSubCategory(subCategoryId);
-  setSelectedCategory(subCat ? String(subCat.category_id) : "");
+    setSelectedSubCategory(subCategoryId);
+    setSelectedCategory(subCat ? String(subCat.category_id) : "");
 
-  // Reset dependent dropdowns
-  setSelectedItemCategory('');
-  setSelectedItemSubCategory('');
-  setSelectedItem('');
-  setItemCategories([]);
-  setItemSubCategories([]);
-  setItems([]);
+    // Reset dependent dropdowns
+    setSelectedItemCategory('');
+    setSelectedItemSubCategory('');
+    setSelectedItem('');
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setItems([]);
 
-  if (subCat) {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/item_category/by-category-subcategory/${subCat.category_id}/${subCategoryId}`
-      );
-      setItemCategories(res.data);
-    } catch (error) {
-      console.error("Error fetching item categories:", error);
-      setItemCategories([]);
+    if (subCat) {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/item_category/by-category-subcategory/${subCat.category_id}/${subCategoryId}`
+        );
+        setItemCategories(res.data);
+      } catch (error) {
+        console.error("Error fetching item categories:", error);
+        setItemCategories([]);
+      }
     }
-  }
-};
+  };
 
   // Handle Item Category Change
   const handleItemCategoryChange = async (event) => {
@@ -298,10 +298,10 @@ const AddProduct = () => {
         // Set category & subcategory first
         setSelectedCategory(data.category || "");
         if (data.sub_category) {
-  setSelectedSubCategory(String(data.sub_category));
-  const subCatObj = subCategories.find(sc => String(sc.id) === String(data.sub_category));
-  setSelectedCategory(subCatObj ? String(subCatObj.category_id) : "");
-}
+          setSelectedSubCategory(String(data.sub_category));
+          const subCatObj = subCategories.find(sc => String(sc.id) === String(data.sub_category));
+          setSelectedCategory(subCatObj ? String(subCatObj.category_id) : "");
+        }
 
         let itemCatRes = [];
         if (data.category && data.sub_category) {
@@ -553,19 +553,19 @@ const AddProduct = () => {
                           {errors.category && (<div className="text-danger small">{errors.category}</div>)}
                         </div> */}
                         <div className="form-group mb-3 col-md-12">
-  <label htmlFor="sub_category" className="form-label required">Sub Category</label>
-  <select
-    id="sub_category"
-    className="form-control select2"
-    value={selectedSubCategory}
-    onChange={handleSubCategoryChange}
-  >
-    <option value="">Select Sub Category</option>
-    {subCategories.map(sc => (
-      <option key={sc.id} value={sc.id}>{sc.name}</option>
-    ))}
-  </select>
-</div>
+                          <label htmlFor="sub_category" className="form-label required">Sub Category</label>
+                          <select
+                            id="sub_category"
+                            className="form-control select2"
+                            value={selectedSubCategory}
+                            onChange={handleSubCategoryChange}
+                          >
+                            <option value="">Select Sub Category</option>
+                            {subCategories.map(sc => (
+                              <option key={sc.id} value={sc.id}>{sc.name}</option>
+                            ))}
+                          </select>
+                        </div>
                         <div className="form-group mb-3 col-md-12">
                           <label htmlFor="item_category_id" className="form-label">Item Category</label>
                           <select
@@ -573,7 +573,9 @@ const AddProduct = () => {
                             className="form-control"
                             value={selectedItemCategory}
                             onChange={handleItemCategoryChange}
-                            disabled={!selectedCategory || !selectedSubCategory}
+                            disabled={
+                              !selectedItemCategory && (!selectedCategory || !selectedSubCategory)
+                            }
                           >
                             <option value="">Select Item Category</option>
                             {itemCategories.map((ic) => (
@@ -582,7 +584,7 @@ const AddProduct = () => {
                           </select>
                         </div>
 
-                        <div className="form-group mb-3 col-md-12">
+                        <div className="form-group mb-3 col-md-12 d-none">
                           <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
                           <select
                             id="item_sub_category_id"
@@ -598,7 +600,7 @@ const AddProduct = () => {
                           </select>
                         </div>
 
-                        <div className="form-group mb-3 col-md-12">
+                        <div className="form-group mb-3 col-md-12 d-none">
                           <label htmlFor="item_id" className="form-label">Items</label>
                           <select
                             id="item_id"
