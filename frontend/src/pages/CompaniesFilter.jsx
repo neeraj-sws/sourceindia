@@ -279,7 +279,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     append ? setScrollLoading(true) : setLoading(true);
     console.log(selectedCoreActivities);
     try {
-      let url = `${API_BASE_URL}/products/companies?is_delete=0&status=1&limit=9&page=${pageNumber}`;
+      let url = `${API_BASE_URL}/products/companies?is_delete=0&status=1&limit=12&page=${pageNumber}`;
       if (typeof isSeller !== 'undefined') url += `&is_seller=${isSeller}`;
       if (typeof isTrading !== 'undefined') url += `&is_trading=${isTrading}`;
       if (selectedCoreActivities) url += `&core_activity=${selectedCoreActivities}`;
