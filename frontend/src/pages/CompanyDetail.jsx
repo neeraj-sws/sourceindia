@@ -405,7 +405,9 @@ const CompanyDetail = () => {
                 </SwiperSlide>
                 ))}
               </Swiper>
-              {/* ⭐ Review Section */}
+            </div>
+          )}
+          {/* ⭐ Review Section */}
 
 
         {/* Recommended Companies */}
