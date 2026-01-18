@@ -7,6 +7,7 @@ import { useAlert } from "./../context/AlertContext";
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import ProductModals from "../admin/pages/modal/ProductModals";
+import { createPortal } from 'react-dom';
 import UseAuth from '../sections/UseAuth';
 import "select2/dist/css/select2.min.css";
 import "select2";
@@ -23,6 +24,7 @@ const AddProduct = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  
   const [imageToDelete, setImageToDelete] = useState(null);
   const [formData, setFormData] = useState({
     user_id: '', title: '', code: '', article_number: '', status: '', short_description: '', description: '', item_category_id: '', item_subcategory_id: '', item_id: ''
@@ -37,6 +39,18 @@ const AddProduct = () => {
   const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState('');
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [categoryLabel, setCategoryLabel] = useState('');
+
+  // Inline Category Picker state
+  const [pickerData, setPickerData] = useState([]);
+  const [pickerExpanded, setPickerExpanded] = useState({});
+  const [pickerSubExpanded, setPickerSubExpanded] = useState({});
+  const [pickerLoading, setPickerLoading] = useState(true);
+  const [pickerError, setPickerError] = useState(null);
+  const [pickerSelection, setPickerSelection] = useState({ categoryId: null, categoryName: '', subId: null, subName: '', itemCategoryId: null, itemCategoryName: '' });
+  const pickerDialogRef = React.useRef(null);
+  const [pickerQuery, setPickerQuery] = useState('');
 
   useEffect(() => {
     if (selectedCategory && selectedSubCategory) {
@@ -147,6 +161,230 @@ const AddProduct = () => {
       }
     }
   };
+
+  const handleCategoryPick = async ({ category, categoryName, sub_category, subName, item_category_id, itemCategoryName }) => {
+    setSelectedCategory(category || '');
+    setSelectedSubCategory(sub_category || '');
+    setSelectedItemCategory(item_category_id || '');
+
+    const parts = [];
+    if (categoryName) parts.push(categoryName);
+    if (subName) parts.push(subName);
+    if (itemCategoryName) parts.push(itemCategoryName);
+    setCategoryLabel(parts.join(' > '));
+
+    if (category && sub_category) {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/item_category/by-category-subcategory/${category}/${sub_category}`
+        );
+        setItemCategories(res.data || []);
+      } catch (err) {
+        setItemCategories([]);
+      }
+    }
+  };
+
+  // Inline picker helpers
+  const loadPickerData = async () => {
+    setPickerLoading(true);
+    try {
+      const token = localStorage.getItem('user_token');
+      // Prefer seller-specific subcategories for this user
+      const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
+        params: { user_id: user?.id },
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      // Group subcategories by category to build picker structure
+      const subs = res.data || [];
+      const map = {};
+      subs.forEach(s => {
+        const cid = s.category_id || s.category || '0';
+        if (!map[cid]) {
+          map[cid] = { id: cid, name: s.category_name || s.category_name || s.category || 'Uncategorized', subcategories: [] };
+        }
+        map[cid].subcategories.push({ id: s.id, name: s.name || s.sub_name || s.subcategory || s.title || 'Subcategory', item_categories: s.item_categories || [] });
+      });
+
+      setPickerData(Object.values(map));
+      // eager-load item categories for all subcategories so table shows item categories
+      try {
+        const subsToLoad = [];
+        Object.values(map).forEach(c => {
+          (c.subcategories || []).forEach(s => {
+            subsToLoad.push({ catId: c.id, subId: s.id });
+          });
+        });
+
+        const token = localStorage.getItem('user_token');
+        await Promise.all(subsToLoad.map(async ({ catId, subId }) => {
+          try {
+            const resIC = await axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${catId}/${subId}`, {
+              headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
+            const items = resIC.data || [];
+            setPickerData(prev => prev.map(c => {
+              if (String(c.id) !== String(catId)) return c;
+              return {
+                ...c,
+                subcategories: c.subcategories.map(su => String(su.id) === String(subId) ? { ...su, item_categories: items } : su)
+              };
+            }));
+          } catch (err) {
+            // ignore per-sub failures
+          }
+        }));
+      } catch (err) {
+        // ignore overall eager-load failures
+      }
+    } catch (err) {
+      console.error('Error loading picker data:', err);
+      setPickerError(err.message || 'Failed to load categories');
+    } finally {
+      setPickerLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showCategoryPicker) return;
+    loadPickerData();
+  }, [showCategoryPicker]);
+
+  useEffect(() => {
+    if (showCategoryPicker) setPickerQuery('');
+  }, [showCategoryPicker]);
+
+  useEffect(() => {
+    if (!showCategoryPicker) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+    const onKey = (e) => { if (e.key === 'Escape') setShowCategoryPicker(false); };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = originalOverflow || '';
+      document.body.classList.remove('modal-open');
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [showCategoryPicker]);
+
+  useEffect(() => {
+    if (showCategoryPicker && pickerDialogRef.current) try { pickerDialogRef.current.focus(); } catch (e) {}
+  }, [showCategoryPicker]);
+
+  const pickerToggle = (id) => setPickerExpanded(s => ({ ...s, [id]: !s[id] }));
+  const pickerToggleSub = async (catId, subId) => {
+    const currently = pickerSubExpanded[subId];
+    setPickerSubExpanded(s => ({ ...s, [subId]: !s[subId] }));
+    // if we are opening, load item categories for this sub if not present
+    if (!currently) {
+      try {
+        // find existing sub in pickerData
+        const cat = pickerData.find(c => String(c.id) === String(catId));
+        const subObj = cat?.subcategories?.find(s => String(s.id) === String(subId));
+        if (subObj && (!subObj.item_categories || subObj.item_categories.length === 0)) {
+          const token = localStorage.getItem('user_token');
+          const res = await axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${catId}/${subId}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          });
+          const items = res.data || [];
+          setPickerData(prev => prev.map(c => {
+            if (String(c.id) !== String(catId)) return c;
+            return {
+              ...c,
+              subcategories: c.subcategories.map(su => String(su.id) === String(subId) ? { ...su, item_categories: items } : su)
+            };
+          }));
+        }
+      } catch (err) {
+        console.error('Error loading item categories for sub:', err);
+      }
+    }
+  };
+  const pickerHandleSelect = (catId, catName, subId, subName, itemCategoryId, itemCategoryName) => {
+    const selection = { categoryId: catId || null, categoryName: catName || '', subId: subId || null, subName: subName || '', itemCategoryId: itemCategoryId || null, itemCategoryName: itemCategoryName || '' };
+    setPickerSelection(selection);
+    // Apply immediately and close modal (no confirm required)
+    handleCategoryPick({
+      category: selection.categoryId || '',
+      categoryName: selection.categoryName || '',
+      sub_category: selection.subId || '',
+      subName: selection.subName || '',
+      item_category_id: selection.itemCategoryId || '',
+      itemCategoryName: selection.itemCategoryName || ''
+    });
+    setShowCategoryPicker(false);
+  };
+
+  const pickerClear = () => setPickerSelection({ categoryId: null, categoryName: '', subId: null, subName: '', itemCategoryId: null, itemCategoryName: '' });
+
+  const pickerConfirm = () => {
+    // reuse existing handler to set form state
+    handleCategoryPick({
+      category: pickerSelection.categoryId || '',
+      categoryName: pickerSelection.categoryName || '',
+      sub_category: pickerSelection.subId || '',
+      subName: pickerSelection.subName || '',
+      item_category_id: pickerSelection.itemCategoryId || '',
+      itemCategoryName: pickerSelection.itemCategoryName || ''
+    });
+    setShowCategoryPicker(false);
+  };
+
+  // Flatten pickerData into table rows: { catId, catName, subId, subName, itemId, itemName }
+  const pickerRows = [];
+  if (pickerData && Array.isArray(pickerData)) {
+    pickerData.forEach(cat => {
+      const catId = cat.id;
+      const catName = cat.name || '';
+      if (cat.subcategories && cat.subcategories.length > 0) {
+        cat.subcategories.forEach(sub => {
+          const subId = sub.id;
+          const subName = sub.name || '';
+          if (sub.item_categories && sub.item_categories.length > 0) {
+            sub.item_categories.forEach(ic => {
+              pickerRows.push({ catId, catName, subId, subName, itemId: ic.id, itemName: ic.name || '' });
+            });
+          } else {
+            pickerRows.push({ catId, catName, subId, subName, itemId: null, itemName: '' });
+          }
+        });
+      } else {
+        pickerRows.push({ catId, catName, subId: null, subName: '', itemId: null, itemName: '' });
+      }
+    });
+  }
+
+  // deterministic pastel color per id
+  const getColorForId = (id) => {
+    if (id === undefined || id === null) return 'transparent';
+    const str = String(id);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    const hue = Math.abs(hash) % 360;
+    // lighter, softer header
+    return `hsl(${hue}, 55%, 94%)`;
+  };
+
+  const getRowColor = (id) => {
+    if (id === undefined || id === null) return 'transparent';
+    const str = String(id);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    const hue = Math.abs(hash) % 360;
+    const saturation = 50;
+    const lightness = 94 - (Math.abs(hash) % 4); // very light variations
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+
+  
 
   // Handle Item Category Change
   const handleItemCategoryChange = async (event) => {
@@ -538,34 +776,42 @@ const AddProduct = () => {
                   <div className="card">
                     <div className="card-body p-4">
                       <div className="row">
-                        {/* <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="category" className="form-label required">Category</label>
-                          <select
-                            id="category" className="form-control select2"
-                            value={selectedCategory}
-                            onChange={handleCategoryChange}
-                          >
-                            <option value="">Select Category</option>
-                            {categories?.map((category) => (
-                              <option key={category.id} value={category.id}>{category.name}</option>
-                            ))}
-                          </select>
-                          {errors.category && (<div className="text-danger small">{errors.category}</div>)}
-                        </div> */}
-                        <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="sub_category" className="form-label required">Sub Category</label>
-                          <select
-                            id="sub_category"
-                            className="form-control select2"
-                            value={selectedSubCategory}
-                            onChange={handleSubCategoryChange}
-                          >
-                            <option value="">Select Sub Category</option>
-                            {subCategories.map(sc => (
-                              <option key={sc.id} value={sc.id}>{sc.name}</option>
-                            ))}
-                          </select>
-                        </div>
+                            {/* <div className="form-group mb-3 col-md-12">
+                              <label htmlFor="category" className="form-label required">Category</label>
+                              <select
+                                id="category" className="form-control select2"
+                                value={selectedCategory}
+                                onChange={handleCategoryChange}
+                              >
+                                <option value="">Select Category</option>
+                                {categories?.map((category) => (
+                                  <option key={category.id} value={category.id}>{category.name}</option>
+                                ))}
+                              </select>
+                              {errors.category && (<div className="text-danger small">{errors.category}</div>)}
+                            </div> */}
+                            <div className="col-12 mb-3 d-flex justify-content-end align-items-center">
+                              <button type="button" className="btn btn-outline-secondary me-2" onClick={() => setShowCategoryPicker(true)}>Category Picker</button>
+                            </div>
+                            <div className="form-group mb-3 col-md-12">
+                              <label htmlFor="sub_category" className="form-label required">Sub Category</label>
+                              <div className="d-flex flex-column">
+                                <div>
+                                  <select
+                                    id="sub_category"
+                                    className="form-control select2"
+                                    value={selectedSubCategory}
+                                    onChange={handleSubCategoryChange}
+                                  >
+                                    <option value="">Select Sub Category</option>
+                                    {subCategories.map(sc => (
+                                      <option key={sc.id} value={sc.id}>{sc.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                
+                              </div>
+                            </div>
                         <div className="form-group mb-3 col-md-12">
                           <label htmlFor="item_category_id" className="form-label">Item Category</label>
                           <select
@@ -709,6 +955,112 @@ const AddProduct = () => {
         handleDeleteConfirm={handleDeleteConfirm}
         deleteType="image"
       />
+      {/* Inline Category Picker modal */}
+      {showCategoryPicker && (() => {
+        const filteredPickerData = (() => {
+          if (!pickerQuery) return pickerData;
+          const q = pickerQuery.toLowerCase();
+          return (pickerData || []).map(cat => {
+            const subcategories = (cat.subcategories || []).map(sub => {
+              const matchedItems = (sub.item_categories || []).filter(ic => (ic.name || '').toLowerCase().includes(q));
+              const subMatch = (sub.name || '').toLowerCase().includes(q);
+              if (subMatch || matchedItems.length) return { ...sub, item_categories: matchedItems };
+              return null;
+            }).filter(Boolean);
+            const catMatch = (cat.name || '').toLowerCase().includes(q);
+            if (catMatch || subcategories.length) return { ...cat, subcategories };
+            return null;
+          }).filter(Boolean);
+        })();
+
+        const modalJSX = (
+          <div className="modal fade show" tabIndex={-1} role="dialog" aria-modal="true" style={{ display: 'block', zIndex: 2147483646, position: 'fixed', inset: 0, pointerEvents: 'none' }}>
+            <div className="modal-dialog modal-lg modal-dialog-centered" role="document" style={{ maxWidth: '900px', margin: '0 auto', pointerEvents: 'auto', zIndex: 2147483647 }}>
+              <div className="modal-content" ref={pickerDialogRef} tabIndex={-1} onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()} style={{ pointerEvents: 'auto' }}>
+                <div className="modal-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <h5 className="modal-title" style={{ margin: 0 }}>Category Picker</h5>
+                    <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowCategoryPicker(false)}></button>
+                  </div>
+                  <div style={{ width: '100%', marginTop: 6 }}>
+                    <input type="search" className="form-control" placeholder="Search categories, subcategories, item categories" value={pickerQuery} onChange={(e) => setPickerQuery(e.target.value)} />
+                  </div>
+                </div>
+                <div className="modal-body" style={{ maxHeight: '60vh', overflow: 'auto' }}>
+                  <div className="mb-3">
+                    <div>{(pickerSelection.categoryName || pickerSelection.subName || pickerSelection.itemCategoryName) ? (
+                      <span>{pickerSelection.categoryName || ''}{pickerSelection.subName ? ` > ${pickerSelection.subName}` : ''}{pickerSelection.itemCategoryName ? ` > ${pickerSelection.itemCategoryName}` : ''}</span>
+                    ) : null}</div>
+                  </div>
+                  {pickerLoading && <div>Loading...</div>}
+                  {pickerError && <div className="text-danger">{pickerError}</div>}
+                  {!pickerLoading && !pickerError && (
+                    <div>
+                      {filteredPickerData && filteredPickerData.length > 0 ? filteredPickerData.map(cat => (
+                        <div key={cat.id} className="mb-3">
+                          <div className="table-responsive">
+                            <table className="table table-sm table-hover table-striped">
+                              <tbody>
+                                <tr>
+                                  <td colSpan={3} className="fw-bold fs-6 py-2" style={{ backgroundColor: getColorForId(cat.id), border: '1px solid rgba(0,0,0,0.12)' }}>{cat.name}</td>
+                                </tr>
+                                <tr className="table-secondary">
+                                  <th className="align-middle text-center">Subcategory</th>
+                                  <th className="align-middle">Item Category</th>
+                                  <th className="align-middle text-end">&nbsp;</th>
+                                </tr>
+                                {cat.subcategories && cat.subcategories.length > 0 ? (
+                                  cat.subcategories.map((sub, si) => {
+                                    const subBg = si % 2 === 0 ? 'rgba(248,249,250,0.8)' : '#ffffff';
+                                    return (
+                                      (sub.item_categories && sub.item_categories.length > 0) ? (
+                                        sub.item_categories.map((ic, idx) => (
+                                          <tr key={`${cat.id}-${sub.id}-${ic.id}`} className={`${pickerSelection.categoryId === cat.id && pickerSelection.subId === sub.id && String(pickerSelection.itemCategoryId) === String(ic.id) ? 'table-active' : ''}`} style={{ backgroundColor: subBg }}>
+                                            {idx === 0 && (
+                                              <td rowSpan={sub.item_categories.length} className="align-middle text-center" style={{ verticalAlign: 'middle', border: '1px solid rgba(0,0,0,0.12)', backgroundColor: subBg }}>{sub.name}</td>
+                                            )}
+                                            <td style={{ border: '1px solid rgba(0,0,0,0.12)', backgroundColor: subBg }}>{ic.name}</td>
+                                            <td className="text-end" style={{ border: '1px solid rgba(0,0,0,0.12)', backgroundColor: subBg }}>
+                                              <button type="button" className="btn btn-sm btn-primary" onClick={(e) => { e.preventDefault(); pickerHandleSelect(cat.id, cat.name, sub.id, sub.name, ic.id, ic.name); }}>Select</button>
+                                            </td>
+                                          </tr>
+                                        ))
+                                      ) : (
+                                        <tr key={`${cat.id}-${sub.id}`} className={`${pickerSelection.categoryId === cat.id && pickerSelection.subId === sub.id ? 'table-active' : ''}`} style={{ backgroundColor: subBg }}>
+                                          <td className="text-center" style={{ border: '1px solid rgba(0,0,0,0.12)', backgroundColor: subBg }}>{sub.name}</td>
+                                          <td style={{ border: '1px solid rgba(0,0,0,0.12)', backgroundColor: subBg }}><span className="text-muted">-</span></td>
+                                          <td className="text-end" style={{ border: '1px solid rgba(0,0,0,0.12)', backgroundColor: subBg }}>
+                                            <button type="button" className="btn btn-sm btn-primary" onClick={(e) => { e.preventDefault(); pickerHandleSelect(cat.id, cat.name, sub.id, sub.name, null, ''); }}>Select</button>
+                                          </td>
+                                        </tr>
+                                      )
+                                    );
+                                  })
+                                ) : (
+                                  <tr>
+                                    <td colSpan={3} className="text-muted">No subcategories</td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="text-muted">No categories available</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-outline-secondary" onClick={(e) => { e.preventDefault(); setShowCategoryPicker(false); }}>Close</button>
+                </div>
+              </div>
+            </div>
+            <div className="modal-backdrop show" style={{ position: 'fixed', left: 0, top: 0, right: 0, bottom: 0, zIndex: 2147483645, backgroundColor: 'rgba(0,0,0,0.4)', pointerEvents: 'auto' }} />
+          </div>
+        );
+        return createPortal(modalJSX, document.body);
+      })()}
     </>
   )
 }
