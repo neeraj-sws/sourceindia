@@ -1,0 +1,608 @@
+/* Company detail page styles */
+
+.productDetail .card {
+  border-radius: 8px;
+  padding: 0; /* keep card-body spacing consistent */
+}
+
+.productDetail .card .card-body {
+  padding: 20px;
+}
+
+/* Tighten top padding for both main details and sidebar cards */
+.productDetail .col-xl-9 .card .card-body,
+.productDetail .col-xl-3 .card .card-body {
+  padding-top: 12px;
+}
+
+/* Reduce top padding for the main company details card to tighten gap */
+.productDetail .col-xl-9 .card .card-body {
+  padding-top: 12px;
+}
+
+/* Key / Value table styling */
+.productTable th {
+  width: 180px;
+  vertical-align: top;
+  color: #6c757d;
+  font-weight: 600;
+  padding-top: .75rem;
+}
+.productTable td {
+  padding-top: .75rem;
+}
+
+/* emphasize values */
+.productTable td {
+  color: #212529;
+  font-weight: 500;
+}
+
+/* Company heading */
+.productDetail .card-body h4 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.company-subtitle {
+  font-size: 0.95rem;
+  color: #343a40;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-style: italic;
+}
+
+.subtitle-icon {
+  font-size: 0.85rem;
+  color: #343a40;
+}
+
+.companydetailimg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: #ffffff;
+}
+.companydetailimg img,
+.companydetailimg .image-front,
+.companydetailimg > img {
+  max-width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.companydetailimg { width: 160px; height: 160px; }
+
+/* Enquiry button adjustments */
+.enquirybtnwidth {
+  width: 100%;
+}
+.enquirybtnwidth .btn {
+  padding: .5rem 1rem;
+}
+
+/* Products carousel cards */
+.companyProducts .productBox {
+  height: 320px;
+  display:flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 12px 12px 20px; /* add bottom padding so buttons have room */
+  gap: 8px;
+  box-sizing: border-box;
+}
+.companyProducts .productBox .ProImgDetail img,
+.companyProducts .productBox .ProImg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* product card hover */
+.productBox.productBoxswiper {
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.productBox.productBoxswiper:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 20px rgba(16,24,40,0.08);
+}
+
+/* Recommended companies carousel */
+.recommended-companies-carousel .productContainer img,
+.recommended-companies-carousel .productContainer .image-front {
+  max-height: 64px;
+  object-fit: contain;
+  display:block;
+  margin: 0 auto;
+}
+
+/* make recommended cards square and centered */
+.recommended-companies-carousel .swiper-slide .bg-white {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px 16px !important;
+}
+.recommended-companies-carousel .productContainer {
+  height: 110px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.recommended-companies-carousel .productContainer img,
+.recommended-companies-carousel .productContainer .image-front {
+  max-height: 64px;
+  max-width: 100%;
+}
+
+.similerCompany h2,
+.companyProducts h2 {
+  margin-bottom: 18px;
+  font-size: 1.25rem;
+}
+
+/* About grid styles */
+.about-grid-wrap { padding: 6px 0; }
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 24px;
+}
+.about-item {
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+}
+.about-icon{
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  background:#f6f7fb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#3b3f5c;
+  font-size:20px;
+}
+.about-label{ font-size:13px; color:#6c757d; }
+.about-value{ font-size:14px; font-weight:600; color:#222; }
+
+@media (max-width: 991.98px){
+  .about-grid{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 575.98px){
+  .about-grid{ grid-template-columns: repeat(1, 1fr); }
+  .companydetailimg{ width:120px; height:120px; }
+  .companydetailimg img{ height:100%; }
+  .productDetail .card-body h4 { font-size: 1.4rem; }
+}
+
+/* Recommended company card look */
+.recommended-companies-carousel .productContainer {
+  padding: 14px 6px;
+}
+.recommended-companies-carousel .productContainer a {
+  color: inherit;
+  text-decoration: none;
+}
+.recommended-companies-carousel .productContainer .image-front,
+.recommended-companies-carousel .productContainer img {
+  border-radius: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+/* Sidebar tweaks */
+.productDetail .card .companydetailimg {
+  background: transparent;
+}
+.productDetail .card .card-body.text-center p,
+.productDetail .card .card-body.text-center h6 {
+  margin: 0;
+}
+
+/* Make enquiry button slightly larger and themed */
+.btn-orange {
+  background: #ff6a00; /* keep theme orange */
+  border-color: #ff6a00;
+  color: #fff;
+}
+.btn-orange:hover { opacity: .95; }
+
+/* Responsive tweaks */
+@media (max-width: 767.98px) {
+  .productTable th { width: 120px; }
+  .companydetailimg img { height: 80px; }
+  .companyProducts .productBox .ProImgDetail img { width: 117px; height: 78px; }
+}
+
+/* subtle card shadow consistency */
+.productDetail .card.h-100.shadow-sm {
+  box-shadow: 0 2px 6px rgba(16,24,40,0.06);
+}
+
+/* CTA card for listing products */
+.list-cta {
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+.list-cta:before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+
+/* Force remove any remaining image frames/borders/padding for product and recommended images */
+.companyProducts .productBox .ProImgDetail,
+.companyProducts .productBox .ProImg,
+.companyProducts .productBox .ProImg img,
+.companyProducts .productBox .ProImgDetail img,
+.recommended-companies-carousel .productContainer .image-front,
+.recommended-companies-carousel .productContainer img,
+.productContainer .image-front,
+.productContainer img,
+.companydetailimg img {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+/* allow images to fully cover their boxes */
+.companyProducts .productBox .ProImg img,
+.companyProducts .productBox .ProImgDetail img,
+.recommended-companies-carousel .productContainer img,
+.recommended-companies-carousel .productContainer .image-front {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* Remove outer card borders for product slides */
+.companyProducts .swiper-slide .bg-white,
+.companyProducts .swiper-slide .card,
+.companyProducts .swiper-slide {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+@media (max-width: 767.98px) {
+  .companyProducts .productBox { height: 280px; padding: 10px; }
+}
+  width: 6px;
+  background: linear-gradient(180deg, #ff6a00 0%, #ff8a36 100%);
+}
+.list-cta .card-body { padding-left: 20px; }
+.list-cta h5 { margin-top: 6px; }
+.list-cta .btn-orange {
+  background: #ff6a00;
+  border-color: #ff6a00;
+  color: #fff;
+  padding: .45rem 1.1rem;
+}
+.list-cta .btn-orange:hover { opacity: .95; }
+
+/* Products and Recommended sections spacing/alignment fixes */
+.companyProducts { margin-top: 2.5rem; }
+.companyProducts { margin-top: 2rem; }
+.companyProducts .productBox { height: 320px; display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; padding: 12px; gap: 8px; box-sizing: border-box; }
+.companyProducts .productBox .ProImgDetail,
+.companyProducts .productBox .ProImg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 208px;
+  height: 182px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: transparent; /* remove subtle fill to let image cover fully */
+  border: none;
+}
+.companyProducts .productBox .ProImgDetail img,
+.companyProducts .productBox .ProImg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.companyProducts .productBox .productlink { width:100%; display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:6px; }
+.companyProducts .productBox .productlink p { margin:0 0 8px; color:#274b88; font-weight:700; font-size:1.05rem; line-height:1.2; max-width:100%; text-align:center; min-height:48px; }
+.companyProducts .productBox .productlink { width:100%; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
+.companyProducts .productBox .productlink .btn { margin-top: auto; padding:.36rem .9rem; min-width:110px; border-radius:6px; font-weight:700; box-shadow:none; background:#0b5cb6; border-color:#0b5cb6; }
+.companyProducts .productBox .productlink p.title-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.companyProducts .productBox .productlink .btn { display:inline-block; margin-top:6px; }
+
+/* Ensure consistent start position for headings across product cards */
+.companyProducts .productBox .productlink { padding-left:6px; padding-right:6px; }
+
+/* Make middle content take available space so buttons align to bottom */
+.companyProducts .productBox .middlepro { flex: 1 1 auto; display:flex; flex-direction:column; justify-content:flex-start; align-items:center; }
+.companyProducts .productBox .product-meta { font-size:0.95rem; color:#6c757d; margin-top:6px; }
+
+/* Ensure slide inner wrapper stacks vertically for current carousel markup (.middlepro) */
+.companyProducts .productBox .middlepro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 8px;
+  flex: 1 1 auto;
+}
+.companyProducts .productBox .ProImg,
+.companyProducts .productBox .ProImgDetail { margin-top: 0; margin-bottom: 6px; }
+.companyProducts .productBox .middlepro .ProImg,
+.companyProducts .productBox .middlepro .ProImgDetail {
+  margin: 0 auto;
+}
+.companyProducts .productBox .middlepro .productlink { width:100%; }
+.companyProducts .productBox .middlepro .productlink .btn { margin-top: 6px; }
+
+/* position navigation buttons slightly outside cards */
+.similar-products-carousel .swiper-button-prev,
+.similar-products-carousel .swiper-button-next,
+.recommended-companies-carousel .swiper-button-prev,
+.recommended-companies-carousel .swiper-button-next {
+  background: #ff6a00; border: none; color: #fff; width:48px; height:48px; border-radius:50%; box-shadow:0 6px 18px rgba(16,24,40,0.06); z-index: 30;
+  top: 50%; transform: translateY(-50%);
+}
+.similar-products-carousel .swiper-button-prev { left: -26px; }
+.similar-products-carousel .swiper-button-next { right: -26px; }
+.recommended-companies-carousel .swiper-button-prev { left: -22px; }
+.recommended-companies-carousel .swiper-button-next { right: -22px; }
+
+/* Ensure carousel controls aren't clipped and are visible */
+.similar-products-carousel, .recommended-companies-carousel {
+  overflow: visible;
+  position: relative; /* ensure absolute-positioned arrows align to this container */
+}
+
+/* Prevent an extra slide from peeking into view by clipping the internal wrapper
+   The outer container remains overflow:visible so arrows can sit outside. */
+.similar-products-carousel .swiper-wrapper,
+.recommended-companies-carousel .swiper-wrapper {
+  overflow: visible; /* allow Swiper to handle sliding and transforms */
+}
+
+/* Ensure slides use box-sizing so spaceBetween is handled predictably */
+.similar-products-carousel .swiper-slide,
+.recommended-companies-carousel .swiper-slide {
+  box-sizing: border-box;
+}
+
+/* Force exact slide widths to avoid partial peeking across breakpoints */
+@media (min-width: 1200px) {
+  .similar-products-carousel .swiper-slide {
+    flex: 0 0 calc((100% - 60px) / 4) !important; /* 4 slides, 20px gap -> 3 gaps = 60px */
+    max-width: calc((100% - 60px) / 4) !important;
+  }
+}
+@media (min-width: 768px) and (max-width: 1199.98px) {
+  .similar-products-carousel .swiper-slide {
+    flex: 0 0 calc((100% - 40px) / 3) !important; /* 3 slides, 20px gap -> 2 gaps = 40px */
+    max-width: calc((100% - 40px) / 3) !important;
+  }
+}
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .similar-products-carousel .swiper-slide {
+    flex: 0 0 calc((100% - 20px) / 2) !important; /* 2 slides, 20px gap -> 1 gap = 20px */
+    max-width: calc((100% - 20px) / 2) !important;
+  }
+}
+@media (max-width: 575.98px) {
+  .similar-products-carousel .swiper-slide {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Ensure buttons show arrow characters if default icons are absent */
+/* Ensure only a single arrow is visible per side by hiding Swiper's inner SVG/icon and using ::after */
+.similar-products-carousel .swiper-button-prev svg,
+.similar-products-carousel .swiper-button-next svg,
+.recommended-companies-carousel .swiper-button-prev svg,
+.recommended-companies-carousel .swiper-button-next svg {
+  display: none !important;
+}
+.similar-products-carousel .swiper-button-prev::after,
+.recommended-companies-carousel .swiper-button-prev::after {
+  content: '‹' !important;
+  font-size: 18px !important;
+  color: #fff !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%,-50%) !important;
+  display: inline-block !important;
+  line-height: 1 !important;
+}
+.similar-products-carousel .swiper-button-next::after,
+.recommended-companies-carousel .swiper-button-next::after {
+  content: '›' !important;
+  font-size: 18px !important;
+  color: #fff !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%,-50%) !important;
+  display: inline-block !important;
+  line-height: 1 !important;
+}
+
+.similar-products-carousel .swiper-button-prev,
+.similar-products-carousel .swiper-button-next,
+.recommended-companies-carousel .swiper-button-prev,
+.recommended-companies-carousel .swiper-button-next {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  opacity: 1 !important;
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 48px !important;
+  height: 48px !important;
+  z-index: 60 !important;
+  background: #ff6a00 !important;
+  border: none !important;
+  box-shadow: 0 6px 18px rgba(16,24,40,0.06) !important;
+  border-radius: 50% !important;
+}
+.similar-products-carousel .swiper-button-prev { left: -28px !important; }
+.similar-products-carousel .swiper-button-next { right: -28px !important; }
+.recommended-companies-carousel .swiper-button-prev { left: -24px !important; }
+.recommended-companies-carousel .swiper-button-next { right: -24px !important; }
+
+/* Hide arrows when disabled (e.g., not enough slides). This makes arrows disappear when there's only one slide */
+.similar-products-carousel .swiper-button-prev.swiper-button-disabled,
+.similar-products-carousel .swiper-button-next.swiper-button-disabled,
+.recommended-companies-carousel .swiper-button-prev.swiper-button-disabled,
+.recommended-companies-carousel .swiper-button-next.swiper-button-disabled {
+  display: none !important;
+}
+
+.similerCompany { margin-top: 3rem; margin-bottom: 2.5rem; }
+.recommended-companies-carousel { padding-bottom: 1.25rem; }
+.recommended-companies-carousel .swiper-slide { display:flex; align-items:center; justify-content:center; }
+.recommended-companies-carousel .productContainer { padding: 14px 12px; height: 130px; display:flex; align-items:center; justify-content:center; }
+.recommended-companies-carousel .productContainer { padding: 12px; height: auto; display:flex; align-items:center; justify-content:center; min-height:170px; }
+.recommended-companies-carousel .productContainer img, .recommended-companies-carousel .productContainer .image-front { max-height: 80px; }
+
+/* Recommended card layout: image box -> name -> location */
+.recommended-companies-carousel .productContainer {
+  flex-direction: column;
+  gap: 8px;
+}
+.recommended-companies-carousel .productContainer .recLogoWrap {
+  width: 160px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+}
+.recommended-companies-carousel .productContainer .recLogoWrap img,
+.recommended-companies-carousel .productContainer .recLogoWrap .image-front {
+  max-width: 100%;
+  max-height: 80px; /* cap to avoid touching card border */
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  margin: 0 auto;
+  display: block;
+}
+.recommended-companies-carousel .productContainer .recLogoWrap img,
+.recommended-companies-carousel .productContainer .recLogoWrap .image-front {
+  width: auto !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+.recommended-companies-carousel .productContainer .recText { text-align:center; display:block; }
+.recommended-companies-carousel .productContainer .recName { margin: 6px 0 2px; font-size: 1rem; color: #123d7a; font-weight: 700; line-height:1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align:center; }
+.recommended-companies-carousel .productContainer .recLocation { font-size: 0.85rem; color: #6c757d; margin-top: 10px; margin-bottom: 12px; display:block; }
+.recommended-companies-carousel .productContainer .recLocation .recLocIcon { margin-right:6px; color:#6c757d; }
+
+/* make the entire link block-level and center content so gaps are equal top/bottom */
+.recommended-companies-carousel .productContainer > a { display:flex; text-align:center; height:240px; min-height:240px; flex-direction:column; align-items:center; justify-content:center; padding:28px 8px 28px; box-sizing:border-box; }
+.recommended-companies-carousel .productContainer { flex-direction: column; gap: 8px; justify-content: center; }
+
+/* Ensure logo, name and location are centered and aligned across all cards */
+.recommended-companies-carousel .productContainer .recLogoWrap { margin-bottom: 8px; }
+.recommended-companies-carousel .productContainer .recName {
+  margin: 6px 0 4px;
+  font-size: 1.06rem; /* slightly larger for readability */
+  color: #0f3b73; /* slightly darker blue for contrast */
+  font-weight: 800;
+  line-height: 1.18;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 56px; /* reserve space for up to 2 lines so location stays aligned */
+  letter-spacing: 0.2px;
+  text-transform: none;
+  text-rendering: optimizeLegibility;
+}
+
+/* subtle hover focus to improve perceived clarity */
+.recommended-companies-carousel .swiper-slide:hover .recName {
+  color: #0b2f5a;
+}
+.recommended-companies-carousel .productContainer .recLocation {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-top: 10px;
+  margin-bottom: 12px;
+  display: block;
+  text-align: center;
+}
+
+/* stronger override to ensure consistent gap across themes */
+.recommended-companies-carousel .productContainer .recLocation { margin-top: 10px !important; margin-bottom: 12px !important; }
+
+/* Make sure the logo image is properly centered without stretching */
+.recommended-companies-carousel .productContainer .recLogoWrap img,
+.recommended-companies-carousel .productContainer .recLogoWrap .image-front {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display:block;
+}
+
+/* Reduce extra padding inside slide so everything centers visually */
+.recommended-companies-carousel .swiper-slide { padding: 8px !important; }
+
+/* Increase spacing above footer so recommended section sits comfortably */
+.similerCompany { margin-top: 2.5rem; margin-bottom: 3.5rem; }
+
+/* Reserve space for arrows so slides don't shift; position arrows inside padding */
+.similar-products-carousel { padding: 0 64px; }
+.recommended-companies-carousel { padding: 0 56px; }
+
+/* Override arrow positions to sit inside the carousel padding and not push slides */
+.similar-products-carousel .swiper-button-prev { left: 16px !important; }
+.similar-products-carousel .swiper-button-next { right: 16px !important; }
+.recommended-companies-carousel .swiper-button-prev { left: 12px !important; }
+.recommended-companies-carousel .swiper-button-next { right: 12px !important; }
+
+/* Slightly reduce arrow shadow so they feel part of the UI */
+.similar-products-carousel .swiper-button-prev, .similar-products-carousel .swiper-button-next,
+.recommended-companies-carousel .swiper-button-prev, .recommended-companies-carousel .swiper-button-next {
+  box-shadow: 0 4px 12px rgba(16,24,40,0.06) !important;
+}
+.similerCompany h2, .companyProducts h2 { margin-bottom: 18px; font-size: 1.25rem; margin-top: 0.5rem; }
+
+/* make breadcrumb and heading stand out slightly more */
+.productDetail .breadcrumb + .card .card-body h4 {
+  margin-top: 0;
+}
+
+/* ensure recommended/logo placeholders are centered */
+.recommended-companies-carousel .productContainer p {
+  margin-top: 8px;
+  font-size: 0.95rem;
+}
+
+/* Increase gap between logo and heading for better readability */
+.recommended-companies-carousel .productContainer .recLogoWrap { margin-bottom: 18px !important; }
+.recommended-companies-carousel .productContainer .recName { margin-top: 12px !important; }
+
+/* Accessible focus outlines for keyboard users */
+:focus-visible { outline: 3px solid rgba(255,138,54,0.95); outline-offset: 2px; }
+.btn:focus-visible, .btn-orange:focus-visible, .swiper-button-prev:focus-visible, .swiper-button-next:focus-visible { box-shadow: none !important; }
