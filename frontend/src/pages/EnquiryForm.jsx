@@ -336,8 +336,7 @@ const isValidEmail = (email) => {
                                     {loadingVerify ? (
                                       <span className="spinner-border spinner-border-sm" />
                                     ) : (
-                                      <i className="fadeIn animated bx bx-refresh"></i>
-                                                                        <i className="fadeIn animated bx bx-refresh" aria-hidden="true"></i>
+                                      <i className="fadeIn animated bx bx-refresh" aria-hidden="true"></i>
                                     )}
                                   </button>
                                 ) : null}
