@@ -243,7 +243,7 @@ const isValidEmail = (email) => {
                     </div>
 
                     <h6>{singleProduct?.title}</h6>
-                    <p><i class="bx bx-building"></i> {companyName || 'Company'}</p>
+                      <p><i className="bx bx-building" aria-hidden="true"></i> {companyName || 'Company'}</p>
                   </div>
                 </div>
                 <div className='col-md-7 pe-4'>
@@ -252,6 +252,7 @@ const isValidEmail = (email) => {
                       <span aria-hidden="true"><i className="bx bx-x" /></span>
                     </button>
                   </div>
+                                        <p><i className="bx bx-building" aria-hidden="true"></i> {companyName || 'Company'}</p>
                   {exists ? (
                     <div className="text-center p-3 py-4">
                       <img src="/check.png" className='img-fluid' width="60" />
@@ -335,7 +336,7 @@ const isValidEmail = (email) => {
                                     {loadingVerify ? (
                                       <span className="spinner-border spinner-border-sm" />
                                     ) : (
-                                      <i className="fadeIn animated bx bx-refresh"></i>
+                                      <i className="fadeIn animated bx bx-refresh" aria-hidden="true"></i>
                                     )}
                                   </button>
                                 ) : null}

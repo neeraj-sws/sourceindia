@@ -1,4 +1,5 @@
 
+
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
@@ -53,6 +54,10 @@ const buyerEnquiryRoutes = require('./routes/buyerEnquiryRoutes');
 
 const app = express();
 const basePath = '/v2'; // All APIs will start with /v2
+
+// Register adminEnquiriesRoutes after app and basePath are defined
+const adminEnquiriesRoutes = require('./routes/adminEnquiriesRoutes');
+app.use(basePath + '/api/admin', adminEnquiriesRoutes);
 // Companies route (must be after app is defined)
 
 app.use(cors());
