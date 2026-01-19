@@ -126,15 +126,36 @@
 /* make recommended cards square and centered */
 .recommended-companies-carousel .swiper-slide .bg-white {
   display:flex;
-  align-items:center;
+  align-items:stretch;
   justify-content:center;
   padding:20px 16px !important;
 }
+
+/* Make all cards equal height and align logo/name/location consistently */
 .recommended-companies-carousel .productContainer {
-  height: 110px;
+  height: 260px; /* fixed card height */
+  display:flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between; /* logo top, name middle, location bottom */
+  padding: 18px 12px;
+  box-sizing: border-box;
+}
+
+.recommended-companies-carousel .productContainer .recLogoWrap {
+  height: 100px; /* reserve space for logo */
   display:flex;
   align-items:center;
   justify-content:center;
+  margin-bottom: 6px;
+}
+
+.recommended-companies-carousel .productContainer .recName {
+  min-height: 48px; /* reserve space for up to two lines */
+}
+
+.recommended-companies-carousel .productContainer .recLocation {
+  margin-bottom: 6px;
 }
 .recommended-companies-carousel .productContainer img,
 .recommended-companies-carousel .productContainer .image-front {
@@ -511,8 +532,17 @@
   object-fit: contain !important;
 }
 .recommended-companies-carousel .productContainer .recText { text-align:center; display:block; }
-.recommended-companies-carousel .productContainer .recName { margin: 6px 0 2px; font-size: 1rem; color: #123d7a; font-weight: 700; line-height:1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align:center; }
+.recommended-companies-carousel .productContainer .recName { margin: 6px 0 2px; font-size: 1rem; color: #0f3b73; font-weight: 600; line-height:1.1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-align:center; }
 .recommended-companies-carousel .productContainer .recLocation { font-size: 0.85rem; color: #6c757d; margin-top: 10px; margin-bottom: 12px; display:block; }
+/* Clamp long addresses to two lines and show ellipsis; title attribute shows full address on hover */
+.recommended-companies-carousel .productContainer .recLocation {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
 .recommended-companies-carousel .productContainer .recLocation .recLocIcon { margin-right:6px; color:#6c757d; }
 
 /* make the entire link block-level and center content so gaps are equal top/bottom */
@@ -524,15 +554,15 @@
 .recommended-companies-carousel .productContainer .recName {
   margin: 6px 0 4px;
   font-size: 1.06rem; /* slightly larger for readability */
-  color: #0f3b73; /* slightly darker blue for contrast */
-  font-weight: 800;
+  color: #0f3b73; /* dark theme blue */
+  font-weight: 600;
   line-height: 1.18;
   text-align: center;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 56px; /* reserve space for up to 2 lines so location stays aligned */
+  min-height: 84px; /* reserve space for up to 3 lines so location stays aligned */
   letter-spacing: 0.2px;
   text-transform: none;
   text-rendering: optimizeLegibility;
@@ -587,6 +617,40 @@
   box-shadow: 0 4px 12px rgba(16,24,40,0.06) !important;
 }
 .similerCompany h2, .companyProducts h2 { margin-bottom: 18px; font-size: 1.25rem; margin-top: 0.5rem; }
+
+/* Strong overrides to ensure all recommended / suggested cards share equal height and alignment */
+.recommended-companies-carousel .swiper-slide {
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  height: auto !important;
+}
+.recommended-companies-carousel .swiper-slide > .bg-white,
+.recommended-companies-carousel .swiper-slide > .bg-white > .productContainer,
+.recommended-companies-carousel .productContainer {
+  box-sizing: border-box !important;
+  height: 260px !important; /* fixed card height */
+  min-height: 260px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 18px !important;
+}
+.recommended-companies-carousel .productContainer .recLogoWrap {
+  height: 100px !important;
+  min-height: 100px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.recommended-companies-carousel .productContainer .recName {
+  -webkit-line-clamp: 3 !important;
+  min-height: 84px !important; /* reserve for up to 3 lines */
+}
+.recommended-companies-carousel .productContainer .recLocation {
+  margin-bottom: 6px !important;
+}
 
 /* make breadcrumb and heading stand out slightly more */
 .productDetail .breadcrumb + .card .card-body h4 {
