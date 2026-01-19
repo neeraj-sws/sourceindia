@@ -1,3 +1,125 @@
+// Admin: Get Enquiry Details (no user_id restriction, supports id or enquiry_number)
+exports.getEnquiryDetailsForAdmin = async (req, res) => {
+  try {
+    const whereClause = isNaN(Number(req.params.enquiry_number))
+      ? { enquiry_number: req.params.enquiry_number }
+      : { id: req.params.enquiry_number };
+    const enquiry = await Enquiries.findOne({
+      where: whereClause,
+      include: [
+        {
+          model: Users,
+          as: 'from_user',
+          attributes: ['id', 'email', 'mobile', 'company_id', 'fname', 'lname'],
+          include: [{
+            model: CompanyInfo,
+            as: 'company_info',
+            attributes: ['organization_name', 'organization_slug'],
+            include: [
+              { model: CoreActivity, as: 'CoreActivity', attributes: ['name'] },
+              { model: Activity, as: 'Activity', attributes: ['name'] }
+            ]
+          }],
+        },
+        {
+          model: Users,
+          as: 'to_user',
+          attributes: ['id', 'email', 'mobile', 'company_id', 'fname', 'lname'],
+          include: [{
+            model: CompanyInfo,
+            as: 'company_info',
+            attributes: ['organization_name'],
+          }],
+        },
+        {
+          model: EnquiryUsers,
+          as: 'enquiry_users',
+          attributes: ['id', 'product_name', 'product_id', 'company_id', 'enquiry_status'],
+          include: [
+            {
+              model: Products,
+              as: 'Products',
+              attributes: ['id', 'title', 'slug', 'description', 'user_id', 'category', 'sub_category'],
+              include: [
+                { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+                { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+                { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+              ],
+              required: false,
+            },
+          ],
+          required: false,
+        },
+      ],
+    });
+
+    if (!enquiry) return res.status(404).json({ message: 'Enquiry not found' });
+
+    const eu = enquiry.enquiry_users?.[0];
+    let single_product = null;
+
+    if (eu?.product_id) {
+      single_product = await Products.findByPk(eu.product_id, {
+        attributes: ['id', 'title', 'slug', 'description', 'user_id', 'category', 'sub_category'],
+        include: [
+          { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+          { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+          { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+        ],
+      });
+    }
+
+    // Fetch seller (the user whose company_id matches the enquiry company)
+    let sellerUser = null;
+    if (eu?.company_id) {
+      sellerUser = await Users.findOne({
+        where: { company_id: enquiry.company_id },
+        include: { model: CompanyInfo, as: 'company_info' },
+      });
+    }
+
+    // Get category & subcategory names for seller
+    let category_sell_names = '';
+    let sub_category_names = '';
+    if (sellerUser) {
+      const catData = await getCategoryNames(sellerUser);
+      category_sell_names = catData.category_sell_names || '';
+      sub_category_names = catData.sub_category_names || '';
+    }
+
+    res.json({
+      ...enquiry.toJSON(),
+      from_full_name: enquiry.from_user ? `${enquiry.from_user.fname} ${enquiry.from_user.lname}`.trim() : null,
+      from_email: enquiry.from_user?.email || null,
+      from_mobile: enquiry.from_user?.mobile || null,
+      from_company_id: enquiry.from_user?.company_id || null,
+      from_organization_name: enquiry.from_user?.company_info?.organization_name || null,
+      from_organization_slug: enquiry.from_user?.company_info?.organization_slug || null,
+      from_core_activity_name: enquiry.from_user?.company_info?.CoreActivity?.name || null,
+      from_activity_name: enquiry.from_user?.company_info?.Activity?.name || null,
+
+      to_full_name: enquiry.to_user ? `${enquiry.to_user.fname} ${enquiry.to_user.lname}`.trim() : null,
+      to_email: enquiry.to_user?.email || null,
+      to_mobile: enquiry.to_user?.mobile || null,
+      to_company_id: enquiry.to_user?.company_id || null,
+      to_organization_name: enquiry.to_user?.company_info?.organization_name || null,
+
+      enquiry_product: eu?.product_name || null,
+      enquiryUser: eu || null,
+      product_details: single_product || eu?.Products || null,
+
+      // New fields
+      seller_category_names: category_sell_names,
+      seller_subcategory_names: sub_category_names,
+
+      product_source: single_product ? 'from_findByPk' : (eu?.Products ? 'from_include' : 'not_found'),
+    });
+
+  } catch (err) {
+    console.error('Error in getEnquiryDetailsForAdmin:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
 const { Op, fn, col, literal, Sequelize, QueryTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const moment = require('moment');

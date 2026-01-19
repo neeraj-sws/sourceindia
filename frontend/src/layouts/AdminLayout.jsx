@@ -160,6 +160,8 @@ function AdminLayout() {
               <Route path="/admin-view-enquiry/:enquiry_number" element={<ProtectedRoute><ViewEnquiry /></ProtectedRoute>} />
               <Route path="/open_enquiries" element={<ProtectedRoute><OpenEnquiry /></ProtectedRoute>} />
               <Route path="/open-enquiry-remove-list" element={<ProtectedRoute><OpenEnquiry getDeleted={true} /></ProtectedRoute>} />
+              {/* Admin Open Enquiry View, same as user style */}
+              <Route path="/open-enquiries/:id" element={<ProtectedRoute><ViewEnquiry role="admin" /></ProtectedRoute>} />
               <Route path="/seo_pages" element={<ProtectedRoute><SeoPages /></ProtectedRoute>} />
               <Route path="/user_activity" element={<ProtectedRoute><UserActivities /></ProtectedRoute>} />
               <Route path="/user-activity-details/:userId" element={<ProtectedRoute><UserActivityDetails /></ProtectedRoute>} />

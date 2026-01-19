@@ -10,8 +10,8 @@ import { formatDateTime } from '../../utils/formatDate';
 import OpenEnquiryModals from "./modal/OpenEnquiryModals";
 import ExcelExport from "../common/ExcelExport";
 import { DateRangePicker } from 'react-date-range';
-import 'react-date-range/dist/styles.css'; 
-import 'react-date-range/dist/theme/default.css'; 
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 import { format } from 'date-fns';
 
 const OpenEnquiry = ({ getDeleted }) => {
@@ -39,10 +39,10 @@ const OpenEnquiry = ({ getDeleted }) => {
   const [tempEndDate, setTempEndDate] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [range, setRange] = useState([
-    {startDate: new Date(), endDate: new Date(), key: 'selection'}
+    { startDate: new Date(), endDate: new Date(), key: 'selection' }
   ]);
   const datePickerRef = useRef(null);
-        
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
@@ -122,7 +122,7 @@ const OpenEnquiry = ({ getDeleted }) => {
 
   useEffect(() => {
     axios.get(`${API_BASE_URL}/open_enquiries`).then((res) => {
-      const filtered = res.data.filter((c) => c.is_delete=== (getDeleted ? 1 : 0));
+      const filtered = res.data.filter((c) => c.is_delete === (getDeleted ? 1 : 0));
       setOpenEnquiryData(filtered);
     });
   }, []);
@@ -143,7 +143,7 @@ const OpenEnquiry = ({ getDeleted }) => {
     try {
       await axios.patch(`${API_BASE_URL}/open_enquiries/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map((d) => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if(field=="delete_status"){
+      if (field == "delete_status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
@@ -171,7 +171,7 @@ const OpenEnquiry = ({ getDeleted }) => {
     setEndDate(null);
     setPage(1);
   };
-  
+
   const handleRangeChange = (item) => {
     const start = item.selection.startDate;
     const end = item.selection.endDate;
@@ -186,23 +186,23 @@ const OpenEnquiry = ({ getDeleted }) => {
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb mainhead="Open Enquiries" maincount={totalRecords} page="Open Enquiries" title={getDeleted ? "Recently Deleted Open Enquiries" : "Open Enquiries List"}
-          actions={
-            <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-            {!getDeleted ? (
+            actions={
               <>
-                <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/open-enquiry-remove-list">
-                  Recently Deleted Open Enquiries
-                </Link>
+                <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                {!getDeleted ? (
+                  <>
+                    <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/open-enquiry-remove-list">
+                      Recently Deleted Open Enquiries
+                    </Link>
+                  </>
+                ) : (
+                  <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                    Back
+                  </button>
+                )}
               </>
-            ) : (
-              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
-                Back
-              </button>
-            )}
-            </>
-          }
-          />          
+            }
+          />
           {getDeleted && (
             <div className="card mb-3">
               <div className="card-body">
@@ -297,79 +297,79 @@ const OpenEnquiry = ({ getDeleted }) => {
                   <tr key={row.id}>
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td>{row.name && (<>{row.name}<br /></>)}
-                    {row.email && (<>{row.email}<br /></>)}
-                    {row.email && (<>{row.phone}<br /></>)}
-                    <span className="badge bg-primary">{row.user_type==1 ? "Seller" : row.user_type==0 ? "Buyer" : "Public Enquery"}</span>
+                      {row.email && (<>{row.email}<br /></>)}
+                      {row.email && (<>{row.phone}<br /></>)}
+                      <span className="badge bg-primary">{row.user_type == 1 ? "Seller" : row.user_type == 0 ? "Buyer" : "Public Enquery"}</span>
                     </td>
                     <td>{row.title}</td>
                     <td>{row.description}</td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     {!getDeleted && (
-                    <>  
-                    <td>
-                      <div className="form-check form-switch">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          checked={row.is_home == 1}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            openStatusModal(row.id, row.is_home, "home_status", "is_home");
-                          }}
-                          readOnly
-                        />
-                      </div>
-                    </td>
-                    </>
+                      <>
+                        <td>
+                          <div className="form-check form-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={row.is_home == 1}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openStatusModal(row.id, row.is_home, "home_status", "is_home");
+                              }}
+                              readOnly
+                            />
+                          </div>
+                        </td>
+                      </>
                     )}
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
                           {!getDeleted ? (
-                          <>
-                          <li>
-                            <button className="dropdown-item text-danger" 
-                              onClick={(e) => {
-                                e.preventDefault(); 
-                                openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                              }}
-                            >
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item" onClick={() => {}}>
-                              <i className="bx bx-envelope me-2"></i> Mail
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item" onClick={() => {}}>
-                              <i className="bx bx-history me-2"></i> Enquiry History
-                            </button>
-                          </li>
-                          </>                          
+                            <>
+                              <li>
+                                <button className="dropdown-item text-danger"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item" onClick={() => { }}>
+                                  <i className="bx bx-envelope me-2"></i> Mail
+                                </button>
+                              </li>
+                              <li>
+                                <Link className="dropdown-item" to={`/admin/open-enquiries/${row.id}`}>
+                                  <i className="bx bx-history me-2"></i> View
+                                </Link>
+                              </li>
+                            </>
                           ) : (
-                          <>
-                          <li>
-                            <button className="dropdown-item" 
-                              onClick={(e) => {
-                                e.preventDefault(); 
-                                openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                              }}
-                            >
-                              <i className="bx bx-windows me-2"></i> Restore
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                          </>
+                            <>
+                              <li>
+                                <button className="dropdown-item"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-windows me-2"></i> Restore
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </>
                           )}
                         </ul>
                       </div>
@@ -393,15 +393,17 @@ const OpenEnquiry = ({ getDeleted }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName={getDeleted ? "Open Enquiry Remove Export.xlsx" : "Open Enquiry Export.xlsx" }
+        fileName={getDeleted ? "Open Enquiry Remove Export.xlsx" : "Open Enquiry Export.xlsx"}
         data={openEnquiryData}
         columns={[
-          {label: "From", key: "name", format: (val, row) => {
-            const name = row.name || "";
-            const email = row.email || "";
-            const phone = row.phone || "";
-            return `${name}\n${email}\n${phone}`;
-          }},
+          {
+            label: "From", key: "name", format: (val, row) => {
+              const name = row.name || "";
+              const email = row.email || "";
+              const phone = row.phone || "";
+              return `${name}\n${email}\n${phone}`;
+            }
+          },
           { label: "Title", key: "title" },
           { label: "Description", key: "description" },
           { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
