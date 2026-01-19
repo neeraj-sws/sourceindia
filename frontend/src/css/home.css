@@ -451,6 +451,12 @@ button.nav-link {
     font-weight: 500;
 }
 
+/* Make tab labels slightly larger for readability */
+button.nav-link,
+.nav-tabs .nav-link {
+    font-size: 1rem; /* 16px */
+}
+
 .nav-item,
 button.nav-link,
 .nav-item:hover,
