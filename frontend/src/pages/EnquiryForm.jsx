@@ -26,11 +26,18 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
   const [products, setProducts] = useState([]); // Initialize as empty array
   const [singleProduct, setSingleProduct] = useState(null);
   const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
-const isValidEmail = (email) => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-};
+  const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
   const [selectedProductId, setSelectedProductId] = useState(productId || '');
   const { user, login } = useAuth();
+
+  useEffect(() => {
+    if (user && user.walkin_buyer === 1 && show) {
+      setStep(3);
+      setUserId(user.id);
+    }
+  }, [user, show]);
 
   useEffect(() => {
     if (!productId && companyId) {
@@ -77,14 +84,14 @@ const isValidEmail = (email) => {
   const handleVerify = async (e) => {
     e.preventDefault();
     if (!email) {
-    showNotification('Email is required', 'error');
-    return;
-  }
+      showNotification('Email is required', 'error');
+      return;
+    }
 
-  if (!isValidEmail(email)) {
-    showNotification('Please enter a valid email address', 'error');
-    return;
-  }
+    if (!isValidEmail(email)) {
+      showNotification('Please enter a valid email address', 'error');
+      return;
+    }
     setLoadingVerify(true);
     try {
       const res = await axios.post(`${API_BASE_URL}/enquiries/verify`, { email });
@@ -122,12 +129,12 @@ const isValidEmail = (email) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/enquiries/submit-otp`, { email, otp });
 
-        if (res.data.verified) {
+      if (res.data.verified) {
 
-    login(res.data.token, res.data.user);
-  setUserId(res.data.user.id);
-  showNotification("OTP verified & logged in!", "success");
-  setStep(3);
+        login(res.data.token, res.data.user);
+        setUserId(res.data.user.id);
+        showNotification("OTP verified & logged in!", "success");
+        setStep(3);
         // setMessage('OTP verified!');
         // showNotification('OTP verified!', 'success');
         // setUserId(res.data.userId);
@@ -219,7 +226,7 @@ const isValidEmail = (email) => {
   return (
     <div className={`modal fade ${show ? 'show' : ''}`} id="enquiryModal" tabIndex="-1" role="dialog" aria-labelledby="enquiryModalLabel" aria-hidden={!show} style={{ display: show ? 'block' : 'none', backgroundColor: show ? '#0606068c' : 'none' }}>
       <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
-        {!user ? (
+        {!user || user.walkin_buyer === 1 ? (
           <div className="modal-content">
 
             <div className="modal-body p-0">
@@ -243,7 +250,7 @@ const isValidEmail = (email) => {
                     </div>
 
                     <h6>{singleProduct?.title}</h6>
-                      <p><i className="bx bx-building" aria-hidden="true"></i> {companyName || 'Company'}</p>
+                    <p><i className="bx bx-building" aria-hidden="true"></i> {companyName || 'Company'}</p>
                   </div>
                 </div>
                 <div className='col-md-7 pe-4'>
@@ -252,7 +259,7 @@ const isValidEmail = (email) => {
                       <span aria-hidden="true"><i className="bx bx-x" /></span>
                     </button>
                   </div>
-                                        <p><i className="bx bx-building" aria-hidden="true"></i> {companyName || 'Company'}</p>
+                  <p><i className="bx bx-building" aria-hidden="true"></i> {companyName || 'Company'}</p>
                   {exists ? (
                     <div className="text-center p-3 py-4">
                       <img src="/check.png" className='img-fluid' width="60" />
@@ -300,20 +307,28 @@ const isValidEmail = (email) => {
                             </div>
 
                             <div className="form-group mb-3">
-                              <label>
-                                Email <sup className="text-danger">*</sup>
-                              </label>
-                              <div className='d-flex gap-2'>
-                                <input
-                                  type="email"
-                                  className="form-control"
-                                  placeholder="Enter Email"
-                                  value={email}
-                                  onChange={(e) => setEmail(e.target.value)}
-                                  readOnly={step > 1}
-                                  required
-                                />
 
+                              {user?.walkin_buyer !== 1 && (
+                                <>
+                                  <label>
+                                    Email <sup className="text-danger">*</sup>
+                                  </label>
+
+                                  <div className="d-flex gap-2">
+                                    <input
+                                      type="email"
+                                      className="form-control"
+                                      placeholder="Enter Email"
+                                      value={email}
+                                      onChange={(e) => setEmail(e.target.value)}
+                                      readOnly={step > 1}
+                                      required
+                                    />
+                                  </div>
+                                </>
+                              )}
+
+                              <div className='mt-3'>
                                 {step === 1 ? (
                                   <button
                                     type="submit"
@@ -342,6 +357,7 @@ const isValidEmail = (email) => {
                                 ) : null}
                               </div>
                             </div>
+
                           </>
                         )}
 
@@ -410,11 +426,16 @@ const isValidEmail = (email) => {
                             </div>
                             <div className="form-group mb-3">
                               <input
-                                type="text"
+                                type="number"
                                 className="form-control"
                                 placeholder="Phone *"
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value.length <= 10) {
+                                    setPhone(value);
+                                  }
+                                }}
                                 required
                               />
                             </div>
@@ -586,7 +607,7 @@ const isValidEmail = (email) => {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 };
 

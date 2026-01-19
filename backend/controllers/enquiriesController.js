@@ -944,6 +944,7 @@ exports.verifyEmail = async (req, res) => {
         website: '',
         products: '',
         request_admin: 0,
+        walkin_buyer: 1,
       },
       { transaction }
     );
@@ -1097,7 +1098,8 @@ exports.storeEnquiry = async (req, res) => {
       mobile: phone,
       is_new: 1,
       is_profile: 1,
-      is_complete: 1
+      is_complete: 1,
+      
     });
 
     /* -------------------- 6. Create enquiry -------------------- */
