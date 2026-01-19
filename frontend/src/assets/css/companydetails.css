@@ -618,6 +618,28 @@
 }
 .similerCompany h2, .companyProducts h2 { margin-bottom: 18px; font-size: 1.25rem; margin-top: 0.5rem; }
 
+/* Standardize section headings on product detail pages */
+.product-detail-container h2,
+.recommended-companies h2,
+.similerCompany h2,
+.companyProducts h2 {
+  font-size: 1.4rem;
+  color: var(--primary-color);
+  font-weight: 700;
+  margin: 1.5rem 0 1rem;
+  text-align: left;
+}
+
+@media (max-width: 767.98px) {
+  .product-detail-container h2,
+  .recommended-companies h2,
+  .similerCompany h2,
+  .companyProducts h2 {
+    text-align: center;
+    font-size: 1.25rem;
+  }
+}
+
 /* Strong overrides to ensure all recommended / suggested cards share equal height and alignment */
 .recommended-companies-carousel .swiper-slide {
   display: flex !important;

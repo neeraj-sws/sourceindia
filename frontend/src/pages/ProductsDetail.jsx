@@ -147,10 +147,21 @@ const ProductDetail = () => {
 
   if (showSkeleton) return <ProductDetailSkeleton />;
 
-  // Combine main file_name with images array
-  const allImages = product.file_name
-    ? [{ file: product.file_name, id: 'main' }, ...product.images]
-    : product.images;
+  // If fetch failed but skeleton hidden, show a friendly message instead of crashing
+  if (!product) {
+    return (
+      <div className="container py-5">
+        <div className="alert alert-warning">Product not found or an error occurred while loading the product.</div>
+      </div>
+    );
+  }
+
+  // Combine main file_name with images array; use fallbacks to avoid exceptions
+  const allImages = (() => {
+    const imgs = Array.isArray(product.images) ? product.images : [];
+    if (product.file_name) return [{ file: product.file_name, id: 'main' }, ...imgs];
+    return imgs;
+  })();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -197,8 +208,9 @@ const ProductDetail = () => {
     }
   };
 
-  const fullStars = Math.floor(product.averageRating);
-  const hasHalfStar = product.averageRating % 1 !== 0;
+  const avgRating = Number(product.averageRating) || 0;
+  const fullStars = Math.floor(avgRating);
+  const hasHalfStar = (avgRating - fullStars) >= 0.5;
 
   return (
     <>
