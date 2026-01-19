@@ -1,4 +1,5 @@
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
+
 const bcrypt = require('bcryptjs');
 const OpenEnquiries = require('../models/OpenEnquiries');
 const OpenEnquiriesChats = require('../models/OpenEnquiriesChats');
@@ -163,30 +164,34 @@ exports.getUserOpenEnquiries = async (req, res) => {
 
     const openEnquiries = await OpenEnquiriesChats.findAll({
       where: whereConditions,
-      order: [['created_at', 'DESC']],
+
+      attributes: [
+        'user_id',
+
+        // 👇 aggregate column
+        [Sequelize.fn('MAX', Sequelize.col('OpenEnquiriesChats.open_enquriychats_id')), 'open_enquriychats_id'],
+        [Sequelize.fn('MAX', Sequelize.col('OpenEnquiriesChats.created_at')), 'created_at'],
+        [Sequelize.fn('MAX', Sequelize.col('OpenEnquiriesChats.message')), 'message'],
+      ],
+
       include: [
         {
           model: Users,
           as: 'Users',
-          attributes: ['fname', 'lname', 'email', 'company_id'],
-          include: [
-            {
-              model: UploadImage,
-              as: 'file',
-              attributes: ['file']
-            }
-          ]
-        }, {
+          attributes: ['user_id', 'fname', 'lname', 'email', 'company_id'],
+        },
+        {
           model: OpenEnquiries,
           as: 'OpenEnquiries',
           attributes: ['title'],
         }
       ],
-      group: ['Users.user_id'],
+
+      group: ['user_id'],   // ✅ safe now
       raw: false,
       nest: true,
-
     });
+
 
     const transformed = openEnquiries.map(item => {
       const enquiry = item.toJSON();
@@ -596,85 +601,85 @@ exports.sendMessage = async (req, res) => {
 };
 
 exports.getOpenenquiryEntryold = async (req, res) => {
-//   try {
-    // 1️⃣ Get all open enquiries jinke user_id null hai
-    const openEnquiries = await OpenEnquiries.findAll({
-      where: { user_id: null }
-    });
+  //   try {
+  // 1️⃣ Get all open enquiries jinke user_id null hai
+  const openEnquiries = await OpenEnquiries.findAll({
+    where: { user_id: null }
+  });
 
-    if (!openEnquiries.length) {
-      return res.json({
-        message: 'No open enquiries found',
-        count: 0
-      });
-    }
-
-    let processed = 0;
-
-    for (const enquiry of openEnquiries) {
-      const { name, email, phone, company } = enquiry;
-
-      // ❌ Skip if essential data missing
-      if (!email || !company || !name) continue;
-
-      // 2️⃣ Company: find or create
-      const [companyRecord] = await CompanyInfo.findOrCreate({
-        where: {
-          organization_name: company.trim()
-        }
-      });
-
-      // 3️⃣ User: check existing by email
-      let user = await Users.findOne({
-        where: {
-          email: email.trim()
-        }
-      });
-
-      // 4️⃣ Create user only if not exists
-      if (!user) {
-        const password =
-          'SI' +
-          new Date().getFullYear() +
-          Math.floor(1000 + Math.random() * 9000);
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        user = await Users.create({
-          fname: name.trim(),
-          lname: '',
-          company_id: companyRecord.id,
-          email: email.trim(),
-          phone: phone?.trim() || null,
-          user_company: company.trim(),
-          password: hashedPassword,
-          real_password: password,
-        });
-
-        // (optional) send password email here
-      }
-
-      // 5️⃣ Update enquiry with user_id
-      enquiry.user_id = user.id;
-      enquiry.enquiry_user_id = user.id; // agar aap use kar rahe ho
-      await enquiry.save();
-
-      processed++;
-    }
-
+  if (!openEnquiries.length) {
     return res.json({
-      message: 'Open enquiries processed successfully',
-      processed
+      message: 'No open enquiries found',
+      count: 0
+    });
+  }
+
+  let processed = 0;
+
+  for (const enquiry of openEnquiries) {
+    const { name, email, phone, company } = enquiry;
+
+    // ❌ Skip if essential data missing
+    if (!email || !company || !name) continue;
+
+    // 2️⃣ Company: find or create
+    const [companyRecord] = await CompanyInfo.findOrCreate({
+      where: {
+        organization_name: company.trim()
+      }
     });
 
-//   } catch (err) {
-//     console.error('getOpenenquiryEntry error:', err);
-//     console.error('DB error:', err?.parent);
+    // 3️⃣ User: check existing by email
+    let user = await Users.findOne({
+      where: {
+        email: email.trim()
+      }
+    });
 
-//     return res.status(500).json({
-//       error: err.message
-//     });
-//   }
+    // 4️⃣ Create user only if not exists
+    if (!user) {
+      const password =
+        'SI' +
+        new Date().getFullYear() +
+        Math.floor(1000 + Math.random() * 9000);
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      user = await Users.create({
+        fname: name.trim(),
+        lname: '',
+        company_id: companyRecord.id,
+        email: email.trim(),
+        phone: phone?.trim() || null,
+        user_company: company.trim(),
+        password: hashedPassword,
+        real_password: password,
+      });
+
+      // (optional) send password email here
+    }
+
+    // 5️⃣ Update enquiry with user_id
+    enquiry.user_id = user.id;
+    enquiry.enquiry_user_id = user.id; // agar aap use kar rahe ho
+    await enquiry.save();
+
+    processed++;
+  }
+
+  return res.json({
+    message: 'Open enquiries processed successfully',
+    processed
+  });
+
+  //   } catch (err) {
+  //     console.error('getOpenenquiryEntry error:', err);
+  //     console.error('DB error:', err?.parent);
+
+  //     return res.status(500).json({
+  //       error: err.message
+  //     });
+  //   }
 
 
 

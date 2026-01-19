@@ -76,7 +76,7 @@ const ViewEnquiry = () => {
       );
     }
   }, [enquiries]);
-  const getuserChat = async (replyUserId, enquiryId, userId) => {
+  const getuserChat = async (replyUserId, eId, userId) => {
 
     setActiveEnquiry(userId);
     setEnquiryIdState(enquiryId);
@@ -190,7 +190,7 @@ const ViewEnquiry = () => {
                                   e.target.onerror = null; // prevent infinite loop
                                   e.target.src = "/user-demo.png";
                                 }}
-                              />
+                              />{enquiry.enquiry_id}
 
 
                               <span
