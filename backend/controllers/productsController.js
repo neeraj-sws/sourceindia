@@ -9,6 +9,7 @@ const UploadImage = require('../models/UploadImage');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
 const States = require('../models/States');
+const Cities = require('../models/Cities');
 const ReviewRating = require('../models/ReviewRating');
 const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
@@ -1193,11 +1194,40 @@ exports.getCompanyInfoById = async (req, res) => {
       });
     }
 
-    const recommendedCompanies = allCompanies.filter(c => {
+    /*const recommendedCompanies = allCompanies.filter(c => {
       if (!c.category_sell) return false;
       const companyCategories = c.category_sell.split(',').map(id => id.trim());
       return companyCategories.some(cat => allowedCategories.has(cat));
-    });
+    });*/
+    let recommendedCompaniesFiltered = [];
+if (user) {
+  const allowedCategoryIds = [...allowedCategories]; // convert Set to array
+
+  const recommendedCompaniesRaw = await sequelize.query(
+    `
+      SELECT c.company_id, c.organization_name, c.category_sell, c.organization_slug,
+             ui.file AS company_logo_file,
+             s.name AS state_name,
+             ci.name AS city_name
+      FROM company_info c
+      LEFT JOIN upload_images ui ON ui.upload_image_id = c.company_logo
+      LEFT JOIN users u ON u.company_id = c.company_id AND u.is_delete = 0 AND u.status = 1 AND u.is_approve = 1
+      LEFT JOIN states s ON s.state_id = u.state
+      LEFT JOIN cities ci ON ci.city_id = u.city
+      WHERE c.company_id != :companyId
+    `,
+    {
+      replacements: { companyId: company.id },
+      type: sequelize.QueryTypes.SELECT
+    }
+  );
+
+  recommendedCompaniesFiltered = recommendedCompaniesRaw.filter(c => {
+    if (!c.category_sell) return false;
+    const companyCategories = c.category_sell.split(',').map(id => id.trim());
+    return companyCategories.some(catId => allowedCategoryIds.includes(catId));
+  });
+}
 
     const response = {
       ...data,
@@ -1208,13 +1238,22 @@ exports.getCompanyInfoById = async (req, res) => {
       item_category_name: itemcategoryNames.join(', '),
       item_subcategory_name: itemsubCategoryNames.join(', '),
       products: productList,
-      recommended_companies: recommendedCompanies.map(c => ({
+      /*recommended_companies: recommendedCompanies.map(c => ({
         id: c.id,
         organization_name: c.organization_name,
         category_sell: c.category_sell,
         company_logo_file: c.companyLogo?.file || null,
         organization_slug: c.organization_slug || null,
-      }))
+      }))*/
+      recommended_companies: recommendedCompaniesFiltered.map(c => ({
+  id: c.id,
+  organization_name: c.organization_name,
+  organization_slug: c.organization_slug,
+  category_sell: c.category_sell,
+  company_logo_file: c.company_logo_file || null,
+  state_name: c.state_name || null,
+  city_name: c.city_name || null
+})),
     };
 
     // Clean up included models

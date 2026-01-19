@@ -97,7 +97,7 @@ const SellerCompany = () => {
                                 const shownState = STATIC_STATE || company.state_name;
                                 return shownState ? (
                                   <div className="recLocation" title={shownState}>
-                                    <i className="bx bx-map recLocIcon" />{shownState}
+                                    <i className="bx bx-map recLocIcon" />{company.city_name}, {company.state_name}
                                   </div>
                                 ) : null;
                               })()}

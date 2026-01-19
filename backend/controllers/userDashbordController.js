@@ -419,15 +419,11 @@ exports.storeItemsubcategory = async (req, res) => {
 exports.getSellercompany = async (req, res) => {
   try {
     const { userId } = req.query;
-
     if (!userId) {
-      return res.status(400).json({
-        status: false,
-        message: "userId is required",
-      });
+      return res.status(400).json({ status: false, message: "userId is required" });
     }
 
-    // 1️⃣ Buyer sourcing interests
+    // Step 1: Get buyer interests
     const interests = await BuyerSourcingInterests.findAll({
       where: { user_id: userId },
       attributes: ["item_subcategory_id"],
@@ -435,17 +431,12 @@ exports.getSellercompany = async (req, res) => {
     });
 
     if (!interests.length) {
-      return res.json({
-        status: true,
-        message: "No sourcing interests found",
-        data: [],
-      });
+      return res.json({ status: true, message: "No sourcing interests found", data: [] });
     }
 
     const itemSubcategoryIds = interests.map(i => i.item_subcategory_id);
 
-
-    // 2️⃣ Get actual subcategory_id from ItemSubcategory
+    // Step 2: Get subcategory IDs
     const subcategories = await ItemSubCategory.findAll({
       where: { item_subcategory_id: itemSubcategoryIds },
       attributes: ["subcategory_id"],
@@ -455,45 +446,59 @@ exports.getSellercompany = async (req, res) => {
     const subCategoryIds = subcategories.map(s => s.subcategory_id);
 
     if (!subCategoryIds.length) {
-      return res.json({
-        status: true,
-        message: "No subcategories mapped",
-        data: [],
-      });
+      return res.json({ status: true, message: "No subcategories mapped", data: [] });
     }
 
-
+    // Step 3: Fetch companies
     const companies = await CompanyInfo.findAll({
       where: {
-        [Op.or]: subCategoryIds.map(id => ({
-          sub_category: {
-            [Op.like]: `%${id}%`
-          }
-        }))
+        [Op.or]: subCategoryIds.map(id => ({ sub_category: { [Op.like]: `%${id}%` } }))
       },
       include: [
         {
           model: UploadImage,
           as: 'companyLogo',
           attributes: ['file'],
-          required: false, // image na ho tab bhi product aaye
+          required: false,
         },
       ],
+      raw: true,
+      nest: true,
+    });
 
+    // Step 4: Manually fetch users with state & city
+    const companyIds = companies.map(c => c.id);
+
+    const users = await Users.findAll({
+      where: { company_id: companyIds },
+      attributes: ['company_id', 'state', 'city'],
+      include: [
+        { model: States, as: 'state_data', attributes: ['name'], required: false },
+        { model: Cities, as: 'city_data', attributes: ['name'], required: false },
+      ],
+      raw: true,
+      nest: true,
+    });
+
+    // Step 5: Merge state & city into company data
+    const finalData = companies.map(company => {
+      const user = users.find(u => u.company_id === company.id) || {};
+      return {
+        ...company,
+        state_name: user.state_data?.name || null,
+        city_name: user.city_data?.name || null,
+      };
     });
 
     return res.json({
       status: true,
       message: "Companies fetched successfully",
-      data: companies,
+      data: finalData,
     });
 
   } catch (error) {
     console.error("Seller Company Error:", error);
-    res.status(500).json({
-      status: false,
-      message: "Server error",
-    });
+    res.status(500).json({ status: false, message: "Server error" });
   }
 };
 

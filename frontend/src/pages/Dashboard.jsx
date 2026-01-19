@@ -405,8 +405,8 @@ const Dashboard = () => {
                               cat.name?.toLowerCase().includes(categorySearch.toLowerCase())
                             )
                             .map((cat) => (
-                              <div className="col-lg-4">
-                                <div key={cat.id} className="form-check mb-2">
+                              <div key={cat.id} className="col-lg-4">
+                                <div className="form-check mb-2">
                                   <input
                                     className="form-check-input"
                                     type="checkbox"
@@ -414,7 +414,7 @@ const Dashboard = () => {
                                     id={`categoryData_${cat.id}`}
                                     onChange={() => handleCategoryChange(cat.id)}
                                   />
-                                  <label className="form-check-label" for={`categoryData_${cat.id}`}>
+                                  <label className="form-check-label" htmlFor={`categoryData_${cat.id}`}>
                                     {cat.name}
                                     {(categoryCounts?.[cat.id] ?? cat.count) > 0 && (
                                       <span className="ms-2 badge bg-primary">

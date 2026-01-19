@@ -453,7 +453,7 @@ const CompanyDetail = () => {
                       </div>
                       <div className="recText">
                         <h6 className="recName" title={item.organization_name}>{item.organization_name}</h6>
-                        <div className="recLocation"><i className="bx bx-map recLocIcon" />{item.company_location || 'India'}</div>
+                        <div className="recLocation"><i className="bx bx-map recLocIcon" />{item.city_name}, {item.state_name}</div>
                       </div>
                     </Link>
                   </div>
