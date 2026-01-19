@@ -81,8 +81,8 @@ const BuyerProduct = () => {
                               <div className="ProImg">
                                 <ImageFront
                                   src={
-                                    product.file?.length
-                                      ? `${ROOT_URL}/${product.file[0].file}`
+                                    product.file
+                                      ? `${ROOT_URL}/${product.file?.file}`
                                       : "/default.png"
                                   }
                                   width={180}

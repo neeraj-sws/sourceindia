@@ -53,6 +53,27 @@ const ProductDetail = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [slug]);
 
+  const timeAgo = (date) => {
+    if (!date) return '—';
+
+    const created = new Date(date);
+    const now = new Date();
+
+    const diffMs = now - created;
+
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
+
+    if (years > 0) return `${years} Year${years > 1 ? 's' : ''}`;
+    if (months > 0) return `${months} Month${months > 1 ? 's' : ''}`;
+    if (days > 0) return `${days} Day${days > 1 ? 's' : ''}`;
+
+    return 'Today';
+  };
+
+
+
   const Skeleton = ({ width = "100%", height = "16px", style = {} }) => (
     <div
       style={{
@@ -452,7 +473,7 @@ const ProductDetail = () => {
                         <i className="bx bx-calendar text-secondary" />
                         <div>
                           <div className="meta-label">Member Since</div>
-                          <div className="meta-value">{product.company_member_since || product.company_year || '—'}</div>
+                          <div className="meta-value">{timeAgo(product.created_at) || '—'}</div>
                         </div>
                       </div>
 
@@ -460,7 +481,7 @@ const ProductDetail = () => {
                         <i className="bx bx-building text-secondary" />
                         <div>
                           <div className="meta-label">Nature of Business</div>
-                          <div className="meta-value">{product.nature_of_business || product.business_nature || 'N/A'}</div>
+                          <div className="meta-value">{product.core_activity_name || product.core_activity_name || 'N/A'}</div>
                         </div>
                       </div>
 
@@ -469,8 +490,8 @@ const ProductDetail = () => {
                       <div className="mt-2">
                         <Link to={`/companies/${product.company_slug}`} className="view-company-link text-decoration-none">View Company Details →</Link>
                       </div>
-                      </div>
                     </div>
+                  </div>
                 </div>
 
                 {/* Separate compact Register CTA card below the sidebar company card */}
@@ -483,7 +504,7 @@ const ProductDetail = () => {
                 </div>
 
               </div>
-              
+
 
 
             </div>
@@ -574,50 +595,50 @@ const ProductDetail = () => {
                                     </div>
 
                                     <div className="about-grid">
-                                  <div className="about-item">
-                                    <div className="about-icon"><i className="bx bx-globe" aria-hidden="true" /></div>
-                                    <div className="about-content">
-                                      <div className="about-label">Website</div>
-                                      <div className="about-value"><a href={product.company_website?.startsWith('http') ? product.company_website : `https://${product.company_website}`} target="_blank" rel="noreferrer">{product.company_website || "N/A"}</a></div>
-                                    </div>
-                                  </div>
+                                      <div className="about-item">
+                                        <div className="about-icon"><i className="bx bx-globe" aria-hidden="true" /></div>
+                                        <div className="about-content">
+                                          <div className="about-label">Website</div>
+                                          <div className="about-value"><a href={product.company_website?.startsWith('http') ? product.company_website : `https://${product.company_website}`} target="_blank" rel="noreferrer">{product.company_website || "N/A"}</a></div>
+                                        </div>
+                                      </div>
 
-                                  <div className="about-item">
-                                    <div className="about-icon"><i className="bx bx-briefcase" aria-hidden="true" /></div>
-                                    <div className="about-content">
-                                      <div className="about-label">Core Activity</div>
-                                      <div className="about-value">{product.core_activity_name || "N/A"}</div>
-                                    </div>
-                                  </div>
+                                      <div className="about-item">
+                                        <div className="about-icon"><i className="bx bx-briefcase" aria-hidden="true" /></div>
+                                        <div className="about-content">
+                                          <div className="about-label">Core Activity</div>
+                                          <div className="about-value">{product.core_activity_name || "N/A"}</div>
+                                        </div>
+                                      </div>
 
-                                  <div className="about-item">
-                                    <div className="about-icon"><i className="bx bx-cog" aria-hidden="true" /></div>
-                                    <div className="about-content">
-                                      <div className="about-label">Activity</div>
-                                      <div className="about-value">{product.activity_name || "N/A"}</div>
-                                    </div>
-                                  </div>
+                                      <div className="about-item">
+                                        <div className="about-icon"><i className="bx bx-cog" aria-hidden="true" /></div>
+                                        <div className="about-content">
+                                          <div className="about-label">Activity</div>
+                                          <div className="about-value">{product.activity_name || "N/A"}</div>
+                                        </div>
+                                      </div>
 
-                                  <div className="about-item">
-                                    <div className="about-icon"><i className="bx bx-category" aria-hidden="true" /></div>
-                                    <div className="about-content">
-                                      <div className="about-label">Category</div>
-                                      <div className="about-value">{product.category_name || "N/A"}</div>
-                                    </div>
-                                  </div>
+                                      <div className="about-item">
+                                        <div className="about-icon"><i className="bx bx-category" aria-hidden="true" /></div>
+                                        <div className="about-content">
+                                          <div className="about-label">Category</div>
+                                          <div className="about-value">{product.category_name || "N/A"}</div>
+                                        </div>
+                                      </div>
 
-                                  <div className="about-item">
-                                    <div className="about-icon"><i className="bx bx-list-ul" aria-hidden="true" /></div>
-                                    <div className="about-content">
-                                      <div className="about-label">Sub Category</div>
-                                      <div className="about-value">{product.sub_category_name || "N/A"}</div>
-                                    </div>
-                                  </div>
+                                      <div className="about-item">
+                                        <div className="about-icon"><i className="bx bx-list-ul" aria-hidden="true" /></div>
+                                        <div className="about-content">
+                                          <div className="about-label">Sub Category</div>
+                                          <div className="about-value">{product.sub_category_name || "N/A"}</div>
+                                        </div>
+                                      </div>
                                     </div>
 
                                     <div className="about-description mt-3">
-                                  <p className="mb-2">{product.brief_company || ""}</p>
-                                  <p className="text-muted" dangerouslySetInnerHTML={{ __html: product.organizations_product_description || "" }} />
+                                      <p className="mb-2">{product.brief_company || ""}</p>
+                                      <p className="text-muted" dangerouslySetInnerHTML={{ __html: product.organizations_product_description || "" }} />
                                     </div>
 
                                     {/* Removed Member Since, Nature of Business, GST No., Enquiry button and company CTAs per request */}
@@ -768,29 +789,29 @@ const ProductDetail = () => {
                   }}
                 >
                   {product.recommended_companies.map((company) => (
-                      <SwiperSlide key={company.id}>
-                        <div className="mb-4">
-                          <div className="productBox productBoxswiper p-3 bg-white h-100">
-                            <Link to={`/companies/${company.organization_slug}`} className="text-dark d-flex flex-column h-100">
-                              <div className="middlepro">
-                                <div className="ProImg">
-                                  <ImageFront
-                                    src={`${ROOT_URL}/${company.company_logo_file}`}
-                                    width={180}
-                                    height={180}
-                                    showFallback={true}
-                                  />
-                                </div>
-                                <div className="productlink text-center">
-                                  <p className="mb-1 title-clamp recName" title={company.organization_name}>{company.organization_name}</p>
-                                  <div className="recLocation text-muted"><i className="bx bx-map recLocIcon" aria-hidden="true" />{company.state_name || company.city_name || company.company_location || 'India'}</div>
-                                </div>
+                    <SwiperSlide key={company.id}>
+                      <div className="mb-4">
+                        <div className="productBox productBoxswiper p-3 bg-white h-100">
+                          <Link to={`/companies/${company.organization_slug}`} className="text-dark d-flex flex-column h-100">
+                            <div className="middlepro">
+                              <div className="ProImg">
+                                <ImageFront
+                                  src={`${ROOT_URL}/${company.company_logo_file}`}
+                                  width={180}
+                                  height={180}
+                                  showFallback={true}
+                                />
                               </div>
-                            </Link>
-                          </div>
+                              <div className="productlink text-center">
+                                <p className="mb-1 title-clamp recName" title={company.organization_name}>{company.organization_name}</p>
+                                <div className="recLocation text-muted"><i className="bx bx-map recLocIcon" aria-hidden="true" />{company.state_name || company.city_name || company.company_location || 'India'}</div>
+                              </div>
+                            </div>
+                          </Link>
                         </div>
-                      </SwiperSlide>
-                    ))}
+                      </div>
+                    </SwiperSlide>
+                  ))}
                 </Swiper>
               </div>
             </div>

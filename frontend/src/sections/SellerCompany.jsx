@@ -84,8 +84,8 @@ const SellerCompany = () => {
                               <div className="ProImg">
                                 <ImageFront
                                   src={
-                                    company.companyLogo?.length
-                                      ? `${ROOT_URL}/${company.companyLogo[0].file}`
+                                    company.companyLogo
+                                      ? `${ROOT_URL}/${company.companyLogo?.file}`
                                       : "/default.png"
                                   }
                                   width={180}
