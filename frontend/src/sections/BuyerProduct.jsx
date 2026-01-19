@@ -63,6 +63,8 @@ const BuyerProduct = () => {
                     slidesPerView={4}
                     navigation
                     autoplay={{ delay: 3000, disableOnInteraction: false }}
+                    className="recommended-companies-carousel"
+                    style={{ padding: "20px 0" }}
                     breakpoints={{
                       0: { slidesPerView: 1 },
                       576: { slidesPerView: 2 },
@@ -71,10 +73,10 @@ const BuyerProduct = () => {
                     }}
                   >
                     {products.map((product) => (
-                      <SwiperSlide key={product.id}>
-                        <div className="shadow-sm p-3 bg-white text-center">
+                      <SwiperSlide key={product.id} className="bg-white border rounded p-2 text-center">
+                        <div className="productContainer">
                           <Link to={`/products/${product.slug}`}>
-                            <div className="BuyerProImg mb-2">
+                            <div className="recLogoWrap mb-2">
                               <ImageFront
                                 src={
                                   product.file?.length
@@ -82,11 +84,13 @@ const BuyerProduct = () => {
                                     : "/default.png"
                                 }
                                 width={180}
-                                height={100}
+                                height={180}
                                 showFallback={true}
                               />
                             </div>
-                            <p className="mb-0">{product.title}</p>
+                            <div className="recText">
+                              <h6 className="recName" title={product.title}>{product.title}</h6>
+                            </div>
                           </Link>
                         </div>
                       </SwiperSlide>

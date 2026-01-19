@@ -17,6 +17,8 @@ const SellerCompany = () => {
   const navigate = useNavigate();
   const { user, loading } = UseAuth();
   const [companies, setCompanies] = useState([]);
+  // Static state displayed for all suggested sellers (change value below)
+  const STATIC_STATE = "Karnataka";
 
   useEffect(() => {
     if (loading) return;
@@ -64,6 +66,8 @@ const SellerCompany = () => {
                     slidesPerView={4}
                     navigation
                     autoplay={{ delay: 3000, disableOnInteraction: false }}
+                    className="recommended-companies-carousel"
+                    style={{ padding: "20px 0" }}
                     breakpoints={{
                       0: { slidesPerView: 1 },
                       576: { slidesPerView: 2 },
@@ -72,10 +76,10 @@ const SellerCompany = () => {
                     }}
                   >
                     {companies.map((company) => (
-                      <SwiperSlide key={company.id}>
-                        <div className="shadow-sm p-3 bg-white">
-                          <Link to={`/products/${company.organization_slug}`}>
-                            <div className="companyProImg mb-2 d-flex align-items-center gap-2">
+                      <SwiperSlide key={company.id} className="bg-white border rounded p-2 text-center">
+                        <div className="productContainer">
+                          <Link to={`/companies/${company.organization_slug}`}>
+                            <div className="recLogoWrap mb-2">
                               <ImageFront
                                 src={
                                   company.companyLogo?.length
@@ -83,12 +87,21 @@ const SellerCompany = () => {
                                     : "/default.png"
                                 }
                                 width={180}
-                                height={100}
+                                height={180}
                                 showFallback={true}
                               />
-                              <p className="mb-0">{company.organization_name}</p>
                             </div>
-
+                            <div className="recText">
+                              <h6 className="recName" title={company.organization_name}>{company.organization_name}</h6>
+                              {(() => {
+                                const shownState = STATIC_STATE || company.state_name;
+                                return shownState ? (
+                                  <div className="recLocation" title={shownState}>
+                                    <i className="bx bx-map recLocIcon" />{shownState}
+                                  </div>
+                                ) : null;
+                              })()}
+                            </div>
                           </Link>
                         </div>
                       </SwiperSlide>

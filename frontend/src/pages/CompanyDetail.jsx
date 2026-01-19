@@ -8,6 +8,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import ImageFront from "../admin/common/ImageFront";
+import '../assets/css/companydetails.css';
 import { useAlert } from "../context/AlertContext";
 import EnquiryForm from "./EnquiryForm";
 import UseAuth from '../sections/UseAuth';
@@ -200,61 +201,89 @@ const CompanyDetail = () => {
             <div className="col-xl-9 col-md-8 mb-md-0 mb-3">
               <div className="card h-100 shadow-sm">
                 <div className="card-body p-4">
-                  <h4 className="text-orange">{company.organization_name}</h4>
-                  <table className="table productTable mt-3">
-                    <tbody>
-                      <tr><th className="text-wrap">Location</th><td>{company.company_location || "N/A"}</td></tr>
-                      <tr><th>Website</th><td>{company.company_website || "N/A"}</td></tr>
-                      <tr><th>Core Activity</th><td>{company.coreactivity_name || "N/A"}</td></tr>
-                      <tr><th>Activity</th><td>{company.activity_name || "N/A"}</td></tr>
-                      <tr><th>Category</th><td>{company.category_name || "N/A"}</td></tr>
-                      <tr><th>Sub Category</th><td>{company.sub_category_name || "N/A"}</td></tr>
-                      {/* <tr><th className="text-nowrap">Item Category</th><td>{company.item_category_name || "N/A"}</td></tr> */}
-                      {/* <tr><th className="text-nowrap">Item Type</th><td>{company.item_subcategory_name || "N/A"}</td></tr> */}
-                    </tbody>
-                  </table>
-                  <p>{company.brief_company || ""}</p>
-                  <p>{company.organizations_product_description || ""}</p>
-                  <div className='w-25 mt-4'>
-                    <button className="btn btn-orange w-100 enquirybtnwidth" onClick={() => setShowModal(true)}>
-                      <i className="lni lni-phone pe-2"></i> Enquiry
-                    </button>
+                  <div className="d-flex align-items-center gap-3 mb-1">
+                    <div className="companydetailimg">
+                      <ImageFront
+                        src={`${ROOT_URL}/${company.company_logo_file}`}
+                        alt={company.organization_name}
+                        showFallback={true}
+                        defaultimg="/company.png"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="text-orange mb-1">{company.organization_name}</h4>
+                      <div className="company-subtitle text-muted"><i className="bx bx-map subtitle-icon" aria-hidden="true" />{company.company_location || ''}</div>
+                    </div>
                   </div>
-                  <EnquiryForm
-                    show={showModal}
-                    onHide={() => setShowModal(false)}
-                    productId=''
-                    companyId={`${company.id}`}
-                    productTitle=''
-                    companyName={`${company.organization_name}`}
-                  />
+                  <div className="about-grid-wrap mt-3">
+                    <div className="about-grid">
+                      {/* Location moved to subtitle above */}
+
+                      <div className="about-item">
+                        <div className="about-icon"><i className="bx bx-globe" aria-hidden="true" /></div>
+                        <div className="about-content">
+                          <div className="about-label">Website</div>
+                          <div className="about-value"><a href={company.company_website?.startsWith('http') ? company.company_website : `https://${company.company_website}`} target="_blank" rel="noreferrer">{company.company_website || "N/A"}</a></div>
+                        </div>
+                      </div>
+
+                      <div className="about-item">
+                        <div className="about-icon"><i className="bx bx-briefcase" aria-hidden="true" /></div>
+                        <div className="about-content">
+                          <div className="about-label">Core Activity</div>
+                          <div className="about-value">{company.coreactivity_name || "N/A"}</div>
+                        </div>
+                      </div>
+
+                      <div className="about-item">
+                        <div className="about-icon"><i className="bx bx-cog" aria-hidden="true" /></div>
+                        <div className="about-content">
+                          <div className="about-label">Activity</div>
+                          <div className="about-value">{company.activity_name || "N/A"}</div>
+                        </div>
+                      </div>
+
+                      <div className="about-item">
+                        <div className="about-icon"><i className="bx bx-category" aria-hidden="true" /></div>
+                        <div className="about-content">
+                          <div className="about-label">Category</div>
+                          <div className="about-value">{company.category_name || "N/A"}</div>
+                        </div>
+                      </div>
+
+                      <div className="about-item">
+                        <div className="about-icon"><i className="bx bx-list-ul" aria-hidden="true" /></div>
+                        <div className="about-content">
+                          <div className="about-label">Sub Category</div>
+                          <div className="about-value">{company.sub_category_name || "N/A"}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="about-description mt-3">
+                      <p className="mb-2">{company.brief_company || ""}</p>
+                      <p className="text-muted">{company.organizations_product_description || ""}</p>
+                    </div>
+
+                    <div className="mt-4 text-start">
+                      <button
+                        className="btn btn-orange"
+                        onClick={() => setShowModal(true)}
+                        aria-label="Enquiry"
+                      >
+                        <i className="lni lni-phone pe-2" aria-hidden="true"></i> Enquiry
+                      </button>
+                    </div>
+
+                  </div>
 
                 </div>
               </div>
             </div>
             <div className="col-xl-3 col-md-4 mb-md-0 mb-3">
-              <div className="card h-100 shadow-sm">
+              <div className="card shadow-sm">
                 <div className="card-body text-center p-4">
-                  <h6 className="my-3 text-start">{company.organization_name}</h6>
-
-                  <div className="rounded-2 companydetailimg">
-                    <ImageFront
-                      src={`${ROOT_URL}/${company.company_logo_file}`}
-                      alt={company.organization_name}
-                      style={{
-                        width: 'auto',
-                        height: '100px',
-                        objectFit: 'cover',
-                        border: '1px solid #ddd',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
-                      }}
-                      showFallback={true}
-                      defaultimg="/company.png"
-                    />
-                  </div>
-
-                  <div className="reviewSection pt-3 text-start">
+                  <h5 className="text-start mb-3">Rating & Review</h5>
+                  <div className="reviewSection pt-1 text-start">
 
                     <form onSubmit={handleSubmit}>
 
@@ -281,16 +310,17 @@ const CompanyDetail = () => {
                       </div>
 
                       <div className="col-md-12 mt-2 mb-3">
-                        <label className="form-label">
-                          Review <sup className="text-danger">*</sup>
-                        </label>
-                        <textarea
-                          className="form-control"
-                          name="review"
-                          rows="3"
-                          value={review}
-                          onChange={(e) => setReview(e.target.value)}
-                        ></textarea>
+                          <label htmlFor="company-review" className="form-label">
+                            Review <sup className="text-danger">*</sup>
+                          </label>
+                          <textarea
+                            id="company-review"
+                            className="form-control"
+                            name="review"
+                            rows="3"
+                            value={review}
+                            onChange={(e) => setReview(e.target.value)}
+                          ></textarea>
                       </div>
 
                       <button type="submit" className="btn btn-primary" disabled={loading}>
@@ -302,39 +332,56 @@ const CompanyDetail = () => {
                 </div>
               </div>
 
+              {/* List your product CTA card */}
+              <div className="card mt-3 shadow-sm list-cta">
+                <div className="card-body text-center p-4">
+                  <h5 className="mb-2">To List your Product</h5>
+                  <p className="mb-3 text-muted">Boost Your Business Visibility Worldwide</p>
+                  <Link to="/register" className="btn btn-orange">Register Now</Link>
+                </div>
+              </div>
 
             </div>
           </div>
         </div>
       </section>
 
+      {/* Enquiry modal form */}
+      <EnquiryForm
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        productId={''}
+        companyId={`${company.id}`}
+        productTitle={''}
+        companyName={`${company.organization_name}`}
+      />
+
       {/* Products Carousel */}
       <div className="container-xl mt-5">
         {company?.products?.length > 0 && (
-          < div className="companyProducts">
+          <div className="companyProducts">
             <h2 className="color-primary">Products</h2>
             <Swiper
               modules={[Navigation, Pagination]}
               spaceBetween={20}
               navigation
-              loop={false}
+              watchOverflow={true}
+              slidesPerView={4}
+              slidesPerGroup={1}
+              loop={company?.products && company.products.length > 4}
+              loopFillGroupWithBlank={false}
               className="similar-products-carousel"
               style={{ padding: "20px 0" }}
               breakpoints={{
-                0: {
-                  slidesPerView: 1,
-                },
-                576: {
-                  slidesPerView: 2,
-                },
-                1024: {
-                  slidesPerView: 3,
-                },
+                0: { slidesPerView: 1, slidesPerGroup: 1 },
+                576: { slidesPerView: 2, slidesPerGroup: 1 },
+                768: { slidesPerView: 3, slidesPerGroup: 1 },
+                1200: { slidesPerView: 4, slidesPerGroup: 1 },
               }}
             >
               {company.products.map((similar) => (
                 <SwiperSlide key={similar.id}>
-                  <div className="productBox productBoxswiper  p-3 bg-white">
+                  <div className="productBox productBoxswiper p-3 bg-white">
                     <div className="middlepro">
                       <div className="ProImg ProImgDetail">
                         <ImageFront
@@ -345,26 +392,22 @@ const CompanyDetail = () => {
                         />
                       </div>
                       <div className="productlink">
-                        <p className="mb-0">{similar.title}</p>
-                        <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2">
+                        <p className="mb-0 title-clamp">{similar.title}</p>
+                        <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2" aria-label={`View ${similar.title}`}>
                           <span className="pe-2">View</span>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="15"
-                            viewBox="4 9.28 23.91 13.44"
-                            className="filtersvg">
-                            <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" className="filtersvg" aria-hidden="true">
+                            <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z" />
                           </svg>
                         </Link>
                       </div>
                     </div>
                   </div>
                 </SwiperSlide>
-              ))}
-            </Swiper>
-          </div>
-        )}
-        {/* ⭐ Review Section */}
+                ))}
+              </Swiper>
+            </div>
+          )}
+          {/* ⭐ Review Section */}
 
 
         {/* Recommended Companies */}
@@ -400,13 +443,18 @@ const CompanyDetail = () => {
                 <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
                   <div className='productContainer'>
                     <Link to={`/companies/${item.organization_slug}`}>
-                      <ImageFront
-                        src={`${ROOT_URL}/${item.company_logo_file}`}
-                        width={180}
-                        height={180}
-                        showFallback
-                      />
-                      <p className="mt-3 mb-2">{item.organization_name}</p>
+                      <div className="recLogoWrap">
+                        <ImageFront
+                          src={`${ROOT_URL}/${item.company_logo_file}`}
+                          width={180}
+                          height={180}
+                          showFallback
+                        />
+                      </div>
+                      <div className="recText">
+                        <h6 className="recName" title={item.organization_name}>{item.organization_name}</h6>
+                        <div className="recLocation"><i className="bx bx-map recLocIcon" />{item.company_location || 'India'}</div>
+                      </div>
                     </Link>
                   </div>
                 </SwiperSlide>
