@@ -3,6 +3,7 @@ import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from '../config'; // Assuming you have ROOT_URL for images
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
+import '../assets/css/companydetails.css';
 import { Navigation, Thumbs, Pagination } from 'swiper/modules'; // Removed Zoom module, added Thumbs
 import 'swiper/css'; // Core Swiper styles
 import 'swiper/css/navigation';
@@ -212,6 +213,24 @@ const ProductDetail = () => {
   const fullStars = Math.floor(avgRating);
   const hasHalfStar = (avgRating - fullStars) >= 0.5;
 
+  // Render rating stars for the review form
+  const renderReviewStars = () => {
+    return [...Array(5)].map((_, index) => {
+      const ratingValue = index + 1;
+      return (
+        <span
+          key={ratingValue}
+          onClick={() => setRating(ratingValue)}
+          onMouseEnter={() => setHover(ratingValue)}
+          onMouseLeave={() => setHover(0)}
+          style={{ cursor: "pointer", fontSize: "28px", color: ratingValue <= (hover || rating) ? "#ffc107" : "#ccc" }}
+        >
+          ★
+        </span>
+      );
+    });
+  };
+
   return (
     <>
       <Suspense fallback={<div></div>}>
@@ -304,34 +323,71 @@ const ProductDetail = () => {
                           <div className="detailhead">
                             <h4 className="text-orange">{product.title}</h4>
                           </div>
-                          <table className="table productTable">
-                            <tbody>
-                              <tr>
-                                <th>Category</th>
-                                <td>{product.category_name || 'N/A'}</td>
-                              </tr>
-                              <tr>
-                                <th>Sub Category</th>
-                                <td>{product.sub_category_name || 'N/A'}</td>
-                              </tr>
-                              <tr>
-                                <th>Item Category</th>
-                                <td>{product.item_category_name || 'N/A'}</td>
-                              </tr>
-                              <tr>
-                                <th>Item Type</th>
-                                <td>{product.item_subcategory_name || 'N/A'}</td>
-                              </tr>
-                              {/* <tr>
-                                <th>Item </th>
-                                <td>{product.item_name || 'N/A'}</td>
-                              </tr> */}
-                              {/* <tr>
-                                <th>Color</th>
-                                <td>{product.color_name || 'N/A'}</td>
-                              </tr> */}
-                            </tbody>
-                          </table>
+                          <div className="product-meta-grid mt-2">
+                            <div className="row g-3">
+                              {product.company_website && (
+                                <div className="col-md-6 col-sm-6">
+                                  <div className="meta-item d-flex align-items-start">
+                                    <div className="meta-icon"><i className="bx bx-globe" /></div>
+                                    <div>
+                                      <div className="meta-label">Website</div>
+                                      <div className="meta-value"><a href={product.company_website?.startsWith('http') ? product.company_website : `https://${product.company_website}`} target="_blank" rel="noreferrer">{product.company_website}</a></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Core Activity and Activity removed per request */}
+
+                              {product.category_name && (
+                                <div className="col-md-6 col-sm-6">
+                                  <div className="meta-item d-flex align-items-start">
+                                    <div className="meta-icon"><i className="bx bx-category" /></div>
+                                    <div>
+                                      <div className="meta-label">Category</div>
+                                      <div className="meta-value">{product.category_name}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {product.sub_category_name && (
+                                <div className="col-md-6 col-sm-6">
+                                  <div className="meta-item d-flex align-items-start">
+                                    <div className="meta-icon"><i className="bx bx-list-ul" /></div>
+                                    <div>
+                                      <div className="meta-label">Sub Category</div>
+                                      <div className="meta-value">{product.sub_category_name}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {product.item_category_name && (
+                                <div className="col-md-6 col-sm-6">
+                                  <div className="meta-item d-flex align-items-start">
+                                    <div className="meta-icon"><i className="bx bx-box" /></div>
+                                    <div>
+                                      <div className="meta-label">Item Category</div>
+                                      <div className="meta-value">{product.item_category_name}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {product.item_subcategory_name && (
+                                <div className="col-md-6 col-sm-6">
+                                  <div className="meta-item d-flex align-items-start">
+                                    <div className="meta-icon"><i className="bx bx-package" /></div>
+                                    <div>
+                                      <div className="meta-label">Item Type</div>
+                                      <div className="meta-value">{product.item_subcategory_name}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                           <div>
                             <p>{product.short_description || 'N/A'}</p>
                           </div>
@@ -354,65 +410,80 @@ const ProductDetail = () => {
                     </div>
                   </div>
                 </div>
+
               </div>
+              {/* Sidebar column */}
               <div className="col-xl-3 col-lg-4 mb-lg-0 mb-3">
-                <div className="card h-100">
+                <div className="card sidebar-company-card">
                   <div className="card-body">
-                    <div className="mb-3">
-                      <div className='gap-2 d-flex rounded-2'>
-                        <Link to={`/companies/${product.company_slug}`} className='company_logo'>
+                    <div className="d-flex align-items-start gap-3 mb-3">
+                      <Link to={`/companies/${product.company_slug}`} className="d-block">
+                        <div className="sidebar-logo">
                           <ImageFront
                             src={`${ROOT_URL}/${product.company_logo}`}
-                            alt={`${product.title}`}
-                            style={{
-                              width: '60px',
-                              height: '60px',
-                              objectFit: 'cover',
-                              border: '1px solid rgb(221, 221, 221)',
-                              borderRadius: '5px',
-                              cursor: 'pointer'
-                            }}
+                            alt={product.company_name}
                             showFallback={true}
-                            className=""
                             defaultimg="/company.png"
+                            style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 6, border: '1px solid #eee' }}
                           />
+                        </div>
+                      </Link>
+                      <div className="flex-grow-1">
+                        <Link to={`/companies/${product.company_slug}`} className="text-dark text-decoration-none">
+                          <h6 className="mb-1">{product.company_name}</h6>
                         </Link>
+                        <div className="text-muted small"><i className="bx bx-map me-1" />{product.company_location || 'N/A'}</div>
 
-                        <div>
-                          <Link to={`/companies/${product.company_slug}`}>
-                            <h6 className="mb-0">{product.company_name}</h6>
-                          </Link>
-                          <small><i class="bx bx-map me-1"></i>{product.company_location || 'N/A'}</small>
-                          <div style={{ color: "#f5c518", fontSize: "18px", lineHeight: "14px" }}>
-                            {[...Array(5)].map((_, index) => {
-                              if (index < fullStars) return <span key={index}>★</span>;
-                              if (index === fullStars && hasHalfStar) return <span key={index}>☆</span>;
-                              return <span key={index}>☆</span>;
-                            })}
-                          </div>
+                        <div className="mt-2 rating-row">
+                          <span className="rating-stars" style={{ color: '#f5c518' }}>
+                            {[...Array(5)].map((_, i) => (i < Math.round(product.averageRating || 0) ? '★' : '☆')).join('')}
+                          </span>
+                          <small className="text-muted ms-2">{product.reviews_count ? `(${product.reviews_count})` : ''}</small>
                         </div>
-                      </div>
-                      <div className='d-flex gap-2 mt-4 align-items-center'>
-                        <i class="lni lni-network text-secondary"></i>
-                        <div>
-                          <b className='d-block'>Activity</b>
-                          <small className='text-secondary'>{product.activity_name || 'N/A'}</small>
-                        </div>
-                      </div>
-                      <div className='d-flex gap-2 mt-2 align-items-center'>
-                        <i class="lni lni-cogs text-secondary"></i>
-                        <div>
-                          <b className='d-block'>Core Activity</b>
-                          <small className='text-secondary'>{product.core_activity_name || 'N/A'}</small>
-                        </div>
+
+                        {/* phone button removed per request */}
                       </div>
                     </div>
 
-                  </div>
+                    <hr />
 
+                    <div className="meta-list">
+                      <div className="d-flex align-items-start gap-2 mb-3">
+                        <i className="bx bx-calendar text-secondary" />
+                        <div>
+                          <div className="meta-label">Member Since</div>
+                          <div className="meta-value">{product.company_member_since || product.company_year || '—'}</div>
+                        </div>
+                      </div>
 
+                      <div className="d-flex align-items-start gap-2 mb-3">
+                        <i className="bx bx-building text-secondary" />
+                        <div>
+                          <div className="meta-label">Nature of Business</div>
+                          <div className="meta-value">{product.nature_of_business || product.business_nature || 'N/A'}</div>
+                        </div>
+                      </div>
+
+                      {/* GST removed per request */}
+
+                      <div className="mt-2">
+                        <Link to={`/companies/${product.company_slug}`} className="view-company-link text-decoration-none">View Company Details →</Link>
+                      </div>
+                      </div>
+                    </div>
                 </div>
+
+                {/* Separate compact Register CTA card below the sidebar company card */}
+                <div className="card mt-3 shadow-sm list-cta-small">
+                  <div className="card-body text-center py-3 px-2">
+                    <h6 className="mb-1">To List your Product</h6>
+                    <p className="mb-2 text-muted small">Boost Your Business Visibility</p>
+                    <Link to="/register" className="btn btn-orange btn-sm">Register Now</Link>
+                  </div>
+                </div>
+
               </div>
+              
 
 
             </div>
@@ -477,40 +548,83 @@ const ProductDetail = () => {
                       {activeTab === 'companyDetails' && (
                         <div className="tab-pane fade show active" role="tabpanel">
                           <div className="company-details">
-                            <h5>About the Company:
-                            </h5>
-                            <table className="table productTable">
-                              <tbody>
+                            <div className="card p-3">
+                              <div className="about-grid-wrap mt-3">
+                                <div className="row">
+                                  <div className="col-md-3 col-sm-12 d-flex justify-content-center">
+                                    {/* left fixed column: logo + short info (keeps same markup) */}
+                                    <div className="company-left-col text-center">
+                                      <div className="companydetailimg mb-2">
+                                        <ImageFront
+                                          src={`${ROOT_URL}/${product.company_logo}`}
+                                          alt={product.company_name}
+                                          showFallback={true}
+                                          defaultimg="/company.png"
+                                        />
+                                      </div>
+                                      <div className="small-meta">
+                                        <div className="rating-line">{product.averageRating ? `${product.averageRating}/5` : ''} <span className="stars">{product.averageRating ? '★★★★★'.slice(0, Math.round(product.averageRating)) : ''}</span></div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="col-md-9 col-sm-12">
+                                    <div className="company-header mb-2">
+                                      <h5 className="mb-1">{product.company_name}</h5>
+                                      <div className="text-muted small"><i className="bx bx-map me-1" />{product.company_location || 'N/A'}</div>
+                                    </div>
 
-                                <tr>
-                                  <th className='text-nowrap'>Sub Category</th>
-                                  <td className='text-nowrap'>{product.sub_category_name || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                  <th className='text-nowrap'>Activity</th>
-                                  <td className='text-nowrap'>{product.activity_name || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                  <th className='text-nowrap'>Core Activity	</th>
-                                  <td className='text-nowrap'>{product.core_activity_name || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                  <th className='text-nowrap'>Location</th>
-                                  <td className='text-nowrap'>{product.company_location || 'N/A'}</td>
-                                </tr>
-                              </tbody>
-                            </table>
-                            <div className="mb-3">
+                                    <div className="about-grid">
+                                  <div className="about-item">
+                                    <div className="about-icon"><i className="bx bx-globe" aria-hidden="true" /></div>
+                                    <div className="about-content">
+                                      <div className="about-label">Website</div>
+                                      <div className="about-value"><a href={product.company_website?.startsWith('http') ? product.company_website : `https://${product.company_website}`} target="_blank" rel="noreferrer">{product.company_website || "N/A"}</a></div>
+                                    </div>
+                                  </div>
 
-                              <div className='companyInfo mt-4'>
-                                <h5>Company Details:</h5>
-                                <div
-                                  dangerouslySetInnerHTML={{ __html: product.brief_company || 'N/A' }}
-                                />
+                                  <div className="about-item">
+                                    <div className="about-icon"><i className="bx bx-briefcase" aria-hidden="true" /></div>
+                                    <div className="about-content">
+                                      <div className="about-label">Core Activity</div>
+                                      <div className="about-value">{product.core_activity_name || "N/A"}</div>
+                                    </div>
+                                  </div>
+
+                                  <div className="about-item">
+                                    <div className="about-icon"><i className="bx bx-cog" aria-hidden="true" /></div>
+                                    <div className="about-content">
+                                      <div className="about-label">Activity</div>
+                                      <div className="about-value">{product.activity_name || "N/A"}</div>
+                                    </div>
+                                  </div>
+
+                                  <div className="about-item">
+                                    <div className="about-icon"><i className="bx bx-category" aria-hidden="true" /></div>
+                                    <div className="about-content">
+                                      <div className="about-label">Category</div>
+                                      <div className="about-value">{product.category_name || "N/A"}</div>
+                                    </div>
+                                  </div>
+
+                                  <div className="about-item">
+                                    <div className="about-icon"><i className="bx bx-list-ul" aria-hidden="true" /></div>
+                                    <div className="about-content">
+                                      <div className="about-label">Sub Category</div>
+                                      <div className="about-value">{product.sub_category_name || "N/A"}</div>
+                                    </div>
+                                  </div>
+                                    </div>
+
+                                    <div className="about-description mt-3">
+                                  <p className="mb-2">{product.brief_company || ""}</p>
+                                  <p className="text-muted" dangerouslySetInnerHTML={{ __html: product.organizations_product_description || "" }} />
+                                    </div>
+
+                                    {/* Removed Member Since, Nature of Business, GST No., Enquiry button and company CTAs per request */}
+                                  </div>
+                                </div>
                               </div>
-
                             </div>
-
                           </div>
                         </div>
                       )}
@@ -524,24 +638,7 @@ const ProductDetail = () => {
                               <form onSubmit={handleSubmit}>
                                 <label className="form-label mt-2 mb-0">Rating</label>
                                 <div className="d-flex">
-                                  {[...Array(5)].map((_, index) => {
-                                    const ratingValue = index + 1;
-                                    return (
-                                      <span
-                                        key={ratingValue}
-                                        onClick={() => setRating(ratingValue)}
-                                        onMouseEnter={() => setHover(ratingValue)}
-                                        onMouseLeave={() => setHover(0)}
-                                        style={{
-                                          cursor: "pointer",
-                                          fontSize: "28px",
-                                          color: ratingValue <= (hover || rating) ? "#ffc107" : "#ccc",
-                                        }}
-                                      >
-                                        ★
-                                      </span>
-                                    );
-                                  })}
+                                  {renderReviewStars()}
                                 </div>
 
                                 <div className="col-md-12 mt-2 mb-3">
@@ -574,7 +671,7 @@ const ProductDetail = () => {
             </div>
           </div>
         </section >
-        <div className="product-detail-container">
+        <div className="product-detail-container companyProducts">
           <div className="container-xl">
             <h2 className="color-primary">Similar Products</h2>
             <Swiper
@@ -640,7 +737,7 @@ const ProductDetail = () => {
           </div>
 
           {/* Recommended Companies Section */}
-          <div className="recommended-companies">
+          <div className="companyProducts recommended-companies">
 
             <div className='container'>
               <h2 className="color-primary">Recommended Companies</h2>
@@ -671,22 +768,29 @@ const ProductDetail = () => {
                   }}
                 >
                   {product.recommended_companies.map((company) => (
-                    <SwiperSlide key={company.id} className=' bg-white border rounded p-2 h-100 text-center'>
-                      <div className='productContainer'>
-                        <Link to={`/companies/${company.organization_slug}`}>
-                          <div className="company-card">
-                            <ImageFront
-                              src={`${ROOT_URL}/${company.company_logo_file}`}
-                              width={180}
-                              height={180}
-                              showFallback={true}
-                            />
-                            <p className='mt-3'>{company.organization_name}</p>
+                      <SwiperSlide key={company.id}>
+                        <div className="mb-4">
+                          <div className="productBox productBoxswiper p-3 bg-white h-100">
+                            <Link to={`/companies/${company.organization_slug}`} className="text-dark d-flex flex-column h-100">
+                              <div className="middlepro">
+                                <div className="ProImg">
+                                  <ImageFront
+                                    src={`${ROOT_URL}/${company.company_logo_file}`}
+                                    width={180}
+                                    height={180}
+                                    showFallback={true}
+                                  />
+                                </div>
+                                <div className="productlink text-center">
+                                  <p className="mb-1 title-clamp recName" title={company.organization_name}>{company.organization_name}</p>
+                                  <div className="recLocation text-muted"><i className="bx bx-map recLocIcon" aria-hidden="true" />{company.state_name || company.city_name || company.company_location || 'India'}</div>
+                                </div>
+                              </div>
+                            </Link>
                           </div>
-                        </Link>
-                      </div>
-                    </SwiperSlide>
-                  ))}
+                        </div>
+                      </SwiperSlide>
+                    ))}
                 </Swiper>
               </div>
             </div>
