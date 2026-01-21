@@ -135,65 +135,8 @@
   box-shadow: 0 8px 20px rgba(16, 24, 40, 0.08);
 }
 
-/* Recommended companies carousel */
-.recommended-companies-carousel .productContainer img,
-.recommended-companies-carousel .productContainer .image-front {
-  max-height: 64px;
-  object-fit: contain;
-  display: block;
-  margin: 0 auto;
-}
-
-/* make recommended cards square and centered */
-.recommended-companies-carousel .swiper-slide .bg-white {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  padding: 20px 16px !important;
-}
-
-/* Make all cards equal height and align logo/name/location consistently */
-.recommended-companies-carousel .productContainer {
-  height: 260px;
-  /* fixed card height */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  /* logo top, name middle, location bottom */
-  padding: 18px 12px;
-  box-sizing: border-box;
-}
-
-.recommended-companies-carousel .productContainer .recLogoWrap {
-  height: 100px;
-  /* reserve space for logo */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 6px;
-}
-
-.recommended-companies-carousel .productContainer .recName {
-  min-height: 48px;
-  /* reserve space for up to two lines */
-}
-
-.recommended-companies-carousel .productContainer .recLocation {
-  margin-bottom: 6px;
-}
-
-.recommended-companies-carousel .productContainer img,
-.recommended-companies-carousel .productContainer .image-front {
-  max-height: 64px;
-  max-width: 100%;
-}
-
-.similerCompany h2,
-.companyProducts h2 {
-  margin-bottom: 18px;
-  font-size: 1.25rem;
-}
+/* NOTE: Recommended companies carousel styles were consolidated later in this file to
+   avoid duplicated rules. Keep the canonical block near the bottom. */
 
 /* About grid styles */
 .about-grid-wrap {
