@@ -52,74 +52,85 @@ const SellerCompany = () => {
   return (
     <>
       <Suspense fallback={<div></div>}>
-        {
-          companies.length > 0 && (
-            <div className="productBuyer my-5 pt-5">
+
+      {companies?.length > 0 && (
+           <div className="productBuyer my-5 pt-5">
               <div className="container">
                 <div className="firstHead text-center pb-4">
                   <h1>Suggested Sellers</h1>
                 </div>
-
-                {companies.length ? (
-                  <Swiper
-                    modules={[Navigation, Autoplay]}
-                    spaceBetween={20}
-                    slidesPerView={4}
-                    navigation
-                    autoplay={{ delay: 3000, disableOnInteraction: false }}
-                    className="recommended-companies-carousel"
-                    style={{ padding: "20px 0" }}
-                    breakpoints={{
-                      0: { slidesPerView: 1 },
-                      576: { slidesPerView: 2 },
-                      768: { slidesPerView: 3 },
-                      992: { slidesPerView: 4 },
-                    }}
-                  >
-                    {companies.map((company) => (
-                      <SwiperSlide key={company.id}>
-                        <div className="mb-4">
-                          <div className="productBox productBoxswiper p-3 bg-white">
-                            <div className="middlepro">
-                              <div className="ProImg">
-                                <ImageFront
-                                  src={
-                                    company.companyLogo
-                                      ? `${ROOT_URL}/${company.companyLogo?.file}`
+            <Swiper
+              modules={[Navigation, Autoplay]}
+              spaceBetween={20}
+              navigation
+              loop
+              className="recommended-companies-carousel"
+              style={{ padding: "20px 0" }}
+              breakpoints={{
+                0: {
+                  slidesPerView: 1,
+                },
+                576: {
+                  slidesPerView: 2,
+                },
+                768: {
+                  slidesPerView: 3,
+                },
+                992: {
+                  slidesPerView: 4,
+                },
+                1200: {
+                  slidesPerView: 5,
+                },
+              }}
+            >
+              {companies.map((item) => (
+                <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
+                  <div className='productContainer'>
+                    <Link to={`/companies/${item.organization_slug}`}>
+                      <div className="recLogoWrap">
+                        <ImageFront
+                           src={
+                                    item.companyLogo
+                                      ? `${ROOT_URL}/${item.companyLogo?.file}`
                                       : "/default.png"
                                   }
-                                  width={180}
-                                  height={180}
-                                  showFallback={true}
-                                />
-                              </div>
-                              <div className="productlink text-center">
-                                <p className="mb-1 title-clamp recName" title={company.organization_name}>{company.organization_name}</p>
+                          width={180}
+                          height={180}
+                          showFallback
+                        />
+                      </div>
+                      <div className="recText">
+                        <h6 className="recName" title={item.organization_name}>{item.organization_name}</h6>
+                        <div className="recLocation">
+                          {(item.city_name || item.state_name) && <i className="bx bx-map recLocIcon" />}
+                          {item.city_name}
+                          {item.city_name && item.state_name ? ', ' : ''}
+                          {item.state_name}
+                        </div>
+                      </div>
+                    </Link>
 
-                                <div className="recLocation">
-                          {(company.city_name || company.state_name) && <i className="bx bx-map recLocIcon" />}
-                          {company.city_name}
-                          {company.city_name && company.state_name ? ', ' : ''}
-                          {company.state_name}
-                        </div>
-                                <Link to={`/companies/${company.organization_slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2">
-                                  <span className="pe-2">View</span>
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" className="filtersvg"><path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path></svg>
-                                </Link>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </SwiperSlide>
-                    ))}
-                  </Swiper>
-                ) : (
-                  <p className="text-center"></p>
-                )}
+                    <div className="recFooter">
+                      <Link
+                        to={`/companies/${item.organization_slug}`}
+                        className="btn btn-outline-primary btn-sm rec-view-bottom"
+                        aria-label={`View ${item.organization_name}`}
+                        title={`View ${item.organization_name}`}
+                      >
+                        View &nbsp;&nbsp;
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" class="filtersvg" aria-hidden="true"><path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path></svg>
+                      </Link>
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          
               </div>
             </div>
-          )
-        }
+        )}
+
       </Suspense>
     </>
   );

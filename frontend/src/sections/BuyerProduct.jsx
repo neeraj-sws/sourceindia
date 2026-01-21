@@ -48,67 +48,66 @@ const BuyerProduct = () => {
   return (
     <>
       <Suspense fallback={<div></div>}>
-        {
-          products.length > 0 && (
-            <div className="productBuyer my-5">
-              <div className="container">
 
-                <>
-                  <div className="firstHead text-center pb-4">
-                    <h1>Suggested Products</h1>
-                  </div>
-
-                  <Swiper
-                    modules={[Navigation, Autoplay]}
-                    spaceBetween={20}
-                    slidesPerView={4}
-                    navigation
-                    autoplay={{ delay: 3000, disableOnInteraction: false }}
-                    className="recommended-companies-carousel"
-                    style={{ padding: "20px 0" }}
-                    breakpoints={{
-                      0: { slidesPerView: 1 },
-                      576: { slidesPerView: 2 },
-                      768: { slidesPerView: 3 },
-                      992: { slidesPerView: 4 },
-                    }}
-                  >
-                    {products.map((product) => (
-                      <SwiperSlide key={product.id}>
-                        <div className="mb-4">
-                          <div className="productBox productBoxswiper p-3 bg-white">
-                            <div className="middlepro">
-                              <div className="ProImg">
-                                <ImageFront
-                                  src={
-                                    product.file
-                                      ? `${ROOT_URL}/${product.file?.file}`
+       {products?.length > 0 && (
+          <div className="companyProducts my-5">
+           <div className="container">
+                <div className="firstHead text-center pb-4">
+                  <h1>Suggested Products</h1>
+                </div>
+            <Swiper
+              modules={[Navigation, Autoplay]}
+              spaceBetween={20}
+              navigation
+              watchOverflow={true}
+              slidesPerView={4}
+              slidesPerGroup={1}
+              loop={products && products.length > 4}
+              loopFillGroupWithBlank={false}
+              className="similar-products-carousel"
+              style={{ padding: "20px 0" }}
+              breakpoints={{
+                0: { slidesPerView: 1, slidesPerGroup: 1 },
+                576: { slidesPerView: 2, slidesPerGroup: 1 },
+                768: { slidesPerView: 3, slidesPerGroup: 1 },
+                1200: { slidesPerView: 4, slidesPerGroup: 1 },
+              }}
+            >
+              {products.map((similar) => (
+                <SwiperSlide key={similar.id}>
+                  <div className="productBox productBoxswiper p-3 bg-white">
+                    <div className="middlepro">
+                      <div className="ProImg ProImgDetail">
+                        <ImageFront
+                           src={
+                                    similar.file
+                                      ? `${ROOT_URL}/${similar.file?.file}`
                                       : "/default.png"
                                   }
-                                  width={180}
-                                  height={180}
-                                  showFallback={true}
-                                />
-                              </div>
-                              <div className="productlink">
-                                <p className="mb-0 title-clamp" title={product.title}>{product.title}</p>
-                                <Link to={`/products/${product.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2">
-                                  <span className="pe-2">View</span>
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" className="filtersvg"><path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path></svg>
-                                </Link>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </SwiperSlide>
-                    ))}
-                  </Swiper>
-                </>
+                          width={180}
+                          height={180}
+                          showFallback
+                        />
+                      </div>
+                      <div className="productlink">
+                        <p className="mb-0 title-clamp">{similar.title}</p>
+                        <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2" aria-label={`View ${similar.title}`}>
+                          <span className="pe-2">View</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" className="filtersvg" aria-hidden="true">
+                            <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z" />
+                          </svg>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+          </div>
+        )}
 
-              </div>
-            </div>
-          )
-        }
+
       </Suspense>
     </>
   );

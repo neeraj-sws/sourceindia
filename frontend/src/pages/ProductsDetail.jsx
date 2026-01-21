@@ -694,61 +694,47 @@ const ProductDetail = () => {
         </section >
         <div className="product-detail-container companyProducts">
           <div className="container-xl">
+            {product?.similar_products?.length > 0 && (
+          <div className="companyProducts">
             <h2 className="color-primary">Similar Products</h2>
             <Swiper
               modules={[Navigation, Pagination]}
-              spaceBetween={20} // Space between slides
-              navigation={true} // Enable navigation arrows
-              loop={false} // Infinite loop
+              spaceBetween={20}
+              navigation
+              watchOverflow={true}
+              slidesPerView={4}
+              slidesPerGroup={1}
+              loop={product?.similar_products && product.similar_products.length > 4}
+              loopFillGroupWithBlank={false}
               className="similar-products-carousel"
-              style={{ padding: '20px 0' }}
+              style={{ padding: "20px 0" }}
               breakpoints={{
-                0: {
-                  slidesPerView: 1,
-                },
-                576: {
-                  slidesPerView: 2,
-                },
-                1024: {
-                  slidesPerView: 3,
-                },
+                0: { slidesPerView: 1, slidesPerGroup: 1 },
+                576: { slidesPerView: 2, slidesPerGroup: 1 },
+                768: { slidesPerView: 3, slidesPerGroup: 1 },
+                1200: { slidesPerView: 4, slidesPerGroup: 1 },
               }}
             >
               {product.similar_products.map((similar) => (
                 <SwiperSlide key={similar.id}>
-                  <div className="mb-4">
-                    <div className="productBox productBoxswiper p-3 bg-white">
-
-                      <div className="middlepro">
-                        <div className="ProImg">
-                          <ImageFront
-                            src={`${ROOT_URL}/${similar.file_name}`}
-                            width={180}
-                            height={180}
-                            showFallback={true}
-                          />
-                        </div>
-                        <div className="productlink">
-                          <div className="">
-                            <div className="cateproduct">
-                              <h6 className={!similar.category_name ? "mb-0" : "mb-1"}>
-                                {similar.category_name || ""}
-                              </h6>
-                            </div>
-
-                            <p className="mb-0">{similar.title}</p>
-                          </div>
-                          <a href={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2">
-                            <span className="pe-2">View</span>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="15"
-                              viewBox="4 9.28 23.91 13.44"
-                              className="filtersvg">
-                              <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path>
-                            </svg>
-                          </a>
-                        </div>
+                  <div className="productBox productBoxswiper p-3 bg-white">
+                    <div className="middlepro">
+                      <div className="ProImg ProImgDetail">
+                        <ImageFront
+                          src={`${ROOT_URL}/${similar.file_name}`}
+                          width={180}
+                          height={180}
+                          showFallback
+                        />
+                      </div>
+                      <div className="productlink">
+                        <p className="mb-0 title-clamp">{similar.title}</p>
+                        <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2" aria-label={`View ${similar.title}`}>
+                          <span className="pe-2">View</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" className="filtersvg" aria-hidden="true">
+                            <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z" />
+                          </svg>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -756,70 +742,82 @@ const ProductDetail = () => {
               ))}
             </Swiper>
           </div>
+        )}
+
+          </div>
 
 
-
-          {/* Recommended Companies */}
-          {product?.recommended_companies?.length > 0 && (
-            <div className='container'>
+           {/* Recommended Companies */}
+        {product?.recommended_companies?.length > 0 && (
+         <div className='container'>
               <div className="similerCompany mt-lg-5 mt-3">
-                <h2 className="color-primary">Recommended Companies</h2>
-                <Swiper
-                  modules={[Navigation, Pagination]}
-                  spaceBetween={20}
-                  navigation
-                  loop
-                  className="recommended-companies-carousel"
-                  style={{ padding: "20px 0" }}
-                  breakpoints={{
-                    0: {
-                      slidesPerView: 1,
-                    },
-                    576: {
-                      slidesPerView: 2,
-                    },
-                    768: {
-                      slidesPerView: 3,
-                    },
-                    992: {
-                      slidesPerView: 4,
-                    },
-                    1200: {
-                      slidesPerView: 5,
-                    },
-                  }}
-                >
-                  {product.recommended_companies.map((item) => (
-                    <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
-                      <div className='productContainer'>
-                        <Link to={`/companies/${item.organization_slug}`}>
-                          <div className="recLogoWrap">
-                            <ImageFront
-                              src={`${ROOT_URL}/${item.company_logo_file}`}
-                              width={180}
-                              height={180}
-                              showFallback
-                            />
-                          </div>
-                          <div className="recText">
-                            <h6 className="recName" title={item.organization_name}>{item.organization_name}</h6>
-
-                            <div className="recLocation">
-                              {(item.city_name || item.state_name) && <i className="bx bx-map recLocIcon" />}
-                              {item.city_name}
-                              {item.city_name && item.state_name ? ', ' : ''}
-                              {item.state_name}
-                            </div>
-                          </div>
-                        </Link>
+            <h2 className="color-primary">Recommended Companies</h2>
+            <Swiper
+              modules={[Navigation, Pagination]}
+              spaceBetween={20}
+              navigation
+              loop
+              className="recommended-companies-carousel"
+              style={{ padding: "20px 0" }}
+              breakpoints={{
+                0: {
+                  slidesPerView: 1,
+                },
+                576: {
+                  slidesPerView: 2,
+                },
+                768: {
+                  slidesPerView: 3,
+                },
+                992: {
+                  slidesPerView: 4,
+                },
+                1200: {
+                  slidesPerView: 5,
+                },
+              }}
+            >
+              {product.recommended_companies.map((item) => (
+                <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
+                  <div className='productContainer'>
+                    <Link to={`/companies/${item.organization_slug}`}>
+                      <div className="recLogoWrap">
+                        <ImageFront
+                          src={`${ROOT_URL}/${item.company_logo_file}`}
+                          width={180}
+                          height={180}
+                          showFallback
+                        />
                       </div>
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
-              </div>
-            </div>
-          )}
+                      <div className="recText">
+                        <h6 className="recName" title={item.organization_name}>{item.organization_name}</h6>
+                        <div className="recLocation">
+                          {(item.city_name || item.state_name) && <i className="bx bx-map recLocIcon" />}
+                          {item.city_name}
+                          {item.city_name && item.state_name ? ', ' : ''}
+                          {item.state_name}
+                        </div>
+                      </div>
+                    </Link>
 
+                    <div className="recFooter">
+                      <Link
+                        to={`/companies/${item.organization_slug}`}
+                        className="btn btn-outline-primary btn-sm rec-view-bottom"
+                        aria-label={`View ${item.organization_name}`}
+                        title={`View ${item.organization_name}`}
+                      >
+                        View &nbsp;&nbsp;
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" class="filtersvg" aria-hidden="true"><path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path></svg>
+                      </Link>
+                    </div>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+            </div>
+            </div>
+        )}
 
         </div>
       </Suspense >

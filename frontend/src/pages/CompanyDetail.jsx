@@ -461,6 +461,18 @@ const CompanyDetail = () => {
                         </div>
                       </div>
                     </Link>
+
+                    <div className="recFooter">
+                      <Link
+                        to={`/companies/${item.organization_slug}`}
+                        className="btn btn-outline-primary btn-sm rec-view-bottom"
+                        aria-label={`View ${item.organization_name}`}
+                        title={`View ${item.organization_name}`}
+                      >
+                        View &nbsp;&nbsp;
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" class="filtersvg" aria-hidden="true"><path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path></svg>
+                      </Link>
+                    </div>
                   </div>
                 </SwiperSlide>
               ))}
