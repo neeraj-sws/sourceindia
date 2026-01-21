@@ -195,7 +195,7 @@ const CompanyDetail = () => {
               </ol>
             </nav>
             {/* Company Info */}
-            
+
 
             {/* Company Details */}
             <div className="col-xl-9 col-md-8 mb-md-0 mb-3">
@@ -310,17 +310,17 @@ const CompanyDetail = () => {
                       </div>
 
                       <div className="col-md-12 mt-2 mb-3">
-                          <label htmlFor="company-review" className="form-label">
-                            Review <sup className="text-danger">*</sup>
-                          </label>
-                          <textarea
-                            id="company-review"
-                            className="form-control"
-                            name="review"
-                            rows="3"
-                            value={review}
-                            onChange={(e) => setReview(e.target.value)}
-                          ></textarea>
+                        <label htmlFor="company-review" className="form-label">
+                          Review <sup className="text-danger">*</sup>
+                        </label>
+                        <textarea
+                          id="company-review"
+                          className="form-control"
+                          name="review"
+                          rows="3"
+                          value={review}
+                          onChange={(e) => setReview(e.target.value)}
+                        ></textarea>
                       </div>
 
                       <button type="submit" className="btn btn-primary" disabled={loading}>
@@ -403,11 +403,11 @@ const CompanyDetail = () => {
                     </div>
                   </div>
                 </SwiperSlide>
-                ))}
-              </Swiper>
-            </div>
-          )}
-          {/* ⭐ Review Section */}
+              ))}
+            </Swiper>
+          </div>
+        )}
+        {/* ⭐ Review Section */}
 
 
         {/* Recommended Companies */}
@@ -453,7 +453,12 @@ const CompanyDetail = () => {
                       </div>
                       <div className="recText">
                         <h6 className="recName" title={item.organization_name}>{item.organization_name}</h6>
-                        <div className="recLocation"><i className="bx bx-map recLocIcon" />{item.company_location || 'India'}</div>
+                        <div className="recLocation">
+                          {(item.city_name || item.state_name) && <i className="bx bx-map recLocIcon" />}
+                          {item.city_name}
+                          {item.city_name && item.state_name ? ', ' : ''}
+                          {item.state_name}
+                        </div>
                       </div>
                     </Link>
                   </div>

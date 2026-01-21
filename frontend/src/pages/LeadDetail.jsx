@@ -33,7 +33,7 @@ const LeadDetail = () => {
   useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}`);
+        const res = await axios.get(`${API_BASE_URL}/enquiries/${enquiry_number}?myEnquiry=${myEnquiry}`);
         const data = res.data;
         setFormData(data);
       } catch (error) {
@@ -203,11 +203,13 @@ const LeadDetail = () => {
                 <div className="d-flex align-items-center justify-content-between flex-wrap">
                   <div className="d-flex align-items-center mb-2">
                     <div className="avatar avatar-xxl avatar-rounded border border-warning bg-soft-warning me-3 flex-shrink-0">
-                      {formData.from_full_name && (() => {
-                        const parts = formData.from_full_name.trim().split(" ");
+                      {(() => {
+                        const name = myEnquiry ? formData.to_full_name : formData.from_full_name;
+                        if (!name) return null;
+                        const parts = name.trim().split(" ");
                         const initials = parts
                           .map(p => p.charAt(0).toUpperCase())
-                          .slice(0, 2) // sirf first 2 letters (first name + last name)
+                          .slice(0, 2)
                           .join("");
                         return (
                           <h6 className="mb-0 text-warning">
@@ -217,11 +219,21 @@ const LeadDetail = () => {
                       })()}
                     </div>
                     <div>
-                      {formData.from_full_name && <h5 className="mb-0"><i className="bx bx-user"></i> {formData.from_full_name} </h5>}
-                      {formData.from_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.from_email}</p>}
-                      {formData.from_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.from_mobile}</p>}
-                      {formData.from_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.from_organization_name}</p>}
-
+                      {myEnquiry ? (
+                        <>
+                          {formData.to_full_name && <h5 className="mb-0"><i className="bx bx-user"></i> {formData.to_full_name} </h5>}
+                          {formData.to_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.to_email}</p>}
+                          {formData.to_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.to_mobile}</p>}
+                          {formData.to_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.to_organization_name}</p>}
+                        </>
+                      ) : (
+                        <>
+                          {formData.from_full_name && <h5 className="mb-0"><i className="bx bx-user"></i> {formData.from_full_name} </h5>}
+                          {formData.from_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.from_email}</p>}
+                          {formData.from_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.from_mobile}</p>}
+                          {formData.from_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.from_organization_name}</p>}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -237,21 +249,21 @@ const LeadDetail = () => {
                       <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Company Name</p>
                         <p className="mb-0 text-dark">
-                          <a href={`/companies/${formData.from_organization_slug}`} target="_blank" className="">
-                            {formData.from_organization_name}
+                          <a href={`/companies/${myEnquiry ? formData.to_organization_slug : formData.from_organization_slug}`} target="_blank" className="">
+                            {myEnquiry ? formData.to_organization_name : formData.from_organization_name}
                           </a>
                         </p>
                       </div>
                       <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Core Activity</p>
                         <p className="mb-0 text-dark">
-                          {formData.from_core_activity_name}
+                          {myEnquiry ? formData.to_core_activity_name : formData.from_core_activity_name}
                         </p>
                       </div>
                       <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Activity</p>
                         <p className="mb-0 text-dark">
-                          {formData.from_activity_name}
+                          {myEnquiry ? formData.to_activity_name : formData.from_activity_name}
                         </p>
                       </div>
                     </div>

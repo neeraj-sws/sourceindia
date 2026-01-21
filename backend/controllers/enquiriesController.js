@@ -333,6 +333,9 @@ exports.getEnquiriesByNumber = async (req, res) => {
       to_mobile: enquiry.to_user?.mobile || null,
       to_company_id: enquiry.to_user?.company_id || null,
       to_organization_name: enquiry.to_user?.company_info?.organization_name || null,
+      to_organization_slug: enquiry.to_user?.company_info?.organization_slug || null,
+      to_core_activity_name: enquiry.to_user?.company_info?.CoreActivity?.name || null,
+      to_activity_name: enquiry.to_user?.company_info?.Activity?.name || null,
 
       enquiry_product: eu?.product_name || null,
       enquiryUser: eu || null,
@@ -1099,7 +1102,7 @@ exports.storeEnquiry = async (req, res) => {
       is_new: 1,
       is_profile: 1,
       is_complete: 1,
-      
+
     });
 
     /* -------------------- 6. Create enquiry -------------------- */
@@ -2132,6 +2135,11 @@ exports.getEnquiriesByEnquiryServerSide = async (req, res) => {
           'email',
           [Sequelize.literal("CONCAT(from_user.fname, ' ', from_user.lname)"), 'full_name']
         ],
+        include: [{
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['organization_name', 'organization_slug'],
+        }],
       },
       {
         model: Users,
@@ -2143,6 +2151,11 @@ exports.getEnquiriesByEnquiryServerSide = async (req, res) => {
           'email',
           [Sequelize.literal("CONCAT(to_user.fname, ' ', to_user.lname)"), 'full_name']
         ],
+        include: [{
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['organization_name', 'organization_slug'],
+        }],
       },
     ];
 

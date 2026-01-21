@@ -32,7 +32,7 @@ const FrontFooter = () => {
     return null;
   }
 
-  const helpItems = menuData.filter(
+  const helpItems = (Array.isArray(menuData) ? menuData : []).filter(
     (item) => item.parent_id === 0 && item.type === 2
   );
 

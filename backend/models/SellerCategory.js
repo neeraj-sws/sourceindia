@@ -2,6 +2,7 @@ const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 const Categories = require('./Categories');
 const SubCategories = require('./SubCategories');
+const Users = require('./Users');
 
 const SellerCategory = sequelize.define("SellerCategory", {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, field: 'seller_category_id' },

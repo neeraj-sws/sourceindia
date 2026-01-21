@@ -757,65 +757,70 @@ const ProductDetail = () => {
             </Swiper>
           </div>
 
-          {/* Recommended Companies Section */}
-          <div className="companyProducts recommended-companies">
 
+
+          {/* Recommended Companies */}
+          {product?.recommended_companies?.length > 0 && (
             <div className='container'>
-              <h2 className="color-primary">Recommended Companies</h2>
-              <div className="companygrid">
+              <div className="similerCompany mt-lg-5 mt-3">
+                <h2 className="color-primary">Recommended Companies</h2>
                 <Swiper
                   modules={[Navigation, Pagination]}
-                  spaceBetween={20} // Space between slides
-                  navigation={true}
-                  loop={true} // Infinite loop
+                  spaceBetween={20}
+                  navigation
+                  loop
                   className="recommended-companies-carousel"
-                  style={{ padding: '20px 0' }}
+                  style={{ padding: "20px 0" }}
                   breakpoints={{
                     0: {
                       slidesPerView: 1,
                     },
-                    480: {
+                    576: {
                       slidesPerView: 2,
                     },
                     768: {
                       slidesPerView: 3,
                     },
-                    1024: {
+                    992: {
                       slidesPerView: 4,
                     },
-                    1280: {
+                    1200: {
                       slidesPerView: 5,
                     },
                   }}
                 >
-                  {product.recommended_companies.map((company) => (
-                    <SwiperSlide key={company.id}>
-                      <div className="mb-4">
-                        <div className="productBox productBoxswiper p-3 bg-white h-100">
-                          <Link to={`/companies/${company.organization_slug}`} className="text-dark d-flex flex-column h-100">
-                            <div className="middlepro">
-                              <div className="ProImg">
-                                <ImageFront
-                                  src={`${ROOT_URL}/${company.company_logo_file}`}
-                                  width={180}
-                                  height={180}
-                                  showFallback={true}
-                                />
-                              </div>
-                              <div className="productlink text-center">
-                                <p className="mb-1 title-clamp recName" title={company.organization_name}>{company.organization_name}</p>
-                                <div className="recLocation text-muted"><i className="bx bx-map recLocIcon" aria-hidden="true" />{company.state_name || company.city_name || company.company_location || 'India'}</div>
-                              </div>
+                  {product.recommended_companies.map((item) => (
+                    <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
+                      <div className='productContainer'>
+                        <Link to={`/companies/${item.organization_slug}`}>
+                          <div className="recLogoWrap">
+                            <ImageFront
+                              src={`${ROOT_URL}/${item.company_logo_file}`}
+                              width={180}
+                              height={180}
+                              showFallback
+                            />
+                          </div>
+                          <div className="recText">
+                            <h6 className="recName" title={item.organization_name}>{item.organization_name}</h6>
+
+                            <div className="recLocation">
+                              {(item.city_name || item.state_name) && <i className="bx bx-map recLocIcon" />}
+                              {item.city_name}
+                              {item.city_name && item.state_name ? ', ' : ''}
+                              {item.state_name}
                             </div>
-                          </Link>
-                        </div>
+                          </div>
+                        </Link>
                       </div>
                     </SwiperSlide>
                   ))}
                 </Swiper>
               </div>
             </div>
-          </div>
+          )}
+
+
         </div>
       </Suspense >
     </>

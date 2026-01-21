@@ -463,6 +463,7 @@ exports.getSellercompany = async (req, res) => {
     }
 
 
+
     const companies = await CompanyInfo.findAll({
       where: {
         [Op.or]: subCategoryIds.map(id => ({
@@ -476,11 +477,36 @@ exports.getSellercompany = async (req, res) => {
           model: UploadImage,
           as: 'companyLogo',
           attributes: ['file'],
-          required: false, // image na ho tab bhi product aaye
+          required: false,
         },
       ],
-
     });
+
+    // Attach state_name and city_name
+    for (const comp of companies) {
+      const user = await Users.findOne({
+        where: { company_id: comp.id },
+        attributes: ['state', 'city'],
+      });
+      let stateName = null;
+      let cityName = null;
+      if (user?.state) {
+        const state = await States.findOne({
+          where: { id: user.state },
+          attributes: ['name'],
+        });
+        stateName = state ? state.name : null;
+      }
+      if (user?.city) {
+        const city = await Cities.findOne({
+          where: { id: user.city },
+          attributes: ['name'],
+        });
+        cityName = city ? city.name : null;
+      }
+      comp.dataValues.state_name = stateName;
+      comp.dataValues.city_name = cityName;
+    }
 
     return res.json({
       status: true,

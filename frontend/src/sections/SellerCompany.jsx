@@ -95,7 +95,13 @@ const SellerCompany = () => {
                               </div>
                               <div className="productlink text-center">
                                 <p className="mb-1 title-clamp recName" title={company.organization_name}>{company.organization_name}</p>
-                                <div className="recLocation text-muted"><i className="bx bx-map recLocIcon" aria-hidden="true" />{STATIC_STATE || company.state_name || company.city_name || company.country_name || 'India'}</div>
+
+                                <div className="recLocation">
+                          {(company.city_name || company.state_name) && <i className="bx bx-map recLocIcon" />}
+                          {company.city_name}
+                          {company.city_name && company.state_name ? ', ' : ''}
+                          {company.state_name}
+                        </div>
                                 <Link to={`/companies/${company.organization_slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2">
                                   <span className="pe-2">View</span>
                                   <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" className="filtersvg"><path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path></svg>

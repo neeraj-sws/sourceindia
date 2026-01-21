@@ -19,6 +19,7 @@ const Items = require('../models/Items');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
+const Cities = require('../models/Cities');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
 const parseCsv2 = (value) => value.split(',').map(item => item.trim());
 
@@ -337,8 +338,28 @@ exports.getProductsById = async (req, res) => {
     // Filter recommended companies based on seller_categories
     const recommendedCompanies = [];
     for (const company of allCompanies) {
+      const usercon = await Users.findOne({
+        where: { company_id: company.id },
+      });
+      let statecom = null;
+      let citycom = null;
+
+      if (usercon?.state != null) {
+        statecom = await States.findOne({
+          where: { id: usercon?.state },
+        });
+      }
+      if (usercon?.city != null) {
+        citycom = await Cities.findOne({
+          where: { id: usercon?.city },
+        });
+      }
+
+      company.state_name = statecom ? statecom.name : null;
+      company.city_name = citycom ? citycom.name : null;
+
       const companySellerCategories = await SellerCategory.findAll({
-        where: { user_id: company.id }
+        where: { user_id: company.id },
       });
       const companyCategoryIds = companySellerCategories.map(sc => sc.category_id.toString());
 
@@ -383,7 +404,6 @@ exports.getProductsById = async (req, res) => {
       title: p.title,
       file_name: p.file?.file || null,
     }));
-
     const response = {
       ...productData,
       category_name: productData.Categories?.name || null,
@@ -391,7 +411,7 @@ exports.getProductsById = async (req, res) => {
       item_category_name: productData.ItemCategory?.name || null,
       item_subcategory_name: productData.ItemSubCategory?.name || null,
       item_name: productData.Items?.name || null,
-      color_name:  null,
+      color_name: null,
       company_name: productData.company_info?.organization_name || null,
       company_slug: productData.company_info?.organization_slug || null,
       company_logo: productData.company_info?.companyLogo?.file || null,
@@ -408,7 +428,9 @@ exports.getProductsById = async (req, res) => {
         id: c.id,
         organization_name: c.organization_name,
         organization_slug: c.organization_slug,
-        company_logo_file: c.companyLogo?.file || null
+        company_logo_file: c.companyLogo?.file || null,
+        state_name: c.state_name || null,
+        city_name: c.city_name || null,
       })),
       seller_categories: sellerCategories.map(sc => ({
         category_id: sc.category_id,
@@ -1165,19 +1187,7 @@ exports.getCompanyInfoById = async (req, res) => {
     });
 
     // Fetch other companies for recommendations
-    const allCompanies = await CompanyInfo.findAll({
-      where: {
-        id: { [Op.ne]: company.id }
-      },
-      attributes: ['id', 'organization_name', 'category_sell', 'organization_slug'],
-      include: [
-        {
-          model: UploadImage,
-          as: 'companyLogo',
-          attributes: ['file']
-        }
-      ]
-    });
+
 
     const allowedCategories = new Set();
 
@@ -1192,12 +1202,66 @@ exports.getCompanyInfoById = async (req, res) => {
         if (sc.category_id) allowedCategories.add(String(sc.category_id));
       });
     }
+    const allCompanies = await CompanyInfo.findAll({
+      where: {
+        id: { [Op.ne]: company.id }
+      },
+      attributes: ['id', 'organization_name', 'category_sell', 'organization_slug'],
+      include: [
+        {
+          model: UploadImage,
+          as: 'companyLogo',
+          attributes: ['file']
+        },
+      ]
+    });
 
+    /* 🔹 Step 1: category filter */
     const recommendedCompanies = allCompanies.filter(c => {
       if (!c.category_sell) return false;
-      const companyCategories = c.category_sell.split(',').map(id => id.trim());
+
+      const companyCategories = c.category_sell
+        .split(',')
+        .map(id => id.trim());
+
       return companyCategories.some(cat => allowedCategories.has(cat));
     });
+
+    /* 🔥 Step 2: loop + user se state / city nikaalo */
+    for (const comp of recommendedCompanies) {
+
+      // 🔥 FIX: company.id = users.id (NOT company_id)
+      const usercon = await Users.findOne({
+        where: { id: comp.id },          // <<< YAHI MAIN FIX HAI
+        attributes: ['state', 'city']
+      });
+
+      let stateName = null;
+      let cityName = null;
+
+      if (usercon?.state) {
+        const state = await States.findOne({
+          where: { id: usercon.state },
+          attributes: ['name']
+        });
+
+        stateName = state ? state.name : null;
+      }
+
+      if (usercon?.city) {
+        const city = await Cities.findOne({
+          where: { id: usercon.city },
+          attributes: ['name']
+        });
+
+        cityName = city ? city.name : null;
+      }
+
+      // attach to company object
+      comp.dataValues.state_name = stateName;
+      comp.dataValues.city_name = cityName;
+      // recommendedCompanies.push(comp);
+    }
 
     const response = {
       ...data,
@@ -1208,14 +1272,16 @@ exports.getCompanyInfoById = async (req, res) => {
       item_category_name: itemcategoryNames.join(', '),
       item_subcategory_name: itemsubCategoryNames.join(', '),
       products: productList,
+
+      // 🔥 final output
       recommended_companies: recommendedCompanies.map(c => ({
-        id: c.id,
-        organization_name: c.organization_name,
-        category_sell: c.category_sell,
+        ...c.dataValues,
+        state_name: c.dataValues.state_name,
+        city_name: c.dataValues.city_name,
         company_logo_file: c.companyLogo?.file || null,
-        organization_slug: c.organization_slug || null,
       }))
     };
+
 
     // Clean up included models
     delete response.CoreActivity;

@@ -290,7 +290,7 @@ const EnquiryList = ({ user_id }) => {
                     { key: "enquiry_number", label: "Enquiry No", sortable: true },
                     { key: "product_name", label: "Product", sortable: true },
                     { key: "category_name", label: "Category", sortable: true },
-                    { key: "sub_category_name", label: "Sub Category", sortable: true },
+                    { key: "Company", label: "Company", sortable: true },
                     { key: "quantity", label: "Quantity", sortable: true },
                     { key: "created_at", label: "Created", sortable: true },
                     { key: "status", label: "Status", sortable: false },
@@ -317,7 +317,7 @@ const EnquiryList = ({ user_id }) => {
 
                       <td>{row.enquiry_users[0].product_name}</td>
                       <td>{row.category_name}</td>
-                      <td>{row.sub_category_name}</td>
+                      <td>{row.to_user.company_info.organization_name}</td>
                       <td>{row.quantity}</td>
                       <td>{formatDateTime(row.created_at)}</td>
                       <td>{row.enquiry_users &&
