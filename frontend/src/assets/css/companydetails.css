@@ -503,7 +503,7 @@
   margin: 0 0 8px;
   color: #274b88;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 0.9rem;
   line-height: 1.2;
   max-width: 100%;
   text-align: center;
@@ -519,14 +519,14 @@
 }
 
 .companyProducts .productBox .productlink .btn {
-  padding: .36rem .9rem;
+  
   min-width: 110px;
   border-radius: 6px;
   font-weight: 700;
   box-shadow: none;
   background: #0b5cb6;
   border-color: #0b5cb6;
-  transform: translateY(-15px);
+  transform: translateY(-10px);
 }
 
 
@@ -1281,7 +1281,7 @@
   flex-direction: column !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 18px !important;
+  padding: 18px 0 !important;
 }
 
 .recommended-companies-carousel .productContainer .recLogoWrap {
