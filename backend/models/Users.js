@@ -76,13 +76,52 @@ const Users = sequelize.define('Users', {
   updatedAt: 'updated_at'
 });
 
-Users.belongsTo(UploadImage, { foreignKey: 'file_id', targetKey: 'id', as: 'file', onDelete: 'CASCADE' });
+/*Users.belongsTo(UploadImage, { foreignKey: 'file_id', targetKey: 'id', as: 'file', onDelete: 'CASCADE' });
 Users.belongsTo(UploadImage, { foreignKey: 'company_file_id', targetKey: 'id', as: 'company_file', onDelete: 'CASCADE' });
 Users.belongsTo(CompanyInfo, { foreignKey: 'company_id', as: 'company_info', constraints: false });
 Users.belongsTo(Countries, { foreignKey: 'country', targetKey: 'id', as: 'country_data', constraints: false });
 Users.belongsTo(States, { foreignKey: 'state', targetKey: 'id', as: 'state_data', constraints: false });
 Users.belongsTo(Cities, { foreignKey: 'city', targetKey: 'id', as: 'city_data', constraints: false });
 Users.hasMany(SellerCategory, { foreignKey: 'user_id', as: 'seller_categories' });
-Users.hasMany(BuyerSourcingInterests, { foreignKey: 'user_id', as: 'BuyerSourcing' });
+Users.hasMany(BuyerSourcingInterests, { foreignKey: 'user_id', as: 'BuyerSourcing' });*/
+Users.associate = (models) => {
+  // Company
+  Users.belongsTo(models.CompanyInfo, {
+    foreignKey: 'company_id',
+    as: 'company_info',
+    constraints: false
+  });
+
+  // Countries
+  Users.belongsTo(models.Countries, {
+    foreignKey: 'country',
+    targetKey: 'id',
+    as: 'country_data',
+    constraints: false
+  });
+
+  // States & Cities
+  Users.belongsTo(models.States, {
+    foreignKey: 'state',
+    targetKey: 'id',
+    as: 'state_data',
+    constraints: false
+  });
+
+  Users.belongsTo(models.Cities, {
+    foreignKey: 'city',
+    targetKey: 'id',
+    as: 'city_data',
+    constraints: false
+  });
+
+  // UploadImage
+  Users.belongsTo(models.UploadImage, { foreignKey: 'file_id', targetKey: 'id', as: 'file', onDelete: 'CASCADE' });
+  Users.belongsTo(models.UploadImage, { foreignKey: 'company_file_id', targetKey: 'id', as: 'company_file', onDelete: 'CASCADE' });
+
+  // Seller & Buyer categories
+  Users.hasMany(models.SellerCategory, { foreignKey: 'user_id', as: 'seller_categories' });
+  Users.hasMany(models.BuyerSourcingInterests, { foreignKey: 'user_id', as: 'BuyerSourcing' });
+};
 
 module.exports = Users;

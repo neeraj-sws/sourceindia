@@ -107,7 +107,7 @@ const isValidEmail = (email) => {
 
   const handleResend = async () => {
     try {
-      await axios.post(`${API_BASE_URL}/resend-otp`, { email });
+      await axios.post(`${API_BASE_URL}/enquiries/resend-otp`, { email });
       setMessage('OTP resent successfully!');
       showNotification('OTP resent successfully!', 'success');
     } catch (err) {

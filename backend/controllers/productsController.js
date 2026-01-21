@@ -2,26 +2,42 @@ const { Op, fn, col, literal, Sequelize } = require('sequelize');
 const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
-const Products = require('../models/Products');
+/*const Products = require('../models/Products');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
 const States = require('../models/States');
-const Cities = require('../models/Cities');
+const Cities = require('../models/Cities');*/
 const ReviewRating = require('../models/ReviewRating');
-const CoreActivity = require('../models/CoreActivity');
+/*const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
 const SellerCategory = require('../models/SellerCategory');
 const ItemCategory = require('../models/ItemCategory');
-const ItemSubCategory = require('../models/ItemSubCategory');
+const ItemSubCategory = require('../models/ItemSubCategory');*/
 const Items = require('../models/Items');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
-const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
+// const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
 const parseCsv2 = (value) => value.split(',').map(item => item.trim());
+const {
+  CompanyInfo,
+  Users,
+  UploadImage,
+  States,
+  Cities,
+  SellerCategory,
+  BuyerSourcingInterests,
+  Categories,
+  SubCategories,
+  CoreActivity,
+  Activity,
+  Products,
+  ItemCategory,
+  ItemSubCategory
+} = require('../models');
 
 async function createUniqueProductSlug(title) {
   if (!title) return '';
@@ -1167,18 +1183,41 @@ exports.getCompanyInfoById = async (req, res) => {
 
     // Fetch other companies for recommendations
     const allCompanies = await CompanyInfo.findAll({
+  where: {
+    id: { [Op.ne]: company.id }
+  },
+  attributes: ['id', 'organization_name', 'category_sell', 'organization_slug'],
+  include: [
+    {
+      model: UploadImage,
+      as: 'companyLogo',
+      attributes: ['file']
+    },
+    {
+      model: Users,
+      as: 'company_users', // alias we’ll define below
+      required: false,
       where: {
-        id: { [Op.ne]: company.id }
+        is_delete: 0,
+        status: 1,
+        is_approve: 1
       },
-      attributes: ['id', 'organization_name', 'category_sell', 'organization_slug'],
+      attributes: ['state', 'city'],
       include: [
         {
-          model: UploadImage,
-          as: 'companyLogo',
-          attributes: ['file']
+          model: States,
+          as: 'state_data',
+          attributes: ['name']
+        },
+        {
+          model: Cities,
+          as: 'city_data',
+          attributes: ['name']
         }
       ]
-    });
+    }
+  ]
+});
 
     const allowedCategories = new Set();
 
@@ -1193,41 +1232,24 @@ exports.getCompanyInfoById = async (req, res) => {
         if (sc.category_id) allowedCategories.add(String(sc.category_id));
       });
     }
-
-    /*const recommendedCompanies = allCompanies.filter(c => {
+    const recommendedCompanies = allCompanies.filter(c => {
       if (!c.category_sell) return false;
       const companyCategories = c.category_sell.split(',').map(id => id.trim());
       return companyCategories.some(cat => allowedCategories.has(cat));
-    });*/
-    let recommendedCompaniesFiltered = [];
-if (user) {
-  const allowedCategoryIds = [...allowedCategories]; // convert Set to array
+    });
 
-  const recommendedCompaniesRaw = await sequelize.query(
-    `
-      SELECT c.company_id, c.organization_name, c.category_sell, c.organization_slug,
-             ui.file AS company_logo_file,
-             s.name AS state_name,
-             ci.name AS city_name
-      FROM company_info c
-      LEFT JOIN upload_images ui ON ui.upload_image_id = c.company_logo
-      LEFT JOIN users u ON u.company_id = c.company_id AND u.is_delete = 0 AND u.status = 1 AND u.is_approve = 1
-      LEFT JOIN states s ON s.state_id = u.state
-      LEFT JOIN cities ci ON ci.city_id = u.city
-      WHERE c.company_id != :companyId
-    `,
-    {
-      replacements: { companyId: company.id },
-      type: sequelize.QueryTypes.SELECT
-    }
-  );
-
-  recommendedCompaniesFiltered = recommendedCompaniesRaw.filter(c => {
-    if (!c.category_sell) return false;
-    const companyCategories = c.category_sell.split(',').map(id => id.trim());
-    return companyCategories.some(catId => allowedCategoryIds.includes(catId));
-  });
-}
+    const recommendedCompaniesResponse = recommendedCompanies.map(c => {
+  const user = c.company_users?.[0]; // pick first active user
+  return {
+    id: c.id,
+    organization_name: c.organization_name,
+    organization_slug: c.organization_slug || null,
+    category_sell: c.category_sell,
+    company_logo_file: c.companyLogo?.file || null,
+    state_name: user?.state_data?.name || null,
+    city_name: user?.city_data?.name || null
+  };
+});
 
     const response = {
       ...data,
@@ -1238,22 +1260,7 @@ if (user) {
       item_category_name: itemcategoryNames.join(', '),
       item_subcategory_name: itemsubCategoryNames.join(', '),
       products: productList,
-      /*recommended_companies: recommendedCompanies.map(c => ({
-        id: c.id,
-        organization_name: c.organization_name,
-        category_sell: c.category_sell,
-        company_logo_file: c.companyLogo?.file || null,
-        organization_slug: c.organization_slug || null,
-      }))*/
-      recommended_companies: recommendedCompaniesFiltered.map(c => ({
-  id: c.id,
-  organization_name: c.organization_name,
-  organization_slug: c.organization_slug,
-  category_sell: c.category_sell,
-  company_logo_file: c.company_logo_file || null,
-  state_name: c.state_name || null,
-  city_name: c.city_name || null
-})),
+      recommended_companies: recommendedCompaniesResponse
     };
 
     // Clean up included models

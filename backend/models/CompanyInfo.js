@@ -66,7 +66,7 @@ const CompanyInfo = sequelize.define('CompanyInfo', {
   updatedAt: 'updated_at'
 });
 
-CompanyInfo.belongsTo(UploadImage, { foreignKey: 'company_logo', targetKey: 'id', as: 'companyLogo', onDelete: 'CASCADE' });
+/*CompanyInfo.belongsTo(UploadImage, { foreignKey: 'company_logo', targetKey: 'id', as: 'companyLogo', onDelete: 'CASCADE' });
 CompanyInfo.belongsTo(UploadImage, { foreignKey: 'company_sample_ppt_file', targetKey: 'id', as: 'companySamplePptFile', onDelete: 'CASCADE' });
 CompanyInfo.belongsTo(UploadImage, { foreignKey: 'company_video', targetKey: 'id', as: 'companyVideo', onDelete: 'CASCADE' });
 CompanyInfo.belongsTo(UploadImage, { foreignKey: 'sample_file_id', targetKey: 'id', as: 'companySampleFile', onDelete: 'CASCADE' });
@@ -75,6 +75,28 @@ CompanyInfo.belongsTo(SubCategories, { foreignKey: 'sub_category', targetKey: 'i
 CompanyInfo.belongsTo(CoreActivity, { foreignKey: 'core_activity', targetKey: 'id', as: 'CoreActivity', constraints: false });
 CompanyInfo.belongsTo(Activity, { foreignKey: 'activity', targetKey: 'id', as: 'Activity', constraints: false });
 CompanyInfo.belongsTo(MembershipPlan, { foreignKey: 'membership_plan', targetKey: 'id', as: 'MembershipPlan', constraints: false });
-CompanyInfo.belongsTo(NatureBusinesses, { foreignKey: 'nature_business', targetKey: 'id', as: 'NatureBusinesses', constraints: false });
+CompanyInfo.belongsTo(NatureBusinesses, { foreignKey: 'nature_business', targetKey: 'id', as: 'NatureBusinesses', constraints: false });*/
+CompanyInfo.associate = (models) => {
+  // Users
+  CompanyInfo.hasMany(models.Users, {
+    foreignKey: 'company_id',
+    as: 'company_users',
+    constraints: false
+  });
+
+  // UploadImage associations
+  CompanyInfo.belongsTo(models.UploadImage, { foreignKey: 'company_logo', targetKey: 'id', as: 'companyLogo', onDelete: 'CASCADE' });
+  CompanyInfo.belongsTo(models.UploadImage, { foreignKey: 'company_sample_ppt_file', targetKey: 'id', as: 'companySamplePptFile', onDelete: 'CASCADE' });
+  CompanyInfo.belongsTo(models.UploadImage, { foreignKey: 'company_video', targetKey: 'id', as: 'companyVideo', onDelete: 'CASCADE' });
+  CompanyInfo.belongsTo(models.UploadImage, { foreignKey: 'sample_file_id', targetKey: 'id', as: 'companySampleFile', onDelete: 'CASCADE' });
+
+  // Other associations
+  CompanyInfo.belongsTo(models.Categories, { foreignKey: 'category_sell', targetKey: 'id', as: 'Categories', constraints: false });
+  CompanyInfo.belongsTo(models.SubCategories, { foreignKey: 'sub_category', targetKey: 'id', as: 'SubCategories', constraints: false });
+  CompanyInfo.belongsTo(models.CoreActivity, { foreignKey: 'core_activity', targetKey: 'id', as: 'CoreActivity', constraints: false });
+  CompanyInfo.belongsTo(models.Activity, { foreignKey: 'activity', targetKey: 'id', as: 'Activity', constraints: false });
+  CompanyInfo.belongsTo(models.MembershipPlan, { foreignKey: 'membership_plan', targetKey: 'id', as: 'MembershipPlan', constraints: false });
+  CompanyInfo.belongsTo(models.NatureBusinesses, { foreignKey: 'nature_business', targetKey: 'id', as: 'NatureBusinesses', constraints: false });
+};
 
 module.exports = CompanyInfo;
