@@ -1,32 +1,61 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const ImageFront = ({ src, alt = 'Image', width = 80, height = 80, showFallback = true, style = null, className = null, defaultimg = null }) => {
+const ImageFront = ({
+  src,
+  alt = 'Image',
+  width = 80,
+  height = 80,
+  showFallback = true,
+  style = null,
+  className = null,
+  defaultimg = null
+}) => {
   const [imageExists, setImageExists] = useState(false);
 
   useEffect(() => {
+    if (!src || src === 'null' || src.endsWith('/null')) {
+      setImageExists(false);
+      return;
+    }
+
     const checkImage = async () => {
       try {
-        await axios.head(src); setImageExists(true);
+        await axios.head(src);
+        setImageExists(true);
       } catch {
         setImageExists(false);
       }
     };
-    if (src) checkImage();
+
+    checkImage();
   }, [src]);
 
   if (!imageExists) {
-    if (showFallback) {
-      const fallbackSrc = defaultimg || '/default.png';
-      return (<img className={`img-fluid ${className || ''}`} src={fallbackSrc} loading="lazy"
-        decoding="async" alt={alt || 'Image'} style={style} />);
-    } else {
-      return null;
-    }
+    if (!showFallback) return null;
+
+    return (
+      <img
+        className={`img-fluid ${className || ''}`}
+        src={defaultimg || '/default.png'}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        style={style}
+      />
+    );
   }
 
-  return (<img className="img-fluid" src={src} alt={alt} loading="lazy"
-    decoding="async" />);
+  return (
+    <img
+      className={`img-fluid ${className || ''}`}
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      style={style}
+    />
+  );
 };
 
 export default ImageFront;
