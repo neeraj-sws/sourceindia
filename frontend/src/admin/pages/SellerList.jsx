@@ -694,12 +694,20 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     }
   };
 
+  const title = React.useMemo(() => {
+  if (getInactive) return "Inactive Sellers";
+  if (getNotApproved) return "Not Approved Sellers";
+  if (getNotCompleted) return "Not Completed Sellers";
+  if (getDeleted) return "Recently Deleted Sellers";
+  return "Sellers List";
+}, [getInactive, getNotApproved, getNotCompleted, getDeleted]);
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Sellers" maincount={totalRecords} page="Sellers"
-            title={getInactive ? "Inactive Sellers" : getNotApproved ? "Not Approved Sellers" : getNotCompleted ? "Not Completed Sellers" : getDeleted ? "Recently Deleted Sellers" : "Sellers List"}
+          <Breadcrumb mainhead={title} maincount={totalRecords} page={title}
+            title={title}
             add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Seller</>)} add_link="/admin/add_seller"
             actions={
               <>
@@ -986,7 +994,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                     </td>
                     )}
                     <td>
-                      {row.organization_name && (<><strong><a href={`/companies/${row.organization_slug}`} target="_blank">{row.organization_name}</a></strong><br /></>)}
+                      {row.organization_name && (<><strong><a href={`/companies/${row.organization_slug}`} target="_blank"> {row.organization_name?.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</a></strong><br /></>)}
                       {row.elcina_member == 1 ? (<><span className="badge bg-primary mb-1 text-uppercase">Elcina Member</span><br /></>) :
                       row.elcina_member == 2 ? (<><span className="badge bg-primary mb-1 text-uppercase">Trial</span><br /></>) : "" }
                       {row.is_trading == 1 && (<><span className="badge bg-success mb-1">Trader</span><br /></>)}
@@ -1176,18 +1184,22 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
         fileName={`${getInactive ? "Inactive" : getNotApproved ? "Notapprove" : getNotCompleted ? "Incomplete" : getDeleted ? "Deleted" : "All"} Seller.xlsx`}
         data={sellerData}
         columns={[
-          { label: "First Name", key: "fname" },
-          { label: "Last Name", key: "lname" },
+          { label: "ID", key: "id" },
+          { label: "Organization Name", key: "organization_name" },
+          { 
+            label: "Full Name", 
+            key: "fname", 
+            format: (val, row) => `${row.fname} ${row.lname}` 
+          },
           { label: "Email", key: "email" },
           { label: "Phone", key: "mobile" },
           { label: "Address", key: "address" },
-          { label: "Country Name", key: "country_name" },
-          { label: "State Name", key: "state_name" },
-          { label: "City Name", key: "city_name" },
+          { label: "Country", key: "country_name" },
+          { label: "State", key: "state_name" },
+          { label: "City", key: "city_name" },
           { label: "Membership Plan", key: "membership_plan_name" },
           { label: "Designation", key: "designation" },
           { label: "Zipcode", key: "zipcode" },
-          { label: "Organization Name", key: "organization_name" },
           { label: "Core Activity", key: "coreactivity_name" },
           { label: "Activity", key: "activity_name" },
           { label: "Category", key: "category_name" },
