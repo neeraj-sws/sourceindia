@@ -1,0 +1,8 @@
+/* Companies page styles: logo sizing, truncation, footer alignment */
+.company-card .company-logo { width:160px; height:100px; display:flex; align-items:center; justify-content:center; margin:0 auto; }
+.company-card .company-logo img { max-width:100%; max-height:100%; object-fit:contain; }
+.company-card .company-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; display:block; margin:0 auto; }
+.company-card .card-footer { min-height:48px; display:flex; align-items:center; justify-content:center; gap:8px; }
+@media (max-width:576px) {
+  .company-card .card-footer { flex-direction:column; gap:6px; }
+}
