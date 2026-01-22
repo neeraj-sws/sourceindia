@@ -106,7 +106,7 @@ const OpenEnquiryDetails = () => {
     const res = await axios.get(`${API_BASE_URL}/open_enquiries/messages`, {
       params: {
         replyUserId,
-        enquiryId,
+        enquiry_id: OpenEnquiryId,
         userId
       }
     });
@@ -395,9 +395,9 @@ const OpenEnquiryDetails = () => {
                           })
 
                         ) : (
-                          <p className="text-center text-muted mt-4">
-                            No messages found
-                          </p>
+                          <div className="text-center p-5">
+                            <img src="/no-data.jpg" alt="No Data" className="img-fluid mb-3 w-50" />
+                          </div>
                         )}
 
                       </div>

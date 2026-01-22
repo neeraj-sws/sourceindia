@@ -328,7 +328,7 @@ const LeadDetail = () => {
                         </div> */}
                         <div className="MainChat">
                           <div className="chat-content ps ps--active-y start-0 m-0 pt-2 mb-4" ref={chatContentRef}>
-                            {enquiryMessages.length > 0 &&
+                            {enquiryMessages.length > 0 ?
                               enquiryMessages.map((msg, index) => {
                                 const time = new Date(msg.updated_at).toLocaleTimeString("en-IN", {
                                   hour: "numeric",
@@ -401,7 +401,11 @@ const LeadDetail = () => {
                                     )}
                                   </div>
                                 );
-                              })}
+                              }) : (
+                                <div className="text-center p-5">
+                                  <img src="/no-data.jpg" alt="No Data" className="img-fluid mb-3 w-50" />
+                                </div>
+                              )}
                           </div>
                           <div className="chat-footer d-flex align-items-center start-0">
                             <div className="flex-grow-1 pe-2">

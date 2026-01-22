@@ -338,7 +338,7 @@ const ViewEnquiry = () => {
                     <div className="tab-pane fade show active" id="primary-pills-email" role="tabpanel">
                       <div className="MainChat">
                         <div className="chat-content ps ps--active-y start-0 m-0 pt-2 mb-4">
-                          {enquiryMessages.length > 0 &&
+                          {enquiryMessages.length > 0 ?
                             enquiryMessages.map((msg, index) => {
 
                               const time = new Date(msg.updated_at).toLocaleTimeString("en-IN", {
@@ -412,7 +412,12 @@ const ViewEnquiry = () => {
                                   )}
                                 </div>
                               );
-                            })}
+                            }
+                          ) : (
+                            <div className="text-center p-5">
+                              <img src="/no-data.jpg" alt="No Data" className="img-fluid mb-3 w-50" />
+                            </div>
+                            )}
                         </div>
 
                       </div>

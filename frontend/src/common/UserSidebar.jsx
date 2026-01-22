@@ -92,7 +92,9 @@ const UserSidebar = () => {
   // ✅ Menu configuration
   const menuData = [
     // Always visible
-    { title: "Dashboard", icon: "bx bx-home-circle", link: "/dashboard" },
+    {
+      icon: "bx bx-home-circle", link: "/dashboard", title: user?.is_seller === 1 ? "Seller Dashboard" : "Buyer Dashboard",
+    },
     { title: "Profile", icon: "bx bx-user", link: "/profile" },
 
 
@@ -121,7 +123,7 @@ const UserSidebar = () => {
 
     // Lead Messages ((member_role == 1 || 3) && is_seller == 1 && complete == 1 && approve == 1)
     {
-      title: "Lead Messages",
+      title: "Lead Chats",
       icon: "bx bx-chat",
       link: "/all-leads-chats",
       show:
@@ -133,7 +135,7 @@ const UserSidebar = () => {
 
     // Enquiries (member_role == 1 && complete == 1 && approve == 1)
     {
-      title: "Enquiries",
+      title: "My Enquiries",
       icon: "bx bx-folder",
       link: "/my_enquiry",
       show:
@@ -144,7 +146,7 @@ const UserSidebar = () => {
 
     // Enquiry Messages (member_role != 3 && complete == 1 && approve == 1)
     {
-      title: "Enquiry Messages",
+      title: "Enquiry Chats",
       icon: "bx bx-chat",
       link: "/my-all-enquiries-chats",
       show:
@@ -177,14 +179,14 @@ const UserSidebar = () => {
 
     // My Buyer Enquiries (complete == 1 && approve == 1)
     {
-      title: "My Buyer Enquiries",
+      title: user?.is_seller === 1 ? "Buyer Connects" : "Seller Connects",
       icon: "bx bx-message-square-dots",
       link: "/my-buyer-enquiries",
       show: user?.is_complete === 1 && user?.is_approve === 1,
     },
 
     // ✅ Always visible (common)
-    { title: "Add Open Enquiries", icon: "bx bx-plus", link: "/open-enquiry" },
+    { title: "Add Open Enquiries", icon: "bx bx-plus", link: "/enquiry" },
     // { title: "My All Enquiries Chats", icon: "bx bx-message", link: "/my-all-enquiries-chats" },
   ];
 

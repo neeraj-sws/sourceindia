@@ -154,7 +154,12 @@ exports.getUserBuyerEnquiries = async (req, res) => {
         const search = req.query.search || '';
         const status = req.query.status || '';
 
-        const where = { user_id };
+        const where = {
+          [Op.or]: [
+            { user_id: user_id },
+            { reciever_id: user_id }
+          ]
+        };
         if (search) {
             where[Op.or] = [
                 { title: { [Op.like]: `%${search}%` } },

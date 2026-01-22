@@ -184,27 +184,9 @@ const MyAllEnquiryChat = ({ user_id }) => {
   useEffect(() => {
     if (!user?.id || !user?.company_id) return; // wait until user info is ready
 
-    // Fetch user's enquiries
-    axios.get(`${API_BASE_URL}/enquiries/by-enquiry?user_id=${user.id}&all=true`)
-      .then((res) => {
-        const filtered = res.data.data.filter((c) => c.is_approve === 1 && c.is_delete === 0);
-        setEnquiriesData(filtered);
-      })
-      .catch((err) => console.error("Error fetching enquiries:", err));
 
-    // Fetch lead count
-    axios.get(`${API_BASE_URL}/enquiries/lead-count?companyId=${user.company_id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    })
-      .then((res) => {
-        const counts = res.data?.data || res.data || { total: 0, open: 0, closed: 0 };
-        setcounterCount(counts);
-        console.log("Lead Counts:", counts);
-      })
-      .catch((err) => {
-        console.error("Error fetching lead count:", err);
-        setcounterCount({ total: 0, open: 0, closed: 0 }); // fallback
-      });
+
+
 
     // Fetch lead chat
     axios.get(`${API_BASE_URL}/enquiries/all-leads?companyId=${user.company_id}&is_type=myenquiry`, {
@@ -322,7 +304,7 @@ const MyAllEnquiryChat = ({ user_id }) => {
           />
           <div className="card">
             <div className="card-body p-0">
-              {allleads && allleads.length > 0 && (
+              {allleads && allleads.length > 0 ? (
                 <div className="row">
                   <div className="col-4 pe-lg-0">
                     <div className="card border rounded-0 h-100">
@@ -346,8 +328,8 @@ const MyAllEnquiryChat = ({ user_id }) => {
                                 <div className="chat_user">
                                   <img
                                     src={
-                                      item.company_logo_new
-                                        ? `${ROOT_URL}/${item.company_logo_new}`
+                                      item.company_logo
+                                        ? `${ROOT_URL}/${item.company_logo}`
                                         : "/user-demo.png"
                                     }
                                     alt=""
@@ -361,14 +343,13 @@ const MyAllEnquiryChat = ({ user_id }) => {
                                 </div>
 
                                 <div className="menquiry">
-                                  <p className="mb-0 fw-bold"> {item.org_name}</p>
-                                  <small> <i class="bx bx-map"></i>{item.com_location
+                                  <p className="mb-0 fw-bold"> {item.organization_name}</p>
+                                  <small> <i class="bx bx-map"></i>{item.company_location
                                   }</small>
                                 </div>
                               </div>
                             </a>
                           ))}
-
 
                         </div>
                       </div>
@@ -384,8 +365,8 @@ const MyAllEnquiryChat = ({ user_id }) => {
                               <div>
                                 <img
                                   src={
-                                    enquiryUsers?.company_info?.companyLogo.file
-                                      ? `${ROOT_URL}/${enquiryUsers?.company_info?.companyLogo.file}`
+                                    enquiryUsers?.company_info?.companyLogo?.file
+                                      ? `${ROOT_URL}/${enquiryUsers?.company_info?.companyLogo?.file}`
                                       : "/user-demo.png"
                                   }
                                   alt=""
@@ -518,6 +499,10 @@ const MyAllEnquiryChat = ({ user_id }) => {
                       </div>
                     </div>
                   </div>
+                </div>
+              ) : (
+                <div className="text-center p-5">
+                  <img src="/no-data.jpg" alt="No Data" className="img-fluid mb-3 w-50" />
                 </div>
               )}
             </div >

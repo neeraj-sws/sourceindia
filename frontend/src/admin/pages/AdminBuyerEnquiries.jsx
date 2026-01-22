@@ -1,8 +1,11 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
+// Capitalize first letter utility
+const capitalize = str => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 import Select from 'react-select';
 import axios from 'axios';
 import API_BASE_URL from '../../config';
 import { Link } from 'react-router-dom';
+import { formatDateTime } from "../../utils/formatDate";
 
 const DataTable = lazy(() => import('../common/DataTable'));
 
@@ -110,8 +113,8 @@ const AdminBuyerEnquiries = () => {
                             <DataTable
                                 columns={[
                                     { key: "id", label: "S.No.", sortable: true },
-                                    { key: "sender_name", label: "Name", sortable: false },
-                                    { key: "receiver_company", label: "Company", sortable: false },
+                                    { key: "sender_name", label: "From", sortable: false },
+                                    { key: "receiver_name", label: "To", sortable: false },
                                     { key: "title", label: "Title", sortable: true },
                                     { key: "message", label: "Message", sortable: true },
                                     { key: "created_at", label: "Date", sortable: true }
@@ -130,13 +133,19 @@ const AdminBuyerEnquiries = () => {
                                 renderRow={(row, idx) => (
                                     <tr key={row.id}>
                                         <td>{(page - 1) * limit + idx + 1}</td>
-                                        <td>{row.sender?.fname} {row.sender?.lname}</td>
                                         <td>
-                                            <Link to={`/companies/${row.receiver?.company_info?.organization_slug}`}>
-                                                {row.receiver?.company_info?.organization_name ?? '-'}</Link></td>
+                                            <i className="fadeIn animated bx bx-user"></i> {capitalize(row.sender?.fname)} {capitalize(row.sender?.lname)}
+                                            <Link className="d-block" to={`/companies/${row.sender?.company_info?.organization_slug}`}>
+                                                <i class="fadeIn animated bx bx-building"></i>  {row.sender?.company_info?.organization_name ?? '-'}</Link>
+                                        </td>
+                                        <td>
+                                            <i className="fadeIn animated bx bx-user"></i>  {capitalize(row.receiver?.fname)} {capitalize(row.receiver?.lname)}
+                                            <Link className="d-block" to={`/companies/${row.receiver?.company_info?.organization_slug}`}>
+                                                <i class="fadeIn animated bx bx-building"></i>  {row.receiver?.company_info?.organization_name ?? '-'}</Link>
+                                        </td>
                                         <td>{row.title}</td>
                                         <td>{row.message}</td>
-                                        <td>{row.created_at ? new Date(row.created_at).toLocaleDateString() : ''}</td>
+                                        <td className='text-nowrap'>{formatDateTime(row.created_at)}</td>
 
                                     </tr>
                                 )}

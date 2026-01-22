@@ -220,14 +220,14 @@ exports.getUserOpenEnquiries = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
-    const { replyUserId, enquiryId } = req.query;
+    const { replyUserId, enquiry_id,enquiryId } = req.query;
     const whereConditions = {};
 
     if (replyUserId !== undefined) {
       whereConditions.reply_user_id = replyUserId;
     }
 
-    whereConditions.enquiry_id = enquiryId;
+    whereConditions.enquiry_id = enquiry_id;
     const openEnquiries = await OpenEnquiriesChats.findAll({
       where: whereConditions,
       include: [

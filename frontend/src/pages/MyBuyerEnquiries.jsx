@@ -32,6 +32,7 @@ const MyBuyerEnquiries = () => {
     const [sortDirection, setSortDirection] = useState('DESC');
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(10);
+    const [filterType, setFilterType] = useState('all'); // 'all', 'send', 'received'
 
     const fetchData = async () => {
         if (!user) return;
@@ -39,9 +40,16 @@ const MyBuyerEnquiries = () => {
         try {
             const params = { user_id: user.id, page, limit, search, sortBy, sort: sortDirection };
             const response = await axios.get(`${API_BASE_URL}/buyerenquiry/user`, { params });
-            setData(response.data.data || []);
+            let records = response.data.data || [];
+            // Filter on client side for send/received
+            if (filterType == 'send') {
+                records = records.filter(row => user.id === row.user_id);
+            } else if (filterType == 'received') {
+                records = records.filter(row => user.id === row.reciever_id);
+            }
+            setData(records);
             setTotalRecords(response.data.totalRecords || response.data.filteredRecords || 0);
-            setFilteredRecords(response.data.filteredRecords || 0);
+            setFilteredRecords(records.length);
         } catch (error) {
             setData([]);
         } finally {
@@ -52,7 +60,7 @@ const MyBuyerEnquiries = () => {
     useEffect(() => {
         fetchData();
         // eslint-disable-next-line
-    }, [user, page, limit, search, sortBy, sortDirection]);
+    }, [user, page, limit, search, sortBy, sortDirection, filterType]);
 
     if (!user) return <p>Loading...</p>;
 
@@ -64,8 +72,15 @@ const MyBuyerEnquiries = () => {
                     <div className="card">
                         <div className="card-body">
                             <div className="row mb-3">
-                                <div className="col-md-6">
+                                <div className="col-md-4 mb-2">
                                     <input type="text" className="form-control" placeholder="Search..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+                                </div>
+                                <div className="col-md-6 mb-2">
+                                    <select className="form-select w-auto" value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1); }}>
+                                        <option value="all">All</option>
+                                        <option value="send">Send</option>
+                                        <option value="received">Received</option>
+                                    </select>
                                 </div>
                             </div>
                             <DataTable
@@ -95,7 +110,14 @@ const MyBuyerEnquiries = () => {
                                         <td>{row.message}</td>
                                         <td>
                                             <Link to={`/companies/${row.receiver?.company_info?.organization_slug}`}>{row.receiver?.company_info?.organization_name ?? '-'}
-                                            </Link>
+                                            </Link><br />
+                                            {(user.id == row.user_id) ? (
+                                                <span className="badge bg-success mt-1">Send</span>
+                                            ) : (user.id == row.reciever_id) ? (
+                                                <span className="badge bg-primary mt-1 small">Received</span>
+                                            ) : (
+                                                <span className="text-muted small">-</span>
+                                            )}
                                         </td>
                                         <td>{row.created_at ? new Date(row.created_at).toLocaleDateString() : ''}</td>
 
