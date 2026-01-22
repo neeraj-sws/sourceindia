@@ -135,6 +135,19 @@
   box-shadow: 0 8px 20px rgba(16, 24, 40, 0.08);
 }
 
+/* Clamp product title to 4 lines with an ellipsis */
+.title-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  max-height: calc(1.2em * 4);
+  /* ensure consistent font-size inheritance and spacing */
+  margin: 0;
+}
+
 /* NOTE: Recommended companies carousel styles were consolidated later in this file to
    avoid duplicated rules. Keep the canonical block near the bottom. */
 
