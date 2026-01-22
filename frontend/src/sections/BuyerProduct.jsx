@@ -45,6 +45,14 @@ const BuyerProduct = () => {
     fetchProducts();
   }, [user, loading, navigate]);
 
+  // truncate a title to a given number of words
+  const truncateWords = (text, wordLimit = 12) => {
+    if (!text) return "";
+    const words = text.trim().split(/\s+/);
+    if (words.length <= wordLimit) return text;
+    return words.slice(0, wordLimit).join(" ") + "...";
+  };
+
   return (
     <>
       <Suspense fallback={<div></div>}>
@@ -90,7 +98,7 @@ const BuyerProduct = () => {
                         />
                       </div>
                       <div className="productlink">
-                        <p className="mb-0 title-clamp">{similar.title}</p>
+                        <p className="mb-0 title-clamp">{truncateWords(similar.title, 8)}</p>
                         <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2" aria-label={`View ${similar.title}`}>
                           <span className="pe-2">View</span>
                           <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" className="filtersvg" aria-hidden="true">
