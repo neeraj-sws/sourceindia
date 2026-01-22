@@ -743,7 +743,7 @@ setAppliedItem(selectedItem);
                       height={40}
                       showFallback={true}
                     /></td>
-                    <td><a href={`/products/${row.slug}`} target="_blank">{row.title}</a></td>
+                    <td><a href={`/products/${row.slug}`} target="_blank"> {row.title?.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</a></td>
                     <td>{row.category_name}</td>
                     <td><a href={`/companies/${row.company_slug}`} target="_blank">{row.company_name}</a></td>
                     <td>{formatDateTime(row.created_at)}</td>
@@ -840,6 +840,7 @@ setAppliedItem(selectedItem);
         fileName={`${getDeleted ? "Product Remove List" : isApprove==1 ? "Approve Product" : isApprove==0 ? "Not Approve Product" : "Products"} Export.xlsx`}
         data={productsData}
         columns={[
+          { label: "ID", key: "id" },
           { label: "Title", key: "title" },
           { label: "Code", key: "code" },
           { label: "Category", key: "category_name" },
