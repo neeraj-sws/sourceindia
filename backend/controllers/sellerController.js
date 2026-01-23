@@ -110,7 +110,7 @@ exports.createSeller = async (req, res) => {
         is_email_verify: is_email_verify || 1, is_profile: is_profile || 1, is_company: is_company || 1,
         is_intrest: is_intrest || 0, request_admin: request_admin || 0, is_complete: is_complete || 1
       });
-     
+
       // Create company info (unchanged)
       const companyInfo = await CompanyInfo.create({
         organization_name: user_company, organization_slug: await createUniqueSlug(user_company), role, user_type: user_type || 9,
@@ -380,6 +380,7 @@ exports.getSellerCount = async (req, res) => {
       Users.count({
         where: {
           is_seller: 1,
+          is_delete: 0,
           created_at: { [Op.between]: [todayStart, todayEnd] },
         },
         include: [
@@ -532,50 +533,50 @@ exports.updateSeller = async (req, res) => {
       };
 
       const fileFields = [
-  { field: 'file', model: 'user', column: 'file_id', folder: 'users' },
-  { field: 'company_logo', model: 'company', column: 'company_logo', folder: 'users' },
-  { field: 'sample_file_id', model: 'company', column: 'sample_file_id', folder: 'users' },
-  { field: 'company_sample_ppt_file', model: 'company', column: 'company_sample_ppt_file', folder: 'users' },
-  { field: 'company_video', model: 'company', column: 'company_video', folder: 'users/video' }
-];
+        { field: 'file', model: 'user', column: 'file_id', folder: 'users' },
+        { field: 'company_logo', model: 'company', column: 'company_logo', folder: 'users' },
+        { field: 'sample_file_id', model: 'company', column: 'sample_file_id', folder: 'users' },
+        { field: 'company_sample_ppt_file', model: 'company', column: 'company_sample_ppt_file', folder: 'users' },
+        { field: 'company_video', model: 'company', column: 'company_video', folder: 'users/video' }
+      ];
 
       // Handling file uploads
       for (const f of fileFields) {
-  const uploadedFile = req.files?.[f.field]?.[0];
-  if (!uploadedFile) continue;
+        const uploadedFile = req.files?.[f.field]?.[0];
+        if (!uploadedFile) continue;
 
-  const filePath = `upload/${f.folder}/${uploadedFile.filename}`;
+        const filePath = `upload/${f.folder}/${uploadedFile.filename}`;
 
-  if (f.model === 'user') {
-    const oldImageId = user[f.column];
-    const oldImage = oldImageId ? await UploadImage.findByPk(oldImageId) : null;
+        if (f.model === 'user') {
+          const oldImageId = user[f.column];
+          const oldImage = oldImageId ? await UploadImage.findByPk(oldImageId) : null;
 
-    if (oldImage) {
-      if (fs.existsSync(path.resolve(oldImage.file))) {
-        fs.unlinkSync(path.resolve(oldImage.file));
+          if (oldImage) {
+            if (fs.existsSync(path.resolve(oldImage.file))) {
+              fs.unlinkSync(path.resolve(oldImage.file));
+            }
+            await oldImage.update({ file: filePath });
+          } else {
+            const newImage = await UploadImage.create({ file: filePath });
+            await user.update({ [f.column]: newImage.id });
+          }
+        }
+
+        if (f.model === 'company' && companyInfo) {
+          const oldImageId = companyInfo[f.column];
+          const oldImage = oldImageId ? await UploadImage.findByPk(oldImageId) : null;
+
+          if (oldImage) {
+            if (fs.existsSync(path.resolve(oldImage.file))) {
+              fs.unlinkSync(path.resolve(oldImage.file));
+            }
+            await oldImage.update({ file: filePath });
+          } else {
+            const newImage = await UploadImage.create({ file: filePath });
+            await companyInfo.update({ [f.column]: newImage.id });
+          }
+        }
       }
-      await oldImage.update({ file: filePath });
-    } else {
-      const newImage = await UploadImage.create({ file: filePath });
-      await user.update({ [f.column]: newImage.id });
-    }
-  }
-
-  if (f.model === 'company' && companyInfo) {
-    const oldImageId = companyInfo[f.column];
-    const oldImage = oldImageId ? await UploadImage.findByPk(oldImageId) : null;
-
-    if (oldImage) {
-      if (fs.existsSync(path.resolve(oldImage.file))) {
-        fs.unlinkSync(path.resolve(oldImage.file));
-      }
-      await oldImage.update({ file: filePath });
-    } else {
-      const newImage = await UploadImage.create({ file: filePath });
-      await companyInfo.update({ [f.column]: newImage.id });
-    }
-  }
-}
 
       await user.update(updatedData);
 
@@ -603,8 +604,8 @@ exports.updateSeller = async (req, res) => {
 
       // Step 1: Add Categories without Subcategories first
       const categoryIds = req.body.categories
-  ? req.body.categories.split(',').map(id => parseInt(id.trim()))
-  : [];
+        ? req.body.categories.split(',').map(id => parseInt(id.trim()))
+        : [];
       const existingCategories = await SellerCategory.findAll({ where: { user_id: sellerId } });
       const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
       const incomingCategoryMap = [];
@@ -866,28 +867,15 @@ exports.getAllSellerServerSide = async (req, res) => {
       order = [['id', 'DESC']];
     }
 
-    // 🧾 WHERE Clauses
-    const where = {};
-    where.is_seller = 1; where.is_delete = 0;
-    where.status = 1;
-    where.member_role = 1;
-    where.is_complete = 1;
 
-    if (req.query.getNotCompleted !== 'true') where.is_approve = 1;
-    if (req.query.getInactive === 'true') where.status = 0;
-    if (req.query.getNotApproved === 'true') where.is_approve = 0;
-    if (req.query.getNotCompleted === 'true') {
-      where.is_complete = 0;
-      where.is_approve = 0;
-    }
-    if (req.query.getDeleted === 'true') {
-      where.is_delete = 1;
-      delete where.is_approve;
-      delete where.status;
-      delete where.member_role;
-      delete where.is_complete;
-    }
+    // 🧾 WHERE Clauses
+    let where = {};
+    let searchWhere = {};
+
     if (req.query.todayOnly === 'true') {
+      // Only apply is_seller, is_delete, and date filter
+      where.is_seller = 1;
+      where.is_delete = 0;
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date();
@@ -895,8 +883,29 @@ exports.getAllSellerServerSide = async (req, res) => {
       where.created_at = {
         [Op.between]: [startOfDay, endOfDay],
       };
+      searchWhere = { ...where };
+    } else {
+      where.is_seller = 1; where.is_delete = 0;
+      where.status = 1;
+      where.member_role = 1;
+      where.is_complete = 1;
+
+      if (req.query.getNotCompleted !== 'true') where.is_approve = 1;
+      if (req.query.getInactive === 'true') where.status = 0;
+      if (req.query.getNotApproved === 'true') where.is_approve = 0;
+      if (req.query.getNotCompleted === 'true') {
+        where.is_complete = 0;
+        where.is_approve = 0;
+      }
+      if (req.query.getDeleted === 'true') {
+        where.is_delete = 1;
+        delete where.is_approve;
+        delete where.status;
+        delete where.member_role;
+        delete where.is_complete;
+      }
+      searchWhere = { ...where };
     }
-    const searchWhere = { ...where };
 
     if (country) searchWhere.country = country;
     if (state) searchWhere.state = state;
@@ -910,24 +919,24 @@ exports.getAllSellerServerSide = async (req, res) => {
     if (search) {
       const escapedSearch = search.replace(/[%_]/g, '\\$&');
 
-  searchWhere[Op.or] = [
-    Sequelize.where(
-      fn('concat', col('fname'), ' ', col('lname')),
-      { [Op.like]: `%${escapedSearch}%` }
-    ),
-    { email: { [Op.like]: `%${escapedSearch}%` } },
-    { mobile: { [Op.like]: `%${escapedSearch}%` } },
-    { '$company_info.organization_name$': { [Op.like]: `%${escapedSearch}%` } },
-    { '$company_info.designation$': { [Op.like]: `%${escapedSearch}%` } },
-    { '$company_info.company_website$': { [Op.like]: `%${escapedSearch}%` } },
-    { '$company_info.organization_quality_certification$': { [Op.like]: `%${escapedSearch}%` } },
-    { '$company_info.CoreActivity.name$': { [Op.like]: `%${escapedSearch}%` } },
-    { '$company_info.Activity.name$': { [Op.like]: `%${escapedSearch}%` } },
-    { '$city_data.name$': { [Op.like]: `%${search}%` } },
-    { '$state_data.name$': { [Op.like]: `%${search}%` } },
+      searchWhere[Op.or] = [
+        Sequelize.where(
+          fn('concat', col('fname'), ' ', col('lname')),
+          { [Op.like]: `%${escapedSearch}%` }
+        ),
+        { email: { [Op.like]: `%${escapedSearch}%` } },
+        { mobile: { [Op.like]: `%${escapedSearch}%` } },
+        { '$company_info.organization_name$': { [Op.like]: `%${escapedSearch}%` } },
+        { '$company_info.designation$': { [Op.like]: `%${escapedSearch}%` } },
+        { '$company_info.company_website$': { [Op.like]: `%${escapedSearch}%` } },
+        { '$company_info.organization_quality_certification$': { [Op.like]: `%${escapedSearch}%` } },
+        { '$company_info.CoreActivity.name$': { [Op.like]: `%${escapedSearch}%` } },
+        { '$company_info.Activity.name$': { [Op.like]: `%${escapedSearch}%` } },
+        { '$city_data.name$': { [Op.like]: `%${search}%` } },
+        { '$state_data.name$': { [Op.like]: `%${search}%` } },
 
-    // ✅ CATEGORY NAME SEARCH
-    Sequelize.literal(`
+        // ✅ CATEGORY NAME SEARCH
+        Sequelize.literal(`
       EXISTS (
         SELECT 1
         FROM seller_categories sc
@@ -937,8 +946,8 @@ exports.getAllSellerServerSide = async (req, res) => {
       )
     `),
 
-    // ✅ SUB-CATEGORY NAME SEARCH (NEW)
-    Sequelize.literal(`
+        // ✅ SUB-CATEGORY NAME SEARCH (NEW)
+        Sequelize.literal(`
       EXISTS (
         SELECT 1
         FROM seller_categories sc
@@ -996,21 +1005,21 @@ exports.getAllSellerServerSide = async (req, res) => {
 
     // 🏢 Include Relationships (with category/subcategory filter fix)
     const sellerCategoryInclude = {
-  model: SellerCategory,
-  as: 'seller_categories',
-  required: false, separate: true,
-  attributes: ['category_id', 'subcategory_id'],
-  include: [
-    { model: Categories, as: 'category', attributes: ['id', 'name'], required: false },
-    { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'], required: false },
-  ],
-};
+      model: SellerCategory,
+      as: 'seller_categories',
+      required: false, separate: true,
+      attributes: ['category_id', 'subcategory_id'],
+      include: [
+        { model: Categories, as: 'category', attributes: ['id', 'name'], required: false },
+        { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'], required: false },
+      ],
+    };
 
     if (categoryId) {
-  searchWhere[Op.and] = searchWhere[Op.and] || [];
+      searchWhere[Op.and] = searchWhere[Op.and] || [];
 
-  searchWhere[Op.and].push(
-    Sequelize.literal(`
+      searchWhere[Op.and].push(
+        Sequelize.literal(`
       EXISTS (
         SELECT 1
         FROM seller_categories sc
@@ -1018,14 +1027,14 @@ exports.getAllSellerServerSide = async (req, res) => {
         AND sc.category_id = ${Number(categoryId)}
       )
     `)
-  );
-}
+      );
+    }
 
-if (subCategoryId) {
-  searchWhere[Op.and] = searchWhere[Op.and] || [];
+    if (subCategoryId) {
+      searchWhere[Op.and] = searchWhere[Op.and] || [];
 
-  searchWhere[Op.and].push(
-    Sequelize.literal(`
+      searchWhere[Op.and].push(
+        Sequelize.literal(`
       EXISTS (
         SELECT 1
         FROM seller_categories sc
@@ -1033,12 +1042,12 @@ if (subCategoryId) {
         AND sc.subcategory_id = ${Number(subCategoryId)}
       )
     `)
-  );
-}
+      );
+    }
 
-if (!categoryId && !subCategoryId) {
-  delete sellerCategoryInclude.where; // avoid empty WHERE {}
-}
+    if (!categoryId && !subCategoryId) {
+      delete sellerCategoryInclude.where; // avoid empty WHERE {}
+    }
 
     const companyInfoInclude = {
       model: CompanyInfo,
@@ -1199,30 +1208,30 @@ exports.sendMail = async (req, res) => {
     // send mails
     for (const seller of sellers) {
 
-            let verification_link = `<a class='back_to' href='/'  
+      let verification_link = `<a class='back_to' href='/'  
         style='background: linear-gradient(90deg, rgb(248 143 66) 45%, #38a15a 100%);
         border: 1px solid transparent; padding: 4px 10px; font-size: 12px; 
         border-radius: 4px; color: #fff;'>
         Click and Login Account
       </a>`;
 
-            const APP_URL = process.env.APP_URL
+      const APP_URL = process.env.APP_URL
 
-            const msgStr = template.message.toString('utf8');
-            let userMessage = msgStr
-              .replace("{{ USER_NAME }}", `${seller.fname} ${seller.lname}`)
-              .replace("{{ USER_EMAIL }}", seller.email)
-              .replace("{{ USER_PASSWORD }}", seller.real_password)
-              .replace("{{ APP_URL }}", APP_URL)
-              .replace("{{ VERIFICATION_LINK }}", verification_link);
+      const msgStr = template.message.toString('utf8');
+      let userMessage = msgStr
+        .replace("{{ USER_NAME }}", `${seller.fname} ${seller.lname}`)
+        .replace("{{ USER_EMAIL }}", seller.email)
+        .replace("{{ USER_PASSWORD }}", seller.real_password)
+        .replace("{{ APP_URL }}", APP_URL)
+        .replace("{{ VERIFICATION_LINK }}", verification_link);
 
-            const { transporter } = await getTransporter();
-            await transporter.sendMail({
-              from: `<info@sourceindia-electronics.com>`,
-              to: seller.email,
-              subject: template?.subject,
-              html: userMessage,
-            });
+      const { transporter } = await getTransporter();
+      await transporter.sendMail({
+        from: `<info@sourceindia-electronics.com>`,
+        to: seller.email,
+        subject: template?.subject,
+        html: userMessage,
+      });
 
 
 

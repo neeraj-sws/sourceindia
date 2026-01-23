@@ -179,7 +179,7 @@ exports.sendOtp = async (req, res) => {
 
 
   const { transporter, siteConfig } = await getTransporter();
-  console.log(siteConfig);
+  
   await transporter.sendMail({
     from: `"OTP Verification" <info@sourceindia-electronics.com>`,
     to: email,

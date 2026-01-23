@@ -39,6 +39,8 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
     }
   }, [user, show]);
 
+  console.log('EnquiryForm:', user);
+
   useEffect(() => {
     if (!productId && companyId) {
       const fetchProducts = async () => {
@@ -168,7 +170,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
       });
       setMessage('Enquiry submitted successfully!');
       showNotification('Enquiry submitted successfully!', 'success');
-      setTimeout(onHide, 2000);
+      setExists(true);
     } catch (err) {
       setError('Error submitting enquiry');
       showNotification('Error submitting enquiry', 'error');
@@ -414,16 +416,18 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                                 required
                               />
                             </div>
-                            <div className="form-group mb-3">
-                              <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Company *"
-                                value={company}
-                                onChange={(e) => setCompany(e.target.value)}
-                                required
-                              />
-                            </div>
+                            {!user?.company_info && (
+                              <div className="form-group mb-3">
+                                <input
+                                  type="text"
+                                  className="form-control"
+                                  placeholder="Company *"
+                                  value={company}
+                                  onChange={(e) => setCompany(e.target.value)}
+                                  required
+                                />
+                              </div>
+                            )}
                             <div className="form-group mb-3">
                               <input
                                 type="number"

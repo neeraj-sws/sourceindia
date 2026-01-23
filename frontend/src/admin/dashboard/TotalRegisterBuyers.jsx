@@ -63,7 +63,7 @@ const TotalRegisterBuyers = () => {
 
   return (
     <>
-      <h6 className="mb-0 text-uppercase">Today Register Buyer</h6>
+      <h6 className="mb-0 text-uppercase mt-3">Today Register Buyer</h6>
       <hr />
       <div className="card">
         <div className="card-body">
@@ -92,7 +92,9 @@ const TotalRegisterBuyers = () => {
             renderRow={(row, index) => (
               <tr key={row.id}>
                 <td>{(page - 1) * limit + index + 1}</td>
-                <td>{row.full_name}<br />{row.email}<br />{row.mobile}</td>
+                <td>{row.full_name}<br />{row.email}<br />{row.mobile}
+                  {(row.walkin_buyer == 1) && (<><br /><small className="badge bg-primary">Walkin Buyer</small></>)}
+                </td>
                 <td>{row.country_name}<br />{row.state_name}<br />{row.city_name}<br /></td>
                 <td>{formatDateTime(row.created_at)}</td>
                 <td>{formatDateTime(row.updated_at)}</td>

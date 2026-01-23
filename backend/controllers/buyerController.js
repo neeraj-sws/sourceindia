@@ -244,7 +244,8 @@ exports.getBuyerCount = async (req, res) => {
 
       // Sellers added today
       Users.count({
-        where: { created_at: { [Op.between]: [todayStart, todayEnd] } },
+
+        where: { is_seller: 0, created_at: { [Op.between]: [todayStart, todayEnd] } },
       }),
 
       // Active sellers
@@ -540,17 +541,14 @@ exports.getAllBuyerServerSide = async (req, res) => {
     } else {
       order = [['id', 'DESC']];
     }
-    const where = {};
-    where.is_seller = 0;
-    where.is_delete = 0;
-    if (req.query.getInactive !== 'true' && req.query.getDeleted !== 'true') {
-      where.is_approve = 1;
-      where.status = 1;
-      where.member_role = 1;
-      // where.step >= 3;
-      where.is_complete = 1;
-    }
+
+    let where = {};
+    let searchWhere = {};
+
     if (req.query.todayOnly === 'true') {
+      // Only apply is_seller, is_delete, and date filter
+      where.is_seller = 0;
+      where.is_delete = 0;
       const startOfDay = new Date();
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date();
@@ -558,17 +556,28 @@ exports.getAllBuyerServerSide = async (req, res) => {
       where.created_at = {
         [Op.between]: [startOfDay, endOfDay],
       };
+      searchWhere = { ...where };
+    } else {
+      where.is_seller = 0;
+      where.is_delete = 0;
+      if (req.query.getInactive !== 'true' && req.query.getDeleted !== 'true') {
+        where.is_approve = 1;
+        where.status = 1;
+        where.member_role = 1;
+        // where.step >= 3;
+        where.is_complete = 1;
+      }
+      if (req.query.getInactive === 'true') {
+        where.status = 0;
+      }
+      if (req.query.getNotApproved === 'true') {
+        where.is_approve = 0;
+      }
+      if (req.query.getDeleted === 'true') {
+        where.is_delete = 1;
+      }
+      searchWhere = { ...where };
     }
-    if (req.query.getInactive === 'true') {
-      where.status = 0;
-    }
-    if (req.query.getNotApproved === 'true') {
-      where.is_approve = 0;
-    }
-    if (req.query.getDeleted === 'true') {
-      where.is_delete = 1;
-    }
-    const searchWhere = { ...where };
     if (country) {
       searchWhere.country = country;
     }

@@ -53,6 +53,7 @@ const MyAllEnquiryChat = ({ user_id }) => {
   const [activeEnquiry, setActiveEnquiry] = useState(null);
   const [enquiryMessages, setEnquiryMessages] = useState([]);
   const [enquiryUsers, setEnquiryUsers] = useState(null);
+  const [singleEnquiry, setSingleEnquiry] = useState(null);
   const [message, setMessage] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const chatContentRef = useRef(null);
@@ -245,6 +246,7 @@ const MyAllEnquiryChat = ({ user_id }) => {
 
       setEnquiryMessages(res.data.data || []);
       setEnquiryUsers(res.data.user || null);
+      setSingleEnquiry(res.data.enquiry.to_user || null);
     } catch (err) {
       console.error(err);
     } finally {
@@ -365,8 +367,8 @@ const MyAllEnquiryChat = ({ user_id }) => {
                               <div>
                                 <img
                                   src={
-                                    enquiryUsers?.company_info?.companyLogo?.file
-                                      ? `${ROOT_URL}/${enquiryUsers?.company_info?.companyLogo?.file}`
+                                    singleEnquiry?.company_info?.companyLogo?.file
+                                      ? `${ROOT_URL}/${singleEnquiry?.company_info?.companyLogo?.file}`
                                       : "/user-demo.png"
                                   }
                                   alt=""
@@ -379,7 +381,7 @@ const MyAllEnquiryChat = ({ user_id }) => {
                                 />
                               </div>
                               <div>
-                                <h5 class="mb-0 font-weight-bold">{enquiryUsers?.company_info?.organization_name}</h5><small className="small"><i class="bx bx-map me-1"></i>{enquiryUsers?.company_info?.company_location}</small>
+                                <h5 class="mb-0 font-weight-bold">{singleEnquiry?.company_info?.organization_name}</h5><small className="small"><i class="bx bx-map me-1"></i>{singleEnquiry?.company_info?.company_location}</small>
                               </div>
                             </div>
                           </div>

@@ -1,4 +1,29 @@
-// Admin: Get Enquiry Details (no user_id restriction, supports id or enquiry_number)
+const { Op, fn, col, literal, Sequelize, QueryTypes } = require('sequelize');
+const sequelize = require('../config/database');
+const moment = require('moment');
+const Enquiries = require('../models/Enquiries');
+const OpenEnquriy = require('../models/OpenEnquiries');
+const Users = require('../models/Users');
+const Products = require('../models/Products');
+const CompanyInfo = require('../models/CompanyInfo');
+const EnquiryUsers = require('../models/EnquiryUsers');
+const UserMessage = require('../models/UserMessage');
+const EnquiryMessage = require('../models/EnquiryMessage');
+const Categories = require('../models/Categories');
+const SubCategories = require('../models/SubCategories');
+const SellerCategory = require('../models/SellerCategory');
+
+const UserActivity = require('../models/UserActivity');
+const Emails = require('../models/Emails');
+const { getTransporter } = require('../helpers/mailHelper');
+const { getCategoryNames } = require('../helpers/mailHelper');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const UploadImage = require('../models/UploadImage');
+const CoreActivity = require('../models/CoreActivity');
+const Activity = require('../models/Activity');
+const BuyerEnquiry = require('../models/BuyerEnquiry');
+
 exports.getEnquiryDetailsForAdmin = async (req, res) => {
   try {
     const whereClause = isNaN(Number(req.params.enquiry_number))
@@ -120,31 +145,7 @@ exports.getEnquiryDetailsForAdmin = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-const { Op, fn, col, literal, Sequelize, QueryTypes } = require('sequelize');
-const sequelize = require('../config/database');
-const moment = require('moment');
-const Enquiries = require('../models/Enquiries');
-const OpenEnquriy = require('../models/OpenEnquiries');
-const Users = require('../models/Users');
-const Products = require('../models/Products');
-const CompanyInfo = require('../models/CompanyInfo');
-const EnquiryUsers = require('../models/EnquiryUsers');
-const UserMessage = require('../models/UserMessage');
-const EnquiryMessage = require('../models/EnquiryMessage');
-const Categories = require('../models/Categories');
-const SubCategories = require('../models/SubCategories');
-const SellerCategory = require('../models/SellerCategory');
 
-const UserActivity = require('../models/UserActivity');
-const Emails = require('../models/Emails');
-const { getTransporter } = require('../helpers/mailHelper');
-const { getCategoryNames } = require('../helpers/mailHelper');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const UploadImage = require('../models/UploadImage');
-const CoreActivity = require('../models/CoreActivity');
-const Activity = require('../models/Activity');
-const BuyerEnquiry = require('../models/BuyerEnquiry');
 
 exports.getAllEnquiries = async (req, res) => {
   try {
@@ -741,9 +742,13 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
 
     const sortDirection = sort.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-    let order = [[sortBy, sortDirection]];
-    if (sortBy === 'enquiry_product') {
+    let order;
+    if (!sortBy || sortBy === 'id') {
+      order = [['created_at', 'DESC']];
+    } else if (sortBy === 'enquiry_product') {
       order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
+    } else {
+      order = [[sortBy, sortDirection]];
     }
 
     const where = { is_delete: 0 };
@@ -875,9 +880,91 @@ const sendEnquiryConfirmation = async (to, name) => {
 
   const { transporter } = await getTransporter();
   await transporter.sendMail({
-    from: `"OTP Verification" <info@sourceindia-electronics.com>`,
+    from: `"Source India-Electronics Supply Chain Portal" <info@sourceindia-electronics.com>`,
     to: to,
-    subject: emailTemplate?.subject || "Verify your email",
+    subject: emailTemplate?.subject || "Enquiry Received",
+    html: userMessage,
+  });
+};
+
+const sendAdminEnquiryConfirmation = async (user, enquiry) => {
+  const emailTemplate = await Emails.findByPk(14);
+  const msgStr = emailTemplate.message.toString('utf8');
+  const productInfo = await EnquiryUsers.findOne({
+    where: { enquiry_id: enquiry.id },
+    include: [{ model: Products, as: 'Products' }]
+  });
+  const companyInfo = await CompanyInfo.findByPk(productInfo.company_id);
+  // Dynamic values
+  const adminName = 'Admin';
+  let productTitle = '';
+  productTitle = productInfo?.Products?.title || '';
+
+  const productQuantity = enquiry?.quantity || '';
+  const companyName = companyInfo?.organization_name || '';
+  const buyerFullName = user?.fname && user?.lname ? `${user.fname} ${user.lname}` : user?.fname || '';
+  const buyerMobile = user?.mobile || '';
+  const enquiryNumber = enquiry?.enquiry_number || '';
+  const enquiryDescription = enquiry?.description || '';
+
+  let userMessage = msgStr
+    .replace("{{ ADMIN_NAME }}", adminName)
+    .replace("{{ PRODUCT_TITLE }}", productTitle)
+    .replace("{{ PRODUCT_QUANTITY }}", productQuantity)
+    .replace("{{ COMPANY_NAME }}", companyName)
+    .replace("{{ BUYER_FULLNAME }}", buyerFullName)
+    .replace("{{ BUYER_EMAIL }}", user?.email || '')
+    .replace("{{ BUYER_MOBILE }}", buyerMobile)
+    .replace("{{ ENQUIRY_NUMBER }}", enquiryNumber)
+    .replace("{{ USER_TYPE }}", user.is_seller == 1 ? 'Seller' : 'Buyer')
+    .replace("{{ ENQUIRY_DESCRIPTION }}", enquiryDescription);
+
+  const { transporter, siteConfig } = await getTransporter();
+  await transporter.sendMail({
+    from: `Source India-Electronics Supply Chain Portal  <info@sourceindia-electronics.com>`,
+    to: siteConfig['site_email'],
+    subject: emailTemplate?.subject || "New Enquiry Received",
+    html: userMessage,
+  });
+};
+
+const sendSellerEnquiryConfirmation = async (user, enquiry) => {
+  const emailTemplate = await Emails.findByPk(8);
+  const msgStr = emailTemplate.message.toString('utf8');
+  const productInfo = await EnquiryUsers.findOne({
+    where: { enquiry_id: enquiry.id },
+    include: [{ model: Products, as: 'Products' }]
+  });
+  const companyInfo = await CompanyInfo.findByPk(productInfo.company_id);
+  const sellerUser = await Users.findOne({ where: { company_id: companyInfo.id } });
+  // Dynamic values
+  let productTitle = '';
+  productTitle = productInfo?.Products?.title || '';
+
+  const productQuantity = enquiry?.quantity || '';
+  const companyName = companyInfo?.organization_name || '';
+  const buyerFullName = user?.fname && user?.lname ? `${user.fname} ${user.lname}` : user?.fname || '';
+  const buyerMobile = user?.mobile || '';
+  const enquiryNumber = enquiry?.enquiry_number || '';
+  const enquiryDescription = enquiry?.description || '';
+
+  let userMessage = msgStr
+    .replace("{{ VENDOR_COMPANY_NAME }}", companyName)
+    .replace("{{ PRODUCT_TITLE }}", productTitle)
+    .replace("{{ PRODUCT_QUANTITY }}", productQuantity)
+    .replace("{{ BUYER_FULLNAME }}", buyerFullName)
+    .replace("{{ BUYER_EMAIL }}", user?.email || '')
+    .replace("{{ BUYER_MOBILE }}", buyerMobile)
+    .replace("{{ ENQUIRY_NUMBER }}", enquiryNumber)
+    .replace("{{ USER_TYPE }}", user.is_seller == 1 ? 'Seller' : 'Buyer')
+    .replace("{{ ENQUIRY_DESCRIPTION }}", enquiryDescription);
+  const selleremail = sellerUser?.email;
+  // const selleremail = 'khushboo@sohamsolution.com';
+  const { transporter, siteConfig } = await getTransporter();
+  await transporter.sendMail({
+    from: `Source India-Electronics Supply Chain Portal  <info@sourceindia-electronics.com>`,
+    to: selleremail,
+    subject: emailTemplate?.subject || "New Enquiry Received",
     html: userMessage,
   });
 };
@@ -1002,6 +1089,37 @@ exports.submitOtp = async (req, res) => {
     user.is_otp = 1;
     user.is_email_verify = 1;
     await user.save();
+
+    const { transporter } = await getTransporter();
+    const userEmailTemplateId = 58;
+    const userEmailData = await Emails.findByPk(userEmailTemplateId);
+    let userMessage = "";
+    if (userEmailData.message) {
+      const usermsgStr = userEmailData.message.toString('utf8');
+      let fullName = "";
+      if (user.fname != "" && user.lname != "") {
+        fullName = `${user.fname} ${user.lname}`;
+      } else {
+        let emailNamePart = user.email.split('@')[0];
+        fullName = emailNamePart;
+      }
+      userMessage = usermsgStr
+        .replace("{{ USER_NAME }}", fullName)
+        .replace("{{ USER_EMAIL }}", user.email)
+        .replace("{{ USER_PASSWORD }}", otp);
+    } else {
+      userMessage = `<p>New message from ${user.fname} ${user.lname}</p>`;
+    }
+
+    const userMailOptions = {
+      from: `"Support Team" <info@sourceindia-electronics.com>`,
+      to: user.email,
+      subject: userEmailData.subject,
+      html: userMessage,
+    };
+
+    await transporter.sendMail(userMailOptions);
+
 
     // 🔐 Generate JWT
     const token = jwt.sign(
@@ -1149,7 +1267,10 @@ exports.storeEnquiry = async (req, res) => {
 
     /* -------------------- 9. Send confirmation mail -------------------- */
     await sendEnquiryConfirmation(user.email, name);
-
+    await sendAdminEnquiryConfirmation(user, enquiry);
+    if (user.walkin_buyer !== 1) {
+      await sendSellerEnquiryConfirmation(user, enquiry);
+    }
     res.status(200).json({
       message: 'Enquiry submitted successfully',
       enquiry_number
@@ -1884,7 +2005,23 @@ exports.getMessageenquiries = async (req, res) => {
 
     const enquiry = await Enquiries.findOne({
       where: { id: enq_id },
-      include: { model: Users, as: 'from_user' }
+      include: [{ model: Users, as: 'from_user' },
+      {
+        model: Users,
+        as: 'to_user',
+        include: [{
+          model: CompanyInfo,
+          as: 'company_info',
+          include: [
+            {
+              model: UploadImage,
+              as: 'companyLogo', // 👈 alias same hona chahiye
+              required: false
+            }
+          ]
+        }],
+      }
+      ]
     });
     const user = await Users.findOne({
       where: { id: enquiry.user_id },
@@ -1896,6 +2033,7 @@ exports.getMessageenquiries = async (req, res) => {
             as: 'companyLogo', // 👈 alias same hona chahiye
             required: false
           }
+
         ]
       }
     });
@@ -2103,8 +2241,12 @@ exports.getEnquiriesByEnquiryServerSide = async (req, res) => {
     const sortDirection = sort.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     let order = [[sortBy, sortDirection]];
-    if (sortBy === 'enquiry_product') {
+    if (!sortBy || sortBy === 'id') {
+      order = [['created_at', 'DESC']];
+    } else if (sortBy === 'enquiry_product') {
       order = [[{ model: EnquiryUsers, as: 'enquiry_users' }, 'product_name', sortDirection]];
+    } else {
+      order = [[sortBy, sortDirection]];
     }
 
     const where = {
