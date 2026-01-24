@@ -865,7 +865,7 @@ const sendOtpEmail = async (to, otp) => {
 
   const { transporter } = await getTransporter();
   await transporter.sendMail({
-    from: `"OTP Verification" <info@sourceindia-electronics.com>`,
+    from: `"Source India-Electronics Supply Chain Portal" <info@sourceindia-electronics.com>`,
     to: to,
     subject: emailTemplate?.subject || "Verify your email",
     html: userMessage,
