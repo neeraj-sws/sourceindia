@@ -66,14 +66,14 @@ exports.sendMail = async (req, res) => {
           .replace("{{ VERIFICATION_LINK }}", verification_link);
 
 
-        const { transporter } = await getTransporter();
-
+        const { transporter, buildEmailHtml } = await getTransporter();
+        const htmlContent = await buildEmailHtml(userMessage);
         // Send Mail
         await transporter.sendMail({
           from: `info@sourceindia-electronics.com`,
           to: seller.mail,
           subject: template?.subject,
-          html: userMessage,
+          html: htmlContent,
         });
 
         await SellerMailHistories.update(

@@ -31,7 +31,9 @@ router.post('/update-profile', authMiddleware, usersController.updateProfile);
 router.get('/countries', usersController.getCountries);
 router.get('/states', usersController.getStates);
 router.get('/cities', usersController.getCities);
+router.post('/forgot-password', usersController.forgotPassword);
 router.patch('/:id/status', usersController.updateUsersStatus);
 router.get('/insert-from-company', usersController.insertFromCompany);
-
+router.post('/verify-forgot-otp', usersController.verifyForgotOtp);
+router.post('/reset-password', usersController.resetPassword);
 module.exports = router;

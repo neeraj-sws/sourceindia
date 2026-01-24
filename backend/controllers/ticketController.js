@@ -207,7 +207,7 @@ exports.getAllTicketsServerSide = async (req, res) => {
       priority,
       category,
     } = req.query;
-    const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'title', 'ticket_id', 'message', 
+    const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'title', 'ticket_id', 'message',
       'priority', 'created_at', 'updated_at', 'category_name', 'user_name'];
     const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -380,10 +380,10 @@ exports.sendOtp = async (req, res) => {
     if (ticket) {
       ticket.otp = generatedOtp;
       ticket.added_by = 'front';
-        if (user_id) {
-          ticket.created_by = created_by;
-          ticket.user_id = user_id; // ✅ update user_id
-        }
+      if (user_id) {
+        ticket.created_by = created_by;
+        ticket.user_id = user_id; // ✅ update user_id
+      }
       await ticket.save();
     } else {
       ticket = await Tickets.create({
@@ -407,12 +407,13 @@ exports.sendOtp = async (req, res) => {
       .replace("{{ USER_FNAME }}", "Guest");
 
     // Step 4: Send OTP via Mail
-    const { transporter } = await getTransporter();
+    const { transporter, buildEmailHtml } = await getTransporter();
+    const htmlContent = await buildEmailHtml(userMessage);
     await transporter.sendMail({
       from: `"Support Team" <info@sourceindia-electronics.com>`,
       to: email,
       subject: emailTemplate.subject || "Your OTP Code",
-      html: userMessage,
+      html: htmlContent,
     });
 
     return res.json({
@@ -696,13 +697,13 @@ exports.ticketReplystore = async (req, res) => {
         .replace("{{ USER_NAME }}", ticket.fname + ' ' + ticket.lname);
 
       // Step 4: Send OTP via Mail
-      const { transporter, siteConfig } = await getTransporter();
-
+      const { transporter, buildEmailHtml, siteConfig } = await getTransporter();
+      const htmlContent = await buildEmailHtml(userMessage);
       await transporter.sendMail({
         from: `"Support Team" <info@sourceindia-electronics.com>`,
         to: ticket.email,
         subject: emailTemplate.subject,
-        html: userMessage,
+        html: htmlContent,
       });
 
       const adminemailTemplate = await Emails.findByPk(85);
@@ -778,7 +779,7 @@ exports.getNextTicket = async (req, res) => {
       attributes: ['ticket_id', 'token']  // Select ticket_id and token fields
     });
 
-    res.json({ 
+    res.json({
       next: next ? next.ticket_id : null,
       token: next ? next.token : null
     });
@@ -788,9 +789,9 @@ exports.getNextTicket = async (req, res) => {
   }
 };
 
-exports.getNextTicketById = async (req, res) => { 
+exports.getNextTicketById = async (req, res) => {
   try {
-    const { id } = req.params; 
+    const { id } = req.params;
     const ticketId = parseInt(id, 10);
 
     if (isNaN(ticketId)) return res.status(400).json({ error: 'Invalid id parameter' });

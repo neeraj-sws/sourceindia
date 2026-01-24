@@ -863,12 +863,13 @@ const sendOtpEmail = async (to, otp) => {
   const msgStr = emailTemplate.message.toString('utf8');
   let userMessage = msgStr.replace("{{ OTP }}", otp);
 
-  const { transporter } = await getTransporter();
+  const { transporter, buildEmailHtml } = await getTransporter();
+  const htmlContent = await buildEmailHtml(userMessage);
   await transporter.sendMail({
     from: `"Source India-Electronics Supply Chain Portal" <info@sourceindia-electronics.com>`,
     to: to,
     subject: emailTemplate?.subject || "Verify your email",
-    html: userMessage,
+    html: htmlContent,
   });
 };
 
@@ -878,12 +879,13 @@ const sendEnquiryConfirmation = async (to, name) => {
   const msgStr = emailTemplate.message.toString('utf8');
   let userMessage = msgStr.replace("{{ USER_FNAME }}", name);
 
-  const { transporter } = await getTransporter();
+  const { transporter, buildEmailHtml } = await getTransporter();
+  const htmlContent = await buildEmailHtml(userMessage);
   await transporter.sendMail({
     from: `"Source India-Electronics Supply Chain Portal" <info@sourceindia-electronics.com>`,
     to: to,
     subject: emailTemplate?.subject || "Enquiry Received",
-    html: userMessage,
+    html: htmlContent,
   });
 };
 
@@ -919,12 +921,13 @@ const sendAdminEnquiryConfirmation = async (user, enquiry) => {
     .replace("{{ USER_TYPE }}", user.is_seller == 1 ? 'Seller' : 'Buyer')
     .replace("{{ ENQUIRY_DESCRIPTION }}", enquiryDescription);
 
-  const { transporter, siteConfig } = await getTransporter();
+  const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
+  const htmlContent = await buildEmailHtml(userMessage);
   await transporter.sendMail({
     from: `Source India-Electronics Supply Chain Portal  <info@sourceindia-electronics.com>`,
     to: siteConfig['site_email'],
     subject: emailTemplate?.subject || "New Enquiry Received",
-    html: userMessage,
+    html: htmlContent,
   });
 };
 
@@ -960,12 +963,13 @@ const sendSellerEnquiryConfirmation = async (user, enquiry) => {
     .replace("{{ ENQUIRY_DESCRIPTION }}", enquiryDescription);
   const selleremail = sellerUser?.email;
   // const selleremail = 'khushboo@sohamsolution.com';
-  const { transporter, siteConfig } = await getTransporter();
+  const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
+  const htmlContent = await buildEmailHtml(userMessage);
   await transporter.sendMail({
     from: `Source India-Electronics Supply Chain Portal  <info@sourceindia-electronics.com>`,
     to: selleremail,
     subject: emailTemplate?.subject || "New Enquiry Received",
-    html: userMessage,
+    html: htmlContent,
   });
 };
 
@@ -1090,7 +1094,7 @@ exports.submitOtp = async (req, res) => {
     user.is_email_verify = 1;
     await user.save();
 
-    const { transporter } = await getTransporter();
+    const { transporter, buildEmailHtml } = await getTransporter();
     const userEmailTemplateId = 58;
     const userEmailData = await Emails.findByPk(userEmailTemplateId);
     let userMessage = "";
@@ -1111,11 +1115,13 @@ exports.submitOtp = async (req, res) => {
       userMessage = `<p>New message from ${user.fname} ${user.lname}</p>`;
     }
 
+    const htmlContent = await buildEmailHtml(userMessage);
+
     const userMailOptions = {
       from: `"Support Team" <info@sourceindia-electronics.com>`,
       to: user.email,
       subject: userEmailData.subject,
-      html: userMessage,
+      html: htmlContent,
     };
 
     await transporter.sendMail(userMailOptions);
@@ -1408,19 +1414,20 @@ Thanks`;
     /* ------------------------------
        7. Send mails
     ------------------------------ */
-
+    const htmlContent = await buildEmailHtml(senderMail);
     await transporter.sendMail({
       from: `"Source India-Electronics Supply Chain Portal " <info@sourceindia-electronics.com>`,
       to: senderUser.email,
       subject: 'Buyer company enquiry mail',
-      text: senderMail
+      html: htmlContent
     });
 
+    const htmlContentReceiver = await buildEmailHtml(receiverMail);
     await transporter.sendMail({
       from: `"Source India-Electronics Supply Chain Portal " <info@sourceindia-electronics.com>`,
       to: receiverUser.email,
       subject: 'New company enquiry received',
-      text: receiverMail
+      html: htmlContentReceiver
     });
 
     /* ------------------------------
@@ -1575,12 +1582,13 @@ exports.submitEnquiry = async (req, res) => {
       let userMessage = msgStr.replace("{{ USER_FNAME }}", full_name);
 
       const subject = formData.title.trim();
-      const { transporter, siteConfig } = await getTransporter();
+      const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
+      const htmlContent = await buildEmailHtml(userMessage);
       await transporter.sendMail({
         from: `"Enquiry " <info@sourceindia-electronics.com>`,
         to: user.email,
         subject: subject || "Enquiry submit successfully",
-        html: userMessage,
+        html: htmlContent,
       });
     } else {
       const emailTemplate = await Emails.findByPk(88);
@@ -1589,12 +1597,13 @@ exports.submitEnquiry = async (req, res) => {
       let userMessage = msgStr.replace("{{ USER_FNAME }}", full_name);
 
       const subject = formData.title.trim();
-      const { transporter, siteConfig } = await getTransporter();
+      const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
+      const htmlContent = await buildEmailHtml(userMessage);
       await transporter.sendMail({
         from: `"Enquiry " <info@sourceindia-electronics.com>`,
         to: formData.email.trim(),
         subject: subject || "Enquiry submit successfully",
-        html: userMessage,
+        html: htmlContent,
       });
     }
     // ========== SUCCESS RESPONSE ==========
@@ -2503,13 +2512,14 @@ exports.sendMessage = async (req, res) => {
       .replace("{{ TITTLE }}", title)
       .replace("{{ MESSAGE }}", message);
 
-    const { transporter } = await getTransporter();
+    const { transporter, buildEmailHtml } = await getTransporter();
+    const htmlContent = await buildEmailHtml(userMessage);
 
     await transporter.sendMail({
       from: sender.email,
       to: companyUser.email,
       subject: emailTemplate?.subject,
-      html: userMessage,
+      html: htmlContent,
     });
 
     return res.status(200).json({ message: "Mail sent successfully" });

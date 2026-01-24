@@ -1225,12 +1225,13 @@ exports.sendMail = async (req, res) => {
         .replace("{{ APP_URL }}", APP_URL)
         .replace("{{ VERIFICATION_LINK }}", verification_link);
 
-      const { transporter } = await getTransporter();
+      const { transporter, buildEmailHtml } = await getTransporter();
+      const htmlContent = await buildEmailHtml(userMessage);
       await transporter.sendMail({
         from: `<info@sourceindia-electronics.com>`,
         to: seller.email,
         subject: template?.subject,
-        html: userMessage,
+        html: htmlContent,
       });
 
 
