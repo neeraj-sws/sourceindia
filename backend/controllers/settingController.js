@@ -100,8 +100,34 @@ for (const [metaKey, fileKey] of Object.entries(imageKeyMap)) {
   }
 }
 
+const allowedHomeKeys = [
+  'footer_logo',
+  'footer_heading',
+  'footershort_description',
+  'footer_img_1',
+  'footer_img_2',
+  'contactphone_1',
+  'contactphone_2',
+  'contactemail',
+  'contact_map_url',
+  'contactaddress',
+  'facebook_url',
+  'twitter_url',
+  'linkedin_url',
+  'youtube_url',
+  'instagram_url'
+];
+
+const filteredHomeSettings = {};
+
+allowedHomeKeys.forEach(key => {
+  if (homeFormatted[key] !== undefined) {
+    filteredHomeSettings[key] = homeFormatted[key];
+  }
+});
+
     // ✅ Attach home settings
-    formatted.home_settings = homeFormatted;
+    formatted.home_settings = filteredHomeSettings;
 
     res.json(formatted);
   } catch (err) {
