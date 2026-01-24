@@ -360,7 +360,7 @@ const AllLeadsChat = ({ user_id }) => {
 
                             <div className="menquiry">
                               <p className="mb-0 fw-bold"> {item.org_name}</p>
-                              <small> <i class="bx bx-map"></i>{item.com_location
+                              <small> <i className="bx bx-map"></i>{item.com_location
                               }</small>
                             </div>
                           </div>
@@ -376,7 +376,7 @@ const AllLeadsChat = ({ user_id }) => {
                 <div className="card mb-3 border-0">
                   <div className="card-body">
                     <div className="MainChat">
-                      <div class="chat-header d-flex align-items-center start-0">
+                      <div className="chat-header d-flex align-items-center start-0">
 
                         <div className="d-flex gap-2 align-items-center">
                           <div>
@@ -396,7 +396,7 @@ const AllLeadsChat = ({ user_id }) => {
                             />
                           </div>
                           <div>
-                            <h5 class="mb-0 font-weight-bold">{enquiryUsers?.company_info?.organization_name}</h5><small className="small"><i class="bx bx-map me-1"></i>{enquiryUsers?.company_info?.company_location}</small>
+                            <h5 className="mb-0 font-weight-bold">{enquiryUsers?.company_info?.organization_name}</h5><small className="small"><i className="bx bx-map me-1"></i>{enquiryUsers?.company_info?.company_location}</small>
                           </div>
                         </div>
 

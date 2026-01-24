@@ -1,44 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
-import API_BASE_URL from "../config";
+import { useSiteSettings } from "../context/SiteSettingsContext";
+import API_BASE_URL, { ROOT_URL } from "../config";
 
 const FrontFooter = () => {
-  const [footerData, setFooterData] = useState(null);
-  const [menuData, setMenuData] = useState([]);
+  const { siteSettings, loading } = useSiteSettings();
 
-  useEffect(() => {
-    const fetchFooterData = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/settings/home`);
-        setFooterData(response.data);
-      } catch (error) {
-        console.error("Error fetching footer data:", error);
-      }
-    };
-    const fetchMenuData = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/front_menu`);
-        setMenuData(response.data);
-      } catch (error) {
-        console.error("Error fetching menu data:", error);
-      }
-    };
-    fetchFooterData();
-    fetchMenuData();
-  }, []);
+  if (loading || !siteSettings) return null;
 
-  if (!footerData || !menuData.length) {
-    return null;
-  }
-
-  const helpItems = menuData.filter(
-    (item) => item.parent_id === 0 && item.type === 2
+  const helpItems = siteSettings.front_menu.filter(
+    item => item.parent_id === 0 && item.type === 2
   );
 
-  // Add FAQ link manually at the top of Help section, but avoid duplicate if already present
   const helpLinks = [
-    // Only add manual FAQ if not present in helpItems
     ...(!helpItems.some(item => item.link === '/faq' || item.name.toLowerCase() === 'faq')
       ? [{ id: 'faq', name: 'FAQ', link: '/faq' }] : []),
     ...helpItems
@@ -52,16 +26,16 @@ const FrontFooter = () => {
             <div className="col-md-3 col-sm-4 order-1">
               <p className="fw-semibold mb-1">Developed and Managed by</p>
               <div className="footer-logo mb-2">
-                <img src="/footer_new_img.jpeg" alt="ELCINA Logo" loading="lazy"
-                  decoding="async" />
+                <img src={siteSettings.home_settings.footer_logo ? `${ROOT_URL}/${siteSettings.home_settings.footer_logo}` : "/footer_new_img.jpeg"}
+  alt="ELCINA Logo" loading="lazy" decoding="async" />
               </div>
             </div>
 
             <div className="col-md-6 order-md-2 order-3 pe-lg-5">
               <div className="electronicpart pe-lg-5">
-                <p className="fw-semibold mb-1">{footerData.footer_heading}</p>
+                <p className="fw-semibold mb-1">{siteSettings.home_settings.footer_heading}</p>
                 <p className="small mb-0">
-                  {footerData.footershort_description}
+                  {siteSettings.home_settings.footershort_description}
                 </p>
               </div>
             </div>
@@ -70,10 +44,10 @@ const FrontFooter = () => {
               <div className="supportclass">
                 <p className="fw-semibold mb-1">Supporting Associations</p>
                 <div className="supporting-logos">
-                  <img src="/mait.jpg" alt="MAIT" className="mb-1" loading="lazy"
-                    decoding="async" />
-                  <img src="/cimei.png" alt="CIMEI" className="mb-1" loading="lazy"
-                    decoding="async" />
+                  <img src={siteSettings.home_settings.footer_img_1 ? `${ROOT_URL}/${siteSettings.home_settings.footer_img_1}` : "/mait.jpg"} 
+                  alt="MAIT" className="mb-1" loading="lazy" decoding="async" />
+                  <img src={siteSettings.home_settings.footer_img_2 ? `${ROOT_URL}/${siteSettings.home_settings.footer_img_2}` : "/cimei.png"} 
+                  alt="CIMEI" className="mb-1" loading="lazy" decoding="async" />
                 </div>
               </div>
             </div>
@@ -140,34 +114,34 @@ const FrontFooter = () => {
                 <i className="bx bx-phone me-1"></i>
                 <div className="d-flex flex-wrap">
                   <Link
-                    to={`tel:${footerData.contactphone_1}`}
+                    to={`tel:${siteSettings.home_settings.contactphone_1}`}
                     className="d-inline-block"
-                  >{footerData.contactphone_1}</Link>{" "}
+                  >{siteSettings.home_settings.contactphone_1}</Link>{" "}
                   /{" "}
                   <Link
-                    to={`tel:${footerData.contactphone_2}`}
+                    to={`tel:${siteSettings.home_settings.contactphone_2}`}
                     className="d-inline-block"
                   >
-                    {footerData.contactphone_2}
+                    {siteSettings.home_settings.contactphone_2}
                   </Link>
                 </div>
               </div>
               <p className="d-flex mb-1">
                 <i className="bx bx-envelope me-1"></i>{" "}
                 <Link
-                  to={`mailto:${footerData.contactemail}`}
+                  to={`mailto:${siteSettings.home_settings.contactemail}`}
                   className="d-inline-block"
                 >
-                  {footerData.contactemail}
+                  {siteSettings.home_settings.contactemail}
                 </Link>
               </p>
               <div className="d-flex">
                 <i className="bx bx-map me-1"></i>{" "}
-                <Link to={footerData.contact_map_url}>
+                <Link to={siteSettings.home_settings.contact_map_url}>
                   <div
                     className="mb-2"
                     dangerouslySetInnerHTML={{
-                      __html: footerData.contactaddress,
+                      __html: siteSettings.home_settings.contactaddress,
                     }}
                   />
                 </Link>
@@ -175,35 +149,35 @@ const FrontFooter = () => {
 
               <div className="social-icons">
                 <a
-                  href={footerData.facebook_url}
+                  href={siteSettings.home_settings.facebook_url}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <i className="bi bi-facebook"></i>
                 </a>
                 <a
-                  href={footerData.twitter_url}
+                  href={siteSettings.home_settings.twitter_url}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <i className="bi bi-twitter-x"></i>
                 </a>
                 <a
-                  href={footerData.linkedin_url}
+                  href={siteSettings.home_settings.linkedin_url}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <i className="bi bi-linkedin"></i>
                 </a>
                 <a
-                  href={footerData.youtube_url}
+                  href={siteSettings.home_settings.youtube_url}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <i className="bi bi-youtube"></i>
                 </a>
                 <a
-                  href={footerData.instagram_url}
+                  href={siteSettings.home_settings.instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

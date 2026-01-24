@@ -40,6 +40,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
   }, [user, show]);
 
   useEffect(() => {
+    if (!show) return;
     if (!productId && companyId) {
       const fetchProducts = async () => {
         try {
@@ -59,10 +60,11 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
     } else {
       console.log('Condition not met - productId:', productId, 'companyId:', companyId);
     }
-  }, [productId, companyId]);
+  }, [show, productId, companyId]);
 
 
   useEffect(() => {
+    if (!productId) return;
     const fetchProduct = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
@@ -497,7 +499,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                     </div>
 
                     <h6>{singleProduct?.title}</h6>
-                    <p><i class="bx bx-building"></i> {companyName || 'Company'}</p>
+                    <p><i className="bx bx-building"></i> {companyName || 'Company'}</p>
                   </div>
                 </div>
                 <div className='col-md-7 pe-4'>

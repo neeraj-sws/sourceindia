@@ -10,10 +10,10 @@ const UseAuth = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('user_token');
-    // if (!token) {
-    //   navigate('/login');
-    //   return;
-    // }
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
     const fetchProfile = async () => {
       try {
@@ -22,10 +22,11 @@ const UseAuth = () => {
         });
         setUser(response.data.user);
       } catch (error) {
-        console.error("Error fetching profile:", error);
-        // Optionally log out the user if the token is invalid
-        // localStorage.removeItem('user_token');
-        // navigate('/login');
+        if (error.response?.status === 401) {
+          localStorage.removeItem("user_token");
+          setUser(null);
+          navigate("/login");
+        }
       } finally {
         setLoading(false);
       }

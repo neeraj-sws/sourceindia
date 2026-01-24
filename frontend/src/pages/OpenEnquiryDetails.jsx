@@ -294,7 +294,7 @@ const OpenEnquiryDetails = () => {
                 <div className="card mb-3 border-0">
                   <div className="card-body">
                     <div className="MainChat">
-                      <div class="chat-header start-0 p-0">
+                      <div className="chat-header start-0 p-0">
                         <div className="heading_chart border-bottom bg-light">
                           <div className="main_enquiry p-3 d-flex align-items-center gap-2">
                             <div className="enquiry_img position-relative">

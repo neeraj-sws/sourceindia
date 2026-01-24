@@ -244,7 +244,7 @@ exports.getBuyerCount = async (req, res) => {
 
       // Sellers added today
       Users.count({
-        where: { created_at: { [Op.between]: [todayStart, todayEnd] } },
+        where: { is_seller: 0, created_at: { [Op.between]: [todayStart, todayEnd] } },
       }),
 
       // Active sellers

@@ -327,8 +327,8 @@ $("#item").select2({
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted,
-    dateRange, startDate, endDate, appliedCategory, appliedSubCategory, appliedCompanies, appliedProductStatus, isApprove, userIdFromUrl]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate, 
+    appliedCategory, appliedSubCategory, appliedItemCategory, appliedItemSubCategory, appliedItem, appliedCompanies, appliedProductStatus, isApprove, userIdFromUrl]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {

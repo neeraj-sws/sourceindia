@@ -262,6 +262,7 @@ useEffect(() => {
                           setFormData(prev => ({ ...prev, meta_keywords: val }))
                         }
                       />
+                      <small><strong>Note:</strong> Enter tokens separated by commas (e.g., token1, token2, token3).</small>
                     </div>
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="meta_description" className="form-label">Description</label>

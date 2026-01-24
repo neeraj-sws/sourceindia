@@ -383,18 +383,33 @@ exports.searchMulti = async (req, res) => {
 
 exports.getAllFrontMenu = async (req, res) => {
   try {
-    const { parent_id } = req.query;
-    const query = {};
-    if (parent_id) {
-      query.parent_id = parent_id;
-    } else {
-      query.parent_id = 0;
-    }
-    const frontMenu = await FrontMenu.findAll({
-      where: query,
-      order: [['type', 'ASC'], ['position', 'ASC'],]
+    // 1. Fetch ALL menus
+    const menus = await FrontMenu.findAll({
+      order: [
+        ['type', 'ASC'],
+        ['position', 'ASC'],
+      ],
+      raw: true,
     });
-    res.json(frontMenu);
+
+    // 2. Create a map for quick lookup
+    const menuMap = {};
+    menus.forEach(menu => {
+      menu.sub_menu = [];
+      menuMap[menu.id] = menu;
+    });
+
+    // 3. Build hierarchy
+    const finalMenu = [];
+    menus.forEach(menu => {
+      if (menu.parent_id === 0) {
+        finalMenu.push(menu);
+      } else if (menuMap[menu.parent_id]) {
+        menuMap[menu.parent_id].sub_menu.push(menu);
+      }
+    });
+
+    res.json(finalMenu);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

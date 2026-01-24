@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "../config";
-import { Link } from "react-router-dom";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 import { useAlert } from "../context/AlertContext";
 
 const ContactUs = () => {
   const { showNotification } = useAlert();
+  const { siteSettings, loading } = useSiteSettings();
   const [formData, setFormData] = useState({
     fname: "",
     lname: "",
@@ -15,25 +16,10 @@ const ContactUs = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [responseMsg, setResponseMsg] = useState("");
-  const [footerData, setFooterData] = useState(null);
 
-  useEffect(() => {
-    const fetchFooterData = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/settings/home`);
-        setFooterData(response.data);
-      } catch (error) {
-        console.error("Error fetching footer data:", error);
-      }
-    };
-    fetchFooterData();
-  }, []);
-
-  if (!footerData) {
-    return null; // or a small loader if needed
-  }
+  if (loading || !siteSettings) return null;
 
   // Handle input change
   const handleChange = (e) => {
@@ -76,7 +62,7 @@ const ContactUs = () => {
       return;
     }
 
-    setLoading(true);
+    setLoadingSubmit(true);
     try {
       await axios.post(`${API_BASE_URL}/contacts`, formData);
       // setResponseMsg("Your message has been sent successfully!");
@@ -97,7 +83,7 @@ const ContactUs = () => {
         "warning"
       );
     } finally {
-      setLoading(false);
+      setLoadingSubmit(false);
     }
   };
   return (
@@ -117,7 +103,7 @@ const ContactUs = () => {
                 <div className="col-xl-4 col-md-6 mb-xl-0 mb-5">
                   <div className="iframeBox h-100">
                     <iframe
-                      src={footerData.contact_map_url}
+                      src={siteSettings.home_settings.contact_map_url}
                       allowfullscreen
                       className="w-100 h-100"
                     ></iframe>
@@ -133,16 +119,16 @@ const ContactUs = () => {
                           <span className="pt-0"> <i className="lni lni-phone"></i> </span>
                           <div className="d-flex align-items-center gap-2 flex-wrap">
                             <p><a
-                              href={`tel:${footerData.contactphone_1}`}
+                              href={`tel:${siteSettings.home_settings.contactphone_1}`}
                               className="nav-link"
                             >
-                              {footerData.contactphone_1},{" "}
+                              {siteSettings.home_settings.contactphone_1},{" "}
                             </a></p>
                             <p><a
-                              href={`tel:${footerData.contactphone_2}`}
+                              href={`tel:${siteSettings.home_settings.contactphone_2}`}
                               className="nav-link"
                             >
-                              {footerData.contactphone_2}
+                              {siteSettings.home_settings.contactphone_2}
                             </a></p>
                           </div>
                         </div>
@@ -156,7 +142,7 @@ const ContactUs = () => {
                         <div
                           className="d-flex gap-2"
                           dangerouslySetInnerHTML={{
-                            __html: ` <i class="lni lni-map-marker pt-2"></i> ${footerData.contactaddress}`,
+                            __html: ` <i class="lni lni-map-marker pt-2"></i> ${siteSettings.home_settings.contactaddress}`,
                           }}
                         ></div>
                       </div>
@@ -168,7 +154,7 @@ const ContactUs = () => {
                         <h6 className="text-orange">Write Us Now</h6>
                         <div className="d-flex gap-2">
                           <i className="fadeIn animated bx bx-comment-detail pt-1"></i>{" "}
-                          {footerData.contactemail}
+                          {siteSettings.home_settings.contactemail}
                         </div>
                       </div>
                     </div>
@@ -283,10 +269,10 @@ const ContactUs = () => {
                         <div className="col-md-12 text-center pt-3">
                           <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loadingSubmit}
                             className="btn btn-primary w-100"
                           >
-                            {loading ? "Sending..." : "Submit Now"}
+                            {loadingSubmit ? "Sending..." : "Submit Now"}
                           </button>
 
                           {responseMsg && (

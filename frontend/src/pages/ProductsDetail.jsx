@@ -758,6 +758,7 @@ const ProductDetail = () => {
           </div>
 
           {/* Recommended Companies Section */}
+          {product.recommended_companies?.length > 0 &&
           <div className="companyProducts recommended-companies">
 
             <div className='container'>
@@ -816,6 +817,7 @@ const ProductDetail = () => {
               </div>
             </div>
           </div>
+}
         </div>
       </Suspense >
     </>
