@@ -1,3 +1,4 @@
+
 const Sequelize = require('sequelize');
 const { Op } = Sequelize;
 const sequelize = require('../config/database');
@@ -177,14 +178,14 @@ exports.sendOtp = async (req, res) => {
   const msgStr = emailTemplate.message.toString('utf8');
   let userMessage = msgStr.replace("{{ USER_PASSWORD }}", otp);
 
+  const { transporter, buildEmailHtml } = await getTransporter();
+  const htmlContent = await buildEmailHtml(userMessage);
 
-  const { transporter, siteConfig } = await getTransporter();
-  
   await transporter.sendMail({
     from: `"OTP Verification" <info@sourceindia-electronics.com>`,
     to: email,
     subject: emailTemplate?.subject || "Verify your email",
-    html: userMessage,
+    html: htmlContent,
   });
 
   return res.json({ message: "OTP sent successfully", user_id: emailRecord.id });
@@ -367,12 +368,13 @@ exports.register = async (req, res) => {
       }
     }
 
-    const { transporter, siteConfig } = await getTransporter();
+    const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
 
     const user_type = category == 1 ? 'Seller' : 'Buyer';
     const adminEmailTemplateId = 6;
     const adminEmailData = await Emails.findByPk(adminEmailTemplateId);
     let adminMessage = "";
+
     if (adminEmailData.message) {
       // longblob / buffer ko string me convert karo
       const msgStr = adminEmailData.message.toString('utf8');
@@ -385,12 +387,12 @@ exports.register = async (req, res) => {
     } else {
       adminMessage = `<p>New message from ${fname} ${lname}</p>`;
     }
-
+    const htmlContent = await buildEmailHtml(adminMessage);
     const adminMailOptions = {
       from: `"Support Team" <info@sourceindia-electronics.com>`,
       to: siteConfig['site_email'],
       subject: adminEmailData.subject,
-      html: adminMessage,
+      html: htmlContent,
     };
 
     await transporter.sendMail(adminMailOptions);
@@ -522,13 +524,14 @@ exports.sendLoginotp = async (req, res) => {
       .replace("{{ USER_FNAME }}", full_name)
       .replace("{{ OTP }}", otp);
 
-    const { transporter, siteConfig } = await getTransporter();
+    const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
+    const htmlContent = await buildEmailHtml(userMessage);
 
     await transporter.sendMail({
       from: `"Support Team" <info@sourceindia-electronics.com>`,
       to: email,
       subject: emailTemplate.subject,
-      html: userMessage,
+      html: htmlContent,
     });
 
     return res.json({
@@ -749,7 +752,7 @@ exports.updateProfileold = async (req, res) => {
         user_type = 'Buyer';
       }
 
-      const { transporter, siteConfig } = await getTransporter();
+      const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
       const adminMessage = msgStr
         .replace("{{ ADMIN_NAME }}", siteConfig['title'])
         .replace("{{ USER_FNAME }}", user.fname)
@@ -759,11 +762,13 @@ exports.updateProfileold = async (req, res) => {
         .replace("{{ USER_ADDRESS }}", user.address)
         .replace("{{ USER_TYPE }}", user_type);
 
+      const htmlContent = await buildEmailHtml(adminMessage);
+
       await transporter.sendMail({
         from: `"Support Team" <info@sourceindia-electronics.com>`,
         to: siteConfig['site_email'],
         subject: adminemailTemplate.subject,
-        html: adminMessage,
+        html: htmlContent,
       });
 
 
@@ -971,7 +976,9 @@ exports.updateProfile = async (req, res) => {
       const adminemailTemplate = await Emails.findByPk(32);
       if (adminemailTemplate) {
         const msgStr = adminemailTemplate.message.toString('utf8');
-        const { transporter, siteConfig } = await getTransporter();
+        const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
+        const htmlContent = await buildEmailHtml(adminMessage);
+
         const user_type = user.is_seller === 1 ? 'Seller' : 'Buyer';
         const adminMessage = msgStr
           .replace('{{ ADMIN_NAME }}', siteConfig['title'])
@@ -986,24 +993,26 @@ exports.updateProfile = async (req, res) => {
           from: `"Support Team" <info@sourceindia-electronics.com>`,
           to: siteConfig['site_email'],
           subject: adminemailTemplate.subject,
-          html: adminMessage,
+          html: htmlContent,
         });
       }
 
       const emailTemplate = await Emails.findByPk(33);
       if (emailTemplate) {
-        const { transporter } = await getTransporter();
+        const { transporter, buildEmailHtml } = await getTransporter();
+
         const usermsgStr = emailTemplate.message.toString('utf8');
         const subject = emailTemplate.subject.replace('{{ USER_FNAME }}', user.fname);
         const userMessage = usermsgStr
           .replace('{{ USER_FNAME }}', user.fname)
           .replace('{{ USER_LNAME }}', user.lname);
+        const htmlContent = await buildEmailHtml(userMessage);
 
         await transporter.sendMail({
           from: `"Support Team" <info@sourceindia-electronics.com>`,
           to: user.email,
           subject: subject,
-          html: userMessage,
+          html: htmlContent,
         });
       }
 
@@ -1492,5 +1501,91 @@ exports.getUsersCount = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+// Forgot Password API
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    // Check if user exists
+    const user = await Users.findOne({ where: { email, is_delete: 0 } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    // Generate OTP or token (for demo, using 6-digit OTP)
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 min expiry
+    await user.update({ otp, otp_expiry: otpExpiry });
+    // Prepare email
+    const emailTemplate = await Emails.findByPk(100); // Use your forgot password template ID
+    let msgStr = emailTemplate ? emailTemplate.message.toString('utf8') : 'Your OTP is {{ OTP }}';
+    const full_name = user.fname + ' ' + user.lname;
+    const userMessage = msgStr.replace('{{ USER_FNAME }}', full_name).replace('{{ OTP }}', otp);
+    const { transporter, buildEmailHtml } = await getTransporter();
+    const htmlContent = await buildEmailHtml(userMessage);
+    await transporter.sendMail({
+      from: 'info@sourceindia-electronics.com',
+      to: email,
+      subject: emailTemplate ? emailTemplate.subject : 'Password Reset OTP',
+      html: htmlContent,
+    });
+    return res.json({ message: 'Check your email for reset instructions' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return res.status(500).json({ message: 'Failed to send reset email' });
+  }
+};
+// Reset Password after OTP verification
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword, confirmPassword } = req.body;
+    if (!email || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: 'All fields are required.' });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords do not match.' });
+    }
+    const user = await Users.findOne({ where: { email, is_delete: 0 } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    user.real_password = newPassword;
+    await user.save();
+    return res.status(200).json({ message: 'Password reset successfully.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({ message: 'Server error.' });
+  }
+};
+// Verify Forgot Password OTP
+exports.verifyForgotOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+    const user = await Users.findOne({ where: { email, is_delete: 0 } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (!user.otp || user.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+    if (user.otp_expiry < new Date()) {
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+    // Mark OTP as used (optional: clear it)
+    await user.update({ otp: null, otp_expiry: null });
+    // You can return a token or just success
+    return res.json({ message: 'OTP verified successfully', email });
+  } catch (error) {
+    console.error('Error in verifyForgotOtp:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 };

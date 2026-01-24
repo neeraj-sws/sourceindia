@@ -46,12 +46,13 @@ exports.contactStore = async (req, res) => {
     } else {
       adminMessage = `<p>New message from ${fname} ${lname}</p>`;
     }
- const { transporter, siteConfig } = await getTransporter();
+ const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
+ const htmlContent = await buildEmailHtml(adminMessage);
     const adminMailOptions = {
       from: `"Contact Form" <${email}>`,
       to: siteConfig['site_email'],
       subject: adminEmailData.subject || `New Contact from ${fname} ${lname}`,
-      html: adminMessage,
+      html: htmlContent,
     };
 
 
