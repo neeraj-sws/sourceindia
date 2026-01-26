@@ -28,6 +28,7 @@ const EmailSettingsForm = () => {
   const validateForm = () => {
     const errs = {};
     if (!formData.smtp_from_name.trim()) errs.smtp_from_name = 'SMTP from name is required';
+    if (!formData.smtp_from_address.trim()) errs.smtp_from_address = 'SMTP from address is required';
     if (!formData.smtp_server_address.trim()) errs.smtp_server_address = 'SMTP server address is required';
     if (!formData.smtp_port.trim()) errs.smtp_port = 'SMTP port is required';
     if (!formData.smtp_username.trim()) errs.smtp_username = 'SMTP username is required';
@@ -68,6 +69,13 @@ const EmailSettingsForm = () => {
           <input type="text" className={`form-control ${errors.smtp_from_name ? 'is-invalid' : ''}`} id="smtp_from_name"
             placeholder="SMTP From Name" value={formData.smtp_from_name} onChange={handleInputChange} />
           {errors.smtp_from_name && <div className="invalid-feedback">{errors.smtp_from_name}</div>}
+        </div>
+
+        <div className="col-md-6">
+          <label htmlFor="smtp_from_address" className="form-label required">SMTP From Address</label>
+          <input type="text" className={`form-control ${errors.smtp_from_address ? 'is-invalid' : ''}`} id="smtp_from_address"
+            placeholder="SMTP From Address" value={formData.smtp_from_address} onChange={handleInputChange} />
+          {errors.smtp_from_address && <div className="invalid-feedback">{errors.smtp_from_address}</div>}
         </div>
         <div className="col-md-6">
           <label htmlFor="smtp_server_address" className="form-label required">SMTP Server Address</label>
