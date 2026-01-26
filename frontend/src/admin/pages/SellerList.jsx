@@ -147,6 +147,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
       const res = await axios.post(`${API_BASE_URL}/sellers/messages`, {
         user_id: declineUserId,
         message: declineMessage,
+        template_id: 64,
       });
       showNotification("Seller approval has been declined!", "success");
       closeDeclineModal();

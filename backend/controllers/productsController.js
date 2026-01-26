@@ -1986,6 +1986,35 @@ exports.updateAccountStatus = async (req, res) => {
     if (!products) return res.status(404).json({ message: 'Product not found' });
     products.is_approve = is_approve;
     await products.save();
+    // Send approval email when product is approved (template id 63)
+    try {
+      if (is_approve === 1) {
+        const Emails = require('../models/Emails');
+        const template = await Emails.findByPk(63);
+        let msgStr = template && template.message ? template.message.toString('utf8') : '';
+        if (!msgStr) msgStr = 'Your product has been approved.';
+        // Try to fetch user/company info
+        const user = await Users.findByPk(products.user_id);
+        let companyName = '';
+        try {
+          const company = await CompanyInfo.findByPk(products.company_id);
+          companyName = company?.organization_name || '';
+        } catch (e) {}
+        const userFullName = user ? `${user.fname || ''} ${user.lname || ''}`.trim() : '';
+        msgStr = msgStr
+          .replace(/{{\s*USER_NAME\s*}}/gi, userFullName || '')
+          .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, products.title || '')
+          .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '');
+        try {
+          if (user && user.email) await sendMail({ to: user.email, subject: template?.subject || 'Product approved', message: msgStr });
+        } catch (err) {
+          console.error('Error sending product approval email:', err);
+        }
+      }
+    } catch (e) {
+      console.error('Approval email flow error (product):', e);
+    }
+
     res.json({ message: 'Product approved', products });
   } catch (err) {
     res.status(500).json({ error: err.message });

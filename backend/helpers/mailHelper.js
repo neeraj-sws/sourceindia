@@ -222,11 +222,11 @@ module.exports = {
     generateOtp,
     generatePassword,
     generateOtpAndPassword,
-    // Sends OTP using template id 97 (fallback text if missing)
+    // Sends OTP using template id 87 (fallback text if missing)
     async sendOtp(to, otp, opts = {}) {
         try {
             const Emails = require('../models/Emails');
-            const emailTemplate = await Emails.findByPk(opts.templateId || 97);
+            const emailTemplate = await Emails.findByPk(opts.templateId || 87);
             let msgStr = emailTemplate && emailTemplate.message ? emailTemplate.message.toString('utf8') : '';
             if (!msgStr) msgStr = `Your verification code is: {{ OTP }}`;
 
