@@ -178,8 +178,10 @@ exports.createProducts = async (req, res) => {
           await sendMail({ to: siteConfig['site_email'], subject: adminTpl.subject || 'New company product added', message: adminMsg });
         }
 
-        // Additionally, when this is the company's second product, send template 65 to the user
+        // Additionally, when this is the company's second product, send template 65 to the company user
+        // and send template 102 to admin. Keep existing guard (user.is_complete === 0 && user.is_delete === 0).
         if (existingCount === 1 && user && user.is_complete === 0 && user.is_delete === 0) {
+          // Send template 65 to company user
           const userLastTpl = await Emails.findByPk(65);
           if (userLastTpl) {
             let userMsg2 = userLastTpl.message ? userLastTpl.message.toString('utf8') : '';
@@ -188,7 +190,29 @@ exports.createProducts = async (req, res) => {
               .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
               .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
               .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '');
-            await sendMail({ to: siteConfig['site_email'], subject: userLastTpl.subject || 'Product processed', message: userMsg2 });
+            try {
+              await sendMail({ to: user.email, subject: userLastTpl.subject || 'Product processed', message: userMsg2 });
+            } catch (e) {
+              console.error('Error sending template 65 to user:', e);
+            }
+          }
+
+          // Send template 102 to admin
+          const adminTpl102 = await Emails.findByPk(102);
+          if (adminTpl102) {
+            let adminMsg102 = adminTpl102.message ? adminTpl102.message.toString('utf8') : '';
+            const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+            adminMsg102 = adminMsg102
+              .replace(/{{\s*ADMIN_NAME\s*}}/gi, 'Admin')
+              .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+              .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
+              .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '')
+              .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '');
+            try {
+              await sendMail({ to: siteConfig['site_email'], subject: adminTpl102.subject || 'Second product added', message: adminMsg102 });
+            } catch (e) {
+              console.error('Error sending template 102 to admin:', e);
+            }
           }
         }
       } catch (mailErr) {
