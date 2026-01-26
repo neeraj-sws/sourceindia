@@ -977,7 +977,7 @@ exports.updateProfile = async (req, res) => {
       if (adminemailTemplate) {
         const msgStr = adminemailTemplate.message.toString('utf8');
         const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
-        const htmlContent = await buildEmailHtml(adminMessage);
+        
 
         const user_type = user.is_seller === 1 ? 'Seller' : 'Buyer';
         const adminMessage = msgStr
@@ -988,7 +988,8 @@ exports.updateProfile = async (req, res) => {
           .replace('{{ USER_MOBILE }}', user.mobile)
           .replace('{{ USER_ADDRESS }}', user.address)
           .replace('{{ USER_TYPE }}', user_type);
-
+        
+        const htmlContent = await buildEmailHtml(adminMessage);
         await transporter.sendMail({
           from: `"Support Team" <info@sourceindia-electronics.com>`,
           to: siteConfig['site_email'],
@@ -1513,6 +1514,7 @@ exports.forgotPassword = async (req, res) => {
     }
     // Check if user exists
     const user = await Users.findOne({ where: { email, is_delete: 0 } });
+    console.log(user);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

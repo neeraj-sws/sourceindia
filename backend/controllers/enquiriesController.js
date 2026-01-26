@@ -1369,52 +1369,24 @@ exports.submitEnquiryuser = async (req, res) => {
        5. Get transporter & site config
     ------------------------------ */
 
-    const { transporter } = await getTransporter();
+    const { transporter, buildEmailHtml } = await getTransporter();
 
     /* ------------------------------
        6. Prepare emails (plain text)
     ------------------------------ */
+    const emailTemplate = await Emails.findByPk(16);
+    const msgStr = emailTemplate.message.toString('utf8');
+    let userMessage = msgStr.replace("{{ BUYER_FNAME }}", senderUser.fname)
+      .replace("{{ PRODUCT_TITLE }}", product.title)
+      .replace("{{ PRODUCT_QUANTITY }}", quantity)
+      .replace("{{ VENDOR_COMPANY_NAME }}", receiverUser.company_info.organization_name)
+      .replace("{{ SELLER_NAME }}", receiverUser.fname)
+      .replace("{{ VENDOR_EMAIL }}", receiverUser.email)
+      .replace("{{ VENDOR_MOBILE }}", receiverUser.mobile)
+      .replace("{{ ENQUIRY_DESCRIPTION }}", description)
+      .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
 
-    const senderMail = `
-Dear ${senderUser.fname},
-
-A new enquiry has been submitted by you. Please check the enquiry details below:
-
-Product Title: ${product.title}
-Quantity: ${quantity}
-
-Seller Company: ${receiverUser.company_info.organization_name}
-Seller Name: ${receiverUser.fname} ${receiverUser.lname}
-Seller Email: ${receiverUser.email}
-Seller Mobile: ${receiverUser.mobile}
-
-Enquiry Number: ${enquiry.enquiry_number}
-Enquiry Message: ${description}
-
-Thanks`;
-
-    const receiverMail = `
-Dear ${receiverUser.fname},
-
-A new enquiry has been received on your company. Please check the enquiry details below:
-
-Product Title: ${product.title}
-Quantity: ${quantity}
-
-Company Name: ${senderUser.company_info.organization_name}
-Name: ${senderUser.fname} ${senderUser.lname}
-Email: ${senderUser.email}
-Mobile: ${senderUser.mobile}
-
-Enquiry Number: ${enquiry.enquiry_number}
-Enquiry Message: ${description}
-
-Thanks`;
-
-    /* ------------------------------
-       7. Send mails
-    ------------------------------ */
-    const htmlContent = await buildEmailHtml(senderMail);
+    const htmlContent = await buildEmailHtml(userMessage);
     await transporter.sendMail({
       from: `"Source India-Electronics Supply Chain Portal " <info@sourceindia-electronics.com>`,
       to: senderUser.email,
@@ -1422,6 +1394,22 @@ Thanks`;
       html: htmlContent
     });
 
+
+    const emailTemplate1 = await Emails.findByPk(15);
+    const msgStr1 = emailTemplate1.message.toString('utf8');
+    let receiverMail = msgStr1.replace("{{ SELLER_NAME }}", receiverUser.fname)
+      .replace("{{ PRODUCT_TITLE }}", product.title)
+      .replace("{{ PRODUCT_QUANTITY }}", quantity)
+      .replace("{{ VENDOR_COMPANY_NAME }}", senderUser.company_info.organization_name)
+      .replace("{{ BUYER_FULLNAME }}", senderUser.fname)
+      .replace("{{ BUYER_EMAIL }}", senderUser.email)
+      .replace("{{ BUYER_MOBILE }}", senderUser.mobile)
+      .replace("{{ ENQUIRY_DESCRIPTION }}", description)
+      .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
+
+    /* ------------------------------
+       7. Send mails
+    ------------------------------ */
     const htmlContentReceiver = await buildEmailHtml(receiverMail);
     await transporter.sendMail({
       from: `"Source India-Electronics Supply Chain Portal " <info@sourceindia-electronics.com>`,
@@ -1430,6 +1418,9 @@ Thanks`;
       html: htmlContentReceiver
     });
 
+    if (senderUser.walkin_buyer !== 1) {
+      await sendSellerEnquiryConfirmation(senderUser, enquiry);
+    }
     /* ------------------------------
        8. Final response
     ------------------------------ */
