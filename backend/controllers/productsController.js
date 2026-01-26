@@ -179,7 +179,7 @@ exports.createProducts = async (req, res) => {
         }
 
         // Additionally, when this is the company's second product, send template 65 to the user
-        if (existingCount === 1 && user && user.is_approve === 0 && user.is_delete === 0) {
+        if (existingCount === 1 && user && user.is_complete === 0 && user.is_delete === 0) {
           const userLastTpl = await Emails.findByPk(65);
           if (userLastTpl) {
             let userMsg2 = userLastTpl.message ? userLastTpl.message.toString('utf8') : '';
