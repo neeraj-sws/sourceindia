@@ -7,7 +7,7 @@ const sequelize = require('../config/database');
 const Users = require('../models/Users');
 const SellerMailHistories = require('../models/SellerMailHistories');
 const Emails = require('../models/Emails');
-const { getTransporter } = require('../helpers/mailHelper');
+const { getTransporter, sendMail } = require('../helpers/mailHelper');
 const bcrypt = require('bcryptjs');
 
 
@@ -66,15 +66,8 @@ exports.sendMail = async (req, res) => {
           .replace("{{ VERIFICATION_LINK }}", verification_link);
 
 
-        const { transporter, buildEmailHtml } = await getTransporter();
-        const htmlContent = await buildEmailHtml(userMessage);
-        // Send Mail
-        await transporter.sendMail({
-          from: `info@sourceindia-electronics.com`,
-          to: seller.mail,
-          subject: template?.subject,
-          html: htmlContent,
-        });
+        // Send Mail via centralized helper
+        await sendMail({ to: seller.mail, subject: template?.subject, message: userMessage });
 
         await SellerMailHistories.update(
           { is_sent: 1, sent_at: new Date() },

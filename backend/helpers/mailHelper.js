@@ -6,6 +6,7 @@ const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 async function getSiteConfig() {
     const settings = await SiteSettings.findAll({
@@ -14,6 +15,8 @@ async function getSiteConfig() {
                 [Op.in]: [
                     'title',
                     'site_email',
+                    'smtp_from_name',
+                    'smtp_from_address',
                     'smtp_server_address',
                     'smtp_port',
                     'smtp_username',
@@ -67,6 +70,22 @@ async function getTransporter() {
     });
 
     return { transporter, siteConfig, buildEmailHtml };
+}
+
+// Format 'from' address using site settings
+function formatFrom(siteConfig, defaultName = 'Source India-Electronics Supply Portal', defaultAddress = 'info@sourceindia-electronics.com') {
+    // Prefer a human-readable site title, then configured smtp_from_name, then fallback
+    const name = siteConfig?.['smtp_from_name'] || defaultName;
+    const address = siteConfig?.['smtp_from_address'] || defaultAddress;
+    return `${name} <${address}>`;
+}
+
+// Centralized sendMail helper
+async function sendMail({ to, subject, message, htmlAlreadyBuilt = false, defaultFromName, fromOverride }) {
+    const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
+    const from = fromOverride || formatFrom(siteConfig, defaultFromName);
+    const htmlContent = htmlAlreadyBuilt ? message : await buildEmailHtml(message);
+    return transporter.sendMail({ from, to, subject, html: htmlContent });
 }
 
 function slugify(text) {
@@ -156,11 +175,76 @@ async function buildEmailHtml(bodyHtml, options = {}) {
     return header + (bodyHtml || '') + footer;
 }
 
+// -------------------------
+// OTP / Password generators
+// -------------------------
+function generateOtp() {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+async function generatePassword() {
+    const password = 'SI' + new Date().getFullYear() + Math.floor(1000 + Math.random() * 9000).toString();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    return { password, hashedPassword };
+}
+
+async function generateOtpAndPassword() {
+    const otp = generateOtp();
+    const { password, hashedPassword } = await generatePassword();
+    return { otp, password, hashedPassword };
+}
+
 module.exports = {
     getTransporter,
     getSiteConfig,
     slugify, generateUniqueSlug, getCategoryNames,
-    buildEmailHtml
+    buildEmailHtml,
+    formatFrom,
+    sendMail,
+    generateOtp,
+    generatePassword,
+    generateOtpAndPassword,
+    // Sends OTP using template id 97 (fallback text if missing)
+    async sendOtp(to, otp, opts = {}) {
+        try {
+            const Emails = require('../models/Emails');
+            const emailTemplate = await Emails.findByPk(opts.templateId || 97);
+            let msgStr = emailTemplate && emailTemplate.message ? emailTemplate.message.toString('utf8') : '';
+            if (!msgStr) msgStr = `Your verification code is: {{ OTP }}`;
+
+            // Build replacement map: allow caller to pass arbitrary tokens via opts.data
+            const replacements = Object.assign({}, opts.data || {});
+            replacements.OTP = otp;
+
+            let userMessage = msgStr;
+            for (const [key, val] of Object.entries(replacements)) {
+                const re = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+                userMessage = userMessage.replace(re, String(val));
+            }
+
+            await sendMail({ to, subject: (emailTemplate?.subject) || opts.subject || 'Verify your email', message: userMessage, defaultFromName: opts.defaultFromName || 'Support Team' });
+            return true;
+        } catch (err) {
+            console.error('sendOtp error:', err.message || err);
+            return false;
+        }
+    },
+    // Sends credentials/password using a template (default id 58)
+    async sendCredential(to, credential, opts = {}) {
+        try {
+            const Emails = require('../models/Emails');
+            const tplId = opts.templateId || 58;
+            const emailTemplate = await Emails.findByPk(tplId);
+            let msgStr = emailTemplate && emailTemplate.message ? emailTemplate.message.toString('utf8') : '';
+            if (!msgStr) msgStr = `Your password: {{ USER_PASSWORD }}`;
+            const userMessage = msgStr.replace(/{{\s*USER_PASSWORD\s*}}/g, credential).replace(/{{\s*USER_EMAIL\s*}}/g, to || '');
+            await sendMail({ to, subject: (emailTemplate?.subject) || opts.subject || 'Your account credentials', message: userMessage, defaultFromName: opts.defaultFromName || 'Support Team' });
+            return true;
+        } catch (err) {
+            console.error('sendCredential error:', err.message || err);
+            return false;
+        }
+    }
 };
 
 

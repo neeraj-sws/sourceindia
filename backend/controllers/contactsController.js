@@ -3,8 +3,7 @@ const { Op, fn, col, where: SequelizeWhere } = Sequelize;
 const moment = require('moment');
 const Contacts = require('../models/Contacts');
 const Emails = require('../models/Emails');
-const nodemailer = require('nodemailer');
-const { getTransporter } = require('../helpers/mailHelper');
+const { sendMail, getSiteConfig } = require('../helpers/mailHelper');
 
 
 
@@ -46,17 +45,13 @@ exports.contactStore = async (req, res) => {
     } else {
       adminMessage = `<p>New message from ${fname} ${lname}</p>`;
     }
- const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
- const htmlContent = await buildEmailHtml(adminMessage);
-    const adminMailOptions = {
-      from: `"Contact Form" <${email}>`,
+    const siteConfig = await getSiteConfig();
+    await sendMail({
       to: siteConfig['site_email'],
       subject: adminEmailData.subject || `New Contact from ${fname} ${lname}`,
-      html: htmlContent,
-    };
-
-
-    await transporter.sendMail(adminMailOptions);
+      message: adminMessage,
+      fromOverride: `"Contact Form" <${email}>`,
+    });
 
 
     // 📧 Optional: Send confirmation email to user
@@ -71,15 +66,12 @@ exports.contactStore = async (req, res) => {
       userMessage = `<p>Hi ${fname}, thank you for contacting us!</p>`;
     }
 
-    const userMailOptions = {
-      from: "support@elcina.com",
+    await sendMail({
       to: email,
       subject: userEmailData.subject || "Thanks for contacting us!",
-      html: userMessage,
-    };
-
-
-    await transporter.sendMail(userMailOptions);
+      message: userMessage,
+      defaultFromName: 'Support Team',
+    });
 
     return res.status(200).json({
       success: true,

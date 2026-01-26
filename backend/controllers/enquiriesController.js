@@ -15,8 +15,7 @@ const SellerCategory = require('../models/SellerCategory');
 
 const UserActivity = require('../models/UserActivity');
 const Emails = require('../models/Emails');
-const { getTransporter } = require('../helpers/mailHelper');
-const { getCategoryNames } = require('../helpers/mailHelper');
+const { getTransporter, getCategoryNames, sendMail, getSiteConfig, generateOtp, generatePassword, generateOtpAndPassword, sendOtp } = require('../helpers/mailHelper');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const UploadImage = require('../models/UploadImage');
@@ -24,6 +23,7 @@ const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
 const BuyerEnquiry = require('../models/BuyerEnquiry');
 
+// `sendMail` is provided by `helpers/mailHelper.js` and used below.
 exports.getEnquiryDetailsForAdmin = async (req, res) => {
   try {
     const whereClause = isNaN(Number(req.params.enquiry_number))
@@ -858,35 +858,14 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
   }
 };
 
-const sendOtpEmail = async (to, otp) => {
-  const emailTemplate = await Emails.findByPk(97);
-  const msgStr = emailTemplate.message.toString('utf8');
-  let userMessage = msgStr.replace("{{ OTP }}", otp);
-
-  const { transporter, buildEmailHtml } = await getTransporter();
-  const htmlContent = await buildEmailHtml(userMessage);
-  await transporter.sendMail({
-    from: `"Source India-Electronics Supply Chain Portal" <info@sourceindia-electronics.com>`,
-    to: to,
-    subject: emailTemplate?.subject || "Verify your email",
-    html: htmlContent,
-  });
-};
+// NOTE: OTP sending moved to `helpers/mailHelper.sendOtp`
 
 const sendEnquiryConfirmation = async (to, name) => {
 
   const emailTemplate = await Emails.findByPk(98);
   const msgStr = emailTemplate.message.toString('utf8');
   let userMessage = msgStr.replace("{{ USER_FNAME }}", name);
-
-  const { transporter, buildEmailHtml } = await getTransporter();
-  const htmlContent = await buildEmailHtml(userMessage);
-  await transporter.sendMail({
-    from: `"Source India-Electronics Supply Chain Portal" <info@sourceindia-electronics.com>`,
-    to: to,
-    subject: emailTemplate?.subject || "Enquiry Received",
-    html: htmlContent,
-  });
+  await sendMail({ to, subject: emailTemplate?.subject || "Enquiry Received", message: userMessage });
 };
 
 const sendAdminEnquiryConfirmation = async (user, enquiry) => {
@@ -921,14 +900,8 @@ const sendAdminEnquiryConfirmation = async (user, enquiry) => {
     .replace("{{ USER_TYPE }}", user.is_seller == 1 ? 'Seller' : 'Buyer')
     .replace("{{ ENQUIRY_DESCRIPTION }}", enquiryDescription);
 
-  const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
-  const htmlContent = await buildEmailHtml(userMessage);
-  await transporter.sendMail({
-    from: `Source India-Electronics Supply Chain Portal  <info@sourceindia-electronics.com>`,
-    to: siteConfig['site_email'],
-    subject: emailTemplate?.subject || "New Enquiry Received",
-    html: htmlContent,
-  });
+  const siteConfig = await getSiteConfig();
+  await sendMail({ to: siteConfig['site_email'], subject: emailTemplate?.subject || "New Enquiry Received", message: userMessage });
 };
 
 const sendSellerEnquiryConfirmation = async (user, enquiry) => {
@@ -962,15 +935,7 @@ const sendSellerEnquiryConfirmation = async (user, enquiry) => {
     .replace("{{ USER_TYPE }}", user.is_seller == 1 ? 'Seller' : 'Buyer')
     .replace("{{ ENQUIRY_DESCRIPTION }}", enquiryDescription);
   const selleremail = sellerUser?.email;
-  // const selleremail = 'khushboo@sohamsolution.com';
-  const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
-  const htmlContent = await buildEmailHtml(userMessage);
-  await transporter.sendMail({
-    from: `Source India-Electronics Supply Chain Portal  <info@sourceindia-electronics.com>`,
-    to: selleremail,
-    subject: emailTemplate?.subject || "New Enquiry Received",
-    html: htmlContent,
-  });
+  await sendMail({ to: selleremail, subject: emailTemplate?.subject || "New Enquiry Received", message: userMessage });
 };
 
 
@@ -981,17 +946,12 @@ exports.verifyEmail = async (req, res) => {
 
     const user = await Users.findOne({ where: { email } });
 
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
-    const password =
-      'SI' +
-      new Date().getFullYear() +
-      Math.floor(1000 + Math.random() * 9000).toString();
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const { otp, password, hashedPassword } = await generateOtpAndPassword();
 
     // ✅ If user already exists
     if (user) {
       await user.update({ otp }, { transaction });
-      await sendOtpEmail(email, otp);
+      await sendOtp(email, otp);
 
       await transaction.commit();
       return res.status(200).json({
@@ -1043,7 +1003,7 @@ exports.verifyEmail = async (req, res) => {
       { transaction }
     );
 
-    await sendOtpEmail(email, otp);
+    await sendOtp(email, otp);
 
     await transaction.commit();
 
@@ -1067,10 +1027,10 @@ exports.resendOtp = async (req, res) => {
     const user = await Users.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const otp = generateOtp();
     user.otp = otp;
     await user.save();
-    await sendOtpEmail(email, otp);
+    await sendOtp(email, otp);
     res.status(200).json({ message: 'OTP resent' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1094,7 +1054,6 @@ exports.submitOtp = async (req, res) => {
     user.is_email_verify = 1;
     await user.save();
 
-    const { transporter, buildEmailHtml } = await getTransporter();
     const userEmailTemplateId = 58;
     const userEmailData = await Emails.findByPk(userEmailTemplateId);
     let userMessage = "";
@@ -1115,16 +1074,7 @@ exports.submitOtp = async (req, res) => {
       userMessage = `<p>New message from ${user.fname} ${user.lname}</p>`;
     }
 
-    const htmlContent = await buildEmailHtml(userMessage);
-
-    const userMailOptions = {
-      from: `"Support Team" <info@sourceindia-electronics.com>`,
-      to: user.email,
-      subject: userEmailData.subject,
-      html: htmlContent,
-    };
-
-    await transporter.sendMail(userMailOptions);
+    await sendMail({ to: user.email, subject: userEmailData.subject, message: userMessage, defaultFromName: 'Support Team' });
 
 
     // 🔐 Generate JWT
@@ -1369,8 +1319,7 @@ exports.submitEnquiryuser = async (req, res) => {
        5. Get transporter & site config
     ------------------------------ */
 
-    const { transporter, buildEmailHtml } = await getTransporter();
-
+    
     /* ------------------------------
        6. Prepare emails (plain text)
     ------------------------------ */
@@ -1386,13 +1335,7 @@ exports.submitEnquiryuser = async (req, res) => {
       .replace("{{ ENQUIRY_DESCRIPTION }}", description)
       .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
 
-    const htmlContent = await buildEmailHtml(userMessage);
-    await transporter.sendMail({
-      from: `"Source India-Electronics Supply Chain Portal " <info@sourceindia-electronics.com>`,
-      to: senderUser.email,
-      subject: 'Buyer company enquiry mail',
-      html: htmlContent
-    });
+    await sendMail({ to: senderUser.email, subject: 'Buyer company enquiry mail', message: userMessage });
 
 
     const emailTemplate1 = await Emails.findByPk(15);
@@ -1407,16 +1350,10 @@ exports.submitEnquiryuser = async (req, res) => {
       .replace("{{ ENQUIRY_DESCRIPTION }}", description)
       .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
 
-    /* ------------------------------
+     /* ------------------------------
        7. Send mails
-    ------------------------------ */
-    const htmlContentReceiver = await buildEmailHtml(receiverMail);
-    await transporter.sendMail({
-      from: `"Source India-Electronics Supply Chain Portal " <info@sourceindia-electronics.com>`,
-      to: receiverUser.email,
-      subject: 'New company enquiry received',
-      html: htmlContentReceiver
-    });
+     ------------------------------ */
+    await sendMail({ to: receiverUser.email, subject: 'New company enquiry received', message: receiverMail });
 
     if (senderUser.walkin_buyer !== 1) {
       await sendSellerEnquiryConfirmation(senderUser, enquiry);
@@ -1522,11 +1459,7 @@ exports.submitEnquiry = async (req, res) => {
       let suser = await Users.findByPk(formData.user_id);
       enquiryPayload = { ...commonEnquiryFields, user_id: parseInt(formData.user_id, 10) };
     } else {
-      let password =
-        'SI' +
-        new Date().getFullYear() +
-        Math.floor(1000 + Math.random() * 9000).toString();
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const { password, hashedPassword } = await generatePassword();
       const company = await CompanyInfo.create({
         organization_name: formData.company.trim()
       });
@@ -1573,14 +1506,7 @@ exports.submitEnquiry = async (req, res) => {
       let userMessage = msgStr.replace("{{ USER_FNAME }}", full_name);
 
       const subject = formData.title.trim();
-      const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
-      const htmlContent = await buildEmailHtml(userMessage);
-      await transporter.sendMail({
-        from: `"Enquiry " <info@sourceindia-electronics.com>`,
-        to: user.email,
-        subject: subject || "Enquiry submit successfully",
-        html: htmlContent,
-      });
+      await sendMail({ to: user.email, subject: subject || "Enquiry submit successfully", message: userMessage });
     } else {
       const emailTemplate = await Emails.findByPk(88);
       const msgStr = emailTemplate.message.toString('utf8');
@@ -1588,14 +1514,7 @@ exports.submitEnquiry = async (req, res) => {
       let userMessage = msgStr.replace("{{ USER_FNAME }}", full_name);
 
       const subject = formData.title.trim();
-      const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
-      const htmlContent = await buildEmailHtml(userMessage);
-      await transporter.sendMail({
-        from: `"Enquiry " <info@sourceindia-electronics.com>`,
-        to: formData.email.trim(),
-        subject: subject || "Enquiry submit successfully",
-        html: htmlContent,
-      });
+      await sendMail({ to: formData.email.trim(), subject: subject || "Enquiry submit successfully", message: userMessage });
     }
     // ========== SUCCESS RESPONSE ==========
     return res.json({
