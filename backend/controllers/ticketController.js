@@ -10,7 +10,7 @@ const getMulterUpload = require('../utils/upload');
 const { body, validationResult } = require('express-validator');
 const upload = getMulterUpload('tickets').single('attachment');
 const moment = require('moment');
-const { getTransporter } = require('../helpers/mailHelper');
+const { getTransporter, sendMail, getSiteConfig } = require('../helpers/mailHelper');
 require('dotenv').config();
 
 exports.createTickets = async (req, res) => {
@@ -407,14 +407,7 @@ exports.sendOtp = async (req, res) => {
       .replace("{{ USER_FNAME }}", "Guest");
 
     // Step 4: Send OTP via Mail
-    const { transporter, buildEmailHtml } = await getTransporter();
-    const htmlContent = await buildEmailHtml(userMessage);
-    await transporter.sendMail({
-      from: `"Support Team" <info@sourceindia-electronics.com>`,
-      to: email,
-      subject: emailTemplate.subject || "Your OTP Code",
-      html: htmlContent,
-    });
+    await sendMail({ to: email, subject: emailTemplate.subject || "Your OTP Code", message: userMessage });
 
     return res.json({
       success: 1,
@@ -696,15 +689,8 @@ exports.ticketReplystore = async (req, res) => {
         .replace("{{ USER_EMAIL }}", ticket.email)
         .replace("{{ USER_NAME }}", ticket.fname + ' ' + ticket.lname);
 
-      // Step 4: Send OTP via Mail
-      const { transporter, buildEmailHtml, siteConfig } = await getTransporter();
-      const htmlContent = await buildEmailHtml(userMessage);
-      await transporter.sendMail({
-        from: `"Support Team" <info@sourceindia-electronics.com>`,
-        to: ticket.email,
-        subject: emailTemplate.subject,
-        html: htmlContent,
-      });
+      // Step 4: Send notification emails using centralized sendMail
+      await sendMail({ to: ticket.email, subject: emailTemplate.subject, message: userMessage });
 
       const adminemailTemplate = await Emails.findByPk(85);
       if (!adminemailTemplate) {
@@ -723,13 +709,8 @@ exports.ticketReplystore = async (req, res) => {
         .replace("{{ USER_EMAIL }}", ticket.email)
         .replace("{{ USER_NAME }}", ticket.fname + ' ' + ticket.lname);
 
-
-      await transporter.sendMail({
-        from: `"Support Team" <info@sourceindia-electronics.com>`,
-        to: siteConfig['site_email'],
-        subject: adminemailTemplate.subject,
-        html: adminMessage,
-      });
+      const siteConfig = await getSiteConfig();
+      await sendMail({ to: siteConfig['site_email'], subject: adminemailTemplate.subject, message: adminMessage });
 
 
       // Generate view HTML

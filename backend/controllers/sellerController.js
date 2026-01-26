@@ -21,7 +21,7 @@ const Products = require('../models/Products');
 const SellerCategory = require('../models/SellerCategory');
 const SellerMailHistories = require('../models/SellerMailHistories');
 const Emails = require('../models/Emails');
-const { getTransporter } = require('../helpers/mailHelper');
+const { getTransporter, sendMail, getSiteConfig } = require('../helpers/mailHelper');
 const SellerMessages = require('../models/SellerMessages');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
@@ -1225,14 +1225,7 @@ exports.sendMail = async (req, res) => {
         .replace("{{ APP_URL }}", APP_URL)
         .replace("{{ VERIFICATION_LINK }}", verification_link);
 
-      const { transporter, buildEmailHtml } = await getTransporter();
-      const htmlContent = await buildEmailHtml(userMessage);
-      await transporter.sendMail({
-        from: `<info@sourceindia-electronics.com>`,
-        to: seller.email,
-        subject: template?.subject,
-        html: htmlContent,
-      });
+      await sendMail({ to: seller.email, subject: template?.subject, message: userMessage });
 
 
 
