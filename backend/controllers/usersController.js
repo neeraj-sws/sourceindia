@@ -360,11 +360,12 @@ exports.register = async (req, res) => {
     const adminEmailTemplateId = 6;
     const adminEmailData = await Emails.findByPk(adminEmailTemplateId);
     let adminMessage = "";
+    const siteConfig = await getSiteConfig();
 
     if (adminEmailData.message) {
       const msgStr = adminEmailData.message.toString('utf8');
       adminMessage = msgStr
-        .replace("{{ ADMIN_NAME }}", '')
+        .replace("{{ ADMIN_NAME }}", 'Admin')
         .replace("{{ USER_FNAME }}", `${fname} ${lname}`)
         .replace("{{ USER_EMAIL }}", email)
         .replace("{{ USER_TYPE }}", user_type)
@@ -373,7 +374,6 @@ exports.register = async (req, res) => {
       adminMessage = `<p>New message from ${fname} ${lname}</p>`;
     }
 
-    const siteConfig = await getSiteConfig();
     await sendMail({ to: siteConfig['site_email'], subject: adminEmailData.subject, message: adminMessage });
 
     // user mail
@@ -705,8 +705,9 @@ exports.updateProfileold = async (req, res) => {
         user_type = 'Buyer';
       }
 
+      const siteConfig = await getSiteConfig();
       const adminMessage = msgStr
-        .replace("{{ ADMIN_NAME }}", '')
+        .replace("{{ ADMIN_NAME }}", 'Admin')
         .replace("{{ USER_FNAME }}", user.fname)
         .replace("{{ USER_LNAME }}", user.lname)
         .replace("{{ USER_EMAIL }}", user.email)
@@ -714,7 +715,6 @@ exports.updateProfileold = async (req, res) => {
         .replace("{{ USER_ADDRESS }}", user.address)
         .replace("{{ USER_TYPE }}", user_type);
 
-      const siteConfig = await getSiteConfig();
       await sendMail({ to: siteConfig['site_email'], subject: adminemailTemplate.subject, message: adminMessage });
 
 
@@ -922,7 +922,7 @@ exports.updateProfile = async (req, res) => {
 
         const user_type = user.is_seller === 1 ? 'Seller' : 'Buyer';
         const adminMessage = msgStr
-          .replace('{{ ADMIN_NAME }}', siteConfig['title'])
+          .replace('{{ ADMIN_NAME }}', 'Admin')
           .replace('{{ USER_FNAME }}', user.fname)
           .replace('{{ USER_LNAME }}', user.lname)
           .replace('{{ USER_EMAIL }}', user.email)

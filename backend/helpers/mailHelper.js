@@ -154,6 +154,12 @@ async function buildEmailHtml(bodyHtml, options = {}) {
     let header = fs.readFileSync(headerPath, 'utf8');
     const footer = fs.readFileSync(footerPath, 'utf8');
 
+    // Root URL (backend) and APP_URL (frontend). Use APP_URL for frontend links.
+    const ROOT_URL = process.env.ROOT_URL || 'https://sourceindia-electronics.com/';
+    const APP_URL = process.env.APP_URL || ROOT_URL;
+    const normalizedRoot = ROOT_URL.replace(/\/$/, '');
+    const normalizedApp = APP_URL.replace(/\/$/, '');
+
     // If logoUrl not provided, try to get from SiteSettings
     let logoUrl = options.logoUrl;
     if (!logoUrl) {
@@ -166,13 +172,25 @@ async function buildEmailHtml(bodyHtml, options = {}) {
             // ignore error, fallback to nothing
         }
     }
-    // Fallback to /logo.png if still not set
+    // Fallback to /logo.png (use backend ROOT_URL for static asset fallback)
     if (!logoUrl) {
-        const ROOT_URL = process.env.ROOT_URL || 'https://react.sourceindia-electronics.com/';
-        logoUrl = ROOT_URL.replace(/\/$/, '') + '/logo.png';
+        logoUrl = normalizedRoot + '/logo.png';
     }
+
+    // Inject logo into header
     header = header.replace(/\{\{\s*LOGO_URL\s*\}\}/g, logoUrl);
-    return header + (bodyHtml || '') + footer;
+
+    // Assemble full content and replace URL tokens if present in any part
+    let content = header + (bodyHtml || '') + footer;
+
+    // Replace frontend URL tokens using APP_URL (so emails point to the frontend)
+    const adminUrl = normalizedApp + '/admin';
+    content = content.replace(/\{\{\s*ADMIN_URL\s*\}\}/gi, adminUrl);
+    content = content.replace(/\{\{\s*URL\s*\}\}/gi, normalizedApp + '/');
+    content = content.replace(/\{\{\s*LOGIN_URL\s*\}\}/gi, normalizedApp + '/login');
+    content = content.replace(/\{\{\s*LOGIN_URL\s*\}\}/gi, normalizedRoot + '/login');
+
+    return content;
 }
 
 // -------------------------
@@ -214,11 +232,15 @@ module.exports = {
 
             // Build replacement map: allow caller to pass arbitrary tokens via opts.data
             const replacements = Object.assign({}, opts.data || {});
+            // Provide both generic and template-specific keys for OTP so templates
+            // using {{ OTP }} or {{ USER_OTP }} both work.
             replacements.OTP = otp;
+            replacements.USER_OTP = otp;
 
             let userMessage = msgStr;
             for (const [key, val] of Object.entries(replacements)) {
-                const re = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+                const safeKey = key.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
+                const re = new RegExp(`{{\\s*${safeKey}\\s*}}`, 'gi');
                 userMessage = userMessage.replace(re, String(val));
             }
 

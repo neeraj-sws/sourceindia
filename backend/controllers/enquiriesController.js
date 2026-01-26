@@ -889,7 +889,7 @@ const sendAdminEnquiryConfirmation = async (user, enquiry) => {
   const enquiryDescription = enquiry?.description || '';
 
   let userMessage = msgStr
-    .replace("{{ ADMIN_NAME }}", adminName)
+    .replace("{{ ADMIN_NAME }}", 'Admin')
     .replace("{{ PRODUCT_TITLE }}", productTitle)
     .replace("{{ PRODUCT_QUANTITY }}", productQuantity)
     .replace("{{ COMPANY_NAME }}", companyName)
