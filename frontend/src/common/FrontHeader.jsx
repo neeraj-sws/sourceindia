@@ -67,7 +67,7 @@ const FrontHeader = () => {
 
   /* ================= PROFILE ================= */
   useEffect(() => {
-    if (!token) return;
+    if (!isLoggedIn || !token) return;
 
     const fetchProfile = async () => {
       try {
@@ -77,6 +77,10 @@ const FrontHeader = () => {
         setUser(res.data.user);
       } catch (err) {
         console.error(err);
+        if (err.response?.status === 401) {
+        logout();           // 🔥 force logout
+        navigate("/login"); // optional redirect
+      }
       }
     };
 
