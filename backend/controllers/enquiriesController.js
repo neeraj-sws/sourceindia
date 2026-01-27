@@ -935,7 +935,7 @@ const sendSellerEnquiryConfirmation = async (user, enquiry) => {
     .replace("{{ USER_TYPE }}", user.is_seller == 1 ? 'Seller' : 'Buyer')
     .replace("{{ ENQUIRY_DESCRIPTION }}", enquiryDescription);
   const selleremail = sellerUser?.email;
-  await sendMail({ to: selleremail, subject: emailTemplate?.subject || "New Enquiry Received", message: userMessage });
+  //await sendMail({ to: selleremail, subject: emailTemplate?.subject || "New Enquiry Received", message: userMessage });
 };
 
 
@@ -1335,7 +1335,7 @@ exports.submitEnquiryuser = async (req, res) => {
       .replace("{{ ENQUIRY_DESCRIPTION }}", description)
       .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
 
-    await sendMail({ to: senderUser.email, subject: 'Buyer company enquiry mail', message: userMessage });
+    await sendMail({ to: senderUser.email, subject: emailTemplate.subject || 'Buyer company enquiry mail', message: userMessage });
 
 
     const emailTemplate1 = await Emails.findByPk(15);
@@ -1353,10 +1353,16 @@ exports.submitEnquiryuser = async (req, res) => {
      /* ------------------------------
        7. Send mails
      ------------------------------ */
-    await sendMail({ to: receiverUser.email, subject: 'New company enquiry received', message: receiverMail });
+    await sendMail({ to: receiverUser.email, subject: emailTemplate1.subject || 'New company enquiry received', message: receiverMail });
 
     if (senderUser.walkin_buyer !== 1) {
       await sendSellerEnquiryConfirmation(senderUser, enquiry);
+    }
+    // Notify admin using template id 14
+    try {
+      await sendAdminEnquiryConfirmation(senderUser, enquiry);
+    } catch (e) {
+      console.error('Failed to send admin enquiry notification:', e.message || e);
     }
     /* ------------------------------
        8. Final response
