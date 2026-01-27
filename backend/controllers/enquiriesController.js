@@ -935,7 +935,7 @@ const sendSellerEnquiryConfirmation = async (user, enquiry) => {
     .replace("{{ USER_TYPE }}", user.is_seller == 1 ? 'Seller' : 'Buyer')
     .replace("{{ ENQUIRY_DESCRIPTION }}", enquiryDescription);
   const selleremail = sellerUser?.email;
-  await sendMail({ to: selleremail, subject: emailTemplate?.subject || "New Enquiry Received", message: userMessage });
+  //await sendMail({ to: selleremail, subject: emailTemplate?.subject || "New Enquiry Received", message: userMessage });
 };
 
 
@@ -1319,67 +1319,51 @@ exports.submitEnquiryuser = async (req, res) => {
        5. Get transporter & site config
     ------------------------------ */
 
-    const { transporter } = await getTransporter();
 
     /* ------------------------------
        6. Prepare emails (plain text)
     ------------------------------ */
+    const emailTemplate = await Emails.findByPk(16);
+    const msgStr = emailTemplate.message.toString('utf8');
+    let userMessage = msgStr.replace("{{ BUYER_FNAME }}", senderUser.fname)
+      .replace("{{ PRODUCT_TITLE }}", product.title)
+      .replace("{{ PRODUCT_QUANTITY }}", quantity)
+      .replace("{{ VENDOR_COMPANY_NAME }}", receiverUser.company_info.organization_name)
+      .replace("{{ SELLER_NAME }}", receiverUser.fname)
+      .replace("{{ VENDOR_EMAIL }}", receiverUser.email)
+      .replace("{{ VENDOR_MOBILE }}", receiverUser.mobile)
+      .replace("{{ ENQUIRY_DESCRIPTION }}", description)
+      .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
 
-    const senderMail = `
-Dear ${senderUser.fname},
+    await sendMail({ to: senderUser.email, subject: emailTemplate.subject || 'Buyer company enquiry mail', message: userMessage });
 
-A new enquiry has been submitted by you. Please check the enquiry details below:
 
-Product Title: ${product.title}
-Quantity: ${quantity}
-
-Seller Company: ${receiverUser.company_info.organization_name}
-Seller Name: ${receiverUser.fname} ${receiverUser.lname}
-Seller Email: ${receiverUser.email}
-Seller Mobile: ${receiverUser.mobile}
-
-Enquiry Number: ${enquiry.enquiry_number}
-Enquiry Message: ${description}
-
-Thanks`;
-
-    const receiverMail = `
-Dear ${receiverUser.fname},
-
-A new enquiry has been received on your company. Please check the enquiry details below:
-
-Product Title: ${product.title}
-Quantity: ${quantity}
-
-Company Name: ${senderUser.company_info.organization_name}
-Name: ${senderUser.fname} ${senderUser.lname}
-Email: ${senderUser.email}
-Mobile: ${senderUser.mobile}
-
-Enquiry Number: ${enquiry.enquiry_number}
-Enquiry Message: ${description}
-
-Thanks`;
+    const emailTemplate1 = await Emails.findByPk(15);
+    const msgStr1 = emailTemplate1.message.toString('utf8');
+    let receiverMail = msgStr1.replace("{{ SELLER_NAME }}", receiverUser.fname)
+      .replace("{{ PRODUCT_TITLE }}", product.title)
+      .replace("{{ PRODUCT_QUANTITY }}", quantity)
+      .replace("{{ VENDOR_COMPANY_NAME }}", senderUser.company_info.organization_name)
+      .replace("{{ BUYER_FULLNAME }}", senderUser.fname)
+      .replace("{{ BUYER_EMAIL }}", senderUser.email)
+      .replace("{{ BUYER_MOBILE }}", senderUser.mobile)
+      .replace("{{ ENQUIRY_DESCRIPTION }}", description)
+      .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
 
     /* ------------------------------
-       7. Send mails
+      7. Send mails
     ------------------------------ */
-    const htmlContent = await buildEmailHtml(senderMail);
-    await transporter.sendMail({
-      from: `"Source India-Electronics Supply Chain Portal " <info@sourceindia-electronics.com>`,
-      to: senderUser.email,
-      subject: 'Buyer company enquiry mail',
-      html: htmlContent
-    });
+    await sendMail({ to: receiverUser.email, subject: emailTemplate1.subject || 'New company enquiry received', message: receiverMail });
 
-    const htmlContentReceiver = await buildEmailHtml(receiverMail);
-    await transporter.sendMail({
-      from: `"Source India-Electronics Supply Chain Portal " <info@sourceindia-electronics.com>`,
-      to: receiverUser.email,
-      subject: 'New company enquiry received',
-      html: htmlContentReceiver
-    });
-
+    if (senderUser.walkin_buyer !== 1) {
+      await sendSellerEnquiryConfirmation(senderUser, enquiry);
+    }
+    // Notify admin using template id 14
+    try {
+      await sendAdminEnquiryConfirmation(senderUser, enquiry);
+    } catch (e) {
+      console.error('Failed to send admin enquiry notification:', e.message || e);
+    }
     /* ------------------------------
        8. Final response
     ------------------------------ */
@@ -2420,10 +2404,12 @@ exports.sendMessage = async (req, res) => {
     const sender = await Users.findByPk(logged_in_user_id);
     if (!sender) return res.status(404).json({ message: "User not found" });
 
+    // sender.company_id refers to CompanyInfo.id
+    const senderCompany = await CompanyInfo.findByPk(sender.company_id);
+
     // get company user
     const companyUser = await Users.findOne({ where: { company_id } });
     if (!companyUser) return res.status(404).json({ message: "Company user not found" });
-
 
 
     const data = await BuyerEnquiry.create({
@@ -2435,24 +2421,29 @@ exports.sendMessage = async (req, res) => {
 
 
     const emailTemplate = await Emails.findByPk(67);
+    if (!emailTemplate || !emailTemplate.message) {
+      console.error('Email template 67 missing or empty');
+      return res.status(500).json({ error: 'Email template not found' });
+    }
 
     const msgStr = emailTemplate.message.toString('utf8');
 
     let userMessage = msgStr
-      .replace("{{ USER_NAME }}", `${sender.fname} ${sender.lname}`)
-      .replace("{{ RECIEVED_USER }}", `${companyUser.fname} ${companyUser.lname}`)
-      .replace("{{ TITTLE }}", title)
+      .replace("{{ USER_NAME }}", `${companyUser.fname} ${companyUser.lname}`)
+      .replace("{{ SENDER_USER }}", senderCompany?.organization_name || '')
+      .replace("{{ TITLE }}", title)
       .replace("{{ MESSAGE }}", message);
 
-    const { transporter, buildEmailHtml } = await getTransporter();
-    const htmlContent = await buildEmailHtml(userMessage);
-
-    await transporter.sendMail({
-      from: sender.email,
-      to: companyUser.email,
-      subject: emailTemplate?.subject,
-      html: htmlContent,
-    });
+    try {
+      await sendMail({
+        to: companyUser.email,
+        subject: emailTemplate?.subject || 'New message',
+        message: userMessage,
+      });
+    } catch (e) {
+      console.error('Failed to send mail via sendMail helper:', e);
+      return res.status(500).json({ error: 'Failed to send email' });
+    }
 
     return res.status(200).json({ message: "Mail sent successfully" });
 

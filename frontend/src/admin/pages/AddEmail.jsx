@@ -37,6 +37,67 @@ const AddEmail = () => {
     return Object.keys(errs).length === 0;
   };
 
+  // Show a simple overlay to edit HTML source (no extra packages needed)
+  const showSourceOverlay = (editor) => {
+    const currentHtml = editor.getData() || '';
+
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.right = '0';
+    overlay.style.bottom = '0';
+    overlay.style.background = 'rgba(0,0,0,0.6)';
+    overlay.style.zIndex = '2000';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+
+    const modal = document.createElement('div');
+    modal.style.width = '80%';
+    modal.style.maxWidth = '900px';
+    modal.style.background = '#fff';
+    modal.style.borderRadius = '6px';
+    modal.style.padding = '12px';
+    modal.style.boxShadow = '0 6px 30px rgba(0,0,0,0.3)';
+
+    const textarea = document.createElement('textarea');
+    textarea.style.width = '100%';
+    textarea.style.height = '60vh';
+    textarea.style.padding = '8px';
+    textarea.value = currentHtml;
+
+    const buttons = document.createElement('div');
+    buttons.style.marginTop = '8px';
+    buttons.style.display = 'flex';
+    buttons.style.justifyContent = 'flex-end';
+    buttons.style.gap = '8px';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'btn btn-primary btn-sm';
+    saveBtn.innerText = 'Save';
+    saveBtn.onclick = () => {
+      editor.setData(textarea.value);
+      document.body.removeChild(overlay);
+    };
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn btn-secondary btn-sm';
+    cancelBtn.innerText = 'Cancel';
+    cancelBtn.onclick = () => document.body.removeChild(overlay);
+
+    buttons.appendChild(cancelBtn);
+    buttons.appendChild(saveBtn);
+
+    modal.appendChild(textarea);
+    modal.appendChild(buttons);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    textarea.focus();
+  };
+
   useEffect(() => {
     if (!isEditing) return;
 
@@ -182,6 +243,23 @@ const AddEmail = () => {
                       <CKEditor
                         editor={ClassicEditor}
                         data={formData.message || ''}
+                        onReady={(editor) => {
+                          try {
+                            const toolbarEl = editor.ui.view.toolbar.element;
+                            if (toolbarEl && !toolbarEl.querySelector('.ck-source-btn')) {
+                              const btn = document.createElement('button');
+                              btn.type = 'button';
+                              btn.className = 'ck-button ck-source-btn btn btn-sm btn-light';
+                              btn.style.marginLeft = '6px';
+                              btn.innerText = 'Source';
+                              btn.onclick = () => showSourceOverlay(editor);
+                              toolbarEl.appendChild(btn);
+                            }
+                          } catch (err) {
+                            // fallback silently if toolbar element not available
+                            console.error('Could not inject source button', err);
+                          }
+                        }}
                         onChange={(event, editor) => {
                           const data = editor.getData();
                           setFormData(prev => ({ ...prev, message: data }));
