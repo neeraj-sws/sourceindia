@@ -1102,6 +1102,7 @@ exports.storeEnquiry = async (req, res) => {
   try {
     const {
       userId,
+      quantity,
       name,
       company,
       phone,
@@ -1159,19 +1160,24 @@ exports.storeEnquiry = async (req, res) => {
     }
 
     /* -------------------- 4. Create buyer company -------------------- */
-    const newCompany = await CompanyInfo.create({
-      organization_name: company
-    });
-
+ 
     /* -------------------- 5. Update user -------------------- */
     const user = await Users.findByPk(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+    const company_id=user.company_id;
+    if(user.company_id == 0 || user.company_id == null){
+    const newCompany = await CompanyInfo.create({
+        organization_name: company
+    });
+      company_id = newCompany.id;
+    }
+
 
     await user.update({
       fname: name,
-      company_id: newCompany.id,
+      company_id: company_id,
       mobile: phone,
       is_new: 1,
       is_profile: 1,
@@ -1189,10 +1195,10 @@ exports.storeEnquiry = async (req, res) => {
       enquiry_number,
       company_id: enq_company_id,
       user_id: user.id,
-      buyer_company_id: newCompany.id,
+      buyer_company_id: company_id,
       description,
       type: 1,
-      quantity: 1,
+      quantity,
       category: category_ids,
       sub_category: subcategory_ids,
       category_name: category_names,
@@ -1211,14 +1217,14 @@ exports.storeEnquiry = async (req, res) => {
     const enquiryMessage = await EnquiryMessage.create({
       seller_company_id: enq_company_id,
       enquiry_id: enquiry.id,
-      buyer_company_id: newCompany.id
+      buyer_company_id: company_id
     });
 
     await UserMessage.create({
       user_id: user.id,
       message: description,
       message_id: enquiryMessage.id,
-      company_id: newCompany.id
+      company_id: company_id
     });
 
     /* -------------------- 9. Send confirmation mail -------------------- */
