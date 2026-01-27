@@ -951,7 +951,8 @@ exports.verifyEmail = async (req, res) => {
     // ✅ If user already exists
     if (user) {
       await user.update({ otp }, { transaction });
-      await sendOtp(email, otp);
+      const full_name = user.fname + ' ' + user.lname;
+      await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: full_name } });
 
       await transaction.commit();
       return res.status(200).json({
@@ -1003,7 +1004,7 @@ exports.verifyEmail = async (req, res) => {
       { transaction }
     );
 
-    await sendOtp(email, otp);
+    await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: 'User' } });
 
     await transaction.commit();
 
