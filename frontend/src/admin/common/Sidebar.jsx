@@ -560,7 +560,7 @@ const Sidebar = () => {
               <div className="simplebar-content mm-active" style={{ padding: 0 }}>
                 <div className="sidebar-header">
                   <div>
-                    <Link to="/">
+                    <Link to="/admin" className="logo-icon">
                     <img src={logoUrl} className="logo-icon" alt="logo icon" loading="lazy"
                       decoding="async" onError={(e) => {
                         e.target.onerror = null;
