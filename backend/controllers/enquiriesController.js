@@ -1037,7 +1037,7 @@ exports.verifyEmail = async (req, res) => {
 };
 
 // Resend OTP
-exports.resendOtp = async (req, res) => { 
+exports.resendOtp = async (req, res) => {
   try {
     const { email } = req.body;
     const user = await Users.findOne({ where: { email } });
@@ -1175,7 +1175,7 @@ exports.storeEnquiry = async (req, res) => {
     }
 
     /* -------------------- 4. Create buyer company -------------------- */
- 
+
     /* -------------------- 5. Update user -------------------- */
     const user = await Users.findByPk(userId);
     if (!user) {
@@ -1183,13 +1183,13 @@ exports.storeEnquiry = async (req, res) => {
     }
 
     const companyInfoData = await CompanyInfo.findByPk(user.company_id);
-    
+
     if (!companyInfoData) {
       return res.status(404).json({ message: 'Company not found' });
     }
     await user.update({
       fname: name,
-      company_id: company_id,
+      company_id: companyInfoData.company_id,
       mobile: phone,
       is_new: 1,
       is_profile: 1,
@@ -1201,7 +1201,7 @@ exports.storeEnquiry = async (req, res) => {
     await companyInfoData.update({
       organization_name: company,
       organization_slug: await createUniqueSlug(company),
-     });
+    });
 
     /* -------------------- 6. Create enquiry -------------------- */
     const enquiry_number = Math.random()
