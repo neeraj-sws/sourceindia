@@ -4,6 +4,7 @@ const path = require('path');
 const SiteSettings = require('../models/SiteSettings');
 const HomeSettings = require('../models/HomeSettings');
 const UploadImage = require('../models/UploadImage');
+const FrontMenu = require('../models/FrontMenu');
 const getMulterUpload = require('../utils/upload');
 
 exports.getSiteSettings = async (req, res) => {
@@ -35,6 +36,92 @@ exports.getSiteSettings = async (req, res) => {
         formatted.favicon_file = faviconImage.file;
       }
     }
+    /* ---------------- FRONT MENU ---------------- */
+    const menus = await FrontMenu.findAll({
+      order: [
+        ['type', 'ASC'],
+        ['position', 'ASC'],
+      ],
+      raw: true,
+    });
+
+    const menuMap = {};
+    menus.forEach(menu => {
+      menu.sub_menu = [];
+      menuMap[menu.id] = menu;
+    });
+
+    const finalMenu = [];
+    menus.forEach(menu => {
+      if (menu.parent_id === 0) {
+        finalMenu.push(menu);
+      } else if (menuMap[menu.parent_id]) {
+        menuMap[menu.parent_id].sub_menu.push(menu);
+      }
+    });
+
+    formatted.front_menu = finalMenu;
+
+    /* ---------------- HOME SETTINGS ---------------- */
+    const homeSettings = await HomeSettings.findAll();
+const homeFormatted = {};
+
+const imageKeyMap = {
+  about_file_id: 'about_file',
+  footer_logo_id: 'footer_logo',
+  footer_img_1_id: 'footer_img_1',
+  footer_img_2_id: 'footer_img_2'
+};
+
+const imageIds = {};
+
+for (const setting of homeSettings) {
+  if (imageKeyMap[setting.meta_key]) {
+    imageIds[setting.meta_key] = setting.meta_value;
+    homeFormatted[setting.meta_key] = setting.meta_value;
+  } else {
+    homeFormatted[setting.meta_key] = setting.meta_value;
+  }
+}
+
+for (const [metaKey, fileKey] of Object.entries(imageKeyMap)) {
+  const fileId = imageIds[metaKey];
+  if (fileId) {
+    const image = await UploadImage.findByPk(fileId);
+    if (image) {
+      homeFormatted[fileKey] = image.file;
+    }
+  }
+}
+
+const allowedHomeKeys = [
+  'footer_logo',
+  'footer_heading',
+  'footershort_description',
+  'footer_img_1',
+  'footer_img_2',
+  'contactphone_1',
+  'contactphone_2',
+  'contactemail',
+  'contact_map_url',
+  'contactaddress',
+  'facebook_url',
+  'twitter_url',
+  'linkedin_url',
+  'youtube_url',
+  'instagram_url'
+];
+
+const filteredHomeSettings = {};
+
+allowedHomeKeys.forEach(key => {
+  if (homeFormatted[key] !== undefined) {
+    filteredHomeSettings[key] = homeFormatted[key];
+  }
+});
+
+    // ✅ Attach home settings
+    formatted.home_settings = filteredHomeSettings;
     res.json(formatted);
   } catch (err) {
     console.error(err);
