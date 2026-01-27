@@ -162,6 +162,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
       await axios.post(`${API_BASE_URL}/enquiries/store`, {
         userId,
         name,
+        quantity,
         company,
         phone,
         description,
@@ -416,7 +417,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                                 required
                               />
                             </div>
-                            {!user?.company_info && (
+                          
                               <div className="form-group mb-3">
                                 <input
                                   type="text"
@@ -427,7 +428,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                                   required
                                 />
                               </div>
-                            )}
+                            
                             <div className="form-group mb-3">
                               <input
                                 type="number"
