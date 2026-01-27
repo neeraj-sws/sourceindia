@@ -181,7 +181,6 @@ exports.getHomeSettings = async (req, res) => {
   try {
     const settings = await HomeSettings.findAll();
     const formatted = {};
-    // let aboutFileId = null;
     const imageKeyMap = {
       about_file_id: 'about_file',
       footer_logo_id: 'footer_logo',
