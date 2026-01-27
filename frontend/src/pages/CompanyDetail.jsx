@@ -369,7 +369,6 @@ const CompanyDetail = () => {
               slidesPerView={4}
               slidesPerGroup={1}
               loop={company?.products && company.products.length > 4}
-              loopFillGroupWithBlank={false}
               className="similar-products-carousel"
               style={{ padding: "20px 0" }}
               breakpoints={{
