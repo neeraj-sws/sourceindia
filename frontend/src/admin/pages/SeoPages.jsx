@@ -141,20 +141,6 @@ useEffect(() => {
         errs.slug = "Slug must be lowercase, contain only letters, numbers, and hyphens (no spaces or special characters)";
       }
     }
-    // if (!formData.meta_title?.trim()) errs.meta_title = "Meta Title is required";
-    // if (!formData.meta_keywords?.trim()) errs.meta_keywords = "Meta keywords is required";
-    // if (!formData.meta_description?.trim()) errs.meta_description = "Meta description is required";
-    // if (!formData.file && !isEditing) {
-    //   errs.file = "Image is required";
-    // }
-  //   if (formData.file) {
-  //   const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-  //   if (!allowedImageTypes.includes(formData.file.type)) {
-  //     errs.file = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
-  //   } else if (formData.file.size > 2 * 1024 * 1024) {
-  //     errs.file = "Image size must be under 2MB";
-  //   }
-  // }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -228,9 +214,11 @@ useEffect(() => {
                         value={formData.title}
                         onChange={handleChange}
                         placeholder="Title"
+                        readOnly={isEditing}
                       />
                       {errors.title && <div className="invalid-feedback">{errors.title}</div>}
                     </div>
+                    {!isEditing &&
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="slug" className="form-label required">Slug</label>
                       <input
@@ -243,6 +231,7 @@ useEffect(() => {
                       />
                       {errors.slug && <div className="invalid-feedback">{errors.slug}</div>}
                     </div>
+}
                     <div className="form-group mb-3 col-md-12">
                       <label htmlFor="meta_title" className="form-label">Meta Title</label>
                       <input
@@ -262,6 +251,7 @@ useEffect(() => {
                           setFormData(prev => ({ ...prev, meta_keywords: val }))
                         }
                       />
+                      <small><strong>Note:</strong> Enter tokens separated by commas (e.g., token1, token2, token3).</small>
                     </div>
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="meta_description" className="form-label">Description</label>
@@ -331,7 +321,6 @@ useEffect(() => {
                       { key: "slug", label: "Slug", sortable: true },
                       { key: "meta_title", label: "Meta Title", sortable: true },
                       { key: "meta_keywords", label: "Meta Keywords", sortable: true },
-                      { key: "meta_description", label: "Meta Description", sortable: true },
                       { key: "action", label: "Action", sortable: false },
                     ]}
                     data={data}
@@ -361,7 +350,6 @@ useEffect(() => {
                         <td>{row.slug}</td>
                         <td>{row.meta_title}</td>
                         <td>{row.meta_keywords}</td>
-                        <td>{row.meta_description}</td>
                         <td>
                           <div className="dropdown">
                             <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
