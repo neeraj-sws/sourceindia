@@ -65,6 +65,7 @@ const Users = sequelize.define('Users', {
   otp: { type: DataTypes.STRING, allowNull: true, },
   is_trading: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
   walkin_buyer: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
+  is_walkin_new: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
   member_role: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 1, },
   is_profile: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0, },
   is_company: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0, },
