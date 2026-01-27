@@ -1022,12 +1022,11 @@ exports.verifyEmail = async (req, res) => {
 };
 
 // Resend OTP
-exports.resendOtp = async (req, res) => {
+exports.resendOtp = async (req, res) => { 
   try {
     const { email } = req.body;
     const user = await Users.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: 'User not found' });
-
     const otp = generateOtp();
     user.otp = otp;
     await user.save();
