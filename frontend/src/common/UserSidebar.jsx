@@ -200,11 +200,13 @@ const UserSidebar = () => {
       <div className="simplebar-content" style={{ padding: 0 }}>
         <div className="sidebar-header">
           <div>
+            <Link to="/">
             <img src={logoUrl} className="logo-icon" alt="logo icon" loading="lazy"
               decoding="async" onError={(e) => {
                 e.target.onerror = null;
                 e.target.src = "/logo.png";
               }} />
+              </Link>
           </div>
           <div className="toggle-icon ms-auto">
             <i className="bx bx-arrow-to-left" />
