@@ -23,6 +23,21 @@ const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
 const BuyerEnquiry = require('../models/BuyerEnquiry');
 
+async function createUniqueSlug(name) {
+  if (!name) return '';
+  let slug = name.toLowerCase().trim()
+    .replace(/[^a-z0-9\s-]/g, '')  // remove invalid chars
+    .replace(/\s+/g, '-')          // replace spaces with -
+    .replace(/-+/g, '-');
+  let uniqueSlug = slug;
+  let counter = 1;
+  while (await CompanyInfo.findOne({ where: { organization_slug: uniqueSlug } })) {
+    uniqueSlug = `${slug}-${counter}`;
+    counter++;
+  }
+  return uniqueSlug;
+}
+
 // `sendMail` is provided by `helpers/mailHelper.js` and used below.
 exports.getEnquiryDetailsForAdmin = async (req, res) => {
   try {
@@ -1166,15 +1181,12 @@ exports.storeEnquiry = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    const company_id=user.company_id;
-    if(user.company_id == 0 || user.company_id == null){
-    const newCompany = await CompanyInfo.create({
-        organization_name: company
-    });
-      company_id = newCompany.id;
+
+    const companyInfoData = await CompanyInfo.findByPk(user.company_id);
+    
+    if (!companyInfoData) {
+      return res.status(404).json({ message: 'Company not found' });
     }
-
-
     await user.update({
       fname: name,
       company_id: company_id,
@@ -1184,6 +1196,12 @@ exports.storeEnquiry = async (req, res) => {
       is_complete: 1,
 
     });
+
+
+    await companyInfoData.update({
+      organization_name: company,
+      organization_slug: await createUniqueSlug(company),
+     });
 
     /* -------------------- 6. Create enquiry -------------------- */
     const enquiry_number = Math.random()
@@ -1195,7 +1213,7 @@ exports.storeEnquiry = async (req, res) => {
       enquiry_number,
       company_id: enq_company_id,
       user_id: user.id,
-      buyer_company_id: company_id,
+      buyer_company_id: companyInfoData.id,
       description,
       type: 1,
       quantity,
@@ -1217,14 +1235,14 @@ exports.storeEnquiry = async (req, res) => {
     const enquiryMessage = await EnquiryMessage.create({
       seller_company_id: enq_company_id,
       enquiry_id: enquiry.id,
-      buyer_company_id: company_id
+      buyer_company_id: companyInfoData.id
     });
 
     await UserMessage.create({
       user_id: user.id,
       message: description,
       message_id: enquiryMessage.id,
-      company_id: company_id
+      company_id: companyInfoData.id
     });
 
     /* -------------------- 9. Send confirmation mail -------------------- */
