@@ -884,7 +884,7 @@ const sendEnquiryConfirmation = async (to, name) => {
 };
 
 const sendAdminEnquiryConfirmation = async (user, enquiry) => {
-  const emailTemplate = await Emails.findByPk(14);
+  const emailTemplate = await Emails.findByPk(72);
   const msgStr = emailTemplate.message.toString('utf8');
   const productInfo = await EnquiryUsers.findOne({
     where: { enquiry_id: enquiry.id },
@@ -1530,21 +1530,48 @@ exports.submitEnquiry = async (req, res) => {
     }
 
     if (isAuthenticated) {
-      const emailTemplate = await Emails.findByPk(88);
-      const msgStr = emailTemplate.message.toString('utf8');
-      const full_name = user.fname + ' ' + user.lname;
-      let userMessage = msgStr.replace("{{ USER_FNAME }}", full_name);
+      try {
+        const emailTemplate = await Emails.findByPk(88);
+        const msgStr = emailTemplate && emailTemplate.message ? emailTemplate.message.toString('utf8') : '';
+        const full_name = user ? `${user.fname} ${user.lname}`.trim() : '';
+        let userMessage = msgStr.replace("{{ USER_FNAME }}", full_name || user?.email || '');
 
-      const subject = formData.title.trim();
-      await sendMail({ to: user.email, subject: subject || "Enquiry submit successfully", message: userMessage });
+        const subject = formData.title.trim();
+        if (user && user.email) {
+          await sendMail({ to: user.email, subject: subject || "Enquiry submit successfully", message: userMessage });
+        }
+      } catch (err) {
+        console.error('Error sending enquiry user email (authenticated):', err);
+      }
+
+      try {
+        const adminUser = user || (enquiry.user_id ? await Users.findByPk(enquiry.user_id) : null);
+        await sendAdminEnquiryConfirmation(adminUser, enquiry);
+      } catch (err) {
+        console.error('Error sending admin enquiry notification (authenticated):', err);
+      }
+
     } else {
-      const emailTemplate = await Emails.findByPk(88);
-      const msgStr = emailTemplate.message.toString('utf8');
-      const full_name = formData.name.trim();
-      let userMessage = msgStr.replace("{{ USER_FNAME }}", full_name);
+      try {
+        const emailTemplate = await Emails.findByPk(88);
+        const msgStr = emailTemplate && emailTemplate.message ? emailTemplate.message.toString('utf8') : '';
+        const full_name = formData.name?.trim() || '';
+        let userMessage = msgStr.replace(/{{\s*USER_FNAME\s*}}/gi, full_name || formData.email || '');
 
-      const subject = formData.title.trim();
-      await sendMail({ to: formData.email.trim(), subject: subject || "Enquiry submit successfully", message: userMessage });
+        const subject = formData.title.trim();
+        if (formData.email) {
+          await sendMail({ to: formData.email.trim(), subject: subject || "Enquiry submit successfully", message: userMessage });
+        }
+      } catch (err) {
+        console.error('Error sending enquiry user email (guest):', err);
+      }
+
+      try {
+        const adminUser = user || (enquiry.user_id ? await Users.findByPk(enquiry.user_id) : null);
+        await sendAdminEnquiryConfirmation(adminUser, enquiry);
+      } catch (err) {
+        console.error('Error sending admin enquiry notification (guest):', err);
+      }
     }
     // ========== SUCCESS RESPONSE ==========
     return res.json({

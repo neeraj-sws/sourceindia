@@ -1595,6 +1595,65 @@ exports.updateSellerStatus = async (req, res) => {
     if (!sellers) return res.status(404).json({ message: 'Sellers not found' });
     sellers.status = status;
     await sellers.save();
+    // Send notification emails based on status (non-blocking)
+    try {
+      const siteConfig = await getSiteConfig();
+
+      const company = await CompanyInfo.findByPk(sellers.company_id).catch(() => null);
+      const companyName = company?.organization_name || '';
+      const userFullName = `${sellers.fname || ''} ${sellers.lname || ''}`.trim() || sellers.email || '';
+
+      if (status === 1) {
+        // status=1: user -> template 4, admin -> template 11
+        try {
+          const userTpl = await Emails.findByPk(4);
+          let msgStr = userTpl && userTpl.message ? userTpl.message.toString('utf8') : '';
+          if (!msgStr) msgStr = 'Your account has been activated.';
+          msgStr = msgStr
+            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+            .replace(/{{\s*USER_EMAIL\s*}}/gi, sellers.email || '')
+            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+          try { if (sellers.email) await sendMail({ to: sellers.email, subject: userTpl?.subject || 'Account Activated', message: msgStr }); } catch (e) { console.error('Error sending seller status=1 user email:', e); }
+        } catch (e) { console.error('Error preparing seller status=1 user email:', e); }
+
+        try {
+          const adminTpl = await Emails.findByPk(11);
+          let msgStr = adminTpl && adminTpl.message ? adminTpl.message.toString('utf8') : '';
+          if (!msgStr) msgStr = `Seller ${userFullName} has been activated.`;
+          msgStr = msgStr
+            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+            .replace(/{{\s*USER_EMAIL\s*}}/gi, sellers.email || '')
+            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+          try { if (siteConfig && siteConfig['site_email']) await sendMail({ to: siteConfig['site_email'], subject: adminTpl?.subject || 'Seller Activated', message: msgStr }); } catch (e) { console.error('Error sending seller status=1 admin email:', e); }
+        } catch (e) { console.error('Error preparing seller status=1 admin email:', e); }
+      } else {
+        // status=0: user -> template 5, admin -> template 12
+        try {
+          const userTpl = await Emails.findByPk(5);
+          let msgStr = userTpl && userTpl.message ? userTpl.message.toString('utf8') : '';
+          if (!msgStr) msgStr = 'Your account has been deactivated.';
+          msgStr = msgStr
+            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+            .replace(/{{\s*USER_EMAIL\s*}}/gi, sellers.email || '')
+            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+          try { if (sellers.email) await sendMail({ to: sellers.email, subject: userTpl?.subject || 'Account Deactivated', message: msgStr }); } catch (e) { console.error('Error sending seller status=0 user email:', e); }
+        } catch (e) { console.error('Error preparing seller status=0 user email:', e); }
+
+        try {
+          const adminTpl = await Emails.findByPk(12);
+          let msgStr = adminTpl && adminTpl.message ? adminTpl.message.toString('utf8') : '';
+          if (!msgStr) msgStr = `Seller ${userFullName} has been deactivated.`;
+          msgStr = msgStr
+            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+            .replace(/{{\s*USER_EMAIL\s*}}/gi, sellers.email || '')
+            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+          try { if (siteConfig && siteConfig['site_email']) await sendMail({ to: siteConfig['site_email'], subject: adminTpl?.subject || 'Seller Deactivated', message: msgStr }); } catch (e) { console.error('Error sending seller status=0 admin email:', e); }
+        } catch (e) { console.error('Error preparing seller status=0 admin email:', e); }
+      }
+    } catch (e) {
+      console.error('Seller status email flow error:', e);
+    }
+
     res.json({ message: 'Status updated', sellers });
   } catch (err) {
     res.status(500).json({ error: err.message });

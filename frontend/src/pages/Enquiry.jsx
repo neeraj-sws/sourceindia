@@ -274,10 +274,6 @@ const Enquiry = () => {
                           </p>
                           <div className="px-3 py-2">
                             <p className="card-text mb-1">
-                              <b className="fw-semibold">Quantity:</b>{" "}
-                              {enquiry.quantity || "N/A"}
-                            </p>
-                            <p className="card-text mb-1">
                               <b className="fw-semibold">Name:</b>{" "}
                               {enquiry.fname || enquiry.lname ? (
                                 <>
