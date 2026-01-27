@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import axios from "axios";
-import API_BASE_URL from "../../../config";
+import ImageWithFallback from "../../common/ImageWithFallback";
+import API_BASE_URL, { ROOT_URL } from "../../../config";
 import { useAlert } from "../../../context/AlertContext";
 
 const FooterSectionForm = () => {
   const { showNotification } = useAlert();
+  const [footerLogo, setFooterLogo] = useState(null);
+const [footerImg1, setFooterImg1] = useState(null);
+const [footerImg2, setFooterImg2] = useState(null);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     newsletter_heading: '', newsletter_short_description: '', footer_heading: '',
-    footershort_description: '', facebook_url: '', twitter_url: '', instagram_url: '', linkedin_url: '', youtube_url: ''
+    footershort_description: '', facebook_url: '', twitter_url: '', instagram_url: '', linkedin_url: '', youtube_url: '',
+  footer_logo: '', footer_img_1: '', footer_img_2: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -24,6 +29,10 @@ const FooterSectionForm = () => {
     }
     fetchData();
   }, []);
+
+  const handleFooterLogoChange = (e) => setFooterLogo(e.target.files[0]);
+const handleFooterImg1Change = (e) => setFooterImg1(e.target.files[0]);
+const handleFooterImg2Change = (e) => setFooterImg2(e.target.files[0]);
 
   const validateForm = () => {
     const errs = {};
@@ -52,6 +61,33 @@ const FooterSectionForm = () => {
       errs.youtube_url = "Enter a valid YouTube URL";
     }
 
+    const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+const maxSize = 2 * 1024 * 1024;
+
+if (footerLogo) {
+  if (!allowedImageTypes.includes(footerLogo.type)) {
+    errs.footer_logo = 'Invalid image format';
+  } else if (footerLogo.size > maxSize) {
+    errs.footer_logo = 'Image must be under 2MB';
+  }
+}
+
+if (footerImg1) {
+  if (!allowedImageTypes.includes(footerImg1.type)) {
+    errs.footer_img_1 = 'Invalid image format';
+  } else if (footerImg1.size > maxSize) {
+    errs.footer_img_1 = 'Image must be under 2MB';
+  }
+}
+
+if (footerImg2) {
+  if (!allowedImageTypes.includes(footerImg2.type)) {
+    errs.footer_img_2 = 'Invalid image format';
+  } else if (footerImg2.size > maxSize) {
+    errs.footer_img_2 = 'Image must be under 2MB';
+  }
+}
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -64,6 +100,9 @@ const FooterSectionForm = () => {
     Object.entries(formData).forEach(([key, value]) => {
       data.append(key, value);
     });
+    if (footerLogo) data.append('footer_logo', footerLogo);
+if (footerImg1) data.append('footer_img_1', footerImg1);
+if (footerImg2) data.append('footer_img_2', footerImg2);
     try {
       await axios.put(`${API_BASE_URL}/settings/home`, data);
       showNotification("Footer section form updated successfully!", "success");
@@ -146,6 +185,63 @@ const FooterSectionForm = () => {
             placeholder="Youtube Url" value={formData.youtube_url} onChange={handleInputChange} />
           {errors.youtube_url && <div className="invalid-feedback">{errors.youtube_url}</div>}
         </div>
+        <div className="col-md-4">
+  <label className="form-label">Footer Logo</label>
+  <input
+    type="file"
+    className={`form-control ${errors.footer_logo ? 'is-invalid' : ''}`}
+    onChange={handleFooterLogoChange}
+  />
+  {errors.footer_logo && <div className="invalid-feedback">{errors.footer_logo}</div>}
+
+  {footerLogo ? (
+    <img src={URL.createObjectURL(footerLogo)} width={80} className="mt-2" />
+  ) : formData.footer_logo ? (
+    <ImageWithFallback
+      src={`${ROOT_URL}/${formData.footer_logo}`}
+      width={80}
+      showFallback={false}
+    />
+  ) : null}
+</div>
+<div className="col-md-4">
+  <label className="form-label">Footer Image 1</label>
+  <input
+    type="file"
+    className={`form-control ${errors.footer_img_1 ? 'is-invalid' : ''}`}
+    onChange={handleFooterImg1Change}
+  />
+  {errors.footer_img_1 && <div className="invalid-feedback">{errors.footer_img_1}</div>}
+
+  {footerImg1 ? (
+    <img src={URL.createObjectURL(footerImg1)} width={80} className="mt-2" />
+  ) : formData.footer_img_1 ? (
+    <ImageWithFallback
+      src={`${ROOT_URL}/${formData.footer_img_1}`}
+      width={80}
+      showFallback={false}
+    />
+  ) : null}
+</div>
+<div className="col-md-4">
+  <label className="form-label">Footer Image 2</label>
+  <input
+    type="file"
+    className={`form-control ${errors.footer_img_2 ? 'is-invalid' : ''}`}
+    onChange={handleFooterImg2Change}
+  />
+  {errors.footer_img_2 && <div className="invalid-feedback">{errors.footer_img_2}</div>}
+
+  {footerImg2 ? (
+    <img src={URL.createObjectURL(footerImg2)} width={80} className="mt-2" />
+  ) : formData.footer_img_2 ? (
+    <ImageWithFallback
+      src={`${ROOT_URL}/${formData.footer_img_2}`}
+      width={80}
+      showFallback={false}
+    />
+  ) : null}
+</div>
         <div className="col-12 text-end mt-4">
           <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
             {submitting ? (
