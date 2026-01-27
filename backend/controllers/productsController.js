@@ -758,6 +758,7 @@ exports.updateProductsStatus = async (req, res) => {
     if (!products) return res.status(404).json({ message: 'Product not found' });
     products.status = status;
     await products.save();
+    // Product publish email flow moved to `updateAccountStatus` (send when is_approve === 1)
     res.json({ message: 'Status updated', products });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2017,35 +2018,41 @@ exports.updateAccountStatus = async (req, res) => {
     if (!products) return res.status(404).json({ message: 'Product not found' });
     products.is_approve = is_approve;
     await products.save();
-    // Send approval email when product is approved (template id 63)
-    try {
-      if (is_approve === 1) {
+
+    // Send product approval email (template 103) when product is approved (is_approve === 1)
+    if (is_approve === 1) {
+      try {
         const Emails = require('../models/Emails');
-        const template = await Emails.findByPk(63);
+        const template = await Emails.findByPk(103);
         let msgStr = template && template.message ? template.message.toString('utf8') : '';
-        if (!msgStr) msgStr = 'Your product has been approved.';
-        // Try to fetch user/company info
+        if (!msgStr) msgStr = 'Your product has been approved and is now public.';
+
         const user = await Users.findByPk(products.user_id);
         let companyName = '';
         try {
           const company = await CompanyInfo.findByPk(products.company_id);
           companyName = company?.organization_name || '';
-        } catch (e) { }
+        } catch (e) { /* ignore */ }
+
         const userFullName = user ? `${user.fname || ''} ${user.lname || ''}`.trim() : '';
 
         msgStr = msgStr
           .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName || '')
           .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, products.title || '')
-          .replace(/{{\s*USER_TYPE\s*}}/gi, user.user_type === 1 ? 'Seller' : 'Buyer')
-          .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '');
+          .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '')
+          .replace(/{{\s*CODE\s*}}/gi, products.code || '')
+          .replace(/{{\s*ARTICLE_NUMBER\s*}}/gi, products.article_number || '');
+
         try {
-          if (user && user.email) await sendMail({ to: user.email, subject: template?.subject || 'Product approved', message: msgStr });
-        } catch (err) {
-          console.error('Error sending product approval email:', err);
+          if (user && user.email) {
+            await sendMail({ to: user.email, subject: template?.subject || 'Product approved', message: msgStr });
+          }
+        } catch (mailErr) {
+          console.error('Error sending product approval email (template 103):', mailErr);
         }
+      } catch (e) {
+        console.error('Product approval email flow error:', e);
       }
-    } catch (e) {
-      console.error('Approval email flow error (product):', e);
     }
 
     res.json({ message: 'Product approved', products });
