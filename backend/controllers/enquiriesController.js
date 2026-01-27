@@ -2419,7 +2419,7 @@ exports.sendMessage = async (req, res) => {
       message,
     });
 
-
+ 
     const emailTemplate = await Emails.findByPk(67);
     if (!emailTemplate || !emailTemplate.message) {
       console.error('Email template 67 missing or empty');
