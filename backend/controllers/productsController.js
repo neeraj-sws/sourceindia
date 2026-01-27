@@ -152,16 +152,27 @@ exports.createProducts = async (req, res) => {
         const Emails = require('../models/Emails');
         const siteConfig = await getSiteConfig();
         const company = await CompanyInfo.findByPk(user.company_id);
-
+        const categories = await Categories.findByPk(category, { attributes: ['name'] });
+        const subCategories = await SubCategories.findByPk(sub_category, { attributes: ['name'] });
         // Always send user template (37) and admin template (36)
         const userTpl = await Emails.findByPk(37);
         if (userTpl) {
           let userMsg = userTpl.message ? userTpl.message.toString('utf8') : '';
           const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+          let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
+          if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
+
           userMsg = userMsg
-            .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+            .replace(/{{\s*SELLER_FNAME\s*}}/gi, userFullName)
             .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
-            .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '');
+            .replace(/{{\s*PRODUCT_NAME\s*}}/gi, title || '')
+            .replace(/{{\s*CATEGORY\s*}}/gi, categories?.name || '')
+            .replace(/{{\s*SUB_CATEGORY\s*}}/gi, subCategories?.name || '')
+            .replace(/{{\s*CODE\s*}}/gi, code || '')
+            .replace(/{{\s*ARTICLE_NUMBER\s*}}/gi, article_number || '')
+            .replace(/{{\s*DESCRIPTION\s*}}/gi, description || '')
+            .replace(/{{\s*URL\s*}}/gi, baseUrl)
+            .replace(/{{\s*SHORT_DESCRIPTION\s*}}/gi, short_description || '');
           await sendMail({ to: user.email, subject: userTpl.subject || 'Your product was added', message: userMsg });
         }
 
@@ -169,11 +180,20 @@ exports.createProducts = async (req, res) => {
         if (adminTpl) {
           let adminMsg = adminTpl.message ? adminTpl.message.toString('utf8') : '';
           const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+          // Ensure BASE_URL ends with a slash
+          let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
+          if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
           adminMsg = adminMsg
             .replace(/{{\s*ADMIN_NAME\s*}}/gi, 'Admin')
             .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
             .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
-            .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '')
+            .replace(/{{\s*PRODUCT_NAME\s*}}/gi, title || '')
+            .replace(/{{\s*CATEGORY\s*}}/gi, categories?.name || '')
+            .replace(/{{\s*CODE\s*}}/gi, code || '')
+            .replace(/{{\s*ARTICLE_NUMBER\s*}}/gi, article_number || '')
+            .replace(/{{\s*SUB_CATEGORY\s*}}/gi, subCategories?.name || '')
+            .replace(/{{\s*DESCRIPTION\s*}}/gi, description || '')
+            .replace(/{{\s*ADMIN_URL\s*}}/gi, baseUrl + 'admin')
             .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '');
           await sendMail({ to: siteConfig['site_email'], subject: adminTpl.subject || 'New company product added', message: adminMsg });
         }
@@ -186,10 +206,14 @@ exports.createProducts = async (req, res) => {
           if (userLastTpl) {
             let userMsg2 = userLastTpl.message ? userLastTpl.message.toString('utf8') : '';
             const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+
+            let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
+            if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
+
             userMsg2 = userMsg2
               .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
               .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
-              .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '');
+              .replace(/{{\s*URL\s*}}/gi, baseUrl);
             try {
               await sendMail({ to: user.email, subject: userLastTpl.subject || 'Product processed', message: userMsg2 });
             } catch (e) {
@@ -202,11 +226,18 @@ exports.createProducts = async (req, res) => {
           if (adminTpl102) {
             let adminMsg102 = adminTpl102.message ? adminTpl102.message.toString('utf8') : '';
             const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+
+            let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
+            if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
+
             adminMsg102 = adminMsg102
               .replace(/{{\s*ADMIN_NAME\s*}}/gi, 'Admin')
               .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+              .replace(/{{\s*USER_MOBILE\s*}}/gi, user.mobile || '')
               .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
               .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '')
+              .replace(/{{\s*USER_TYPE\s*}}/gi, user.user_type === 1 ? 'Seller' : 'Buyer')
+              .replace(/{{\s*ADMIN_URL\s*}}/gi, baseUrl + 'admin' || '')
               .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '');
             try {
               await sendMail({ to: siteConfig['site_email'], subject: adminTpl102.subject || 'Second product added', message: adminMsg102 });
@@ -1999,11 +2030,15 @@ exports.updateAccountStatus = async (req, res) => {
         try {
           const company = await CompanyInfo.findByPk(products.company_id);
           companyName = company?.organization_name || '';
-        } catch (e) {}
+        } catch (e) { }
         const userFullName = user ? `${user.fname || ''} ${user.lname || ''}`.trim() : '';
+        let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
+        if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
         msgStr = msgStr
-          .replace(/{{\s*USER_NAME\s*}}/gi, userFullName || '')
+          .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName || '')
           .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, products.title || '')
+          .replace(/{{\s*USER_TYPE\s*}}/gi, user.user_type === 1 ? 'Seller' : 'Buyer')
+          .replace(/{{\s*URL\s*}}/gi, baseUrl)
           .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '');
         try {
           if (user && user.email) await sendMail({ to: user.email, subject: template?.subject || 'Product approved', message: msgStr });
