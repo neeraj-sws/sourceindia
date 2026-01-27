@@ -1319,7 +1319,7 @@ exports.submitEnquiryuser = async (req, res) => {
        5. Get transporter & site config
     ------------------------------ */
 
-    
+
     /* ------------------------------
        6. Prepare emails (plain text)
     ------------------------------ */
@@ -1350,9 +1350,9 @@ exports.submitEnquiryuser = async (req, res) => {
       .replace("{{ ENQUIRY_DESCRIPTION }}", description)
       .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
 
-     /* ------------------------------
-       7. Send mails
-     ------------------------------ */
+    /* ------------------------------
+      7. Send mails
+    ------------------------------ */
     await sendMail({ to: receiverUser.email, subject: emailTemplate1.subject || 'New company enquiry received', message: receiverMail });
 
     if (senderUser.walkin_buyer !== 1) {
@@ -2419,7 +2419,7 @@ exports.sendMessage = async (req, res) => {
       message,
     });
 
- 
+
     const emailTemplate = await Emails.findByPk(67);
     if (!emailTemplate || !emailTemplate.message) {
       console.error('Email template 67 missing or empty');

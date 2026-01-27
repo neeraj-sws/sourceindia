@@ -1465,10 +1465,13 @@ exports.updateAccountStatus = async (req, res) => {
           // ignore
         }
         const userFullName = (sellers.fname || sellers.lname) ? `${sellers.fname || ''} ${sellers.lname || ''}`.trim() : (sellers.email || '');
+        let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
+        if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
+
         msgStr = msgStr
-          .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
-          .replace(/{{\s*USER_EMAIL\s*}}/gi, sellers.email || '')
-          .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '');
+          .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+          .replace(/{{\s*USER_TYPE\s*}}/gi, sellers.user_type === 1 ? 'Seller' : 'Buyer')
+          .replace(/{{\s*URL\s*}}/gi, baseUrl);
         try {
           await sendMail({ to: sellers.email, subject: template?.subject || 'Account approved', message: msgStr });
         } catch (err) {
@@ -1505,10 +1508,9 @@ exports.addOrUpdateSellerMessage = async (req, res) => {
         if (template && user && user.email) {
           let msgStr = template.message ? template.message.toString('utf8') : '';
           const userMessage = msgStr
-            .replace(/{{\s*USER_NAME\s*}}/gi, `${user.fname || ''} ${user.lname || ''}`.trim())
+            .replace(/{{\s*USER_FNAME\s*}}/gi, `${user.fname || ''} ${user.lname || ''}`.trim())
             .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '')
-            .replace(/{{\s*MESSAGE\s*}}/gi, message || '')
-            .replace(/{{\s*COMPANY_NAME\s*}}/gi, user?.user_company || '');
+            .replace(/{{\s*REASON\s*}}/gi, message || '');
           try { await sendMail({ to: user.email, subject: template?.subject || 'Application Declined', message: userMessage }); } catch (e) { console.error('Decline mail send error:', e.message || e); }
         }
       } catch (e) {
@@ -1530,10 +1532,9 @@ exports.addOrUpdateSellerMessage = async (req, res) => {
       if (template && user && user.email) {
         let msgStr = template.message ? template.message.toString('utf8') : '';
         const userMessage = msgStr
-          .replace(/{{\s*USER_NAME\s*}}/gi, `${user.fname || ''} ${user.lname || ''}`.trim())
+          .replace(/{{\s*USER_FNAME\s*}}/gi, `${user.fname || ''} ${user.lname || ''}`.trim())
           .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '')
-          .replace(/{{\s*MESSAGE\s*}}/gi, message || '')
-          .replace(/{{\s*COMPANY_NAME\s*}}/gi, user?.user_company || '');
+          .replace(/{{\s*REASON\s*}}/gi, message || '');
         try { await sendMail({ to: user.email, subject: template?.subject || 'Application Declined', message: userMessage }); } catch (e) { console.error('Decline mail send error:', e.message || e); }
       }
     } catch (e) {

@@ -475,12 +475,16 @@ exports.updateAccountStatus = async (req, res) => {
         try {
           const company = await CompanyInfo.findByPk(buyers.company_id);
           companyName = company?.organization_name || '';
-        } catch (e) {}
+        } catch (e) { }
         const userFullName = (buyers.fname || buyers.lname) ? `${buyers.fname || ''} ${buyers.lname || ''}`.trim() : (buyers.email || '');
+
+        let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
+        if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
+
         msgStr = msgStr
-          .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
-          .replace(/{{\s*USER_EMAIL\s*}}/gi, buyers.email || '')
-          .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '');
+          .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+          .replace(/{{\s*USER_TYPE\s*}}/gi, buyers.user_type === 1 ? 'Seller' : 'Buyer')
+          .replace(/{{\s*URL\s*}}/gi, baseUrl);
         try {
           await sendMail({ to: buyers.email, subject: template?.subject || 'Account approved', message: msgStr });
         } catch (err) {
