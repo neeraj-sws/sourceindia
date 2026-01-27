@@ -183,6 +183,24 @@ exports.sendOtp = async (req, res) => {
   }
 };
 
+// Resend OTP
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await EmailVerification.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const otp = generateOtp();
+    user.otp = otp;
+    
+    await user.save();
+    await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: 'User' } });
+
+    res.status(200).json({ message: 'OTP resent' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Verify OTP
 exports.verifyOtp = async (req, res) => {
   try {
