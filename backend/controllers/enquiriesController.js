@@ -1045,7 +1045,7 @@ exports.resendOtp = async (req, res) => {
     const otp = generateOtp();
     user.otp = otp;
     await user.save();
-    await sendOtp(email, otp);
+    await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: 'User' } });
     res.status(200).json({ message: 'OTP resent' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1194,7 +1194,7 @@ exports.storeEnquiry = async (req, res) => {
       is_new: 1,
       is_profile: 1,
       is_complete: 1,
-
+      is_walkin_new: 1,
     });
 
 
