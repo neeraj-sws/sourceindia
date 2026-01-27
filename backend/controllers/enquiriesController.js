@@ -2404,10 +2404,12 @@ exports.sendMessage = async (req, res) => {
     const sender = await Users.findByPk(logged_in_user_id);
     if (!sender) return res.status(404).json({ message: "User not found" });
 
+    // sender.company_id refers to CompanyInfo.id
+    const senderCompany = await CompanyInfo.findByPk(sender.company_id);
+
     // get company user
     const companyUser = await Users.findOne({ where: { company_id } });
     if (!companyUser) return res.status(404).json({ message: "Company user not found" });
-
 
 
     const data = await BuyerEnquiry.create({
@@ -2417,26 +2419,31 @@ exports.sendMessage = async (req, res) => {
       message,
     });
 
-
+ 
     const emailTemplate = await Emails.findByPk(67);
+    if (!emailTemplate || !emailTemplate.message) {
+      console.error('Email template 67 missing or empty');
+      return res.status(500).json({ error: 'Email template not found' });
+    }
 
     const msgStr = emailTemplate.message.toString('utf8');
 
     let userMessage = msgStr
-      .replace("{{ USER_NAME }}", `${sender.fname} ${sender.lname}`)
-      .replace("{{ RECIEVED_USER }}", `${companyUser.fname} ${companyUser.lname}`)
-      .replace("{{ TITTLE }}", title)
+      .replace("{{ USER_NAME }}", `${companyUser.fname} ${companyUser.lname}`)
+      .replace("{{ SENDER_USER }}", senderCompany?.organization_name || '')
+      .replace("{{ TITLE }}", title)
       .replace("{{ MESSAGE }}", message);
 
-    const { transporter, buildEmailHtml } = await getTransporter();
-    const htmlContent = await buildEmailHtml(userMessage);
-
-    await transporter.sendMail({
-      from: sender.email,
-      to: companyUser.email,
-      subject: emailTemplate?.subject,
-      html: htmlContent,
-    });
+    try {
+      await sendMail({
+        to: companyUser.email,
+        subject: emailTemplate?.subject || 'New message',
+        message: userMessage,
+      });
+    } catch (e) {
+      console.error('Failed to send mail via sendMail helper:', e);
+      return res.status(500).json({ error: 'Failed to send email' });
+    }
 
     return res.status(200).json({ message: "Mail sent successfully" });
 
