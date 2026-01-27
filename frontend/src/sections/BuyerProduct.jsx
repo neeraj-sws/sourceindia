@@ -71,7 +71,6 @@ const BuyerProduct = () => {
               slidesPerView={4}
               slidesPerGroup={1}
               loop={products && products.length > 4}
-              loopFillGroupWithBlank={false}
               className="similar-products-carousel"
               style={{ padding: "20px 0" }}
               breakpoints={{

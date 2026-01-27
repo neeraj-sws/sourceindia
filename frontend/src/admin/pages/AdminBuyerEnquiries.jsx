@@ -136,12 +136,12 @@ const AdminBuyerEnquiries = () => {
                                         <td>
                                             <i className="fadeIn animated bx bx-user"></i> {capitalize(row.sender?.fname)} {capitalize(row.sender?.lname)}
                                             <Link className="d-block" to={`/companies/${row.sender?.company_info?.organization_slug}`}>
-                                                <i class="fadeIn animated bx bx-building"></i>  {row.sender?.company_info?.organization_name ?? '-'}</Link>
+                                                <i className="fadeIn animated bx bx-building"></i>  {row.sender?.company_info?.organization_name ?? '-'}</Link>
                                         </td>
                                         <td>
                                             <i className="fadeIn animated bx bx-user"></i>  {capitalize(row.receiver?.fname)} {capitalize(row.receiver?.lname)}
                                             <Link className="d-block" to={`/companies/${row.receiver?.company_info?.organization_slug}`}>
-                                                <i class="fadeIn animated bx bx-building"></i>  {row.receiver?.company_info?.organization_name ?? '-'}</Link>
+                                                <i className="fadeIn animated bx bx-building"></i>  {row.receiver?.company_info?.organization_name ?? '-'}</Link>
                                         </td>
                                         <td>{row.title}</td>
                                         <td>{row.message}</td>

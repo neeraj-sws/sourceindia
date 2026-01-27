@@ -53,6 +53,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AlertProvider } from '../context/AlertContext';
 import { AuthProvider } from '../context/AuthContext';
+import { SiteSettingsProvider } from "../context/SiteSettingsContext";
 
 import PrivateRoute from '../routes/PrivateRoute';
 import PublicRoute from '../routes/PublicRoute';
@@ -69,6 +70,7 @@ function FrontLayout() {
     <>
       <AuthProvider>
         <AlertProvider>
+          <SiteSettingsProvider>
           <GlobalSeo />
           <ToastContainer position="top-right" autoClose={2000} hideProgressBar={true} />
           <Suspense fallback={<div></div>}>
@@ -126,6 +128,7 @@ function FrontLayout() {
             </Suspense>
           </main>
           {isUserLayout ? <UserFooter /> : <FrontFooter />}
+          </SiteSettingsProvider>
         </AlertProvider>
       </AuthProvider>
     </>

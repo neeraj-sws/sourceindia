@@ -4,6 +4,7 @@ const path = require('path');
 const SiteSettings = require('../models/SiteSettings');
 const HomeSettings = require('../models/HomeSettings');
 const UploadImage = require('../models/UploadImage');
+const FrontMenu = require('../models/FrontMenu');
 const getMulterUpload = require('../utils/upload');
 
 exports.getSiteSettings = async (req, res) => {
@@ -35,6 +36,92 @@ exports.getSiteSettings = async (req, res) => {
         formatted.favicon_file = faviconImage.file;
       }
     }
+    /* ---------------- FRONT MENU ---------------- */
+    const menus = await FrontMenu.findAll({
+      order: [
+        ['type', 'ASC'],
+        ['position', 'ASC'],
+      ],
+      raw: true,
+    });
+
+    const menuMap = {};
+    menus.forEach(menu => {
+      menu.sub_menu = [];
+      menuMap[menu.id] = menu;
+    });
+
+    const finalMenu = [];
+    menus.forEach(menu => {
+      if (menu.parent_id === 0) {
+        finalMenu.push(menu);
+      } else if (menuMap[menu.parent_id]) {
+        menuMap[menu.parent_id].sub_menu.push(menu);
+      }
+    });
+
+    formatted.front_menu = finalMenu;
+
+    /* ---------------- HOME SETTINGS ---------------- */
+    const homeSettings = await HomeSettings.findAll();
+const homeFormatted = {};
+
+const imageKeyMap = {
+  about_file_id: 'about_file',
+  footer_logo_id: 'footer_logo',
+  footer_img_1_id: 'footer_img_1',
+  footer_img_2_id: 'footer_img_2'
+};
+
+const imageIds = {};
+
+for (const setting of homeSettings) {
+  if (imageKeyMap[setting.meta_key]) {
+    imageIds[setting.meta_key] = setting.meta_value;
+    homeFormatted[setting.meta_key] = setting.meta_value;
+  } else {
+    homeFormatted[setting.meta_key] = setting.meta_value;
+  }
+}
+
+for (const [metaKey, fileKey] of Object.entries(imageKeyMap)) {
+  const fileId = imageIds[metaKey];
+  if (fileId) {
+    const image = await UploadImage.findByPk(fileId);
+    if (image) {
+      homeFormatted[fileKey] = image.file;
+    }
+  }
+}
+
+const allowedHomeKeys = [
+  'footer_logo',
+  'footer_heading',
+  'footershort_description',
+  'footer_img_1',
+  'footer_img_2',
+  'contactphone_1',
+  'contactphone_2',
+  'contactemail',
+  'contact_map_url',
+  'contactaddress',
+  'facebook_url',
+  'twitter_url',
+  'linkedin_url',
+  'youtube_url',
+  'instagram_url'
+];
+
+const filteredHomeSettings = {};
+
+allowedHomeKeys.forEach(key => {
+  if (homeFormatted[key] !== undefined) {
+    filteredHomeSettings[key] = homeFormatted[key];
+  }
+});
+
+    // ✅ Attach home settings
+    formatted.home_settings = filteredHomeSettings;
     res.json(formatted);
   } catch (err) {
     console.error(err);
@@ -94,19 +181,29 @@ exports.getHomeSettings = async (req, res) => {
   try {
     const settings = await HomeSettings.findAll();
     const formatted = {};
-    let aboutFileId = null;
+    const imageKeyMap = {
+      about_file_id: 'about_file',
+      footer_logo_id: 'footer_logo',
+      footer_img_1_id: 'footer_img_1',
+      footer_img_2_id: 'footer_img_2'
+    };
+
+    const imageIds = {};
     for (const setting of settings) {
-      if (setting.meta_key === 'about_file_id') {
-        aboutFileId = setting.meta_value;
-        formatted.about_file_id = aboutFileId;
+      if (imageKeyMap[setting.meta_key]) {
+        imageIds[setting.meta_key] = setting.meta_value;
+        formatted[setting.meta_key] = setting.meta_value;
       } else {
         formatted[setting.meta_key] = setting.meta_value;
       }
     }
-    if (aboutFileId) {
-      const aboutImage = await UploadImage.findByPk(aboutFileId);
-      if (aboutImage) {
-        formatted.about_file = aboutImage.file;
+    for (const [metaKey, fileKey] of Object.entries(imageKeyMap)) {
+      const fileId = imageIds[metaKey];
+      if (fileId) {
+        const image = await UploadImage.findByPk(fileId);
+        if (image) {
+          formatted[fileKey] = image.file;
+        }
       }
     }
     res.json(formatted);
@@ -119,7 +216,10 @@ exports.getHomeSettings = async (req, res) => {
 exports.updateHomeSettings = async (req, res) => {
   const upload = getMulterUpload('siteSettings');
   upload.fields([
-    { name: 'about_file', maxCount: 1 }
+    { name: 'about_file', maxCount: 1 },
+    { name: 'footer_logo', maxCount: 1 },
+    { name: 'footer_img_1', maxCount: 1 },
+    { name: 'footer_img_2', maxCount: 1 }
   ])(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
@@ -129,14 +229,20 @@ exports.updateHomeSettings = async (req, res) => {
       }
       const textSettingsToUpdate = req.body;
       const keys = Object.keys(textSettingsToUpdate).filter(
-        key => key !== 'about_file'
+        key =>
+          ![
+            'about_file',
+            'footer_logo',
+            'footer_img_1',
+            'footer_img_2'
+          ].includes(key)
       );
       if (keys.length) {
         const settings = await HomeSettings.findAll({
           where: { meta_key: keys }
         });
-        const foundKeys = settings.map(setting => setting.meta_key);
-        const missingKeys = keys.filter(key => !foundKeys.includes(key));
+        const foundKeys = settings.map(s => s.meta_key);
+        const missingKeys = keys.filter(k => !foundKeys.includes(k));
         if (missingKeys.length) {
           return res.status(404).json({
             message: `Settings not found for keys: ${missingKeys.join(', ')}`
@@ -147,10 +253,17 @@ exports.updateHomeSettings = async (req, res) => {
           await setting.save();
         }
       }
-      if (req.files?.about_file) {
-        const file = req.files.about_file[0];
-        await handleSettingImageUpdate('about_file_id', file, HomeSettings);
-      }
+      if (req.files?.about_file)
+        await handleSettingImageUpdate('about_file_id', req.files.about_file[0], HomeSettings);
+
+      if (req.files?.footer_logo)
+        await handleSettingImageUpdate('footer_logo_id', req.files.footer_logo[0], HomeSettings);
+
+      if (req.files?.footer_img_1)
+        await handleSettingImageUpdate('footer_img_1_id', req.files.footer_img_1[0], HomeSettings);
+
+      if (req.files?.footer_img_2)
+        await handleSettingImageUpdate('footer_img_2_id', req.files.footer_img_2[0], HomeSettings);
       res.json({ message: 'Home settings updated successfully' });
     } catch (err) {
       console.error(err);

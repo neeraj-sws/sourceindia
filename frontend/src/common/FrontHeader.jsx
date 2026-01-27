@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 import API_BASE_URL, { ROOT_URL } from "../config";
 import ImageWithFallback from "../admin/common/ImageWithFallback";
 import "../css/home.css";
@@ -15,59 +16,24 @@ const FrontHeader = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
-
+  const { siteSettings, loading } = useSiteSettings();
   const [logoUrl, setLogoUrl] = useState("/logo.png");
   const [mobile, setMobile] = useState("+91-11-41615985");
   const [menuItems, setMenuItems] = useState([]);
-  const [dropdownItems, setDropdownItems] = useState({});
   const [searchFocused, setSearchFocused] = useState(false);
 
   /* ================= SITE SETTINGS ================= */
   useEffect(() => {
-    const fetchMenu = async () => {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/front_menu`);
-        const mainMenu = response.data.filter((item) => item.parent_id === 0);
-        setMenuItems(mainMenu);
-        mainMenu.forEach(async (menu) => {
-          if (menu.type === 1) {
-            const dropdownResponse = await axios.get(
-              `${API_BASE_URL}/front_menu?parent_id=${menu.id}`
-            );
-            setDropdownItems((prev) => ({
-              ...prev,
-              [menu.id]: dropdownResponse.data,
-            }));
-          }
-        });
-      } catch (err) {
-        console.error("Error fetching menu data:", err);
-      }
-    };
-    fetchMenu();
-  }, []);
-  useEffect(() => {
-    const fetchSiteSettings = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/settings/site`);
-        const data = res.data;
-
-        if (data?.logo_file) {
-          setLogoUrl(`${ROOT_URL}/${data.logo_file}`);
-        }
-        if (data?.mobile) {
-          setMobile(data.mobile);
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchSiteSettings();
-  }, []);
+    if (!loading && siteSettings) {
+      if (siteSettings.logo_file) setLogoUrl(siteSettings.logo_file);
+      if (siteSettings.mobile) setMobile(siteSettings.mobile);
+      if (Array.isArray(siteSettings.front_menu)) setMenuItems(siteSettings.front_menu);
+    }
+  }, [siteSettings, loading]);
 
   /* ================= PROFILE ================= */
   useEffect(() => {
-    if (!token) return;
+    if (!isLoggedIn || !token) return;
 
     const fetchProfile = async () => {
       try {
@@ -77,6 +43,10 @@ const FrontHeader = () => {
         setUser(res.data.user);
       } catch (err) {
         console.error(err);
+        if (err.response?.status === 401) {
+        logout();           // 🔥 force logout
+        navigate("/login"); // optional redirect
+      }
       }
     };
 
@@ -352,15 +322,9 @@ const FrontHeader = () => {
                           menuItem.type === 1
                       )
                       .map((menuItem) => {
-                        const hasDropdown =
-                          dropdownItems[menuItem.id] &&
-                          dropdownItems[menuItem.id].length > 0;
+                        const hasDropdown = menuItem.sub_menu && menuItem.sub_menu.length > 0;
                         return (
-                          <li
-                            className={`nav-item ${hasDropdown ? "dropdown" : ""
-                              }`}
-                            key={menuItem.id}
-                          >
+                          <li className={`nav-item ${hasDropdown ? "dropdown" : ""}`} key={menuItem.id}>
                             {hasDropdown ? (
                               <>
                                 <a
@@ -377,12 +341,9 @@ const FrontHeader = () => {
                                   className="dropdown-menu"
                                   aria-labelledby={`dropdown-${menuItem.id}`}
                                 >
-                                  {dropdownItems[menuItem.id].map((subItem) => (
+                                  {menuItem.sub_menu.map((subItem) => (
                                     <li key={subItem.id}>
-                                      <Link
-                                        className="dropdown-item"
-                                        to={subItem.link}
-                                      >
+                                      <Link className="dropdown-item" to={subItem.link}>
                                         {subItem.name}
                                       </Link>
                                     </li>
@@ -404,8 +365,7 @@ const FrontHeader = () => {
           </div>
         </div>
       </header >
-      {searchFocused && <div className="search-overlay"></div>
-      }
+      {searchFocused && <div className="search-overlay"></div>}
     </>
   );
 };
