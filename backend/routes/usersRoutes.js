@@ -36,4 +36,5 @@ router.patch('/:id/status', usersController.updateUsersStatus);
 router.get('/insert-from-company', usersController.insertFromCompany);
 router.post('/verify-forgot-otp', usersController.verifyForgotOtp);
 router.post('/reset-password', usersController.resetPassword);
+router.post('/resend-otp', usersController.resendOtp);
 module.exports = router;
