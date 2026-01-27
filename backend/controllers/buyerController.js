@@ -478,13 +478,10 @@ exports.updateAccountStatus = async (req, res) => {
         } catch (e) { }
         const userFullName = (buyers.fname || buyers.lname) ? `${buyers.fname || ''} ${buyers.lname || ''}`.trim() : (buyers.email || '');
 
-        let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
-        if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
 
         msgStr = msgStr
           .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
-          .replace(/{{\s*USER_TYPE\s*}}/gi, buyers.user_type === 1 ? 'Seller' : 'Buyer')
-          .replace(/{{\s*URL\s*}}/gi, baseUrl);
+          .replace(/{{\s*USER_TYPE\s*}}/gi, buyers.user_type === 1 ? 'Seller' : 'Buyer');
         try {
           await sendMail({ to: buyers.email, subject: template?.subject || 'Account approved', message: msgStr });
         } catch (err) {

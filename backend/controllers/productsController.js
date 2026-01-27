@@ -116,9 +116,9 @@ exports.createProducts = async (req, res) => {
       const user = await Users.findOne({ where: { id: user_id } });
 
       // detect whether this is the company's first product
+
       const existingCount = await Products.count({ where: { company_id: user.company_id } });
       const isFirstProduct = existingCount === 0;
-
       const products = await Products.create({
         user_id,
         title,
@@ -147,7 +147,8 @@ exports.createProducts = async (req, res) => {
         company_id: user.company_id,
       });
 
-      // If this was the first product for the company, send notification emails
+      console.log('Is first product for company:', isFirstProduct);
+      console.log('Is existingCount:', existingCount);
       try {
         const Emails = require('../models/Emails');
         const siteConfig = await getSiteConfig();
@@ -159,8 +160,7 @@ exports.createProducts = async (req, res) => {
         if (userTpl) {
           let userMsg = userTpl.message ? userTpl.message.toString('utf8') : '';
           const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
-          let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
-          if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
+
 
           userMsg = userMsg
             .replace(/{{\s*SELLER_FNAME\s*}}/gi, userFullName)
@@ -171,7 +171,6 @@ exports.createProducts = async (req, res) => {
             .replace(/{{\s*CODE\s*}}/gi, code || '')
             .replace(/{{\s*ARTICLE_NUMBER\s*}}/gi, article_number || '')
             .replace(/{{\s*DESCRIPTION\s*}}/gi, description || '')
-            .replace(/{{\s*URL\s*}}/gi, baseUrl)
             .replace(/{{\s*SHORT_DESCRIPTION\s*}}/gi, short_description || '');
           await sendMail({ to: user.email, subject: userTpl.subject || 'Your product was added', message: userMsg });
         }
@@ -180,9 +179,7 @@ exports.createProducts = async (req, res) => {
         if (adminTpl) {
           let adminMsg = adminTpl.message ? adminTpl.message.toString('utf8') : '';
           const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
-          // Ensure BASE_URL ends with a slash
-          let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
-          if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
+
           adminMsg = adminMsg
             .replace(/{{\s*ADMIN_NAME\s*}}/gi, 'Admin')
             .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
@@ -193,13 +190,17 @@ exports.createProducts = async (req, res) => {
             .replace(/{{\s*ARTICLE_NUMBER\s*}}/gi, article_number || '')
             .replace(/{{\s*SUB_CATEGORY\s*}}/gi, subCategories?.name || '')
             .replace(/{{\s*DESCRIPTION\s*}}/gi, description || '')
-            .replace(/{{\s*ADMIN_URL\s*}}/gi, baseUrl + 'admin')
             .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '');
           await sendMail({ to: siteConfig['site_email'], subject: adminTpl.subject || 'New company product added', message: adminMsg });
         }
 
         // Additionally, when this is the company's second product, send template 65 to the company user
         // and send template 102 to admin. Keep existing guard (user.is_complete === 0 && user.is_delete === 0).
+
+        console.log('existingCount' + existingCount);
+        console.log('is_complete' + user.is_complete);
+        console.log('is_delete' + user.is_delete);
+
         if (existingCount === 1 && user && user.is_complete === 0 && user.is_delete === 0) {
           // Send template 65 to company user
           const userLastTpl = await Emails.findByPk(65);
@@ -207,13 +208,10 @@ exports.createProducts = async (req, res) => {
             let userMsg2 = userLastTpl.message ? userLastTpl.message.toString('utf8') : '';
             const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
 
-            let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
-            if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
 
             userMsg2 = userMsg2
               .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
-              .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
-              .replace(/{{\s*URL\s*}}/gi, baseUrl);
+              .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '');
             try {
               await sendMail({ to: user.email, subject: userLastTpl.subject || 'Product processed', message: userMsg2 });
             } catch (e) {
@@ -227,17 +225,15 @@ exports.createProducts = async (req, res) => {
             let adminMsg102 = adminTpl102.message ? adminTpl102.message.toString('utf8') : '';
             const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
 
-            let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
-            if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
 
             adminMsg102 = adminMsg102
               .replace(/{{\s*ADMIN_NAME\s*}}/gi, 'Admin')
-              .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+              .replace(/{{\s*USER_FNAME\s*}}/gi, user.fname)
+              .replace(/{{\s*USER_LNAME\s*}}/gi, user.lname)
               .replace(/{{\s*USER_MOBILE\s*}}/gi, user.mobile || '')
               .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
               .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '')
               .replace(/{{\s*USER_TYPE\s*}}/gi, user.user_type === 1 ? 'Seller' : 'Buyer')
-              .replace(/{{\s*ADMIN_URL\s*}}/gi, baseUrl + 'admin' || '')
               .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '');
             try {
               await sendMail({ to: siteConfig['site_email'], subject: adminTpl102.subject || 'Second product added', message: adminMsg102 });
@@ -245,17 +241,21 @@ exports.createProducts = async (req, res) => {
               console.error('Error sending template 102 to admin:', e);
             }
           }
+          let updateObj = {};
+          if (user.is_product === 0) updateObj.is_product = 1;
+          if (user.is_complete === 0) updateObj.is_complete = 1;
+          if (Object.keys(updateObj).length > 0) {
+            await user.update(updateObj);
+          }
         }
+
+
+
       } catch (mailErr) {
         console.error('Error sending product emails:', mailErr);
       }
 
-      let updateObj = {};
-      if (user.is_product === 0) updateObj.is_product = 1;
-      if (user.is_complete === 0) updateObj.is_complete = 1;
-      if (Object.keys(updateObj).length > 0) {
-        await user.update(updateObj);
-      }
+
 
       res.status(201).json({ message: 'Product created', products });
 
@@ -2032,13 +2032,11 @@ exports.updateAccountStatus = async (req, res) => {
           companyName = company?.organization_name || '';
         } catch (e) { }
         const userFullName = user ? `${user.fname || ''} ${user.lname || ''}`.trim() : '';
-        let baseUrl = process.env.BASE_URL || 'https://react.sourceindia-electronics.com/';
-        if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
+
         msgStr = msgStr
           .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName || '')
           .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, products.title || '')
           .replace(/{{\s*USER_TYPE\s*}}/gi, user.user_type === 1 ? 'Seller' : 'Buyer')
-          .replace(/{{\s*URL\s*}}/gi, baseUrl)
           .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '');
         try {
           if (user && user.email) await sendMail({ to: user.email, subject: template?.subject || 'Product approved', message: msgStr });
