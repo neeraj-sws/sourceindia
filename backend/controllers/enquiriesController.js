@@ -2536,10 +2536,100 @@ exports.updateEnquiriesApproveStatus = async (req, res) => {
     if (is_approve !== 0 && is_approve !== 1) {
       return res.status(400).json({ message: 'Invalid account status. Use 1 (Active) or 0 (Deactive).' });
     }
-    const enquiries = await Enquiries.findByPk(req.params.id);
+    const enquiries = await Enquiries.findByPk(req.params.id, {
+      include: [
+        { model: EnquiryUsers, as: 'enquiry_users', include: [{ model: Products, as: 'Products' }], required: false },
+        { model: Users, as: 'from_user', required: false },
+        { model: Users, as: 'to_user', required: false },
+      ],
+    });
     if (!enquiries) return res.status(404).json({ message: 'Enquiries not found' });
     enquiries.is_approve = is_approve;
     await enquiries.save();
+
+    // Attempt to send notification emails (do not fail the request if emails fail)
+    try {
+      const adminTemplateId = 73; // admin
+      const sellerTemplateId = 15; // seller
+      const buyerTemplateId = 16; // buyer
+
+      const productInfo = enquiries.enquiry_users && enquiries.enquiry_users[0];
+      const product = productInfo?.Products || null;
+      const productTitle = product?.title || productInfo?.product_name || '';
+      const productQuantity = enquiries.quantity || '';
+      const enquiryNumber = enquiries.enquiry_number || '';
+      const enquiryDescription = enquiries.description || '';
+
+      const buyer = enquiries.from_user || (await Users.findByPk(enquiries.user_id));
+      const seller = enquiries.to_user || (await Users.findOne({ where: { company_id: enquiries.company_id, is_seller: 1, status: 1 } }));
+
+      const buyerFullName = buyer ? `${buyer.fname || ''} ${buyer.lname || ''}`.trim() : '';
+      const sellerName = seller ? `${seller.fname || ''} ${seller.lname || ''}`.trim() : '';
+
+      // Admin email
+      try {
+        const adminTpl = await Emails.findByPk(adminTemplateId);
+        if (adminTpl && adminTpl.message) {
+          const msgStr = adminTpl.message.toString('utf8');
+          const siteConfig = await getSiteConfig();
+          let msg = msgStr
+            .replace('{{ ENQUIRY_NUMBER }}', enquiryNumber)
+            .replace('{{ PRODUCT_TITLE }}', productTitle)
+            .replace('{{ PRODUCT_QUANTITY }}', productQuantity)
+            .replace('{{ COMPANY_NAME }}', sellerName || '')
+            .replace('{{ BUYER_FULLNAME }}', buyerFullName)
+            .replace('{{ ENQUIRY_DESCRIPTION }}', enquiryDescription);
+
+          await sendMail({ to: siteConfig['site_email'], subject: adminTpl.subject || 'Enquiry Approval Update', message: msg });
+        }
+      } catch (e) {
+        console.error('Failed to send admin approval email:', e.message || e);
+      }
+
+      // Seller email
+      try {
+        if (seller && seller.email) {
+          const sellerTpl = await Emails.findByPk(sellerTemplateId);
+          if (sellerTpl && sellerTpl.message) {
+            const msgStr = sellerTpl.message.toString('utf8');
+            let msg = msgStr
+              .replace('{{ SELLER_NAME }}', sellerName || '')
+              .replace('{{ PRODUCT_TITLE }}', productTitle)
+              .replace('{{ PRODUCT_QUANTITY }}', productQuantity)
+              .replace('{{ BUYER_FULLNAME }}', buyerFullName)
+              .replace('{{ ENQUIRY_NUMBER }}', enquiryNumber)
+              .replace('{{ ENQUIRY_DESCRIPTION }}', enquiryDescription);
+
+            await sendMail({ to: seller.email, subject: sellerTpl.subject || 'Enquiry Approval Update', message: msg });
+          }
+        }
+      } catch (e) {
+        console.error('Failed to send seller approval email:', e.message || e);
+      }
+
+      // Buyer email
+      try {
+        if (buyer && buyer.email) {
+          const buyerTpl = await Emails.findByPk(buyerTemplateId);
+          if (buyerTpl && buyerTpl.message) {
+            const msgStr = buyerTpl.message.toString('utf8');
+            let msg = msgStr
+              .replace('{{ BUYER_FULLNAME }}', buyerFullName || '')
+              .replace('{{ PRODUCT_TITLE }}', productTitle)
+              .replace('{{ PRODUCT_QUANTITY }}', productQuantity)
+              .replace('{{ ENQUIRY_NUMBER }}', enquiryNumber)
+              .replace('{{ ENQUIRY_DESCRIPTION }}', enquiryDescription);
+
+            await sendMail({ to: buyer.email, subject: buyerTpl.subject || 'Enquiry Approval Update', message: msg });
+          }
+        }
+      } catch (e) {
+        console.error('Failed to send buyer approval email:', e.message || e);
+      }
+    } catch (emailErr) {
+      console.error('Error while preparing/sending approval emails:', emailErr.message || emailErr);
+    }
+
     res.json({ message: 'Approve status updated', enquiries });
   } catch (err) {
     res.status(500).json({ error: err.message });
