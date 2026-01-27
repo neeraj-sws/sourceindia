@@ -23,6 +23,21 @@ const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
 const BuyerEnquiry = require('../models/BuyerEnquiry');
 
+async function createUniqueSlug(name) {
+  if (!name) return '';
+  let slug = name.toLowerCase().trim()
+    .replace(/[^a-z0-9\s-]/g, '')  // remove invalid chars
+    .replace(/\s+/g, '-')          // replace spaces with -
+    .replace(/-+/g, '-');
+  let uniqueSlug = slug;
+  let counter = 1;
+  while (await CompanyInfo.findOne({ where: { organization_slug: uniqueSlug } })) {
+    uniqueSlug = `${slug}-${counter}`;
+    counter++;
+  }
+  return uniqueSlug;
+}
+
 // `sendMail` is provided by `helpers/mailHelper.js` and used below.
 exports.getEnquiryDetailsForAdmin = async (req, res) => {
   try {
@@ -951,7 +966,8 @@ exports.verifyEmail = async (req, res) => {
     // ✅ If user already exists
     if (user) {
       await user.update({ otp }, { transaction });
-      await sendOtp(email, otp);
+      const full_name = user.fname + ' ' + user.lname;
+      await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: full_name } });
 
       await transaction.commit();
       return res.status(200).json({
@@ -1003,7 +1019,7 @@ exports.verifyEmail = async (req, res) => {
       { transaction }
     );
 
-    await sendOtp(email, otp);
+    await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: 'User' } });
 
     await transaction.commit();
 
@@ -1021,12 +1037,11 @@ exports.verifyEmail = async (req, res) => {
 };
 
 // Resend OTP
-exports.resendOtp = async (req, res) => {
+exports.resendOtp = async (req, res) => { 
   try {
     const { email } = req.body;
     const user = await Users.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: 'User not found' });
-
     const otp = generateOtp();
     user.otp = otp;
     await user.save();
@@ -1102,6 +1117,7 @@ exports.storeEnquiry = async (req, res) => {
   try {
     const {
       userId,
+      quantity,
       name,
       company,
       phone,
@@ -1159,25 +1175,33 @@ exports.storeEnquiry = async (req, res) => {
     }
 
     /* -------------------- 4. Create buyer company -------------------- */
-    const newCompany = await CompanyInfo.create({
-      organization_name: company
-    });
-
+ 
     /* -------------------- 5. Update user -------------------- */
     const user = await Users.findByPk(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const companyInfoData = await CompanyInfo.findByPk(user.company_id);
+    
+    if (!companyInfoData) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
     await user.update({
       fname: name,
-      company_id: newCompany.id,
+      company_id: company_id,
       mobile: phone,
       is_new: 1,
       is_profile: 1,
       is_complete: 1,
 
     });
+
+
+    await companyInfoData.update({
+      organization_name: company,
+      organization_slug: await createUniqueSlug(company),
+     });
 
     /* -------------------- 6. Create enquiry -------------------- */
     const enquiry_number = Math.random()
@@ -1189,10 +1213,10 @@ exports.storeEnquiry = async (req, res) => {
       enquiry_number,
       company_id: enq_company_id,
       user_id: user.id,
-      buyer_company_id: newCompany.id,
+      buyer_company_id: companyInfoData.id,
       description,
       type: 1,
-      quantity: 1,
+      quantity,
       category: category_ids,
       sub_category: subcategory_ids,
       category_name: category_names,
@@ -1211,14 +1235,14 @@ exports.storeEnquiry = async (req, res) => {
     const enquiryMessage = await EnquiryMessage.create({
       seller_company_id: enq_company_id,
       enquiry_id: enquiry.id,
-      buyer_company_id: newCompany.id
+      buyer_company_id: companyInfoData.id
     });
 
     await UserMessage.create({
       user_id: user.id,
       message: description,
       message_id: enquiryMessage.id,
-      company_id: newCompany.id
+      company_id: companyInfoData.id
     });
 
     /* -------------------- 9. Send confirmation mail -------------------- */
