@@ -118,7 +118,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
 
   const handleResend = async () => {
     try {
-      await axios.post(`${API_BASE_URL}/resend-otp`, { email });
+      await axios.post(`${API_BASE_URL}/enquiries/resend-otp`, { email });
       setMessage('OTP resent successfully!');
       showNotification('OTP resent successfully!', 'success');
     } catch (err) {
@@ -164,6 +164,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
       await axios.post(`${API_BASE_URL}/enquiries/store`, {
         userId,
         name,
+        quantity,
         company,
         phone,
         description,
@@ -418,18 +419,18 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                                 required
                               />
                             </div>
-                            {!user?.company_info && (
-                              <div className="form-group mb-3">
-                                <input
-                                  type="text"
-                                  className="form-control"
-                                  placeholder="Company *"
-                                  value={company}
-                                  onChange={(e) => setCompany(e.target.value)}
-                                  required
-                                />
-                              </div>
-                            )}
+
+                            <div className="form-group mb-3">
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Company *"
+                                value={company}
+                                onChange={(e) => setCompany(e.target.value)}
+                                required
+                              />
+                            </div>
+
                             <div className="form-group mb-3">
                               <input
                                 type="number"

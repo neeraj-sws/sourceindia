@@ -23,6 +23,21 @@ const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
 const BuyerEnquiry = require('../models/BuyerEnquiry');
 
+async function createUniqueSlug(name) {
+  if (!name) return '';
+  let slug = name.toLowerCase().trim()
+    .replace(/[^a-z0-9\s-]/g, '')  // remove invalid chars
+    .replace(/\s+/g, '-')          // replace spaces with -
+    .replace(/-+/g, '-');
+  let uniqueSlug = slug;
+  let counter = 1;
+  while (await CompanyInfo.findOne({ where: { organization_slug: uniqueSlug } })) {
+    uniqueSlug = `${slug}-${counter}`;
+    counter++;
+  }
+  return uniqueSlug;
+}
+
 // `sendMail` is provided by `helpers/mailHelper.js` and used below.
 exports.getEnquiryDetailsForAdmin = async (req, res) => {
   try {
@@ -935,7 +950,7 @@ const sendSellerEnquiryConfirmation = async (user, enquiry) => {
     .replace("{{ USER_TYPE }}", user.is_seller == 1 ? 'Seller' : 'Buyer')
     .replace("{{ ENQUIRY_DESCRIPTION }}", enquiryDescription);
   const selleremail = sellerUser?.email;
-  await sendMail({ to: selleremail, subject: emailTemplate?.subject || "New Enquiry Received", message: userMessage });
+  //await sendMail({ to: selleremail, subject: emailTemplate?.subject || "New Enquiry Received", message: userMessage });
 };
 
 
@@ -951,7 +966,8 @@ exports.verifyEmail = async (req, res) => {
     // ✅ If user already exists
     if (user) {
       await user.update({ otp }, { transaction });
-      await sendOtp(email, otp);
+      const full_name = user.fname + ' ' + user.lname;
+      await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: full_name } });
 
       await transaction.commit();
       return res.status(200).json({
@@ -1003,7 +1019,7 @@ exports.verifyEmail = async (req, res) => {
       { transaction }
     );
 
-    await sendOtp(email, otp);
+    await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: 'User' } });
 
     await transaction.commit();
 
@@ -1026,11 +1042,10 @@ exports.resendOtp = async (req, res) => {
     const { email } = req.body;
     const user = await Users.findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: 'User not found' });
-
     const otp = generateOtp();
     user.otp = otp;
     await user.save();
-    await sendOtp(email, otp);
+    await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: 'User' } });
     res.status(200).json({ message: 'OTP resent' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1102,6 +1117,7 @@ exports.storeEnquiry = async (req, res) => {
   try {
     const {
       userId,
+      quantity,
       name,
       company,
       phone,
@@ -1159,9 +1175,6 @@ exports.storeEnquiry = async (req, res) => {
     }
 
     /* -------------------- 4. Create buyer company -------------------- */
-    const newCompany = await CompanyInfo.create({
-      organization_name: company
-    });
 
     /* -------------------- 5. Update user -------------------- */
     const user = await Users.findByPk(userId);
@@ -1169,14 +1182,25 @@ exports.storeEnquiry = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const companyInfoData = await CompanyInfo.findByPk(user.company_id);
+
+    if (!companyInfoData) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
     await user.update({
       fname: name,
-      company_id: newCompany.id,
+      company_id: companyInfoData.company_id,
       mobile: phone,
       is_new: 1,
       is_profile: 1,
       is_complete: 1,
+      is_walkin_new: 1,
+    });
 
+
+    await companyInfoData.update({
+      organization_name: company,
+      organization_slug: await createUniqueSlug(company),
     });
 
     /* -------------------- 6. Create enquiry -------------------- */
@@ -1189,10 +1213,10 @@ exports.storeEnquiry = async (req, res) => {
       enquiry_number,
       company_id: enq_company_id,
       user_id: user.id,
-      buyer_company_id: newCompany.id,
+      buyer_company_id: companyInfoData.id,
       description,
       type: 1,
-      quantity: 1,
+      quantity,
       category: category_ids,
       sub_category: subcategory_ids,
       category_name: category_names,
@@ -1211,14 +1235,14 @@ exports.storeEnquiry = async (req, res) => {
     const enquiryMessage = await EnquiryMessage.create({
       seller_company_id: enq_company_id,
       enquiry_id: enquiry.id,
-      buyer_company_id: newCompany.id
+      buyer_company_id: companyInfoData.id
     });
 
     await UserMessage.create({
       user_id: user.id,
       message: description,
       message_id: enquiryMessage.id,
-      company_id: newCompany.id
+      company_id: companyInfoData.id
     });
 
     /* -------------------- 9. Send confirmation mail -------------------- */
@@ -1319,7 +1343,7 @@ exports.submitEnquiryuser = async (req, res) => {
        5. Get transporter & site config
     ------------------------------ */
 
-    
+
     /* ------------------------------
        6. Prepare emails (plain text)
     ------------------------------ */
@@ -1335,7 +1359,7 @@ exports.submitEnquiryuser = async (req, res) => {
       .replace("{{ ENQUIRY_DESCRIPTION }}", description)
       .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
 
-    await sendMail({ to: senderUser.email, subject: 'Buyer company enquiry mail', message: userMessage });
+    await sendMail({ to: senderUser.email, subject: emailTemplate.subject || 'Buyer company enquiry mail', message: userMessage });
 
 
     const emailTemplate1 = await Emails.findByPk(15);
@@ -1350,13 +1374,19 @@ exports.submitEnquiryuser = async (req, res) => {
       .replace("{{ ENQUIRY_DESCRIPTION }}", description)
       .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
 
-     /* ------------------------------
-       7. Send mails
-     ------------------------------ */
-    await sendMail({ to: receiverUser.email, subject: 'New company enquiry received', message: receiverMail });
+    /* ------------------------------
+      7. Send mails
+    ------------------------------ */
+    await sendMail({ to: receiverUser.email, subject: emailTemplate1.subject || 'New company enquiry received', message: receiverMail });
 
     if (senderUser.walkin_buyer !== 1) {
       await sendSellerEnquiryConfirmation(senderUser, enquiry);
+    }
+    // Notify admin using template id 14
+    try {
+      await sendAdminEnquiryConfirmation(senderUser, enquiry);
+    } catch (e) {
+      console.error('Failed to send admin enquiry notification:', e.message || e);
     }
     /* ------------------------------
        8. Final response
@@ -2398,10 +2428,12 @@ exports.sendMessage = async (req, res) => {
     const sender = await Users.findByPk(logged_in_user_id);
     if (!sender) return res.status(404).json({ message: "User not found" });
 
+    // sender.company_id refers to CompanyInfo.id
+    const senderCompany = await CompanyInfo.findByPk(sender.company_id);
+
     // get company user
     const companyUser = await Users.findOne({ where: { company_id } });
     if (!companyUser) return res.status(404).json({ message: "Company user not found" });
-
 
 
     const data = await BuyerEnquiry.create({
@@ -2413,24 +2445,29 @@ exports.sendMessage = async (req, res) => {
 
 
     const emailTemplate = await Emails.findByPk(67);
+    if (!emailTemplate || !emailTemplate.message) {
+      console.error('Email template 67 missing or empty');
+      return res.status(500).json({ error: 'Email template not found' });
+    }
 
     const msgStr = emailTemplate.message.toString('utf8');
 
     let userMessage = msgStr
-      .replace("{{ USER_NAME }}", `${sender.fname} ${sender.lname}`)
-      .replace("{{ RECIEVED_USER }}", `${companyUser.fname} ${companyUser.lname}`)
-      .replace("{{ TITTLE }}", title)
+      .replace("{{ USER_NAME }}", `${companyUser.fname} ${companyUser.lname}`)
+      .replace("{{ SENDER_USER }}", senderCompany?.organization_name || '')
+      .replace("{{ TITLE }}", title)
       .replace("{{ MESSAGE }}", message);
 
-    const { transporter, buildEmailHtml } = await getTransporter();
-    const htmlContent = await buildEmailHtml(userMessage);
-
-    await transporter.sendMail({
-      from: sender.email,
-      to: companyUser.email,
-      subject: emailTemplate?.subject,
-      html: htmlContent,
-    });
+    try {
+      await sendMail({
+        to: companyUser.email,
+        subject: emailTemplate?.subject || 'New message',
+        message: userMessage,
+      });
+    } catch (e) {
+      console.error('Failed to send mail via sendMail helper:', e);
+      return res.status(500).json({ error: 'Failed to send email' });
+    }
 
     return res.status(200).json({ message: "Mail sent successfully" });
 

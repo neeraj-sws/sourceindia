@@ -183,6 +183,24 @@ exports.sendOtp = async (req, res) => {
   }
 };
 
+// Resend OTP
+exports.resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await EmailVerification.findOne({ where: { email } });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const otp = generateOtp();
+    user.otp = otp;
+    
+    await user.save();
+    await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: 'User' } });
+
+    res.status(200).json({ message: 'OTP resent' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Verify OTP
 exports.verifyOtp = async (req, res) => {
   try {
@@ -918,7 +936,6 @@ exports.updateProfile = async (req, res) => {
       if (adminemailTemplate) {
         const msgStr = adminemailTemplate.message.toString('utf8');
         const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
-        
 
         const user_type = user.is_seller === 1 ? 'Seller' : 'Buyer';
         const adminMessage = msgStr
@@ -929,8 +946,15 @@ exports.updateProfile = async (req, res) => {
           .replace('{{ USER_MOBILE }}', user.mobile)
           .replace('{{ USER_ADDRESS }}', user.address)
           .replace('{{ USER_TYPE }}', user_type);
-        
-        await sendMail({ to: siteConfig['site_email'], subject: adminemailTemplate.subject, message: adminMessage });
+
+        const htmlContent = await buildEmailHtml(adminMessage);
+
+        await transporter.sendMail({
+          from: `"Support Team" <info@sourceindia-electronics.com>`,
+          to: siteConfig['site_email'],
+          subject: adminemailTemplate.subject,
+          html: htmlContent,
+        });
       }
 
       const emailTemplate = await Emails.findByPk(33);

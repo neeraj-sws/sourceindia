@@ -51,8 +51,8 @@ const Registration = () => {
     const [verifyMessage, setVerifyMessage] = useState("");
     const [errors, setErrors] = useState({});
     const isValidEmail = (email) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-};
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    };
 
     useEffect(() => {
         if (isLoggedIn && user) {
@@ -251,6 +251,19 @@ const Registration = () => {
             showNotification(res.data.message || "OTP sent successfully", "success");
         } catch (err) {
             showNotification(err.response?.data?.error || "Error sending OTP", "error");
+        } finally {
+            setVerifyLoading(false);
+        }
+    };
+
+    const handleResend = async () => {
+        setVerifyLoading(true);
+        try {
+            await axios.post(`${API_BASE_URL}/signup/resend-otp`, { email: form.email });
+            setOtp("");
+            showNotification('OTP resent successfully!', 'success');
+        } catch (err) {
+            showNotification('Error resending OTP', 'error');
         } finally {
             setVerifyLoading(false);
         }
@@ -544,11 +557,16 @@ const Registration = () => {
                                         </button>
                                     )}
 
+
+                                    {/* Resend OTP functionality */}
                                     {!emailVerified && otpSent && (
                                         <>
                                             <input type="text" placeholder="Enter OTP" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\s/g, ""))} className="form-control w-25" />
-                                            <button type="button" className="btn btn-primary" onClick={verifyOtp} disabled={verifyLoading}>
+                                            <button type="button" className="btn btn-primary" onClick={verifyOtp} disabled={verifyLoading || otp.length === 0}>
                                                 {verifyLoading ? "Verifying..." : "Verify OTP"}
+                                            </button>
+                                            <button type="button" className="btn btn-link" style={{ whiteSpace: 'nowrap' }} onClick={handleResend} disabled={verifyLoading}>
+                                                Resend OTP
                                             </button>
                                         </>
                                     )}

@@ -116,9 +116,9 @@ exports.createProducts = async (req, res) => {
       const user = await Users.findOne({ where: { id: user_id } });
 
       // detect whether this is the company's first product
+
       const existingCount = await Products.count({ where: { company_id: user.company_id } });
       const isFirstProduct = existingCount === 0;
-
       const products = await Products.create({
         user_id,
         title,
@@ -147,21 +147,31 @@ exports.createProducts = async (req, res) => {
         company_id: user.company_id,
       });
 
-      // If this was the first product for the company, send notification emails
+      console.log('Is first product for company:', isFirstProduct);
+      console.log('Is existingCount:', existingCount);
       try {
         const Emails = require('../models/Emails');
         const siteConfig = await getSiteConfig();
         const company = await CompanyInfo.findByPk(user.company_id);
-
+        const categories = await Categories.findByPk(category, { attributes: ['name'] });
+        const subCategories = await SubCategories.findByPk(sub_category, { attributes: ['name'] });
         // Always send user template (37) and admin template (36)
         const userTpl = await Emails.findByPk(37);
         if (userTpl) {
           let userMsg = userTpl.message ? userTpl.message.toString('utf8') : '';
           const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+
+
           userMsg = userMsg
-            .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+            .replace(/{{\s*SELLER_FNAME\s*}}/gi, userFullName)
             .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
-            .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '');
+            .replace(/{{\s*PRODUCT_NAME\s*}}/gi, title || '')
+            .replace(/{{\s*CATEGORY\s*}}/gi, categories?.name || '')
+            .replace(/{{\s*SUB_CATEGORY\s*}}/gi, subCategories?.name || '')
+            .replace(/{{\s*CODE\s*}}/gi, code || '')
+            .replace(/{{\s*ARTICLE_NUMBER\s*}}/gi, article_number || '')
+            .replace(/{{\s*DESCRIPTION\s*}}/gi, description || '')
+            .replace(/{{\s*SHORT_DESCRIPTION\s*}}/gi, short_description || '');
           await sendMail({ to: user.email, subject: userTpl.subject || 'Your product was added', message: userMsg });
         }
 
@@ -169,27 +179,39 @@ exports.createProducts = async (req, res) => {
         if (adminTpl) {
           let adminMsg = adminTpl.message ? adminTpl.message.toString('utf8') : '';
           const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+
           adminMsg = adminMsg
             .replace(/{{\s*ADMIN_NAME\s*}}/gi, 'Admin')
             .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
             .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
-            .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '')
+            .replace(/{{\s*PRODUCT_NAME\s*}}/gi, title || '')
+            .replace(/{{\s*CATEGORY\s*}}/gi, categories?.name || '')
+            .replace(/{{\s*CODE\s*}}/gi, code || '')
+            .replace(/{{\s*ARTICLE_NUMBER\s*}}/gi, article_number || '')
+            .replace(/{{\s*SUB_CATEGORY\s*}}/gi, subCategories?.name || '')
+            .replace(/{{\s*DESCRIPTION\s*}}/gi, description || '')
             .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '');
           await sendMail({ to: siteConfig['site_email'], subject: adminTpl.subject || 'New company product added', message: adminMsg });
         }
 
         // Additionally, when this is the company's second product, send template 65 to the company user
         // and send template 102 to admin. Keep existing guard (user.is_complete === 0 && user.is_delete === 0).
+
+        console.log('existingCount' + existingCount);
+        console.log('is_complete' + user.is_complete);
+        console.log('is_delete' + user.is_delete);
+
         if (existingCount === 1 && user && user.is_complete === 0 && user.is_delete === 0) {
           // Send template 65 to company user
           const userLastTpl = await Emails.findByPk(65);
           if (userLastTpl) {
             let userMsg2 = userLastTpl.message ? userLastTpl.message.toString('utf8') : '';
             const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+
+
             userMsg2 = userMsg2
               .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
-              .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
-              .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '');
+              .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '');
             try {
               await sendMail({ to: user.email, subject: userLastTpl.subject || 'Product processed', message: userMsg2 });
             } catch (e) {
@@ -202,11 +224,16 @@ exports.createProducts = async (req, res) => {
           if (adminTpl102) {
             let adminMsg102 = adminTpl102.message ? adminTpl102.message.toString('utf8') : '';
             const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+
+
             adminMsg102 = adminMsg102
               .replace(/{{\s*ADMIN_NAME\s*}}/gi, 'Admin')
-              .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+              .replace(/{{\s*USER_FNAME\s*}}/gi, user.fname)
+              .replace(/{{\s*USER_LNAME\s*}}/gi, user.lname)
+              .replace(/{{\s*USER_MOBILE\s*}}/gi, user.mobile || '')
               .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
               .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '')
+              .replace(/{{\s*USER_TYPE\s*}}/gi, user.user_type === 1 ? 'Seller' : 'Buyer')
               .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '');
             try {
               await sendMail({ to: siteConfig['site_email'], subject: adminTpl102.subject || 'Second product added', message: adminMsg102 });
@@ -214,17 +241,21 @@ exports.createProducts = async (req, res) => {
               console.error('Error sending template 102 to admin:', e);
             }
           }
+          let updateObj = {};
+          if (user.is_product === 0) updateObj.is_product = 1;
+          if (user.is_complete === 0) updateObj.is_complete = 1;
+          if (Object.keys(updateObj).length > 0) {
+            await user.update(updateObj);
+          }
         }
+
+
+
       } catch (mailErr) {
         console.error('Error sending product emails:', mailErr);
       }
 
-      let updateObj = {};
-      if (user.is_product === 0) updateObj.is_product = 1;
-      if (user.is_complete === 0) updateObj.is_complete = 1;
-      if (Object.keys(updateObj).length > 0) {
-        await user.update(updateObj);
-      }
+
 
       res.status(201).json({ message: 'Product created', products });
 
@@ -1999,11 +2030,13 @@ exports.updateAccountStatus = async (req, res) => {
         try {
           const company = await CompanyInfo.findByPk(products.company_id);
           companyName = company?.organization_name || '';
-        } catch (e) {}
+        } catch (e) { }
         const userFullName = user ? `${user.fname || ''} ${user.lname || ''}`.trim() : '';
+
         msgStr = msgStr
-          .replace(/{{\s*USER_NAME\s*}}/gi, userFullName || '')
+          .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName || '')
           .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, products.title || '')
+          .replace(/{{\s*USER_TYPE\s*}}/gi, user.user_type === 1 ? 'Seller' : 'Buyer')
           .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '');
         try {
           if (user && user.email) await sendMail({ to: user.email, subject: template?.subject || 'Product approved', message: msgStr });
