@@ -18,6 +18,8 @@ const InterestSubCategories = require('../models/InterestSubCategories');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const Emails = require('../models/Emails');
+const { sendMail } = require('../helpers/mailHelper');
 
 async function createUniqueSlug(name) {
   if (!name) return '';
@@ -462,6 +464,33 @@ exports.updateAccountStatus = async (req, res) => {
     if (!buyers) return res.status(404).json({ message: 'Buyer not found' });
     buyers.is_approve = is_approve;
     await buyers.save();
+
+    // Send approval email when account is approved (template id 63)
+    try {
+      if (is_approve === 1) {
+        const template = await Emails.findByPk(63);
+        let msgStr = template && template.message ? template.message.toString('utf8') : '';
+        if (!msgStr) msgStr = 'Your account has been approved.';
+        let companyName = '';
+        try {
+          const company = await CompanyInfo.findByPk(buyers.company_id);
+          companyName = company?.organization_name || '';
+        } catch (e) {}
+        const userFullName = (buyers.fname || buyers.lname) ? `${buyers.fname || ''} ${buyers.lname || ''}`.trim() : (buyers.email || '');
+        msgStr = msgStr
+          .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+          .replace(/{{\s*USER_EMAIL\s*}}/gi, buyers.email || '')
+          .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '');
+        try {
+          await sendMail({ to: buyers.email, subject: template?.subject || 'Account approved', message: msgStr });
+        } catch (err) {
+          console.error('Error sending approval email to buyer:', err);
+        }
+      }
+    } catch (e) {
+      console.error('Approval email flow error (buyer):', e);
+    }
+
     res.json({ message: 'Account status updated', buyers });
   } catch (err) {
     res.status(500).json({ error: err.message });

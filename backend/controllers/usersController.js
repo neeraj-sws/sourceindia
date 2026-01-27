@@ -21,13 +21,12 @@ const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
 const SellerCategory = require('../models/SellerCategory');
-const { getTransporter } = require('../helpers/mailHelper');
-const { generateUniqueSlug } = require('../helpers/mailHelper');
+const { getTransporter, generateUniqueSlug, insertSellerCategoriesFromCompany, sendMail, sendOtp, generateOtp, getSiteConfig } = require('../helpers/mailHelper');
 const getMulterUpload = require('../utils/upload');
 const nodemailer = require('nodemailer');
 const secretKey = 'your_secret_key';
 const jwt = require('jsonwebtoken');
-const { insertSellerCategoriesFromCompany } = require('../helpers/mailHelper');
+
 
 
 exports.insertFromCompany = async (req, res) => {
@@ -157,42 +156,31 @@ exports.login = async (req, res) => {
 
 // Send OTP
 exports.sendOtp = async (req, res) => {
-  // try {
-  const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-  const existingUser = await Users.findOne({ where: { email } });
-  if (existingUser) return res.status(400).json({ error: "Email already taken" });
+    const existingUser = await Users.findOne({ where: { email } });
+    if (existingUser) return res.status(400).json({ error: "Email already taken" });
 
-  const otp = Math.floor(1000 + Math.random() * 9000);
+    const otp = generateOtp();
 
-  let emailRecord = await EmailVerification.findOne({ where: { email } });
-  if (emailRecord) {
-    emailRecord.otp = otp;
-    emailRecord.is_verify = 0;
-    await emailRecord.save();
-  } else {
-    emailRecord = await EmailVerification.create({ email, otp, is_verify: 0 });
+    let emailRecord = await EmailVerification.findOne({ where: { email } });
+    if (emailRecord) {
+      emailRecord.otp = otp;
+      emailRecord.is_verify = 0;
+      await emailRecord.save();
+    } else {
+      emailRecord = await EmailVerification.create({ email, otp, is_verify: 0 });
+    }
+
+    // Use centralized helper to send OTP (uses templateId 99 for signup flows)
+    await sendOtp(email, otp, { templateId: 99 });
+
+    return res.json({ message: "OTP sent successfully", user_id: emailRecord.id });
+  } catch (err) {
+    console.error('sendOtp error:', err);
+    return res.status(500).json({ error: "Failed to send OTP" });
   }
-
-  const emailTemplate = await Emails.findByPk(99);
-  const msgStr = emailTemplate.message.toString('utf8');
-  let userMessage = msgStr.replace("{{ USER_PASSWORD }}", otp);
-
-  const { transporter, buildEmailHtml } = await getTransporter();
-  const htmlContent = await buildEmailHtml(userMessage);
-
-  await transporter.sendMail({
-    from: `"OTP Verification" <info@sourceindia-electronics.com>`,
-    to: email,
-    subject: emailTemplate?.subject || "Verify your email",
-    html: htmlContent,
-  });
-
-  return res.json({ message: "OTP sent successfully", user_id: emailRecord.id });
-  // } catch (err) {
-  //   console.error(err);
-  //   return res.status(500).json({ error: "Failed to send OTP" });
-  // }
 };
 
 // Verify OTP
@@ -368,18 +356,16 @@ exports.register = async (req, res) => {
       }
     }
 
-    const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
-
     const user_type = category == 1 ? 'Seller' : 'Buyer';
     const adminEmailTemplateId = 6;
     const adminEmailData = await Emails.findByPk(adminEmailTemplateId);
     let adminMessage = "";
+    const siteConfig = await getSiteConfig();
 
     if (adminEmailData.message) {
-      // longblob / buffer ko string me convert karo
       const msgStr = adminEmailData.message.toString('utf8');
       adminMessage = msgStr
-        .replace("{{ ADMIN_NAME }}", siteConfig['title'])
+        .replace("{{ ADMIN_NAME }}", 'Admin')
         .replace("{{ USER_FNAME }}", `${fname} ${lname}`)
         .replace("{{ USER_EMAIL }}", email)
         .replace("{{ USER_TYPE }}", user_type)
@@ -387,23 +373,14 @@ exports.register = async (req, res) => {
     } else {
       adminMessage = `<p>New message from ${fname} ${lname}</p>`;
     }
-    const htmlContent = await buildEmailHtml(adminMessage);
-    const adminMailOptions = {
-      from: `"Support Team" <info@sourceindia-electronics.com>`,
-      to: siteConfig['site_email'],
-      subject: adminEmailData.subject,
-      html: htmlContent,
-    };
 
-    await transporter.sendMail(adminMailOptions);
+    await sendMail({ to: siteConfig['site_email'], subject: adminEmailData.subject, message: adminMessage });
 
     // user mail
-
     const userEmailTemplateId = 58;
     const userEmailData = await Emails.findByPk(userEmailTemplateId);
     let userMessage = "";
-    if (userEmailData.message) {
-      // longblob / buffer ko string me convert karo
+    if (userEmailData && userEmailData.message) {
       const usermsgStr = userEmailData.message.toString('utf8');
       userMessage = usermsgStr
         .replace("{{ USER_NAME }}", `${fname} ${lname}`)
@@ -413,14 +390,7 @@ exports.register = async (req, res) => {
       userMessage = `<p>New message from ${fname} ${lname}</p>`;
     }
 
-    const userMailOptions = {
-      from: `"Support Team" <info@sourceindia-electronics.com>`,
-      to: email,
-      subject: userEmailData.subject,
-      html: userMessage,
-    };
-
-    await transporter.sendMail(userMailOptions);
+    await sendMail({ to: email, subject: userEmailData?.subject || 'Welcome', message: userMessage });
 
     return res.status(200).json({
       success: true,
@@ -506,33 +476,16 @@ exports.sendLoginotp = async (req, res) => {
       return res.status(400).json({ message: 'Your account is not active.' });
     }
 
-    // Generate OTP
-    const otp = Math.floor(1234 + Math.random() * (9999 - 1234 + 1)).toString(); // 4-digit OTP
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10-minute expiry
+    // Generate OTP using centralized helper
+    const otp = generateOtp();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10-minute expiry (configurable later)
 
     // Store OTP in Users table
     await user.update({ otp, otp_expiry: otpExpiry });
 
-    // Send OTP email
-    const emailTemplate = await Emails.findByPk(87);
-    if (!emailTemplate) {
-      return res.status(404).json({ message: "Email template not found" });
-    }
-    const msgStr = emailTemplate.message.toString("utf8");
+    // Send OTP email via helper (templateId 87) and pass user's name for template replacements
     const full_name = user.fname + ' ' + user.lname;
-    const userMessage = msgStr
-      .replace("{{ USER_FNAME }}", full_name)
-      .replace("{{ OTP }}", otp);
-
-    const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
-    const htmlContent = await buildEmailHtml(userMessage);
-
-    await transporter.sendMail({
-      from: `"Support Team" <info@sourceindia-electronics.com>`,
-      to: email,
-      subject: emailTemplate.subject,
-      html: htmlContent,
-    });
+    await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: full_name } });
 
     return res.json({
       success: 1,
@@ -752,9 +705,9 @@ exports.updateProfileold = async (req, res) => {
         user_type = 'Buyer';
       }
 
-      const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
+      const siteConfig = await getSiteConfig();
       const adminMessage = msgStr
-        .replace("{{ ADMIN_NAME }}", siteConfig['title'])
+        .replace("{{ ADMIN_NAME }}", 'Admin')
         .replace("{{ USER_FNAME }}", user.fname)
         .replace("{{ USER_LNAME }}", user.lname)
         .replace("{{ USER_EMAIL }}", user.email)
@@ -762,14 +715,7 @@ exports.updateProfileold = async (req, res) => {
         .replace("{{ USER_ADDRESS }}", user.address)
         .replace("{{ USER_TYPE }}", user_type);
 
-      const htmlContent = await buildEmailHtml(adminMessage);
-
-      await transporter.sendMail({
-        from: `"Support Team" <info@sourceindia-electronics.com>`,
-        to: siteConfig['site_email'],
-        subject: adminemailTemplate.subject,
-        html: htmlContent,
-      });
+      await sendMail({ to: siteConfig['site_email'], subject: adminemailTemplate.subject, message: adminMessage });
 
 
       const emailTemplate = await Emails.findByPk(33);
@@ -782,12 +728,7 @@ exports.updateProfileold = async (req, res) => {
         .replace("{{ USER_FNAME }}", user.fname)
         .replace("{{ USER_LNAME }}", user.lname);
 
-      await transporter.sendMail({
-        from: `"Support Team" <info@sourceindia-electronics.com>`,
-        to: user.email,
-        subject: subject,
-        html: userMessage,
-      })
+      await sendMail({ to: user.email, subject: subject, message: userMessage });
 
       if (companyInfo) {
         const companyLogo = req.files?.company_logo?.[0];
@@ -978,10 +919,9 @@ exports.updateProfile = async (req, res) => {
         const msgStr = adminemailTemplate.message.toString('utf8');
         const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
 
-
         const user_type = user.is_seller === 1 ? 'Seller' : 'Buyer';
         const adminMessage = msgStr
-          .replace('{{ ADMIN_NAME }}', siteConfig['title'])
+          .replace('{{ ADMIN_NAME }}', 'Admin')
           .replace('{{ USER_FNAME }}', user.fname)
           .replace('{{ USER_LNAME }}', user.lname)
           .replace('{{ USER_EMAIL }}', user.email)
@@ -1001,21 +941,13 @@ exports.updateProfile = async (req, res) => {
 
       const emailTemplate = await Emails.findByPk(33);
       if (emailTemplate) {
-        const { transporter, buildEmailHtml } = await getTransporter();
-
         const usermsgStr = emailTemplate.message.toString('utf8');
         const subject = emailTemplate.subject.replace('{{ USER_FNAME }}', user.fname);
         const userMessage = usermsgStr
           .replace('{{ USER_FNAME }}', user.fname)
           .replace('{{ USER_LNAME }}', user.lname);
-        const htmlContent = await buildEmailHtml(userMessage);
 
-        await transporter.sendMail({
-          from: `"Support Team" <info@sourceindia-electronics.com>`,
-          to: user.email,
-          subject: subject,
-          html: htmlContent,
-        });
+        await sendMail({ to: user.email, subject: subject, message: userMessage });
       }
 
       // 🏢 Company info + category handling
@@ -1515,6 +1447,7 @@ exports.forgotPassword = async (req, res) => {
     }
     // Check if user exists
     const user = await Users.findOne({ where: { email, is_delete: 0 } });
+    console.log(user);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -1527,14 +1460,7 @@ exports.forgotPassword = async (req, res) => {
     let msgStr = emailTemplate ? emailTemplate.message.toString('utf8') : 'Your OTP is {{ OTP }}';
     const full_name = user.fname + ' ' + user.lname;
     const userMessage = msgStr.replace('{{ USER_FNAME }}', full_name).replace('{{ OTP }}', otp);
-    const { transporter, buildEmailHtml } = await getTransporter();
-    const htmlContent = await buildEmailHtml(userMessage);
-    await transporter.sendMail({
-      from: 'info@sourceindia-electronics.com',
-      to: email,
-      subject: emailTemplate ? emailTemplate.subject : 'Password Reset OTP',
-      html: htmlContent,
-    });
+    await sendMail({ to: email, subject: emailTemplate ? emailTemplate.subject : 'Password Reset OTP', message: userMessage });
     return res.json({ message: 'Check your email for reset instructions' });
   } catch (error) {
     console.error('Forgot password error:', error);

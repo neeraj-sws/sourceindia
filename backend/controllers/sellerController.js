@@ -21,7 +21,7 @@ const Products = require('../models/Products');
 const SellerCategory = require('../models/SellerCategory');
 const SellerMailHistories = require('../models/SellerMailHistories');
 const Emails = require('../models/Emails');
-const { getTransporter } = require('../helpers/mailHelper');
+const { getTransporter, sendMail, getSiteConfig } = require('../helpers/mailHelper');
 const SellerMessages = require('../models/SellerMessages');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
@@ -1225,14 +1225,7 @@ exports.sendMail = async (req, res) => {
         .replace("{{ APP_URL }}", APP_URL)
         .replace("{{ VERIFICATION_LINK }}", verification_link);
 
-      const { transporter, buildEmailHtml } = await getTransporter();
-      const htmlContent = await buildEmailHtml(userMessage);
-      await transporter.sendMail({
-        from: `<info@sourceindia-electronics.com>`,
-        to: seller.email,
-        subject: template?.subject,
-        html: htmlContent,
-      });
+      await sendMail({ to: seller.email, subject: template?.subject, message: userMessage });
 
 
 
@@ -1457,6 +1450,35 @@ exports.updateAccountStatus = async (req, res) => {
       sellers.approve_date = null;
     }
     await sellers.save();
+    // Send approval email when account is approved (template id 63)
+    try {
+      if (is_approve === 1) {
+        const template = await Emails.findByPk(63);
+        let msgStr = template && template.message ? template.message.toString('utf8') : '';
+        if (!msgStr) msgStr = 'Your account has been approved.';
+        // Try to fetch company name if available
+        let companyName = '';
+        try {
+          const company = await CompanyInfo.findByPk(sellers.company_id);
+          companyName = company?.organization_name || '';
+        } catch (e) {
+          // ignore
+        }
+        const userFullName = (sellers.fname || sellers.lname) ? `${sellers.fname || ''} ${sellers.lname || ''}`.trim() : (sellers.email || '');
+        msgStr = msgStr
+          .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+          .replace(/{{\s*USER_EMAIL\s*}}/gi, sellers.email || '')
+          .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '');
+        try {
+          await sendMail({ to: sellers.email, subject: template?.subject || 'Account approved', message: msgStr });
+        } catch (err) {
+          console.error('Error sending approval email to seller:', err);
+        }
+      }
+    } catch (e) {
+      console.error('Approval email flow error:', e);
+    }
+
     res.json({ message: 'Account status updated', sellers });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1468,6 +1490,8 @@ exports.addOrUpdateSellerMessage = async (req, res) => {
     const { user_id, message } = req.body;
     if (!user_id)
       return res.status(400).json({ message: "user_id is required" });
+    // load user (for sending decline email) when message is created/updated
+    const user = await Users.findByPk(user_id);
     const existing = await SellerMessages.findOne({
       where: { user_id }
     });
@@ -1475,6 +1499,22 @@ exports.addOrUpdateSellerMessage = async (req, res) => {
       existing.message = message;
       existing.updated_at = new Date();
       await existing.save();
+      // attempt to send decline email (template id 64) but do not block response
+      try {
+        const template = await Emails.findByPk(64);
+        if (template && user && user.email) {
+          let msgStr = template.message ? template.message.toString('utf8') : '';
+          const userMessage = msgStr
+            .replace(/{{\s*USER_NAME\s*}}/gi, `${user.fname || ''} ${user.lname || ''}`.trim())
+            .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '')
+            .replace(/{{\s*MESSAGE\s*}}/gi, message || '')
+            .replace(/{{\s*COMPANY_NAME\s*}}/gi, user?.user_company || '');
+          try { await sendMail({ to: user.email, subject: template?.subject || 'Application Declined', message: userMessage }); } catch (e) { console.error('Decline mail send error:', e.message || e); }
+        }
+      } catch (e) {
+        console.error('Decline template lookup/send error:', e.message || e);
+      }
+
       return res.json({
         message: 'Seller message updated',
         data: existing
@@ -1484,6 +1524,21 @@ exports.addOrUpdateSellerMessage = async (req, res) => {
       user_id,
       message
     });
+    // attempt to send decline email (template id 64) but do not block response
+    try {
+      const template = await Emails.findByPk(64);
+      if (template && user && user.email) {
+        let msgStr = template.message ? template.message.toString('utf8') : '';
+        const userMessage = msgStr
+          .replace(/{{\s*USER_NAME\s*}}/gi, `${user.fname || ''} ${user.lname || ''}`.trim())
+          .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '')
+          .replace(/{{\s*MESSAGE\s*}}/gi, message || '')
+          .replace(/{{\s*COMPANY_NAME\s*}}/gi, user?.user_company || '');
+        try { await sendMail({ to: user.email, subject: template?.subject || 'Application Declined', message: userMessage }); } catch (e) { console.error('Decline mail send error:', e.message || e); }
+      }
+    } catch (e) {
+      console.error('Decline template lookup/send error:', e.message || e);
+    }
     return res.json({
       message: 'Seller message created',
       data: created

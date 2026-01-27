@@ -18,6 +18,7 @@ const ItemSubCategory = require('../models/ItemSubCategory');
 const Items = require('../models/Items');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
+const { sendMail, getSiteConfig } = require('../helpers/mailHelper');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const Cities = require('../models/Cities');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
@@ -114,6 +115,10 @@ exports.createProducts = async (req, res) => {
       const fileIds = uploadImages.map(image => image.id).join(',');
       const user = await Users.findOne({ where: { id: user_id } });
 
+      // detect whether this is the company's first product
+      const existingCount = await Products.count({ where: { company_id: user.company_id } });
+      const isFirstProduct = existingCount === 0;
+
       const products = await Products.create({
         user_id,
         title,
@@ -141,6 +146,78 @@ exports.createProducts = async (req, res) => {
         item_id,
         company_id: user.company_id,
       });
+
+      // If this was the first product for the company, send notification emails
+      try {
+        const Emails = require('../models/Emails');
+        const siteConfig = await getSiteConfig();
+        const company = await CompanyInfo.findByPk(user.company_id);
+
+        // Always send user template (37) and admin template (36)
+        const userTpl = await Emails.findByPk(37);
+        if (userTpl) {
+          let userMsg = userTpl.message ? userTpl.message.toString('utf8') : '';
+          const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+          userMsg = userMsg
+            .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+            .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
+            .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '');
+          await sendMail({ to: user.email, subject: userTpl.subject || 'Your product was added', message: userMsg });
+        }
+
+        const adminTpl = await Emails.findByPk(36);
+        if (adminTpl) {
+          let adminMsg = adminTpl.message ? adminTpl.message.toString('utf8') : '';
+          const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+          adminMsg = adminMsg
+            .replace(/{{\s*ADMIN_NAME\s*}}/gi, 'Admin')
+            .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+            .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
+            .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '')
+            .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '');
+          await sendMail({ to: siteConfig['site_email'], subject: adminTpl.subject || 'New company product added', message: adminMsg });
+        }
+
+        // Additionally, when this is the company's second product, send template 65 to the company user
+        // and send template 102 to admin. Keep existing guard (user.is_complete === 0 && user.is_delete === 0).
+        if (existingCount === 1 && user && user.is_complete === 0 && user.is_delete === 0) {
+          // Send template 65 to company user
+          const userLastTpl = await Emails.findByPk(65);
+          if (userLastTpl) {
+            let userMsg2 = userLastTpl.message ? userLastTpl.message.toString('utf8') : '';
+            const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+            userMsg2 = userMsg2
+              .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+              .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
+              .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '');
+            try {
+              await sendMail({ to: user.email, subject: userLastTpl.subject || 'Product processed', message: userMsg2 });
+            } catch (e) {
+              console.error('Error sending template 65 to user:', e);
+            }
+          }
+
+          // Send template 102 to admin
+          const adminTpl102 = await Emails.findByPk(102);
+          if (adminTpl102) {
+            let adminMsg102 = adminTpl102.message ? adminTpl102.message.toString('utf8') : '';
+            const userFullName = (user.fname || user.lname) ? `${user.fname || ''} ${user.lname || ''}`.trim() : (user.email || '');
+            adminMsg102 = adminMsg102
+              .replace(/{{\s*ADMIN_NAME\s*}}/gi, 'Admin')
+              .replace(/{{\s*USER_NAME\s*}}/gi, userFullName)
+              .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
+              .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '')
+              .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '');
+            try {
+              await sendMail({ to: siteConfig['site_email'], subject: adminTpl102.subject || 'Second product added', message: adminMsg102 });
+            } catch (e) {
+              console.error('Error sending template 102 to admin:', e);
+            }
+          }
+        }
+      } catch (mailErr) {
+        console.error('Error sending product emails:', mailErr);
+      }
 
       let updateObj = {};
       if (user.is_product === 0) updateObj.is_product = 1;
@@ -1909,6 +1986,35 @@ exports.updateAccountStatus = async (req, res) => {
     if (!products) return res.status(404).json({ message: 'Product not found' });
     products.is_approve = is_approve;
     await products.save();
+    // Send approval email when product is approved (template id 63)
+    try {
+      if (is_approve === 1) {
+        const Emails = require('../models/Emails');
+        const template = await Emails.findByPk(63);
+        let msgStr = template && template.message ? template.message.toString('utf8') : '';
+        if (!msgStr) msgStr = 'Your product has been approved.';
+        // Try to fetch user/company info
+        const user = await Users.findByPk(products.user_id);
+        let companyName = '';
+        try {
+          const company = await CompanyInfo.findByPk(products.company_id);
+          companyName = company?.organization_name || '';
+        } catch (e) {}
+        const userFullName = user ? `${user.fname || ''} ${user.lname || ''}`.trim() : '';
+        msgStr = msgStr
+          .replace(/{{\s*USER_NAME\s*}}/gi, userFullName || '')
+          .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, products.title || '')
+          .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '');
+        try {
+          if (user && user.email) await sendMail({ to: user.email, subject: template?.subject || 'Product approved', message: msgStr });
+        } catch (err) {
+          console.error('Error sending product approval email:', err);
+        }
+      }
+    } catch (e) {
+      console.error('Approval email flow error (product):', e);
+    }
+
     res.json({ message: 'Product approved', products });
   } catch (err) {
     res.status(500).json({ error: err.message });
