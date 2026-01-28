@@ -1,18 +1,58 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+
+// Simple in-memory cache for image existence checks
+const _imageExistenceCache = new Map();
 
 const ImageWithFallback = ({ src, alt = 'Image', width = 80, height = 80, showFallback = true }) => {
   const [imageExists, setImageExists] = useState(false);
 
   useEffect(() => {
-    const checkImage = async () => {
-      try {
-        await axios.head(src); setImageExists(true);
-      } catch {
-        setImageExists(false);
-      }
+    if (!src || src === 'null' || src.endsWith('/null')) {
+      setImageExists(false);
+      return;
+    }
+
+    if (_imageExistenceCache.has(src)) {
+      setImageExists(Boolean(_imageExistenceCache.get(src)));
+      return;
+    }
+
+    let mounted = true;
+    const img = new Image();
+    let timeoutId = null;
+
+    const onLoad = () => {
+      if (!mounted) return;
+      _imageExistenceCache.set(src, true);
+      setImageExists(true);
+      cleanup();
     };
-    if (src) checkImage();
+
+    const onError = () => {
+      if (!mounted) return;
+      _imageExistenceCache.set(src, false);
+      setImageExists(false);
+      cleanup();
+    };
+
+    const cleanup = () => {
+      try { img.onload = null; img.onerror = null; } catch (e) {}
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+
+    img.onload = onLoad;
+    img.onerror = onError;
+    // small timeout to guard against very slow responses
+    timeoutId = setTimeout(() => {
+      if (!mounted) return;
+      _imageExistenceCache.set(src, false);
+      setImageExists(false);
+      cleanup();
+    }, 5000);
+
+    img.src = src;
+
+    return () => { mounted = false; cleanup(); };
   }, [src]);
 
   if (!imageExists) {

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+
+// Simple in-memory cache for image existence checks to avoid repeated network probes
+const _imageExistenceCache = new Map();
 
 const ImageFront = ({
   src,
@@ -19,16 +21,49 @@ const ImageFront = ({
       return;
     }
 
-    const checkImage = async () => {
-      try {
-        await axios.head(src);
-        setImageExists(true);
-      } catch {
-        setImageExists(false);
-      }
+    // Return cached result when available
+    if (_imageExistenceCache.has(src)) {
+      setImageExists(Boolean(_imageExistenceCache.get(src)));
+      return;
+    }
+
+    let mounted = true;
+    const img = new Image();
+    let timeoutId = null;
+
+    const onLoad = () => {
+      if (!mounted) return;
+      _imageExistenceCache.set(src, true);
+      setImageExists(true);
+      cleanup();
     };
 
-    checkImage();
+    const onError = () => {
+      if (!mounted) return;
+      _imageExistenceCache.set(src, false);
+      setImageExists(false);
+      cleanup();
+    };
+
+    const cleanup = () => {
+      try { img.onload = null; img.onerror = null; } catch (e) {}
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+
+    img.onload = onLoad;
+    img.onerror = onError;
+    // small timeout to guard against very slow responses (treat as not available)
+    timeoutId = setTimeout(() => {
+      if (!mounted) return;
+      _imageExistenceCache.set(src, false);
+      setImageExists(false);
+      cleanup();
+    }, 5000);
+
+    // start loading image (this triggers browser image fetch, not a HEAD request)
+    img.src = src;
+
+    return () => { mounted = false; cleanup(); };
   }, [src]);
 
   if (!imageExists) {
