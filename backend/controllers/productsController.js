@@ -1369,6 +1369,7 @@ exports.getCompanyInfoById = async (req, res) => {
     }
 
     const response = {
+  id: data.id,
   organization_name: data.organization_name,
   brief_company: data.brief_company,
   company_logo_file: data.company_logo_file,
