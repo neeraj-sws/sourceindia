@@ -11,7 +11,7 @@ export const SiteSettingsProvider = ({ children }) => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/settings/site`);
+        const response = await axios.get(`${API_BASE_URL}/settings/front-site`);
         setSiteSettings(response.data);
 
         // Set favicon dynamically

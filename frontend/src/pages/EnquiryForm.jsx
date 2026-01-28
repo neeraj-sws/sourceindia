@@ -33,7 +33,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
   const { user, login } = useAuth();
 
   useEffect(() => {
-    if (user && user.walkin_buyer === 1 && user.is_walkin_new  === 0 && show) {
+    if (user && user.walkin_buyer === 1 && user.is_walkin_new === 0 && show) {
       setStep(3);
       setUserId(user.id);
     }
@@ -174,6 +174,10 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
       setMessage('Enquiry submitted successfully!');
       showNotification('Enquiry submitted successfully!', 'success');
       setExists(true);
+      // Refresh the page after successful submit
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 2000);
     } catch (err) {
       setError('Error submitting enquiry');
       showNotification('Error submitting enquiry', 'error');
@@ -202,7 +206,8 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
       setMessage('Enquiry submitted successfully!');
       showNotification('Enquiry submitted successfully!', 'success');
       setExists(true);
-      // setTimeout(onHide, 2000);
+      // Refresh the page after successful submit
+      window.location.reload();
     } catch (err) {
       setError('Error submitting enquiry');
       showNotification('Error submitting enquiry', 'error');
@@ -231,7 +236,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
   return (
     <div className={`modal fade ${show ? 'show' : ''}`} id="enquiryModal" tabIndex="-1" role="dialog" aria-labelledby="enquiryModalLabel" aria-hidden={!show} style={{ display: show ? 'block' : 'none', backgroundColor: show ? '#0606068c' : 'none' }}>
       <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
-        {!user || (user.walkin_buyer === 1 && user.is_walkin_new  === 0) ? (
+        {!user || (user.walkin_buyer === 1 && user.is_walkin_new === 0) ? (
           <div className="modal-content">
 
             <div className="modal-body p-0">

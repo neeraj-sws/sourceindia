@@ -2590,6 +2590,21 @@ exports.updateEnquiriesApproveStatus = async (req, res) => {
       const buyer = enquiries.from_user || (await Users.findByPk(enquiries.user_id));
       const seller = enquiries.to_user || (await Users.findOne({ where: { company_id: enquiries.company_id, is_seller: 1, status: 1 } }));
 
+
+      // Get seller company name
+      let companyName = '';
+      if (seller && seller.company_id) {
+        const sellerCompanyInfo = await CompanyInfo.findByPk(seller.company_id);
+        companyName = sellerCompanyInfo?.organization_name || '';
+      }
+
+      // Get buyer company name
+      let companyBuyerName = '';
+      if (buyer && buyer.company_id) {
+        const buyerCompanyInfo = await CompanyInfo.findByPk(buyer.company_id);
+        companyBuyerName = buyerCompanyInfo?.organization_name || '';
+      }
+
       const buyerFullName = buyer ? `${buyer.fname || ''} ${buyer.lname || ''}`.trim() : '';
       const sellerName = seller ? `${seller.fname || ''} ${seller.lname || ''}`.trim() : '';
 
@@ -2600,11 +2615,17 @@ exports.updateEnquiriesApproveStatus = async (req, res) => {
           const msgStr = adminTpl.message.toString('utf8');
           const siteConfig = await getSiteConfig();
           let msg = msgStr
+            .replace('{{ SELLER_FULLNAME }}', sellerName || '')
+            .replace('{{ SELLER_EMAIL }}', seller.email || '')
+            .replace('{{ SELLER_MOBILE }}', seller.mobile || '')
             .replace('{{ ENQUIRY_NUMBER }}', enquiryNumber)
             .replace('{{ PRODUCT_TITLE }}', productTitle)
             .replace('{{ PRODUCT_QUANTITY }}', productQuantity)
-            .replace('{{ COMPANY_NAME }}', sellerName || '')
+            .replace('{{ VENDOR_COMPANY_NAME }}', companyName)
+            .replace('{{ BUYER_COMPANY_NAME }}', companyBuyerName)
             .replace('{{ BUYER_FULLNAME }}', buyerFullName)
+            .replace('{{ BUYER_EMAIL }}', buyer.email)
+            .replace('{{ BUYER_MOBILE }}', buyer.mobile)
             .replace('{{ ENQUIRY_DESCRIPTION }}', enquiryDescription);
 
           await sendMail({ to: siteConfig['site_email'], subject: adminTpl.subject || 'Enquiry Approval Update', message: msg });
@@ -2623,7 +2644,10 @@ exports.updateEnquiriesApproveStatus = async (req, res) => {
               .replace('{{ SELLER_NAME }}', sellerName || '')
               .replace('{{ PRODUCT_TITLE }}', productTitle)
               .replace('{{ PRODUCT_QUANTITY }}', productQuantity)
+              .replace('{{ VENDOR_COMPANY_NAME }}', companyName)
               .replace('{{ BUYER_FULLNAME }}', buyerFullName)
+              .replace('{{ BUYER_EMAIL }}', buyer.email)
+              .replace('{{ BUYER_MOBILE }}', buyer.mobile)
               .replace('{{ ENQUIRY_NUMBER }}', enquiryNumber)
               .replace('{{ ENQUIRY_DESCRIPTION }}', enquiryDescription);
 
@@ -2641,10 +2665,14 @@ exports.updateEnquiriesApproveStatus = async (req, res) => {
           if (buyerTpl && buyerTpl.message) {
             const msgStr = buyerTpl.message.toString('utf8');
             let msg = msgStr
-              .replace('{{ BUYER_FULLNAME }}', buyerFullName || '')
+              .replace('{{ BUYER_FNAME }}', buyerFullName || '')
               .replace('{{ PRODUCT_TITLE }}', productTitle)
               .replace('{{ PRODUCT_QUANTITY }}', productQuantity)
               .replace('{{ ENQUIRY_NUMBER }}', enquiryNumber)
+              .replace('{{ VENDOR_COMPANY_NAME }}', companyName)
+              .replace('{{ SELLER_NAME }}', sellerName)
+              .replace('{{ VENDOR_EMAIL }}', seller.email)
+              .replace('{{ VENDOR_MOBILE }}', seller.mobile)
               .replace('{{ ENQUIRY_DESCRIPTION }}', enquiryDescription);
 
             await sendMail({ to: buyer.email, subject: buyerTpl.subject || 'Enquiry Approval Update', message: msg });

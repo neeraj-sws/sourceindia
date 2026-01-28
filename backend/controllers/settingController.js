@@ -9,11 +9,25 @@ const getMulterUpload = require('../utils/upload');
 
 exports.getSiteSettings = async (req, res) => {
   try {
-    const settings = await SiteSettings.findAll();
+    const settings = await SiteSettings.findAll({
+      attributes: ['id', 'meta_key', 'meta_value'], // add/remove fields as needed
+    });
     const formatted = {};
     let logoFileId = null;
     let faviconFileId = null;
+    const excludeKeys = [
+      'smtp_password',
+      'smtp_username',
+      'smtp_server_address',
+      'smtp_port',
+      'smtp_from_address',
+      'smtp_auto_reply',
+      'sms_password',
+      'sms_pid',
+      // aur bhi jo nahi chahiye, yahan add karen
+    ];
     for (const setting of settings) {
+      if (excludeKeys.includes(setting.meta_key)) continue;
       if (setting.meta_key === 'logo_file_id') {
         logoFileId = setting.meta_value;
         formatted.logo_file_id = logoFileId;
@@ -38,6 +52,7 @@ exports.getSiteSettings = async (req, res) => {
     }
     /* ---------------- FRONT MENU ---------------- */
     const menus = await FrontMenu.findAll({
+      attributes: ['id', 'name', 'type', 'position', 'parent_id', 'url'], // add/remove fields as needed
       order: [
         ['type', 'ASC'],
         ['position', 'ASC'],
@@ -64,61 +79,205 @@ exports.getSiteSettings = async (req, res) => {
 
     /* ---------------- HOME SETTINGS ---------------- */
     const homeSettings = await HomeSettings.findAll();
-const homeFormatted = {};
+    const homeFormatted = {};
 
-const imageKeyMap = {
-  about_file_id: 'about_file',
-  footer_logo_id: 'footer_logo',
-  footer_img_1_id: 'footer_img_1',
-  footer_img_2_id: 'footer_img_2'
+    const imageKeyMap = {
+      about_file_id: 'about_file',
+      footer_logo_id: 'footer_logo',
+      footer_img_1_id: 'footer_img_1',
+      footer_img_2_id: 'footer_img_2'
+    };
+
+    const imageIds = {};
+
+    for (const setting of homeSettings) {
+      if (imageKeyMap[setting.meta_key]) {
+        imageIds[setting.meta_key] = setting.meta_value;
+        homeFormatted[setting.meta_key] = setting.meta_value;
+      } else {
+        homeFormatted[setting.meta_key] = setting.meta_value;
+      }
+    }
+
+    for (const [metaKey, fileKey] of Object.entries(imageKeyMap)) {
+      const fileId = imageIds[metaKey];
+      if (fileId) {
+        const image = await UploadImage.findByPk(fileId);
+        if (image) {
+          homeFormatted[fileKey] = image.file;
+        }
+      }
+    }
+
+    const allowedHomeKeys = [
+      'footer_logo',
+      'footer_heading',
+      'footershort_description',
+      'footer_img_1',
+      'footer_img_2',
+      'contactphone_1',
+      'contactphone_2',
+      'contactemail',
+      'contact_map_url',
+      'contactaddress',
+      'facebook_url',
+      'twitter_url',
+      'linkedin_url',
+      'youtube_url',
+      'instagram_url'
+    ];
+
+    const filteredHomeSettings = {};
+
+    allowedHomeKeys.forEach(key => {
+      if (homeFormatted[key] !== undefined) {
+        filteredHomeSettings[key] = homeFormatted[key];
+      }
+    });
+
+    // ✅ Attach home settings
+    formatted.home_settings = filteredHomeSettings;
+    res.json(formatted);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
 };
 
-const imageIds = {};
 
-for (const setting of homeSettings) {
-  if (imageKeyMap[setting.meta_key]) {
-    imageIds[setting.meta_key] = setting.meta_value;
-    homeFormatted[setting.meta_key] = setting.meta_value;
-  } else {
-    homeFormatted[setting.meta_key] = setting.meta_value;
-  }
-}
-
-for (const [metaKey, fileKey] of Object.entries(imageKeyMap)) {
-  const fileId = imageIds[metaKey];
-  if (fileId) {
-    const image = await UploadImage.findByPk(fileId);
-    if (image) {
-      homeFormatted[fileKey] = image.file;
+exports.getFrontSiteSettings = async (req, res) => {
+  try {
+    const settings = await SiteSettings.findAll();
+    const formatted = {};
+    let logoFileId = null;
+    let faviconFileId = null;
+    const excludeKeys = [
+      'smtp_password',
+      'smtp_username',
+      'smtp_server_address',
+      'smtp_port',
+      'smtp_from_address',
+      'smtp_auto_reply',
+      'sms_password',
+      'sms_pid',
+      'site_email',
+      'sms_dlt_template_id',
+      'sms_route',
+      'sms_url',
+      'sms_username',
+      'smtp_from_name',
+      'smtp_tls',
+      // aur bhi jo nahi chahiye, yahan add karen
+    ];
+    for (const setting of settings) {
+      if (excludeKeys.includes(setting.meta_key)) continue;
+      if (setting.meta_key === 'logo_file_id') {
+        logoFileId = setting.meta_value;
+        formatted.logo_file_id = logoFileId;
+      } else if (setting.meta_key === 'favicon_file_id') {
+        faviconFileId = setting.meta_value;
+        formatted.favicon_file_id = faviconFileId;
+      } else {
+        formatted[setting.meta_key] = setting.meta_value;
+      }
     }
-  }
-}
+    if (logoFileId) {
+      const logoImage = await UploadImage.findByPk(logoFileId);
+      if (logoImage) {
+        formatted.logo_file = logoImage.file;
+      }
+    }
+    if (faviconFileId) {
+      const faviconImage = await UploadImage.findByPk(faviconFileId);
+      if (faviconImage) {
+        ;
+        formatted.favicon_file = faviconImage.file;
+      }
+    }
+    /* ---------------- FRONT MENU ---------------- */
+    const menus = await FrontMenu.findAll({
+      attributes: ['id', 'name', 'type', 'position', 'parent_id', 'link'], // add/remove fields as needed
+      order: [
+        ['type', 'ASC'],
+        ['position', 'ASC'],
+      ],
+      raw: true,
+    });
 
-const allowedHomeKeys = [
-  'footer_logo',
-  'footer_heading',
-  'footershort_description',
-  'footer_img_1',
-  'footer_img_2',
-  'contactphone_1',
-  'contactphone_2',
-  'contactemail',
-  'contact_map_url',
-  'contactaddress',
-  'facebook_url',
-  'twitter_url',
-  'linkedin_url',
-  'youtube_url',
-  'instagram_url'
-];
+    const menuMap = {};
+    menus.forEach(menu => {
+      menu.sub_menu = [];
+      menuMap[menu.id] = menu;
+    });
 
-const filteredHomeSettings = {};
+    const finalMenu = [];
+    menus.forEach(menu => {
+      if (menu.parent_id === 0) {
+        finalMenu.push(menu);
+      } else if (menuMap[menu.parent_id]) {
+        menuMap[menu.parent_id].sub_menu.push(menu);
+      }
+    });
 
-allowedHomeKeys.forEach(key => {
-  if (homeFormatted[key] !== undefined) {
-    filteredHomeSettings[key] = homeFormatted[key];
-  }
-});
+    formatted.front_menu = finalMenu;
+
+    /* ---------------- HOME SETTINGS ---------------- */
+    const homeSettings = await HomeSettings.findAll();
+    const homeFormatted = {};
+
+    const imageKeyMap = {
+      about_file_id: 'about_file',
+      footer_logo_id: 'footer_logo',
+      footer_img_1_id: 'footer_img_1',
+      footer_img_2_id: 'footer_img_2'
+    };
+
+    const imageIds = {};
+
+    for (const setting of homeSettings) {
+      if (imageKeyMap[setting.meta_key]) {
+        imageIds[setting.meta_key] = setting.meta_value;
+        homeFormatted[setting.meta_key] = setting.meta_value;
+      } else {
+        homeFormatted[setting.meta_key] = setting.meta_value;
+      }
+    }
+
+    for (const [metaKey, fileKey] of Object.entries(imageKeyMap)) {
+      const fileId = imageIds[metaKey];
+      if (fileId) {
+        const image = await UploadImage.findByPk(fileId);
+        if (image) {
+          homeFormatted[fileKey] = image.file;
+        }
+      }
+    }
+
+    const allowedHomeKeys = [
+      'footer_logo',
+      'footer_heading',
+      'footershort_description',
+      'footer_img_1',
+      'footer_img_2',
+      'contactphone_1',
+      'contactphone_2',
+      'contactemail',
+      'contact_map_url',
+      'contactaddress',
+      'facebook_url',
+      'twitter_url',
+      'linkedin_url',
+      'youtube_url',
+      'instagram_url'
+    ];
+
+    const filteredHomeSettings = {};
+
+    allowedHomeKeys.forEach(key => {
+      if (homeFormatted[key] !== undefined) {
+        filteredHomeSettings[key] = homeFormatted[key];
+      }
+    });
 
     // ✅ Attach home settings
     formatted.home_settings = filteredHomeSettings;
