@@ -196,7 +196,7 @@ exports.getFrontSiteSettings = async (req, res) => {
     }
     /* ---------------- FRONT MENU ---------------- */
     const menus = await FrontMenu.findAll({
-      attributes: ['id', 'name', 'type', 'position', 'parent_id', 'link'], // add/remove fields as needed
+      attributes: ['id', 'name', 'type', 'position', 'parent_id', 'link','is_show','status'], // add/remove fields as needed
       order: [
         ['type', 'ASC'],
         ['position', 'ASC'],
