@@ -147,8 +147,6 @@ exports.createProducts = async (req, res) => {
         company_id: user.company_id,
       });
 
-      console.log('Is first product for company:', isFirstProduct);
-      console.log('Is existingCount:', existingCount);
       try {
         const Emails = require('../models/Emails');
         const siteConfig = await getSiteConfig();
@@ -196,12 +194,9 @@ exports.createProducts = async (req, res) => {
 
         // Additionally, when this is the company's second product, send template 65 to the company user
         // and send template 102 to admin. Keep existing guard (user.is_complete === 0 && user.is_delete === 0).
+       
 
-        console.log('existingCount' + existingCount);
-        console.log('is_complete' + user.is_complete);
-        console.log('is_delete' + user.is_delete);
-
-        if (existingCount === 1 && user && user.is_complete === 0 && user.is_delete === 0) {
+        if (existingCount === 0 && user && user.is_complete === 0 && user.is_delete === 0) {
           // Send template 65 to company user
           const userLastTpl = await Emails.findByPk(65);
           if (userLastTpl) {
@@ -2037,11 +2032,8 @@ exports.updateAccountStatus = async (req, res) => {
         const userFullName = user ? `${user.fname || ''} ${user.lname || ''}`.trim() : '';
 
         msgStr = msgStr
-          .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName || '')
-          .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, products.title || '')
-          .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName || '')
-          .replace(/{{\s*CODE\s*}}/gi, products.code || '')
-          .replace(/{{\s*ARTICLE_NUMBER\s*}}/gi, products.article_number || '');
+          .replace(/{{\s*SELLER_NAME\s*}}/gi, userFullName || '')
+          .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, products.title || '');
 
         try {
           if (user && user.email) {

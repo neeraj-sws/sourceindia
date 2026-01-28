@@ -464,9 +464,7 @@ exports.updateBuyerStatus = async (req, res) => {
           let msgStr = userTpl && userTpl.message ? userTpl.message.toString('utf8') : '';
           if (!msgStr) msgStr = 'Your account has been activated.';
           msgStr = msgStr
-            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
-            .replace(/{{\s*USER_EMAIL\s*}}/gi, buyers.email || '')
-            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+            .replace(/{{\s*SELLER_NAME\s*}}/gi, userFullName);
           try { if (buyers.email) await sendMail({ to: buyers.email, subject: userTpl?.subject || 'Account Activated', message: msgStr }); } catch (e) { console.error('Error sending buyer status=1 user email:', e); }
         } catch (e) { console.error('Error preparing buyer status=1 user email:', e); }
 
@@ -476,8 +474,9 @@ exports.updateBuyerStatus = async (req, res) => {
           if (!msgStr) msgStr = `Buyer ${userFullName} has been activated.`;
           msgStr = msgStr
             .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+            .replace(/{{\s*USER_LNAME\s*}}/gi, buyers.lname)
             .replace(/{{\s*USER_EMAIL\s*}}/gi, buyers.email || '')
-            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+            .replace(/{{\s*USER_TYPE\s*}}/gi, buyers.is_seller === 1 ? 'Seller' : 'Buyer');
           try { if (siteConfig && siteConfig['site_email']) await sendMail({ to: siteConfig['site_email'], subject: adminTpl?.subject || 'Buyer Activated', message: msgStr }); } catch (e) { console.error('Error sending buyer status=1 admin email:', e); }
         } catch (e) { console.error('Error preparing buyer status=1 admin email:', e); }
       } else {
@@ -487,9 +486,7 @@ exports.updateBuyerStatus = async (req, res) => {
           let msgStr = userTpl && userTpl.message ? userTpl.message.toString('utf8') : '';
           if (!msgStr) msgStr = 'Your account has been deactivated.';
           msgStr = msgStr
-            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
-            .replace(/{{\s*USER_EMAIL\s*}}/gi, buyers.email || '')
-            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+            .replace(/{{\s*SELLER_NAME\s*}}/gi, userFullName);
           try { if (buyers.email) await sendMail({ to: buyers.email, subject: userTpl?.subject || 'Account Deactivated', message: msgStr }); } catch (e) { console.error('Error sending buyer status=0 user email:', e); }
         } catch (e) { console.error('Error preparing buyer status=0 user email:', e); }
 
@@ -498,9 +495,10 @@ exports.updateBuyerStatus = async (req, res) => {
           let msgStr = adminTpl && adminTpl.message ? adminTpl.message.toString('utf8') : '';
           if (!msgStr) msgStr = `Buyer ${userFullName} has been deactivated.`;
           msgStr = msgStr
-            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+            .replace(/{{\s*USER_FNAME\s*}}/gi, buyers.fname)
+            .replace(/{{\s*USER_LNAME\s*}}/gi, buyers.lname)
             .replace(/{{\s*USER_EMAIL\s*}}/gi, buyers.email || '')
-            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+            .replace(/{{\s*USER_TYPE\s*}}/gi, buyers.is_seller === 1 ? 'Seller' : 'Buyer');
           try { if (siteConfig && siteConfig['site_email']) await sendMail({ to: siteConfig['site_email'], subject: adminTpl?.subject || 'Buyer Deactivated', message: msgStr }); } catch (e) { console.error('Error sending buyer status=0 admin email:', e); }
         } catch (e) { console.error('Error preparing buyer status=0 admin email:', e); }
       }

@@ -1465,7 +1465,7 @@ exports.updateAccountStatus = async (req, res) => {
           // ignore
         }
         const userFullName = (sellers.fname || sellers.lname) ? `${sellers.fname || ''} ${sellers.lname || ''}`.trim() : (sellers.email || '');
-        
+
 
         msgStr = msgStr
           .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
@@ -1610,9 +1610,7 @@ exports.updateSellerStatus = async (req, res) => {
           let msgStr = userTpl && userTpl.message ? userTpl.message.toString('utf8') : '';
           if (!msgStr) msgStr = 'Your account has been activated.';
           msgStr = msgStr
-            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
-            .replace(/{{\s*USER_EMAIL\s*}}/gi, sellers.email || '')
-            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+            .replace(/{{\s*SELLER_NAME\s*}}/gi, userFullName);
           try { if (sellers.email) await sendMail({ to: sellers.email, subject: userTpl?.subject || 'Account Activated', message: msgStr }); } catch (e) { console.error('Error sending seller status=1 user email:', e); }
         } catch (e) { console.error('Error preparing seller status=1 user email:', e); }
 
@@ -1621,9 +1619,10 @@ exports.updateSellerStatus = async (req, res) => {
           let msgStr = adminTpl && adminTpl.message ? adminTpl.message.toString('utf8') : '';
           if (!msgStr) msgStr = `Seller ${userFullName} has been activated.`;
           msgStr = msgStr
-            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+            .replace(/{{\s*USER_FNAME\s*}}/gi, sellers.fname)
+            .replace(/{{\s*USER_LNAME\s*}}/gi, sellers.lname)
             .replace(/{{\s*USER_EMAIL\s*}}/gi, sellers.email || '')
-            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+            .replace(/{{\s*USER_TYPE\s*}}/gi, sellers.is_seller === 1 ? 'Seller' : 'Buyer');
           try { if (siteConfig && siteConfig['site_email']) await sendMail({ to: siteConfig['site_email'], subject: adminTpl?.subject || 'Seller Activated', message: msgStr }); } catch (e) { console.error('Error sending seller status=1 admin email:', e); }
         } catch (e) { console.error('Error preparing seller status=1 admin email:', e); }
       } else {
@@ -1633,9 +1632,7 @@ exports.updateSellerStatus = async (req, res) => {
           let msgStr = userTpl && userTpl.message ? userTpl.message.toString('utf8') : '';
           if (!msgStr) msgStr = 'Your account has been deactivated.';
           msgStr = msgStr
-            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
-            .replace(/{{\s*USER_EMAIL\s*}}/gi, sellers.email || '')
-            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+            .replace(/{{\s*SELLER_NAME\s*}}/gi, userFullName);
           try { if (sellers.email) await sendMail({ to: sellers.email, subject: userTpl?.subject || 'Account Deactivated', message: msgStr }); } catch (e) { console.error('Error sending seller status=0 user email:', e); }
         } catch (e) { console.error('Error preparing seller status=0 user email:', e); }
 
@@ -1644,9 +1641,10 @@ exports.updateSellerStatus = async (req, res) => {
           let msgStr = adminTpl && adminTpl.message ? adminTpl.message.toString('utf8') : '';
           if (!msgStr) msgStr = `Seller ${userFullName} has been deactivated.`;
           msgStr = msgStr
-            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+            .replace(/{{\s*USER_FNAME\s*}}/gi, sellers.fname)
+            .replace(/{{\s*USER_LNAME\s*}}/gi, sellers.lname)
             .replace(/{{\s*USER_EMAIL\s*}}/gi, sellers.email || '')
-            .replace(/{{\s*COMPANY_NAME\s*}}/gi, companyName);
+            .replace(/{{\s*USER_TYPE\s*}}/gi, sellers.is_seller === 1 ? 'Seller' : 'Buyer');
           try { if (siteConfig && siteConfig['site_email']) await sendMail({ to: siteConfig['site_email'], subject: adminTpl?.subject || 'Seller Deactivated', message: msgStr }); } catch (e) { console.error('Error sending seller status=0 admin email:', e); }
         } catch (e) { console.error('Error preparing seller status=0 admin email:', e); }
       }
