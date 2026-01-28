@@ -1373,24 +1373,30 @@ exports.getCompanyInfoById = async (req, res) => {
     }
 
     const response = {
-      ...data,
-      coreactivity_name: data.CoreActivity?.name || null,
-      activity_name: data.Activity?.name || null,
-      category_name: categoryNames.join(', '),
-      sub_category_name: subCategoryNames.join(', '),
-      item_category_name: itemcategoryNames.join(', '),
-      item_subcategory_name: itemsubCategoryNames.join(', '),
-      products: productList,
+  organization_name: data.organization_name,
+  brief_company: data.brief_company,
+  company_logo_file: data.company_logo_file,
+  company_location: data.company_location,
+  company_website: data.company_website,
+  organizations_product_description: data.organizations_product_description,
 
-      // 🔥 final output
-      recommended_companies: recommendedCompanies.map(c => ({
-        ...c.dataValues,
-        state_name: c.dataValues.state_name,
-        city_name: c.dataValues.city_name,
-        company_logo_file: c.companyLogo?.file || null,
-      }))
-    };
+  coreactivity_name: data.CoreActivity?.name || null,
+  activity_name: data.Activity?.name || null,
 
+  category_name: categoryNames.join(', '),
+  sub_category_name: subCategoryNames.join(', '),
+
+  products: productList,
+
+  recommended_companies: recommendedCompanies.map(c => ({
+    id: c.id,
+    organization_slug: c.organization_slug,
+    organization_name: c.organization_name,
+    company_logo_file: c.companyLogo?.file || null,
+    state_name: c.dataValues.state_name,
+    city_name: c.dataValues.city_name,
+  }))
+};
 
     // Clean up included models
     delete response.CoreActivity;
