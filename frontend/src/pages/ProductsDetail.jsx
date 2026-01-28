@@ -34,7 +34,7 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/products/${slug}`);
+        const res = await axios.get(`${API_BASE_URL}/products/details/${slug}`);
 
         setTimeout(() => {
           setProduct(res.data);

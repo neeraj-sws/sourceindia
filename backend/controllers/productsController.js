@@ -374,6 +374,66 @@ exports.getProductsById = async (req, res) => {
   try {
     const identifier = req.params.id;
 
+    // Check if ID or slug
+    const isNumeric = /^\d+$/.test(identifier);
+
+    // Fetch product
+    const product = await Products.findOne({
+      where: isNumeric ? { id: identifier } : { slug: identifier },
+      include: [
+        { model: UploadImage, as: 'file', attributes: ['file'] } // main image
+      ]
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const productData = product.toJSON();
+
+    // Remove 'file' from output
+    delete productData.file;
+
+    // Parse multiple images
+    const fileIds = productData.file_ids
+      ? productData.file_ids.split(',').map(id => id.trim())
+      : [];
+
+    let images = [];
+    if (fileIds.length) {
+      const uploadedImages = await UploadImage.findAll({
+        where: { id: { [Op.in]: fileIds } },
+        attributes: ['id', 'file']
+      });
+
+      // Keep same order as file_ids
+      const imageMap = uploadedImages.reduce((acc, img) => {
+        acc[img.id] = img;
+        return acc;
+      }, {});
+
+      images = fileIds
+        .map(id => imageMap[id])
+        .filter(Boolean)
+        .map(img => ({ id: img.id, file: img.file }));
+    }
+
+    res.json({
+      ...productData,
+      file_name: productData.file_id ? images.find(img => img.id === productData.file_id)?.file || null : null,
+      images
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getProductsDetail = async (req, res) => {
+  try {
+    const identifier = req.params.id;
+
     // Check if identifier is a number (ID) or a string (slug)
     const isNumeric = /^\d+$/.test(identifier);
 
@@ -381,15 +441,24 @@ exports.getProductsById = async (req, res) => {
     const product = await Products.findOne({
       where: isNumeric ? { id: identifier } : { slug: identifier },
       include: [
-        { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
-        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
-        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
-        { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
-        { model: Items, as: 'Items', attributes: ['id', 'name'] },
+        { model: Categories, as: 'Categories', attributes: ['name'] },
+        { model: SubCategories, as: 'SubCategories', attributes: ['name'] },
+        { model: ItemCategory, as: 'ItemCategory', attributes: ['name'] },
+        { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['name'] },
         {
           model: CompanyInfo,
           as: 'company_info',
-          attributes: ['id', 'organization_name', 'company_logo', 'brief_company', 'company_location', 'activity', 'core_activity', 'organization_slug'],
+          attributes: [
+            'id',
+            'organization_name',
+            'company_logo',
+            'brief_company',
+            'company_location',
+            'activity',
+            'core_activity',
+            'organization_slug',
+            'company_website'
+          ],
           include: [
             { model: UploadImage, as: 'companyLogo', attributes: ['file'] },
             { model: Activity, as: 'Activity', attributes: ['name'] },
@@ -406,104 +475,30 @@ exports.getProductsById = async (req, res) => {
 
     const productData = product.toJSON();
 
-    // Fetch seller categories based on user_id (company owner)
-    const sellerCategories = await SellerCategory.findAll({
-      where: { user_id: productData.company_info?.id },
-      include: [
-        { model: Categories, as: 'category', attributes: ['id', 'name'] },
-        { model: SubCategories, as: 'subcategory', attributes: ['id', 'name'] },
-      ]
-    });
-
-    const allowedCategoryIds = sellerCategories.map(sc => sc.category_id.toString());
-
-
-
+    // Calculate average rating
     const avgRating = await ReviewRating.findOne({
       where: { product_id: productData.id },
-      attributes: [
-        [Sequelize.fn('AVG', Sequelize.col('rating')), 'averageRating']
-      ],
+      attributes: [[Sequelize.fn('AVG', Sequelize.col('rating')), 'averageRating']],
       raw: true
     });
 
-    const averageRating = avgRating.averageRating
-      ? Number(avgRating.averageRating)
-      : 0;
+    const averageRating = avgRating.averageRating ? Number(avgRating.averageRating) : 0;
 
+    // Count reviews
+    const reviewsCount = await ReviewRating.count({ where: { product_id: productData.id } });
 
-    // Fetch all other companies excluding current
-    const allCompanies = await CompanyInfo.findAll({
-      where: {
-        id: { [Op.ne]: productData.company_info?.id }
-      },
-      attributes: ['id', 'organization_name', 'organization_slug'],
-      include: [
-        { model: UploadImage, as: 'companyLogo', attributes: ['file'] }
-      ]
-    });
-
-    // Filter recommended companies based on seller_categories
-    const recommendedCompanies = [];
-    for (const company of allCompanies) {
-      const usercon = await Users.findOne({
-        where: { company_id: company.id },
-      });
-      let statecom = null;
-      let citycom = null;
-
-      if (usercon?.state != null) {
-        statecom = await States.findOne({
-          where: { id: usercon?.state },
-        });
-      }
-      if (usercon?.city != null) {
-        citycom = await Cities.findOne({
-          where: { id: usercon?.city },
-        });
-      }
-
-      company.state_name = statecom ? statecom.name : null;
-      company.city_name = citycom ? citycom.name : null;
-
-      const companySellerCategories = await SellerCategory.findAll({
-        where: { user_id: company.id },
-      });
-      const companyCategoryIds = companySellerCategories.map(sc => sc.category_id.toString());
-
-      if (companyCategoryIds.some(catId => allowedCategoryIds.includes(catId))) {
-        recommendedCompanies.push(company);
-      }
-    }
-
+    // Fetch associated images
     const fileIds = productData.file_ids ? productData.file_ids.split(',') : [];
-
     const associatedImages = await UploadImage.findAll({
       where: { id: { [Op.in]: fileIds } },
       attributes: ['id', 'file'],
     });
 
-    const reviews = await ReviewRating.findAll({
-      where: { product_id: product.id },
-      attributes: ['id', 'rating', 'review', 'created_at'],
-      include: [{ model: Users, as: 'reviewer', attributes: ['id', 'fname', 'lname'] }]
-    });
-
-    const formattedReviews = reviews.map(r => ({
-      id: r.id,
-      rating: r.rating,
-      review: r.review,
-      created_at: r.created_at,
-      reviewer_name: r.reviewer ? `${r.reviewer.fname} ${r.reviewer.lname}` : null
-    }));
-
+    // Similar products
     const similarProducts = await Products.findAll({
-      where: {
-        category: product.category,
-        id: { [Op.ne]: product.id }
-      },
+      where: { category: productData.category, id: { [Op.ne]: productData.id } },
       attributes: ['id', 'title', 'file_ids', 'slug'],
-      include: [{ model: UploadImage, as: 'file', attributes: ['file'] }],
+      include: [{ model: UploadImage, as: 'file', attributes: ['file'] }]
     });
 
     const formattedSimilarProducts = similarProducts.map(p => ({
@@ -512,48 +507,49 @@ exports.getProductsById = async (req, res) => {
       title: p.title,
       file_name: p.file?.file || null,
     }));
+
+    // Recommended companies (simplified)
+    const allCompanies = await CompanyInfo.findAll({
+      where: { id: { [Op.ne]: productData.company_info?.id } },
+      attributes: ['id', 'organization_name', 'organization_slug', 'company_website'],
+      include: [{ model: UploadImage, as: 'companyLogo', attributes: ['file'] }]
+    });
+
+    const recommendedCompanies = allCompanies.map(c => ({
+      id: c.id,
+      organization_name: c.organization_name,
+      organization_slug: c.organization_slug,
+      company_logo_file: c.companyLogo?.file || null,
+      company_website: c.company_website || null
+    }));
+
+    // Build response
     const response = {
-      ...productData,
+      id: productData.id,
+      company_id: productData.company_id,
+      title: productData.title,
+      file_name: productData.file?.file || null,
+      images: associatedImages.map(img => ({ id: img.id, file: img.file })),
+      averageRating,
+      reviews_count: reviewsCount,
       category_name: productData.Categories?.name || null,
       sub_category_name: productData.SubCategories?.name || null,
       item_category_name: productData.ItemCategory?.name || null,
       item_subcategory_name: productData.ItemSubCategory?.name || null,
-      item_name: productData.Items?.name || null,
-      color_name: null,
-      company_name: productData.company_info?.organization_name || null,
+      short_description: productData.short_description || null,
       company_slug: productData.company_info?.organization_slug || null,
       company_logo: productData.company_info?.companyLogo?.file || null,
-      brief_company: productData.company_info?.brief_company || null,
       company_location: productData.company_info?.company_location || null,
-      activity_name: productData.company_info?.Activity?.name || null,
+      created_at: productData.created_at,
       core_activity_name: productData.company_info?.CoreActivity?.name || null,
-      file_name: productData.file?.file || null,
-      images: associatedImages.map(image => ({ id: image.id, file: image.file })),
-      reviews: formattedReviews,
-      averageRating: averageRating,
+      description: productData.description || null,
+      company_name: productData.company_info?.organization_name || null,
+      activity_name: productData.company_info?.Activity?.name || null,
+      brief_company: productData.company_info?.brief_company || null,
+      organizations_product_description: productData.description || null,
       similar_products: formattedSimilarProducts,
-      recommended_companies: recommendedCompanies.map(c => ({
-        id: c.id,
-        organization_name: c.organization_name,
-        organization_slug: c.organization_slug,
-        company_logo_file: c.companyLogo?.file || null,
-        state_name: c.state_name || null,
-        city_name: c.city_name || null,
-      })),
-      seller_categories: sellerCategories.map(sc => ({
-        category_id: sc.category_id,
-        category_name: sc.category?.name || null,
-        subcategory_id: sc.subcategory_id,
-        subcategory_name: sc.subcategory?.name || null
-      }))
+      recommended_companies: recommendedCompanies
     };
-
-    // Clean up unwanted fields
-    delete response.Categories;
-    delete response.SubCategories;
-    delete response.Color;
-    delete response.company_info;
-    delete response.file;
 
     res.json(response);
   } catch (err) {
@@ -621,10 +617,15 @@ exports.updateProducts = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    let slug = product.slug;
+    if (title && title !== product.title) {
+      slug = await createUniqueProductSlug(title);
+    }
+
     await product.update({
       user_id,
       title,
-      slug: await createUniqueProductSlug(title),
+      slug,
       code,
       article_number,
       category,

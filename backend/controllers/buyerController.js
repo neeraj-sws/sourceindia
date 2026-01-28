@@ -351,9 +351,13 @@ exports.updateBuyer = async (req, res) => {
       }
       await user.update(updatedData);
       if (companyInfo) {
+        let organization_slug = companyInfo.organization_slug;
+        if (req.body.user_company && req.body.user_company !== companyInfo.organization_name) {
+          organization_slug = await createUniqueSlug(req.body.user_company);
+        }
         await companyInfo.update({
           organization_name: req.body.user_company,
-          organization_slug: await createUniqueSlug(req.body.user_company),
+          organization_slug,
           company_website: req.body.website,
           organizations_product_description: req.body.products,
           user_category: req.body.user_category,
