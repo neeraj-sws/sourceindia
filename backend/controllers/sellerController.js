@@ -582,9 +582,13 @@ exports.updateSeller = async (req, res) => {
 
       // Update company information if exists
       if (companyInfo) {
+        let organization_slug = companyInfo.organization_slug;
+  if (req.body.user_company && req.body.user_company !== companyInfo.organization_name) {
+    organization_slug = await createUniqueSlug(req.body.user_company);
+  }
         await companyInfo.update({
           organization_name: req.body.user_company,
-          organization_slug: await createUniqueSlug(req.body.user_company),
+          organization_slug,
           role: req.body.role,
           // user_type: req.body.user_type,
           core_activity: req.body.core_activity,

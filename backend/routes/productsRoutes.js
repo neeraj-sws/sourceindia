@@ -13,6 +13,7 @@ router.get('/companies_filtered', productsController.getFilteredCompanies);
 router.get('/filtered', productsController.getFilteredProducts);
 router.post('/company-review', productsController.companyReview);
 router.get('/companies/:id', productsController.getCompanyInfoById);
+router.get('/details/:id', productsController.getProductsDetail);
 router.get('/item-hierarchy/:type/:item_id', productsController.getItemHierarchy);
 router.get('/:id', productsController.getProductsById);
 router.put('/:id', productsController.updateProducts);
