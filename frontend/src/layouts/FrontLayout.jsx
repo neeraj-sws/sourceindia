@@ -71,7 +71,7 @@ function FrontLayout() {
       <AuthProvider>
         <AlertProvider>
           <SiteSettingsProvider>
-          <GlobalSeo />
+          {!isUserLayout && <GlobalSeo />}
           <ToastContainer position="top-right" autoClose={2000} hideProgressBar={true} />
           <Suspense fallback={<div></div>}>
             {isUserLayout ? <><UserHeader /><UserSidebar /></> : <FrontHeader />}
