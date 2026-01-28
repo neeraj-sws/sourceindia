@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from "../config";
 import ImageWithFallback from "../admin/common/ImageWithFallback";
+import "../css/home.css";
 
 const UserHeader = () => {
   const navigate = useNavigate();
