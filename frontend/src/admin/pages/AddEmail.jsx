@@ -185,7 +185,10 @@ const AddEmail = () => {
                         value={formData.email_for}
                         onChange={handleInputChange}
                       >
-                        <option value="User">User</option>
+                        <option value="Buyer">Buyer</option>
+                        <option value="Seller">Seller</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Walkin Buyer">Walkin Buyer</option>
                       </select>
                       {errors.email_for && (<div className="invalid-feedback">{errors.email_for}</div>)}
                     </div>
