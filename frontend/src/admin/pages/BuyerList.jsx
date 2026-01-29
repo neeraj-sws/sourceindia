@@ -294,7 +294,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     try {
       await axios.patch(`${API_BASE_URL}/buyers/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map((d) => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if (field == "seller_status" || field == "delete_status") {
+      if (field == "seller_status" || field == "delete_status" || field == "status" || field == "account_status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
@@ -428,12 +428,18 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     }
   };
 
+  const title = React.useMemo(() => {
+    if (getInactive) return "Inactive Buyers";
+    if (getNotApproved) return "Not Approved Buyers";
+    if (getDeleted) return "Recently Deleted Buyers";
+    return "Buyers List";
+  }, [getInactive, getNotApproved, getDeleted]);
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Buyers" maincount={totalRecords} page="Buyers"
-            title={getInactive ? "Inactive Buyers" : getNotApproved ? "Not Approved Buyers" : getDeleted ? "Recently Deleted Buyers" : "Buyers List"}
+          <Breadcrumb mainhead={title} maincount={totalRecords} page={title}
+            title={title}
             add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Buyer</>)} add_link="/admin/add_buyer"
             actions={
               <>
@@ -582,13 +588,18 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                 columns={[
                   ...(!getDeleted ? [{ key: "select", label: (<input type="checkbox" onChange={handleSelectAll} />) }] : []),
                   { key: "id", label: "S.No.", sortable: true },
-                  { key: "full_name", label: "Name", sortable: true },
                   { key: "user_company", label: "Company", sortable: true },
                   { key: "address", label: "Location", sortable: true },
                   ...(!getDeleted ? [
-                  { key: "status", label: "User Status", sortable: false },
-                  { key: "account_status", label: "Account Status", sortable: false },
-                  { key: "seller_status", label: "Make Seller", sortable: false },
+                   ...(!getNotApproved ? [
+                    { key: "status", label: "User Status", sortable: false }
+                    ]:[]),
+                   ...(getNotApproved ? [
+                    { key: "account_status", label: "Account Status", sortable: false }
+                     ]:[]),
+                  ...(!getInactive && !getNotApproved ? [
+                    { key: "seller_status", label: "Make Seller", sortable: false } 
+                  ]:[]),
                   ]:[]),
                   { key: "user_category", label: "User Category", sortable: true },
                   { key: "created_at", label: "Created", sortable: true },
@@ -617,11 +628,28 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                       </td>
                     )}
                     <td><Link to={`/admin/buyer/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
-                    <td>{row.full_name}<br />{row.email}<br />{row.mobile}<br />{row.is_trading == 1 ? (<span className="badge bg-success">Trader</span>) : ("")}</td>
-                    <td><a href={`/companies/${row.company_slug}`} target="_blank">{row.user_company}</a><br />{row.walkin_buyer == 1 ? (<span className="badge bg-primary">Walk-In Buyer</span>) : ("")}</td>
-                    <td>{row.country_name}<br />{row.state_name}<br />{row.city_name}<br /></td>
+                    <td>
+                       {row.user_company}<br />
+                      {row.full_name}<br />{row.email}<br />{row.mobile}<br />{row.is_trading == 1 ? (<span className="badge bg-success">Trader</span>) : ("")}
+                     {row.walkin_buyer == 1 ? (<span className="badge bg-primary">Walk-In Buyer</span>) : ("")}
+                      <br />
+                     </td>
+                   
+                    <td>
+                      {([row.country_name, row.state_name, row.city_name]
+                        .filter(v => v && v !== "NA").length > 0) ? (
+
+                        [row.country_name, row.state_name, row.city_name]
+                          .filter(v => v && v !== "NA")
+                          .map((v, i) => <div key={i}>{v}</div>)
+
+                      ) : (
+                        <small><i>NA</i></small>
+                      )}
+                    </td>
                     {!getDeleted && (
                       <>
+                       {!getNotApproved && (
                         <td>
                           <div className="form-check form-switch">
                             <input
@@ -633,6 +661,9 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                             />
                           </div>
                         </td>
+                         )}
+
+                        {getNotApproved && ( 
                         <td>
                           <div className="form-check form-switch">
                             <input
@@ -644,6 +675,9 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                             />
                           </div>
                         </td>
+                         )}
+
+                        {!getInactive && !getNotApproved && (
                         <td>
                           <div className="form-check form-switch">
                             <input
@@ -655,9 +689,10 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                             />
                           </div>
                         </td>
+                        )}
                       </>
                     )}
-                    <td>{row.user_category}</td>
+                    <td>{row.user_category || <small><i>NA</i></small>}</td>
                     <td>{formatDateTime(row.created_at)}</td>                    
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>

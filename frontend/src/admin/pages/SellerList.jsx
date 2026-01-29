@@ -541,7 +541,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     try {
       await axios.patch(`${API_BASE_URL}/sellers/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if (field == "delete_status" || field == "account_status") {
+      if (field == "delete_status" || field == "account_status" || field == "status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
@@ -938,8 +938,8 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                   { key: "designation", label: "Designation / Website / Quality Certification", sortable: true },
                   { key: "created_at", label: "Created", sortable: true },
                   { key: "updated_at", label: "Last Update", sortable: true },
-                  { key: "approve_date", label: "	Approve Date", sortable: true },
-                  ...(!getDeleted ? [{ key: "status", label: "Status", sortable: false }] : []),
+                  ...(!getDeleted && !getNotApproved && !getNotCompleted ? [{ key: "approve_date", label: "	Approve Date", sortable: true }] : []),
+                  ...(!getDeleted && !getNotApproved && !getNotCompleted ? [{ key: "status", label: "Status", sortable: false }] : []),
                   { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}
@@ -1006,16 +1006,36 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                       {row.city_name && (<><i className="bx bx-map me-1" />{row.city_name}<br /></>)}
                       <strong>Products:</strong> <Link to={`/admin/product-list?id=${row.id}`}><span className="badge bg-primary mb-1">{row.user_count}</span></Link>
                     </td>
-                    <td>{row.coreactivity_name}<br />{row.activity_name}<br />{row.category_name}<br />{row.sub_category_name}</td>
-                    <td>
-                      {row.designation && (<>{row.designation}<br /></>)}
-                      {row.company_website && (<>{row.company_website}<br /></>)}
-                      {row.organization_quality_certification && row.organization_quality_certification}
+                  <td>
+                      {([row.coreactivity_name, row.activity_name, row.category_name, row.sub_category_name]
+                        .filter(v => v && v !== "NA").length > 0) ? (
+
+                        [row.coreactivity_name, row.activity_name, row.category_name, row.sub_category_name]
+                          .filter(v => v && v !== "NA")
+                          .map((v, i) => <div key={i}>{v}</div>)
+
+                      ) : (
+                        <small><i>NA</i></small>
+                      )}
+                    </td>
+                   <td>
+                      {([row.designation, row.company_website, row.organization_quality_certification]
+                        .filter(v => v && v !== "NA").length > 0) ? (
+
+                        [row.designation, row.company_website, row.organization_quality_certification]
+                          .filter(v => v && v !== "NA")
+                          .map((v, i) => <div key={i}>{v}</div>)
+
+                      ) : (
+                        <small><i>NA</i></small>
+                      )}
                     </td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
-                    <td>{formatDateTime(row.approve_date)}</td>
-                    {!getDeleted && (
+
+                    {!getDeleted && !getNotApproved && !getNotCompleted && (
+                       <>
+                      <td>{formatDateTime(row.approve_date)}</td>
                       <td>
                         <div className="form-check form-switch">
                           <input
@@ -1027,6 +1047,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                           />
                         </div>
                       </td>
+                      </>
                     )}
                     <td>
                       <div className="dropdown">
