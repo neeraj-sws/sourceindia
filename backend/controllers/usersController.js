@@ -949,14 +949,10 @@ exports.updateProfile = async (req, res) => {
           .replace('{{ USER_ADDRESS }}', user.address)
           .replace('{{ USER_TYPE }}', user_type);
 
-        const htmlContent = await buildEmailHtml(adminMessage);
+        
 
-        await transporter.sendMail({
-          from: `"Support Team" <info@sourceindia-electronics.com>`,
-          to: siteConfig['site_email'],
-          subject: adminemailTemplate.subject,
-          html: htmlContent,
-        });
+       await sendMail({ to: siteConfig['site_email'], subject: adminemailTemplate.subject, message: adminMessage }); 
+     
       }
 
       const emailTemplate = await Emails.findByPk(33);
