@@ -15,17 +15,7 @@ exports.getSiteSettings = async (req, res) => {
     const formatted = {};
     let logoFileId = null;
     let faviconFileId = null;
-    const excludeKeys = [
-      'smtp_password',
-      'smtp_username',
-      'smtp_server_address',
-      'smtp_port',
-      'smtp_from_address',
-      'smtp_auto_reply',
-      'sms_password',
-      'sms_pid',
-      // aur bhi jo nahi chahiye, yahan add karen
-    ];
+    const excludeKeys = [];
     for (const setting of settings) {
       if (excludeKeys.includes(setting.meta_key)) continue;
       if (setting.meta_key === 'logo_file_id') {
