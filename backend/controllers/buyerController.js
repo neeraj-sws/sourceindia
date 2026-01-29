@@ -549,6 +549,31 @@ exports.updateAccountStatus = async (req, res) => {
         } catch (err) {
           console.error('Error sending approval email to buyer:', err);
         }
+
+        // Send admin notification using template id 107 (contains USER_FNAME, USER_EMAIL, USER_TYPE, DATE_TIME)
+        try {
+          const siteConfig = await getSiteConfig();
+          const adminTpl = await Emails.findByPk(107);
+          let adminMsg = adminTpl && adminTpl.message ? adminTpl.message.toString('utf8') : '';
+          if (!adminMsg) adminMsg = `User {{ USER_FNAME }} ({{ USER_EMAIL }}) approved as {{ USER_TYPE }} on {{ DATE_TIME }}`;
+          const dateTime = moment().format('YYYY-MM-DD HH:mm:ss');
+          const userType = buyers.is_seller === 1 ? 'Seller' : 'Buyer';
+          adminMsg = adminMsg
+            .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
+            .replace(/{{\s*USER_EMAIL\s*}}/gi, buyers.email || '')
+            .replace(/{{\s*USER_TYPE\s*}}/gi, userType)
+            .replace(/{{\s*DATE_TIME\s*}}/gi, dateTime);
+
+          try {
+            if (siteConfig && siteConfig['site_email']) {
+              await sendMail({ to: siteConfig['site_email'], subject: adminTpl?.subject || 'Account approved (Admin)', message: adminMsg });
+            }
+          } catch (e) {
+            console.error('Error sending admin approval email (buyer):', e);
+          }
+        } catch (e) {
+          console.error('Admin approval email flow error (buyer):', e);
+        }
       }
     } catch (e) {
       console.error('Approval email flow error (buyer):', e);
