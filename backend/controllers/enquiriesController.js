@@ -1561,7 +1561,7 @@ exports.submitEnquiry = async (req, res) => {
 
         const subject = formData.title.trim();
         if (user && user.email) {
-          await sendMail({ to: user.email, subject: subject || "Enquiry submit successfully", message: userMessage });
+          await sendMail({ to: user.email, subject: emailTemplate?.subject || "Enquiry submit successfully", message: userMessage });
         }
       } catch (err) {
         console.error('Error sending enquiry user email (authenticated):', err);
@@ -1583,7 +1583,7 @@ exports.submitEnquiry = async (req, res) => {
 
         const subject = formData.title.trim();
         if (formData.email) {
-          await sendMail({ to: formData.email.trim(), subject: subject || "Enquiry submit successfully", message: userMessage });
+          await sendMail({ to: formData.email.trim(), subject: emailTemplate?.subject || "Enquiry submit successfully", message: userMessage });
         }
       } catch (err) {
         console.error('Error sending enquiry user email (guest):', err);

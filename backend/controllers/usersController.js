@@ -4,6 +4,7 @@ const { Op } = Sequelize;
 const sequelize = require('../config/database');
 const path = require('path');
 const fs = require('fs');
+const moment = require('moment');
 const bcrypt = require('bcryptjs');
 const Users = require('../models/Users');
 const Countries = require('../models/Countries');
@@ -964,6 +965,50 @@ exports.updateProfile = async (req, res) => {
           .replace('{{ USER_LNAME }}', user.lname);
 
         await sendMail({ to: user.email, subject: subject, message: userMessage });
+      }
+
+      // If buyer updated profile and account still pending approval, send buyer (109) and admin (108) templates
+      try {
+        if (user.is_seller == 0 && Number(user.is_approve) === 0) {
+          const dateTime = moment().format('YYYY-MM-DD HH:mm:ss');
+
+          // Buyer email (template 109)
+          try {
+            const buyerTpl = await Emails.findByPk(109);
+            let buyerMsg = buyerTpl && buyerTpl.message ? buyerTpl.message.toString('utf8') : '';
+            if (!buyerMsg) buyerMsg = `Dear {{ USER_FNAME }}, your account is pending admin approval as of {{ DATE_TIME }}`;
+            const buyerMsgFinal = buyerMsg
+              .replace(/{{\s*USER_FNAME\s*}}/gi, `${user.fname || ''} ${user.lname || ''}`.trim())
+              .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '')
+              .replace(/{{\s*USER_TYPE\s*}}/gi, 'Buyer')
+              .replace(/{{\s*DATE_TIME\s*}}/gi, dateTime);
+
+            await sendMail({ to: user.email, subject: buyerTpl?.subject || 'Account pending approval', message: buyerMsgFinal });
+          } catch (err) {
+            console.error('Error sending buyer pending email (109):', err);
+          }
+
+          // Admin email (template 108)
+          try {
+            const siteConfig = await getSiteConfig();
+            const adminTpl = await Emails.findByPk(108);
+            let adminMsg = adminTpl && adminTpl.message ? adminTpl.message.toString('utf8') : '';
+            if (!adminMsg) adminMsg = `Buyer {{ USER_FNAME }} ({{ USER_EMAIL }}) updated profile and is awaiting approval on {{ DATE_TIME }}`;
+            const adminMsgFinal = adminMsg
+              .replace(/{{\s*USER_FNAME\s*}}/gi, `${user.fname || ''} ${user.lname || ''}`.trim())
+              .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '')
+              .replace(/{{\s*USER_TYPE\s*}}/gi, 'Buyer')
+              .replace(/{{\s*DATE_TIME\s*}}/gi, dateTime);
+
+            if (siteConfig && siteConfig['site_email']) {
+              await sendMail({ to: siteConfig['site_email'], subject: adminTpl?.subject || 'Buyer profile awaiting approval', message: adminMsgFinal });
+            }
+          } catch (err) {
+            console.error('Error sending admin pending email (108):', err);
+          }
+        }
+      } catch (err) {
+        console.error('Pending-approval email flow error:', err);
       }
 
       // 🏢 Company info + category handling
