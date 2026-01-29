@@ -884,7 +884,7 @@ const sendEnquiryConfirmation = async (to, name) => {
 };
 
 const sendAdminEnquiryConfirmation = async (user, enquiry) => {
-  const emailTemplate = await Emails.findByPk(72);
+  const emailTemplate = await Emails.findByPk(14);
   const msgStr = emailTemplate.message.toString('utf8');
   const productInfo = await EnquiryUsers.findOne({
     where: { enquiry_id: enquiry.id },
@@ -908,7 +908,7 @@ const sendAdminEnquiryConfirmation = async (user, enquiry) => {
     .replace("{{ PRODUCT_TITLE }}", productTitle)
     .replace("{{ PRODUCT_QUANTITY }}", productQuantity)
     .replace("{{ COMPANY_NAME }}", companyName)
-    .replace("{{ BUYER_FULLNAME }}", buyerFullName)
+    .replace("{{ USER_NAME }}", buyerFullName)
     .replace("{{ BUYER_EMAIL }}", user?.email || '')
     .replace("{{ BUYER_MOBILE }}", buyerMobile)
     .replace("{{ ENQUIRY_NUMBER }}", enquiryNumber)
@@ -918,6 +918,29 @@ const sendAdminEnquiryConfirmation = async (user, enquiry) => {
   const siteConfig = await getSiteConfig();
   await sendMail({ to: siteConfig['site_email'], subject: emailTemplate?.subject || "New Enquiry Received", message: userMessage });
 };
+
+const sendAdminOpenEnquiryConfirmation = async (user, enquiry) => {
+  const emailTemplate = await Emails.findByPk(72);
+  const msgStr = emailTemplate.message.toString('utf8');
+
+
+  const buyerFullName = user?.fname && user?.lname ? `${user.fname} ${user.lname}` : user?.fname || '';
+
+
+  let userMessage = msgStr
+    .replace("{{ TITLE }}", enquiry.title)
+    .replace("{{ USER_NAME }}", buyerFullName)
+    .replace("{{ MESSAGE }}", enquiry?.description || '')
+    .replace("{{ LINK }}", '');
+
+  const siteConfig = await getSiteConfig();
+  await sendMail({ to: siteConfig['site_email'], subject: emailTemplate?.subject || "New Enquiry Received", message: userMessage });
+};
+
+
+
+
+
 
 const sendSellerEnquiryConfirmation = async (user, enquiry) => {
   const emailTemplate = await Emails.findByPk(8);
@@ -1546,7 +1569,7 @@ exports.submitEnquiry = async (req, res) => {
 
       try {
         const adminUser = user || (enquiry.user_id ? await Users.findByPk(enquiry.user_id) : null);
-        await sendAdminEnquiryConfirmation(adminUser, enquiry);
+        await sendAdminOpenEnquiryConfirmation(adminUser, enquiry);
       } catch (err) {
         console.error('Error sending admin enquiry notification (authenticated):', err);
       }
@@ -1568,7 +1591,7 @@ exports.submitEnquiry = async (req, res) => {
 
       try {
         const adminUser = user || (enquiry.user_id ? await Users.findByPk(enquiry.user_id) : null);
-        await sendAdminEnquiryConfirmation(adminUser, enquiry);
+        await sendAdminOpenEnquiryConfirmation(adminUser, enquiry);
       } catch (err) {
         console.error('Error sending admin enquiry notification (guest):', err);
       }
