@@ -726,7 +726,7 @@ exports.updateProfileold = async (req, res) => {
       const siteConfig = await getSiteConfig();
       const adminMessage = msgStr
         .replace("{{ ADMIN_NAME }}", 'Admin')
-        .replace("{{ COMPANY_NAME }}", user.organization_name || '')
+        .replace("{{ COMPANY_NAME }}", companyInfo.organization_name || '')
         .replace("{{ USER_FNAME }}", user.fname)
         .replace("{{ USER_LNAME }}", user.lname)
         .replace("{{ USER_EMAIL }}", user.email)
@@ -941,7 +941,7 @@ exports.updateProfile = async (req, res) => {
         const user_type = user.is_seller === 1 ? 'Seller' : 'Buyer';
         const adminMessage = msgStr
           .replace('{{ ADMIN_NAME }}', 'Admin')
-          .replace("{{ COMPANY_NAME }}", user.organization_name || '')
+          .replace("{{ COMPANY_NAME }}", companyInfo.organization_name || '')
           .replace('{{ USER_FNAME }}', user.fname)
           .replace('{{ USER_LNAME }}', user.lname)
           .replace('{{ USER_EMAIL }}', user.email)
