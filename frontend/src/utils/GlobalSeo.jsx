@@ -51,7 +51,7 @@ const GlobalSeo = () => {
         const productSlug = pathname.split('/')[2];
 
         const res = await axios.get(
-          `${API_BASE_URL}/products/${productSlug}`
+          `${API_BASE_URL}/products/details/${productSlug}`
         );
 
         const product = res?.data || {};

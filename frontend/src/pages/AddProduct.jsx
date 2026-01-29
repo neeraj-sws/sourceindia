@@ -531,6 +531,10 @@ const AddProduct = () => {
           short_description: data.short_description || '',
           description: data.description || '',
           images: data.images || [],
+          is_gold: Number(data.is_gold) || 0,
+  is_featured: Number(data.is_featured) || 0,
+  is_recommended: Number(data.is_recommended) || 0,
+  best_product: Number(data.best_product) || 0,
         });
 
         // Set category & subcategory first
@@ -643,26 +647,32 @@ const AddProduct = () => {
   };
 
   const handleAddImages = async () => {
-    if (files.length === 0) return;
-    const formDataObj = new FormData();
-    files.forEach(file => formDataObj.append("files", file));
+  if (files.length === 0) return;
+  const formDataObj = new FormData();
+  files.forEach(file => formDataObj.append("files", file));
 
-    try {
-      const res = await axios.post(`${API_BASE_URL}/products/${productId}/images`,
-        formDataObj,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...(Array.isArray(res.data) ? res.data : [res.data])]
-      }));
-      setFiles([]);
-      showNotification("Images added successfully!", "success");
-    } catch (error) {
-      console.error("Error adding images:", error);
-      showNotification("Failed to add images", "error");
-    }
-  };
+  try {
+    // Upload images
+    await axios.post(`${API_BASE_URL}/products/${productId}/images`,
+      formDataObj,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    // Fetch updated product to get images
+    const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
+    const data = res.data;
+
+    setFormData(prev => ({
+      ...prev,
+      images: data.images || []
+    }));
+    setFiles([]);
+    showNotification("Images added successfully!", "success");
+  } catch (error) {
+    console.error("Error adding images:", error);
+    showNotification("Failed to add images", "error");
+  }
+};
 
   const openDeleteModal = (id) => { setImageToDelete(id); setShowDeleteModal(true); };
 
