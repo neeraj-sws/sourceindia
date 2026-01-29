@@ -52,7 +52,7 @@ exports.getSiteSettings = async (req, res) => {
     }
     /* ---------------- FRONT MENU ---------------- */
     const menus = await FrontMenu.findAll({
-      attributes: ['id', 'name', 'type', 'position', 'parent_id', 'url'], // add/remove fields as needed
+      attributes: ['id', 'name', 'type', 'position', 'parent_id', 'link'], // add/remove fields as needed
       order: [
         ['type', 'ASC'],
         ['position', 'ASC'],
@@ -75,7 +75,7 @@ exports.getSiteSettings = async (req, res) => {
       }
     });
 
-    formatted.front_menu = finalMenu;
+
 
     /* ---------------- HOME SETTINGS ---------------- */
     const homeSettings = await HomeSettings.findAll();
@@ -135,8 +135,7 @@ exports.getSiteSettings = async (req, res) => {
       }
     });
 
-    // ✅ Attach home settings
-    formatted.home_settings = filteredHomeSettings;
+
     res.json(formatted);
   } catch (err) {
     console.error(err);
@@ -196,7 +195,7 @@ exports.getFrontSiteSettings = async (req, res) => {
     }
     /* ---------------- FRONT MENU ---------------- */
     const menus = await FrontMenu.findAll({
-      attributes: ['id', 'name', 'type', 'position', 'parent_id', 'link','is_show','status'], // add/remove fields as needed
+      attributes: ['id', 'name', 'type', 'position', 'parent_id', 'link', 'is_show', 'status'], // add/remove fields as needed
       order: [
         ['type', 'ASC'],
         ['position', 'ASC'],
