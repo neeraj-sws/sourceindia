@@ -543,7 +543,7 @@ exports.updateAccountStatus = async (req, res) => {
 
         msgStr = msgStr
           .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
-          .replace(/{{\s*USER_TYPE\s*}}/gi, buyers.user_type === 1 ? 'Seller' : 'Buyer');
+          .replace(/{{\s*USER_TYPE\s*}}/gi, buyers.is_seller === 1 ? 'Seller' : 'Buyer');
         try {
           await sendMail({ to: buyers.email, subject: template?.subject || 'Account approved', message: msgStr });
         } catch (err) {

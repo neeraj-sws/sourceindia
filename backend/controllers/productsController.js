@@ -228,7 +228,7 @@ exports.createProducts = async (req, res) => {
               .replace(/{{\s*USER_MOBILE\s*}}/gi, user.mobile || '')
               .replace(/{{\s*COMPANY_NAME\s*}}/gi, (company?.organization_name) || '')
               .replace(/{{\s*PRODUCT_TITLE\s*}}/gi, title || '')
-              .replace(/{{\s*USER_TYPE\s*}}/gi, user.user_type === 1 ? 'Seller' : 'Buyer')
+              .replace(/{{\s*USER_TYPE\s*}}/gi, user.is_seller === 1 ? 'Seller' : 'Buyer')
               .replace(/{{\s*USER_EMAIL\s*}}/gi, user.email || '');
             try {
               await sendMail({ to: siteConfig['site_email'], subject: adminTpl102.subject || 'Second product added', message: adminMsg102 });

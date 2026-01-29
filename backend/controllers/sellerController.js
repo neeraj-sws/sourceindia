@@ -71,7 +71,7 @@ exports.createSeller = async (req, res) => {
         fname, lname, email, password, mobile, alternate_number, country_code, country, state, city, zipcode,
         address, status, is_trading, elcina_member, user_company, website, products,
         step, mode, real_password, remember_token, payment_status, is_email_verify, featured_company, is_approve,
-        organization_name, organization_slug, user_type, core_activity, activity, categories, subcategory_ids, // Added subcategory_ids
+        organization_name, organization_slug, is_seller, core_activity, activity, categories, subcategory_ids, // Added subcategory_ids
         company_website, company_location, is_star_seller, is_verified, role,
         company_meta_title, company_video_second, brief_company,
         organizations_product_description, designation, is_profile, is_company, is_intrest, request_admin, is_complete
@@ -113,7 +113,7 @@ exports.createSeller = async (req, res) => {
 
       // Create company info (unchanged)
       const companyInfo = await CompanyInfo.create({
-        organization_name: user_company, organization_slug: await createUniqueSlug(user_company), role, user_type: user_type || 9,
+        organization_name: user_company, organization_slug: await createUniqueSlug(user_company), role, user_type: 1,
         core_activity, activity, company_website: website, company_location,
         is_star_seller: is_star_seller || 0, is_verified: is_verified || 0, company_meta_title,
         company_video_second, brief_company, organizations_product_description: products, designation,
@@ -1473,7 +1473,7 @@ exports.updateAccountStatus = async (req, res) => {
 
         msgStr = msgStr
           .replace(/{{\s*USER_FNAME\s*}}/gi, userFullName)
-          .replace(/{{\s*USER_TYPE\s*}}/gi, sellers.user_type === 1 ? 'Seller' : 'Buyer');
+          .replace(/{{\s*USER_TYPE\s*}}/gi, sellers.is_seller === 1 ? 'Seller' : 'Buyer');
         try {
           await sendMail({ to: sellers.email, subject: template?.subject || 'Account approved', message: msgStr });
         } catch (err) {
