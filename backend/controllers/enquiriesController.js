@@ -883,8 +883,8 @@ const sendEnquiryConfirmation = async (to, name) => {
   await sendMail({ to, subject: emailTemplate?.subject || "Enquiry Received", message: userMessage });
 };
 
-const sendAdminEnquiryConfirmation = async (user, enquiry) => {
-  const emailTemplate = await Emails.findByPk(14);
+const sendAdminEnquiryConfirmation = async (user, enquiry, TemplateID) => {
+  const emailTemplate = await Emails.findByPk(TemplateID);
   const msgStr = emailTemplate.message.toString('utf8');
   const productInfo = await EnquiryUsers.findOne({
     where: { enquiry_id: enquiry.id },
@@ -1270,7 +1270,7 @@ exports.storeEnquiry = async (req, res) => {
 
     /* -------------------- 9. Send confirmation mail -------------------- */
     await sendEnquiryConfirmation(user.email, name);
-    await sendAdminEnquiryConfirmation(user, enquiry);
+    await sendAdminEnquiryConfirmation(user, enquiry, 120);
     if (user.walkin_buyer !== 1) {
       await sendSellerEnquiryConfirmation(user, enquiry);
     }
@@ -1407,10 +1407,11 @@ exports.submitEnquiryuser = async (req, res) => {
     }
     // Notify admin using template id 14
     try {
-      await sendAdminEnquiryConfirmation(senderUser, enquiry);
+      await sendAdminEnquiryConfirmation(senderUser, enquiry, 14);
     } catch (e) {
       console.error('Failed to send admin enquiry notification:', e.message || e);
     }
+    
     /* ------------------------------
        8. Final response
     ------------------------------ */
