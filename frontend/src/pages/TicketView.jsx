@@ -3,7 +3,8 @@ import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from '../config'; // Assuming you have ROOT_URL for images
 import { useAlert } from "../context/AlertContext";
 import { useParams, useLocation, Link } from "react-router-dom";
-import JoditEditor from "jodit-react";
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { useNavigate } from "react-router-dom";
 import UseAuth from '../sections/UseAuth';
 
@@ -19,6 +20,8 @@ const TicketView = () => {
   const [attachment, setAttachment] = useState(null);
   const [showButton, setShowButton] = useState(false);
   const editor = useRef(null);
+  const changeTimeout = useRef(null);
+  const ckEditorRef = useRef(null);
   // Extract token from query string
   const queryParams = new URLSearchParams(location.search);
   const token = queryParams.get("token");
@@ -42,6 +45,9 @@ const TicketView = () => {
     };
 
     if (number && token) fetchTicket();
+    return () => {
+      if (changeTimeout.current) clearTimeout(changeTimeout.current);
+    };
   }, [number, token]);
 
   const handleSubmit = async (e) => {
@@ -49,7 +55,17 @@ const TicketView = () => {
     setFormLoading(true);
     const formData = new FormData();
     formData.append("id", number);
-    formData.append("message", message);
+    // If message state is empty (user didn't blur), try to read from editor ref
+    let currentMessage = message;
+    try {
+      if (!currentMessage) {
+        // try CKEditor instance
+        if (ckEditorRef.current) currentMessage = ckEditorRef.current.getData?.() || currentMessage;
+      }
+    } catch (e) {
+      // ignore
+    }
+    formData.append("message", currentMessage);
     if (user) {
       formData.append("user_id", user.id);
       formData.append("added_by", user.is_seller === 1 ? "Seller" : "Buyer");
@@ -205,22 +221,18 @@ const TicketView = () => {
                     <h5 className="headinginfo mb-3">Add Reply</h5>
                     <form onSubmit={handleSubmit}>
                       <div className="mb-3">
-                        <JoditEditor
-                          value={message} // Bind to the message state
-                          config={{
-                            readonly: false,
-                            height: 300,
-                            toolbarSticky: false,
-                            buttons: [
-                              'source', '|', 'bold', 'italic', 'underline', '|',
-                              'ul', 'ol', '|', 'outdent', 'indent', '|',
-                              'image', 'link', '|', 'undo', 'redo'
-                            ]
+                        <CKEditor
+                          editor={ClassicEditor}
+                          data={message || ''}
+                          onReady={(editor) => { ckEditorRef.current = editor; }}
+                          onChange={(event, editor) => {
+                            const data = editor.getData();
+                            if (changeTimeout.current) clearTimeout(changeTimeout.current);
+                            const textOnly = (data || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+                            setShowButton(/\S/.test(textOnly));
+                            changeTimeout.current = setTimeout(() => {}, 200);
                           }}
-                          onChange={newContent => {
-                            setMessage(newContent); // Update the message state with the new content
-                            setShowButton(newContent.replace(/<[^>]*>/g, "").trim() !== ""); // Update button visibility
-                          }}
+                          onBlur={(event, editor) => { setMessage(editor.getData()); }}
                         />
 
                       </div>
@@ -253,6 +265,7 @@ const TicketView = () => {
                               </div>
 
                               <div className="mb-2"
+                                style={{ whiteSpace: 'pre-wrap' }}
                                 dangerouslySetInnerHTML={{ __html: reply.description || reply.reply }}
                               />
                             </div>
