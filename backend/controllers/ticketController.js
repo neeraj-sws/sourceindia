@@ -181,6 +181,80 @@ exports.updateTicketsStatus = async (req, res) => {
       is_complete: status === 2 ? 1 : ticket.is_complete,
     });
 
+    // Send emails for resolved/cancelled status
+    try {
+      const userName = `${ticket.fname || ''} ${ticket.lname || ''}`.trim();
+      const nowStr = new Date().toLocaleString();
+      const siteConfig = await getSiteConfig();
+      if (status === 2) { // Resolved
+        // User mail (117)
+        const userEmailTemplate = await Emails.findByPk(117);
+        if (userEmailTemplate) {
+          let userMsg = userEmailTemplate.message.toString("utf8");
+          userMsg = userMsg
+            .replace(/{{ USER_NAME }}/g, userName)
+            .replace(/{{ TICKET_ID }}/g, ticket.ticket_id)
+            .replace(/{{ TICKET_SUBJECT }}/g, ticket.title)
+            .replace(/{{ DATE_TIME }}/g, nowStr);
+          await sendMail({
+            to: ticket.email,
+            subject: userEmailTemplate.subject || "Your Support Ticket Has Been Resolved",
+            message: userMsg,
+          });
+        }
+        // Admin mail (116)
+        const adminEmailTemplate = await Emails.findByPk(116);
+        if (adminEmailTemplate) {
+          let adminMsg = adminEmailTemplate.message.toString("utf8");
+          adminMsg = adminMsg
+            .replace(/{{ USER_NAME }}/g, userName)
+            .replace(/{{ USER_EMAIL }}/g, ticket.email)
+            .replace(/{{ TICKET_ID }}/g, ticket.ticket_id)
+            .replace(/{{ TICKET_SUBJECT }}/g, ticket.title)
+            .replace(/{{ DATE_TIME }}/g, nowStr);
+          await sendMail({
+            to: siteConfig['site_email'],
+            subject: adminEmailTemplate.subject || "Admin Alert: Ticket Resolved",
+            message: adminMsg,
+          });
+        }
+      } else if (status === 3) { // Cancelled
+        // User mail (118)
+        const userEmailTemplate = await Emails.findByPk(118);
+        if (userEmailTemplate) {
+          let userMsg = userEmailTemplate.message.toString("utf8");
+          userMsg = userMsg
+            .replace(/{{ USER_NAME }}/g, userName)
+            .replace(/{{ TICKET_ID }}/g, ticket.ticket_id)
+            .replace(/{{ TICKET_SUBJECT }}/g, ticket.title)
+            .replace(/{{ DATE_TIME }}/g, nowStr);
+          await sendMail({
+            to: ticket.email,
+            subject: userEmailTemplate.subject || "Your Support Ticket Has Been Cancelled",
+            message: userMsg,
+          });
+        }
+        // Admin mail (119)
+        const adminEmailTemplate = await Emails.findByPk(119);
+        if (adminEmailTemplate) {
+          let adminMsg = adminEmailTemplate.message.toString("utf8");
+          adminMsg = adminMsg
+            .replace(/{{ USER_NAME }}/g, userName)
+            .replace(/{{ USER_EMAIL }}/g, ticket.email)
+            .replace(/{{ TICKET_ID }}/g, ticket.ticket_id)
+            .replace(/{{ TICKET_SUBJECT }}/g, ticket.title)
+            .replace(/{{ DATE_TIME }}/g, nowStr);
+          await sendMail({
+            to: siteConfig['site_email'],
+            subject: adminEmailTemplate.subject || "Admin Alert: Ticket Cancelled",
+            message: adminMsg,
+          });
+        }
+      }
+    } catch (mailErr) {
+      console.error('Status update mail error:', mailErr);
+    }
+
     return res.json({
       message: 'Ticket status updated successfully',
       ticket,
@@ -466,17 +540,14 @@ exports.createstoreTicket = async (req, res) => {
       return res.status(400).json({ error: 'Attachment upload failed', details: err.message });
     }
     try {
-
       const { first_name, last_name, phone, title, message, email, ticket_id, user_id, added_by } = req.body;
 
       const ticket = await Tickets.findByPk(ticket_id);
       if (!ticket || ticket.email !== email) {
         return res.status(403).json({ message: "Email not verified" });
       }
-      // const created_by = created_by || "Guest";
       const ticketId = `SOURCE-INDIA-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 900 + 100)}`;
       const crypto = require("crypto");
-
       const token = crypto.createHash("md5").update(req.body.title).digest("hex");
       // Save final ticket info
       ticket.fname = first_name;
@@ -505,6 +576,49 @@ exports.createstoreTicket = async (req, res) => {
         media_type: mediaType,
       });
 
+      // --- Send User Email (template 110) ---
+      try {
+        const userEmailTemplate = await Emails.findByPk(110);
+
+        if (userEmailTemplate) {
+          let userMsg = userEmailTemplate.message.toString("utf8");
+          userMsg = userMsg
+            .replace(/{{ USER_NAME }}/g, `${first_name} ${last_name}`)
+            .replace(/{{ TICKET_ID }}/g, ticketId)
+            .replace(/{{ TICKET_SUBJECT }}/g, title)
+            .replace(/{{ DATE_TIME }}/g, new Date().toLocaleString());
+          await sendMail({
+            to: email,
+            subject: userEmailTemplate.subject || "Support Ticket Created",
+            message: userMsg,
+          });
+        }
+      } catch (mailErr) {
+        console.error("User mail send error:", mailErr);
+      }
+      // --- Send Admin Email (template 111) ---
+      const siteConfig = await getSiteConfig();
+      try {
+        const adminEmailTemplate = await Emails.findByPk(111);
+        if (adminEmailTemplate) {
+          let adminMsg = adminEmailTemplate.message.toString("utf8");
+          adminMsg = adminMsg
+            .replace(/{{ USER_NAME }}/g, `${first_name} ${last_name}`)
+            .replace(/{{ USER_EMAIL }}/g, email)
+            .replace(/{{ TICKET_ID }}/g, ticketId)
+            .replace(/{{ TICKET_SUBJECT }}/g, title)
+            .replace(/{{ TICKET_MESSAGE }}/g, message)
+            .replace(/{{ DATE_TIME }}/g, new Date().toLocaleString());
+          const adminEmail = siteConfig['site_email'];
+          await sendMail({
+            to: adminEmail,
+            subject: adminEmailTemplate.subject || "New Support Ticket Submitted",
+            message: adminMsg,
+          });
+        }
+      } catch (mailErr) {
+        console.error("Admin mail send error:", mailErr);
+      }
 
       res.json({
         success: true,
@@ -642,7 +756,6 @@ exports.ticketReplystore = async (req, res) => {
         reply: message,
         attachment: attachment ? attachment.filename : null,
         media_type: type || 'reply',
-        // added_by: req.user ? req.user.role : 'Guest', // Adjust based on your auth setup
         added_by: added_by || 'Guest',
         user_id: user_id || 0,
       });
@@ -669,49 +782,93 @@ exports.ticketReplystore = async (req, res) => {
         ticketReply,
       };
 
-
-
-      const emailTemplate = await Emails.findByPk(84);
-      if (!emailTemplate) {
-        return res.status(404).json({ message: "Email template not found" });
-      }
-
-      const attUrl = attachmentUrl ? process.env.ROOT_URL + attachmentUrl : '';
-      const msgStr = emailTemplate.message.toString("utf8");
-      const userMessage = msgStr
-        .replace("{{ MESSAGE }}", message)
-        .replace("{{ USER_FNAME }}", ticket.fname)
-        .replace("{{ ADDED_BY }}", reply.added_by)
-        .replace("{{ TICKET_ID }}", ticket.ticket_id)
-        .replace("{{ LINK }}", attUrl)
-        .replace("{{ TITLE }}", ticket.title)
-        .replace("{{ ATTACHMENT }}", attUrl)
-        .replace("{{ USER_EMAIL }}", ticket.email)
-        .replace("{{ USER_NAME }}", ticket.fname + ' ' + ticket.lname);
-
-      // Step 4: Send notification emails using centralized sendMail
-      await sendMail({ to: ticket.email, subject: emailTemplate.subject, message: userMessage });
-
-      const adminemailTemplate = await Emails.findByPk(85);
-      if (!adminemailTemplate) {
-        return res.status(404).json({ message: "Admin Email template not found" });
-      }
-
-      const adminmsgStr = adminemailTemplate.message.toString("utf8");
-      const adminMessage = adminmsgStr
-        .replace("{{ MESSAGE }}", message)
-        .replace("{{ USER_FNAME }}", ticket.fname)
-        .replace("{{ ADDED_BY }}", reply.added_by)
-        .replace("{{ TICKET_ID }}", ticket.ticket_id)
-        .replace("{{ LINK }}", attUrl)
-        .replace("{{ TITLE }}", ticket.title)
-        .replace("{{ ATTACHMENT }}", attUrl)
-        .replace("{{ USER_EMAIL }}", ticket.email)
-        .replace("{{ USER_NAME }}", ticket.fname + ' ' + ticket.lname);
-
+      // --- Send Reply Emails (admin vs user) ---
+      const isAdminReply = (reply.added_by && reply.added_by.toLowerCase() === 'admin');
+      const nowStr = new Date().toLocaleString();
+      const userName = ticket.fname + ' ' + ticket.lname;
       const siteConfig = await getSiteConfig();
-      await sendMail({ to: siteConfig['site_email'], subject: adminemailTemplate.subject, message: adminMessage });
 
+      if (isAdminReply) {
+        // User mail (114)
+        try {
+          const userEmailTemplate = await Emails.findByPk(114);
+          if (userEmailTemplate) {
+            let userMsg = userEmailTemplate.message.toString("utf8");
+            userMsg = userMsg
+              .replace(/{{ USER_NAME }}/g, userName)
+              .replace(/{{ TICKET_ID }}/g, ticket.ticket_id)
+              .replace(/{{ SUPPORT_REPLY }}/g, message)
+              .replace(/{{ DATE_TIME }}/g, nowStr);
+            await sendMail({
+              to: ticket.email,
+              subject: userEmailTemplate.subject || "Support Team Replied to Your Ticket",
+              message: userMsg,
+            });
+          }
+        } catch (mailErr) {
+          console.error("User reply mail send error:", mailErr);
+        }
+        // Admin mail (115)
+        try {
+          const adminEmailTemplate = await Emails.findByPk(115);
+          if (adminEmailTemplate) {
+            let adminMsg = adminEmailTemplate.message.toString("utf8");
+            adminMsg = adminMsg
+              .replace(/{{ USER_NAME }}/g, userName)
+              .replace(/{{ USER_EMAIL }}/g, ticket.email)
+              .replace(/{{ TICKET_ID }}/g, ticket.ticket_id)
+              .replace(/{{ SUPPORT_REPLY }}/g, message)
+              .replace(/{{ DATE_TIME }}/g, nowStr);
+            await sendMail({
+              to: siteConfig['site_email'],
+              subject: adminEmailTemplate.subject || "Support Team Ticket Reply",
+              message: adminMsg,
+            });
+          }
+        } catch (mailErr) {
+          console.error("Admin reply mail send error:", mailErr);
+        }
+      } else {
+        // User mail (113)
+        try {
+          const userEmailTemplate = await Emails.findByPk(113);
+          if (userEmailTemplate) {
+            let userMsg = userEmailTemplate.message.toString("utf8");
+            userMsg = userMsg
+              .replace(/{{ USER_NAME }}/g, userName)
+              .replace(/{{ TICKET_ID }}/g, ticket.ticket_id)
+              .replace(/{{ USER_REPLY }}/g, message)
+              .replace(/{{ DATE_TIME }}/g, nowStr);
+            await sendMail({
+              to: ticket.email,
+              subject: userEmailTemplate.subject || "Support Ticket Reply Received",
+              message: userMsg,
+            });
+          }
+        } catch (mailErr) {
+          console.error("User reply mail send error:", mailErr);
+        }
+        // Admin mail (112)
+        try {
+          const adminEmailTemplate = await Emails.findByPk(112);
+          if (adminEmailTemplate) {
+            let adminMsg = adminEmailTemplate.message.toString("utf8");
+            adminMsg = adminMsg
+              .replace(/{{ USER_NAME }}/g, userName)
+              .replace(/{{ USER_EMAIL }}/g, ticket.email)
+              .replace(/{{ TICKET_ID }}/g, ticket.ticket_id)
+              .replace(/{{ USER_REPLY }}/g, message)
+              .replace(/{{ DATE_TIME }}/g, nowStr);
+            await sendMail({
+              to: siteConfig['site_email'],
+              subject: adminEmailTemplate.subject || "Support Ticket Reply Alert",
+              message: adminMsg,
+            });
+          }
+        } catch (mailErr) {
+          console.error("Admin reply mail send error:", mailErr);
+        }
+      }
 
       // Generate view HTML
       const view = attachmentUrl
