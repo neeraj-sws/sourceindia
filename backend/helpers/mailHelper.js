@@ -71,7 +71,7 @@ async function getTransporter() {
         }
     });
 
-    return { transporter, siteConfig, buildEmailHtml };
+     return { transporter, siteConfig, buildEmailHtml };
 }
 
 // Format 'from' address using site settings
