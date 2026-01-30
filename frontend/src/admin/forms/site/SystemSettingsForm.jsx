@@ -9,7 +9,7 @@ const SystemSettingsForm = () => {
   const [logoFile, setLogoFile] = useState(null);
   const [faviconFile, setFaviconFile] = useState(null);
   const [errors, setErrors] = useState({});
-  const [formData, setFormData] = useState({ title: '', site_email: '', mobile: '', address: '', logo_file: '', favicon_file: '', seller_category_limit: '' });
+  const [formData, setFormData] = useState({ title: '', website_email: '', site_email: '', site_email_cc: '', site_email_bcc: '', mobile: '', address: '', logo_file: '', favicon_file: '', seller_category_limit: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
@@ -32,8 +32,19 @@ const SystemSettingsForm = () => {
   const validateForm = () => {
     const errs = {};
     if (!formData.title.trim()) errs.title = 'Title is required';
+
+    if (!formData.website_email.trim()) errs.website_email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.website_email)) errs.website_email = 'Invalid email format';
+
     if (!formData.site_email.trim()) errs.site_email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.site_email)) errs.site_email = 'Invalid email format';
+
+    if (!formData.site_email_cc.trim()) errs.site_email_cc = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.site_email_cc)) errs.site_email_cc = 'Invalid email format';
+
+    if (!formData.site_email_bcc.trim()) errs.site_email_bcc = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.site_email_bcc)) errs.site_email_bcc = 'Invalid email format';
+
     if (!formData.mobile.trim()) errs.mobile = 'Mobile is required';
     else if (!/^[6-9]\d{9}$/.test(formData.mobile)) errs.mobile = "Mobile Number is invalid";
     if (!formData.address) errs.address = 'Address is required';
@@ -97,10 +108,10 @@ const SystemSettingsForm = () => {
           {errors.title && <div className="invalid-feedback">{errors.title}</div>}
         </div>
         <div className="col-md-4">
-          <label htmlFor="site_email" className="form-label required">Site Email</label>
-          <input type="email" className={`form-control ${errors.site_email ? 'is-invalid' : ''}`} id="site_email" placeholder="Site Email"
-            value={formData.site_email} onChange={handleInputChange} />
-          {errors.site_email && <div className="invalid-feedback">{errors.site_email}</div>}
+          <label htmlFor="website_email" className="form-label required">Website Email</label>
+          <input type="email" className={`form-control ${errors.website_email ? 'is-invalid' : ''}`} id="website_email" placeholder="Website Email"
+            value={formData.website_email} onChange={handleInputChange} />
+          {errors.website_email && <div className="invalid-feedback">{errors.website_email}</div>}
         </div>
         <div className="col-md-4">
           <label htmlFor="mobile" className="form-label required">Mobile</label>
@@ -167,7 +178,7 @@ const SystemSettingsForm = () => {
           />
           {errors.address && <div className="invalid-feedback">{errors.address}</div>}
         </div>
-        <div className="col-md-6">
+        <div className="col-md-3">
           <label htmlFor="seller_category_limit" className="form-label required">Seller Category Limit</label>
           <select id="seller_category_limit"
             className={`form-select ${errors.seller_category_limit ? 'is-invalid' : ''}`}
@@ -179,6 +190,24 @@ const SystemSettingsForm = () => {
             ))}
           </select>
           {errors.seller_category_limit && <div className="invalid-feedback">{errors.seller_category_limit}</div>}
+        </div>
+         <div className="col-md-3">
+          <label htmlFor="site_email" className="form-label required">Admin Site Email</label>
+          <input type="email" className={`form-control ${errors.site_email ? 'is-invalid' : ''}`} id="site_email" placeholder="Site Email"
+            value={formData.site_email} onChange={handleInputChange} />
+          {errors.site_email && <div className="invalid-feedback">{errors.site_email}</div>}
+        </div>
+         <div className="col-md-3">
+          <label htmlFor="site_email_cc" className="form-label required">Admin Site Email CC</label>
+          <input type="email" className={`form-control ${errors.site_email_cc ? 'is-invalid' : ''}`} id="site_email_cc" placeholder="Site Email CC"
+            value={formData.site_email_cc} onChange={handleInputChange} />
+          {errors.site_email_cc && <div className="invalid-feedback">{errors.site_email_cc}</div>}
+        </div>
+         <div className="col-md-3">
+          <label htmlFor="site_email_bcc" className="form-label required">Admin Site Email BCC</label>
+          <input type="email" className={`form-control ${errors.site_email_bcc ? 'is-invalid' : ''}`} id="site_email_bcc" placeholder="Site Email BCC"
+            value={formData.site_email_bcc} onChange={handleInputChange} />
+          {errors.site_email_bcc && <div className="invalid-feedback">{errors.site_email_bcc}</div>}
         </div>
         <div className="col-12 text-end mt-4">
           <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>
