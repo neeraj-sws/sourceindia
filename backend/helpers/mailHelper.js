@@ -22,6 +22,8 @@ async function getSiteConfig() {
                     'smtp_username',
                     'smtp_password',
                     'logo_file_id',
+                    'site_email_cc',
+                    'site_email_bcc',
                 ],
             },
         },
@@ -81,11 +83,31 @@ function formatFrom(siteConfig, defaultName = 'Source India-Electronics Supply P
 }
 
 // Centralized sendMail helper
-async function sendMail({ to, subject, message, htmlAlreadyBuilt = false, defaultFromName, fromOverride }) {
+async function sendMail({ to, subject, message, htmlAlreadyBuilt = false, defaultFromName, fromOverride, cc, bcc }) {
     const { transporter, siteConfig, buildEmailHtml } = await getTransporter();
     const from = fromOverride || formatFrom(siteConfig, defaultFromName);
     const htmlContent = htmlAlreadyBuilt ? message : await buildEmailHtml(message);
-    return transporter.sendMail({ from, to, subject, html: htmlContent });
+
+    // Determine whether the primary recipient includes the admin/site email
+    // Normalize `to` to array of addresses for comparison
+    let toList = [];
+    if (Array.isArray(to)) toList = to.map(t => (t || '').toString().trim());
+    else if (typeof to === 'string') toList = to.split(',').map(t => t.trim()).filter(Boolean);
+    else if (to && typeof to === 'object' && to.address) toList = [to.address];
+
+    const siteEmail = siteConfig?.['site_email']?.toString().trim();
+    const isToSiteEmail = siteEmail ? toList.some(t => t.toLowerCase() === siteEmail.toLowerCase()) : false;
+
+    // Allow callers to explicitly provide CC/BCC. If not provided, only apply
+    // site-configured CC/BCC when the mail is being sent to the site admin address.
+    const finalCc = cc || (isToSiteEmail ? siteConfig?.['site_email_cc'] : undefined) || undefined;
+    const finalBcc = bcc || (isToSiteEmail ? siteConfig?.['site_email_bcc'] : undefined) || undefined;
+
+    const mailOptions = { from, to, subject, html: htmlContent };
+    if (finalCc) mailOptions.cc = finalCc;
+    if (finalBcc) mailOptions.bcc = finalBcc;
+
+    return transporter.sendMail(mailOptions);
 }
 
 function slugify(text) {
