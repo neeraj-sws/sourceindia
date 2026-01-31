@@ -1411,7 +1411,7 @@ exports.submitEnquiryuser = async (req, res) => {
     } catch (e) {
       console.error('Failed to send admin enquiry notification:', e.message || e);
     }
-    
+
     /* ------------------------------
        8. Final response
     ------------------------------ */
@@ -1657,7 +1657,7 @@ exports.getLeadsCount = async (req, res) => {
           where: { company_id: companyId },
           required: true,
         }],
-        where: { is_delete: 0, is_approve: 1 },
+        where: { is_delete: 0, },
         distinct: true,
         col: 'enquiry_id',
       }),
@@ -1669,7 +1669,7 @@ exports.getLeadsCount = async (req, res) => {
           where: { company_id: companyId },
           required: true,
         }],
-        where: { is_delete: 0, is_approve: 1, status: 1 },
+        where: { is_delete: 0, status: 1 },
         distinct: true,
         col: 'enquiry_id',
       }),
@@ -1681,25 +1681,25 @@ exports.getLeadsCount = async (req, res) => {
           where: { company_id: companyId },
           required: true,
         }],
-        where: { is_delete: 0, is_approve: 1, status: 0 },
+        where: { is_delete: 0, status: 0 },
         distinct: true,
         col: 'enquiry_id',
       }),
 
       Enquiries.findAndCountAll({
-        where: { is_delete: 0, is_approve: 1, user_id: user.id },
+        where: { is_delete: 0, user_id: user.id },
         distinct: true,
         col: 'enquiry_id',
       }),
 
       Enquiries.findAndCountAll({
-        where: { is_delete: 0, is_approve: 1, status: 1, user_id: user.id },
+        where: { is_delete: 0, status: 1, user_id: user.id },
         distinct: true,
         col: 'enquiry_id',
       }),
 
       Enquiries.findAndCountAll({
-        where: { is_delete: 0, is_approve: 1, status: 0, user_id: user.id },
+        where: { is_delete: 0, status: 0, user_id: user.id },
         distinct: true,
         col: 'enquiry_id',
       }),
@@ -2250,7 +2250,7 @@ exports.getEnquiriesByEnquiryServerSide = async (req, res) => {
     }
 
     const where = {
-      is_approve: 1,
+      //   is_approve: 1,
       user_id: user_id,
       is_delete: 0
     };
