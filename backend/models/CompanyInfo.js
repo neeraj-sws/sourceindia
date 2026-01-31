@@ -31,9 +31,6 @@ const CompanyInfo = sequelize.define('CompanyInfo', {
   membership_plan: { type: DataTypes.STRING, allowNull: true },
   brief_company: { type: DataTypes.TEXT('long'), allowNull: true },
   callin_pin: { type: DataTypes.INTEGER, allowNull: true },
-  category_buy: { type: DataTypes.STRING, allowNull: true },
-  category_sell: { type: DataTypes.STRING, allowNull: true },
-  sub_category: { type: DataTypes.STRING, allowNull: true },
   core_activity: { type: DataTypes.STRING, allowNull: true },
   activity: { type: DataTypes.STRING, allowNull: true },
   nature_business: { type: DataTypes.STRING, allowNull: true },
@@ -70,8 +67,6 @@ CompanyInfo.belongsTo(UploadImage, { foreignKey: 'company_logo', targetKey: 'id'
 CompanyInfo.belongsTo(UploadImage, { foreignKey: 'company_sample_ppt_file', targetKey: 'id', as: 'companySamplePptFile', onDelete: 'CASCADE' });
 CompanyInfo.belongsTo(UploadImage, { foreignKey: 'company_video', targetKey: 'id', as: 'companyVideo', onDelete: 'CASCADE' });
 CompanyInfo.belongsTo(UploadImage, { foreignKey: 'sample_file_id', targetKey: 'id', as: 'companySampleFile', onDelete: 'CASCADE' });
-CompanyInfo.belongsTo(Categories, { foreignKey: 'category_sell', targetKey: 'id', as: 'Categories', constraints: false });
-CompanyInfo.belongsTo(SubCategories, { foreignKey: 'sub_category', targetKey: 'id', as: 'SubCategories', constraints: false });
 CompanyInfo.belongsTo(CoreActivity, { foreignKey: 'core_activity', targetKey: 'id', as: 'CoreActivity', constraints: false });
 CompanyInfo.belongsTo(Activity, { foreignKey: 'activity', targetKey: 'id', as: 'Activity', constraints: false });
 CompanyInfo.belongsTo(MembershipPlan, { foreignKey: 'membership_plan', targetKey: 'id', as: 'MembershipPlan', constraints: false });
