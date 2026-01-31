@@ -677,7 +677,6 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
         sub_category_name: sub_category_names,
       });
     }
-
     // Final mapped response
     const mappedRows = enrichedRows.map(row => {
       const base = {
@@ -693,6 +692,8 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
         is_approve: row.is_approve,
         from_full_name: row.from_user ? `${row.from_user.fname} ${row.from_user.lname}` : null,
         from_email: row.from_user?.email || null,
+        product_name: row.enquiry_users?.[0]?.product_name || null,
+        product_slug: row.enquiry_users?.[0]?.Products?.slug || null,
       };
 
       if (viewType === 'dashboard') {
@@ -702,6 +703,17 @@ exports.getAllEnquiriesServerSide = async (req, res) => {
           to_organization_name: row.to_user?.company_info?.organization_name || null,
           to_organization_slug: row.to_user?.company_info?.organization_slug || null,
           product_slug: row.enquiry_users?.[0]?.Products?.slug || null,
+          from_mobile: row.from_user?.mobile || null,
+          from_organization_name: row.from_user?.company_info?.organization_name || null,
+          from_organization_slug: row.from_user?.company_info?.organization_slug || null,
+          from_user_type: row.from_user?.is_seller ?? null,
+          to_full_name: row.to_user ? `${row.to_user.fname} ${row.to_user.lname}` : null,
+          to_email: row.to_user?.to_email || null,
+          to_mobile: row.to_user?.to_mobile || null,
+          to_company_id: row.to_user?.to_company_id || null,
+          to_organization_name: row.to_user?.company_info?.organization_name || null,
+          to_organization_slug: row.to_user?.company_info?.organization_slug || null,
+          to_user_type: row.to_user?.is_seller ?? null,
         };
       }
 

@@ -14,7 +14,7 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { format } from "date-fns";
 
-const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted}) => {
+const LeadsList = ({ getPublic, getApprove, getNotApprove, viewType, getDeleted }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -41,7 +41,7 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
   const [tempEndDate, setTempEndDate] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [range, setRange] = useState([
-    {startDate: new Date(), endDate: new Date(), key: 'selection'}
+    { startDate: new Date(), endDate: new Date(), key: 'selection' }
   ]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
@@ -53,7 +53,7 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
   const [tempEnquiryNo, setTempEnquiryNo] = useState("");
   const [enquiriesCount, setEnquiriesCount] = useState("");
   const datePickerRef = useRef(null);
-        
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
@@ -106,17 +106,17 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
       width: "100%",
       placeholder: "Select Category",
     })
-    .on("change", function () {
-      handleCategoryChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleCategoryChange({ target: { value: $(this).val() } });
+      });
     $("#sub_category").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select Sub Category",
     })
-    .on("change", function () {
-      handleSubCategoryChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleSubCategoryChange({ target: { value: $(this).val() } });
+      });
     return () => {
       const $category = $("#category");
       const $subCategory = $("#sub_category");
@@ -133,10 +133,11 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/enquiries/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, getPublic: getPublic ? 'true' : 'false',
-        getApprove: getApprove ? 'true' : 'false', getNotApprove: getNotApprove ? 'true' : 'false', viewType: 'leads',
-        dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "", enquiry_no: enquiryNo || ""
-      },
+        params: {
+          page, limit, search, sortBy, sort: sortDirection, getPublic: getPublic ? 'true' : 'false',
+          getApprove: getApprove ? 'true' : 'false', getNotApprove: getNotApprove ? 'true' : 'false', viewType: 'leads',
+          dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "", enquiry_no: enquiryNo || ""
+        },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -265,7 +266,7 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
     try {
       await axios.patch(`${API_BASE_URL}/enquiries/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map((d) => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if(field == "account_status" || field=="delete_status"){
+      if (field == "account_status" || field == "delete_status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
@@ -302,7 +303,7 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
     $("#category").val("").trigger("change");
     $("#sub_category").val("").trigger("change");
   };
-  
+
   const handleRangeChange = (item) => {
     const start = item.selection.startDate;
     const end = item.selection.endDate;
@@ -316,130 +317,130 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Enquiry" maincount={totalRecords} page="Leads Master" title={ getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : getNotApprove ? "Pending Leads" : "Leads" }
-          actions={
-            <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-            {!getDeleted ? (
+          <Breadcrumb mainhead="Enquiry" maincount={totalRecords} page="Leads Master" title={getPublic ? "Public Enquiries" : getApprove ? "Approve Leads" : getNotApprove ? "Pending Leads" : "Leads"}
+            actions={
               <>
-                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedEnquiries.length === 0}>
-                  <i className="bx bx-trash me-1" /> Delete Selected
-                </button>
-                <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/enquiry-remove-list">
-                  Recently Deleted Enquiry
-                </Link>
+                <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                {!getDeleted ? (
+                  <>
+                    <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedEnquiries.length === 0}>
+                      <i className="bx bx-trash me-1" /> Delete Selected
+                    </button>
+                    <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/enquiry-remove-list">
+                      Recently Deleted Enquiry
+                    </Link>
+                  </>
+                ) : (
+                  <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                    Back
+                  </button>
+                )}
               </>
-            ) : (
-              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
-                Back
-              </button>
-            )}
-            </>
-          }
+            }
           />
-          { !getPublic && (
-          <div className="row pb-3 pt-3 mb-3">
-            <div className="col-sm-3">
-              <div className="card radius-10 mb-3">
-                <div className="card-body bg-light shadow-sm rounded h-100">
-                  <div className="d-flex align-items-center">
-                    <div>
-                      <p className="mb-0 text-secondary">No. of Leads</p>
-                      <h4 className="my-1">{enquiriesCount.all}</h4>
+          {!getPublic && (
+            <div className="row pb-3 pt-3 mb-3">
+              <div className="col-sm-3">
+                <div className="card radius-10 mb-3">
+                  <div className="card-body bg-light shadow-sm rounded h-100">
+                    <div className="d-flex align-items-center">
+                      <div>
+                        <p className="mb-0 text-secondary">No. of Leads</p>
+                        <h4 className="my-1">{enquiriesCount.all}</h4>
+                      </div>
+                      <div className="widgets-icons bg-light-primary text-primary ms-auto">
+                        <i className="bx bx-cart" />
+                      </div>
                     </div>
-                    <div className="widgets-icons bg-light-primary text-primary ms-auto">
-                      <i className="bx bx-cart" />
+                  </div>
+                </div>
+              </div>
+              <div className="col-sm-3">
+                <div className="card radius-10 mb-3">
+                  <div className="card-body bg-light shadow-sm rounded">
+                    <div className="d-flex align-items-center">
+                      <div>
+                        <p className="mb-0 text-secondary">Open Leads</p>
+                        <h4 className="my-1">{enquiriesCount.status1}</h4>
+                      </div>
+                      <div className="widgets-icons bg-light-primary text-primary ms-auto">
+                        <i className="bx bx-cart" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="col-sm-3">
+                <div className="card radius-10 mb-3">
+                  <div className="card-body bg-light shadow-sm rounded">
+                    <div className="d-flex align-items-center">
+                      <div>
+                        <p className="mb-0 text-secondary">Closed Leads</p>
+                        <h4 className="my-1">{enquiriesCount.status2}</h4>
+                      </div>
+                      <div className="widgets-icons bg-light-primary text-primary ms-auto">
+                        <i className="bx bx-cart" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="col-sm-3">
+                <div className="card radius-10 mb-3">
+                  <div className="card-body bg-light shadow-sm rounded">
+                    <div className="d-flex align-items-center">
+                      <div>
+                        <p className="mb-0 text-secondary">Pending Leads</p>
+                        <h4 className="my-1">{enquiriesCount.status0}</h4>
+                      </div>
+                      <div className="widgets-icons bg-light-primary text-primary ms-auto">
+                        <i className="bx bx-cart" />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="col-sm-3">
-              <div className="card radius-10 mb-3">
-                <div className="card-body bg-light shadow-sm rounded">
-                  <div className="d-flex align-items-center">
-                    <div>
-                      <p className="mb-0 text-secondary">Open Leads</p>
-                      <h4 className="my-1">{enquiriesCount.status1}</h4>
-                    </div>
-                    <div className="widgets-icons bg-light-primary text-primary ms-auto">
-                      <i className="bx bx-cart" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-sm-3">
-              <div className="card radius-10 mb-3">
-                <div className="card-body bg-light shadow-sm rounded">
-                  <div className="d-flex align-items-center">
-                    <div>
-                      <p className="mb-0 text-secondary">Closed Leads</p>
-                      <h4 className="my-1">{enquiriesCount.status2}</h4>
-                    </div>
-                    <div className="widgets-icons bg-light-primary text-primary ms-auto">
-                      <i className="bx bx-cart" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-sm-3">
-              <div className="card radius-10 mb-3">
-                <div className="card-body bg-light shadow-sm rounded">
-                  <div className="d-flex align-items-center">
-                    <div>
-                      <p className="mb-0 text-secondary">Pending Leads</p>
-                      <h4 className="my-1">{enquiriesCount.status0}</h4>
-                    </div>
-                    <div className="widgets-icons bg-light-primary text-primary ms-auto">
-                      <i className="bx bx-cart" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
           )}
           <div className="card mb-3">
             <div className="card-body">
               <div className="row">
                 {!getDeleted && (
-                <>
-                <div className="col-md-4 mb-3">
-                  <label className="form-label">Enquiry No</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter Enquiry No"
-                    value={tempEnquiryNo}
-                    onChange={(e) => setTempEnquiryNo(e.target.value)}
-                  />
-                </div>
-                {!getPublic && (
-                <>
-                <div className="col-md-4 mb-3">
-                  <label className="form-label">Category</label>
-                  <select id="category" className="form-control select2" value={selectedCategory} onChange={handleCategoryChange}>
-                    <option value="">All</option>
-                    {categories.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-4 mb-3">
-                  <label className="form-label">Sub Category</label>
-                  <select id="sub_category" className="form-control select2" value={selectedSubCategory} onChange={handleSubCategoryChange}>
-                    <option value="">All</option>
-                    {subCategories.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                </>
+                  <>
+                    <div className="col-md-4 mb-3">
+                      <label className="form-label">Enquiry No</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Enter Enquiry No"
+                        value={tempEnquiryNo}
+                        onChange={(e) => setTempEnquiryNo(e.target.value)}
+                      />
+                    </div>
+                    {!getPublic && (
+                      <>
+                        <div className="col-md-4 mb-3">
+                          <label className="form-label">Category</label>
+                          <select id="category" className="form-control select2" value={selectedCategory} onChange={handleCategoryChange}>
+                            <option value="">All</option>
+                            {categories.map((s) => (
+                              <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-md-4 mb-3">
+                          <label className="form-label">Sub Category</label>
+                          <select id="sub_category" className="form-control select2" value={selectedSubCategory} onChange={handleSubCategoryChange}>
+                            <option value="">All</option>
+                            {subCategories.map((s) => (
+                              <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
+                  </>
                 )}
-                </>
-                )}                
                 <div className={!getDeleted ? "col-md-6 mb-3" : "col-md-8 d-flex align-items-center gap-2"}>
                   <label className="form-label">Date Filter:</label>
                   <div className="position-relative">
@@ -506,17 +507,16 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
             <div className="card-body">
               <DataTable
                 columns={[
-                  ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),
+                  ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "enquiry_number", label: "Lead Number", sortable: true },
-                  { key: "from_full_name", label: "Name", sortable: true },
-                  { key: "to_organization_name", label: "To", sortable: true },
-                  { key: "from_organization_name", label: "From", sortable: true },
-                  { key: "category_name", label: "Category", sortable: true },
+                  { key: "from_organization_name", label: "Sender", sortable: true },
+                  { key: "to_organization_name", label: "Receiver", sortable: true },
+                  { key: "category_name", label: "Product", sortable: true },
                   { key: "quantity", label: "Quantity", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },
                   { key: "updated_at", label: "Updated At", sortable: true },
-                  ...(getNotApprove ? [{ key: "account_status", label: "Approval", sortable: false }]:[]),
+                  ...(getNotApprove ? [{ key: "account_status", label: "Approval", sortable: false }] : []),
                   { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}
@@ -536,20 +536,12 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     {!getDeleted && (
-                    <td>                    
-                      <input type="checkbox" checked={selectedEnquiries.includes(row.id)} onChange={() => handleSelectEnquiries(row.id)} />
-                    </td>
+                      <td>
+                        <input type="checkbox" checked={selectedEnquiries.includes(row.id)} onChange={() => handleSelectEnquiries(row.id)} />
+                      </td>
                     )}
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td><Link to={`/admin/admin-view-enquiry/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
-                    <td>{row.from_full_name}<br />{row.from_email}</td>
-                    <td>
-                      {row.to_organization_name && (<><a href={`/companies/${row.to_organization_slug}`} target="_blank">{row.to_organization_name}</a><br /></>)}
-                      {row.to_full_name && (<>{row.to_full_name}<br /></>)}
-                      {row.to_email && (<>{row.to_email}<br /></>)}
-                      {row.to_mobile && (<>{row.to_mobile}<br /></>)}
-                      <span className="badge bg-primary">{row.to_user_type == 1 ? "Seller" : row.to_user_type == 0 ? "Buyer" : ""}</span>
-                    </td>
                     <td>
                       {row.from_organization_name && (<><a href={`/companies/${row.from_organization_slug}`} target="_blank">{row.from_organization_name}</a><br /></>)}
                       {row.from_full_name && (<>{row.from_full_name}<br /></>)}
@@ -557,56 +549,70 @@ const LeadsList = ({getPublic, getApprove, getNotApprove, viewType, getDeleted})
                       {row.from_mobile && (<>{row.from_mobile}<br /></>)}
                       <span className="badge bg-primary">{row.from_user_type == 1 ? "Seller" : row.from_user_type == 0 ? "Buyer" : ""}</span>
                     </td>
-                    <td>{row.category_name}</td>
+                    <td>
+                      {row.to_organization_name && (<><a href={`/companies/${row.to_organization_slug}`} target="_blank">{row.to_organization_name}</a><br /></>)}
+                      {row.to_full_name && (<>{row.to_full_name}<br /></>)}
+                      {row.to_email && (<>{row.to_email}<br /></>)}
+                      {row.to_mobile && (<>{row.to_mobile}<br /></>)}
+                      <span className="badge bg-primary">{row.to_user_type == 1 ? "Seller" : row.to_user_type == 0 ? "Buyer" : ""}</span>
+                    </td>
+
+                    <td>
+                      {row.product_slug ? (
+                        <Link to={`/product/${row.product_slug}`} target="_blank">{row.product_name}</Link>
+                      ) : (
+                        row.product_name
+                      )}
+                    </td>
                     <td>{row.quantity}</td>
                     <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     {getNotApprove && (
-                    <td>
-                      <button type="button" className="btn btn-success btn-sm"
-                      onClick={(e) => { e.preventDefault(); openStatusModal( row.id, row.is_approve, "account_status", "is_approve" ); }}
-                      >
-                        Approve
-                      </button>
-                    </td>
+                      <td>
+                        <button type="button" className="btn btn-success btn-sm"
+                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_approve, "account_status", "is_approve"); }}
+                        >
+                          Approve
+                        </button>
+                      </td>
                     )}
                     <td>
                       <div className="dropdown">
-                        <button  className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </button>
                         <ul className="dropdown-menu">
                           {!getDeleted ? (
-                          <>
-                          <li>
-                            <button className="dropdown-item text-danger" 
-                              onClick={(e) => {
-                                e.preventDefault(); 
-                                openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                              }}
-                            >
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                          </>                          
+                            <>
+                              <li>
+                                <button className="dropdown-item text-danger"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </>
                           ) : (
-                          <>
-                          <li>
-                            <button className="dropdown-item" 
-                              onClick={(e) => {
-                                e.preventDefault(); 
-                                openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                              }}
-                            >
-                              <i className="bx bx-windows me-2"></i> Restore
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                          </>
+                            <>
+                              <li>
+                                <button className="dropdown-item"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-windows me-2"></i> Restore
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </>
                           )}
                         </ul>
                       </div>
