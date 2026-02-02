@@ -51,8 +51,9 @@ const Login = () => {
         password: formData.password
       });
 
-      const { token } = response.data;
+      const { token, admin } = response.data;
       localStorage.setItem('token', token);
+      localStorage.setItem("admin", JSON.stringify(admin));
 
       if (rememberMe) {
         Cookies.set('rememberedEmail', formData.email, { expires: 7 });

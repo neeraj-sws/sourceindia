@@ -85,7 +85,12 @@ const TicketView = () => {
   useEffect(() => {
     const fetchNextTicket = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/tickets/id/${ticketId}/next`);
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API_BASE_URL}/tickets/id/${ticketId}/next`, {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
         setNextTicket(res.data);
       } catch (error) {
         console.error("Error fetching next ticket:", error);

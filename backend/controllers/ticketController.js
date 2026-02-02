@@ -6,6 +6,7 @@ const TicketCategory = require('../models/TicketCategory');
 const TicketReply = require('../models/TicketReply');
 const Emails = require('../models/Emails');
 const Users = require('../models/Users');
+const Admin = require('../models/Admin');
 const getMulterUpload = require('../utils/upload');
 const { body, validationResult } = require('express-validator');
 const upload = getMulterUpload('tickets').single('attachment');
@@ -16,44 +17,92 @@ require('dotenv').config();
 exports.createTickets = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ error: 'Attachment upload failed', details: err.message });
+      return res.status(400).json({
+        error: "Attachment upload failed",
+        details: err.message,
+      });
     }
+
     try {
-      const { user_id, title, message, priority, category, status } = req.body;
-      const attachment = req.file ? req.file.filename : null;
-
-      // Fetch user details
-      const user = await Users.findByPk(user_id);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      // Generate ticket ID
-      const dateStr = moment().format('YYYYMMDD');
-      const randomNum = Math.floor(100 + Math.random() * 900);
-      const ticket_id = `SOURCE-INDIA-${dateStr}-${randomNum}`;
-
-      // Create ticket with user info and added_by="admin"
-      const ticket = await Tickets.create({
+      const {
         user_id,
-        ticket_id,
         title,
         message,
         priority,
         category,
         status,
-        attachment,
+      } = req.body;
+
+      // 1️⃣ Validate User
+      const user = await Users.findByPk(user_id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // 2️⃣ Generate Ticket ID
+      const dateStr = moment().format("YYYYMMDD");
+      const randomNum = Math.floor(100 + Math.random() * 900);
+      const ticketId = `SOURCE-INDIA-${dateStr}-${randomNum}`;
+
+      // 3️⃣ Generate Token
+      const crypto = require("crypto");
+      const token = crypto
+        .createHash("md5")
+        .update(title + Date.now())
+        .digest("hex");
+
+      // 4️⃣ Create Ticket
+      const ticket = await Tickets.create({
+        user_id,
+        ticket_id: ticketId,
+        title,
+        message,
+        priority,
+        category,
+        status,
+        attachment: req.file ? req.file.filename : null,
+
         fname: user.fname,
         lname: user.lname,
         email: user.email,
         phone: user.mobile,
-        added_by: 'admin',
+
+        added_by: "admin",
+        created_by: "Admin",
+        token,
+        is_complete: 1,
       });
 
-      res.status(201).json({ message: 'Ticket created successfully', ticket });
-    } catch (err) {
-      console.error('Error creating ticket:', err);
-      res.status(500).json({ error: err.message });
+      // 5️⃣ Create First Reply
+      const mediaType = req.file?.mimetype?.startsWith("image/")
+        ? "image"
+        : req.file
+        ? "file"
+        : "text";
+
+      await TicketReply.create({
+        user_id: user_id,
+        ticket_id: ticket.id, // FK (tickets_id)
+        reply: message,
+        added_by: "Admin",
+        attachment: req.file ? req.file.filename : null,
+        media_type: mediaType,
+      });
+
+      // 6️⃣ Response
+      return res.status(201).json({
+        success: true,
+        message: "Ticket created successfully",
+        ticket,
+        ticket_id: ticketId,
+        token,
+      });
+    } catch (error) {
+      console.error("Admin Ticket Create Error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create ticket",
+      });
     }
   });
 };
@@ -267,6 +316,15 @@ exports.updateTicketsStatus = async (req, res) => {
 
 exports.getAllTicketsServerSide = async (req, res) => {
   try {
+    const adminId = req.user.id;
+
+    const admin = await Admin.findByPk(adminId, {
+      include: [{ association: 'Roles' }]
+    });
+
+    if (!admin) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
     const {
       page = 1,
       limit = 10,
@@ -304,6 +362,18 @@ exports.getAllTicketsServerSide = async (req, res) => {
       order = [['id', 'DESC']];
     }
     const baseWhere = {};
+    if (admin.Roles?.id !== 4) {
+  if (admin.Roles?.ticket_category === 0) {
+    // show all categories → do nothing
+  } else if (
+    admin.Roles?.ticket_category !== null &&
+    admin.Roles?.ticket_category !== undefined
+  ) {
+    baseWhere.category = admin.Roles.ticket_category;
+  } else {
+    baseWhere.category = -1; // no tickets
+  }
+}
     let dateCondition = null;
     if (dateRange) {
       const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
@@ -361,7 +431,7 @@ exports.getAllTicketsServerSide = async (req, res) => {
     if (priority) {
       baseWhere.priority = priority;
     }
-    if (category) {
+    if (category && admin.Roles?.id === 4) {
       baseWhere.category = category;
     }
     if (title) {
@@ -932,13 +1002,55 @@ exports.getNextTicketById = async (req, res) => {
     const { id } = req.params;
     const ticketId = parseInt(id, 10);
 
-    if (isNaN(ticketId)) return res.status(400).json({ error: 'Invalid id parameter' });
+    if (isNaN(ticketId)) {
+      return res.status(400).json({ error: 'Invalid id parameter' });
+    }
 
-    const current = await Tickets.findOne({ where: { id: ticketId } });
-    if (!current) return res.json({ next: null, token: null, id: null });
+    // 1. Get logged-in admin
+    const adminId = req.user.id;
 
+    const admin = await Admin.findByPk(adminId, {
+      include: [{ association: 'Roles' }]
+    });
+
+    if (!admin) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // 2. Build baseWhere like getAllTicketsServerSide
+    const baseWhere = {};
+
+    if (admin.Roles?.id !== 4) {
+      if (admin.Roles?.ticket_category === 0) {
+        // all categories → no filter
+      } else if (
+        admin.Roles?.ticket_category !== null &&
+        admin.Roles?.ticket_category !== undefined
+      ) {
+        baseWhere.category = admin.Roles.ticket_category;
+      } else {
+        baseWhere.category = -1; // no tickets
+      }
+    }
+
+    // 3. Find current ticket WITH role condition
+    const current = await Tickets.findOne({
+      where: {
+        id: ticketId,
+        ...baseWhere
+      }
+    });
+
+    if (!current) {
+      return res.json({ next: null, token: null, id: null });
+    }
+
+    // 4. Find next ticket (previous ID) WITH SAME condition
     const next = await Tickets.findOne({
-      where: { id: { [Op.lt]: current.id } },
+      where: {
+        id: { [Op.lt]: current.id },
+        ...baseWhere
+      },
       order: [['id', 'DESC']],
       attributes: ['ticket_id', 'token', 'id']
     });
@@ -950,6 +1062,7 @@ exports.getNextTicketById = async (req, res) => {
     });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 };
