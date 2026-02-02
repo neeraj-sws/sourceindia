@@ -65,7 +65,15 @@ const TicketList = () => {
   newStatus: null,
 });
 const [statusLoading, setStatusLoading] = useState(false);
+const admin = JSON.parse(localStorage.getItem("admin"));
+const isSuperAdmin = admin?.role === 4;
         
+useEffect(() => {
+  if (!isSuperAdmin && admin?.Roles?.ticket_category) {
+    setSelectedCategory(String(admin.Roles.ticket_category));
+  }
+}, [isSuperAdmin]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
@@ -85,7 +93,9 @@ const [statusLoading, setStatusLoading] = useState(false);
   const fetchData = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem("token");
       const response = await axios.get(`${API_BASE_URL}/tickets/server-side`, {
+        headers: { Authorization: `Bearer ${token}` },
         params: { page, limit, search, sortBy, sort: sortDirection, dateRange, startDate, endDate, 
         title: ticketTitle || "", status: appliedStatusFilter || "", priority: appliedPriorityFilter || "", category: appliedFilterCategories },
       });
@@ -500,6 +510,7 @@ setStatusLoading(true);
                         <option value="high">High</option>
                       </select>
                     </div>
+                    {isSuperAdmin ? (
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="category" className="form-label required">Category</label>
                       <select
@@ -517,6 +528,13 @@ setStatusLoading(true);
                       </select>
                       {errors.category && <div className="text-danger small mt-1">{errors.category}</div>}
                     </div>
+                    ) : (
+  <input
+    type="hidden"
+    name="category"
+    value={selectedCategory}
+  />
+)}
                     <div className="form-group col-md-12 mb-3">
                       <label htmlFor="message" className="form-label required">Message</label>
                       <textarea
@@ -615,6 +633,7 @@ setStatusLoading(true);
                         <option value="critical">Critical</option>
                       </select>
                     </div>
+                    {isSuperAdmin && (
                     <div className="col-md-6 mb-3">
                       <label className="form-label">Categories</label>
                       <select id="filter_categories" className="form-control select2" value={selectedFilterCategories} onChange={handleFilterCategoriesChange}>
@@ -624,6 +643,7 @@ setStatusLoading(true);
                         ))}
                       </select>
                     </div>
+                    )}
                     <div className="col-md-8">
                       <label className="form-label mb-0">Date Filter:</label>
                       <div className="position-relative">
