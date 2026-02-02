@@ -234,7 +234,7 @@ const handleFileChange = (e) => {
     if (!selectedUsers) errs.user_id = "User is required";
     if (!formData.message.trim()) errs.message = "Message is required";
     // if (!formData.priority.trim()) errs.priority = "Priority is required";
-    if (!selectedCategory) errs.category = "Category is required";
+    if (isSuperAdmin && !selectedCategory) errs.category = "Category is required";
     // if (!formData.status) errs.status = "Invalid status";
     // if (!formData.attachment && !isEditing) {
     //   errs.attachment = "Attachment is required";
