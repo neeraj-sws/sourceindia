@@ -1246,7 +1246,7 @@ exports.storeEnquiry = async (req, res) => {
 
     const enquiry = await Enquiries.create({
       enquiry_number,
-      company_id: enq_company_id,
+      company_id: product.user_id,
       user_id: user.id,
       buyer_company_id: companyInfoData.id,
       description,
@@ -1334,7 +1334,7 @@ exports.submitEnquiryuser = async (req, res) => {
 
     const enquiry = await Enquiries.create({
       enquiry_number,
-      company_id: enq_company_id,
+      company_id: product.user_id,
       buyer_company_id: senderUser.company_id,
       user_id: senderUser.id,
       type: 1,
