@@ -317,7 +317,7 @@ const EnquiryList = ({ user_id }) => {
 
                       <td>{row.enquiry_users[0].product_name}</td>
                       <td>{row.category_name}</td>
-                      <td>{row.to_user.company_info.organization_name}</td>
+                      <td>{row.to_user?.company_info?.organization_name}</td>
                       <td>{row.quantity}</td>
                       <td>{formatDateTime(row.created_at)}</td>
                       <td>{row.enquiry_users &&
