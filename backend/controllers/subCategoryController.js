@@ -8,26 +8,26 @@ const Categories = require('../models/Categories');
 const Products = require('../models/Products');
 const CompanyInfo = require('../models/CompanyInfo');
 const SellerCategory = require('../models/SellerCategory');
-  const UploadImage = require('../models/UploadImage');
-  const getMulterUpload = require('../utils/upload');
+const UploadImage = require('../models/UploadImage');
+const getMulterUpload = require('../utils/upload');
 
 exports.createSubCategories = async (req, res) => {
   const upload = getMulterUpload('sub_category');
   upload.single('file')(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
-  try {
-    const { name, category, status } = req.body;
-    /*if (!name || !category || !status) {
-        return res.status(400).json({ message: 'All fields (name, category, status) are required' });
-      }*/
-    const uploadImage = await UploadImage.create({
+    try {
+      const { name, category, status } = req.body;
+      /*if (!name || !category || !status) {
+          return res.status(400).json({ message: 'All fields (name, category, status) are required' });
+        }*/
+      const uploadImage = await UploadImage.create({
         file: `upload/sub_category/${req.file.filename}`,
       });
-    const subCategories = await SubCategories.create({ name, category, status, file_id: uploadImage.id });
-    res.status(201).json({ message: 'Sub Category created', subCategories });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+      const subCategories = await SubCategories.create({ name, category, status, file_id: uploadImage.id });
+      res.status(201).json({ message: 'Sub Category created', subCategories });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   });
 };
 
@@ -128,7 +128,7 @@ exports.getSubCategoriesByCategory = async (req, res) => {
   }
 };
 
-exports.getSubCategoriesByCategories = async (req, res) => { 
+exports.getSubCategoriesByCategories = async (req, res) => {
   try {
     const { categories } = req.body;
 
@@ -158,9 +158,11 @@ exports.getSubCategoriesByCategories = async (req, res) => {
     // 2. Product counts per subcategory
     const productCounts = await Products.findAll({
       attributes: ['sub_category', [fn('COUNT', col('product_id')), 'count']],
-      where: { is_delete: 0, 
+      where: {
+        is_delete: 0,
         // is_approve: 1, 
-        status: 1, category: { [Op.in]: categories } },
+        status: 1, category: { [Op.in]: categories }
+      },
       group: ['sub_category'],
       raw: true,
     });
@@ -171,22 +173,22 @@ exports.getSubCategoriesByCategories = async (req, res) => {
     });
 
     // 3. Company counts per subcategory (CSV field logic)
-    const companyData = await CompanyInfo.findAll({
-      attributes: ['sub_category'], // CSV string like "1,2,3"
-      where: { is_delete: 0 },
-      raw: true,
-    });
+    // const companyData = await CompanyInfo.findAll({
+    //   attributes: ['sub_category'], // CSV string like "1,2,3"
+    //   where: { is_delete: 0 },
+    //   raw: true,
+    // });
 
-    const companyCountMap = {};
-    companyData.forEach(item => {
-      const csv = item.sub_category || '';
-      const subCatIds = csv.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
-      const uniqueIds = [...new Set(subCatIds)];
+    // const companyCountMap = {};
+    // companyData.forEach(item => {
+    //   const csv = item.sub_category || '';
+    //   const subCatIds = csv.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+    //   const uniqueIds = [...new Set(subCatIds)];
 
-      uniqueIds.forEach(subCatId => {
-        companyCountMap[subCatId] = (companyCountMap[subCatId] || 0) + 1;
-      });
-    });
+    //   uniqueIds.forEach(subCatId => {
+    //     companyCountMap[subCatId] = (companyCountMap[subCatId] || 0) + 1;
+    //   });
+    // });
 
     // 4. Format response
     const modifiedSubCategories = subCategories.map(subCat => {
@@ -196,7 +198,7 @@ exports.getSubCategoriesByCategories = async (req, res) => {
         getStatus: subCatData.status === 1 ? 'Active' : 'Inactive',
         category_name: subCatData.Categories?.name || null,
         product_count: productCountMap[subCatData.id] || 0,
-        company_count: companyCountMap[subCatData.id] || 0,
+        company_count:  0,
       };
     });
 
@@ -209,7 +211,7 @@ exports.getSubCategoriesByCategories = async (req, res) => {
 
 exports.getSubCategoriesCount = async (req, res) => {
   try {
-    const total = await SubCategories.count({where: { is_delete: 0 }});
+    const total = await SubCategories.count({ where: { is_delete: 0 } });
     res.json({ total });
   } catch (err) {
     console.error(err);
@@ -223,50 +225,50 @@ exports.updateSubCategories = async (req, res) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-  try {
-    const { name, category, status } = req.body;
-    const subCategories = await SubCategories.findByPk(req.params.id);
-    if (!subCategories) return res.status(404).json({ message: 'Sub Category not found' });
-    const uploadDir = path.resolve('upload/sub_category');
-    if (!fs.existsSync(uploadDir)) {
-      console.log("Directory does not exist, creating:", uploadDir);
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    const file_id = subCategories.file_id;
-    if (req.file) {
-      if (file_id) {
-        const existingImage = await UploadImage.findByPk(file_id);
-        if (existingImage) {
-          const oldImagePath = path.resolve(existingImage.file);
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
+    try {
+      const { name, category, status } = req.body;
+      const subCategories = await SubCategories.findByPk(req.params.id);
+      if (!subCategories) return res.status(404).json({ message: 'Sub Category not found' });
+      const uploadDir = path.resolve('upload/sub_category');
+      if (!fs.existsSync(uploadDir)) {
+        console.log("Directory does not exist, creating:", uploadDir);
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const file_id = subCategories.file_id;
+      if (req.file) {
+        if (file_id) {
+          const existingImage = await UploadImage.findByPk(file_id);
+          if (existingImage) {
+            const oldImagePath = path.resolve(existingImage.file);
+            if (fs.existsSync(oldImagePath)) {
+              fs.unlinkSync(oldImagePath);
+            }
+            existingImage.file = `upload/sub_category/${req.file.filename}`;
+            existingImage.updated_at = new Date();
+            await existingImage.save();
+          } else {
+            const newImage = await UploadImage.create({
+              file: `upload/sub_category/${req.file.filename}`,
+            });
+            subCategories.file_id = newImage.id;
           }
-          existingImage.file = `upload/sub_category/${req.file.filename}`;
-          existingImage.updated_at = new Date();
-          await existingImage.save();
         } else {
           const newImage = await UploadImage.create({
             file: `upload/sub_category/${req.file.filename}`,
           });
           subCategories.file_id = newImage.id;
         }
-      } else {
-        const newImage = await UploadImage.create({
-          file: `upload/sub_category/${req.file.filename}`,
-        });
-        subCategories.file_id = newImage.id;
       }
-    }
-    subCategories.name = name;
-    subCategories.category = category;
-    subCategories.status = status;
-    subCategories.updated_at = new Date();
-    await subCategories.save();
+      subCategories.name = name;
+      subCategories.category = category;
+      subCategories.status = status;
+      subCategories.updated_at = new Date();
+      await subCategories.save();
 
-    res.json({ message: 'Sub Category updated', subCategories });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+      res.json({ message: 'Sub Category updated', subCategories });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   });
 };
 
