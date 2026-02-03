@@ -77,8 +77,8 @@ exports.createTickets = async (req, res) => {
       const mediaType = req.file?.mimetype?.startsWith("image/")
         ? "image"
         : req.file
-        ? "file"
-        : "text";
+          ? "file"
+          : "text";
 
       await TicketReply.create({
         user_id: user_id,
@@ -363,17 +363,17 @@ exports.getAllTicketsServerSide = async (req, res) => {
     }
     const baseWhere = {};
     if (admin.Roles?.id !== 4) {
-  if (admin.Roles?.ticket_category === 0) {
-    // show all categories → do nothing
-  } else if (
-    admin.Roles?.ticket_category !== null &&
-    admin.Roles?.ticket_category !== undefined
-  ) {
-    baseWhere.category = admin.Roles.ticket_category;
-  } else {
-    baseWhere.category = -1; // no tickets
-  }
-}
+      if (admin.Roles?.ticket_category === 0) {
+        // show all categories → do nothing
+      } else if (
+        admin.Roles?.ticket_category !== null &&
+        admin.Roles?.ticket_category !== undefined
+      ) {
+        baseWhere.category = admin.Roles.ticket_category;
+      } else {
+        baseWhere.category = -1; // no tickets
+      }
+    }
     let dateCondition = null;
     if (dateRange) {
       const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');

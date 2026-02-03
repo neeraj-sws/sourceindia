@@ -939,27 +939,27 @@ exports.getAllSellerServerSide = async (req, res) => {
         { '$city_data.name$': { [Op.like]: `%${search}%` } },
         { '$state_data.name$': { [Op.like]: `%${search}%` } },
 
-        // ✅ CATEGORY NAME SEARCH
-        Sequelize.literal(`
-      EXISTS (
-        SELECT 1
-        FROM seller_categories sc
-        JOIN categories c ON c.category_id = sc.category_id
-        WHERE sc.user_id = users.user_id
-        AND c.name LIKE '%${escapedSearch}%'
-      )
-    `),
+    //     // ✅ CATEGORY NAME SEARCH
+    //     Sequelize.literal(`
+    //   EXISTS (
+    //     SELECT 1
+    //     FROM seller_categories sc
+    //     JOIN categories c ON c.category_id = sc.category_id
+    //     WHERE sc.user_id = users.user_id
+    //     AND c.name LIKE '%${escapedSearch}%'
+    //   )
+    // `),
 
-        // ✅ SUB-CATEGORY NAME SEARCH (NEW)
-        Sequelize.literal(`
-      EXISTS (
-        SELECT 1
-        FROM seller_categories sc
-        JOIN sub_categories s ON s.sub_category_id = sc.subcategory_id
-        WHERE sc.user_id = users.user_id
-        AND s.name LIKE '%${escapedSearch}%'
-      )
-    `),
+    //     // ✅ SUB-CATEGORY NAME SEARCH (NEW)
+    //     Sequelize.literal(`
+    //   EXISTS (
+    //     SELECT 1
+    //     FROM seller_categories sc
+    //     JOIN sub_categories s ON s.sub_category_id = sc.subcategory_id
+    //     WHERE sc.user_id = users.user_id
+    //     AND s.name LIKE '%${escapedSearch}%'
+    //   )
+    // `),
       ];
     }
 
