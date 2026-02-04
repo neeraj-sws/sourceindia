@@ -346,7 +346,7 @@ const LeadsList = ({ getPublic, getApprove, getNotApprove, viewType, getDeleted 
                     <div className="d-flex align-items-center">
                       <div>
                         <p className="mb-0 text-secondary">No. of Leads</p>
-                        <h4 className="my-1">{enquiriesCount.all}</h4>
+                        <h4 className="my-1">{enquiriesCount.getApprove}</h4>
                       </div>
                       <div className="widgets-icons bg-light-primary text-primary ms-auto">
                         <i className="bx bx-cart" />

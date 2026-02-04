@@ -186,7 +186,7 @@ const EnquiryList = ({ user_id }) => {
       .catch((err) => console.error("Error fetching enquiries:", err));
 
     // Fetch lead count
-    axios.get(`${API_BASE_URL}/enquiries/lead-count?companyId=${user.company_id}`, {
+    axios.get(`${API_BASE_URL}/enquiries/lead-count?companyId=${user.company_id}&userId=${user.id}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
       .then((res) => {

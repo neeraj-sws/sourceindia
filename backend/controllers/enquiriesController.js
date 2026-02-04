@@ -782,7 +782,7 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
     if (!isAdmin) {
       where.is_approve = 1;
       if (type == "lead") {
-        where.company_id = company_id;
+        where.company_id = user_id;
       } else {
         where.user_id = user_id;
       }
@@ -1634,7 +1634,7 @@ exports.submitEnquiry = async (req, res) => {
   }
 };
 
-exports.getLeadsCount = async (req, res) => {
+exports.getLeadsCountOld = async (req, res) => {
   try {
     const { companyId, enquiryId } = req.query;
 
@@ -1759,6 +1759,163 @@ exports.getLeadsCount = async (req, res) => {
   }
 };
 
+
+exports.getLeadsCount = async (req, res) => {
+  try {
+    const { companyId, enquiryId, userId } = req.query;
+
+    if (!companyId) {
+      return res.status(400).json({ error: 'Missing companyId parameter' });
+    }
+
+    const user = await Users.findOne({
+      where: { company_id: companyId }
+    });
+    const whereAwarded = { is_delete: 0 };
+    const whereShortlisted = { is_delete: 0 };
+    const whereAccepted = {
+      is_delete: 0, enquiry_status: 1,
+      ...(enquiryId ? { enquiry_id: enquiryId } : {}),
+    };
+
+    // only add enquiry_id if provided
+    if (enquiryId) {
+      whereAwarded.enquiry_id = enquiryId;
+      whereAccepted.enquiry_id = enquiryId;;
+      whereShortlisted.enquiry_id = enquiryId;;
+    }
+
+
+    // Run all 3 queries in parallel for speed
+
+    const [
+      totalResult,
+      openResult,
+      closedResult,
+      noEnquiry,
+      openEnquiry,
+      closeEnquiry,
+      enquiryFloated,
+      enquirySeen,
+      awerded,
+      acceptCount,
+      shortlisted,
+      totalResultApproved,
+      openResultApproved,
+      closedResultApproved
+    ] = await Promise.all([
+      // totalResult
+      Enquiries.findAndCountAll({
+
+        where: { is_delete: 0, user_id: userId },
+        distinct: true,
+        col: 'enquiry_id',
+      }),
+      // openResult
+      Enquiries.findAndCountAll({
+        // include: [{
+        //   model: EnquiryUsers,
+        //   as: 'enquiry_users',
+        //   where: { company_id: companyId },
+        //   required: true,
+        // }],
+        where: { is_delete: 0, status: 1, user_id: userId },
+        distinct: true,
+        col: 'enquiry_id',
+      }),
+      // closedResult
+      Enquiries.findAndCountAll({
+
+        where: { is_delete: 0, status: 0, user_id: userId },
+        distinct: true,
+        col: 'enquiry_id',
+      }),
+      // noEnquiry
+      Enquiries.findAndCountAll({
+        where: { is_delete: 0, user_id: user.id },
+        distinct: true,
+        col: 'enquiry_id',
+      }),
+      // openEnquiry
+      Enquiries.findAndCountAll({
+        where: { is_delete: 0, status: 1, user_id: user.id },
+        distinct: true,
+        col: 'enquiry_id',
+      }),
+      // closeEnquiry
+      Enquiries.findAndCountAll({
+        where: { is_delete: 0, status: 0, user_id: user.id },
+        distinct: true,
+        col: 'enquiry_id',
+      }),
+      // enquiryFloated
+      Enquiries.findAndCountAll({
+        col: 'enquiry_id',
+      }),
+      // enquirySeen
+      EnquiryUsers.findAndCountAll({
+        where: { enquiry_status: 1 },
+        col: 'enquiry_id',
+      }),
+      // awerded
+      EnquiryUsers.findAndCountAll({
+        where: whereAwarded,
+        col: 'enquiry_id',
+      }),
+      // acceptCount
+      EnquiryUsers.findAndCountAll({
+        where: whereAccepted,
+        col: 'enquiry_id',
+      }),
+      // shortlisted
+      EnquiryUsers.findAndCountAll({
+        where: whereShortlisted,
+        col: 'enquiry_id',
+      }),
+      // totalApproved
+      Enquiries.findAndCountAll({
+
+        where: { is_delete: 0, is_approve: 1, company_id: userId },
+        distinct: true,
+        col: 'enquiry_id',
+      }),
+      // openApproved
+      Enquiries.findAndCountAll({
+
+        where: { is_delete: 0, is_approve: 1, status: 1, company_id: userId },
+        distinct: true,
+        col: 'enquiry_id',
+      }),
+      // closedApproved
+      Enquiries.findAndCountAll({
+
+        where: { is_delete: 0, is_approve: 1, status: 0, company_id: userId },
+        distinct: true,
+        col: 'enquiry_id',
+      }),
+    ]);
+
+    res.json({
+      total: Number(totalResult.count),
+      open: Number(openResult.count),
+      closed: Number(closedResult.count),
+      enquirytotal: Number(noEnquiry.count),
+      enquiryopen: Number(openEnquiry.count),
+      enquiryclosed: Number(closeEnquiry.count),
+      enquiryFloated: Number(enquiryFloated.count),
+      enquirySeen: Number(enquirySeen.count),
+      awerded: Number(awerded.count),
+      acceptCount: Number(acceptCount.count),
+      shortlisted: Number(shortlisted.count),
+      totalApproved: Number(totalResultApproved.count),
+      openApproved: Number(openResultApproved.count),
+      closedApproved: Number(closedResultApproved.count),
+    });
+  } catch (err) {
+    console.error('Lead stats error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
 
 exports.dashboardEnquiryProve = async (req, res) => {
   try {

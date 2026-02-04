@@ -186,7 +186,7 @@ const LeadsList = ({ user_id }) => {
       .catch((err) => console.error("Error fetching enquiries:", err));
 
     // Fetch lead count
-    axios.get(`${API_BASE_URL}/enquiries/lead-count?companyId=${user.company_id}`, {
+    axios.get(`${API_BASE_URL}/enquiries/lead-count?companyId=${user.company_id}&userId=${user.id}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
     })
       .then((res) => {
@@ -236,7 +236,7 @@ const LeadsList = ({ user_id }) => {
                     <div className="d-flex align-items-center">
                       <div className="labeltitle">
                         <p className="mb-2">No. of Leads</p>
-                        <h2 className="mb-0">{counterCount?.total || 0}</h2>
+                        <h2 className="mb-0">{counterCount?.totalApproved || 0}</h2>
                       </div>
                       <div className="ms-auto dashicon avatar avatar-md rounded-circle bg-soft-success border border-success text-success"><i className="bx bxs-user-plus"></i></div>
                     </div>
@@ -253,7 +253,7 @@ const LeadsList = ({ user_id }) => {
                         <p className="mb-2">Open Leads
 
                         </p>
-                        <h2 className="mb-0">{counterCount?.open || 0}</h2>
+                        <h2 className="mb-0">{counterCount?.openApproved || 0}</h2>
                       </div>
                       <div className="ms-auto dashicon avatar avatar-md rounded-circle bg-soft-warning border border-warning text-warning"><i className="bx bxs-user-plus"></i></div>
                     </div>
@@ -270,7 +270,7 @@ const LeadsList = ({ user_id }) => {
                         <p className="mb-2">Closed Leads
 
                         </p>
-                        <h2 className="mb-0">{counterCount?.closed || 0}</h2>
+                        <h2 className="mb-0">{counterCount?.closedApproved || 0}</h2>
                       </div>
                       <div className="ms-auto dashicon avatar avatar-md rounded-circle bg-soft-primary border border-primary text-primary"><i className="bx bxs-user-plus"></i></div>
                     </div>
