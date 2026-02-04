@@ -11,8 +11,8 @@ import { formatDateTime } from '../../utils/formatDate';
 import ProductModals from "./modal/ProductModals";
 import ExcelExport from "../common/ExcelExport";
 import { DateRangePicker } from 'react-date-range';
-import 'react-date-range/dist/styles.css'; 
-import 'react-date-range/dist/theme/default.css'; 
+import 'react-date-range/dist/styles.css';
+import 'react-date-range/dist/theme/default.css';
 import { format } from 'date-fns';
 
 const ProductList = ({ getDeleted, isApprove }) => {
@@ -42,7 +42,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
   const [tempEndDate, setTempEndDate] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [range, setRange] = useState([
-    {startDate: new Date(), endDate: new Date(), key: 'selection'}
+    { startDate: new Date(), endDate: new Date(), key: 'selection' }
   ]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
@@ -51,14 +51,14 @@ const ProductList = ({ getDeleted, isApprove }) => {
   const [appliedCategory, setAppliedCategory] = useState("");
   const [appliedSubCategory, setAppliedSubCategory] = useState("");
   const [itemCategories, setItemCategories] = useState([]);
-const [itemSubCategories, setItemSubCategories] = useState([]);
-const [selectedItemCategory, setSelectedItemCategory] = useState("");
-const [selectedItemSubCategory, setSelectedItemSubCategory] = useState("");
-const [appliedItemCategory, setAppliedItemCategory] = useState("");
-const [appliedItemSubCategory, setAppliedItemSubCategory] = useState("");
-const [items, setItems] = useState([]);
-const [selectedItem, setSelectedItem] = useState("");
-const [appliedItem, setAppliedItem] = useState("");
+  const [itemSubCategories, setItemSubCategories] = useState([]);
+  const [selectedItemCategory, setSelectedItemCategory] = useState("");
+  const [selectedItemSubCategory, setSelectedItemSubCategory] = useState("");
+  const [appliedItemCategory, setAppliedItemCategory] = useState("");
+  const [appliedItemSubCategory, setAppliedItemSubCategory] = useState("");
+  const [items, setItems] = useState([]);
+  const [selectedItem, setSelectedItem] = useState("");
+  const [appliedItem, setAppliedItem] = useState("");
   const [companies, setCompanies] = useState([]);
   const [selectedCompanies, setSelectedCompanies] = useState("");
   const [appliedCompanies, setAppliedCompanies] = useState("");
@@ -67,9 +67,9 @@ const [appliedItem, setAppliedItem] = useState("");
   const [appliedProductStatus, setAppliedProductStatus] = useState("");
   const datePickerRef = useRef(null);
   const location = useLocation();
-const queryParams = new URLSearchParams(location.search);
-const userIdFromUrl = queryParams.get("id");
-        
+  const queryParams = new URLSearchParams(location.search);
+  const userIdFromUrl = queryParams.get("id");
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
@@ -99,129 +99,129 @@ const userIdFromUrl = queryParams.get("id");
   }, []);
 
   const handleCategoryChange = async (event) => {
-  const categoryId = event.target.value;
-  setSelectedCategory(categoryId);
-  setSelectedSubCategory("");
-  setSelectedItemCategory("");
-  setSelectedItemSubCategory("");
-  setSelectedItem("");
-  setSubCategories([]);
-  setItemCategories([]);
-  setItemSubCategories([]);
-  setItems([]);
-
-  $("#sub_category").val("").trigger("change");
-  $("#item_category").val("").trigger("change");
-  $("#item_subcategory").val("").trigger("change");
-  $("#item").val("").trigger("change");
-
-  if (categoryId) {
-    const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
-    setSubCategories(res.data);
-  } else {
+    const categoryId = event.target.value;
+    setSelectedCategory(categoryId);
+    setSelectedSubCategory("");
+    setSelectedItemCategory("");
+    setSelectedItemSubCategory("");
+    setSelectedItem("");
     setSubCategories([]);
-  }
-};
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setItems([]);
 
-const handleSubCategoryChange = async (event) => {
-  const subCategoryId = event.target.value;
-  setSelectedSubCategory(subCategoryId);
-  setSelectedItemCategory("");
-  setSelectedItemSubCategory("");
-  setSelectedItem("");
-  setItemCategories([]);
-  setItemSubCategories([]);
-  setItems([]);
-  $("#item_category").val("").trigger("change");
-  $("#item_subcategory").val("").trigger("change");
-  $("#item").val("").trigger("change");
-  await fetchItemCategories(selectedCategory, subCategoryId);
-};
+    $("#sub_category").val("").trigger("change");
+    $("#item_category").val("").trigger("change");
+    $("#item_subcategory").val("").trigger("change");
+    $("#item").val("").trigger("change");
+
+    if (categoryId) {
+      const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
+      setSubCategories(res.data);
+    } else {
+      setSubCategories([]);
+    }
+  };
+
+  const handleSubCategoryChange = async (event) => {
+    const subCategoryId = event.target.value;
+    setSelectedSubCategory(subCategoryId);
+    setSelectedItemCategory("");
+    setSelectedItemSubCategory("");
+    setSelectedItem("");
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setItems([]);
+    $("#item_category").val("").trigger("change");
+    $("#item_subcategory").val("").trigger("change");
+    $("#item").val("").trigger("change");
+    await fetchItemCategories(selectedCategory, subCategoryId);
+  };
 
   const fetchItemCategories = async (categoryId, subCategoryId) => {
-  if (!categoryId || !subCategoryId) {
-    setItemCategories([]);
-    return;
-  }
+    if (!categoryId || !subCategoryId) {
+      setItemCategories([]);
+      return;
+    }
 
-  try {
-    const res = await axios.get(
-      `${API_BASE_URL}/item_category/by-category-subcategory/${categoryId}/${subCategoryId}`
-    );
-    setItemCategories(res.data || []);
-  } catch (err) {
-    console.error("Error fetching item categories:", err);
-  }
-};
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/item_category/by-category-subcategory/${categoryId}/${subCategoryId}`
+      );
+      setItemCategories(res.data || []);
+    } catch (err) {
+      console.error("Error fetching item categories:", err);
+    }
+  };
 
-const fetchItemSubCategories = async (itemCategoryId) => {
-  if (!selectedCategory || !selectedSubCategory || !itemCategoryId) {
+  const fetchItemSubCategories = async (itemCategoryId) => {
+    if (!selectedCategory || !selectedSubCategory || !itemCategoryId) {
+      setItemSubCategories([]);
+      return;
+    }
+
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
+      );
+      setItemSubCategories(res.data || []);
+    } catch (err) {
+      console.error("Error fetching item sub categories:", err);
+    }
+  };
+
+  const fetchItems = async (itemSubCategoryId) => {
+    if (
+      !selectedCategory ||
+      !selectedSubCategory ||
+      !selectedItemCategory ||
+      !itemSubCategoryId
+    ) {
+      setItems([]);
+      return;
+    }
+
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
+      );
+      setItems(res.data || []);
+    } catch (err) {
+      console.error("Error fetching items:", err);
+    }
+  };
+
+  const handleItemCategoryChange = async (event) => {
+    const value = event.target.value;
+
+    setSelectedItemCategory(value);
+    setSelectedItemSubCategory("");
+    setSelectedItem("");
+
     setItemSubCategories([]);
-    return;
-  }
-
-  try {
-    const res = await axios.get(
-      `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
-    );
-    setItemSubCategories(res.data || []);
-  } catch (err) {
-    console.error("Error fetching item sub categories:", err);
-  }
-};
-
-const fetchItems = async (itemSubCategoryId) => {
-  if (
-    !selectedCategory ||
-    !selectedSubCategory ||
-    !selectedItemCategory ||
-    !itemSubCategoryId
-  ) {
     setItems([]);
-    return;
-  }
 
-  try {
-    const res = await axios.get(
-      `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
-    );
-    setItems(res.data || []);
-  } catch (err) {
-    console.error("Error fetching items:", err);
-  }
-};
+    $("#item_subcategory").val("").trigger("change");
+    $("#item").val("").trigger("change");
 
-const handleItemCategoryChange = async (event) => {
-  const value = event.target.value;
+    await fetchItemSubCategories(value);
+  };
 
-  setSelectedItemCategory(value);
-  setSelectedItemSubCategory("");
-  setSelectedItem("");
+  const handleItemSubCategoryChange = async (event) => {
+    const value = event.target.value;
 
-  setItemSubCategories([]);
-  setItems([]);
+    setSelectedItemSubCategory(value);
+    setSelectedItem("");
+    setItems([]);
 
-  $("#item_subcategory").val("").trigger("change");
-  $("#item").val("").trigger("change");
+    $("#item").val("").trigger("change");
 
-  await fetchItemSubCategories(value);
-};
+    await fetchItems(value);
+  };
 
-const handleItemSubCategoryChange = async (event) => {
-  const value = event.target.value;
-
-  setSelectedItemSubCategory(value);
-  setSelectedItem("");
-  setItems([]);
-
-  $("#item").val("").trigger("change");
-
-  await fetchItems(value);
-};
-
-const handleItemChange = (event) => {
-  setSelectedItem(event.target.value);
-};
+  const handleItemChange = (event) => {
+    setSelectedItem(event.target.value);
+  };
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -238,7 +238,7 @@ const handleItemChange = (event) => {
   const handleCompaniesChange = (event) => { setSelectedCompanies(event.target.value); };
 
   useEffect(() => {
-    setProductStatus([{id:2,name:"Private"}, {id:1,name:"Public"}, {id:0,name:"Draft"}]);
+    setProductStatus([{ id: 2, name: "Private" }, { id: 1, name: "Public" }, { id: 0, name: "Draft" }]);
   }, []);
 
   const handleProductStatusChange = (event) => { setSelectedProductStatus(event.target.value); };
@@ -249,60 +249,60 @@ const handleItemChange = (event) => {
       width: "100%",
       placeholder: "Select Category",
     })
-    .on("change", function () {
-      handleCategoryChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleCategoryChange({ target: { value: $(this).val() } });
+      });
     $("#sub_category").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select Sub Category",
     })
-    .on("change", function () {
-      handleSubCategoryChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleSubCategoryChange({ target: { value: $(this).val() } });
+      });
     $("#item_category").select2({
-  theme: "bootstrap",
-  width: "100%",
-  placeholder: "Select Item Category",
-}).on("change", function () {
-  handleItemCategoryChange({ target: { value: $(this).val() } });
-});
-$("#item_subcategory").select2({
-  theme: "bootstrap",
-  width: "100%",
-  placeholder: "Select Item Sub Category",
-}).on("change", function () {
-  handleItemSubCategoryChange({ target: { value: $(this).val() } });
-});
-$("#item").select2({
-  theme: "bootstrap",
-  width: "100%",
-  placeholder: "Select Item",
-}).on("change", function () {
-  handleItemChange({ target: { value: $(this).val() } });
-});
+      theme: "bootstrap",
+      width: "100%",
+      placeholder: "Select Item Category",
+    }).on("change", function () {
+      handleItemCategoryChange({ target: { value: $(this).val() } });
+    });
+    $("#item_subcategory").select2({
+      theme: "bootstrap",
+      width: "100%",
+      placeholder: "Select Item Sub Category",
+    }).on("change", function () {
+      handleItemSubCategoryChange({ target: { value: $(this).val() } });
+    });
+    $("#item").select2({
+      theme: "bootstrap",
+      width: "100%",
+      placeholder: "Select Item",
+    }).on("change", function () {
+      handleItemChange({ target: { value: $(this).val() } });
+    });
     $("#company").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select companies",
     })
-    .on("change", function () {
-      handleCompaniesChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleCompaniesChange({ target: { value: $(this).val() } });
+      });
     $("#product_status").select2({
       theme: "bootstrap",
       width: "100%",
       placeholder: "Select elcina member",
     })
-    .on("change", function () {
-      handleProductStatusChange({ target: { value: $(this).val() } });
-    });
+      .on("change", function () {
+        handleProductStatusChange({ target: { value: $(this).val() } });
+      });
     return () => {
       $("#category").off("change").select2("destroy");
       $("#sub_category").off("change").select2("destroy");
       $("#item_category").off("change").select2("destroy");
-  $("#item_subcategory").off("change").select2("destroy");
-  $("#item").off("change").select2("destroy");
+      $("#item_subcategory").off("change").select2("destroy");
+      $("#item").off("change").select2("destroy");
       $("#company").off("change").select2("destroy");
       $("#product_status").off("change").select2("destroy");
     };
@@ -312,10 +312,11 @@ $("#item").select2({
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/products/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false',
-        dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "", item_category_id: appliedItemCategory || "",
-  item_subcategory_id: appliedItemSubCategory || "", item_id: appliedItem || "", company: appliedCompanies || "", product_status: appliedProductStatus, is_approve: isApprove, user_id: userIdFromUrl || ""
-      },
+        params: {
+          page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false',
+          dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "", item_category_id: appliedItemCategory || "",
+          item_subcategory_id: appliedItemSubCategory || "", item_id: appliedItem || "", company: appliedCompanies || "", product_status: appliedProductStatus, is_approve: isApprove, user_id: userIdFromUrl || ""
+        },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -327,7 +328,7 @@ $("#item").select2({
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate, 
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate,
     appliedCategory, appliedSubCategory, appliedItemCategory, appliedItemSubCategory, appliedItem, appliedCompanies, appliedProductStatus, isApprove, userIdFromUrl]);
 
   const handleSortChange = (column) => {
@@ -410,9 +411,9 @@ $("#item").select2({
       let filtered = res.data.products;
       if (getDeleted) {
         filtered = filtered.filter((c) => c.is_delete === 1);
-      } else if (isApprove==1) {
+      } else if (isApprove == 1) {
         filtered = filtered.filter((c) => c.is_approve === 1 && c.is_delete === 0);
-      } else if (isApprove==0) {
+      } else if (isApprove == 0) {
         filtered = filtered.filter((c) => c.is_approve === 0 && c.is_delete === 0);
       } else {
         filtered = filtered.filter((c) => c.is_delete === 0);
@@ -428,35 +429,35 @@ $("#item").select2({
   // };
 
   const handleDownload = async () => {
-  try {
-    const res = await axios.get(`${API_BASE_URL}/products/server-side`, {
-      params: {
-        page: 1,
-        limit: 100000,
-        search,
-        sortBy,
-        sort: sortDirection,
-        getDeleted: getDeleted ? "true" : "false",
-        dateRange,
-        startDate,
-        endDate,
-        category: appliedCategory || "",
-        sub_category: appliedSubCategory || "",
-        item_category_id: appliedItemCategory || "",
-        item_subcategory_id: appliedItemSubCategory || "",
-        item_id: appliedItem || "",
-        company: appliedCompanies || "",
-        product_status: appliedProductStatus || "",
-        is_approve: isApprove,
-        user_id: userIdFromUrl || ""
-      }
-    });
+    try {
+      const res = await axios.get(`${API_BASE_URL}/products/server-side`, {
+        params: {
+          page: 1,
+          limit: 100000,
+          search,
+          sortBy,
+          sort: sortDirection,
+          getDeleted: getDeleted ? "true" : "false",
+          dateRange,
+          startDate,
+          endDate,
+          category: appliedCategory || "",
+          sub_category: appliedSubCategory || "",
+          item_category_id: appliedItemCategory || "",
+          item_subcategory_id: appliedItemSubCategory || "",
+          item_id: appliedItem || "",
+          company: appliedCompanies || "",
+          product_status: appliedProductStatus || "",
+          is_approve: isApprove,
+          user_id: userIdFromUrl || ""
+        }
+      });
 
-    excelExportRef.current.exportWithData(res.data.data);
-  } catch (err) {
-    console.error(err);
-  }
-};
+      excelExportRef.current.exportWithData(res.data.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const openStatusModal = (id, currentStatus, field, valueKey) => {
     setStatusToggleInfo({ id, currentStatus, field, valueKey });
@@ -471,7 +472,7 @@ $("#item").select2({
     try {
       await axios.patch(`${API_BASE_URL}/products/${id}/${field}`, { [valueKey]: newStatus });
       setData(data?.map(d => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
-      if(field=="delete_status" || field == "account_status"){
+      if (field == "delete_status" || field == "account_status") {
         setData((prevData) => prevData.filter((item) => item.id !== id));
         setTotalRecords((prev) => prev - 1);
         setFilteredRecords((prev) => prev - 1);
@@ -501,16 +502,16 @@ $("#item").select2({
     setSelectedSubCategory("");
     setSubCategories([]);
     setSelectedItemCategory("");
-setSelectedItemSubCategory("");
-setAppliedItemCategory("");
-setAppliedItemSubCategory("");
-setItemCategories([]);
-setItemSubCategories([]);
+    setSelectedItemSubCategory("");
+    setAppliedItemCategory("");
+    setAppliedItemSubCategory("");
+    setItemCategories([]);
+    setItemSubCategories([]);
     setAppliedCategory("");
     setAppliedSubCategory("");
     setSelectedItem("");
-setAppliedItem("");
-setItems([]);
+    setAppliedItem("");
+    setItems([]);
     setSelectedCompanies("");
     setAppliedCompanies("");
     setSelectedProductStatus("");
@@ -519,12 +520,12 @@ setItems([]);
     $("#category").val("").trigger("change");
     $("#sub_category").val("").trigger("change");
     $("#item_category").val("").trigger("change");
-$("#item_subcategory").val("").trigger("change");
-$("#item").val("").trigger("change");
+    $("#item_subcategory").val("").trigger("change");
+    $("#item").val("").trigger("change");
     $("#company").val("").trigger("change");
     $("#product_status").val("").trigger("change");
   };
-  
+
   const handleRangeChange = (item) => {
     const start = item.selection.startDate;
     const end = item.selection.endDate;
@@ -534,104 +535,112 @@ $("#item").val("").trigger("change");
     setShowPicker(false);
   };
 
+
+
+  const title = React.useMemo(() => {
+    if (isApprove === 0) return "Not Approve Product List";
+    if (getDeleted) return "Recently Deleted Product";
+    return "Products List";
+  }, [isApprove, getDeleted]);
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Products" maincount={totalRecords} page="Products" 
-          title={getDeleted ? "Recently Deleted Product" : isApprove==0 ? "Not Approve Product List" : "Products List"}
-          add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Product</>)} add_link="/admin/add_product"
-          actions={
-            <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-            {!getDeleted ? (
+          <Breadcrumb mainhead={title} maincount={totalRecords} page="Products"
+            title={title} rangetext={getRangeText()}
+            add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Product</>)} add_link="/admin/add_product"
+            actions={
               <>
-                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedProducts.length === 0}>
-                  <i className="bx bx-trash me-1" /> Delete Selected
-                </button>
-                <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/product-remove">
-                  Recently Deleted Product
-                </Link>
+                <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                {!getDeleted ? (
+                  <>
+                    <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedProducts.length === 0}>
+                      <i className="bx bx-trash me-1" /> Delete Selected
+                    </button>
+                    <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/product-remove">
+                      Recently Deleted Product
+                    </Link>
+                  </>
+                ) : (
+                  <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                    Back
+                  </button>
+                )}
               </>
-            ) : (
-              <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
-                Back
-              </button>
-            )}
-            </>
-          }
+            }
           />
           <div className="card mb-3">
             <div className="card-body">
               <div className="row">
                 {!getDeleted && (
-                <>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Category</label>
-                  <select id="category" className="form-control select2" value={selectedCategory} onChange={handleCategoryChange}>
-                    <option value="">All</option>
-                    {categories.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Sub Category</label>
-                  <select id="sub_category" className="form-control select2" value={selectedSubCategory} onChange={handleSubCategoryChange}>
-                    <option value="">All</option>
-                    {subCategories.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-  <label className="form-label">Item Category</label>
-  <select id="item_category" className="form-control select2">
-    <option value="">All</option>
-    {itemCategories.map((i) => (
-      <option key={i.id} value={i.id}>{i.name}</option>
-    ))}
-  </select>
-</div>
-<div className="col-md-3 mb-3">
-  <label className="form-label">Item Sub Category</label>
-  <select id="item_subcategory" className="form-control select2">
-    <option value="">All</option>
-    {itemSubCategories.map((i) => (
-      <option key={i.id} value={i.id}>{i.name}</option>
-    ))}
-  </select>
-</div>
-<div className="col-md-3 mb-3">
-  <label className="form-label">Item</label>
-  <select id="item" className="form-control select2">
-    <option value="">All</option>
-    {items.map((i) => (
-      <option key={i.id} value={i.id}>
-        {i.name}
-      </option>
-    ))}
-  </select>
-</div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Company</label>
-                  <select id="company" className="form-control select2" value={selectedCompanies} onChange={handleCompaniesChange}>
-                    <option value="">All</option>
-                    {companies.map((c) => (
-                      <option key={c.id} value={c.id}>{c.organization_name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Status</label>
-                  <select id="product_status" className="form-control select2">
-                    <option value="">-- Select --</option>
-                    {productStatus.map((item) => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
-                    ))}
-                  </select>
-                </div>
-                </>
+                  <>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Category</label>
+                      <select id="category" className="form-control select2" value={selectedCategory} onChange={handleCategoryChange}>
+                        <option value="">All</option>
+                        {categories.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Sub Category</label>
+                      <select id="sub_category" className="form-control select2" value={selectedSubCategory} onChange={handleSubCategoryChange}>
+                        <option value="">All</option>
+                        {subCategories.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Item Category</label>
+                      <select id="item_category" className="form-control select2">
+                        <option value="">All</option>
+                        {itemCategories.map((i) => (
+                          <option key={i.id} value={i.id}>{i.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Item Sub Category</label>
+                      <select id="item_subcategory" className="form-control select2">
+                        <option value="">All</option>
+                        {itemSubCategories.map((i) => (
+                          <option key={i.id} value={i.id}>{i.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Item</label>
+                      <select id="item" className="form-control select2">
+                        <option value="">All</option>
+                        {items.map((i) => (
+                          <option key={i.id} value={i.id}>
+                            {i.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Company</label>
+                      <select id="company" className="form-control select2" value={selectedCompanies} onChange={handleCompaniesChange}>
+                        <option value="">All</option>
+                        {companies.map((c) => (
+                          <option key={c.id} value={c.id}>{c.organization_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Status</label>
+                      <select id="product_status" className="form-control select2">
+                        <option value="">-- Select --</option>
+                        {productStatus.map((item) => (
+                          <option key={item.id} value={item.id}>{item.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
                 )}
                 <div className={!getDeleted ? "col-md-6 mb-3" : "col-md-8 d-flex align-items-center gap-2"}>
                   <label className="form-label">Date Filter:</label>
@@ -685,8 +694,8 @@ $("#item").val("").trigger("change");
                       setAppliedCategory(selectedCategory);
                       setAppliedSubCategory(selectedSubCategory);
                       setAppliedItemCategory(selectedItemCategory);
-setAppliedItemSubCategory(selectedItemSubCategory);
-setAppliedItem(selectedItem);
+                      setAppliedItemSubCategory(selectedItemSubCategory);
+                      setAppliedItem(selectedItem);
                       setAppliedCompanies(selectedCompanies);
                       setAppliedProductStatus(selectedProductStatus);
                       setPage(1);
@@ -697,13 +706,13 @@ setAppliedItem(selectedItem);
                   <button className="btn btn-secondary" onClick={() => { clearFilters(); }}>Clear</button>
                 </div>
               </div>
-              </div>
+            </div>
           </div>
           <div className="card">
             <div className="card-body">
               <DataTable
                 columns={[
-                  ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]:[]),
+                  ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                   { key: "id", label: "S.No.", sortable: true },
                   { key: "image", label: "Image", sortable: false },
                   { key: "title", label: "Product", sortable: true },
@@ -732,9 +741,9 @@ setAppliedItem(selectedItem);
                 renderRow={(row, index) => (
                   <tr key={row.id}>
                     {!getDeleted && (
-                    <td>                    
-                      <input type="checkbox" checked={selectedProducts.includes(row.id)} onChange={() => handleSelectProducts(row.id)} />
-                    </td>
+                      <td>
+                        <input type="checkbox" checked={selectedProducts.includes(row.id)} onChange={() => handleSelectProducts(row.id)} />
+                      </td>
                     )}
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td><ImageWithFallback
@@ -765,7 +774,7 @@ setAppliedItem(selectedItem);
                           className="form-check-input"
                           type="checkbox"
                           checked={row.is_approve == 1}
-                          onClick={(e) => { e.preventDefault(); openStatusModal( row.id, row.is_approve, "account_status", "is_approve" ); }}
+                          onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_approve, "account_status", "is_approve"); }}
                           readOnly
                         />
                       </div>
@@ -777,41 +786,41 @@ setAppliedItem(selectedItem);
                         </button>
                         <ul className="dropdown-menu">
                           {!getDeleted ? (
-                          <>
-                          <li>
-                            <button className="dropdown-item" onClick={(e) => navigate(`/admin/edit_product/${row.id}`)}>
-                              <i className="bx bx-edit me-2"></i> Edit
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" 
-                              onClick={(e) => {
-                                e.preventDefault(); 
-                                openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                              }}
-                            >
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                          </>                          
+                            <>
+                              <li>
+                                <button className="dropdown-item" onClick={(e) => navigate(`/admin/edit_product/${row.id}`)}>
+                                  <i className="bx bx-edit me-2"></i> Edit
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </>
                           ) : (
-                          <>
-                          <li>
-                            <button className="dropdown-item" 
-                              onClick={(e) => {
-                                e.preventDefault(); 
-                                openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                              }}
-                            >
-                              <i className="bx bx-windows me-2"></i> Restore
-                            </button>
-                          </li>
-                          <li>
-                            <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                              <i className="bx bx-trash me-2"></i> Delete
-                            </button>
-                          </li>
-                          </>
+                            <>
+                              <li>
+                                <button className="dropdown-item"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                  }}
+                                >
+                                  <i className="bx bx-windows me-2"></i> Restore
+                                </button>
+                              </li>
+                              <li>
+                                <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                  <i className="bx bx-trash me-2"></i> Delete
+                                </button>
+                              </li>
+                            </>
                           )}
                         </ul>
                       </div>
@@ -837,7 +846,7 @@ setAppliedItem(selectedItem);
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName={`${getDeleted ? "Product Remove List" : isApprove==1 ? "Approve Product" : isApprove==0 ? "Not Approve Product" : "Products"} Export.xlsx`}
+        fileName={`${getDeleted ? "Product Remove List" : isApprove == 1 ? "Approve Product" : isApprove == 0 ? "Not Approve Product" : "Products"} Export.xlsx`}
         data={productsData}
         columns={[
           { label: "ID", key: "id" },

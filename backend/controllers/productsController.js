@@ -560,10 +560,10 @@ exports.getProductsCount = async (req, res) => {
     startOfMonth.setHours(0, 0, 0, 0);
     const now = new Date();
 
-    const [total, statusPublic, statusDraft, addedThisMonth] = await Promise.all([
+   const [total, statusPublic, statusDraft, addedThisMonth] = await Promise.all([
       Products.count({ where: { is_delete: 0 } }),
-      Products.count({ where: { status: 1, is_delete: 0 } }),
-      Products.count({ where: { status: 0, is_delete: 0 } }),
+      Products.count({ where: { is_delete: 0,is_approve:1 } }),
+      Products.count({ where: {  is_delete: 0,is_approve:0 } }),
       Products.count({
         where: {
           created_at: {
