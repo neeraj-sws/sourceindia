@@ -57,8 +57,8 @@ exports.getAllOpenEnquiries = async (req, res) => {
       const flattened = {
         ...enquiry,
         ...enquiry.Users && {
-          fname: enquiry.Users.fname,
-          lname: enquiry.Users.lname,
+          fname: enquiry?.Users?.fname ?? '',
+          lname: enquiry?.Users?.lname ?? '',
           email: enquiry.Users.email,
           company_id: enquiry.Users.company_id,
           organization_name: enquiry.Users.company_info?.organization_name || null,
@@ -220,7 +220,7 @@ exports.getUserOpenEnquiries = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
-    const { replyUserId, enquiry_id,enquiryId } = req.query;
+    const { replyUserId, enquiry_id, enquiryId } = req.query;
     const whereConditions = {};
 
     if (replyUserId !== undefined) {
@@ -432,7 +432,7 @@ exports.getAllOpenEnquiriesServerSide = async (req, res) => {
       id: row.id,
       user_id: row.user_id,
       title: row.title,
-      name: row.Users.fname + " " + row.Users.lname,
+      name: row?.Users?.fname + " " + row?.Users?.lname,
       email: row.email,
       phone: row.phone,
       description: row.description,
