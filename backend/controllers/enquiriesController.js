@@ -812,6 +812,11 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
           'email',
           [Sequelize.literal("CONCAT(from_user.fname, ' ', from_user.lname)"), 'full_name']
         ],
+        include: [{
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['id', 'organization_name', 'organization_slug']
+        }]
       },
       {
         model: Users,
@@ -823,6 +828,11 @@ exports.getEnquiriesByUserServerSide = async (req, res) => {
           'email',
           [Sequelize.literal("CONCAT(to_user.fname, ' ', to_user.lname)"), 'full_name']
         ],
+        include: [{
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['id', 'organization_name', 'organization_slug']
+        }]
       },
     ];
 

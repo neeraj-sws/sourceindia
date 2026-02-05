@@ -285,10 +285,9 @@ const LeadsList = ({ user_id }) => {
                 <DataTable
                   columns={[
                     { key: "id", label: "S.No.", sortable: true },
+                    { key: "name", label: "Sender", sortable: true },
                     { key: "enquiry_number", label: "Enquiry No", sortable: true },
-                    { key: "name", label: "Name", sortable: true },
                     { key: "product_name", label: "Product", sortable: true },
-                    { key: "category_name", label: "Category", sortable: true },
                     { key: "quantity", label: "Quantity", sortable: true },
                     { key: "created_at", label: "Created", sortable: true },
                     { key: "status", label: "Status", sortable: false },
@@ -311,12 +310,21 @@ const LeadsList = ({ user_id }) => {
                   renderRow={(row, index) => (
                     <tr key={row.id}>
                       <td>{(page - 1) * limit + index + 1}</td>
-                      <td><Link to={`/lead-detail/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
+
                       <td>{row.from_user.full_name}<br />
-                        <b>Email:</b> {row.from_user.email}
+                        {row.from_user?.company_info?.organization_name ? (
+                          <div>
+                            {row.from_user.company_info.id ? (
+                              <Link to={`/company-detail/${row.from_user.company_info.organization_slug || row.from_user.company_info.id}`}>{row.from_user.company_info.organization_name}</Link>
+                            ) : row.from_user.company_info.organization_name}
+                          </div>
+                        ) : null}
+
+                        {row.from_user.email && <div> {row.from_user.email}</div>}
+                        {row.from_user.phone && <div> {row.from_user.phone}</div>}
                       </td>
+                      <td><Link to={`/lead-detail/${row.enquiry_number}`}>{row.enquiry_number}</Link></td>
                       <td>{row.enquiry_users[0].product_name}</td>
-                      <td>{row.category_name}</td>
                       <td>{row.quantity}</td>
                       <td>{formatDateTime(row.created_at)}</td>
                       <td>{row.enquiry_users &&

@@ -288,9 +288,8 @@ const EnquiryList = ({ user_id }) => {
                   columns={[
                     { key: "id", label: "S.No.", sortable: true },
                     { key: "enquiry_number", label: "Enquiry No", sortable: true },
+                    { key: "Receiver", label: "Receiver", sortable: true },
                     { key: "product_name", label: "Product", sortable: true },
-                    { key: "category_name", label: "Category", sortable: true },
-                    { key: "Company", label: "Company", sortable: true },
                     { key: "quantity", label: "Quantity", sortable: true },
                     { key: "created_at", label: "Created", sortable: true },
                     { key: "status", label: "Status", sortable: false },
@@ -314,10 +313,18 @@ const EnquiryList = ({ user_id }) => {
                     <tr key={row.id}>
                       <td>{(page - 1) * limit + index + 1}</td>
                       <td><Link to={`/lead-detail/${row.enquiry_number}?my-enquiry=true`}>{row.enquiry_number}</Link></td>
-
+                      <td>
+                        {row.to_user?.company_info?.organization_name ? (
+                          <Link to={`/company-detail/${row.to_user.company_info.id}`}>{row.to_user.company_info.organization_name}</Link>
+                        ) : null}
+                        {row.to_user?.fname || row.to_user?.email ? (
+                          <div style={{ fontSize: '12px', color: '#666' }}>
+                            {row.to_user?.fname && <div>{row.to_user.fname}</div>}
+                            {row.to_user?.email && <div>{row.to_user.email}</div>}
+                          </div>
+                        ) : null}
+                      </td>
                       <td>{row.enquiry_users[0].product_name}</td>
-                      <td>{row.category_name}</td>
-                      <td>{row.to_user?.company_info?.organization_name}</td>
                       <td>{row.quantity}</td>
                       <td>{formatDateTime(row.created_at)}</td>
                       <td>{row.enquiry_users &&

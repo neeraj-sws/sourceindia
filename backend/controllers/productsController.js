@@ -560,7 +560,7 @@ exports.getProductsCount = async (req, res) => {
     startOfMonth.setHours(0, 0, 0, 0);
     const now = new Date();
 
-   const [total, statusPublic, statusDraft, addedThisMonth] = await Promise.all([
+    const [total, statusPublic, statusDraft, addedThisMonth] = await Promise.all([
       Products.count({ where: { is_delete: 0 } }),
       Products.count({ where: { is_delete: 0,is_approve:1 } }),
       Products.count({ where: {  is_delete: 0,is_approve:0 } }),
@@ -920,28 +920,6 @@ exports.getAllCompanyInfo = async (req, res) => {
     }
 
 
-    // if (interestSubCatIds.length) {
-    //   whereClause[Op.and] = whereClause[Op.and] || [];
-    //   whereClause[Op.and].push(
-    //     literal(`
-    //       EXISTS (
-    //         SELECT 1
-    //         FROM users u2
-    //         JOIN cities c ON u2.city = c.city_id
-    //         JOIN states s ON u2.state = s.state_id
-    //         JOIN countries co ON u2.country = co.country_id
-    //         JOIN buyerinterests bi ON bi.buyer_id = u2.user_id
-    //         WHERE u2.company_id = CompanyInfo.company_id
-    //           AND bi.activity_id IN (${interestSubCatIds.join(',')})
-    //           AND u2.status = 1
-    //           AND u2.is_approve = 1
-    //           AND u2.is_seller = 0
-    //           AND u2.is_delete = 0
-    //           AND CompanyInfo.is_delete = 0
-    //       )
-    //     `)
-    //   );
-    // }
 
     whereClause[Op.and] = whereClause[Op.and] || [];
     whereClause[Op.and].push(
@@ -985,6 +963,7 @@ exports.getAllCompanyInfo = async (req, res) => {
     const allProducts = await Products.findAll({
       where: { company_id: { [Op.in]: companyIds }, is_delete: 0, is_approve: 1, status: 1 },
       attributes: ['id', 'title', 'slug', 'company_id'],
+      limit:10,
       raw: true
     });
 

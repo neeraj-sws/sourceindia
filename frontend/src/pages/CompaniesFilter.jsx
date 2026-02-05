@@ -769,7 +769,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 <li className="sortPopular px-sm-2 ps-0 pe-2">
                   <label
                     htmlFor="sortByPopularAtoZ"
-                    className="m-0 cursor-pointer"
+                    className={`m-0 cursor-pointer${sortBy === "a_to_z" ? " text-orange fw-bold" : ""}`}
                   >
                     <input
                       type="radio"
@@ -787,7 +787,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 <li className="sortPopular px-2 border-0 border-start border-end">
                   <label
                     htmlFor="sortByPopularZtoA"
-                    className="m-0 cursor-pointer"
+                    className={`m-0 cursor-pointer${sortBy === "z_to_a" ? " text-orange fw-bold" : ""}`}
                   >
                     <input
                       type="radio"
@@ -805,7 +805,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                 <li className="sortPopular px-2">
                   <label
                     htmlFor="sortByPopularNewest"
-                    className="m-0 cursor-pointer"
+                    className={`m-0 cursor-pointer${sortBy === "newest" ? " text-orange fw-bold" : ""}`}
                   >
                     <input
                       type="radio"

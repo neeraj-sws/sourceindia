@@ -44,9 +44,9 @@ const FrontHeader = () => {
       } catch (err) {
         console.error(err);
         if (err.response?.status === 401) {
-        logout();           // 🔥 force logout
-        navigate("/login"); // optional redirect
-      }
+          logout();           // 🔥 force logout
+          navigate("/login"); // optional redirect
+        }
       }
     };
 
@@ -167,12 +167,16 @@ const FrontHeader = () => {
                       {suggestions.map((item) => (
                         <li
                           key={item.id}
+                          onClick={() => {
+                            setSearchQuery(item.name);
+                            setShowDropdown(false);
+                            navigate(item.url);
+                          }}
+                          style={{ cursor: "pointer" }}
                         >
-                          <Link to={`${item.url}`}>
-                            <div className="d-flex align-items-center gap-2">
-                              <i className="bx bx-history"></i> {item.name}
-                            </div>
-                          </Link>
+                          <div className="d-flex align-items-center gap-2">
+                            <i className="bx bx-history"></i> {item.name}
+                          </div>
                         </li>
                       ))}
                     </ul>
