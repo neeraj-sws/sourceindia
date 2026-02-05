@@ -158,7 +158,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
       showNotification("Failed to update message", "error");
     }
   };
-        
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
@@ -488,45 +488,45 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
   // };
 
   const handleDownload = async () => {
-  try {
-    const res = await axios.get(`${API_BASE_URL}/sellers/server-side`, {
-      params: {
-        page: 1,
-        limit: 100000, // large limit for export
-        search,
-        sortBy,
-        sort: sortDirection,
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sellers/server-side`, {
+        params: {
+          page: 1,
+          limit: 100000, // large limit for export
+          search,
+          sortBy,
+          sort: sortDirection,
 
-        getInactive: getInactive ? "true" : "false",
-        getNotApproved: getNotApproved ? "true" : "false",
-        getNotCompleted: getNotCompleted ? "true" : "false",
-        getDeleted: getDeleted ? "true" : "false",
+          getInactive: getInactive ? "true" : "false",
+          getNotApproved: getNotApproved ? "true" : "false",
+          getNotCompleted: getNotCompleted ? "true" : "false",
+          getDeleted: getDeleted ? "true" : "false",
 
-        dateRange,
-        startDate,
-        endDate,
+          dateRange,
+          startDate,
+          endDate,
 
-        state: appliedState || "",
-        city: appliedCity || "",
-        customerId: customerId || "",
-        firstName: firstName || "",
-        lastName: lastName || "",
-        organizationName: organizationName || "",
-        core_activity: appliedCoreActivity || "",
-        activity: appliedActivity || "",
-        designation: appliedDesignation || "",
-        categoryId: appliedCategories || "",
-        nature_business: appliedNatureBusiness || "",
-        elcina_member: appliedElcinaMember || "",
-      }
-    });
+          state: appliedState || "",
+          city: appliedCity || "",
+          customerId: customerId || "",
+          firstName: firstName || "",
+          lastName: lastName || "",
+          organizationName: organizationName || "",
+          core_activity: appliedCoreActivity || "",
+          activity: appliedActivity || "",
+          designation: appliedDesignation || "",
+          categoryId: appliedCategories || "",
+          nature_business: appliedNatureBusiness || "",
+          elcina_member: appliedElcinaMember || "",
+        }
+      });
 
-    excelExportRef.current.exportWithData(res.data.data);
-  } catch (error) {
-    console.error("Seller Excel export failed", error);
-    showNotification("Failed to export sellers", "error");
-  }
-};
+      excelExportRef.current.exportWithData(res.data.data);
+    } catch (error) {
+      console.error("Seller Excel export failed", error);
+      showNotification("Failed to export sellers", "error");
+    }
+  };
 
   const openStatusModal = (id, currentStatus, field, valueKey) => {
     setStatusToggleInfo({ id, currentStatus, field, valueKey });
@@ -696,12 +696,12 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
   };
 
   const title = React.useMemo(() => {
-  if (getInactive) return "Inactive Sellers";
-  if (getNotApproved) return "Not Approved Sellers";
-  if (getNotCompleted) return "Not Completed Sellers";
-  if (getDeleted) return "Recently Deleted Sellers";
-  return "Sellers List";
-}, [getInactive, getNotApproved, getNotCompleted, getDeleted]);
+    if (getInactive) return "Inactive Sellers";
+    if (getNotApproved) return "Not Approved Sellers";
+    if (getNotCompleted) return "Not Completed Sellers";
+    if (getDeleted) return "Recently Deleted Sellers";
+    return "Sellers List";
+  }, [getInactive, getNotApproved, getNotCompleted, getDeleted]);
 
   return (
     <>
@@ -965,48 +965,48 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                     )}
                     <td><Link to={`/admin/seller/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
                     {getNotApproved && (
-                    <td>
-                      {!usersWithMessages.includes(row.id) ? (
-                      <div className="d-flex">
-                        <a href="#" onClick={(e) => {
-                          e.preventDefault(); openStatusModal(row.id, row.is_approve, "account_status", "is_approve");
-                        }}>
-                          <span className="badge bg-success mx-2 py-2">
-                            <i className="bx bx-check" aria-hidden="true" />
-                          </span>
-                        </a>
-                        <a href="#" className="px-2 decline-approval"
-                          onClick={(e) => { e.preventDefault(); openDeclineModal(row.id); }}
-                        >
-                          <span className="badge bg-danger py-2">
-                            <i className="bx bx-x" aria-hidden="true" />
-                          </span>
-                        </a>
-                      </div>
-                      ) : (
-                        <a href="#" className="px-2 decline-approval"
-                          onClick={(e) => { e.preventDefault(); openDeclineModal(row.id); }}
-                        >
-                          <span className="badge bg-dark rounded-pill p-2">
-                            <i className="bx bx-question-mark" aria-hidden="true" />
-                          </span>
-                        </a>
-                      )}
-                    </td>
+                      <td>
+                        {!usersWithMessages.includes(row.id) ? (
+                          <div className="d-flex">
+                            <a href="#" onClick={(e) => {
+                              e.preventDefault(); openStatusModal(row.id, row.is_approve, "account_status", "is_approve");
+                            }}>
+                              <span className="badge bg-success mx-2 py-2">
+                                <i className="bx bx-check" aria-hidden="true" />
+                              </span>
+                            </a>
+                            <a href="#" className="px-2 decline-approval"
+                              onClick={(e) => { e.preventDefault(); openDeclineModal(row.id); }}
+                            >
+                              <span className="badge bg-danger py-2">
+                                <i className="bx bx-x" aria-hidden="true" />
+                              </span>
+                            </a>
+                          </div>
+                        ) : (
+                          <a href="#" className="px-2 decline-approval"
+                            onClick={(e) => { e.preventDefault(); openDeclineModal(row.id); }}
+                          >
+                            <span className="badge bg-dark rounded-pill p-2">
+                              <i className="bx bx-question-mark" aria-hidden="true" />
+                            </span>
+                          </a>
+                        )}
+                      </td>
                     )}
                     <td>
                       {row.organization_name && (<><strong><a href={`/companies/${row.organization_slug}`} target="_blank"> {row.organization_name?.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</a></strong><br /></>)}
                       {row.elcina_member == 1 ? (<><span className="badge bg-primary mb-1 text-uppercase">Elcina Member</span><br /></>) :
-                      row.elcina_member == 2 ? (<><span className="badge bg-primary mb-1 text-uppercase">Trial</span><br /></>) : "" }
+                        row.elcina_member == 2 ? (<><span className="badge bg-primary mb-1 text-uppercase">Trial</span><br /></>) : ""}
                       {row.is_trading == 1 && (<><span className="badge bg-success mb-1">Trader</span><br /></>)}
                       {row.full_name && (<><i className="bx bx-user me-1" />{row.full_name}<br /></>)}
                       {row.email && (<><i className="bx bx-user me-1" />{row.email}<br /></>)}
                       {row.mobile && (<><i className="bx bx-mobile me-1" />{row.mobile}<br /></>)}
                       {row.state_name && (<><i className="bx bx-map me-1" />{row.state_name}<br /></>)}
                       {row.city_name && (<><i className="bx bx-map me-1" />{row.city_name}<br /></>)}
-                      <strong>Products:</strong> <Link to={`/admin/product-list?id=${row.id}`}><span className="badge bg-primary mb-1">{row.user_count}</span></Link>
+                      <strong>Products:</strong> <Link to={`/admin/product-list?id=${row.id}&cid=${row.company_id}`}><span className="badge bg-primary mb-1">{row.user_count}</span></Link>
                     </td>
-                  <td>
+                    <td>
                       {([row.coreactivity_name, row.activity_name, row.category_name, row.sub_category_name]
                         .filter(v => v && v !== "NA").length > 0) ? (
 
@@ -1018,7 +1018,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                         <small><i>NA</i></small>
                       )}
                     </td>
-                   <td>
+                    <td>
                       {([row.designation, row.company_website, row.organization_quality_certification]
                         .filter(v => v && v !== "NA").length > 0) ? (
 
@@ -1034,19 +1034,19 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                     <td>{formatDateTime(row.updated_at)}</td>
 
                     {!getDeleted && !getNotApproved && !getNotCompleted && (
-                       <>
-                      <td>{formatDateTime(row.approve_date)}</td>
-                      <td>
-                        <div className="form-check form-switch">
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            checked={row.status == 1}
-                            onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
-                            readOnly
-                          />
-                        </div>
-                      </td>
+                      <>
+                        <td>{formatDateTime(row.approve_date)}</td>
+                        <td>
+                          <div className="form-check form-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={row.status == 1}
+                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
+                              readOnly
+                            />
+                          </div>
+                        </td>
                       </>
                     )}
                     <td>
@@ -1078,7 +1078,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
                                 </li>
                               )}
                               <li>
-                                <button className="dropdown-item" onClick={() =>handleImpersonateLogin(row.id)}>
+                                <button className="dropdown-item" onClick={() => handleImpersonateLogin(row.id)}>
                                   <i className="bx bx-log-in me-2"></i> Login
                                 </button>
                               </li>
@@ -1208,10 +1208,10 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
         columns={[
           { label: "ID", key: "id" },
           { label: "Organization Name", key: "organization_name" },
-          { 
-            label: "Full Name", 
-            key: "fname", 
-            format: (val, row) => `${row.fname} ${row.lname}` 
+          {
+            label: "Full Name",
+            key: "fname",
+            format: (val, row) => `${row.fname} ${row.lname}`
           },
           { label: "Email", key: "email" },
           { label: "Phone", key: "mobile" },

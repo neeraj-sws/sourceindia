@@ -248,6 +248,32 @@ const LeadDetail = () => {
               <div className="col-md-4">
                 <div className="card mb-3">
                   <div className="card-body">
+                    <h6 className="mb-3 fw-semibold">Lead Information</h6>
+                    <div className="border-bottom mb-3 pb-3">
+                      <div className="d-flex align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Date Created</p>
+                        <p className="mb-0 text-dark">
+                          {formData.created_at && (() => {
+                            const date = new Date(formData.created_at);
+                            const formatted = date.toLocaleString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true,
+                            }).replace(',', '');
+                            return <span>{formatted}</span>;
+                          })()}
+                        </p>
+                      </div>
+                      <div className="d-flex align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Enquiry Number</p>
+                        <p className="mb-0 text-dark">
+                          <b> {formData.enquiry_number}</b>
+                        </p>
+                      </div>
+                    </div>
                     <h6 className="mb-3 fw-semibold">Company Detail</h6>
                     <div className="border-bottom mb-3 pb-3">
                       <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">

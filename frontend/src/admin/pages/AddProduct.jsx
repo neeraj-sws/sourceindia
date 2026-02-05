@@ -118,7 +118,7 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchSellers = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/sellers?is_delete=0&status=1&is_approve=1&is_complete=1`);
+        const res = await axios.get(`${API_BASE_URL}/sellers?is_delete=0&status=1&is_complete=1`);
         setSellers(res.data);
       } catch (error) {
         console.error("Error fetching sellers:", error);
@@ -128,35 +128,35 @@ const AddProduct = () => {
   }, []);
 
   useEffect(() => {
-  if (!selectedSellers) {
-    setSubCategories([]);
-    setSelectedSubCategory("");
-    setSelectedCategory("");
-    return;
-  }
-
-  const fetchSellerSubcategories = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
-        params: { user_id: selectedSellers }
-      });
-      setSubCategories(res.data);
-    } catch (error) {
-      console.error("Error fetching subcategories:", error);
+    if (!selectedSellers) {
       setSubCategories([]);
+      setSelectedSubCategory("");
+      setSelectedCategory("");
+      return;
     }
-  };
 
-  fetchSellerSubcategories();
-}, [selectedSellers]);
+    const fetchSellerSubcategories = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
+          params: { user_id: selectedSellers }
+        });
+        setSubCategories(res.data);
+      } catch (error) {
+        console.error("Error fetching subcategories:", error);
+        setSubCategories([]);
+      }
+    };
 
-useEffect(() => {
-  if (subCategories.length > 0 && selectedSubCategory) {
-    $('#sub_category')
-      .val(selectedSubCategory)
-      .trigger('change.select2');
-  }
-}, [subCategories, selectedSubCategory]);
+    fetchSellerSubcategories();
+  }, [selectedSellers]);
+
+  useEffect(() => {
+    if (subCategories.length > 0 && selectedSubCategory) {
+      $('#sub_category')
+        .val(selectedSubCategory)
+        .trigger('change.select2');
+    }
+  }, [subCategories, selectedSubCategory]);
 
   const handleSellersChange = (event) => {
     const userId = event.target.value;
@@ -190,30 +190,30 @@ useEffect(() => {
   const handleApplicationsChange = (event) => { setSelectedApplications(event.target.value); };
 
   const handleSubCategoryChange = (event) => {
-  const subCategoryId = event.target.value;
-  const subCat = subCategories.find(sc => String(sc.id) === subCategoryId);
+    const subCategoryId = event.target.value;
+    const subCat = subCategories.find(sc => String(sc.id) === subCategoryId);
 
-  setSelectedSubCategory(subCategoryId);
-  setSelectedCategory(subCat ? String(subCat.category_id) : "");
+    setSelectedSubCategory(subCategoryId);
+    setSelectedCategory(subCat ? String(subCat.category_id) : "");
 
-  // Reset dependent dropdowns
-  setSelectedItemCategory('');
-  setSelectedItemSubCategory('');
-  setSelectedItem('');
-  setItemCategories([]);
-  setItemSubCategories([]);
-  setItems([]);
+    // Reset dependent dropdowns
+    setSelectedItemCategory('');
+    setSelectedItemSubCategory('');
+    setSelectedItem('');
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setItems([]);
 
-  // fetch item categories for this subcategory
-  if (subCat) {
-    axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${subCat.category_id}/${subCategoryId}`)
-      .then(res => setItemCategories(res.data))
-      .catch(err => {
-        console.error("Error fetching item categories:", err);
-        setItemCategories([]);
-      });
-  }
-};
+    // fetch item categories for this subcategory
+    if (subCat) {
+      axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${subCat.category_id}/${subCategoryId}`)
+        .then(res => setItemCategories(res.data))
+        .catch(err => {
+          console.error("Error fetching item categories:", err);
+          setItemCategories([]);
+        });
+    }
+  };
 
   // Handle Item Category Change
   const handleItemCategoryChange = async (event) => {
@@ -374,9 +374,9 @@ useEffect(() => {
           description: data.description || '',
           images: data.images || [],
           is_gold: Number(data.is_gold) || 0,
-  is_featured: Number(data.is_featured) || 0,
-  is_recommended: Number(data.is_recommended) || 0,
-  best_product: Number(data.best_product) || 0,
+          is_featured: Number(data.is_featured) || 0,
+          is_recommended: Number(data.is_recommended) || 0,
+          best_product: Number(data.best_product) || 0,
         });
         setSelectedSellers(String(data.user_id || ""));
         setSelectedApplications(String(data.application || ""));
@@ -395,16 +395,16 @@ useEffect(() => {
           setCategories(catRes.data);
         }
         if (data.user_id) {
-  try {
-    const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
-      params: { user_id: data.user_id }
-    });
-    setSubCategories(res.data || []);
-  } catch (err) {
-    console.error("Error fetching subcategories:", err);
-    setSubCategories([]);
-  }
-}
+          try {
+            const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
+              params: { user_id: data.user_id }
+            });
+            setSubCategories(res.data || []);
+          } catch (err) {
+            console.error("Error fetching subcategories:", err);
+            setSubCategories([]);
+          }
+        }
 
         setSelectedSubCategory(data.sub_category || "");
 
@@ -512,32 +512,32 @@ useEffect(() => {
   };
 
   const handleAddImages = async () => {
-  if (files.length === 0) return;
-  const formDataObj = new FormData();
-  files.forEach(file => formDataObj.append("files", file));
+    if (files.length === 0) return;
+    const formDataObj = new FormData();
+    files.forEach(file => formDataObj.append("files", file));
 
-  try {
-    // Upload images
-    await axios.post(`${API_BASE_URL}/products/${productId}/images`,
-      formDataObj,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
+    try {
+      // Upload images
+      await axios.post(`${API_BASE_URL}/products/${productId}/images`,
+        formDataObj,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
 
-    // Fetch updated product to get images
-    const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
-    const data = res.data;
+      // Fetch updated product to get images
+      const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
+      const data = res.data;
 
-    setFormData(prev => ({
-      ...prev,
-      images: data.images || []
-    }));
-    setFiles([]);
-    showNotification("Images added successfully!", "success");
-  } catch (error) {
-    console.error("Error adding images:", error);
-    showNotification("Failed to add images", "error");
-  }
-};
+      setFormData(prev => ({
+        ...prev,
+        images: data.images || []
+      }));
+      setFiles([]);
+      showNotification("Images added successfully!", "success");
+    } catch (error) {
+      console.error("Error adding images:", error);
+      showNotification("Failed to add images", "error");
+    }
+  };
 
   const openDeleteModal = (id) => { setImageToDelete(id); setShowDeleteModal(true); };
 
@@ -574,171 +574,171 @@ useEffect(() => {
 
   }, [itemSubCategories]);
 
-    // Load picker data scoped to selected seller
-    const loadPickerData = async () => {
-      if (!selectedSellers) return setPickerData([]);
-      setPickerLoading(true);
-      setPickerError(null);
+  // Load picker data scoped to selected seller
+  const loadPickerData = async () => {
+    if (!selectedSellers) return setPickerData([]);
+    setPickerLoading(true);
+    setPickerError(null);
+    try {
+      const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
+        params: { user_id: selectedSellers }
+      });
+      const subcats = res.data || [];
+
+      // Group subcategories by category to match front picker structure
+      const map = {};
+      subcats.forEach(s => {
+        const cid = s.category_id || s.category || '0';
+        if (!map[cid]) {
+          map[cid] = { id: cid, name: s.category_name || s.category || 'Uncategorized', subcategories: [] };
+        }
+        map[cid].subcategories.push({ id: s.id, name: s.name || s.sub_name || 'Subcategory', item_categories: [] });
+      });
+
+      const grouped = Object.values(map);
+
+      // eager-load item categories and their item subcategories for all subcategories
       try {
-        const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
-          params: { user_id: selectedSellers }
-        });
-        const subcats = res.data || [];
+        const subsToLoad = [];
+        grouped.forEach(c => { (c.subcategories || []).forEach(s => subsToLoad.push({ catId: c.id, subId: s.id })); });
+        await Promise.all(subsToLoad.map(async ({ catId, subId }) => {
+          try {
+            const r = await axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${catId}/${subId}`);
+            const items = r.data || [];
+            // for each item category, eager-load its item subcategories
+            await Promise.all((items || []).map(async (ic) => {
+              try {
+                const r2 = await axios.get(`${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${catId}/${subId}/${ic.id}`);
+                ic.item_sub_categories = r2.data || [];
+              } catch (ee) {
+                ic.item_sub_categories = [];
+              }
+            }));
 
-        // Group subcategories by category to match front picker structure
-        const map = {};
-        subcats.forEach(s => {
-          const cid = s.category_id || s.category || '0';
-          if (!map[cid]) {
-            map[cid] = { id: cid, name: s.category_name || s.category || 'Uncategorized', subcategories: [] };
+            // attach into grouped
+            grouped.forEach(c => {
+              if (String(c.id) !== String(catId)) return;
+              c.subcategories = c.subcategories.map(su => String(su.id) === String(subId) ? { ...su, item_categories: items } : su);
+            });
+          } catch (e) {
+            // ignore per-sub failures
           }
-          map[cid].subcategories.push({ id: s.id, name: s.name || s.sub_name || 'Subcategory', item_categories: [] });
-        });
+        }));
+      } catch (e) {
+        // ignore overall eager-load failures
+      }
 
-        const grouped = Object.values(map);
+      setPickerData(grouped);
+    } catch (err) {
+      console.error('Error loading picker data:', err);
+      setPickerError('Failed to load categories');
+      setPickerData([]);
+    } finally {
+      setPickerLoading(false);
+    }
+  };
 
-        // eager-load item categories and their item subcategories for all subcategories
-        try {
-          const subsToLoad = [];
-          grouped.forEach(c => { (c.subcategories || []).forEach(s => subsToLoad.push({ catId: c.id, subId: s.id })); });
-          await Promise.all(subsToLoad.map(async ({ catId, subId }) => {
-            try {
-              const r = await axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${catId}/${subId}`);
-              const items = r.data || [];
-              // for each item category, eager-load its item subcategories
-              await Promise.all((items || []).map(async (ic) => {
-                try {
-                  const r2 = await axios.get(`${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${catId}/${subId}/${ic.id}`);
-                  ic.item_sub_categories = r2.data || [];
-                } catch (ee) {
-                  ic.item_sub_categories = [];
-                }
-              }));
+  useEffect(() => {
+    if (showCategoryPicker) loadPickerData();
+  }, [showCategoryPicker, selectedSellers]);
 
-              // attach into grouped
-              grouped.forEach(c => {
-                if (String(c.id) !== String(catId)) return;
-                c.subcategories = c.subcategories.map(su => String(su.id) === String(subId) ? { ...su, item_categories: items } : su);
-              });
-            } catch (e) {
-              // ignore per-sub failures
-            }
-          }));
-        } catch (e) {
-          // ignore overall eager-load failures
-        }
+  // Close modal on Escape and lock body scroll (add modal-open class like front picker)
+  useEffect(() => {
+    if (!showCategoryPicker) return;
+    const onKey = (e) => { if (e.key === 'Escape') setShowCategoryPicker(false); };
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = originalOverflow || ''; document.body.classList.remove('modal-open'); window.removeEventListener('keydown', onKey); };
+  }, [showCategoryPicker]);
 
-        setPickerData(grouped);
+  const pickerHandleSelect = (subcat, itemCat) => {
+    // legacy simple handler removed in favor of frontend-style picker selection
+  };
+
+  const adminPickerHandleSelect = async (catId, catName, subId, subName, itemCategoryId, itemCategoryName, itemSubCategoryId, itemSubCategoryName) => {
+    const selection = { categoryId: catId || null, categoryName: catName || '', subId: subId || null, subName: subName || '', itemCategoryId: itemCategoryId || null, itemCategoryName: itemCategoryName || '', itemSubCategoryId: itemSubCategoryId || null, itemSubCategoryName: itemSubCategoryName || '' };
+    setPickerSelection(selection);
+    // apply immediately to form state
+    setSelectedCategory(selection.categoryId || '');
+    setSelectedSubCategory(selection.subId || '');
+    setSelectedItemCategory(selection.itemCategoryId || '');
+    setSelectedItemSubCategory(selection.itemSubCategoryId || '');
+    setSelectedItem('');
+    // eager-load item categories for the selected subcategory
+    if (selection.categoryId && selection.subId) {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${selection.categoryId}/${selection.subId}`);
+        setItemCategories(res.data || []);
       } catch (err) {
-        console.error('Error loading picker data:', err);
-        setPickerError('Failed to load categories');
-        setPickerData([]);
-      } finally {
-        setPickerLoading(false);
+        setItemCategories([]);
       }
-    };
+    }
+    setShowCategoryPicker(false);
+  };
 
-    useEffect(() => {
-      if (showCategoryPicker) loadPickerData();
-    }, [showCategoryPicker, selectedSellers]);
-
-    // Close modal on Escape and lock body scroll (add modal-open class like front picker)
-    useEffect(() => {
-      if (!showCategoryPicker) return;
-      const onKey = (e) => { if (e.key === 'Escape') setShowCategoryPicker(false); };
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      document.body.classList.add('modal-open');
-      window.addEventListener('keydown', onKey);
-      return () => { document.body.style.overflow = originalOverflow || ''; document.body.classList.remove('modal-open'); window.removeEventListener('keydown', onKey); };
-    }, [showCategoryPicker]);
-
-    const pickerHandleSelect = (subcat, itemCat) => {
-      // legacy simple handler removed in favor of frontend-style picker selection
-    };
-
-    const adminPickerHandleSelect = async (catId, catName, subId, subName, itemCategoryId, itemCategoryName, itemSubCategoryId, itemSubCategoryName) => {
-      const selection = { categoryId: catId || null, categoryName: catName || '', subId: subId || null, subName: subName || '', itemCategoryId: itemCategoryId || null, itemCategoryName: itemCategoryName || '', itemSubCategoryId: itemSubCategoryId || null, itemSubCategoryName: itemSubCategoryName || '' };
-      setPickerSelection(selection);
-      // apply immediately to form state
-      setSelectedCategory(selection.categoryId || '');
-      setSelectedSubCategory(selection.subId || '');
-      setSelectedItemCategory(selection.itemCategoryId || '');
-      setSelectedItemSubCategory(selection.itemSubCategoryId || '');
-      setSelectedItem('');
-      // eager-load item categories for the selected subcategory
-      if (selection.categoryId && selection.subId) {
-        try {
-          const res = await axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${selection.categoryId}/${selection.subId}`);
-          setItemCategories(res.data || []);
-        } catch (err) {
-          setItemCategories([]);
-        }
-      }
-      setShowCategoryPicker(false);
-    };
-
-    const filteredPickerData = (pickerData || []).map(cat => {
-      if (!pickerQuery) return cat;
-      const q = pickerQuery.toLowerCase();
-      const matchedSubcategories = (cat.subcategories || []).map(sub => {
-        const matchedItemCategories = (sub.item_categories || []).map(ic => {
-          const matchedItemSubs = (ic.item_sub_categories || []).filter(isc => String(isc.name || '').toLowerCase().includes(q));
-          const icMatch = String(ic.name || '').toLowerCase().includes(q) || matchedItemSubs.length > 0;
-          return icMatch ? { ...ic, item_sub_categories: matchedItemSubs.length ? matchedItemSubs : ic.item_sub_categories } : null;
-        }).filter(Boolean);
-
-        const subMatch = String(sub.name || '').toLowerCase().includes(q) || matchedItemCategories.length > 0;
-        return subMatch ? { ...sub, item_categories: matchedItemCategories.length ? matchedItemCategories : sub.item_categories } : null;
+  const filteredPickerData = (pickerData || []).map(cat => {
+    if (!pickerQuery) return cat;
+    const q = pickerQuery.toLowerCase();
+    const matchedSubcategories = (cat.subcategories || []).map(sub => {
+      const matchedItemCategories = (sub.item_categories || []).map(ic => {
+        const matchedItemSubs = (ic.item_sub_categories || []).filter(isc => String(isc.name || '').toLowerCase().includes(q));
+        const icMatch = String(ic.name || '').toLowerCase().includes(q) || matchedItemSubs.length > 0;
+        return icMatch ? { ...ic, item_sub_categories: matchedItemSubs.length ? matchedItemSubs : ic.item_sub_categories } : null;
       }).filter(Boolean);
 
-      const catMatch = String(cat.name || '').toLowerCase().includes(q) || (matchedSubcategories && matchedSubcategories.length > 0);
-      return catMatch ? { ...cat, subcategories: matchedSubcategories.length ? matchedSubcategories : cat.subcategories } : null;
+      const subMatch = String(sub.name || '').toLowerCase().includes(q) || matchedItemCategories.length > 0;
+      return subMatch ? { ...sub, item_categories: matchedItemCategories.length ? matchedItemCategories : sub.item_categories } : null;
     }).filter(Boolean);
 
-    // Front-like picker rows and helpers
-    const pickerRows = [];
-    if (pickerData && Array.isArray(pickerData)) {
-      pickerData.forEach(cat => {
-        const catId = cat.id;
-        const catName = cat.name || '';
-        if (cat.subcategories && cat.subcategories.length > 0) {
-          cat.subcategories.forEach(sub => {
-            const subId = sub.id;
-            const subName = sub.name || '';
-            if (sub.item_categories && sub.item_categories.length > 0) {
-              sub.item_categories.forEach(ic => {
-                pickerRows.push({ catId, catName, subId, subName, itemId: ic.id, itemName: ic.name || '' });
-              });
-            } else {
-              pickerRows.push({ catId, catName, subId, subName, itemId: null, itemName: '' });
-            }
-          });
-        } else {
-          pickerRows.push({ catId, catName, subId: null, subName: '', itemId: null, itemName: '' });
-        }
-      });
-    }
+    const catMatch = String(cat.name || '').toLowerCase().includes(q) || (matchedSubcategories && matchedSubcategories.length > 0);
+    return catMatch ? { ...cat, subcategories: matchedSubcategories.length ? matchedSubcategories : cat.subcategories } : null;
+  }).filter(Boolean);
 
-    const getColorForId = (id) => {
-      if (id === undefined || id === null) return 'transparent';
-      const str = String(id);
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
-      const hue = Math.abs(hash) % 360;
-      return `hsl(${hue}, 55%, 94%)`;
-    };
+  // Front-like picker rows and helpers
+  const pickerRows = [];
+  if (pickerData && Array.isArray(pickerData)) {
+    pickerData.forEach(cat => {
+      const catId = cat.id;
+      const catName = cat.name || '';
+      if (cat.subcategories && cat.subcategories.length > 0) {
+        cat.subcategories.forEach(sub => {
+          const subId = sub.id;
+          const subName = sub.name || '';
+          if (sub.item_categories && sub.item_categories.length > 0) {
+            sub.item_categories.forEach(ic => {
+              pickerRows.push({ catId, catName, subId, subName, itemId: ic.id, itemName: ic.name || '' });
+            });
+          } else {
+            pickerRows.push({ catId, catName, subId, subName, itemId: null, itemName: '' });
+          }
+        });
+      } else {
+        pickerRows.push({ catId, catName, subId: null, subName: '', itemId: null, itemName: '' });
+      }
+    });
+  }
 
-    const getRowColor = (id) => {
-      if (id === undefined || id === null) return 'transparent';
-      const str = String(id);
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
-      const hue = Math.abs(hash) % 360;
-      const saturation = 50;
-      const lightness = 94 - (Math.abs(hash) % 4);
-      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-    };
+  const getColorForId = (id) => {
+    if (id === undefined || id === null) return 'transparent';
+    const str = String(id);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 55%, 94%)`;
+  };
+
+  const getRowColor = (id) => {
+    if (id === undefined || id === null) return 'transparent';
+    const str = String(id);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
+    const hue = Math.abs(hash) % 360;
+    const saturation = 50;
+    const lightness = 94 - (Math.abs(hash) % 4);
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
 
   return (
     <>
@@ -896,31 +896,31 @@ useEffect(() => {
                   <div className="card">
                     <div className="card-body p-4">
                       <div className="row">
-                            <div className="col-12 mb-3 d-flex justify-content-end align-items-center">
-                              {selectedSellers ? (
-                                <button type="button" className="btn btn-outline-secondary me-2" onClick={() => setShowCategoryPicker(true)}>Category Picker</button>
-                              ) : null}
+                        <div className="col-12 mb-3 d-flex justify-content-end align-items-center">
+                          {selectedSellers ? (
+                            <button type="button" className="btn btn-outline-secondary me-2" onClick={() => setShowCategoryPicker(true)}>Category Picker</button>
+                          ) : null}
+                        </div>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="sub_category" className="form-label required">Sub Category</label>
+                          <div className="d-flex flex-column">
+                            <div>
+                              <select
+                                id="sub_category"
+                                className="form-control select2"
+                                value={selectedSubCategory}
+                                onChange={handleSubCategoryChange}
+                                disabled={!selectedSellers}
+                              >
+                                <option value="">Select Sub Category</option>
+                                {subCategories.map(sc => (
+                                  <option key={sc.id} value={sc.id}>{sc.name}</option>
+                                ))}
+                              </select>
                             </div>
-                            <div className="form-group mb-3 col-md-12">
-                              <label htmlFor="sub_category" className="form-label required">Sub Category</label>
-                              <div className="d-flex flex-column">
-                                <div>
-                                  <select
-                                    id="sub_category"
-                                    className="form-control select2"
-                                    value={selectedSubCategory}
-                                    onChange={handleSubCategoryChange}
-                                    disabled={!selectedSellers}
-                                  >
-                                    <option value="">Select Sub Category</option>
-                                    {subCategories.map(sc => (
-                                      <option key={sc.id} value={sc.id}>{sc.name}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                                
-                              </div>
-                            </div>
+
+                          </div>
+                        </div>
                         <div className="form-group mb-3 col-md-12">
                           <label htmlFor="item_category_id" className="form-label">Item Category</label>
                           <select
@@ -1075,7 +1075,7 @@ useEffect(() => {
                 <div style={{ width: '100%', marginTop: 6 }}>
                   <div className="input-group input-group-sm">
                     <input ref={pickerSearchRef} className="form-control form-control-sm" placeholder="Search categories, subcategories or item categories" value={pickerQuery} onChange={(e) => setPickerQuery(e.target.value)} />
-                    <button type="button" className="btn btn-outline-secondary" onClick={(e) => { e.preventDefault(); setPickerQuery(''); try { pickerSearchRef.current && pickerSearchRef.current.focus(); } catch (err) {} }} title="Clear search">×</button>
+                    <button type="button" className="btn btn-outline-secondary" onClick={(e) => { e.preventDefault(); setPickerQuery(''); try { pickerSearchRef.current && pickerSearchRef.current.focus(); } catch (err) { } }} title="Clear search">×</button>
                   </div>
                 </div>
               </div>
@@ -1159,8 +1159,8 @@ useEffect(() => {
                           </div>
                         </div>
                       ))) : (
-                        <div className="text-muted">No categories available</div>
-                      )}
+                      <div className="text-muted">No categories available</div>
+                    )}
                   </div>
                 )}
               </div>

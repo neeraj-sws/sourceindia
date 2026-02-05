@@ -1101,6 +1101,7 @@ exports.getAllSellerServerSide = async (req, res) => {
 
       return {
         id: row.id,
+        company_id: row.company_id,
         full_name: `${row.fname} ${row.lname}`,
         fname: row.fname,
         lname: row.lname,

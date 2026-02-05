@@ -209,7 +209,7 @@ const ProfileEdit = () => {
       formData.append("zipcode", user.zipcode || "");
       formData.append("address", user.address || "");
       formData.append("website", user.website || "");
-      formData.append("user_category", user.user_category || "");
+      formData.append("user_category", user.company_info?.user_category || "");
       formData.append("products", user.products || "");
 
       // designation (from company_info)
@@ -415,7 +415,13 @@ const ProfileEdit = () => {
                                 className={`form-select ${errors.user_category ? "is-invalid" : ""}`}
                                 name="user_category"
                                 value={user.company_info?.user_category || ""}
-                                onChange={handleChange}
+                                onChange={e => setUser(prev => ({
+                                  ...prev,
+                                  company_info: {
+                                    ...prev.company_info,
+                                    user_category: e.target.value
+                                  }
+                                }))}
                               >
                                 <option value="">Select User Category</option>
                                 <option value="brand">Brand</option>

@@ -562,8 +562,8 @@ exports.getProductsCount = async (req, res) => {
 
     const [total, statusPublic, statusDraft, addedThisMonth] = await Promise.all([
       Products.count({ where: { is_delete: 0 } }),
-      Products.count({ where: { is_delete: 0,is_approve:1 } }),
-      Products.count({ where: {  is_delete: 0,is_approve:0 } }),
+      Products.count({ where: { is_delete: 0, is_approve: 1 } }),
+      Products.count({ where: { is_delete: 0, is_approve: 0 } }),
       Products.count({
         where: {
           created_at: {
@@ -865,7 +865,11 @@ exports.getAllCompanyInfo = async (req, res) => {
     }
 
     // ✅ User filters
-    const userFilters = [`u.is_delete = 0`, `u.status = 1`, `u.is_approve = 1`];
+    let userFilters = [`u.is_delete = 0`, `u.status = 1`, `u.is_approve = 1`];
+    // Remove u.is_approve = 1 if is_approve=2 in query
+    if (req.query.is_approve == 2) {
+      userFilters = userFilters.filter(f => f !== 'u.is_approve = 1');
+    }
     if (user_state) {
       const stateIds = parseCsv(user_state).map(x => parseInt(x)).filter(x => !isNaN(x));
       if (stateIds.length) userFilters.push(`u.state IN (${stateIds.join(',')})`);
@@ -963,7 +967,7 @@ exports.getAllCompanyInfo = async (req, res) => {
     const allProducts = await Products.findAll({
       where: { company_id: { [Op.in]: companyIds }, is_delete: 0, is_approve: 1, status: 1 },
       attributes: ['id', 'title', 'slug', 'company_id'],
-      limit:10,
+      limit: 10,
       raw: true
     });
 

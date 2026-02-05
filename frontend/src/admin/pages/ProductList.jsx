@@ -44,6 +44,10 @@ const ProductList = ({ getDeleted, isApprove }) => {
   const [range, setRange] = useState([
     { startDate: new Date(), endDate: new Date(), key: 'selection' }
   ]);
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const userIdFromUrl = queryParams.get("id");
+  const companyIdFromUrl = queryParams.get("cid");
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -60,15 +64,15 @@ const ProductList = ({ getDeleted, isApprove }) => {
   const [selectedItem, setSelectedItem] = useState("");
   const [appliedItem, setAppliedItem] = useState("");
   const [companies, setCompanies] = useState([]);
-  const [selectedCompanies, setSelectedCompanies] = useState("");
+  const [selectedCompanies, setSelectedCompanies] = useState(companyIdFromUrl || "");
+  // Debug: log selectedCompanies value
+
   const [appliedCompanies, setAppliedCompanies] = useState("");
   const [productStatus, setProductStatus] = useState([]);
   const [selectedProductStatus, setSelectedProductStatus] = useState("");
   const [appliedProductStatus, setAppliedProductStatus] = useState("");
   const datePickerRef = useRef(null);
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const userIdFromUrl = queryParams.get("id");
+
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -226,7 +230,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/products/companies`);
+        const res = await axios.get(`${API_BASE_URL}/products/companies?is_approve=2`);
         setCompanies(res.data.companies);
       } catch (err) {
         console.error("Error fetching companies:", err);

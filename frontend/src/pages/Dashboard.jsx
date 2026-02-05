@@ -569,10 +569,9 @@ const Dashboard = () => {
                         columns={[
                           { key: "id", label: "S.No.", sortable: true },
                           { key: "enquiry_number", label: "Enquiry No", sortable: true },
-                          { key: "name", label: "Name", sortable: true },
+                          { key: "name", label: "Receiver", sortable: true },
                           { key: "product_name", label: "Product", sortable: true },
-                          { key: "category_name", label: "Category", sortable: true },
-                          { key: "sub_category_name", label: "Sub Category", sortable: true },
+
                           { key: "quantity", label: "Quantity", sortable: true },
                           { key: "created_at", label: "Created", sortable: true },
                           { key: "status", label: "Status", sortable: false },
@@ -601,8 +600,6 @@ const Dashboard = () => {
                             </td>
                             <td>{row.enquiry_users[0].product_name}</td>
 
-                            <td>{row.category_name}</td>
-                            <td>{row.sub_category_name}</td>
                             <td>{row.quantity}</td>
                             <td>{formatDateTime(row.created_at)}</td>
                             <td>{row.enquiry_users &&

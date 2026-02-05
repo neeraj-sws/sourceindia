@@ -1404,7 +1404,7 @@ exports.submitEnquiryuser = async (req, res) => {
       .replace("{{ ENQUIRY_DESCRIPTION }}", description)
       .replace("{{ ENQUIRY_NUMBER }}", enquiry.enquiry_number);
 
-    await sendMail({ to: senderUser.email, subject: emailTemplate.subject || 'Buyer company enquiry mail', message: userMessage });
+
 
 
     const emailTemplate1 = await Emails.findByPk(15);
@@ -1424,12 +1424,21 @@ exports.submitEnquiryuser = async (req, res) => {
     ------------------------------ */
     await sendMail({ to: receiverUser.email, subject: emailTemplate1.subject || 'New company enquiry received', message: receiverMail });
 
+    const name = senderUser.fname ? senderUser.fname : senderUser.email.split('@')[0];
+
     if (senderUser.walkin_buyer !== 1) {
+      await sendMail({ to: senderUser.email, subject: emailTemplate.subject || 'Buyer company enquiry mail', message: userMessage });
       await sendSellerEnquiryConfirmation(senderUser, enquiry);
+    } else {
+      await sendEnquiryConfirmation(senderUser.email, name);
     }
     // Notify admin using template id 14
     try {
-      await sendAdminEnquiryConfirmation(senderUser, enquiry, 14);
+      if (senderUser.walkin_buyer === 0) {
+        await sendAdminEnquiryConfirmation(senderUser, enquiry, 14);
+      } else {
+        await sendAdminEnquiryConfirmation(senderUser, enquiry, 120);
+      }
     } catch (e) {
       console.error('Failed to send admin enquiry notification:', e.message || e);
     }
