@@ -222,9 +222,13 @@ const LeadDetail = () => {
                       {myEnquiry ? (
                         <>
                           {formData.to_full_name && <h5 className="mb-0"><i className="bx bx-user"></i> {formData.to_full_name} </h5>}
-                          {formData.to_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.to_email}</p>}
-                          {formData.to_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.to_mobile}</p>}
-                          {formData.to_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.to_organization_name}</p>}
+                          {formData.is_approve === 1 ? (
+                            <>
+                              {formData.to_email && <p className="mb-0"><i className="fadeIn animated bx bx-envelope me-1"></i>{formData.to_email}</p>}
+                              {formData.to_mobile && <p className="mb-0"><i className="fadeIn animated bx bx-phone me-1"></i>{formData.to_mobile}</p>}
+                              {formData.to_organization_name && <p className="mb-0"><i className="fadeIn animated bx bx-buildings"></i> {formData.to_organization_name}</p>}
+                            </>
+                          ) : null}
                         </>
                       ) : (
                         <>
@@ -303,7 +307,7 @@ const LeadDetail = () => {
                       }
                       {formData.product_details?.description &&
                         <div className="d-flex align-items-center justify-content-between mb-2 mt-3">
-                          <p className="mb-0 text-dark" dangerouslySetInnerHTML={{ __html: formData.product_details?.description }} />
+                          <p className="mb-0 text-dark comFont" style={{ fontSize: '15px' }} dangerouslySetInnerHTML={{ __html: formData.product_details?.description }} />
                         </div>
                       }
                     </div>
@@ -407,29 +411,32 @@ const LeadDetail = () => {
                                 </div>
                               )}
                           </div>
-                          <div className="chat-footer d-flex align-items-center start-0">
-                            <div className="flex-grow-1 pe-2">
-                              <div className="input-group">	<span className="input-group-text"><i className="bx bx-envelope"></i></span>
-                                <input
-                                  type="text"
-                                  className="form-control"
-                                  placeholder="Type a message"
-                                  value={message}
-                                  onChange={(e) => setMessage(e.target.value)}
-                                  onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                                />
+                          {formData.is_approve === 1 ? (
+                            <>
+                              <div className="chat-footer d-flex align-items-center start-0">
+                                <div className="flex-grow-1 pe-2">
+                                  <div className="input-group">	<span className="input-group-text"><i className="bx bx-envelope"></i></span>
+                                    <input
+                                      type="text"
+                                      className="form-control"
+                                      placeholder="Type a message"
+                                      value={message}
+                                      onChange={(e) => setMessage(e.target.value)}
+                                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                                    />
 
-                                <button
-                                  className="btn btn-primary"
-                                  onClick={handleSendMessage}
-                                  disabled={!message.trim()}
-                                >
-                                  Send
-                                </button>
+                                    <button
+                                      className="btn btn-primary"
+                                      onClick={handleSendMessage}
+                                      disabled={!message.trim()}
+                                    >
+                                      Send
+                                    </button>
+                                  </div>
+                                </div>
+
                               </div>
-                            </div>
-
-                          </div>
+                            </>) : (<></>)}
                         </div>
                       </div>
                     </div>

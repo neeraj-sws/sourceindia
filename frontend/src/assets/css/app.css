@@ -3253,38 +3253,42 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 }
 
 .planBox tr th {
-    text-align: center;
+	text-align: center;
 }
 
 .planBox tr td {
-    text-align: right;
+	text-align: right;
 }
 
 .planpart {
-    position: relative;
+	position: relative;
 }
 
 .gif_left {
-    width: 20px;
-    position: absolute;
-    left: -27px;
-    right: 0;
-    margin: 0 auto;
-    transform: rotate(90deg);
+	width: 20px;
+	position: absolute;
+	left: -27px;
+	right: 0;
+	margin: 0 auto;
+	transform: rotate(90deg);
 }
 
 .continuebtn {
-    display: none;
-    transition: 1s;
-    position: absolute;
-    right: 0;
-    top: 0;
-    padding: 2px 8px;
-    background: #ff6600;
-    color: #fff;
-    font-size: 12px;
+	display: none;
+	transition: 1s;
+	position: absolute;
+	right: 0;
+	top: 0;
+	padding: 2px 8px;
+	background: #ff6600;
+	color: #fff;
+	font-size: 12px;
 }
 
 .planpart:hover .continuebtn {
-    display: block;
+	display: block;
+}
+
+.comFont *	 {
+	font-size: 15px;
 }
