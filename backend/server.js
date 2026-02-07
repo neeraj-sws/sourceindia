@@ -1,6 +1,7 @@
 
 
 const express = require('express');
+const compression = require('compression');
 const path = require('path');
 const cors = require('cors');
 const companiesRoutes = require('./routes/companiesRoutes');
@@ -53,6 +54,7 @@ const buyerEnquiryRoutes = require('./routes/buyerEnquiryRoutes');
 
 
 const app = express();
+
 const basePath = '/v2'; // All APIs will start with /v2
 
 // Register adminEnquiriesRoutes after app and basePath are defined
@@ -61,6 +63,7 @@ app.use(basePath + '/api/admin', adminEnquiriesRoutes);
 // Companies route (must be after app is defined)
 
 app.use(cors());
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -69,8 +72,17 @@ app.get(basePath + '/', (req, res) => {
   res.send('Node.js app is running under ' + basePath);
 });
 
-// Serve static files under basePath
-app.use(basePath + '/upload', express.static(path.join(__dirname, 'upload')));
+// Serve static files under basePath with cache headers
+app.use(basePath + '/upload', express.static(path.join(__dirname, 'upload'), {
+  maxAge: '30d'
+}));
+// Example: API caching for list endpoints
+// You can add this middleware to specific routes or globally for all list endpoints
+// Example usage for a list endpoint:
+// app.get(basePath + '/api/items', (req, res, next) => {
+//   res.set('Cache-Control', 'public, max-age=300');
+//   next();
+// }, itemsRoutes);
 
 // All APIs under /v2/api/...
 app.use(basePath + '/api/files', fileRoutes);

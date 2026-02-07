@@ -559,7 +559,7 @@ const LeadsList = ({ getPublic, getApprove, getNotApprove, viewType, getDeleted 
 
                     <td>
                       {row.product_slug ? (
-                        <Link to={`/product/${row.product_slug}`} target="_blank">{row.product_name}</Link>
+                        <Link to={`/products/${row.product_slug}`} target="_blank">{row.product_name}</Link>
                       ) : (
                         row.product_name
                       )}
