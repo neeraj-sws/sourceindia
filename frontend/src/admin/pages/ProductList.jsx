@@ -750,12 +750,16 @@ const ProductList = ({ getDeleted, isApprove }) => {
                       </td>
                     )}
                     <td>{(page - 1) * limit + index + 1}</td>
-                    <td><ImageWithFallback
-                      src={`${ROOT_URL}/${row.file_name}`}
-                      width={40}
-                      height={40}
-                      showFallback={true}
-                    /></td>
+                    <td>
+                      <img
+                        src={row.file_name ? `${ROOT_URL}/${row.file_name}` : '/default-image.png'}
+                        width={40}
+                        height={40}
+                        alt={row.title || 'Product Image'}
+                        style={{ objectFit: 'cover', borderRadius: '4px' }}
+                        onError={e => { e.target.onerror = null; e.target.src = '/default-image.png'; }}
+                      />
+                    </td>
                     <td><a href={`/products/${row.slug}`} target="_blank"> {row.title?.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</a></td>
                     <td>{row.category_name}</td>
                     <td><a href={`/companies/${row.company_slug}`} target="_blank">{row.company_name}</a></td>

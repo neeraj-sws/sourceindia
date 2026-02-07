@@ -47,43 +47,43 @@ const ProductsList = () => {
   const [showFilter, setShowFilter] = useState(false);
   const [filtersReady, setFiltersReady] = useState(false);
 
-useEffect(() => {
-  const queryParams = new URLSearchParams(location.search);
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
 
-  const mapping = [
-    { key: 'item_id', type: 'item' },
-    { key: 'item_subcategory_id', type: 'item_subcategory' },
-    { key: 'item_category_id', type: 'item_category' },
-    { key: 'subcategory_id', type: 'subcategory' },
-    { key: 'category_id', type: 'category' }
-  ];
+    const mapping = [
+      { key: 'item_id', type: 'item' },
+      { key: 'item_subcategory_id', type: 'item_subcategory' },
+      { key: 'item_category_id', type: 'item_category' },
+      { key: 'subcategory_id', type: 'subcategory' },
+      { key: 'category_id', type: 'category' }
+    ];
 
-  const found = mapping.find(m => queryParams.get(m.key));
+    const found = mapping.find(m => queryParams.get(m.key));
 
-  if (!found) return;
+    if (!found) return;
 
-  const id = Number(queryParams.get(found.key));
+    const id = Number(queryParams.get(found.key));
 
-  (async () => {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/products/item-hierarchy/${found.type}/${id}`
-      );
+    (async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/products/item-hierarchy/${found.type}/${id}`
+        );
 
-      const data = res.data;
+        const data = res.data;
 
-      setSelectedCategories(data.category_id ? [data.category_id] : []);
-      setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
-      setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
-      setSelectedItemSubCategories(
-        data.item_subcategory_id ? [data.item_subcategory_id] : []
-      );
-      setSelectedItems(data.item_id ? [data.item_id] : []);
-    } catch (err) {
-      console.error("Error fetching item hierarchy:", err);
-    }
-  })();
-}, [location.search]);
+        setSelectedCategories(data.category_id ? [data.category_id] : []);
+        setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
+        setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
+        setSelectedItemSubCategories(
+          data.item_subcategory_id ? [data.item_subcategory_id] : []
+        );
+        setSelectedItems(data.item_id ? [data.item_id] : []);
+      } catch (err) {
+        console.error("Error fetching item hierarchy:", err);
+      }
+    })();
+  }, [location.search]);
 
 
   useEffect(() => {
@@ -94,47 +94,47 @@ useEffect(() => {
   }, [searchParams]);
 
   useEffect(() => {
-  const queryParams = new URLSearchParams(location.search);
+    const queryParams = new URLSearchParams(location.search);
 
-  const mapping = [
-    { key: 'item_id', type: 'item' },
-    { key: 'item_subcategory_id', type: 'item_subcategory' },
-    { key: 'item_category_id', type: 'item_category' },
-    { key: 'subcategory_id', type: 'subcategory' },
-    { key: 'category_id', type: 'category' }
-  ];
+    const mapping = [
+      { key: 'item_id', type: 'item' },
+      { key: 'item_subcategory_id', type: 'item_subcategory' },
+      { key: 'item_category_id', type: 'item_category' },
+      { key: 'subcategory_id', type: 'subcategory' },
+      { key: 'category_id', type: 'category' }
+    ];
 
-  const found = mapping.find(m => queryParams.get(m.key));
+    const found = mapping.find(m => queryParams.get(m.key));
 
-  if (!found) {
-    setFiltersReady(true); // no URL filters
-    return;
-  }
-
-  const id = Number(queryParams.get(found.key));
-
-  (async () => {
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/products/item-hierarchy/${found.type}/${id}`
-      );
-
-      const data = res.data;
-
-      setSelectedCategories(data.category_id ? [data.category_id] : []);
-      setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
-      setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
-      setSelectedItemSubCategories(
-        data.item_subcategory_id ? [data.item_subcategory_id] : []
-      );
-      setSelectedItems(data.item_id ? [data.item_id] : []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setFiltersReady(true); // ✅ important
+    if (!found) {
+      setFiltersReady(true); // no URL filters
+      return;
     }
-  })();
-}, [location.search]);
+
+    const id = Number(queryParams.get(found.key));
+
+    (async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/products/item-hierarchy/${found.type}/${id}`
+        );
+
+        const data = res.data;
+
+        setSelectedCategories(data.category_id ? [data.category_id] : []);
+        setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
+        setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
+        setSelectedItemSubCategories(
+          data.item_subcategory_id ? [data.item_subcategory_id] : []
+        );
+        setSelectedItems(data.item_id ? [data.item_id] : []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setFiltersReady(true); // ✅ important
+      }
+    })();
+  }, [location.search]);
 
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(categorySearchTerm)
@@ -376,22 +376,22 @@ useEffect(() => {
   };
 
   useEffect(() => {
-  if (!filtersReady) return; // 🚫 block early call
+    if (!filtersReady) return; // 🚫 block early call
 
-  setPage(1);
-  setHasMore(true);
-  fetchProducts(1, false);
-}, [
-  filtersReady,
-  selectedCategories,
-  selectedSubCategories,
-  selectedItemCategories,
-  selectedItemSubCategories,
-  selectedItems,
-  selectedStates,
-  selectedCompanies,
-  sortBy
-]);
+    setPage(1);
+    setHasMore(true);
+    fetchProducts(1, false);
+  }, [
+    filtersReady,
+    selectedCategories,
+    selectedSubCategories,
+    selectedItemCategories,
+    selectedItemSubCategories,
+    selectedItems,
+    selectedStates,
+    selectedCompanies,
+    sortBy
+  ]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -576,27 +576,27 @@ useEffect(() => {
                       overflowY:
                         filteredCategories.length >= 5 ? "auto" : "visible",
                     }}
-                    >
+                  >
                     {filteredCategories
                       .filter((cat) => cat.product_count > 0)
                       .map((cat) => (
-                      <div className="form-check mb-2" key={cat.id}>
-                        <input
-                          type="checkbox"
-                          id={`cat-${cat.id}`}
-                          className="form-check-input"
-                          checked={selectedCategories.includes(cat.id)}
-                          onChange={() => handleCategoryCheckboxChange(cat.id)}
-                          disabled={cat.product_count === 0}
-                        />
-                        <label
-                          htmlFor={`cat-${cat.id}`}
-                          className="form-check-label text-capitalize"
-                        >
-                          {cat.name} ({cat.product_count})
-                        </label>
-                      </div>
-                        ))}
+                        <div className="form-check mb-2" key={cat.id}>
+                          <input
+                            type="checkbox"
+                            id={`cat-${cat.id}`}
+                            className="form-check-input"
+                            checked={selectedCategories.includes(cat.id)}
+                            onChange={() => handleCategoryCheckboxChange(cat.id)}
+                            disabled={cat.product_count === 0}
+                          />
+                          <label
+                            htmlFor={`cat-${cat.id}`}
+                            className="form-check-label text-capitalize"
+                          >
+                            {cat.name} ({cat.product_count})
+                          </label>
+                        </div>
+                      ))}
                   </div>
                 </div>
               </div>
@@ -632,25 +632,25 @@ useEffect(() => {
                         {filteredSubCategories
                           .filter((sub) => sub.product_count > 0)
                           .map((sub) => (
-                          <div className="form-check mb-2" key={sub.id}>
-                            <input
-                              type="checkbox"
-                              id={`subcat-${sub.id}`}
-                              className="form-check-input"
-                              checked={selectedSubCategories.includes(sub.id)}
-                              disabled={sub.product_count === 0}
-                              onChange={() =>
-                                handleSubCategoryCheckboxChange(sub.id)
-                              }
-                            />
-                            <label
-                              htmlFor={`subcat-${sub.id}`}
-                              className="form-check-label text-capitalize"
-                            >
-                              {sub.name} ({sub.product_count})
-                            </label>
-                          </div>
-                        ))}
+                            <div className="form-check mb-2" key={sub.id}>
+                              <input
+                                type="checkbox"
+                                id={`subcat-${sub.id}`}
+                                className="form-check-input"
+                                checked={selectedSubCategories.includes(sub.id)}
+                                disabled={sub.product_count === 0}
+                                onChange={() =>
+                                  handleSubCategoryCheckboxChange(sub.id)
+                                }
+                              />
+                              <label
+                                htmlFor={`subcat-${sub.id}`}
+                                className="form-check-label text-capitalize"
+                              >
+                                {sub.name} ({sub.product_count})
+                              </label>
+                            </div>
+                          ))}
                       </div>
                     </div>
                   </div>
@@ -857,23 +857,23 @@ useEffect(() => {
                     {filteredStates
                       .filter((state) => state.product_count > 0)
                       .map((state) => (
-                      <div className="form-check mb-2" key={state.id}>
-                        <input
-                          type="checkbox"
-                          id={`state-${state.id}`}
-                          className="form-check-input"
-                          checked={selectedStates.includes(state.id)}
-                          onChange={() => handleStatesCheckboxChange(state.id)}
-                          disabled={state.product_count === 0}
-                        />
-                        <label
-                          htmlFor={`state-${state.id}`}
-                          className="form-check-label text-capitalize"
-                        >
-                          {state.name} ({state.product_count})
-                        </label>
-                      </div>
-                    ))}
+                        <div className="form-check mb-2" key={state.id}>
+                          <input
+                            type="checkbox"
+                            id={`state-${state.id}`}
+                            className="form-check-input"
+                            checked={selectedStates.includes(state.id)}
+                            onChange={() => handleStatesCheckboxChange(state.id)}
+                            disabled={state.product_count === 0}
+                          />
+                          <label
+                            htmlFor={`state-${state.id}`}
+                            className="form-check-label text-capitalize"
+                          >
+                            {state.name} ({state.product_count})
+                          </label>
+                        </div>
+                      ))}
                   </div>
                 </div>
               </div>
@@ -904,25 +904,25 @@ useEffect(() => {
                     {filteredCompanies
                       .filter((company) => company.product_count > 0)
                       .map((company) => (
-                      <div className="form-check mb-2" key={company.id}>
-                        <input
-                          type="checkbox"
-                          id={`company-${company.id}`}
-                          className="form-check-input"
-                          checked={selectedCompanies.includes(company.id)}
-                           disabled={company.product_count === 0}
-                          onChange={() =>
-                            handleCompaniesCheckboxChange(company.id)
-                          }
-                        />
-                        <label
-                          htmlFor={`company-${company.id}`}
-                          className="form-check-label text-capitalize"
-                        >
-                          {company.organization_name} ({company.product_count})
-                        </label>
-                      </div>
-                    ))}
+                        <div className="form-check mb-2" key={company.id}>
+                          <input
+                            type="checkbox"
+                            id={`company-${company.id}`}
+                            className="form-check-input"
+                            checked={selectedCompanies.includes(company.id)}
+                            disabled={company.product_count === 0}
+                            onChange={() =>
+                              handleCompaniesCheckboxChange(company.id)
+                            }
+                          />
+                          <label
+                            htmlFor={`company-${company.id}`}
+                            className="form-check-label text-capitalize"
+                          >
+                            {company.organization_name} ({company.product_count})
+                          </label>
+                        </div>
+                      ))}
                   </div>
                 </div>
               </div>
@@ -1169,11 +1169,13 @@ useEffect(() => {
                             height: isListView ? "100%" : "200px",
                           }}
                         >
-                          <ImageWithFallback
-                            src={`${ROOT_URL}/${product.file_name}`}
-                            width={180}
-                            height={180}
-                            showFallback={true}
+                          <img
+                            src={product.file_name ? `${ROOT_URL}/${product.file_name}` : '/default-image.png'}
+                            width={40}
+                            height={40}
+                            alt={product.title || 'Product Image'}
+                            style={{ objectFit: 'cover', borderRadius: '4px' }}
+                            onError={e => { e.target.onerror = null; e.target.src = '/default-image.png'; }}
                           />
                         </div>
 
