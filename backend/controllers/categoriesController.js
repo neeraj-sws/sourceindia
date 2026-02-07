@@ -578,13 +578,19 @@ exports.getItemCategories = async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
 
-    // 1️⃣ Fetch all top-level categories
+    // 1️⃣ Fetch all top-level categories with image
     const categories = await Categories.findAll({
       where: { top_category: 1, is_delete: 0, status: 1 },
       attributes: ['id', 'name', 'cat_file_id', 'slug'],
       order: [['id', 'ASC']],
-      ...(limit && { limit }), // optional category limit
-      raw: true
+      ...(limit && { limit }),
+      include: [
+        {
+          model: UploadImage,
+          as: 'CategoryImage',
+          attributes: ['file']
+        }
+      ]
     });
 
     // 2️⃣ Fetch all subcategories
@@ -622,24 +628,24 @@ exports.getItemCategories = async (req, res) => {
     });
 
     const productCounts = await Products.findAll({
-  attributes: [
-    'category',
-    'sub_category',
-    'item_category_id',
-    [sequelize.fn('COUNT', sequelize.col('product_id')), 'product_count']
-  ],
-  where: {
-    status: 1,
-    is_delete: 0
-  },
-  group: ['category', 'sub_category', 'item_category_id'],
-  raw: true
-});
+      attributes: [
+        'category',
+        'sub_category',
+        'item_category_id',
+        [sequelize.fn('COUNT', sequelize.col('product_id')), 'product_count']
+      ],
+      where: {
+        status: 1,
+        is_delete: 0
+      },
+      group: ['category', 'sub_category', 'item_category_id'],
+      raw: true
+    });
     const productCountMap = {};
-productCounts.forEach(p => {
-  const key = `${p.category}_${p.sub_category}_${p.item_category_id}`;
-  productCountMap[key] = Number(p.product_count);
-});
+    productCounts.forEach(p => {
+      const key = `${p.category}_${p.sub_category}_${p.item_category_id}`;
+      productCountMap[key] = Number(p.product_count);
+    });
 
     // ✅ Item categories grouped by subcategory_id
     const itemBySubcategory = {};
@@ -650,7 +656,7 @@ productCounts.forEach(p => {
         id: item.id,
         name: item.name,
         slug: item.slug,
-        file_name: imageMap[item.file_id] || null,
+        file_name: imageMap[item.cat_file_id] || null,
         product_count: productCountMap[key] || 0
       });
     });
@@ -675,7 +681,7 @@ productCounts.forEach(p => {
       slug: cat.slug,
       file_name: imageMap[cat.cat_file_id] || null,
       subcategories: 6
-        ? (subByCategory[cat.id] || []).slice(0, 6) // 👈 limit applied here
+        ? (subByCategory[cat.id] || []).slice(0, 6)
         : (subByCategory[cat.id] || [])
     }));
 
@@ -685,6 +691,7 @@ productCounts.forEach(p => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 exports.getItemSubCategories = async (req, res) => {
   try {
