@@ -3166,18 +3166,18 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 .banner-slide {
 	height: 500px;
 	background-size: cover;
-	background-position: right center;
+	/* background-position: right center; */
 	position: relative;
 }
 
 .banner-overlay {
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(90deg,
+	/* background: linear-gradient(90deg,
 			#071a2d 0%,
 			rgba(7, 26, 45, 0.95) 40%,
 			rgba(7, 26, 45, 0.5) 70%,
-			rgba(7, 26, 45, 0.1) 100%);
+			rgba(7, 26, 45, 0.1) 100%); */
 	z-index: 1;
 }
 
@@ -3289,6 +3289,6 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 	display: block;
 }
 
-.comFont *	 {
+.comFont * {
 	font-size: 15px;
 }

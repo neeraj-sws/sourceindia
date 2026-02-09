@@ -240,9 +240,25 @@ const Profile = () => {
                           <div className="col-sm-6">
                             <div className="pt-3 border-bottom">
                               <h6>Company Brochure</h6>
-                              <a href={user.company_info?.companySamplePptFile ? `${ROOT_URL}/${user.company_info.companySamplePptFile.file}` : "#"}>
-                                Download File
-                              </a>
+                              {user.company_info?.companySampleFile?.file ? (
+                                <a href={`${ROOT_URL}/${user.company_info.companySampleFile.file}`} target="_blank" rel="noopener noreferrer">
+                                  Download Brochure
+                                </a>
+                              ) : (
+                                <span>No brochure uploaded</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="col-sm-6">
+                            <div className="pt-3 border-bottom">
+                              <h6>Company PPT</h6>
+                              {user.company_info?.companySamplePptFile?.file ? (
+                                <a href={`${ROOT_URL}/${user.company_info.companySamplePptFile.file}`} target="_blank" rel="noopener noreferrer">
+                                  Download PPT
+                                </a>
+                              ) : (
+                                <span>No PPT uploaded</span>
+                              )}
                             </div>
                           </div>
                           <div className="col-sm-6">
@@ -259,7 +275,7 @@ const Profile = () => {
                           <div className="col-sm-12">
                             <div className="pt-3 border-bottom">
                               <h6>Company Introduction</h6>
-                              <p>{user.company_info?.organizations_product_description}</p>
+                              <p>{user.company_info?.brief_company}</p>
                             </div>
                           </div>
                         </div>

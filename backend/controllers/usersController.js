@@ -192,7 +192,7 @@ exports.resendOtp = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     const otp = generateOtp();
     user.otp = otp;
-    
+
     await user.save();
     await sendOtp(email, otp, { templateId: 87, data: { USER_FNAME: 'User' } });
 
@@ -950,10 +950,10 @@ exports.updateProfile = async (req, res) => {
           .replace('{{ USER_ADDRESS }}', user.address)
           .replace('{{ USER_TYPE }}', user_type);
 
-        
 
-       await sendMail({ to: siteConfig['site_email'], subject: adminemailTemplate.subject, message: adminMessage }); 
-     
+
+        await sendMail({ to: siteConfig['site_email'], subject: adminemailTemplate.subject, message: adminMessage });
+
       }
 
       const emailTemplate = await Emails.findByPk(33);
@@ -1016,10 +1016,17 @@ exports.updateProfile = async (req, res) => {
         // Handle company logo, sample, ppt
         const companyLogo = req.files?.company_logo?.[0];
         const sampleFile = req.files?.sample_file_id?.[0];
-        const pptFile = req.files?.company_sample_ppt_file?.[0];
 
-        const handleFileUpdate = async (existingId, newFile, fieldName) => {
+        const pptFile = req.files?.company_sample_ppt_file?.[0];
+        const handleFileUpdate = async (existingId, newFile, fieldName, validatePpt = false) => {
           if (!newFile) return null;
+          // Validate PPT/PPTX if required
+          if (validatePpt) {
+            const ext = path.extname(newFile.originalname).toLowerCase();
+            if (ext !== '.ppt' && ext !== '.pptx') {
+              throw new Error('Only PPT or PPTX files are allowed for company sample PPT file.');
+            }
+          }
           const existingFile = existingId ? await UploadImage.findByPk(existingId) : null;
           if (existingFile) {
             const oldPath = path.resolve(existingFile.file);
@@ -1027,6 +1034,7 @@ exports.updateProfile = async (req, res) => {
             existingFile.file = `upload/users/${newFile.filename}`;
             existingFile.updated_at = new Date();
             await existingFile.save();
+            await companyInfo.update({ [fieldName]: existingFile.id });
             return existingFile.id;
           } else {
             const created = await UploadImage.create({
@@ -1039,7 +1047,13 @@ exports.updateProfile = async (req, res) => {
 
         await handleFileUpdate(companyInfo.company_logo, companyLogo, 'company_logo');
         await handleFileUpdate(companyInfo.sample_file_id, sampleFile, 'sample_file_id');
-        await handleFileUpdate(companyInfo.company_sample_ppt_file, pptFile, 'company_sample_ppt_file');
+        if (pptFile) {
+          try {
+            await handleFileUpdate(companyInfo.company_sample_ppt_file, pptFile, 'company_sample_ppt_file', true);
+          } catch (pptErr) {
+            return res.status(400).json({ error: pptErr.message });
+          }
+        }
 
         // 🧾 Update company info
         await companyInfo.update({

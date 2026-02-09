@@ -336,6 +336,9 @@ const AddProduct = () => {
     if (!selectedSellers) errs.user_id = 'User is required';
     if (!formData.title.trim()) errs.title = 'Title is required';
     if (!selectedCategory) errs.category = "Category is required";
+    if (!selectedSubCategory) errs.sub_category = "Sub Category is required";
+    if (!selectedItemCategory) errs.item_category = "Item Category is required";
+
     if (!formData.status) errs.status = 'Status is required';
     if (!formData.short_description) errs.short_description = 'Short description is required';
 
@@ -660,12 +663,15 @@ const AddProduct = () => {
   const adminPickerHandleSelect = async (catId, catName, subId, subName, itemCategoryId, itemCategoryName, itemSubCategoryId, itemSubCategoryName) => {
     const selection = { categoryId: catId || null, categoryName: catName || '', subId: subId || null, subName: subName || '', itemCategoryId: itemCategoryId || null, itemCategoryName: itemCategoryName || '', itemSubCategoryId: itemSubCategoryId || null, itemSubCategoryName: itemSubCategoryName || '' };
     setPickerSelection(selection);
-    // apply immediately to form state
+    // Always reset dependent dropdowns
     setSelectedCategory(selection.categoryId || '');
     setSelectedSubCategory(selection.subId || '');
     setSelectedItemCategory(selection.itemCategoryId || '');
     setSelectedItemSubCategory(selection.itemSubCategoryId || '');
     setSelectedItem('');
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setItems([]);
     // eager-load item categories for the selected subcategory
     if (selection.categoryId && selection.subId) {
       try {
@@ -673,6 +679,24 @@ const AddProduct = () => {
         setItemCategories(res.data || []);
       } catch (err) {
         setItemCategories([]);
+      }
+    }
+    // If item category and item sub category are selected, reload item sub categories
+    if (selection.categoryId && selection.subId && selection.itemCategoryId) {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selection.categoryId}/${selection.subId}/${selection.itemCategoryId}`);
+        setItemSubCategories(res.data || []);
+      } catch (err) {
+        setItemSubCategories([]);
+      }
+    }
+    // If item sub category is selected, reload items
+    if (selection.categoryId && selection.subId && selection.itemCategoryId && selection.itemSubCategoryId) {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selection.categoryId}/${selection.subId}/${selection.itemCategoryId}/${selection.itemSubCategoryId}`);
+        setItems(res.data || []);
+      } catch (err) {
+        setItems([]);
       }
     }
     setShowCategoryPicker(false);
@@ -917,6 +941,7 @@ const AddProduct = () => {
                                   <option key={sc.id} value={sc.id}>{sc.name}</option>
                                 ))}
                               </select>
+                              {errors.sub_category && (<div className="text-danger small">{errors.sub_category}</div>)}
                             </div>
 
                           </div>
@@ -937,6 +962,7 @@ const AddProduct = () => {
                               <option key={ic.id} value={ic.id}>{ic.name}</option>
                             ))}
                           </select>
+                          {errors.item_category && (<div className="text-danger small">{errors.item_category}</div>)}
                         </div>
 
                         <div className="form-group mb-3 col-md-12">
@@ -953,6 +979,7 @@ const AddProduct = () => {
                               <option key={isc.id} value={isc.id}>{isc.name}</option>
                             ))}
                           </select>
+
                         </div>
 
                         <div className="form-group mb-3 col-md-12">
@@ -969,6 +996,7 @@ const AddProduct = () => {
                               <option key={i.id} value={i.id}>{i.name}</option>
                             ))}
                           </select>
+
                         </div>
 
                         <div className="col-md-12">

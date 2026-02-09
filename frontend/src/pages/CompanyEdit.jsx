@@ -379,6 +379,9 @@ const CompanyEdit = () => {
     // Activity
     if (!selectedActivity)
       errs.activity = "Activity is required";
+    // Sub category
+    if (!selectedSubCategory.length)
+      errs.sub_category = "Sub category is required";
 
     // Category Sell
     if (!selectedCategory.length)
@@ -583,7 +586,7 @@ const CompanyEdit = () => {
                           {errors.category_sell && (<div className="text-danger small mt-1">{errors.category_sell}</div>)}
                         </div>
                         <div className="col-md-6">
-                          <label htmlFor="sub_category" className="form-label">Sub Category</label>
+                          <label htmlFor="sub_category" className="form-label required">Sub Category</label>
                           <select
                             id="sub_category" className="form-control select2"
                             value={selectedSubCategory}
@@ -596,6 +599,7 @@ const CompanyEdit = () => {
                               <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
                             ))}
                           </select>
+                          {errors.sub_category && <div className="text-danger small mt-1">{errors.sub_category}</div>}
                         </div>
                         <div className="col-md-12">
                           <label className="form-label">Company Logo </label>
@@ -647,9 +651,11 @@ const CompanyEdit = () => {
                         <div className="col-md-12 mt-3">
                           <label className="form-label">Ppt file</label>
                           <input
-                            type="file" className={`form-control ${errors.company_sample_ppt_file ? "is-invalid" : ""}`}
+                            type="file"
+                            className={`form-control ${errors.company_sample_ppt_file ? "is-invalid" : ""}`}
                             id="company_sample_ppt_file"
-                            onChange={handleChange}
+                            accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                            onChange={handleCompanyFileChange}
                           />
                           {user.company_info?.companySamplePptFile?.file && (
                             <a

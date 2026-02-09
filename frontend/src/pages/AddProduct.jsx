@@ -24,7 +24,7 @@ const AddProduct = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  
+
   const [imageToDelete, setImageToDelete] = useState(null);
   const [formData, setFormData] = useState({
     user_id: '', title: '', code: '', article_number: '', status: '', short_description: '', description: '', item_category_id: '', item_subcategory_id: '', item_id: ''
@@ -270,7 +270,7 @@ const AddProduct = () => {
   }, [showCategoryPicker]);
 
   useEffect(() => {
-    if (showCategoryPicker && pickerDialogRef.current) try { pickerDialogRef.current.focus(); } catch (e) {}
+    if (showCategoryPicker && pickerDialogRef.current) try { pickerDialogRef.current.focus(); } catch (e) { }
   }, [showCategoryPicker]);
 
   const pickerToggle = (id) => setPickerExpanded(s => ({ ...s, [id]: !s[id] }));
@@ -384,7 +384,7 @@ const AddProduct = () => {
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
   };
 
-  
+
 
   // Handle Item Category Change
   const handleItemCategoryChange = async (event) => {
@@ -494,6 +494,8 @@ const AddProduct = () => {
     const errs = {};
     if (!formData.title.trim()) errs.title = 'Title is required';
     if (!selectedCategory) errs.category = "Category is required";
+    if (!selectedSubCategory) errs.sub_category = "Sub Category is required";
+    if (!selectedItemCategory) errs.item_category = "Item Category is required";
     if (!formData.status) errs.status = 'Status is required';
     if (!formData.short_description) errs.short_description = 'Short description is required';
 
@@ -532,9 +534,9 @@ const AddProduct = () => {
           description: data.description || '',
           images: data.images || [],
           is_gold: Number(data.is_gold) || 0,
-  is_featured: Number(data.is_featured) || 0,
-  is_recommended: Number(data.is_recommended) || 0,
-  best_product: Number(data.best_product) || 0,
+          is_featured: Number(data.is_featured) || 0,
+          is_recommended: Number(data.is_recommended) || 0,
+          best_product: Number(data.best_product) || 0,
         });
 
         // Set category & subcategory first
@@ -647,32 +649,32 @@ const AddProduct = () => {
   };
 
   const handleAddImages = async () => {
-  if (files.length === 0) return;
-  const formDataObj = new FormData();
-  files.forEach(file => formDataObj.append("files", file));
+    if (files.length === 0) return;
+    const formDataObj = new FormData();
+    files.forEach(file => formDataObj.append("files", file));
 
-  try {
-    // Upload images
-    await axios.post(`${API_BASE_URL}/products/${productId}/images`,
-      formDataObj,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
+    try {
+      // Upload images
+      await axios.post(`${API_BASE_URL}/products/${productId}/images`,
+        formDataObj,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
 
-    // Fetch updated product to get images
-    const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
-    const data = res.data;
+      // Fetch updated product to get images
+      const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
+      const data = res.data;
 
-    setFormData(prev => ({
-      ...prev,
-      images: data.images || []
-    }));
-    setFiles([]);
-    showNotification("Images added successfully!", "success");
-  } catch (error) {
-    console.error("Error adding images:", error);
-    showNotification("Failed to add images", "error");
-  }
-};
+      setFormData(prev => ({
+        ...prev,
+        images: data.images || []
+      }));
+      setFiles([]);
+      showNotification("Images added successfully!", "success");
+    } catch (error) {
+      console.error("Error adding images:", error);
+      showNotification("Failed to add images", "error");
+    }
+  };
 
   const openDeleteModal = (id) => { setImageToDelete(id); setShowDeleteModal(true); };
 
@@ -786,7 +788,7 @@ const AddProduct = () => {
                   <div className="card">
                     <div className="card-body p-4">
                       <div className="row">
-                            {/* <div className="form-group mb-3 col-md-12">
+                        {/* <div className="form-group mb-3 col-md-12">
                               <label htmlFor="category" className="form-label required">Category</label>
                               <select
                                 id="category" className="form-control select2"
@@ -800,30 +802,31 @@ const AddProduct = () => {
                               </select>
                               {errors.category && (<div className="text-danger small">{errors.category}</div>)}
                             </div> */}
-                            <div className="col-12 mb-3 d-flex justify-content-end align-items-center">
-                              <button type="button" className="btn btn-outline-secondary me-2" onClick={() => setShowCategoryPicker(true)}>Category Picker</button>
-                            </div>
-                            <div className="form-group mb-3 col-md-12">
-                              <label htmlFor="sub_category" className="form-label required">Sub Category</label>
-                              <div className="d-flex flex-column">
-                                <div>
-                                  <select
-                                    id="sub_category"
-                                    className="form-control select2"
-                                    value={selectedSubCategory}
-                                    onChange={handleSubCategoryChange}
-                                  >
-                                    <option value="">Select Sub Category</option>
-                                    {subCategories.map(sc => (
-                                      <option key={sc.id} value={sc.id}>{sc.name}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                                
-                              </div>
-                            </div>
+                        <div className="col-12 mb-3 d-flex justify-content-end align-items-center">
+                          <button type="button" className="btn btn-outline-secondary me-2" onClick={() => setShowCategoryPicker(true)}>Category Picker</button>
+                        </div>
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="item_category_id" className="form-label">Item Category</label>
+                          <label htmlFor="sub_category" className="form-label required">Sub Category</label>
+                          <div className="d-flex flex-column">
+                            <div>
+                              <select
+                                id="sub_category"
+                                className="form-control select2"
+                                value={selectedSubCategory}
+                                onChange={handleSubCategoryChange}
+                              >
+                                <option value="">Select Sub Category</option>
+                                {subCategories.map(sc => (
+                                  <option key={sc.id} value={sc.id}>{sc.name}</option>
+                                ))}
+                              </select>
+                              {errors.sub_category && (<div className="text-danger small">{errors.sub_category}</div>)}
+                            </div>
+
+                          </div>
+                        </div>
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="item_category_id" className="form-label required">Item Category</label>
                           <select
                             id="item_category_id"
                             className="form-control"
@@ -838,6 +841,7 @@ const AddProduct = () => {
                               <option key={ic.id} value={ic.id}>{ic.name}</option>
                             ))}
                           </select>
+                          {errors.item_category && (<div className="text-danger small">{errors.item_category}</div>)}
                         </div>
 
                         <div className="form-group mb-3 col-md-12 d-none">

@@ -687,6 +687,9 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     try {
       const response = await axios.post(`${API_BASE_URL}/signup/impersonate-login`, { userId });
       if (response.data.token) {
+        // Set token in localStorage (replace session)
+        localStorage.setItem("user_token", response.data.token);
+        // Open impersonate URL in new tab as well
         const url = `${window.location.origin}/impersonate?token=${response.data.token}`;
         window.open(url, "_blank");
       }
