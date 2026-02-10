@@ -3292,3 +3292,8 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 .comFont * {
 	font-size: 15px;
 }
+
+.scrollable {
+	max-height: 400px;
+	overflow-y: scroll;
+}

@@ -680,7 +680,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                               <h5 className="modal-title"> Sourcing Interests</h5>
                               <button className="btn-close" onClick={handleCloseSourcingModal}></button>
                             </div>
-                            <div className="modal-body">
+                            <div className="modal-body scrollable" style={{ maxHeight: "400px", overflowY: "auto" }}>
                               {sourcingLoading ? (
                                 <div className="text-center py-4"><span className="spinner-border"></span> Loading...</div>
                               ) : sourcingError ? (
