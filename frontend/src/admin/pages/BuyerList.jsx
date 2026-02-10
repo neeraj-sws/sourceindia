@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
@@ -62,6 +63,34 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [mailType, setMailType] = useState("selected");
   const [mailLoading, setMailLoading] = useState(false);
+
+
+  // Sourcing Interests Modal State
+  const [showSourcingModal, setShowSourcingModal] = useState(false);
+  const [sourcingData, setSourcingData] = useState([]);
+  const [sourcingLoading, setSourcingLoading] = useState(false);
+  const [sourcingError, setSourcingError] = useState("");
+
+  const handleShowSourcingInterests = async (userId) => {
+    setSourcingLoading(true);
+    setShowSourcingModal(true);
+    setSourcingError("");
+    try {
+      const res = await axios.get(`${API_BASE_URL}/buyers/get-buyer-sourcing-interests`, { params: { user_id: userId } });
+      setSourcingData(res.data.data || []);
+    } catch (err) {
+      setSourcingError("Failed to load sourcing interests.");
+      setSourcingData([]);
+    } finally {
+      setSourcingLoading(false);
+    }
+  };
+
+  const handleCloseSourcingModal = () => {
+    setShowSourcingModal(false);
+    setSourcingData([]);
+    setSourcingError("");
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -591,16 +620,16 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                   { key: "user_company", label: "Company", sortable: true },
                   { key: "address", label: "Location", sortable: true },
                   ...(!getDeleted ? [
-                   ...(!getNotApproved ? [
-                    { key: "status", label: "User Status", sortable: false }
-                    ]:[]),
-                   ...(getNotApproved ? [
-                    { key: "account_status", label: "Account Status", sortable: false }
-                     ]:[]),
-                  ...(!getInactive && !getNotApproved ? [
-                    { key: "seller_status", label: "Make Seller", sortable: false } 
-                  ]:[]),
-                  ]:[]),
+                    ...(!getNotApproved ? [
+                      { key: "status", label: "User Status", sortable: false }
+                    ] : []),
+                    ...(getNotApproved ? [
+                      { key: "account_status", label: "Account Status", sortable: false }
+                    ] : []),
+                    ...(!getInactive && !getNotApproved ? [
+                      { key: "seller_status", label: "Make Seller", sortable: false }
+                    ] : []),
+                  ] : []),
                   { key: "user_category", label: "User Category", sortable: true },
                   { key: "created_at", label: "Created", sortable: true },
                   { key: "updated_at", label: "Last Update", sortable: true },
@@ -629,12 +658,56 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                     )}
                     <td><Link to={`/admin/buyer/user-profile/${row.id}`}>{(page - 1) * limit + index + 1}</Link></td>
                     <td>
-                       {row.user_company}<br />
-                      {row.full_name}<br />{row.email}<br />{row.mobile}<br />{row.is_trading == 1 ? (<span className="badge bg-success">Trader</span>) : ("")}
-                     {row.walkin_buyer == 1 ? (<span className="badge bg-primary">Walk-In Buyer</span>) : ("")}
-                      <br />
-                     </td>
-                   
+                      {row.user_company}<br />
+                      {row.full_name}<br />{row.email}<br />{row.mobile}<br />
+                      {row.is_trading == 1 ? (<span className="badge bg-success">Trader</span>) : ("")}
+                      {row.walkin_buyer == 1 ? (<span className="badge bg-primary small" style={{ fontSize: "11px" }}>Walk-In Buyer</span>) : ("")}
+                      {!getDeleted && !getInactive && row.is_sourcing_interest == 'yes' && (
+                        <>
+                          <br />
+                          <button className="btn btn-sm btn-info my-2 p-1 px-2" onClick={() => handleShowSourcingInterests(row.id)} style={{ fontSize: "11px" }}>
+                            <i className="bx bx-list-ul me-1 small"></i> Sourcing Interests
+                          </button>
+                        </>
+                      )}
+                    </td>
+                    {/* Sourcing Interests Modal */}
+                    {showSourcingModal && (
+                      <div className="modal fade show" style={{ display: "block", background: "rgba(0,0,0,0.5)" }}>
+                        <div className="modal-dialog modal-lg">
+                          <div className="modal-content">
+                            <div className="modal-header">
+                              <h5 className="modal-title"> Sourcing Interests</h5>
+                              <button className="btn-close" onClick={handleCloseSourcingModal}></button>
+                            </div>
+                            <div className="modal-body">
+                              {sourcingLoading ? (
+                                <div className="text-center py-4"><span className="spinner-border"></span> Loading...</div>
+                              ) : sourcingError ? (
+                                <div className="alert alert-danger">{sourcingError}</div>
+                              ) : sourcingData.length === 0 ? (
+                                <div className="text-center text-muted">No sourcing interests found.</div>
+                              ) : (
+                                <div>
+                                  {sourcingData.map((cat) => (
+                                    <div key={cat.category_id} className="border-bottom pb-2 mb-3">
+                                      <h6 className="fw-bold mb-2">{cat.category_name}</h6>
+                                      <ul className="list-group list-group-flush">
+                                        {cat.subcategories.map(sub => sub.name).join(', ')}
+                                      </ul>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div className="modal-footer">
+                              <button className="btn btn-secondary" onClick={handleCloseSourcingModal}>Close</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <td>
                       {([row.country_name, row.state_name, row.city_name]
                         .filter(v => v && v !== "NA").length > 0) ? (
@@ -649,51 +722,51 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                     </td>
                     {!getDeleted && (
                       <>
-                       {!getNotApproved && (
-                        <td>
-                          <div className="form-check form-switch">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              checked={row.status == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
-                              readOnly
-                            />
-                          </div>
-                        </td>
-                         )}
+                        {!getNotApproved && (
+                          <td>
+                            <div className="form-check form-switch">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                checked={row.status == 1}
+                                onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status, "status", "status"); }}
+                                readOnly
+                              />
+                            </div>
+                          </td>
+                        )}
 
-                        {getNotApproved && ( 
-                        <td>
-                          <div className="form-check form-switch">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              checked={row.is_approve == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_approve, "account_status", "is_approve"); }}
-                              readOnly
-                            />
-                          </div>
-                        </td>
-                         )}
+                        {getNotApproved && (
+                          <td>
+                            <div className="form-check form-switch">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                checked={row.is_approve == 1}
+                                onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_approve, "account_status", "is_approve"); }}
+                                readOnly
+                              />
+                            </div>
+                          </td>
+                        )}
 
                         {!getInactive && !getNotApproved && (
-                        <td>
-                          <div className="form-check form-switch">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              checked={row.is_seller == 1}
-                              onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_seller, "seller_status", "is_seller"); }}
-                              readOnly
-                            />
-                          </div>
-                        </td>
+                          <td>
+                            <div className="form-check form-switch">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                checked={row.is_seller == 1}
+                                onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.is_seller, "seller_status", "is_seller"); }}
+                                readOnly
+                              />
+                            </div>
+                          </td>
                         )}
                       </>
                     )}
                     <td>{row.user_category || <small><i>NA</i></small>}</td>
-                    <td>{formatDateTime(row.created_at)}</td>                    
+                    <td>{formatDateTime(row.created_at)}</td>
                     <td>{formatDateTime(row.updated_at)}</td>
                     <td>
                       <div className="dropdown">
@@ -704,7 +777,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                           {!getDeleted ? (
                             <>
                               <li>
-                                <button className="dropdown-item" onClick={() =>handleImpersonateLogin(row.id)}>
+                                <button className="dropdown-item" onClick={() => handleImpersonateLogin(row.id)}>
                                   <i className="bx bx-log-in me-2"></i> Login
                                 </button>
                               </li>
