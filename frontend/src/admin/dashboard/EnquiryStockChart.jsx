@@ -4,25 +4,49 @@ import API_BASE_URL from "../../config";
 
 const EnquiryStockChart = () => {
   const [chartDataSets, setChartDataSets] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState("MM");
 
   useEffect(() => {
     const fetchChartData = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/enquiries/chart`);
+        let url = `${API_BASE_URL}/enquiries/chart`;
+        let allActiveData = [];
+        if (selectedPeriod === "ALLACTIVE") {
+          url += "?type=ALLACTIVE";
+          const response = await axios.get(url);
+          allActiveData = response.data.map(item => {
+            let dateObj = null;
+            if (item.date && /^\d{4}-\d{2}-\d{2}$/.test(item.date)) {
+              dateObj = new Date(item.date + "T00:00:00");
+            }
+            return {
+              date: dateObj,
+              value: typeof item.value === 'number' ? item.value : (parseFloat(item.value) || 0),
+              volume: typeof item.value === 'number' ? item.value : (parseFloat(item.value) || 0)
+            };
+          }).filter(item => item.date instanceof Date && !isNaN(item.date));
+          if (!allActiveData.length) {
+            alert("No valid data available for Overall period! Please check backend response.");
+            setChartDataSets([]);
+            return;
+          }
+          setChartDataSets([
+            { title: "All Enquiries", dataProvider: allActiveData }
+          ]);
+          return;
+        }
+        const response = await axios.get(url);
         const data = response.data;
-
         const Approved = data.map(item => ({
           date: new Date(item.date),
           value: item.Approved || 0,
           volume: item.Approved || 0,
         }));
-
         const NotApproved = data.map(item => ({
           date: new Date(item.date),
           value: item.NotApproved || 0,
           volume: item.NotApproved || 0,
         }));
-
         setChartDataSets([
           { title: "Approved", dataProvider: Approved },
           { title: "Not Approved", dataProvider: NotApproved },
@@ -31,9 +55,8 @@ const EnquiryStockChart = () => {
         console.error("Error fetching enquiry chart data:", err);
       }
     };
-
     fetchChartData();
-  }, []);
+  }, [selectedPeriod]);
 
   useEffect(() => {
     if (!chartDataSets.length) return;
@@ -102,11 +125,16 @@ const EnquiryStockChart = () => {
       periodSelector: {
         position: "left",
         periods: [
-          { period: "MM", count: 1, selected: true, label: "1 month" },
-          { period: "YYYY", count: 1, label: "1 year" },
-          { period: "YTD", label: "YTD" },
-          { period: "MAX", label: "MAX" },
+          { period: "ALLACTIVE", selected: selectedPeriod === "ALLACTIVE", label: "Overall" },
+          { period: "MM", count: 1, selected: selectedPeriod === "MM", label: "1 month" },
+          { period: "YYYY", count: 1, selected: selectedPeriod === "YYYY", label: "1 year" },
+          { period: "YTD", selected: selectedPeriod === "YTD", label: "YTD" },
+          { period: "MAX", selected: selectedPeriod === "MAX", label: "MAX" }
         ],
+        ...(selectedPeriod === "ALLACTIVE" && chartDataSets[0] && chartDataSets[0].dataProvider.length && chartDataSets[0].dataProvider[0].date instanceof Date && !isNaN(chartDataSets[0].dataProvider[0].date)
+          ? { startDate: chartDataSets[0].dataProvider[0].date } : {}),
+        ...(selectedPeriod === "ALLACTIVE" && chartDataSets[0] && chartDataSets[0].dataProvider.length && chartDataSets[0].dataProvider[chartDataSets[0].dataProvider.length - 1].date instanceof Date && !isNaN(chartDataSets[0].dataProvider[chartDataSets[0].dataProvider.length - 1].date)
+          ? { endDate: chartDataSets[0].dataProvider[chartDataSets[0].dataProvider.length - 1].date } : {})
       },
 
       dataSetSelector: { position: "left" },
@@ -118,12 +146,34 @@ const EnquiryStockChart = () => {
     };
   }, [chartDataSets]);
 
+  // Custom 'From' date display for ALLACTIVE/Overall
+  let customFromDate = null;
+  if (selectedPeriod === "ALLACTIVE" && chartDataSets[0] && chartDataSets[0].dataProvider.length) {
+    const allActiveData = chartDataSets[0].dataProvider;
+    const firstNonZero = allActiveData.find(d => d.value > 0);
+    const dateObj = firstNonZero ? firstNonZero.date : allActiveData[0].date;
+    if (dateObj instanceof Date && !isNaN(dateObj)) {
+      // Format as DD-MM-YYYY
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const yyyy = dateObj.getFullYear();
+      customFromDate = `${dd}-${mm}-${yyyy}`;
+    }
+  }
+
   return (
-    <div
-      id="enquiryChartDiv"
-      style={{ width: "100%", height: "600px" }}
-      className="my-3"
-    />
+    <>
+      {selectedPeriod === "ALLACTIVE" && customFromDate && (
+        <div style={{ marginBottom: 8, fontWeight: 500 }}>
+          From: <span style={{ color: '#007bff' }}>{customFromDate}</span>
+        </div>
+      )}
+      <div
+        id="enquiryChartDiv"
+        style={{ width: "100%", height: "600px" }}
+        className="my-5"
+      />
+    </>
   );
 };
 

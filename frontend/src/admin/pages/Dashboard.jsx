@@ -172,29 +172,29 @@ const Dashboard = () => {
 
           </div>
         </div>
-        <div id="sellerGraph" className="mb-3">
+        <div id="sellerGraph" className="mb-4">
           <h6 className="mb-0 text-uppercase">Seller Graph</h6>
           <hr />
           <div className="card">
-            <div className="card-body">
+            <div className="card-body mb-4">
               <SellerStockChart />
             </div>
           </div>
         </div>
-        <div id="buyerGraph" className="mb-3">
+        <div id="buyerGraph" className="mb-4">
           <h6 className="mb-0 text-uppercase">Buyer Graph</h6>
           <hr />
           <div className="card">
-            <div className="card-body">
+            <div className="card-body mb-4">
               <BuyerStockChart />
             </div>
           </div>
         </div>
-        <div id="enquiryGraph" className="mb-3">
+        <div id="enquiryGraph" className="mb-4">
           <h6 className="mb-0 text-uppercase">Leads Graph</h6>
           <hr />
           <div className="card">
-            <div className="card-body">
+            <div className="card-body mb-4">
               <EnquiryStockChart />
             </div>
           </div>

@@ -1078,8 +1078,8 @@ exports.getBuyerChartData = async (req, res) => {
     let cumulativeDeleted = 0;
 
     while (currentDate <= end) {
-      const dateStr = currentDate.toISOString().split("T")[0];
-
+      // Use local date string to avoid timezone issues
+      const dateStr = currentDate.toLocaleDateString('en-CA'); // 'YYYY-MM-DD'
       const entry = dataMap[dateStr] || {
         Active: 0,
         Inactive: 0,
@@ -1088,10 +1088,10 @@ exports.getBuyerChartData = async (req, res) => {
       };
 
       // Update cumulative totals
-      cumulativeActive += entry.Active;
-      cumulativeInactive += entry.Inactive;
-      cumulativeNotApproved += entry.NotApproved;
-      cumulativeDeleted += entry.Deleted;
+      cumulativeActive = entry.Active;
+      cumulativeInactive = entry.Inactive;
+      cumulativeNotApproved = entry.NotApproved;
+      cumulativeDeleted = entry.Deleted;
 
       const total = cumulativeActive + cumulativeInactive + cumulativeNotApproved + cumulativeDeleted;
 

@@ -2970,7 +2970,8 @@ exports.getEnquiryChartData = async (req, res) => {
     let cumulativeNotApproved = 0;
 
     while (currentDate <= end) {
-      const dateStr = currentDate.toISOString().split("T")[0];
+      // const dateStr = currentDate.toISOString().split("T")[0];
+      const dateStr = currentDate.toLocaleDateString('en-CA');
 
       const entry = dataMap[dateStr] || {
         Approved: 0,
@@ -2978,8 +2979,8 @@ exports.getEnquiryChartData = async (req, res) => {
       };
 
       // Update cumulative totals
-      cumulativeApproved += entry.Approved;
-      cumulativeNotApproved += entry.NotApproved;
+      cumulativeApproved = entry.Approved;
+      cumulativeNotApproved = entry.NotApproved;
 
       const total = cumulativeApproved + cumulativeNotApproved;
 

@@ -583,9 +583,9 @@ exports.updateSeller = async (req, res) => {
       // Update company information if exists
       if (companyInfo) {
         let organization_slug = companyInfo.organization_slug;
-  if (req.body.user_company && req.body.user_company !== companyInfo.organization_name) {
-    organization_slug = await createUniqueSlug(req.body.user_company);
-  }
+        if (req.body.user_company && req.body.user_company !== companyInfo.organization_name) {
+          organization_slug = await createUniqueSlug(req.body.user_company);
+        }
         await companyInfo.update({
           organization_name: req.body.user_company,
           organization_slug,
@@ -939,27 +939,27 @@ exports.getAllSellerServerSide = async (req, res) => {
         { '$city_data.name$': { [Op.like]: `%${search}%` } },
         { '$state_data.name$': { [Op.like]: `%${search}%` } },
 
-    //     // ✅ CATEGORY NAME SEARCH
-    //     Sequelize.literal(`
-    //   EXISTS (
-    //     SELECT 1
-    //     FROM seller_categories sc
-    //     JOIN categories c ON c.category_id = sc.category_id
-    //     WHERE sc.user_id = users.user_id
-    //     AND c.name LIKE '%${escapedSearch}%'
-    //   )
-    // `),
+        //     // ✅ CATEGORY NAME SEARCH
+        //     Sequelize.literal(`
+        //   EXISTS (
+        //     SELECT 1
+        //     FROM seller_categories sc
+        //     JOIN categories c ON c.category_id = sc.category_id
+        //     WHERE sc.user_id = users.user_id
+        //     AND c.name LIKE '%${escapedSearch}%'
+        //   )
+        // `),
 
-    //     // ✅ SUB-CATEGORY NAME SEARCH (NEW)
-    //     Sequelize.literal(`
-    //   EXISTS (
-    //     SELECT 1
-    //     FROM seller_categories sc
-    //     JOIN sub_categories s ON s.sub_category_id = sc.subcategory_id
-    //     WHERE sc.user_id = users.user_id
-    //     AND s.name LIKE '%${escapedSearch}%'
-    //   )
-    // `),
+        //     // ✅ SUB-CATEGORY NAME SEARCH (NEW)
+        //     Sequelize.literal(`
+        //   EXISTS (
+        //     SELECT 1
+        //     FROM seller_categories sc
+        //     JOIN sub_categories s ON s.sub_category_id = sc.subcategory_id
+        //     WHERE sc.user_id = users.user_id
+        //     AND s.name LIKE '%${escapedSearch}%'
+        //   )
+        // `),
       ];
     }
 
@@ -1406,21 +1406,20 @@ exports.getFilteredSellers = async (req, res) => {
         : 'NA';
 
       return {
-        id: s.id,
-        full_name: `${s.fname} ${s.lname}`,
-        fname: s.fname,
-        lname: s.lname,
-        email: s.email,
-        mobile: s.mobile,
-        address: s.address,
-        zipcode: s.zipcode,
+        ...s,
+        getStatus: s.status === 1 ? 'Active' : 'Inactive',
+        getApproved: s.is_approve === 1 ? 'Approved' : 'Not Approved',
         country_name: s.country_data?.name || 'NA',
         state_name: s.state_data?.name || 'NA',
         city_name: s.city_data?.name || 'NA',
-        organization_name: s.company_info?.organization_name || null,
+        company_name: s.company_info?.organization_name || null,
         designation: s.company_info?.designation || null,
-        coreactivity_name: s.company_info?.CoreActivity?.name || 'NA',
-        activity_name: s.company_info?.Activity?.name || 'NA',
+        company_website: s.company_info?.company_website || null,
+        company_email: s.company_info?.company_email || null,
+        membership_plan_name: s.company_info?.MembershipPlan?.name || null,
+        coreactivity_name: s.company_info?.CoreActivity?.name || null,
+        activity_name: s.company_info?.Activity?.name || null,
+        quality_certification: s.company_info?.organization_quality_certification || null,
         category_names: categoryNames,
         sub_category_names: subCategoryNames,
         status: s.status == 1 ? 'Active' : 'Inactive',
@@ -1915,8 +1914,8 @@ exports.getSellerTrends = async (req, res) => {
 
 exports.getSellerChartData = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
-
+    // Accept new parameter: type
+    const { startDate, endDate, type } = req.query;
     // Fetch earliest seller record for MAX period
     const earliestUser = await Users.findOne({
       where: { is_seller: 1 },
@@ -1930,7 +1929,6 @@ exports.getSellerChartData = async (req, res) => {
         : new Date(new Date().setFullYear(new Date().getFullYear() - 1)); // fallback 1 year ago
 
     const end = endDate ? new Date(endDate) : new Date();
-
     start.setHours(0, 0, 0, 0);
     end.setHours(23, 59, 59, 999);
 
@@ -2016,7 +2014,6 @@ exports.getSellerChartData = async (req, res) => {
 
     while (currentDate <= end) {
       const dateStr = currentDate.toISOString().split("T")[0];
-
       const entry = dataMap[dateStr] || {
         Active: 0,
         Inactive: 0,
@@ -2024,16 +2021,12 @@ exports.getSellerChartData = async (req, res) => {
         NotCompleted: 0,
         Deleted: 0
       };
-
-      // Update cumulative totals
-      cumulativeActive += entry.Active;
-      cumulativeInactive += entry.Inactive;
-      cumulativeNotApproved += entry.NotApproved;
-      cumulativeNotCompleted += entry.NotCompleted;
-      cumulativeDeleted += entry.Deleted;
-
+      cumulativeActive = entry.Active;
+      cumulativeInactive = entry.Inactive;
+      cumulativeNotApproved = entry.NotApproved;
+      cumulativeNotCompleted = entry.NotCompleted;
+      cumulativeDeleted = entry.Deleted;
       const total = cumulativeActive + cumulativeInactive + cumulativeNotApproved + cumulativeNotCompleted + cumulativeDeleted;
-
       chartArray.push({
         date: dateStr,
         Active: cumulativeActive,
@@ -2043,8 +2036,35 @@ exports.getSellerChartData = async (req, res) => {
         Deleted: cumulativeDeleted,
         Total: total
       });
-
       currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Ensure end date is present (in case of time mismatch)
+    const endDateStr = end.toISOString().split("T")[0];
+    if (!chartArray.length || chartArray[chartArray.length - 1].date !== endDateStr) {
+      const entry = dataMap[endDateStr] || {
+        Active: 0,
+        Inactive: 0,
+        NotApproved: 0,
+        NotCompleted: 0,
+        Deleted: 0
+      };
+      chartArray.push({
+        date: endDateStr,
+        Active: entry.Active,
+        Inactive: entry.Inactive,
+        NotApproved: entry.NotApproved,
+        NotCompleted: entry.NotCompleted,
+        Deleted: entry.Deleted,
+        Total: entry.Active + entry.Inactive + entry.NotApproved + entry.NotCompleted + entry.Deleted
+      });
+    }
+
+    // Filter by type if provided
+    if (type === "ALLACTIVE") {
+      // Only return All Active Sellers (Total)
+      const allActiveArray = chartArray.map(item => ({ date: item.date, value: item.Total || 0, volume: item.Total || 0 }));
+      return res.json(allActiveArray);
     }
 
     return res.json(chartArray);
