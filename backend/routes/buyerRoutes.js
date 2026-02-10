@@ -7,6 +7,7 @@ router.get('/count', buyerController.getBuyerCount);
 router.get('/', buyerController.getAllBuyer);
 router.get('/server-side', buyerController.getAllBuyerServerSide);
 router.get('/filtered', buyerController.getFilteredBuyers);
+router.get('/get-buyer-sourcing-interests', buyerController.getBuyerSourcingInterests);
 router.delete('/delete-selected', buyerController.deleteSelectedBuyer);
 router.get('/chart', buyerController.getBuyerChartData);
 router.get('/:id', buyerController.getBuyerById);

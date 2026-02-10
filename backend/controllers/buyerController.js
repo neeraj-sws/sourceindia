@@ -14,7 +14,7 @@ const Activity = require('../models/Activity');
 const Categories = require('../models/Categories');
 const MembershipPlan = require('../models/MembershipPlan');
 const BuyerInterests = require('../models/BuyerInterests');
-const InterestSubCategories = require('../models/InterestSubCategories');
+const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
@@ -798,6 +798,18 @@ exports.getAllBuyerServerSide = async (req, res) => {
         { model: Cities, as: 'city_data', attributes: ['name'] },
       ],
     });
+    // For each buyer, check if they have sourcing interests
+    const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
+    const buyerIds = rows.map(row => row.id);
+    let sourcingMap = {};
+    if (buyerIds.length > 0) {
+      const allSourcing = await BuyerSourcingInterests.findAll({
+        where: { user_id: buyerIds },
+        attributes: ['user_id'],
+        group: ['user_id']
+      });
+      allSourcing.forEach(s => { sourcingMap[s.user_id] = true; });
+    }
     const mappedRows = rows.map(row => ({
       id: row.id,
       full_name: `${row.fname} ${row.lname}`,
@@ -831,6 +843,7 @@ exports.getAllBuyerServerSide = async (req, res) => {
       walkin_buyer: row.walkin_buyer,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      is_sourcing_interest: sourcingMap[row.id] ? 'yes' : 'no',
     }));
     res.json({
       data: mappedRows,
@@ -1112,5 +1125,78 @@ exports.getBuyerChartData = async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
+  }
+};
+
+// Get buyer sourcing interests grouped by item_category_id, showing subcategories for a given user_id
+exports.getBuyerSourcingInterests = async (req, res) => {
+  try {
+    const userId = req.query.user_id || req.body.user_id || req.params.user_id;
+    if (!userId) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    // Fetch all sourcing interests for this user
+    const interests = await BuyerSourcingInterests.findAll({
+      where: { user_id: userId },
+      attributes: ['item_category_id', 'item_subcategory_id', 'created_at'],
+      order: [['item_category_id', 'ASC'], ['item_subcategory_id', 'ASC']]
+    });
+
+    if (!interests || interests.length === 0) {
+      return res.json({ data: [], message: 'No sourcing interests found for this user.' });
+    }
+
+    // Get unique category and subcategory IDs
+    const categoryIds = [...new Set(interests.map(i => i.item_category_id))];
+    const subcategoryIds = [...new Set(interests.map(i => i.item_subcategory_id))];
+
+    // Fetch category and subcategory names
+    const [categories, subcategories] = await Promise.all([
+      require('../models/ItemCategory').findAll({
+        where: { id: categoryIds },
+        attributes: ['id', 'name']
+      }),
+      require('../models/ItemSubCategory').findAll({
+        where: { id: subcategoryIds },
+        attributes: ['id', 'name', 'item_category_id']
+      })
+    ]);
+
+    // Map for quick lookup
+    const categoryMap = {};
+    categories.forEach(cat => { categoryMap[cat.id] = cat.name; });
+    const subcategoryMap = {};
+    subcategories.forEach(sub => {
+      subcategoryMap[sub.id] = { name: sub.name, item_category_id: sub.item_category_id };
+    });
+
+    // Group subcategories by category
+    const grouped = {};
+    interests.forEach(interest => {
+      const catId = interest.item_category_id;
+      const subId = interest.item_subcategory_id;
+      if (!grouped[catId]) {
+        grouped[catId] = {
+          category_id: catId,
+          category_name: categoryMap[catId] || '',
+          subcategories: []
+        };
+      }
+      // Only add subcategory if not already present
+      if (!grouped[catId].subcategories.find(s => s.id === subId)) {
+        grouped[catId].subcategories.push({
+          id: subId,
+          name: subcategoryMap[subId]?.name || ''
+        });
+      }
+    });
+
+    // Convert grouped object to array
+    const result = Object.values(grouped);
+    res.json({ data: result });
+  } catch (err) {
+    console.error('Error in getBuyerSourcingInterests:', err);
+    res.status(500).json({ error: err.message });
   }
 };
