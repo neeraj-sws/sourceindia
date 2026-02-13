@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const Admin = require('../models/Admin');
+const Roles = require('../models/Roles');
 const jwt = require('jsonwebtoken');
 
 // Helper to normalize Laravel-style bcrypt hashes
@@ -9,26 +10,28 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const admin = await Admin.findOne({ where: { email } });
+    const admin = await Admin.findOne({ where: { email },
+    include: [
+      {
+        model: Roles,
+        as: 'Roles',
+        attributes: ['ticket_category', 'pages']
+      }
+    ]});
     if (!admin) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
-
-    // Normalize hash in case it’s from Laravel
     const fixedHash = normalizeHash(admin.password);
     const isMatch = await bcrypt.compare(password, fixedHash);
-
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
-
-    // Use environment secret if available
     const token = jwt.sign(
       { id: admin.id, email: admin.email, role: admin.role },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '1h' }
     );
-
+    console.log(admin.Roles.pages)
     return res.status(200).json({
       message: 'Login successful.',
       token,
@@ -37,6 +40,8 @@ const login = async (req, res) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
+        ticket_category: admin.Roles ? admin.Roles.ticket_category : null,
+        pages: admin.Roles?.pages ? JSON.parse(admin.Roles.pages) : []
       }
     });
   } catch (error) {

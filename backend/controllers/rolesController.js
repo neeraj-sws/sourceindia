@@ -166,6 +166,7 @@ exports.getAllRolesServerSide = async (req, res) => {
       ticket_category: row.ticket_category,
       category_name: row.TicketCategory ? row.TicketCategory.name : null,
       status: row.status,
+      pages: row.pages,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -177,5 +178,20 @@ exports.getAllRolesServerSide = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.updateRolePages = async (req, res) => {
+  try {
+    const { pages } = req.body;
+
+    await Roles.update(
+      { pages: JSON.stringify(pages) },
+      { where: { id: req.params.id } }
+    );
+
+    res.json({ message: "Pages updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
   }
 };

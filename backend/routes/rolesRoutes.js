@@ -10,5 +10,6 @@ router.get('/:id', rolesController.getRolesById);
 router.put('/:id', rolesController.updateRoles);
 router.delete('/:id', rolesController.deleteRoles);
 router.patch('/:id/status', rolesController.updateRolesStatus);
+router.patch("/:id/pages", rolesController.updateRolePages);
 
 module.exports = router;

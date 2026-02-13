@@ -62,6 +62,7 @@ const menuData = [
     ],
   },
   {
+    key: 'management_portal',
     title: 'Management Portal',
     icon: 'bx bx-user',
     subMenu: [
@@ -160,6 +161,7 @@ const menuData = [
     ],
   },
   {
+    key: 'activities_section',
     title: 'Activity',
     icon: 'bx bx-task',
     subMenu: [
@@ -181,13 +183,14 @@ const menuData = [
     link: '/admin/testimonials',
   },
   {
+    key: 'all_settings',
     title: 'Settings',
     icon: 'bx bx-cog',
     subMenu: [
-      { title: 'Site Settings', link: '/admin/site_settings' },
-      { title: 'Home Settings', link: '/admin/home_settings' },
-      { title: 'ShortCut menu', link: '/admin/shortcut-page' },
-      { title: 'Front menu', link: '/admin/front_menu' },
+      { key: 'site_settings', title: 'Site Settings', link: '/admin/site_settings' },
+      { key: 'home_settings', title: 'Home Settings', link: '/admin/home_settings' },
+      { key: 'shortcut_page', title: 'ShortCut menu', link: '/admin/shortcut-page' },
+      { key: 'front_menu', title: 'Front menu', link: '/admin/front_menu' },
     ],
   },
   {
@@ -209,22 +212,24 @@ const menuData = [
     link: '/admin/user_activity',
   },
   {
+    key: 'pages_section',
     title: 'Pages',
     icon: 'bx bx-file-blank',
     subMenu: [
-      { title: 'Terms & Conditions', link: '/admin/terms_conditions' },
-      { title: 'Privacy Policy', link: '/admin/privacy_policy' },
+      { key: 'terms_conditions', title: 'Terms & Conditions', link: '/admin/terms_conditions' },
+      { key: 'privacy_policy', title: 'Privacy Policy', link: '/admin/privacy_policy' },
     ],
   },
   {
+    key: 'reports_section',
     title: 'Reports',
     icon: 'bx bx-file-blank',
     subMenu: [
-      { title: 'Seller Unused Categories', link: '/admin/seller_category_report' },
-      { title: 'Product Unused Categories', link: '/admin/product_category_report' },
-      { title: 'Seller Categories Graph', link: '/admin/seller_category_graph' },
-      { title: 'Product Categories Graph', link: '/admin/product_category_graph' },
-      { title: 'Sourcing Interest Graph', link: '/admin/sourcing_interest_graph' },
+      { key: 'seller_category_report', title: 'Seller Unused Categories', link: '/admin/seller_category_report' },
+      { key: 'product_category_report', title: 'Product Unused Categories', link: '/admin/product_category_report' },
+      { key: 'seller_category_graph', title: 'Seller Categories Graph', link: '/admin/seller_category_graph' },
+      { key: 'product_category_graph', title: 'Product Categories Graph', link: '/admin/product_category_graph' },
+      { key: 'sourcing_interest_graph', title: 'Sourcing Interest Graph', link: '/admin/sourcing_interest_graph' },
     ],
   },
 ];
@@ -407,6 +412,40 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {
 };
 
 const Sidebar = () => {
+  const admin = JSON.parse(localStorage.getItem("admin")) || {};
+
+let filteredMenu = menuData;
+
+// PERMISSION BASED FILTERING (INCLUDING SUBMENU)
+if (admin?.role !== 4 && admin?.ticket_category === 0) {
+
+  // returns true if parent menu should show
+  const allowItem = (menu) => {
+    return admin.pages?.some(p => p.key === menu.key);
+  };
+
+  // returns true if submenu item should show
+  const allowSubItem = (subKey) => {
+    return admin.pages?.some(p => p.subPages?.includes(subKey));
+  };
+
+  filteredMenu = menuData
+    .filter(allowItem)  // only include parent menus allowed
+    .map((item) => {
+
+      // if it has subMenu, only include allowed submenus
+      if (item.subMenu) {
+        return {
+          ...item,
+          subMenu: item.subMenu.filter((s) =>
+            allowSubItem(s.key)
+          ),
+        };
+      }
+      return item;
+    });
+}
+  
   const location = useLocation();
   const currentPath = location.pathname;
   const [openIndex, setOpenIndex] = useState(null);
@@ -530,7 +569,7 @@ const Sidebar = () => {
 
   useEffect(() => {
     // Find the menu index that matches the currentPath
-    const activeIndex = menuData.findIndex((item) => {
+    const activeIndex = filteredMenu.findIndex((item) => {
       if (item.subMenu) {
         return item.subMenu.some((sub) => sub.link === currentPath);
       }
@@ -574,7 +613,7 @@ const Sidebar = () => {
                 </div>
                 {/*navigation*/}
                 <ul className="metismenu" id="menu">
-                  {menuData?.map((item, idx) => (
+                  {filteredMenu?.map((item, idx) => (
                     <SidebarItem
                       key={idx}
                       item={item}

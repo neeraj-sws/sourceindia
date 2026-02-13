@@ -34,6 +34,10 @@ const Roles = sequelize.define('Roles', {
     allowNull: false,
     defaultValue: 0,
   },
+  pages: {
+  type: DataTypes.TEXT, // store JSON
+  allowNull: true
+},
 }, {
   tableName: 'roles',
   timestamps: true,

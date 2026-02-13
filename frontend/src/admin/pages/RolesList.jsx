@@ -6,6 +6,7 @@ import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import RoleModals from "./modal/RoleModals";
+import RolePagePermissionModal from "./modal/RolePagePermissionModal";
 import ExcelExport from "../common/ExcelExport";
 const initialForm = { id: null, name: "", ticket_category: "", status: "1" };
 import "select2/dist/css/select2.min.css";
@@ -37,6 +38,18 @@ const RolesList = () => {
   const [roleData, setRoleData] = useState([]);
   const excelExportRef = useRef();
   const [submitting, setSubmitting] = useState(false);
+  const [showPageModal, setShowPageModal] = useState(false);
+const [selectedRoleForPages, setSelectedRoleForPages] = useState(null);
+
+const openPagePermissionModal = (role) => {
+  setSelectedRoleForPages(role);
+  setShowPageModal(true);
+};
+
+const closePagePermissionModal = () => {
+  setShowPageModal(false);
+  setSelectedRoleForPages(null);
+};
 
   const fetchData = async () => {
     setLoading(true);
@@ -357,6 +370,7 @@ const RolesList = () => {
                     { key: "name", label: "Name", sortable: true },
                     { key: "category_name", label: "Ticket Category", sortable: true },
                     { key: "status", label: "Status", sortable: false },
+                    { key: "pages", label: "Required Pages", sortable: false },
                     { key: "action", label: "Action", sortable: false },
                   ]}
                   data={data}
@@ -392,6 +406,16 @@ const RolesList = () => {
                             readOnly
                           />
                         </div>
+                      </td>
+                      <td>
+                        {row.id!==4 && row.ticket_category===0 &&
+                        <button
+    className="btn btn-primary btn-sm"
+    onClick={() => openPagePermissionModal(row)}
+  >
+    <i className="bx bx-list-check me-2"></i> Menu Permission
+  </button>
+                  }
                       </td>
                       <td>
                         <div className="dropdown">
@@ -431,6 +455,18 @@ const RolesList = () => {
       closeStatusModal={closeStatusModal}
       handleStatusConfirm={handleStatusConfirm}
     />
+    <RolePagePermissionModal
+  show={showPageModal}
+  role={selectedRoleForPages}
+  onClose={closePagePermissionModal}
+  onPagesUpdated={(roleId, pages) => {
+    setData(prev =>
+      prev.map(r =>
+        r.id === roleId ? { ...r, pages: JSON.stringify(pages) } : r
+      )
+    );
+  }}
+/>
     <ExcelExport
       ref={excelExportRef}
       columnWidth={34.29}
