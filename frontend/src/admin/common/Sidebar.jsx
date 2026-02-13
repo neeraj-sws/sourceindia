@@ -229,6 +229,18 @@ const menuData = [
   },
 ];
 
+const admin = JSON.parse(localStorage.getItem("admin"));
+const isSuperAdmin = admin?.role === 4 || admin?.ticket_category == 0;
+const subAdminMenu = [
+  {
+    key: 'tickets',
+    title: 'Tickets',
+    icon: 'bx bx-bulb',
+    link: '/admin/tickets', // direct link
+  },
+];
+const filteredMenu = isSuperAdmin ? menuData : subAdminMenu;
+
 const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {
   const hasSubMenu = item.subMenu && item.subMenu.length > 0;
 
@@ -442,6 +454,7 @@ const Sidebar = () => {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
+        const token = localStorage.getItem("token");
         const [buyers, sellers, products, newItems, enquiries, openEnquiries, roles, interestCategories, interestSubCategories, tickets, ticket_categories,
           faqs, activities, applications, testimonials, seo_pages, user_activity, user_history, home_banners, knowledge_center, emails, membership_plan,
           contacts, newsletters, registrations] = await Promise.all([
@@ -454,7 +467,7 @@ const Sidebar = () => {
             axios.get(`${API_BASE_URL}/sub_admin/count`),
             axios.get(`${API_BASE_URL}/interest_categories/count`),
             axios.get(`${API_BASE_URL}/interest_sub_categories/count`),
-            axios.get(`${API_BASE_URL}/tickets/count`),
+            axios.get(`${API_BASE_URL}/tickets/count`, { headers: { Authorization: `Bearer ${token}` } }),
             axios.get(`${API_BASE_URL}/ticket_categories/count`),
             axios.get(`${API_BASE_URL}/faqs/count`),
             axios.get(`${API_BASE_URL}/activities/count`),
@@ -530,7 +543,7 @@ const Sidebar = () => {
 
   useEffect(() => {
     // Find the menu index that matches the currentPath
-    const activeIndex = menuData.findIndex((item) => {
+    const activeIndex = filteredMenu.findIndex((item) => {
       if (item.subMenu) {
         return item.subMenu.some((sub) => sub.link === currentPath);
       }
@@ -574,7 +587,7 @@ const Sidebar = () => {
                 </div>
                 {/*navigation*/}
                 <ul className="metismenu" id="menu">
-                  {menuData?.map((item, idx) => (
+                  {filteredMenu?.map((item, idx) => (
                     <SidebarItem
                       key={idx}
                       item={item}

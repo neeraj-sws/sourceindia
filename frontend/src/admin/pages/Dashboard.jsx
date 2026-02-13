@@ -9,11 +9,15 @@ import EnquiryStockChart from '../dashboard/EnquiryStockChart';
 import LeadsList from '../dashboard/LeadsList';
 import TotalRegisterBuyers from "../dashboard/TotalRegisterBuyers";
 import TotalRegisterSellers from "../dashboard/TotalRegisterSellers";
+import DashboardTicketList from '../dashboard/DashboardTicketList';
 
 const Dashboard = () => {
   const [counts, setCounts] = useState({});
   const buyerSectionRef = useRef(null);
   const sellerSectionRef = useRef(null);
+  const token = localStorage.getItem("token");
+  const admin = JSON.parse(localStorage.getItem("admin"));
+const isSuperAdmin = admin?.role === 4 || admin?.ticket_category == 0;
 
   const CountData = ({ label, value, icon, link, onClick }) => {
     const randomNum = Math.floor(Math.random() * 4) + 1;
@@ -69,7 +73,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const [sellers, buyers, categories, subCats, itemCats, itemSubCats, items, products, enquiries] = await Promise.all([
+        const [sellers, buyers, categories, subCats, itemCats, itemSubCats, items, products, enquiries, tickets] = await Promise.all([
           axios.get(`${API_BASE_URL}/sellers/count`),
           axios.get(`${API_BASE_URL}/buyers/count`),
           axios.get(`${API_BASE_URL}/categories/count`),
@@ -79,6 +83,7 @@ const Dashboard = () => {
           axios.get(`${API_BASE_URL}/items/count`),
           axios.get(`${API_BASE_URL}/products/count`),
           axios.get(`${API_BASE_URL}/enquiries/count`),
+          axios.get(`${API_BASE_URL}/tickets/count`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
         setCounts({
           sellers: {
@@ -115,6 +120,7 @@ const Dashboard = () => {
             addedThisMonth: products.data.addedThisMonth,
           },
           enquiries: enquiries.data.total,
+          tickets: tickets.data.total,
         });
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
@@ -123,7 +129,14 @@ const Dashboard = () => {
     fetchCounts();
   }, []);
 
-  const stats = [
+  const ticketStat = {
+  label: "Total Tickets",
+  value: counts.tickets,
+  icon: "bx bx-bulb",
+  link: "/admin/tickets",
+};
+
+  const normalStats = [
     {
       label: "Today Seller Members",
       value: counts.sellers?.addedToday,
@@ -163,15 +176,18 @@ const Dashboard = () => {
       <div className="page-content">
         <Breadcrumb mainhead="Dashboard" title="" />
         <div className="row row-cols-1 row-cols-md-2 row-cols-xl-4">
-          {stats?.map((s, idx) => (
+          {(!isSuperAdmin ? [ticketStat] : normalStats)?.map((s, idx) => (
             <CountData key={idx} label={s.label} value={s.value || 0} icon={s.icon} link={s.link} onClick={s.onClick} />
           ))}
         </div>
-        <div className="row">
-          <div className="col-md-6">
-
-          </div>
+        {!isSuperAdmin ? (
+        <div className="mb-4">
+          <h6 className="mb-0 text-uppercase">Ticket List</h6>
+          <hr />
+          <DashboardTicketList limit={25} />
         </div>
+        ) : (
+        <>
         <div id="sellerGraph" className="mb-4">
           <h6 className="mb-0 text-uppercase">Seller Graph</h6>
           <hr />
@@ -206,6 +222,8 @@ const Dashboard = () => {
         <div ref={buyerSectionRef}>
           <TotalRegisterBuyers />
         </div>
+        </>
+      )}
       </div>
     </div>
   );

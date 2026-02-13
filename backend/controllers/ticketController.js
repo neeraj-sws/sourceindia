@@ -7,6 +7,7 @@ const TicketReply = require('../models/TicketReply');
 const Emails = require('../models/Emails');
 const Users = require('../models/Users');
 const Admin = require('../models/Admin');
+const Roles = require('../models/Roles');
 const getMulterUpload = require('../utils/upload');
 const { body, validationResult } = require('express-validator');
 const upload = getMulterUpload('tickets').single('attachment');
@@ -24,79 +25,145 @@ exports.createTickets = async (req, res) => {
     }
 
     try {
+      const adminId = req.user.id;
+
+      const admin = await Admin.findByPk(adminId, {
+        include: [{ association: "Roles" }],
+      });
+
+      if (!admin) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
       const {
         user_id,
         title,
         message,
         priority,
-        category,
         status,
       } = req.body;
 
-      // 1️⃣ Validate User
+      let category;
+
+      // 🔐 CATEGORY LOGIC BASED ON TOKEN
+      if (admin.Roles.id === 4) {
+        // Super Admin → allow category from request
+        category = req.body.category;
+      } else {
+        // Normal Admin → FORCE category from role
+        category = admin.Roles.ticket_category;
+
+        if (!category || category === 0) {
+          return res.status(403).json({
+            message: "You are not allowed to create tickets in this category",
+          });
+        }
+      }
+
       const user = await Users.findByPk(user_id);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // 2️⃣ Generate Ticket ID
       const dateStr = moment().format("YYYYMMDD");
       const randomNum = Math.floor(100 + Math.random() * 900);
       const ticketId = `SOURCE-INDIA-${dateStr}-${randomNum}`;
 
-      // 3️⃣ Generate Token
       const crypto = require("crypto");
       const token = crypto
         .createHash("md5")
         .update(title + Date.now())
         .digest("hex");
 
-      // 4️⃣ Create Ticket
+      /*let acceptance_status = 0;
+      let accepted_by = 0;
+
+      // If NOT super admin → auto accept by that subadmin
+      if (admin.Roles?.id !== 4) {
+        acceptance_status = 1;
+        accepted_by = adminId;
+      }*/
+      let acceptance_status = 0;
+      let accepted_by = 0;
+      let ticketStatus = 0;
+
+      if (admin.Roles?.id === 4) {
+        // Main Admin creating ticket
+
+        const subAdmins = await Admin.findAll({
+          include: [
+            {
+              model: Roles,
+              as: "Roles",
+              where: {
+                ticket_category: category,
+                status: 1,
+                is_delete: 0,
+              },
+              required: true,
+            },
+          ],
+          where: {
+            status: 1,
+            role: { [Op.ne]: 4 },
+          },
+        });
+
+        if (subAdmins.length === 1) {
+          acceptance_status = 1;
+          accepted_by = subAdmins[0].id;
+          ticketStatus = 1;
+        }
+
+      } else {
+        acceptance_status = 1;
+        accepted_by = adminId;
+        ticketStatus = 1;
+      }
+
       const ticket = await Tickets.create({
         user_id,
         ticket_id: ticketId,
         title,
         message,
         priority,
-        category,
-        status,
+        category, // ✅ enforced from token
+        status: ticketStatus,
         attachment: req.file ? req.file.filename : null,
-
         fname: user.fname,
         lname: user.lname,
         email: user.email,
         phone: user.mobile,
-
         added_by: "admin",
         created_by: "Admin",
         token,
         is_complete: 1,
+        acceptance_status,
+        accepted_by
       });
 
-      // 5️⃣ Create First Reply
-      const mediaType = req.file?.mimetype?.startsWith("image/")
-        ? "image"
-        : req.file
-          ? "file"
-          : "text";
-
       await TicketReply.create({
-        user_id: user_id,
-        ticket_id: ticket.id, // FK (tickets_id)
+        user_id,
+        ticket_id: ticket.id,
         reply: message,
         added_by: "Admin",
         attachment: req.file ? req.file.filename : null,
-        media_type: mediaType,
+        media_type: req.file?.mimetype?.startsWith("image/")
+          ? "image"
+          : req.file
+          ? "file"
+          : "text",
       });
 
-      // 6️⃣ Response
       return res.status(201).json({
         success: true,
         message: "Ticket created successfully",
         ticket,
         ticket_id: ticketId,
         token,
+        accepted_by_name: acceptedByAdmin ? acceptedByAdmin.name : null,
       });
+
     } catch (error) {
       console.error("Admin Ticket Create Error:", error);
       res.status(500).json({
@@ -128,10 +195,17 @@ exports.getTicketsById = async (req, res) => {
     const tickets = await Tickets.findByPk(ticketId, {
       include: [
         { model: TicketCategory, attributes: ['name'], as: 'TicketCategory' },
+        { model: Admin, attributes: ['id', 'name'], as: 'AcceptedByAdmin' },
       ],
     });
 
     if (!tickets) return res.status(404).json({ message: 'Ticket not found' });
+    const ticketData = {
+      ...tickets.toJSON(),
+      accepted_by_name: tickets.AcceptedByAdmin
+        ? tickets.AcceptedByAdmin.name
+        : null
+    };
 
     // Fetch all completed tickets for the same email
     const relatedTickets = await Tickets.findAll({
@@ -147,7 +221,7 @@ exports.getTicketsById = async (req, res) => {
     const lastReply = ticketReplies.length > 0 ? ticketReplies[0] : null;
 
     return res.json({
-      ticket: tickets,
+      ticket: ticketData,
       relatedTickets,
       replies: ticketReplies,
       lastReply,
@@ -161,33 +235,77 @@ exports.getTicketsById = async (req, res) => {
 exports.updateTickets = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ error: 'Attachment upload failed', details: err.message });
+      return res.status(400).json({ error: "Attachment upload failed", details: err.message });
     }
+
     try {
-      const { user_id, title, message, priority, category, status } = req.body;
-      const tickets = await Tickets.findByPk(req.params.id);
-      if (!tickets) return res.status(404).json({ message: 'Ticket not found' });
-      tickets.user_id = user_id;
-      tickets.title = title;
-      tickets.message = message;
-      tickets.priority = priority;
-      tickets.category = category;
-      tickets.status = status;
-      if (req.file) {
-        if (tickets.attachment) {
-          const oldPath = path.join(__dirname, '../upload/tickets/', tickets.attachment);
-          fs.unlink(oldPath, (err) => {
-            console.log(oldPath)
-            if (err) console.error('Failed to delete old attachment:', err);
+      const adminId = req.user.id;
+      const admin = await Admin.findByPk(adminId, { include: [{ association: "Roles" }] });
+      if (!admin) return res.status(401).json({ message: "Unauthorized" });
+
+      const { user_id, title, message, priority, status } = req.body;
+
+      // Find the ticket
+      const ticket = await Tickets.findByPk(req.params.id);
+      if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+
+      // Determine category based on admin role
+      let category;
+      if (admin.Roles.id === 4) {
+        // Super Admin → allow category from request
+        category = req.body.category;
+      } else {
+        // Normal Admin → enforce category from role
+        category = admin.Roles.ticket_category;
+        if (!category || category === 0) {
+          return res.status(403).json({
+            message: "You are not allowed to update tickets in this category",
           });
         }
-        tickets.attachment = req.file.filename;
       }
-      tickets.updated_at = new Date();
-      await tickets.save();
-      res.json({ message: 'Ticket updated', tickets });
-    } catch (err) {
-      res.status(500).json({ error: err.message });
+
+      // Validate the user
+      const user = await Users.findByPk(user_id);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      // Update ticket fields
+      ticket.user_id = user_id;
+      ticket.title = title;
+      ticket.message = message;
+      ticket.priority = priority;
+      ticket.status = status || ticket.status;
+      ticket.category = category;
+
+      // Handle attachment
+      if (req.file) {
+        if (ticket.attachment) {
+          const oldPath = path.join(__dirname, "../upload/tickets/", ticket.attachment);
+          fs.unlink(oldPath, (err) => {
+            if (err) console.error("Failed to delete old attachment:", err);
+          });
+        }
+        ticket.attachment = req.file.filename;
+      }
+
+      ticket.updated_at = new Date();
+      await ticket.save();
+
+      // Optional: create a new TicketReply if message updated
+      if (message && message !== ticket.message) {
+        await TicketReply.create({
+          user_id,
+          ticket_id: ticket.id,
+          reply: message,
+          added_by: "Admin",
+          attachment: req.file ? req.file.filename : null,
+          media_type: req.file?.mimetype?.startsWith("image/") ? "image" : req.file ? "file" : "text",
+        });
+      }
+
+      return res.json({ success: true, message: "Ticket updated successfully", ticket });
+    } catch (error) {
+      console.error("Admin Ticket Update Error:", error);
+      return res.status(500).json({ success: false, message: "Failed to update ticket", error: error.message });
     }
   });
 };
@@ -374,6 +492,25 @@ exports.getAllTicketsServerSide = async (req, res) => {
         baseWhere.category = -1; // no tickets
       }
     }
+    if (admin.Roles?.id !== 4) {
+      baseWhere[Op.and] = [{
+        [Op.or]: [
+          { acceptance_status: 0 },
+          {
+            [Op.and]: [
+              { acceptance_status: 1 },
+              { accepted_by: admin.id }
+            ]
+          },
+          {
+            [Op.and]: [
+              { acceptance_status: 2 },
+              { accepted_by: { [Op.ne]: admin.id } }
+            ]
+          }
+        ]
+      }];
+    }
     let dateCondition = null;
     if (dateRange) {
       const range = dateRange.toString().toLowerCase().replace(/\s+/g, '');
@@ -460,6 +597,7 @@ exports.getAllTicketsServerSide = async (req, res) => {
       include: [
         { model: TicketCategory, attributes: ['name'], as: 'TicketCategory' },
         { model: Users, attributes: ['fname'], as: 'Users' },
+        { model: Admin, attributes: ['id', 'name'], as: 'AcceptedByAdmin' },
       ],
       attributes: {
         include: [
@@ -491,6 +629,9 @@ exports.getAllTicketsServerSide = async (req, res) => {
       status: row.status,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      accepted_by: row.accepted_by,
+      accepted_by_name: row.AcceptedByAdmin ? row.AcceptedByAdmin.name : null,
+      acceptance_status: row.acceptance_status,
       last_reply_date: row.getDataValue('last_reply_date')
     }));
     res.json({
@@ -959,8 +1100,59 @@ exports.ticketReplystore = async (req, res) => {
 
 exports.getTicketsCount = async (req, res) => {
   try {
-    const total = await Tickets.count();
+    const adminId = req.user.id;
+
+    const admin = await Admin.findByPk(adminId, {
+      include: [{ association: 'Roles' }]
+    });
+
+    if (!admin) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const baseWhere = {};
+
+    // Apply category restriction (same as getAllTicketsServerSide)
+    if (admin.Roles?.id !== 4) {
+      if (admin.Roles?.ticket_category === 0) {
+        // show all categories → do nothing
+      } else if (
+        admin.Roles?.ticket_category !== null &&
+        admin.Roles?.ticket_category !== undefined
+      ) {
+        baseWhere.category = admin.Roles.ticket_category;
+      } else {
+        baseWhere.category = -1; // no tickets
+      }
+    }
+
+    // Apply acceptance logic (same as getAllTicketsServerSide)
+    if (admin.Roles?.id !== 4) {
+      baseWhere[Op.and] = [{
+        [Op.or]: [
+          { acceptance_status: 0 },
+          {
+            [Op.and]: [
+              { acceptance_status: 1 },
+              { accepted_by: admin.id }
+            ]
+          },
+          {
+            [Op.and]: [
+              { acceptance_status: 2 },
+              { accepted_by: { [Op.ne]: admin.id } }
+            ]
+          }
+        ]
+      }];
+    }
+
+    const total = await Tickets.count({
+      where: baseWhere
+    });
+
     res.json({ total });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -1064,5 +1256,58 @@ exports.getNextTicketById = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.acceptDeclineTicket = async (req, res) => {
+  try {
+    const adminId = req.user.id;
+    const { action } = req.body; // "accept" or "decline"
+
+    const admin = await Admin.findByPk(adminId, {
+      include: [{ association: 'Roles' }]
+    });
+
+    if (!admin || admin.Roles?.id === 4) {
+      return res.status(403).json({ message: 'Invalid action' });
+    }
+
+    const ticket = await Tickets.findByPk(req.params.id);
+
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    // Category check
+    if (Number(ticket.category) !== Number(admin.Roles.ticket_category)) {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+
+    // Already processed
+    if (ticket.acceptance_status !== 0) {
+      return res.status(400).json({ message: 'Ticket already processed' });
+    }
+
+    if (action === 'accept') {
+      ticket.acceptance_status = 1;
+      ticket.accepted_by = adminId;
+      ticket.status = 1;
+    }
+
+    if (action === 'decline') {
+      ticket.acceptance_status = 2;
+      ticket.accepted_by = adminId;
+    }
+
+    await ticket.save();
+
+    res.json({
+      success: true,
+      message: `Ticket ${action}ed successfully`
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 };

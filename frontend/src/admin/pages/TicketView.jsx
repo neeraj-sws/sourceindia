@@ -32,6 +32,12 @@ const TicketView = () => {
     newStatus: null, // 2 = resolve, 3 = cancel
   });
   const [statusLoading, setStatusLoading] = useState(false);
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [acceptAction, setAcceptAction] = useState(null); // accept | decline
+  const [acceptLoading, setAcceptLoading] = useState(false);
+const listStatus = ["Pending", "In Progress", "Resolved", "Cancel"];
+const admin = JSON.parse(localStorage.getItem("admin"));
+const isSuperAdmin = admin?.role === 4 || admin?.ticket_category == 0;
 
   useEffect(() => {
     const fetchTicket = async () => {
@@ -87,10 +93,10 @@ const TicketView = () => {
       try {
         const token = localStorage.getItem('token');
         const res = await axios.get(`${API_BASE_URL}/tickets/id/${ticketId}/next`, {
-  headers: {
-    Authorization: `Bearer ${token}`
-  }
-});
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         setNextTicket(res.data);
       } catch (error) {
         console.error("Error fetching next ticket:", error);
@@ -172,6 +178,46 @@ const TicketView = () => {
     }
   };
 
+  const handleAcceptConfirm = async () => {
+    setAcceptLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.post(
+        `${API_BASE_URL}/tickets/${ticket.id}/accept`,
+        { action: acceptAction },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      showNotification(
+        `Ticket ${acceptAction === "accept" ? "accepted" : "declined"} successfully`,
+        "success"
+      );
+
+      // update locally
+      setTicketData(prev => ({
+        ...prev,
+        ticket: {
+          ...prev.ticket,
+          acceptance_status: acceptAction === "accept" ? 1 : 2,
+          accepted_by: admin.id
+        }
+      }));
+
+      setShowAcceptModal(false);
+
+    } catch (err) {
+      showNotification(
+        err.response?.data?.message || "Action failed",
+        "error"
+      );
+    } finally {
+      setAcceptLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="page-wrapper">
@@ -233,8 +279,38 @@ const TicketView = () => {
                           : "No replies yet"}
                       </p>
                     </div>
+                    {isSuperAdmin && (
+                      <>
+                      <div className="d-flex align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Status</p>
+                        <span
+                          className={`badge ${
+                            ticket.status == 0
+                              ? "bg-warning"
+                              : ticket.status == 1
+                              ? "bg-primary"
+                              : ticket.status == 2
+                              ? "bg-success"
+                              : ticket.status == 3
+                              ? "bg-danger"
+                              : "bg-secondary"
+                          }`}
+                        >
+                          {listStatus[ticket.status] || "Unknown"}
+                        </span>
+                      </div>
+                      <div className="d-flex align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Acceptance Status</p>
+                        {ticket.acceptance_status == 1 ? <span className="badge bg-primary">Accepted</span>:<span className="badge bg-warning">Pending</span>}
+                      </div>
+                      <div className="d-flex align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Accepted By</p>
+                        <p className="mb-0 text-dark">{ticket.acceptance_status == 1 ? ticket.accepted_by_name : "NA"}</p>
+                      </div>
+                      </>
+                    )}
                   </div>
-                  {(ticket.status == 0 || ticket.status == 1) && (
+                  {!isSuperAdmin && ticket.acceptance_status === 1 && (ticket.status == 0 || ticket.status == 1) && (
                     <div className="border-bottom mb-3 pb-3 mt-3">
                       <h5>Issue Resolved/Cancel</h5>
                       <div className="d-flex gap-2">
@@ -255,6 +331,31 @@ const TicketView = () => {
                           }}
                         >
                           Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {!isSuperAdmin && ticket.acceptance_status === 0 && (
+                    <div className="border-bottom mb-3 pb-3 mt-3">
+                      <h5>Acceptance Status</h5>
+                      <div className="d-flex gap-2">
+                        <button
+                          className="btn btn-success"
+                          onClick={() => {
+                            setAcceptAction("accept");
+                            setShowAcceptModal(true);
+                          }}
+                        >
+                          Accept
+                        </button>
+                        <button
+                          className="btn btn-danger"
+                          onClick={() => {
+                            setAcceptAction("decline");
+                            setShowAcceptModal(true);
+                          }}
+                        >
+                          Decline
                         </button>
                       </div>
                     </div>
@@ -392,6 +493,11 @@ const TicketView = () => {
         closeStatusModal={() => setShowStatusModal(false)}
         handleStatusConfirm={handleStatusConfirm}
         statusLoading={statusLoading}
+        showAcceptModal={showAcceptModal}
+        closeAcceptModal={() => setShowAcceptModal(false)}
+        acceptAction={acceptAction}
+        handleAcceptConfirm={handleAcceptConfirm}
+        acceptLoading={acceptLoading}
       />
     </>
   );

@@ -2,6 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const TicketCategory = require('./TicketCategory');
 const Users = require('./Users');
+const Admin = require('./Admin');
 
 const Tickets = sequelize.define('Tickets', {
   id: {
@@ -34,6 +35,8 @@ const Tickets = sequelize.define('Tickets', {
   created_by: { type: DataTypes.STRING, allowNull: true },
   token: { type: DataTypes.STRING, allowNull: true },
   added_by: { type: DataTypes.STRING, allowNull: true },
+  acceptance_status: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  accepted_by: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
 }, {
   tableName: 'tickets',
   timestamps: true,
@@ -43,5 +46,11 @@ const Tickets = sequelize.define('Tickets', {
 
 Tickets.belongsTo(TicketCategory, { foreignKey: 'category', targetKey: 'id', as: 'TicketCategory', constraints: false });
 Tickets.belongsTo(Users, { foreignKey: 'user_id', targetKey: 'id', as: 'Users', constraints: false });
+Tickets.belongsTo(Admin, {
+  foreignKey: 'accepted_by',
+  targetKey: 'id',
+  as: 'AcceptedByAdmin',
+  constraints: false
+});
 
 module.exports = Tickets;

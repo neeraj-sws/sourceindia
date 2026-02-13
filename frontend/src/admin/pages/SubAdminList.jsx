@@ -338,7 +338,7 @@ const SubAdminList = () => {
                       <div className="form-group mb-3 col-md-12">
                         <label htmlFor="password" className="form-label required">Password</label>
                         <input
-                          type="text"
+                          type="password"
                           className={`form-control ${errors.password ? "is-invalid" : ""}`}
                           id="password"
                           value={formData.password || ""}

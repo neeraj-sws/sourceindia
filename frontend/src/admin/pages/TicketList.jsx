@@ -33,7 +33,6 @@ const TicketList = () => {
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState('');
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState(null);
   const listStatus = ["Pending", "In Progress", "Resolved", "Cancel"];
@@ -68,11 +67,12 @@ const [statusLoading, setStatusLoading] = useState(false);
 const admin = JSON.parse(localStorage.getItem("admin"));
 const isSuperAdmin = admin?.role === 4;
         
-useEffect(() => {
-  if (!isSuperAdmin && admin?.Roles?.ticket_category) {
-    setSelectedCategory(String(admin.Roles.ticket_category));
+const [selectedCategory, setSelectedCategory] = useState(() => {
+  if (admin?.Roles?.ticket_category && admin?.role !== 4) {
+    return String(admin.Roles.ticket_category);
   }
-}, [isSuperAdmin]);
+  return "";
+});
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -166,7 +166,9 @@ useEffect(() => {
     setFormData(initialForm);
     setIsEditing(false);
     setErrors({});
-    setSelectedCategory('');
+    setSelectedCategory(
+      isSuperAdmin ? '' : String(admin?.Roles?.ticket_category || '')
+    );
     setSelectedUsers('');
     setTimeout(() => {
     if ($("#category").data("select2")) {
@@ -247,20 +249,25 @@ const handleFileChange = (e) => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
+    const token = localStorage.getItem("token");
     const sCategory = categories.find((c) => c.id.toString() === selectedCategory.toString());
     const sUser = users.find((u) => u.id.toString() === formData.user_id.toString());
-    const payload = { ...formData, category: selectedCategory, category_name: sCategory?.name || "", user_id: selectedUsers, user_name: sUser?.fname + " " + sUser?.lname };
+    const payload = { ...formData, category: selectedCategory, category_name: sCategory?.name || "", user_id: selectedUsers, full_name: sUser?.fname + " " + sUser?.lname };
+    const headers = {
+      "Content-Type": "multipart/form-data",
+      Authorization: `Bearer ${token}`,
+    };
     try {
       if (isEditing) {
         await axios.put(`${API_BASE_URL}/tickets/${formData.id}`, payload, {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers,
         });
         setData((d) => d?.map((item) => (item.id === formData.id ? { ...item, ...payload, updated_at: new Date().toISOString() } : item)));
       } else {
         const res = await axios.post(`${API_BASE_URL}/tickets`, payload, {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers,
         });
-        const payload1 = { ...res.data.ticket, category_name: sCategory?.name || "", created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const payload1 = { ...res.data.ticket, category_name: sCategory?.name || "", accepted_by_name: res.data.accepted_by_name || "NA", created_at: new Date().toISOString(), updated_at: new Date().toISOString(), last_reply_date: new Date().toISOString(), };
         setData((d) => [payload1, ...d]);
         setTotalRecords((c) => c + 1);
         setFilteredRecords((c) => c + 1);
@@ -559,19 +566,6 @@ setStatusLoading(true);
     <div className="invalid-feedback">{errors.attachment}</div>
   )}
 </div>
-                    {/* <div className="form-group col-md-12 mb-3">
-                      <label htmlFor="status" className="form-label required">Status</label>
-                      <select
-                        id="status"
-                        className={`form-select ${errors.status ? "is-invalid" : ""}`}
-                        value={formData.status}
-                        onChange={handleChange}
-                      >
-                        <option value="">Select here</option>
-                        {listStatus?.map((status, key) => (<option key={key} value={key}>{status}</option>))}
-                      </select>
-                      {errors.status && <div className="invalid-feedback">{errors.status}</div>}
-                    </div> */}
                     <div className="d-flex justify-content-between">
                       <button type="button" className="btn btn-secondary btn-sm" onClick={resetForm}>
                         {isEditing ? "Cancel" : "Reset"}
@@ -719,7 +713,9 @@ setStatusLoading(true);
                       { key: "last_reply_date", label: "Last Reply", sortable: true },
                       { key: "priority", label: "Priority", sortable: true },
                       { key: "category_name", label: "Ticket Category", sortable: true },
-                      { key: "action", label: "Action", sortable: false },
+                      { key: "status", label: "Status", sortable: false },
+                      ...(!isSuperAdmin ? [{ key: "action", label: "Action", sortable: false }] 
+                        : [{ key: "acceptance_status", label: "Acceptance Status", sortable: false },{ key: "accepted_by_name", label: "Accepted By", sortable: false },]),
                     ]}
                     data={data}
                     loading={loading}
@@ -749,7 +745,25 @@ setStatusLoading(true);
                         <td>{row.priority}</td>
                         <td><span className="badge bg-info">{row.category_name}</span></td>
                         <td>
-                          <div className="d-flex gap-2">
+                          <span
+                            className={`badge ${
+                              row.status == 0
+                                ? "bg-warning"
+                                : row.status == 1
+                                ? "bg-primary"
+                                : row.status == 2
+                                ? "bg-success"
+                                : row.status == 3
+                                ? "bg-danger"
+                                : "bg-secondary"
+                            }`}
+                          >
+                            {listStatus[row.status] || "Unknown"}
+                          </span>
+                        </td>
+                        {!isSuperAdmin ? (
+                        <td>
+                          {/* <div className="d-flex gap-2">
                             {(row.status==0 || row.status==1) &&
                             <>
                             <a href="#" className="btn btn-primary btn-sm"
@@ -771,8 +785,15 @@ setStatusLoading(true);
                             </>
                             }
                             <button className="btn btn-dark btn-sm" onClick={() => openDeleteModal(row.id)}><i className="bx bx-trash"></i></button>
-                          </div>
+                          </div> */}
+                          <button className="btn btn-dark btn-sm" onClick={() => openDeleteModal(row.id)}><i className="bx bx-trash"></i></button>
                         </td>
+                        ):(
+                          <>
+                          <td>{row.acceptance_status == 1 ? <span className="badge bg-primary">Accepted</span>:<span className="badge bg-warning">Pending</span>}</td>
+                          <td>{row.acceptance_status == 1 ? row.accepted_by_name : "NA"}</td>
+                          </>
+                        )}
                       </tr>
                     )}
                   />

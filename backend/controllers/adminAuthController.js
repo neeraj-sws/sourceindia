@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const Admin = require('../models/Admin');
+const Roles = require('../models/Roles');
 const jwt = require('jsonwebtoken');
 
 // Helper to normalize Laravel-style bcrypt hashes
@@ -9,7 +10,14 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const admin = await Admin.findOne({ where: { email } });
+    const admin = await Admin.findOne({ where: { email },
+    include: [
+      {
+        model: Roles,
+        as: 'Roles',
+        attributes: ['ticket_category'] // only fetch this field
+      }
+    ]});
     if (!admin) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
@@ -37,6 +45,7 @@ const login = async (req, res) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
+        ticket_category: admin.Roles ? admin.Roles.ticket_category : 0
       }
     });
   } catch (error) {
