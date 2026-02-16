@@ -14,7 +14,7 @@ const Home = () => {
         <Banner />
         <CommonSection />
         <Product />
-        <CategoryMain limit={6} />
+        <CategoryMain limit={6} isHome={true} />
         <Company limit={11} />
       </Suspense>
     </>

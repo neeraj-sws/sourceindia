@@ -1161,13 +1161,22 @@ async function getNamesByIds(Model, idsString) {
 }
 
 exports.getEmailtemplate = async (req, res) => {
-
   try {
+    // query se value lo (string aati hai)
+    const notcomplete = req.query.notcomplete;
+
+    // base condition
+    let whereCondition = {
+      is_seller_direct: 1
+    };
+
+    // agar notcomplete = 0 hai tabhi exclude kare
+    if (Number(notcomplete) === 0) {
+      whereCondition.title = { [Op.ne]: "Incomplete Seller" };
+    }
+
     const templates = await Emails.findAll({
-      where: {
-        is_seller_direct: 1,
-        title: { [Op.ne]: "Incomplete Seller" }
-      },
+      where: whereCondition,
       order: [["id", "DESC"]]
     });
 
@@ -1181,6 +1190,7 @@ exports.getEmailtemplate = async (req, res) => {
     });
   }
 };
+
 
 exports.sendMail = async (req, res) => {
   try {

@@ -577,10 +577,24 @@ exports.getAllCategoriesServerSide = async (req, res) => {
 exports.getItemCategories = async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
-
+    const is_home = req.query.is_home ? parseInt(req.query.is_home) : null;
     // 1️⃣ Fetch all top-level categories with image
+    // 🔹 Build dynamic where condition
+    const categoryWhere = {
+      is_delete: 0,
+      status: 1
+    };
+
+    // If is_home=1 → filter by is_home
+    if (is_home === 1) {
+      categoryWhere.is_home = 1;
+    } else {
+      // otherwise normal top category
+      categoryWhere.top_category = 1;
+    }
+
     const categories = await Categories.findAll({
-      where: { top_category: 1, is_delete: 0, status: 1 },
+      where: categoryWhere,
       attributes: ['id', 'name', 'cat_file_id', 'slug'],
       order: [['id', 'ASC']],
       ...(limit && { limit }),

@@ -623,7 +623,9 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     setMailType(type);
 
     try {
-      const res = await axios.get(`${API_BASE_URL}/sellers/get-email-template`);
+      const res = await axios.get(
+        `${API_BASE_URL}/sellers/get-email-template?notcomplete=${getNotCompleted ? 1 : 0}`
+      );
       setMailTemplates(res.data);
     } catch (e) {
       showNotification("Failed to load mail templates", "error");

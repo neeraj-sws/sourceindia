@@ -11,7 +11,7 @@ const CategoryMain = ({ isHome, limit }) => {
       setLoading(true);
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/categories/category-item?is_delete=0&status=1&limit=${limit}`
+          `${API_BASE_URL}/categories/category-item?is_delete=0&status=1&limit=${limit}&is_home=${isHome ? 1 : 0}`
         );
         setCategories(res.data || []);
       } catch (err) {
@@ -22,7 +22,7 @@ const CategoryMain = ({ isHome, limit }) => {
       }
     };
     fetchCategories();
-  }, [limit]);
+  }, [limit, isHome]);
 
   const CategorySkeletonLoader = ({ count = 2 }) => {
     const categories = Array.from({ length: count });
@@ -175,9 +175,9 @@ const CategoryMain = ({ isHome, limit }) => {
                                                 className="text-decoration-none text-primary small text-truncate"
                                               > */}
                                               <a
-                      href={`/products?category_id=${cat.id}&subcategory_id=${sub.id}&item_category_id=${item.id}`}
-                      className="text-decoration-none text-primary small text-truncate"
-                    >
+                                                href={`/products?category_id=${cat.id}&subcategory_id=${sub.id}&item_category_id=${item.id}`}
+                                                className="text-decoration-none text-primary small text-truncate"
+                                              >
                                                 {item.name.length > 20
                                                   ? item.name.slice(0, 20) + "..."
                                                   : item.name}
