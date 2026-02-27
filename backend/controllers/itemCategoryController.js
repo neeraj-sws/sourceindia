@@ -386,6 +386,36 @@ exports.getItemCategoriesByCategoryAndSubCategory = async (req, res) => {
       });
     }
     const itemCategories = await ItemCategory.findAll({
+      where: { category_id, subcategory_id, status: 1, },
+      include: [
+        { model: Categories, as: 'Categories', attributes: ['id', 'name'], where: {
+          status: 1, is_delete: 0,
+        }},
+        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'], where: {
+          status: 1, is_delete: 0,
+        }},
+      ],
+      order: [['id', 'ASC']],
+    });
+    if (itemCategories.length === 0) {
+      return res.status(404).json({ message: 'No item categories found for the given category and subcategory.' });
+    }
+    res.json(itemCategories);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getItemCategoriesByCategoryAndSubCategoryAll = async (req, res) => {
+  try {
+    const { category_id, subcategory_id } = req.params;
+    if (!category_id || !subcategory_id) {
+      return res.status(400).json({
+        error: 'Both category_id and subcategory_id are required.',
+      });
+    }
+    const itemCategories = await ItemCategory.findAll({
       where: { category_id, subcategory_id },
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },

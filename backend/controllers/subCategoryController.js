@@ -119,6 +119,19 @@ exports.getSubCategoriesByCategory = async (req, res) => {
       return res.status(400).json({ error: 'category is required' });
     }*/
     const interestSubCategories = await SubCategories.findAll({
+      where: { category : category, status: 1, is_delete: 0 },
+      order: [['id', 'ASC']],
+    });
+    res.json(interestSubCategories);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getSubCategoriesByCategoryAll = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const interestSubCategories = await SubCategories.findAll({
       where: { category },
       order: [['id', 'ASC']],
     });

@@ -120,7 +120,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
     $("#item").val("").trigger("change");
 
     if (categoryId) {
-      const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${categoryId}`);
+      const res = await axios.get(`${API_BASE_URL}/sub_categories/category-all/${categoryId}`);
       setSubCategories(res.data);
     } else {
       setSubCategories([]);
@@ -150,7 +150,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
 
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/item_category/by-category-subcategory/${categoryId}/${subCategoryId}`
+        `${API_BASE_URL}/item_category/by-category-subcategory-all/${categoryId}/${subCategoryId}`
       );
       setItemCategories(res.data || []);
     } catch (err) {
@@ -166,7 +166,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
 
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
+        `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory-all/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
       );
       setItemSubCategories(res.data || []);
     } catch (err) {
@@ -187,7 +187,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
 
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
+        `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory-all/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
       );
       setItems(res.data || []);
     } catch (err) {

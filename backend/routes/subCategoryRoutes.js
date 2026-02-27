@@ -10,6 +10,7 @@ router.delete('/delete-selected', subCategoryController.deleteSelectedSubCategor
 router.get('/product-bar-graph', subCategoryController.getSubCategoryProductGraph);
 router.get('/seller-bar-graph', subCategoryController.getSellerSubCategoryBarGraph);
 router.get('/category/:category', subCategoryController.getSubCategoriesByCategory);
+router.get('/category-all/:category', subCategoryController.getSubCategoriesByCategoryAll);
 router.get('/:id', subCategoryController.getSubCategoriesById);
 router.put('/:id', subCategoryController.updateSubCategories);
 router.delete('/:id', subCategoryController.deleteSubCategories);
