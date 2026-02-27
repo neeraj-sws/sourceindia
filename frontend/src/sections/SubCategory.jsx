@@ -161,8 +161,12 @@ const SubCategory = () => {
                             .slice(0, 4)
                             .map((item, i) => (
                               <li key={i} className="text-start">
-                                <a
+                                {/* <a
                                   href={`/categories/${category.slug}/${sub.slug}/${item.slug}`}
+                                  className="text-decoration-none text-primary small d-inline-block"
+                                > */}
+                                <a
+                                  href={`/products?category_id=${category.id}&subcategory_id=${sub.id}&item_category_id=${item.id}`}
                                   className="text-decoration-none text-primary small d-inline-block"
                                 >
                                   {item.name}
