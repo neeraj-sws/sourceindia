@@ -345,7 +345,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
   }, [page, hasMore, scrollLoading, loading]);
 
   const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
+    setSearchTerm(e.target.value.trim());
   };
 
   const handleCoreActivitiyCheckboxChange = (coreactivitiesId) => {

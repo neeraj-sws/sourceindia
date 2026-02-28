@@ -1,10 +1,10 @@
 .form-container {
-    max-width: 500px;
-    margin: auto;
-    padding: 30px;
-    border: 1px solid #eee;
-    border-radius: 10px;
-    background: #fff;
+  max-width: 500px;
+  margin: auto;
+  padding: 30px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  background: #fff;
 }
 
 .hero .overlay {
@@ -16,6 +16,7 @@
   background-color: rgba(0, 0, 0, 0.6);
   z-index: 1;
 }
+
 .hero .carousel-caption {
   z-index: 2;
 }
@@ -86,6 +87,19 @@
 }
 
 @keyframes placeholderShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.products-list-cards .gridviewimg img{
+  width: 100%;
+}
+.ProImgDetail img {
+  width: 100%;
+  object-fit: contain !important;
 }
