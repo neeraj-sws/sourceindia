@@ -264,7 +264,7 @@ exports.getItemSubCategoriesByCategorySubCategoryItemCategoryItemSubCategory = a
       });
     }
     const items = await Items.findAll({
-      where: { category_id, subcategory_id, item_category_id, item_sub_category_id },
+      where: { category_id, subcategory_id, item_category_id, item_sub_category_id, status: 1 },
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },

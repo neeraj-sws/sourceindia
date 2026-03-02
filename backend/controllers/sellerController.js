@@ -1191,7 +1191,6 @@ exports.getEmailtemplate = async (req, res) => {
   }
 };
 
-
 exports.sendMail = async (req, res) => {
   try {
     const { ids, template_id } = req.body;
@@ -2104,6 +2103,10 @@ exports.getSellerSubCategoriesByUser = async (req, res) => {
           model: SubCategories,
           as: 'subcategory',
           attributes: ['id', 'name', 'slug'],
+           where: {
+      status: 1
+    },
+     required: false  
         },
         {
           model: Categories,
