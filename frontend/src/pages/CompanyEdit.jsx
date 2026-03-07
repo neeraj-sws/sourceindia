@@ -26,10 +26,8 @@ const CompanyEdit = () => {
   });
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
-  const [subCategories, setSubCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState([]);
   const [selectedSubCategory, setSelectedSubCategory] = useState([]);
-  const previousSelectedCategoriesRef = useRef([]);
   const [subCategoryMap, setSubCategoryMap] = useState({});
   const [coreActivities, setCoreActivities] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -42,6 +40,9 @@ const CompanyEdit = () => {
   const [submitting, setSubmitting] = useState(false);
   const [categoryLimit, setCategoryLimit] = useState(null);
   const isBlockingRef = useRef(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+const [categorySearch, setCategorySearch] = useState("");
+const [subCategorySearch, setSubCategorySearch] = useState("");
 
   const countWords = (text) => {
     return text
@@ -50,7 +51,60 @@ const CompanyEdit = () => {
       .filter(word => word.length > 0).length;
   };
 
+const handleCategorySelect = async (categoryId) => {
+  let updatedCategories;
 
+  if (selectedCategory.includes(categoryId)) {
+    // If unchecking category
+    updatedCategories = selectedCategory.filter(id => id !== categoryId);
+
+    // Remove its subcategories from selectedSubCategory
+    const subs = subCategoryMap[categoryId] || [];
+    const subIds = subs.map(s => s.id);
+
+    setSelectedSubCategory(prev =>
+      prev.filter(id => !subIds.includes(id))
+    );
+
+    // Remove category from map
+    setSubCategoryMap(prev => {
+      const newMap = { ...prev };
+      delete newMap[categoryId];
+      return newMap;
+    });
+
+  } else {
+    // If checking category
+    updatedCategories = [...selectedCategory, categoryId];
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+        categories: [categoryId]
+      });
+
+      setSubCategoryMap(prev => ({
+        ...prev,
+        [categoryId]: res.data
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  setSelectedCategory(updatedCategories);
+};
+
+const handleSubCategorySelect = (subId) => {
+  if (selectedSubCategory.includes(subId)) {
+    setSelectedSubCategory(prev =>
+      prev.filter(id => id !== subId)
+    );
+  } else {
+    setSelectedSubCategory(prev =>
+      [...prev, subId]
+    );
+  }
+};
 
   useEffect(() => {
     const fetchCoreActivities = async () => {
@@ -92,112 +146,7 @@ const CompanyEdit = () => {
     fetchCategories();
   }, []);
 
-  const handleCategoryChange = async (event) => {
-    const selectedOptions = Array.from(event.target.selectedOptions, (option) => Number(option.value));
-    if (categoryLimit && selectedOptions.length > categoryLimit) {
-      showNotification(`You can select up to ${categoryLimit} categories only.`, "error");
-      return;
-    }
-    setSelectedCategory(selectedOptions);
-    if (selectedOptions.length > 0) {
-      try {
-        const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
-          categories: selectedOptions
-        });
-        const subCats = res.data;
-        const validSelectedSubCategories = selectedSubCategory.filter(id =>
-          subCats.some(sub => sub.id == id)
-        );
-        setSubCategories(subCats);
-        setSelectedSubCategory(validSelectedSubCategories);
-        $('#sub_category').val(validSelectedSubCategories).trigger('change');
-      } catch (err) {
-        console.error("Error fetching subcategories:", err);
-      }
-    } else {
-      setSubCategories([]);
-      setSelectedSubCategory([]);
-      $('#sub_category').val([]).trigger('change');
-    }
-  };
-
-  const handleSubCategoryChange = (event) => {
-    const options = Array.from(event.target.selectedOptions, (option) => Number(option.value));
-    setSelectedSubCategory(options);
-  };
-
   useEffect(() => {
-    $('#category_sell').select2({
-      theme: "bootstrap",
-      width: '100%',
-      placeholder: "Select Category",
-      multiple: true,
-    }).on("change", async function () {
-      const currentSelected = $(this).val()?.map(Number) || [];
-      if (categoryLimit && currentSelected.length > categoryLimit) {
-        currentSelected.pop();
-        $(this).val(currentSelected).trigger("change");
-        showNotification(`You can select maximum ${categoryLimit} categories.`, "error");
-        return;
-      }
-      const previousSelectedCategories = previousSelectedCategoriesRef.current;
-      const addedCategories = currentSelected.filter(cat => !previousSelectedCategories.includes(cat));
-      const removedCategories = previousSelectedCategories.filter(cat => !currentSelected.includes(cat));
-      previousSelectedCategoriesRef.current = [...currentSelected];
-      setSelectedCategory(currentSelected);
-      let updatedSubCategories = [...subCategories];
-      let updatedMap = { ...subCategoryMap };
-      if (addedCategories.length > 0) {
-        try {
-          const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
-            categories: addedCategories
-          });
-          const newSubCats = res.data;
-          newSubCats.forEach(sub => {
-            if (!updatedMap[sub.id]) updatedMap[sub.id] = new Set();
-            addedCategories.forEach(catId => updatedMap[sub.id].add(catId));
-            if (!updatedSubCategories.find(s => s.id === sub.id)) {
-              updatedSubCategories.push(sub);
-            }
-          });
-        } catch (err) {
-          console.error("Error adding subcategories:", err);
-        }
-      }
-      if (removedCategories.length > 0) {
-        Object.entries(updatedMap).forEach(([subId, categorySet]) => {
-          removedCategories.forEach(catId => categorySet.delete(catId));
-        });
-        updatedSubCategories = updatedSubCategories.filter(sub => {
-          const set = updatedMap[sub.id];
-          return set && set.size > 0;
-        });
-        const updatedSelected = selectedSubCategory.filter(subId => {
-          return updatedMap[subId] && updatedMap[subId].size > 0;
-        });
-        setSelectedSubCategory(updatedSelected);
-        $('#sub_category').val(updatedSelected).trigger('change');
-      }
-      setSubCategories(updatedSubCategories);
-      setSubCategoryMap(updatedMap);
-      if (currentSelected.length === 0) {
-        setSubCategories([]);
-        setSelectedSubCategory([]);
-        setSubCategoryMap({});
-        $('#sub_category').val([]).trigger('change');
-      }
-    });
-
-    $('#sub_category').select2({
-      theme: "bootstrap",
-      width: '100%',
-      placeholder: "Select Sub Category",
-      multiple: true,
-    }).on("change", function () {
-      const selectedValues = $(this).val() || [];
-      setSelectedSubCategory(selectedValues.map(Number));
-    });
-
     $('#core_activity').select2({
       theme: "bootstrap",
       width: '100%',
@@ -217,16 +166,12 @@ const CompanyEdit = () => {
     });
 
     return () => {
-      const $category_sell = $('#category_sell');
-      const $sub_category = $('#sub_category');
       const $core_activity = $('#core_activity');
       const $activity = $('#activity');
-      if ($category_sell.data('select2')) { $category_sell.off("change").select2('destroy'); }
-      if ($sub_category.data('select2')) { $sub_category.off("change").select2('destroy'); }
       if ($core_activity.data('select2')) { $core_activity.select2('destroy'); }
       if ($activity.data('select2')) { $activity.select2('destroy'); }
     };
-  }, [categories, subCategories, selectedSubCategory, subCategoryMap, coreActivities, activities]);
+  }, [coreActivities, activities]);
 
   const handleFileChange = (e) => { setFile(e.target.files[0]); };
 
@@ -267,7 +212,20 @@ const CompanyEdit = () => {
           const cRes = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
             categories: categoryArray,
           });
-          setSubCategories(cRes.data);
+          const map = {};
+
+for (const catId of categoryArray) {
+  try {
+    const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+      categories: [catId]
+    });
+    map[catId] = res.data;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+setSubCategoryMap(map);
 
           // ✅ wait for the subcategories to finish rendering before setting select2 value
           setTimeout(() => {
@@ -445,8 +403,8 @@ const CompanyEdit = () => {
       formData.append("activity", selectedActivity || "");
       // formData.append("category_sell", selectedCategory.join(","));
       // formData.append("sub_category", selectedSubCategory.join(","));
-      formData.append("categories", selectedCategory.join(",")); // Append categories as comma-separated string
-      formData.append("subcategory_ids", selectedSubCategory.join(","));
+      formData.append("categories", selectedCategory.join(","));
+formData.append("subcategory_ids", selectedSubCategory.join(","));
       formData.append("brief_company", user.company_info?.brief_company || "");
       formData.append("company_video_second", user.company_info?.company_video_second || "");
 
@@ -474,6 +432,7 @@ const CompanyEdit = () => {
   if (loading) return <p>Loading...</p>;
 
   return (
+    <>
     <div className="page-wrapper">
       <div className="page-content">
         <h4 className="pb-2">Company Update</h4>
@@ -571,36 +530,23 @@ const CompanyEdit = () => {
                           {errors.activity && <div className="text-danger small mt-1">{errors.activity}</div>}
                         </div>
                         <div className="col-md-6">
-                          <label htmlFor="category_sell" className="form-label required">Category</label>
-                          <select
-                            id="category_sell" className="form-control select2"
-                            value={selectedCategory}
-                            onChange={handleCategoryChange}
-                            multiple
-                          >
-                            <option value="">Select Category</option>
-                            {categories?.map((category) => (
-                              <option key={category.id} value={category.id}>{category.name}</option>
-                            ))}
-                          </select>
-                          {errors.category_sell && (<div className="text-danger small mt-1">{errors.category_sell}</div>)}
-                        </div>
-                        <div className="col-md-6">
-                          <label htmlFor="sub_category" className="form-label required">Sub Category</label>
-                          <select
-                            id="sub_category" className="form-control select2"
-                            value={selectedSubCategory}
-                            onChange={handleSubCategoryChange}
-                            disabled={subCategories.length === 0}
-                            multiple
-                          >
-                            <option value="">Select Sub Category</option>
-                            {subCategories?.map((sub_category) => (
-                              <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
-                            ))}
-                          </select>
-                          {errors.sub_category && <div className="text-danger small mt-1">{errors.sub_category}</div>}
-                        </div>
+  <label className="form-label required">Select Category & Sub Category</label>
+  <button
+    type="button"
+    className="btn btn-outline-primary w-100"
+    onClick={() => setShowCategoryModal(true)}
+  >
+    Category Picker
+  </button>
+  {selectedCategory.length > 0 && (
+    <small className="text-success">
+      {selectedCategory.length} Category Selected
+    </small>
+  )}
+  {errors.category_sell && (
+    <div className="text-danger small">{errors.category_sell}</div>
+  )}
+</div>
                         <div className="col-md-12">
                           <label className="form-label">Company Logo </label>
                           <input className="form-control" type="file"
@@ -719,6 +665,61 @@ const CompanyEdit = () => {
         {/*end row*/}
       </div>
     </div>
+    {showCategoryModal && (
+<div className="modal show" style={{display: 'block', background: 'rgba(0,0,0,0.5)'}}>
+    <div className="modal-dialog modal-lg">
+        <div className="modal-content">
+            <div className="modal-header">
+                <h5>Select Category & Sub Category</h5>
+                <button className="btn-close" onClick={()=>setShowCategoryModal(false)} />
+            </div>
+            <div className="modal-body">
+                <div className="row">
+                    {/* LEFT CATEGORY */}
+                    <div className="col-8 border-end">
+                        <input type="text" className="form-control mb-3" placeholder="Search Category" value={categorySearch} onChange={(e)=>setCategorySearch(e.target.value)} />
+                        <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                            {categories .filter(cat => cat.name.toLowerCase().includes(categorySearch.toLowerCase()) ) .map(cat => (
+                            <div key={cat.id} className="form-check mb-2">
+                                <input id={`category-${cat.id}`} type="checkbox" className="form-check-input" checked={selectedCategory.includes(cat.id)} onChange={()=>handleCategorySelect(cat.id)} />
+                                <label htmlFor={`category-${cat.id}`} className="form-check-label">
+                                    {cat.name}
+                                </label>
+                            </div>
+                            ))}
+                        </div>
+                    </div>
+                    {/* RIGHT SUBCATEGORY */}
+                    <div className="col-4">
+                        <input type="text" className="form-control mb-3" placeholder="Search Subcategory" value={subCategorySearch} onChange={(e)=>setSubCategorySearch(e.target.value)} />
+                        <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                            {selectedCategory.map(catId => { const cat = categories.find(c => c.id === catId); const subs = subCategoryMap[catId] || []; if (!subs.length) return null; return (
+                            <div key={catId} className="mb-3">
+                                <div className="fw-bold border-bottom pb-1 mb-2">
+                                    {cat?.name}
+                                </div>
+                                {subs .filter(sub => sub.name.toLowerCase().includes(subCategorySearch.toLowerCase()) ) .map(sub => (
+                                <div key={sub.id} className="form-check mb-2">
+                                    <input id={`subcategory-${sub.id}`} type="checkbox" className="form-check-input" checked={selectedSubCategory.includes(sub.id)} onChange={()=> handleSubCategorySelect(sub.id)} />
+                                    <label htmlFor={`subcategory-${sub.id}`} className="form-check-label">
+                                        {sub.name}
+                                    </label>
+                                </div>
+                                ))}
+                            </div>
+                            ); })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="modal-footer">
+                <button className="btn btn-primary" onClick={()=>setShowCategoryModal(false)} >Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+)}
+</>
   )
 }
 
