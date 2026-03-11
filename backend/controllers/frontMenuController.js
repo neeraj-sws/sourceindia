@@ -3,9 +3,10 @@ const { Op, fn, col } = Sequelize;
 const FrontMenu = require('../models/FrontMenu');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
-const Products = require('../models/Products');
-const ItemCategory = require('../models/ItemCategory');
-const ItemSubCategory = require('../models/ItemSubCategory');
+// const Products = require('../models/Products');
+// const ItemCategory = require('../models/ItemCategory');
+// const ItemSubCategory = require('../models/ItemSubCategory');
+const { ItemCategory, ItemSubCategory, Products } = require('../models');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const SellerCategory = require('../models/SellerCategory');
@@ -44,27 +45,46 @@ const searchProducts = async (q, type) => {
    2️⃣ UNIQUE CATEGORY MATCH
   --------------------------------*/
   const categoryMatches = await ItemCategory.findAll({
-    where: {
-      name: { [Op.like]: `%${q}%` },
-    },
-    attributes: ["id", "name", "category_id", "subcategory_id"],
-    group: ["item_category_id"],
-    limit: 5,
-    raw: true,
-  });
+  where: { name: { [Op.like]: `%${q}%` } },
+  include: [
+    {
+      model: Products,
+      as: 'products', // must match the hasMany alias above
+      attributes: [],
+      required: true,
+      where: { status: 1, is_delete: 0,
+      category: { [Op.col]: 'ItemCategory.category_id' },
+        sub_category: { [Op.col]: 'ItemCategory.subcategory_id' }}
+    }
+  ],
+  attributes: ['id', 'name', 'category_id', 'subcategory_id'],
+  group: ['item_category_id'],
+  limit: 5,
+  // raw: true,
+});
 
   /* -------------------------------
    3️⃣ UNIQUE SUBCATEGORY MATCH
   --------------------------------*/
   const subCategoryMatches = await ItemSubCategory.findAll({
-    where: {
-      name: { [Op.like]: `%${q}%` },
-    },
-    attributes: ["id", "name", "category_id", "subcategory_id", "item_category_id"],
-    group: ["item_subcategory_id"],
-    limit: 5,
-    raw: true,
-  });
+  where: { name: { [Op.like]: `%${q}%` } },
+  include: [
+    {
+      model: Products,
+      as: 'products', // must match the hasMany alias above
+      attributes: [],
+      required: true,
+      where: { status: 1, is_delete: 0,
+      category: { [Op.col]: 'ItemSubCategory.category_id' },
+        sub_category: { [Op.col]: 'ItemSubCategory.subcategory_id' },
+        item_category_id: { [Op.col]: 'ItemSubCategory.item_category_id' }, }
+    }
+  ],
+  attributes: ['id', 'name', 'category_id', 'subcategory_id', 'item_category_id'],
+  group: ['item_subcategory_id'],
+  limit: 5,
+  // raw: true,
+});
 
   return [
     // 🔹 Products first
