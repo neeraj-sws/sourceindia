@@ -3,9 +3,6 @@ const { Op, fn, col } = Sequelize;
 const FrontMenu = require('../models/FrontMenu');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
-// const Products = require('../models/Products');
-// const ItemCategory = require('../models/ItemCategory');
-// const ItemSubCategory = require('../models/ItemSubCategory');
 const { ItemCategory, ItemSubCategory, Products } = require('../models');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
@@ -60,7 +57,6 @@ const searchProducts = async (q, type) => {
   attributes: ['id', 'name', 'category_id', 'subcategory_id'],
   group: ['item_category_id'],
   limit: 5,
-  // raw: true,
 });
 
   /* -------------------------------
@@ -83,7 +79,6 @@ const searchProducts = async (q, type) => {
   attributes: ['id', 'name', 'category_id', 'subcategory_id', 'item_category_id'],
   group: ['item_subcategory_id'],
   limit: 5,
-  // raw: true,
 });
 
   return [

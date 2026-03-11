@@ -72,8 +72,6 @@ Products.belongsTo(Users, { foreignKey: 'user_id', targetKey: 'id', as: 'Users',
 Products.belongsTo(Categories, { foreignKey: 'category', as: 'Categories', constraints: false });
 Products.belongsTo(SubCategories, { foreignKey: 'sub_category', targetKey: 'id', as: 'SubCategories', constraints: false });
 Products.belongsTo(Applications, { foreignKey: 'application', targetKey: 'id', as: 'Applications', constraints: false });
-// Products.belongsTo(ItemCategory, { foreignKey: 'item_category_id', targetKey: 'id', as: 'ItemCategory', constraints: false });
-// Products.belongsTo(ItemSubCategory, { foreignKey: 'item_subcategory_id', targetKey: 'id', as: 'ItemSubCategory', constraints: false });
 Products.belongsTo(Items, { foreignKey: 'item_id', targetKey: 'id', as: 'Items', constraints: false });
 
 module.exports = Products;
