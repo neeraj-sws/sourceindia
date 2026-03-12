@@ -1,0 +1,245 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import API_BASE_URL from "../config";
+import { useAlert } from "../context/AlertContext";
+import UseAuth from "../sections/UseAuth";
+
+const BuyerSourcingModal = () => {
+  const { user } = UseAuth();
+  const { showNotification } = useAlert();
+  const [itemCategoryData, setItemcategoryData] = useState({ categories: [] });
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [subCategories, setSubCategories] = useState([]);
+  const [selectedSubIds, setSelectedSubIds] = useState([]);
+  const [categoryCounts, setCategoryCounts] = useState({});
+  const [categorySearch, setCategorySearch] = useState("");
+  const [subCategorySearch, setSubCategorySearch] = useState("");
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const token = localStorage.getItem("user_token");
+    axios
+      .get(`${API_BASE_URL}/dashboard/get-itemtype?userId=${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        setItemcategoryData(res.data || { categories: [] });
+      });
+  }, [user]);
+
+  const handleCategoryChange = async (categoryId) => {
+    const token = localStorage.getItem("user_token");
+    setSelectedCategoryId(categoryId);
+    setSelectedSubIds([]);
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/dashboard/get-item-subcategory?categoryId=${categoryId}&userId=${user.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSubCategories(res.data?.subcategories || []);
+      const checkedIds = res.data.subcategories
+        .filter((s) => s.checked)
+        .map((s) => s.id);
+      setSelectedSubIds(checkedIds);
+      setCategoryCounts(prev => ({
+        ...prev,
+        [categoryId]: checkedIds.length
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCheckAll = async (e) => {
+  if (!selectedCategoryId) return;
+  const token = localStorage.getItem("user_token");
+  let updatedSubIds = [];
+  if (e.target.checked) {
+    updatedSubIds = subCategories.map((sub) => sub.id);
+  }
+  setSelectedSubIds(updatedSubIds);
+  setCategoryCounts((prev) => ({
+    ...prev,
+    [selectedCategoryId]: updatedSubIds.length,
+  }));
+
+  try {
+    await axios.post(
+      `${API_BASE_URL}/dashboard/store-item-subcategory`,
+      {
+        userId: user.id,
+        activity: {
+          category_id: selectedCategoryId,
+          subcategory_ids: subCategories.map((sub) => sub.id),
+          action: e.target.checked ? "add" : "remove",
+        },
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+  } catch (err) {
+    showNotification("Failed to save all selections", "error");
+  }
+};
+
+  const handleSubCheck = async (id) => {
+    const token = localStorage.getItem("user_token");
+    const isChecked = selectedSubIds.includes(id);
+    let updatedIds = isChecked
+      ? selectedSubIds.filter(x => x !== id)
+      : [...selectedSubIds, id];
+    setSelectedSubIds(updatedIds);
+    setCategoryCounts(prev => ({
+      ...prev,
+      [selectedCategoryId]: updatedIds.length
+    }));
+
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/dashboard/store-item-subcategory`,
+        {
+          userId: user.id,
+          activity: {
+            category_id: selectedCategoryId,
+            subcategory_ids: [id],
+            action: isChecked ? "remove" : "add"
+          }
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      if (res.data.success) {
+        showNotification(res.data.message, "success");
+      }
+    } catch (err) {
+      showNotification("Failed to save interest", "error");
+    }
+  };
+
+  return (
+    <div className="modal fade" id="buyerSourcing">
+      <div className="modal-dialog modal-lg" style={{ maxWidth: "1200px" }}>
+        <div className="modal-content p-2">
+          <div className="modal-header">
+            <h4 className="modal-title">Sourcing Interest</h4>
+            <button className="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div className="modal-body">
+            <div className="row">
+              {/* LEFT CATEGORY PART */}
+              <div className="col-9 border-end">
+                <h6 className="mb-3">Category</h6>
+                <input
+                  type="text"
+                  className="form-control mb-3"
+                  placeholder="Search category..."
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                />
+                <div className="heightPart">
+                  <div className="row">
+                    {(itemCategoryData?.categories || [])
+                      .filter(cat =>
+                        cat.name?.toLowerCase().includes(categorySearch.toLowerCase())
+                      )
+                      .map(cat => (
+                        <div className="col-lg-4" key={cat.id}>
+                          <div className="form-check mb-2">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={selectedCategoryId === cat.id}
+                              onChange={() => handleCategoryChange(cat.id)}
+                              id={`category_${cat.id}`}
+                            />
+                            <label
+                              className="form-check-label"
+                              htmlFor={`category_${cat.id}`}
+                            >
+                              {cat.name}
+                              {(categoryCounts?.[cat.id] ?? cat.count) > 0 && (
+                                <span className="ms-2 badge bg-primary">
+                                  {categoryCounts?.[cat.id] ?? cat.count}
+                                </span>
+                              )}
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+              {/* RIGHT SUBCATEGORY PART */}
+              <div className="col-3" style={{ background: "#ffe5e5" }}>
+                <div className="p-2 rightPart">
+                  <h6 className="mb-3 mt-2">Please Select The Type</h6>
+                    {subCategories.length === 0 && (
+                    <p className="text-muted">
+                        Please select a type to see categories
+                    </p>
+                    )}
+                    {selectedCategoryId && subCategories.length > 0 && (
+                    <>
+                  <input
+                    type="text"
+                    className="form-control mb-2"
+                    placeholder="Search sub-category..."
+                    value={subCategorySearch}
+                    onChange={(e) => setSubCategorySearch(e.target.value)}
+                  />
+                  <div className="subpart">
+                    <div className="mb-3 bg-primary p-2 rounded text-white">
+                    <label htmlFor="checkAllsub" className="d-flex">
+                        <input
+                        type="checkbox"
+                        className="me-2"
+                        id="checkAllsub"
+                        checked={
+                            selectedSubIds.length === subCategories.length &&
+                            subCategories.length > 0
+                        }
+                        onChange={handleCheckAll}
+                        />
+                        Check All
+                    </label>
+                    </div>
+                    {subCategories
+                      .filter(sub =>
+                        sub.name.toLowerCase().includes(subCategorySearch.toLowerCase())
+                      )
+                      .map(sub => (
+                        <div key={sub.id} className="subcate mb-3">
+                          <div className="border p-2 rounded bg-white">
+                            <label>
+                              <input
+                                type="checkbox"
+                                className="me-2"
+                                checked={selectedSubIds.includes(sub.id)}
+                                onChange={() => handleSubCheck(sub.id)}
+                              />
+                              {sub.name}
+                            </label>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </>
+                )}
+                </div>
+              </div>
+            </div>
+          </div>
+            <div className="modal-footer">
+                <button className="btn btn-secondary" data-bs-dismiss="modal">
+                  Close
+                </button>
+              </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BuyerSourcingModal;

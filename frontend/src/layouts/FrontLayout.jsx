@@ -7,6 +7,7 @@ const FrontFooter = lazy(() => import('../common/FrontFooter'));
 const UserHeader = lazy(() => import('../common/UserHeader'));
 const UserSidebar = lazy(() => import('../common/UserSidebar'));
 const UserFooter = lazy(() => import('../common/UserFooter'));
+const BuyerSourcingModal = lazy(() => import('../components/BuyerSourcingModal'));
 const Home = lazy(() => import('../pages/Home'));
 const Login = lazy(() => import('../pages/Login'));
 const Companies = lazy(() => import('../pages/Companies'));
@@ -74,7 +75,7 @@ function FrontLayout() {
           {!isUserLayout && <GlobalSeo />}
           <ToastContainer position="top-right" autoClose={2000} hideProgressBar={true} />
           <Suspense fallback={<div></div>}>
-            {isUserLayout ? <><UserHeader /><UserSidebar /></> : <FrontHeader />}
+            {isUserLayout ? <><UserHeader /><UserSidebar /><BuyerSourcingModal /></> : <FrontHeader />}
           </Suspense>
           <main>
             <Suspense fallback={<div></div>}>
