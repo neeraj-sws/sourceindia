@@ -8,6 +8,7 @@ const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
+const Countries = require('../models/Countries');
 const States = require('../models/States');
 const ReviewRating = require('../models/ReviewRating');
 const CoreActivity = require('../models/CoreActivity');
@@ -1314,9 +1315,14 @@ exports.getCompanyInfoById = async (req, res) => {
         status: 1,
         is_approve: 1
       },
-      attributes: ['id'],
+      attributes: ['id', 'address', 'zipcode', 'is_seller'],
+      include: [
+        { model: Countries, as: 'country_data', attributes: ['name'] },
+        { model: States, as: 'state_data', attributes: ['name'] },
+        { model: Cities, as: 'city_data', attributes: ['name'] }
+      ],
       order: [['id', 'ASC']],
-      raw: true
+      // raw: true
     });
 
     // 2️⃣ Get seller categories
@@ -1495,7 +1501,13 @@ exports.getCompanyInfoById = async (req, res) => {
       company_location: data.company_location,
       company_website: data.company_website,
       organizations_product_description: data.organizations_product_description,
-
+      user_category: data.user_category,
+      address: user?.address || null,
+      zipcode: user?.zipcode || null,
+      is_seller: user?.is_seller || 0,
+      country_name: user?.country_data?.name || null,
+      state_name: user?.state_data?.name || null,
+      city_name: user?.city_data?.name || null,
       coreactivity_name: data.CoreActivity?.name || null,
       activity_name: data.Activity?.name || null,
 
