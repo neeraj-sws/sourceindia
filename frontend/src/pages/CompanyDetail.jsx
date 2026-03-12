@@ -215,7 +215,18 @@ const [showConnectModal, setShowConnectModal] = useState(false);
                     </div>
                     <div>
                       <h4 className="text-orange mb-1">{company.organization_name}</h4>
-                      <div className="company-subtitle text-muted"><i className="bx bx-map subtitle-icon" aria-hidden="true" />{company.company_location || ''}</div>
+                      <div className="company-subtitle text-muted"><i className="bx bx-map subtitle-icon" aria-hidden="true" />
+                      {company.is_seller === 0
+                        ? [
+                            company.country_name,
+                            company.state_name,
+                            company.city_name
+                          ]
+                            .filter(Boolean) // remove undefined/null
+                            .join(', ')
+                        : company.company_location || ''
+                      }
+                      </div>
                     </div>
                   </div>
                   <div className="about-grid-wrap mt-3">
@@ -241,7 +252,14 @@ const [showConnectModal, setShowConnectModal] = useState(false);
                         <div className="about-icon"><i className="bx bx-map" aria-hidden="true" /></div>
                         <div className="about-content">
                           <div className="about-label">Address</div>
-                          <div className="about-value">{company.address || "N/A"}</div>
+                          <div className="about-value">
+                            {company.address && (
+                              <>
+                                {company.address}
+                                {company.zipcode ? `, ${company.zipcode}` : ""}
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                       </>
