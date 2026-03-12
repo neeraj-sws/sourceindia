@@ -953,26 +953,33 @@ exports.getAllCompanyInfo = async (req, res) => {
       const catIds = category ? parseCsv(category).map(x => parseInt(x)).filter(x => !isNaN(x)) : [];
       const subIds = sub_category ? parseCsv(sub_category).map(x => parseInt(x)).filter(x => !isNaN(x)) : [];
 
-      let sellerWhere = [];
+      let sellerConditions = [];
 
+if (catIds.length) {
+  sellerConditions.push(`sc.category_id IN (${catIds.join(',')})`);
+}
 
-      if (catIds.length) sellerWhere.push(`sc.category_id IN (${catIds.join(',')})`);
-      if (subIds.length) sellerWhere.push(`sc.subcategory_id IN (${subIds.join(',')})`);
+if (subIds.length) {
+  sellerConditions.push(`sc.subcategory_id IN (${subIds.join(',')})`);
+}
 
-      if (sellerWhere.length) {
-        whereClause[Op.and] = whereClause[Op.and] || [];
-        whereClause[Op.and].push(
-          literal(`
-            EXISTS (
-              SELECT 1 FROM users u 
-              INNER JOIN seller_categories sc ON sc.user_id = u.user_id
-              WHERE u.company_id = CompanyInfo.company_id
-              AND u.is_delete = 0 AND u.status = 1 AND u.is_approve = 1
-              AND (${sellerWhere.join(' OR ')})
-            )
-          `)
-        );
-      }
+if (sellerConditions.length) {
+  whereClause[Op.and] = whereClause[Op.and] || [];
+  whereClause[Op.and].push(
+    literal(`
+      EXISTS (
+        SELECT 1 
+        FROM users u
+        INNER JOIN seller_categories sc ON sc.user_id = u.user_id
+        WHERE u.company_id = CompanyInfo.company_id
+        AND u.is_delete = 0
+        AND u.status = 1
+        AND u.is_approve = 1
+        AND ${sellerConditions.join(' AND ')}
+      )
+    `)
+  );
+}
     }
     const coreWhere = [];
     if (core_activity || activity) {
@@ -1086,18 +1093,6 @@ exports.getAllCompanyInfo = async (req, res) => {
       limit:10,
       raw: true
     });
-    
-    
-
-    // const productMap = {};
-    // allProducts.forEach(p => {
-    //   if (!productMap[p.company_id]) productMap[p.company_id] = [];
-    //   productMap[p.company_id].push({ id: p.id, title: p.title, slug: p.slug, companyId: p.company_id });
-    // });
-    // console.log('productMap '+productMap);
-    
-    
-    
     
     const productMap = {};
 
