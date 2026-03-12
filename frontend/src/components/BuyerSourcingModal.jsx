@@ -51,37 +51,37 @@ const BuyerSourcingModal = () => {
   };
 
   const handleCheckAll = async (e) => {
-  if (!selectedCategoryId) return;
-  const token = localStorage.getItem("user_token");
-  let updatedSubIds = [];
-  if (e.target.checked) {
-    updatedSubIds = subCategories.map((sub) => sub.id);
-  }
-  setSelectedSubIds(updatedSubIds);
-  setCategoryCounts((prev) => ({
-    ...prev,
-    [selectedCategoryId]: updatedSubIds.length,
-  }));
+    if (!selectedCategoryId) return;
+    const token = localStorage.getItem("user_token");
+    let updatedSubIds = [];
+    if (e.target.checked) {
+      updatedSubIds = subCategories.map((sub) => sub.id);
+    }
+    setSelectedSubIds(updatedSubIds);
+    setCategoryCounts((prev) => ({
+      ...prev,
+      [selectedCategoryId]: updatedSubIds.length,
+    }));
 
-  try {
-    await axios.post(
-      `${API_BASE_URL}/dashboard/store-item-subcategory`,
-      {
-        userId: user.id,
-        activity: {
-          category_id: selectedCategoryId,
-          subcategory_ids: subCategories.map((sub) => sub.id),
-          action: e.target.checked ? "add" : "remove",
+    try {
+      await axios.post(
+        `${API_BASE_URL}/dashboard/store-item-subcategory`,
+        {
+          userId: user.id,
+          activity: {
+            category_id: selectedCategoryId,
+            subcategory_ids: subCategories.map((sub) => sub.id),
+            action: e.target.checked ? "add" : "remove",
+          },
         },
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-  } catch (err) {
-    showNotification("Failed to save all selections", "error");
-  }
-};
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+    } catch (err) {
+      showNotification("Failed to save all selections", "error");
+    }
+  };
 
   const handleSubCheck = async (id) => {
     const token = localStorage.getItem("user_token");
@@ -139,103 +139,124 @@ const BuyerSourcingModal = () => {
                   onChange={(e) => setCategorySearch(e.target.value)}
                 />
                 <div className="heightPart">
-                  <div className="row">
-                    {(itemCategoryData?.categories || [])
-                      .filter(cat =>
-                        cat.name?.toLowerCase().includes(categorySearch.toLowerCase())
-                      )
-                      .map(cat => (
-                        <div className="col-lg-4" key={cat.id}>
-                          <div className="form-check mb-2">
-                            <input
-                              className="form-check-input"
-                              type="checkbox"
-                              checked={selectedCategoryId === cat.id}
-                              onChange={() => handleCategoryChange(cat.id)}
-                              id={`category_${cat.id}`}
-                            />
-                            <label
-                              className="form-check-label"
-                              htmlFor={`category_${cat.id}`}
-                            >
-                              {cat.name}
-                              {(categoryCounts?.[cat.id] ?? cat.count) > 0 && (
-                                <span className="ms-2 badge bg-primary">
-                                  {categoryCounts?.[cat.id] ?? cat.count}
-                                </span>
-                              )}
-                            </label>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
+
+                  {(itemCategoryData?.groups || []).map(group => (
+
+                    <div key={group.id} className="mb-3">
+
+                      <h6 className="mb-3">{group.name}</h6>
+
+                      <div className="row">
+
+                        {group.categories
+                          .filter(cat =>
+                            cat.name?.toLowerCase().includes(categorySearch.toLowerCase())
+                          )
+                          .map(cat => (
+
+                            <div className="col-lg-4" key={cat.id}>
+                              <div className="form-check mb-2">
+
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  checked={selectedCategoryId === cat.id}
+                                  onChange={() => handleCategoryChange(cat.id)}
+                                  id={`category_${cat.id}`}
+                                />
+
+                                <label
+                                  className="form-check-label"
+                                  htmlFor={`category_${cat.id}`}
+                                >
+                                  {cat.name}
+
+                                  {(categoryCounts?.[cat.id] ?? cat.count) > 0 && (
+                                    <span className="ms-2 badge bg-primary">
+                                      {categoryCounts?.[cat.id] ?? cat.count}
+                                    </span>
+                                  )}
+
+                                </label>
+
+                              </div>
+                            </div>
+
+                          ))}
+
+                      </div>
+
+                    </div>
+
+                  ))}
+
                 </div>
               </div>
               {/* RIGHT SUBCATEGORY PART */}
               <div className="col-3" style={{ background: "#ffe5e5" }}>
                 <div className="p-2 rightPart">
                   <h6 className="mb-3 mt-2">Please Select The Type</h6>
-                    {subCategories.length === 0 && (
+                  {subCategories.length === 0 && (
                     <p className="text-muted">
-                        Please select a type to see categories
+                      Please select a type to see categories
                     </p>
-                    )}
-                    {selectedCategoryId && subCategories.length > 0 && (
+                  )}
+                  {selectedCategoryId && subCategories.length > 0 && (
                     <>
-                  <input
-                    type="text"
-                    className="form-control mb-2"
-                    placeholder="Search sub-category..."
-                    value={subCategorySearch}
-                    onChange={(e) => setSubCategorySearch(e.target.value)}
-                  />
-                  <div className="subpart">
-                    <div className="mb-3 bg-primary p-2 rounded text-white">
-                    <label htmlFor="checkAllsub" className="d-flex">
-                        <input
-                        type="checkbox"
-                        className="me-2"
-                        id="checkAllsub"
-                        checked={
-                            selectedSubIds.length === subCategories.length &&
-                            subCategories.length > 0
-                        }
-                        onChange={handleCheckAll}
-                        />
-                        Check All
-                    </label>
-                    </div>
-                    {subCategories
-                      .filter(sub =>
-                        sub.name.toLowerCase().includes(subCategorySearch.toLowerCase())
-                      )
-                      .map(sub => (
-                        <div key={sub.id} className="subcate mb-3">
-                          <div className="border p-2 rounded bg-white">
-                            <label>
-                              <input
-                                type="checkbox"
-                                className="me-2"
-                                checked={selectedSubIds.includes(sub.id)}
-                                onChange={() => handleSubCheck(sub.id)}
-                              />
-                              {sub.name}
-                            </label>
-                          </div>
+                      <input
+                        type="text"
+                        className="form-control mb-2"
+                        placeholder="Search sub-category..."
+                        value={subCategorySearch}
+                        onChange={(e) => setSubCategorySearch(e.target.value)}
+                      />
+                      <div className="subpart">
+                        <div className="mb-3 bg-primary p-2 rounded text-white">
+                          <label htmlFor="checkAllsub" className="d-flex">
+                            <input
+                              type="checkbox"
+                              className="me-2"
+                              id="checkAllsub"
+                              checked={
+                                selectedSubIds.length === subCategories.length &&
+                                subCategories.length > 0
+                              }
+                              onChange={handleCheckAll}
+                            />
+                            Check All
+                          </label>
                         </div>
-                      ))}
-                  </div>
-                </>
-                )}
+                        {subCategories
+                          .filter(sub =>
+                            sub.name.toLowerCase().includes(subCategorySearch.toLowerCase())
+                          )
+                          .map(sub => (
+                            <div key={sub.id} className="subcate mb-3">
+                              <div className="border p-2 rounded bg-white">
+                                <label>
+                                  <input
+                                    type="checkbox"
+                                    className="me-2"
+                                    checked={selectedSubIds.includes(sub.id)}
+                                    onChange={() => handleSubCheck(sub.id)}
+                                  />
+                                  {sub.name}
+                                </label>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-            <div className="modal-footer">
-                <button className="btn btn-secondary" data-bs-dismiss="modal">
-                  Close
-                </button>
-              </div>
+          <div className="modal-footer">
+            <button className="btn btn-secondary" data-bs-dismiss="modal">
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>

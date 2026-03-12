@@ -325,8 +325,8 @@ const searchBuyers = async (q, type) => {
   --------------------------------*/
   return [
     ...companies,      // 🔹 buyers first
-    ...categories,     // 🔹 categories
-    ...subcategories,  // 🔹 subcategories
+    // ...categories,     // 🔹 categories
+    // ...subcategories,  // 🔹 subcategories
   ];
 };
 
