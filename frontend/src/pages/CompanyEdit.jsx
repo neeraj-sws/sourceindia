@@ -41,8 +41,8 @@ const CompanyEdit = () => {
   const [categoryLimit, setCategoryLimit] = useState(null);
   const isBlockingRef = useRef(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-const [categorySearch, setCategorySearch] = useState("");
-const [subCategorySearch, setSubCategorySearch] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
+  const [subCategorySearch, setSubCategorySearch] = useState("");
 
   const countWords = (text) => {
     return text
@@ -51,60 +51,60 @@ const [subCategorySearch, setSubCategorySearch] = useState("");
       .filter(word => word.length > 0).length;
   };
 
-const handleCategorySelect = async (categoryId) => {
-  let updatedCategories;
+  const handleCategorySelect = async (categoryId) => {
+    let updatedCategories;
 
-  if (selectedCategory.includes(categoryId)) {
-    // If unchecking category
-    updatedCategories = selectedCategory.filter(id => id !== categoryId);
+    if (selectedCategory.includes(categoryId)) {
+      // If unchecking category
+      updatedCategories = selectedCategory.filter(id => id !== categoryId);
 
-    // Remove its subcategories from selectedSubCategory
-    const subs = subCategoryMap[categoryId] || [];
-    const subIds = subs.map(s => s.id);
+      // Remove its subcategories from selectedSubCategory
+      const subs = subCategoryMap[categoryId] || [];
+      const subIds = subs.map(s => s.id);
 
-    setSelectedSubCategory(prev =>
-      prev.filter(id => !subIds.includes(id))
-    );
+      setSelectedSubCategory(prev =>
+        prev.filter(id => !subIds.includes(id))
+      );
 
-    // Remove category from map
-    setSubCategoryMap(prev => {
-      const newMap = { ...prev };
-      delete newMap[categoryId];
-      return newMap;
-    });
-
-  } else {
-    // If checking category
-    updatedCategories = [...selectedCategory, categoryId];
-
-    try {
-      const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
-        categories: [categoryId]
+      // Remove category from map
+      setSubCategoryMap(prev => {
+        const newMap = { ...prev };
+        delete newMap[categoryId];
+        return newMap;
       });
 
-      setSubCategoryMap(prev => ({
-        ...prev,
-        [categoryId]: res.data
-      }));
-    } catch (err) {
-      console.error(err);
+    } else {
+      // If checking category
+      updatedCategories = [...selectedCategory, categoryId];
+
+      try {
+        const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+          categories: [categoryId]
+        });
+
+        setSubCategoryMap(prev => ({
+          ...prev,
+          [categoryId]: res.data
+        }));
+      } catch (err) {
+        console.error(err);
+      }
     }
-  }
 
-  setSelectedCategory(updatedCategories);
-};
+    setSelectedCategory(updatedCategories);
+  };
 
-const handleSubCategorySelect = (subId) => {
-  if (selectedSubCategory.includes(subId)) {
-    setSelectedSubCategory(prev =>
-      prev.filter(id => id !== subId)
-    );
-  } else {
-    setSelectedSubCategory(prev =>
-      [...prev, subId]
-    );
-  }
-};
+  const handleSubCategorySelect = (subId) => {
+    if (selectedSubCategory.includes(subId)) {
+      setSelectedSubCategory(prev =>
+        prev.filter(id => id !== subId)
+      );
+    } else {
+      setSelectedSubCategory(prev =>
+        [...prev, subId]
+      );
+    }
+  };
 
   useEffect(() => {
     const fetchCoreActivities = async () => {
@@ -214,18 +214,18 @@ const handleSubCategorySelect = (subId) => {
           });
           const map = {};
 
-for (const catId of categoryArray) {
-  try {
-    const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
-      categories: [catId]
-    });
-    map[catId] = res.data;
-  } catch (err) {
-    console.error(err);
-  }
-}
+          for (const catId of categoryArray) {
+            try {
+              const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+                categories: [catId]
+              });
+              map[catId] = res.data;
+            } catch (err) {
+              console.error(err);
+            }
+          }
 
-setSubCategoryMap(map);
+          setSubCategoryMap(map);
 
           // ✅ wait for the subcategories to finish rendering before setting select2 value
           setTimeout(() => {
@@ -404,7 +404,7 @@ setSubCategoryMap(map);
       // formData.append("category_sell", selectedCategory.join(","));
       // formData.append("sub_category", selectedSubCategory.join(","));
       formData.append("categories", selectedCategory.join(","));
-formData.append("subcategory_ids", selectedSubCategory.join(","));
+      formData.append("subcategory_ids", selectedSubCategory.join(","));
       formData.append("brief_company", user.company_info?.brief_company || "");
       formData.append("company_video_second", user.company_info?.company_video_second || "");
 
@@ -433,293 +433,310 @@ formData.append("subcategory_ids", selectedSubCategory.join(","));
 
   return (
     <>
-    <div className="page-wrapper">
-      <div className="page-content">
-        <h4 className="pb-2">Company Update</h4>
-        <form onSubmit={handleSubmit}>
-          <div className="card">
-            <div className="card-body">
-              <div className="row g-3">
-                <div className="row mt-3">
-                  <div className="col-lg-12">
-                    <div className="border border-1 p-4 rounded">
-                      <div className="row g-3">
-                        <div className="col-md-6">
-                          <label className="form-label">
-                            Organization Name<sup className="text-danger">*</sup>
-                          </label>
-                          <input
-                            type="text"
-                            name="organization_name"
-                            value={user.company_info?.organization_name || ""}
-                            onChange={handleChange}
-                            className={`form-control ${errors.organization_name ? 'is-invalid' : ''}`}
-                            placeholder="Enter Organization Name"
-                          />
-                          {errors.organization_name && <div className="invalid-feedback">{errors.organization_name}</div>}
-                        </div>
-                        <div className="col-md-6 mt-3">
-                          <label className="form-label">
-                            Company Email<sup className="text-danger">*</sup>
-                          </label>
-                          <input
-                            type="email"
-                            className={`form-control ${errors.company_email ? 'is-invalid' : ''}`}
-                            name="company_email"
-                            placeholder="Enter  Comapny Email"
-                            value={user.company_info?.company_email || ""}
-                            onChange={handleChange}
-                          />
-                          {errors.company_email && <div className="invalid-feedback">{errors.company_email}</div>}
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label">
-                            Company Location<sup className="text-danger">*</sup>
-                          </label>
-                          <input
-                            type="text"
-                            className={`form-control ${errors.company_location ? 'is-invalid' : ''}`}
-                            name="company_location"
-                            placeholder="Enter Organization Name"
-                            value={user.company_info?.company_location || ""}
-                            onChange={handleChange}
-                          />
-                          {errors.company_location && <div className="invalid-feedback">{errors.company_location}</div>}
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label">
-                            Company Website <sup className="text-danger">*</sup>
-                          </label>
-                          <input
-                            type="text"
-                            className={`form-control ${errors.company_website ? 'is-invalid' : ''}`}
-                            name="company_website"
-                            placeholder="Enter Company Website"
-                            value={user.company_info?.company_website || ""}
-                            onChange={handleChange}
-                          />
-                        </div>
-                        <div className="col-md-6 mb-3">
-                          <label htmlFor="core_activity" className="form-label required">Core Activity</label>
-                          <select
-                            id="core_activity"
-                            className="form-control select2"
-                            value={selectedCoreActivity}
-                            onChange={handleCoreActivityChange}
-                          >
-                            <option value="">Select Core Activity</option>
-                            {coreActivities.map((c) => (
-                              <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                          </select>
-                          {errors.core_activity && <div className="text-danger small mt-1">{errors.core_activity}</div>}
-                        </div>
-                        <div className="col-md-6 mb-3">
-                          <label htmlFor="activity" className="form-label required">Activity</label>
-                          <select
-                            id="activity"
-                            className="form-control select2"
-                            value={selectedActivity}
-                            onChange={handleActivityChange}
-                          >
-                            <option value="">Select Activity</option>
-                            {activities.map((activity) => (
-                              <option key={activity.id} value={activity.id}>{activity.name}</option>
-                            ))}
-                          </select>
-                          {errors.activity && <div className="text-danger small mt-1">{errors.activity}</div>}
-                        </div>
-                        <div className="col-md-6">
-  <label className="form-label required">Select Category & Sub Category</label>
-  <button
-    type="button"
-    className="btn btn-outline-primary w-100"
-    onClick={() => setShowCategoryModal(true)}
-  >
-    Category Picker
-  </button>
-  {selectedCategory.length > 0 && (
-    <small className="text-success">
-      {selectedCategory.length} Category Selected
-    </small>
-  )}
-  {errors.category_sell && (
-    <div className="text-danger small">{errors.category_sell}</div>
-  )}
-</div>
-                        <div className="col-md-12">
-                          <label className="form-label">Company Logo </label>
-                          <input className="form-control" type="file"
-                            id="file" onChange={handleFileChange} />
-                          {errors.file && <div className="invalid-feedback">{errors.file}</div>}
-                          {file ? (
-                            <img
-                              src={URL.createObjectURL(file)}
-                              className="img-preview mt-3"
-                              width={150}
-                              height={150}
-                              alt="Preview"
-                              loading="lazy"
-                              decoding="async"
+      <div className="page-wrapper">
+        <div className="page-content">
+          <h4 className="pb-2">Company Update</h4>
+          <form onSubmit={handleSubmit}>
+            <div className="card">
+              <div className="card-body">
+                <div className="row g-3">
+                  <div className="row mt-3">
+                    <div className="col-lg-12">
+                      <div className="border border-1 p-4 rounded">
+                        <div className="row g-3">
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              Organization Name<sup className="text-danger">*</sup>
+                            </label>
+                            <input
+                              type="text"
+                              name="organization_name"
+                              value={user.company_info?.organization_name || ""}
+                              onChange={handleChange}
+                              className={`form-control ${errors.organization_name ? 'is-invalid' : ''}`}
+                              placeholder="Enter Organization Name"
                             />
-                          ) : user.company_info?.companyLogo?.file ? (
-                            <ImageWithFallback
-                              src={`${ROOT_URL}/${user.company_info.companyLogo.file}`}
-                              width={150}
-                              height={150}
-                              showFallback={false}
+                            {errors.organization_name && <div className="invalid-feedback">{errors.organization_name}</div>}
+                          </div>
+                          <div className="col-md-6 mt-3">
+                            <label className="form-label">
+                              Company Email<sup className="text-danger">*</sup>
+                            </label>
+                            <input
+                              type="email"
+                              className={`form-control ${errors.company_email ? 'is-invalid' : ''}`}
+                              name="company_email"
+                              placeholder="Enter  Comapny Email"
+                              value={user.company_info?.company_email || ""}
+                              onChange={handleChange}
                             />
-                          ) : null}
-                        </div>
-                        <div className="col-md-12">
-                          <label className="form-label">
-                            Company Introduction<sup className="text-danger">*</sup>
-                          </label>
-                          <textarea
-                            className="form-control"
-                            id="brief_company"
-                            name="brief_company"
-                            placeholder="Company Introduction"
-                            rows={5}
-                            value={user.company_info?.brief_company || ""}
-                            onChange={handleChange}
-                          />
-                          <p className="pt-3">
-                            Total Words Limit <span className="about">1500</span> |
-                            Used: <strong>{countWords(user.company_info?.brief_company || "")}</strong>
-                          </p>
-
-                          {errors.brief_company && (
-                            <div className="text-danger small mt-1">{errors.brief_company}</div>
-                          )}
-
-                        </div>
-                        <div className="col-md-12 mt-3">
-                          <label className="form-label">Ppt file</label>
-                          <input
-                            type="file"
-                            className={`form-control ${errors.company_sample_ppt_file ? "is-invalid" : ""}`}
-                            id="company_sample_ppt_file"
-                            accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                            onChange={handleCompanyFileChange}
-                          />
-                          {user.company_info?.companySamplePptFile?.file && (
-                            <a
-                              href={`${ROOT_URL}/${user.company_info.companySamplePptFile.file}`}
-                              target="_blank"
-                              rel="noreferrer"
+                            {errors.company_email && <div className="invalid-feedback">{errors.company_email}</div>}
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              Company Location<sup className="text-danger">*</sup>
+                            </label>
+                            <input
+                              type="text"
+                              className={`form-control ${errors.company_location ? 'is-invalid' : ''}`}
+                              name="company_location"
+                              placeholder="Enter Organization Name"
+                              value={user.company_info?.company_location || ""}
+                              onChange={handleChange}
+                            />
+                            {errors.company_location && <div className="invalid-feedback">{errors.company_location}</div>}
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label">
+                              Company Website <sup className="text-danger">*</sup>
+                            </label>
+                            <input
+                              type="text"
+                              className={`form-control ${errors.company_website ? 'is-invalid' : ''}`}
+                              name="company_website"
+                              placeholder="Enter Company Website"
+                              value={user.company_info?.company_website || ""}
+                              onChange={handleChange}
+                            />
+                          </div>
+                          <div className="col-md-6 mb-3">
+                            <label htmlFor="core_activity" className="form-label required">Core Activity</label>
+                            <select
+                              id="core_activity"
+                              className="form-control select2"
+                              value={selectedCoreActivity}
+                              onChange={handleCoreActivityChange}
                             >
-                              View Uploaded PPT
-                            </a>
-                          )}
-                          {errors.company_sample_ppt_file && (<div className="invalid-feedback">{errors.company_sample_ppt_file}</div>)}
-                        </div>
-                        <div className="col-md-12 mt-3 ">
-                          <label className="form-label">Upload Video Url</label>
-                          <div className="input-group row">
-                            <div className="col-md-10">
-                              <div className="custom-file">
-                                <input
-                                  type="url"
-                                  className="form-control"
-                                  name="company_video_second"
-                                  value={user.company_info?.company_video_second || ""}
-                                  onChange={handleChange}
-                                />
-                                <small>(https://www.youtube.com/c/w3schools)</small>
+                              <option value="">Select Core Activity</option>
+                              {coreActivities.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                            {errors.core_activity && <div className="text-danger small mt-1">{errors.core_activity}</div>}
+                          </div>
+                          <div className="col-md-6 mb-3">
+                            <label htmlFor="activity" className="form-label required">Activity</label>
+                            <select
+                              id="activity"
+                              className="form-control select2"
+                              value={selectedActivity}
+                              onChange={handleActivityChange}
+                            >
+                              <option value="">Select Activity</option>
+                              {activities.map((activity) => (
+                                <option key={activity.id} value={activity.id}>{activity.name}</option>
+                              ))}
+                            </select>
+                            {errors.activity && <div className="text-danger small mt-1">{errors.activity}</div>}
+                          </div>
+                          <div className="col-md-6">
+                            <label className="form-label required">Select Category & Sub Category</label>
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary w-100"
+                              onClick={() => setShowCategoryModal(true)}
+                            >
+                              Category Picker
+                            </button>
+                            {selectedCategory.length > 0 && (
+                              <small className="text-success">
+                                {selectedCategory.length} Category Selected
+                              </small>
+                            )}
+                            {errors.category_sell && (
+                              <div className="text-danger small">{errors.category_sell}</div>
+                            )}
+                          </div>
+                          <div className="col-md-12">
+                            <label className="form-label">Company Logo </label>
+                            <input className="form-control" type="file"
+                              id="file" onChange={handleFileChange} />
+                            {errors.file && <div className="invalid-feedback">{errors.file}</div>}
+                            {file ? (
+                              <img
+                                src={URL.createObjectURL(file)}
+                                className="img-preview mt-3"
+                                width={150}
+                                height={150}
+                                alt="Preview"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            ) : user.company_info?.companyLogo?.file ? (
+                              <ImageWithFallback
+                                src={`${ROOT_URL}/${user.company_info.companyLogo.file}`}
+                                width={150}
+                                height={150}
+                                showFallback={false}
+                              />
+                            ) : null}
+                          </div>
+                          <div className="col-md-12">
+                            <label className="form-label">
+                              Company Introduction<sup className="text-danger">*</sup>
+                            </label>
+                            <textarea
+                              className="form-control"
+                              id="brief_company"
+                              name="brief_company"
+                              placeholder="Company Introduction"
+                              rows={5}
+                              value={user.company_info?.brief_company || ""}
+                              onChange={handleChange}
+                            />
+                            <p className="pt-3">
+                              Total Words Limit <span className="about">1500</span> |
+                              Used: <strong>{countWords(user.company_info?.brief_company || "")}</strong>
+                            </p>
+
+                            {errors.brief_company && (
+                              <div className="text-danger small mt-1">{errors.brief_company}</div>
+                            )}
+
+                          </div>
+                          <div className="col-md-12 mt-3">
+                            <label className="form-label">Ppt file</label>
+                            <input
+                              type="file"
+                              className={`form-control ${errors.company_sample_ppt_file ? "is-invalid" : ""}`}
+                              id="company_sample_ppt_file"
+                              accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                              onChange={handleCompanyFileChange}
+                            />
+                            {user.company_info?.companySamplePptFile?.file && (
+                              <a
+                                href={`${ROOT_URL}/${user.company_info.companySamplePptFile.file}`}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                View Uploaded PPT
+                              </a>
+                            )}
+                            {errors.company_sample_ppt_file && (<div className="invalid-feedback">{errors.company_sample_ppt_file}</div>)}
+                          </div>
+                          <div className="col-md-12 mt-3 ">
+                            <label className="form-label">Upload Video Url</label>
+                            <div className="input-group row">
+                              <div className="col-md-10">
+                                <div className="custom-file">
+                                  <input
+                                    type="url"
+                                    className="form-control"
+                                    name="company_video_second"
+                                    value={user.company_info?.company_video_second || ""}
+                                    onChange={handleChange}
+                                  />
+                                  <small>(https://www.youtube.com/c/w3schools)</small>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="col-md-12">
-                          <label className="form-label">Company Brochure</label>
-                          <input
-                            type="file" className={`form-control ${errors.sample_file_id ? "is-invalid" : ""}`}
-                            id="sample_file_id"
-                            onChange={handleCompanyBrochureChange}
-                          />
-                          {user.company_info?.companySampleFile?.file && (
-                            <a
-                              href={`${ROOT_URL}/${user.company_info.companySampleFile.file}`}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              View PDF
-                            </a>
-                          )}
-                          {errors.sample_file_id && (<div className="invalid-feedback">{errors.sample_file_id}</div>)}
+                          <div className="col-md-12">
+                            <label className="form-label">Company Brochure</label>
+                            <input
+                              type="file" className={`form-control ${errors.sample_file_id ? "is-invalid" : ""}`}
+                              id="sample_file_id"
+                              onChange={handleCompanyBrochureChange}
+                            />
+                            {user.company_info?.companySampleFile?.file && (
+                              <a
+                                href={`${ROOT_URL}/${user.company_info.companySampleFile.file}`}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                View PDF
+                              </a>
+                            )}
+                            {errors.sample_file_id && (<div className="invalid-feedback">{errors.sample_file_id}</div>)}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="text-end">
-                  <button type="submit" className="btn btn-primary mt-3" disabled={submitting}>
-                    {submitting ? "Saving..." : "Save"}
-                  </button>
+                  <div className="text-end">
+                    <button type="submit" className="btn btn-primary mt-3" disabled={submitting}>
+                      {submitting ? "Saving..." : "Save"}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </form>
-        {/*end row*/}
-      </div>
-    </div>
-    {showCategoryModal && (
-<div className="modal show" style={{display: 'block', background: 'rgba(0,0,0,0.5)'}}>
-    <div className="modal-dialog modal-lg">
-        <div className="modal-content">
-            <div className="modal-header">
-                <h5>Select Category & Sub Category</h5>
-                <button className="btn-close" onClick={()=>setShowCategoryModal(false)} />
-            </div>
-            <div className="modal-body">
-                <div className="row">
-                    {/* LEFT CATEGORY */}
-                    <div className="col-8 border-end">
-                        <input type="text" className="form-control mb-3" placeholder="Search Category" value={categorySearch} onChange={(e)=>setCategorySearch(e.target.value)} />
-                        <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                            {categories .filter(cat => cat.name.toLowerCase().includes(categorySearch.toLowerCase()) ) .map(cat => (
-                            <div key={cat.id} className="form-check mb-2">
-                                <input id={`category-${cat.id}`} type="checkbox" className="form-check-input" checked={selectedCategory.includes(cat.id)} onChange={()=>handleCategorySelect(cat.id)} />
-                                <label htmlFor={`category-${cat.id}`} className="form-check-label">
-                                    {cat.name}
-                                </label>
-                            </div>
-                            ))}
-                        </div>
-                    </div>
-                    {/* RIGHT SUBCATEGORY */}
-                    <div className="col-4">
-                        <input type="text" className="form-control mb-3" placeholder="Search Subcategory" value={subCategorySearch} onChange={(e)=>setSubCategorySearch(e.target.value)} />
-                        <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                            {selectedCategory.map(catId => { const cat = categories.find(c => c.id === catId); const subs = subCategoryMap[catId] || []; if (!subs.length) return null; return (
-                            <div key={catId} className="mb-3">
-                                <div className="fw-bold border-bottom pb-1 mb-2">
-                                    {cat?.name}
-                                </div>
-                                {subs .filter(sub => sub.name.toLowerCase().includes(subCategorySearch.toLowerCase()) ) .map(sub => (
-                                <div key={sub.id} className="form-check mb-2">
-                                    <input id={`subcategory-${sub.id}`} type="checkbox" className="form-check-input" checked={selectedSubCategory.includes(sub.id)} onChange={()=> handleSubCategorySelect(sub.id)} />
-                                    <label htmlFor={`subcategory-${sub.id}`} className="form-check-label">
-                                        {sub.name}
-                                    </label>
-                                </div>
-                                ))}
-                            </div>
-                            ); })}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div className="modal-footer">
-                <button className="btn btn-primary" onClick={()=>setShowCategoryModal(false)} >Done</button>
-            </div>
+          </form>
+          {/*end row*/}
         </div>
-    </div>
-</div>
-)}
-</>
+      </div>
+      {showCategoryModal && (
+        <div className="modal show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-xl">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5>Select Category & Sub Category</h5>
+                <button className="btn-close" onClick={() => setShowCategoryModal(false)} />
+              </div>
+              <div className="modal-body">
+                <div className="row">
+                  {/* LEFT CATEGORY */}
+                  <div className="col-12">
+                    <input type="text" className="form-control mb-3" placeholder="Search Category" value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} />
+                    <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                      {categories.filter(cat => cat.name.toLowerCase().includes(categorySearch.toLowerCase())).map(cat => (
+                        <div key={cat.id} className="mb-2">
+                          <div className="form-check">
+                            <input id={`category-${cat.id}`} type="checkbox" className="form-check-input" checked={selectedCategory.includes(cat.id)} onChange={() => handleCategorySelect(cat.id)} />
+                            <label htmlFor={`category-${cat.id}`} className="form-check-label fw-bold">
+                              {cat.name}
+                            </label>
+                          </div>
+                          {/* Subcategories under selected category */}
+                          {selectedCategory.includes(cat.id) && (
+                            <div className="ms-4 mt-1 category-subcategory">
+                              {(subCategoryMap[cat.id] || []).map(sub => (
+                                <div key={sub.id} className="form-check mb-1">
+                                  <input id={`subcategory-inline-${sub.id}`} type="checkbox" className="form-check-input" checked={selectedSubCategory.includes(sub.id)} onChange={() => handleSubCategorySelect(sub.id)} />
+                                  <label htmlFor={`subcategory-inline-${sub.id}`} className="form-check-label">
+                                    {sub.name}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* RIGHT SUBCATEGORY */}
+                  <div className="col-4 d-none">
+                    <input type="text" className="form-control mb-3" placeholder="Search Subcategory" value={subCategorySearch} onChange={(e) => setSubCategorySearch(e.target.value)} />
+                    <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                      {selectedCategory.map(catId => {
+                        const cat = categories.find(c => c.id === catId); const subs = subCategoryMap[catId] || []; if (!subs.length) return null; return (
+                          <div key={catId} className="mb-3">
+                            <div className="fw-bold border-bottom pb-1 mb-2">
+                              {cat?.name}
+                            </div>
+                            {subs.filter(sub => sub.name.toLowerCase().includes(subCategorySearch.toLowerCase())).map(sub => (
+                              <div key={sub.id} className="form-check mb-2">
+                                <input id={`subcategory-${sub.id}`} type="checkbox" className="form-check-input" checked={selectedSubCategory.includes(sub.id)} onChange={() => handleSubCategorySelect(sub.id)} />
+                                <label htmlFor={`subcategory-${sub.id}`} className="form-check-label">
+                                  {sub.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-primary" onClick={() => setShowCategoryModal(false)} >Done</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

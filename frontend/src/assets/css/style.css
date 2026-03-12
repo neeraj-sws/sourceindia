@@ -96,10 +96,17 @@
   }
 }
 
-.products-list-cards .gridviewimg img{
+.products-list-cards .gridviewimg img {
   width: 100%;
 }
+
 .ProImgDetail img {
   width: 100%;
   object-fit: contain !important;
+}
+
+.category-subcategory {
+  display: grid;
+  grid-template-columns: 33% 33% 33%;
+  gap: 2px;
 }
