@@ -104,16 +104,18 @@ exports.getAllCategories = async (req, res) => {
     // company count per category (simplified for now)
     const companyCountsRaw = await sequelize.query(
       `SELECT 
-    sc.category_id AS category_id,
-    COUNT(DISTINCT u.company_id) AS count
-  FROM seller_categories sc
-  INNER JOIN users u 
-    ON u.user_id = sc.user_id
-   AND u.is_delete = 0
-   AND u.status = 1
-   AND u.is_approve = 1
-  WHERE u.company_id IS NOT NULL
-  GROUP BY sc.category_id`, { type: QueryTypes.SELECT });
+sc.category_id,
+COUNT(DISTINCT u.company_id) AS count
+FROM seller_categories sc
+JOIN users u ON u.user_id = sc.user_id
+JOIN company_info ci ON ci.company_id = u.company_id
+WHERE
+u.is_delete = 0
+AND u.status = 1
+AND u.is_approve = 1
+AND u.is_seller = 1
+AND ci.is_delete = 0
+GROUP BY sc.category_id`, { type: QueryTypes.SELECT });
 
     const companyCountMap = {};
     companyCountsRaw.forEach(item => {

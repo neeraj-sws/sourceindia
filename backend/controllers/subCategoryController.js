@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
 const sequelize = require('../config/database');
+const { QueryTypes } = require('sequelize');
 const SubCategories = require('../models/SubCategories');
 const Categories = require('../models/Categories');
 const Products = require('../models/Products');
@@ -173,22 +174,32 @@ exports.getSubCategoriesByCategories = async (req, res) => {
     });
 
     // 3. Company counts per subcategory (CSV field logic)
-    // const companyData = await CompanyInfo.findAll({
-    //   attributes: ['sub_category'], // CSV string like "1,2,3"
-    //   where: { is_delete: 0 },
-    //   raw: true,
-    // });
+    const companyCountsRaw = await sequelize.query(
+`SELECT 
+    sc.subcategory_id,
+    COUNT(DISTINCT u.company_id) AS count
+ FROM seller_categories sc
+ INNER JOIN users u 
+    ON u.user_id = sc.user_id
+    AND u.is_delete = 0
+    AND u.status = 1
+    AND u.is_approve = 1
+    AND u.is_seller = 1
+ INNER JOIN company_info ci
+    ON ci.company_id = u.company_id
+    AND ci.is_delete = 0
+ WHERE sc.subcategory_id IS NOT NULL
+   AND sc.category_id IN (:categories)
+ GROUP BY sc.subcategory_id`,
+{
+  replacements: { categories },
+  type: QueryTypes.SELECT
+});
 
-    // const companyCountMap = {};
-    // companyData.forEach(item => {
-    //   const csv = item.sub_category || '';
-    //   const subCatIds = csv.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
-    //   const uniqueIds = [...new Set(subCatIds)];
-
-    //   uniqueIds.forEach(subCatId => {
-    //     companyCountMap[subCatId] = (companyCountMap[subCatId] || 0) + 1;
-    //   });
-    // });
+const companyCountMap = {};
+companyCountsRaw.forEach(item => {
+  companyCountMap[item.subcategory_id] = parseInt(item.count) || 0;
+});
 
     // 4. Format response
     const modifiedSubCategories = subCategories.map(subCat => {
@@ -198,7 +209,7 @@ exports.getSubCategoriesByCategories = async (req, res) => {
         getStatus: subCatData.status === 1 ? 'Active' : 'Inactive',
         category_name: subCatData.Categories?.name || null,
         product_count: productCountMap[subCatData.id] || 0,
-        company_count:  0,
+        company_count: companyCountMap[subCatData.id] || 0,
       };
     });
 

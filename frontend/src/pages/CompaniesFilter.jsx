@@ -50,6 +50,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [showFilter, setShowFilter] = useState(false);
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
 
   useEffect(() => {
     const searchValue = searchParams.get("search");
@@ -190,11 +191,19 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
           }
         );
         const subs = res.data || [];
-        const filtered = subs.filter((sub) => sub.company_count > 0);
+        const querySubcat = Number(new URLSearchParams(location.search).get("subcategory_id"));
+
+const filtered = subs.filter(
+  (sub) => sub.company_count > 0 || sub.id === querySubcat
+);
         setSubCategories(filtered);
-        setSelectedSubCategories((prevSelected) =>
-          prevSelected.filter((id) => filtered.some((sub) => sub.id === id))
-        );
+        if (querySubcat && filtered.some((s) => s.id === querySubcat)) {
+      setSelectedSubCategories([querySubcat]);
+    } else {
+      setSelectedSubCategories((prev) =>
+        prev.filter((id) => filtered.some((sub) => sub.id === id))
+      );
+    }
       } catch (err) {
         console.error("Error fetching sub-categories by categories:", err);
       }
@@ -202,6 +211,25 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     fetchSubCategoriesByCategories();
   }, [selectedCategories]);
 
+useEffect(() => {
+  const searchValue = searchParams.get("search");
+  if (searchValue) {
+    setSearchTerm(searchValue);
+  }
+
+  const cateIdParam = searchParams.get("category_id");
+  const subcateIdParam = searchParams.get("subcategory_id");
+
+  if (cateIdParam) {
+    setSelectedCategories([Number(cateIdParam)]);
+  }
+
+  if (subcateIdParam) {
+    setSelectedSubCategories([Number(subcateIdParam)]);
+  }
+
+  setFiltersInitialized(true);
+}, [searchParams]);
 
   useEffect(() => {
     const fetchItemCategories = async () => {
@@ -319,6 +347,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
   };
 
   useEffect(() => {
+    if (!filtersInitialized) return;
     setPage(1);
     setHasMore(true);
     fetchCompanies(1, false);
@@ -726,7 +755,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                         </div>
                         <div className="px-2" style={{ maxHeight: '190px', overflowY: filteredItemSubCategories.length >= 5 ? 'auto' : 'visible' }}>
                           {filteredItemSubCategories.map(sub => (
-                            <div className="form-check mb-2">
+                            <div className="form-check mb-2" key={sub.id}>
                               <input
                                 type="checkbox"
                                 id={`itemsubcat-${sub.id}`}
@@ -896,7 +925,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                     )}
 
                     {selectedCategories.map(id => (
-                      <span className="badge bg-primary text-white d-flex align-items-center">
+                      <span key={`cat-${id}`} className="badge bg-primary text-white d-flex align-items-center">
                         {getNameById(categories, id)}
                         <button
                           onClick={() => handleCategoryCheckboxChange(id)}
@@ -907,7 +936,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                       </span>
                     ))}
                     {selectedSubCategories.map(id => (
-                      <span className="badge bg-secondary text-white d-flex align-items-center">
+                      <span key={`subcat-${id}`} className="badge bg-secondary text-white d-flex align-items-center">
                         {getNameById(subCategories, id)}
                         <button
                           onClick={() => handleSubCategoryCheckboxChange(id)}
@@ -918,7 +947,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                       </span>
                     ))}
                     {selectedItemCategories !== null && typeof selectedItemCategories === 'number' && (
-                      <span className="badge bg-primary text-white d-flex align-items-center">
+                      <span key={`itemsub-${selectedItemCategories}`} className="badge bg-primary text-white d-flex align-items-center">
                         {getNameById(itemcategories, selectedItemCategories)}
                         <button
                           onClick={() => handleItemCategoryCheckboxChange(selectedItemCategories)}
@@ -929,7 +958,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                       </span>
                     )}
                     {selectedItemSubCategories.map(id => (
-                      <span className="badge bg-secondary text-white d-flex align-items-center">
+                      <span key={`state-${id}`} className="badge bg-secondary text-white d-flex align-items-center">
                         {getNameById(itemsubCategories, id)}
                         <button
                           onClick={() => handleItemSubCategoryCheckboxChange(id)}
@@ -940,7 +969,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                       </span>
                     ))}
                     {selectedStates.map(id => (
-                      <span className="badge bg-success text-white d-flex align-items-center">
+                      <span key={`sic-${id}`} className="badge bg-success text-white d-flex align-items-center">
                         {getNameById(states, id)}
                         <button
                           onClick={() => handleStatesCheckboxChange(id)}
@@ -1223,6 +1252,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
                           {company.products &&
                             company.products.map((product, idx) => (
                               <Link
+                                key={product.id || idx}
                                 to={`/products/${product.slug}`}
                                 className="small badge text-decoration-none text-white btn-orange text-start"
                                 style={{
