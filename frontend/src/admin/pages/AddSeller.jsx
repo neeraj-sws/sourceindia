@@ -22,15 +22,12 @@ const AddSeller = () => {
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [categories, setCategories] = useState([]);
-  const [subCategories, setSubCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState([]);
   const [selectedSubCategory, setSelectedSubCategory] = useState([]);
   const [coreactivities, setCoreactivities] = useState([]);
   const [activities, setActivities] = useState([]);
   const [selectedCoreActivity, setSelectedCoreActivity] = useState("");
   const [selectedActivity, setSelectedActivity] = useState("");
-  // const [roles, setRoles] = useState([]);
-  // const [selectedRoles, setSelectedRoles] = useState('');
   const [formData, setFormData] = useState({
     fname: "", lname: "", email: "", password: "", mobile: "", alternate_number: "", country_code: "", zipcode: "", website: "", is_trading: "", elcina_member: "",
     address: "", file: null, company_logo: null, user_company: "", company_location: "",
@@ -42,12 +39,13 @@ const AddSeller = () => {
   const [companyBrochure, setCompanyBrochure] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const previousSelectedCategoriesRef = useRef([]);
   const [subCategoryMap, setSubCategoryMap] = useState({});
   const [designations, setDesignations] = useState([]);
   const [categoryLimit, setCategoryLimit] = useState(null);
-  const isBlockingRef = useRef(false);
   const [updateSection, setUpdateSection] = useState(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+const [categorySearch, setCategorySearch] = useState("");
+const [subCategorySearch, setSubCategorySearch] = useState("");
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -117,96 +115,6 @@ const AddSeller = () => {
       handleCityChange({ target: { value: cityId } });
     });
 
-    $('#category_sell').select2({
-      theme: "bootstrap",
-      width: '100%',
-      placeholder: "Select Category",
-      multiple: true,
-    })
-
-      // ⬇⬇ ADD THIS BLOCK RIGHT HERE (before .on("change")) ⬇⬇
-      .on("select2:select", function (e) {
-        const values = $(this).val() || [];
-
-        if (categoryLimit && values.length > categoryLimit) {
-          isBlockingRef.current = true;  // ⬅ Block next change event
-
-          $(this).val(values.slice(0, categoryLimit)).trigger("change");
-
-          showNotification(`Maximum ${categoryLimit} categories allowed`, "error");
-        }
-      })
-      // ⬆⬆ ADD ABOVE ⬆⬆
-
-      .on("change", async function () {
-        if (isBlockingRef.current) {
-          isBlockingRef.current = false;
-          return;  // prevent clearing subcategories
-        }
-        const currentSelected = $(this).val()?.map(Number) || [];
-        const previousSelectedCategories = previousSelectedCategoriesRef.current;
-        const addedCategories = currentSelected.filter(cat => !previousSelectedCategories.includes(cat));
-        const removedCategories = previousSelectedCategories.filter(cat => !currentSelected.includes(cat));
-        previousSelectedCategoriesRef.current = [...currentSelected];
-        setSelectedCategory(currentSelected);
-
-        let updatedSubCategories = [...subCategories];
-        let updatedMap = { ...subCategoryMap };
-
-        if (addedCategories.length > 0) {
-          try {
-            const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
-              categories: addedCategories
-            });
-            const newSubCats = res.data;
-            newSubCats.forEach(sub => {
-              if (!updatedMap[sub.id]) updatedMap[sub.id] = new Set();
-              addedCategories.forEach(catId => updatedMap[sub.id].add(catId));
-              if (!updatedSubCategories.find(s => s.id === sub.id)) {
-                updatedSubCategories.push(sub);
-              }
-            });
-          } catch (err) {
-            console.error("Error adding subcategories:", err);
-          }
-        }
-
-        if (removedCategories.length > 0) {
-          Object.entries(updatedMap).forEach(([subId, categorySet]) => {
-            removedCategories.forEach(catId => categorySet.delete(catId));
-          });
-          updatedSubCategories = updatedSubCategories.filter(sub => {
-            const set = updatedMap[sub.id];
-            return set && set.size > 0;
-          });
-          const updatedSelected = selectedSubCategory.filter(subId => {
-            return updatedMap[subId] && updatedMap[subId].size > 0;
-          });
-          setSelectedSubCategory(updatedSelected);
-          $('#sub_category').val(updatedSelected).trigger('change');
-        }
-
-        setSubCategories(updatedSubCategories);
-        setSubCategoryMap(updatedMap);
-
-        if (currentSelected.length === 0) {
-          setSubCategories([]);
-          setSelectedSubCategory([]);
-          setSubCategoryMap({});
-          $('#sub_category').val([]).trigger('change');
-        }
-      });
-
-    $('#sub_category').select2({
-      theme: "bootstrap",
-      width: '100%',
-      placeholder: "Select Sub Category",
-      multiple: true,
-    }).on("change", function () {
-      const selectedValues = $(this).val() || [];
-      setSelectedSubCategory(selectedValues.map(Number));
-    });
-
     $('#core_activity').select2({
       theme: "bootstrap",
       width: '100%',
@@ -229,13 +137,10 @@ const AddSeller = () => {
       $('#country').off("change").select2('destroy');
       $('#state').off("change").select2('destroy');
       $('#city').off("change").select2('destroy');
-      $('#category_sell').off("change").select2('destroy');
-      $('#sub_category').off("change").select2('destroy');
       $('#core_activity').off("change").select2('destroy');
       $('#activity').off("change").select2('destroy');
-      // $('#user_type').off("change").select2('destroy');
     };
-  }, [countries, states, cities, categories, subCategories, selectedSubCategory, subCategoryMap, coreactivities, activities]);
+  }, [countries, states, cities, coreactivities, activities]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -249,39 +154,62 @@ const AddSeller = () => {
     fetchCategories();
   }, []);
 
-  const handleCategoryChange = async (event) => {
-    const selectedOptions = Array.from(event.target.selectedOptions, (option) => Number(option.value));
-    if (categoryLimit && selectedOptions.length > categoryLimit) {
-      showNotification(`You can select only ${categoryLimit} categories`, "error");
-      return; // STOP user from selecting more
-    }
-    setSelectedCategory(selectedOptions);
-    if (selectedOptions.length > 0) {
-      try {
-        const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
-          categories: selectedOptions
-        });
-        const subCats = res.data;
-        const validSelectedSubCategories = selectedSubCategory.filter(id =>
-          subCats.some(sub => sub.id == id)
-        );
-        setSubCategories(subCats);
-        setSelectedSubCategory(validSelectedSubCategories);
-        $('#sub_category').val(validSelectedSubCategories).trigger('change');
-      } catch (err) {
-        console.error("Error fetching subcategories:", err);
-      }
-    } else {
-      setSubCategories([]);
-      setSelectedSubCategory([]);
-      $('#sub_category').val([]).trigger('change');
-    }
-  };
+  const handleCategorySelect = async (categoryId) => {
+  let updatedCategories;
 
-  const handleSubCategoryChange = (event) => {
-    const options = Array.from(event.target.selectedOptions, (option) => Number(option.value));
-    setSelectedSubCategory(options);
-  };
+  if (selectedCategory.includes(categoryId)) {
+    updatedCategories = selectedCategory.filter(id => id !== categoryId);
+
+    const subs = subCategoryMap[categoryId] || [];
+    const subIds = subs.map(s => s.id);
+
+    setSelectedSubCategory(prev =>
+      prev.filter(id => !subIds.includes(id))
+    );
+
+    setSubCategoryMap(prev => {
+      const newMap = { ...prev };
+      delete newMap[categoryId];
+      return newMap;
+    });
+
+  } else {
+
+    if (categoryLimit && selectedCategory.length >= categoryLimit) {
+      showNotification(`Maximum ${categoryLimit} categories allowed`, "error");
+      return;
+    }
+
+    updatedCategories = [...selectedCategory, categoryId];
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
+        categories: [categoryId]
+      });
+
+      setSubCategoryMap(prev => ({
+        ...prev,
+        [categoryId]: res.data
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  setSelectedCategory(updatedCategories);
+};
+
+const handleSubCategorySelect = (subId) => {
+  if (selectedSubCategory.includes(subId)) {
+    setSelectedSubCategory(prev =>
+      prev.filter(id => id !== subId)
+    );
+  } else {
+    setSelectedSubCategory(prev =>
+      [...prev, subId]
+    );
+  }
+};
 
   useEffect(() => {
     const fetchCoreactivities = async () => {
@@ -394,11 +322,8 @@ const handleVideoChange = (e) => {
   }
   if (!section || section === "company") {
     if (!formData.user_company?.trim()) errs.user_company = "Organization Name is required";
-    // if (!formData.designation?.trim()) errs.designation = "Designation is required";
     if (!formData.company_location?.trim()) errs.company_location = "Company Location is required";
-    // if (!formData.company_video_second?.trim()) errs.company_video_second = "Video URL is required";
     if (!formData.brief_company?.trim()) errs.brief_company = "Brief Company Description is required";
-    // if (!selectedRoles) errs.user_type = "User Type is required";
     if (!formData.is_star_seller) errs.is_star_seller = "Star Seller status is required";
     if (!formData.is_verified) errs.is_verified = "Verification status is required";
     if (!formData.elcina_member) errs.elcina_member = "ELCINA Member is required";
@@ -478,7 +403,6 @@ const handleVideoChange = (e) => {
           company_video_second: data.company_video_second || "",
           products: data.products || "",
           brief_company: data.brief_company || "",
-          // user_type: data.user_type || "",
           featured_company: String(data.featured_company) || "",
           company_sample_file_name: data.company_sample_file_name || "",
           company_sample_ppt_file_name: data.company_sample_ppt_file_name || "",
@@ -489,27 +413,31 @@ const handleVideoChange = (e) => {
         setSelectedCountry(data.country || "");
         setSelectedState(data.state || "");
         setSelectedCity(data.city || "");
-        if (data.categories && Array.isArray(data.categories)) {
-          const categoryIds = [...new Set(data.categories.map(c => c.category_id).filter(Boolean))];
-          const subCategoryIds = data.categories.map(c => c.subcategory_id).filter(Boolean);
-
-          setSelectedCategory(categoryIds);
-
-          // Fetch subcategories for selected categories
-          const subRes = await axios.post(`${API_BASE_URL}/sub_categories/categories`, { categories: categoryIds });
-          setSubCategories(subRes.data);
-
-          setSelectedSubCategory(subCategoryIds);
-
-          // Update Select2 values after options exist
-          setTimeout(() => {
-            $('#category_sell').val(categoryIds).trigger('change');
-            $('#sub_category').val(subCategoryIds).trigger('change');
-          }, 50);
-        }
+       if (data.categories && Array.isArray(data.categories)) {
+  const categoryIds = [
+    ...new Set(data.categories.map(c => c.category_id).filter(Boolean))
+  ];
+  const subCategoryIds = data.categories
+    .map(c => c.subcategory_id)
+    .filter(Boolean);
+  setSelectedCategory(categoryIds);
+  setSelectedSubCategory(subCategoryIds);
+  const map = {};
+  for (const catId of categoryIds) {
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/sub_categories/categories`,
+        { categories: [catId] }
+      );
+      map[catId] = res.data;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  setSubCategoryMap(map);
+}
         setSelectedCoreActivity(data.core_activity || "");
         setSelectedActivity(data.activity || "");
-        // setSelectedRoles(data.user_type || "");
         if (data.country) {
           const stRes = await axios.get(`${API_BASE_URL}/location/states/${data.country}`); setStates(stRes.data);
         }
@@ -526,38 +454,6 @@ const handleVideoChange = (e) => {
     fetchSeller();
   }, [sellerId]);
 
-  /*const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setSubmitting(true);
-    const data = new FormData();
-    Object.entries(formData).forEach(([key, value]) => { data.append(key, value); });
-    data.append("country", selectedCountry);
-    data.append("state", selectedState);
-    data.append("city", selectedCity);
-    data.append("categories", selectedCategory.join(','));
-    data.append("subcategory_ids", selectedSubCategory.join(','));
-    data.append("core_activity", selectedCoreActivity);
-    data.append("activity", selectedActivity);
-    // data.append("user_type", selectedRoles);
-    if (file) data.append("file", file);
-    if (companyFile) data.append("company_logo", companyFile);
-    if (companyBrochure) data.append("sample_file_id", companyBrochure);
-    try {
-      const endpoint = isEditing ? `${API_BASE_URL}/sellers/${sellerId}` : `${API_BASE_URL}/sellers`;
-      const method = isEditing ? "put" : "post";
-      await axios[method](endpoint, data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      showNotification(`Seller ${isEditing ? "updated" : "added"} successfully!`, "success");
-      if (!isEditing) { navigate("/admin/sellers"); }
-    } catch (error) {
-      console.error("Error saving seller:", error);
-      showNotification(`Failed to ${isEditing ? "update" : "add"} seller`, "error");
-    } finally {
-      setSubmitting(false);
-    }
-  };*/
   const handleSubmit = async (e, section = null) => {
   e.preventDefault();
 
@@ -795,7 +691,6 @@ if (!section || section === "company") {
                             <option value={d.name} if="" key={index}></option>
                           ))}
                         </datalist>
-                        {/* {errors.designation && (<div className="invalid-feedback">{errors.designation}</div>)} */}
                       </div>
                       <div className="col-md-6 mb-3">
                         <label htmlFor="file" className="form-label required">
@@ -899,36 +794,27 @@ if (!section || section === "company") {
                       {errors.activity && (<div className="text-danger small">{errors.activity}</div>)}
                     </div>
                     <div className="col-md-4">
-                      <label htmlFor="category_sell" className="form-label required">Category</label>
-                      <select
-                        id="category_sell"
-                        className="form-control select2"
-                        value={selectedCategory}
-                        onChange={() => { }}
-                        multiple
-                      >
-                        <option value="">Select Category</option>
-                        {categories?.map((category) => (
-                          <option key={category.id} value={category.id}>{category.name}</option>
-                        ))}
-                      </select>
-                      {errors.category_sell && (<div className="text-danger small">{errors.category_sell}</div>)}
-                    </div>
-                    <div className="col-md-4">
-                      <label htmlFor="sub_category" className="form-label">Sub Category</label>
-                      <select
-                        id="sub_category"
-                        className="form-control select2"
-                        value={selectedSubCategory}
-                        disabled={subCategories.length === 0}
-                        multiple
-                      >
-                        <option value="">Select Sub Category</option>
-                        {subCategories?.map((sub_category) => (
-                          <option key={sub_category.id} value={sub_category.id}>{sub_category.name}</option>
-                        ))}
-                      </select>
-                    </div>
+  <label className="form-label required">
+    Category & Sub Category
+  </label>
+  <button
+    type="button"
+    className="btn btn-outline-primary w-100"
+    onClick={() => setShowCategoryModal(true)}
+  >
+    Category Picker
+  </button>
+  {selectedCategory.length > 0 && (
+    <small className="text-success">
+      {selectedCategory.length} Category Selected
+    </small>
+  )}
+  {errors.category_sell && (
+    <div className="text-danger small">
+      {errors.category_sell}
+    </div>
+  )}
+</div>
                     <div className="col-md-4">
                       <label htmlFor="website" className="form-label">Company Website</label>
                       <input
@@ -1101,7 +987,6 @@ if (!section || section === "company") {
                         value={formData.company_video_second}
                         onChange={handleInputChange}
                       />
-                      {/* {errors.company_video_second && (<div className="invalid-feedback">{errors.company_video_second}</div>)} */}
                     </div>
                     <div className="col-md-12">
                       <label htmlFor="brief_company" className="form-label required">Brief Company Profile</label>
@@ -1160,6 +1045,97 @@ if (!section || section === "company") {
           </div>
         </div>
       </div>
+      {showCategoryModal && (
+<div className="modal show" style={{display:'block', background:'rgba(0,0,0,0.5)'}}>
+  <div className="modal-dialog modal-lg">
+    <div className="modal-content">
+      <div className="modal-header">
+        <h5>Select Category & Sub Category</h5>
+        <button className="btn-close" onClick={()=>setShowCategoryModal(false)} />
+      </div>
+      <div className="modal-body">
+        <div className="row">
+          {/* Category */}
+          <div className="col-8 border-end">
+            <input
+              type="text"
+              className="form-control mb-3"
+              placeholder="Search Category"
+              value={categorySearch}
+              onChange={(e)=>setCategorySearch(e.target.value)}
+            />
+            <div style={{maxHeight:"400px",overflowY:"auto"}}>
+              {categories
+                .filter(cat =>
+                  cat.name.toLowerCase().includes(categorySearch.toLowerCase())
+                )
+                .map(cat => (
+                <div key={cat.id} className="form-check mb-2">
+                  <input
+                    type="checkbox"
+                    className="form-check-input"
+                    checked={selectedCategory.includes(cat.id)}
+                    onChange={()=>handleCategorySelect(cat.id)}
+                  />
+                  <label className="form-check-label">
+                    {cat.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* SubCategory */}
+          <div className="col-4">
+            <input
+              type="text"
+              className="form-control mb-3"
+              placeholder="Search Subcategory"
+              value={subCategorySearch}
+              onChange={(e)=>setSubCategorySearch(e.target.value)}
+            />
+            <div style={{maxHeight:"400px",overflowY:"auto"}}>
+              {selectedCategory.map(catId => {
+                const cat = categories.find(c => c.id === catId);
+                const subs = subCategoryMap[catId] || [];
+                if (!subs.length) return null;
+                return (
+                <div key={catId} className="mb-3">
+                  <div className="fw-bold border-bottom pb-1 mb-2">
+                    {cat?.name}
+                  </div>
+                  {subs
+                    .filter(sub =>
+                      sub.name.toLowerCase().includes(subCategorySearch.toLowerCase())
+                    )
+                    .map(sub => (
+                    <div key={sub.id} className="form-check mb-2">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        checked={selectedSubCategory.includes(sub.id)}
+                        onChange={()=>handleSubCategorySelect(sub.id)}
+                      />
+                      <label className="form-check-label">
+                        {sub.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )})}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-primary" onClick={()=>setShowCategoryModal(false)}>
+          Done
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+)}
     </>
   );
 };
