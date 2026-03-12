@@ -12,6 +12,7 @@ import '../assets/css/companydetails.css';
 import { useAlert } from "../context/AlertContext";
 import EnquiryForm from "./EnquiryForm";
 import UseAuth from '../sections/UseAuth';
+import ConnectForm from "./ConnectForm";
 
 const CompanyDetail = () => {
   const navigate = useNavigate();
@@ -26,6 +27,8 @@ const CompanyDetail = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const { user } = UseAuth();
+  const [showEnquiryModal, setShowEnquiryModal] = useState(false);
+const [showConnectModal, setShowConnectModal] = useState(false);
 
   useEffect(() => {
     const fetchCompany = async () => {
@@ -218,7 +221,6 @@ const CompanyDetail = () => {
                   <div className="about-grid-wrap mt-3">
                     <div className="about-grid">
                       {/* Location moved to subtitle above */}
-
                       <div className="about-item">
                         <div className="about-icon"><i className="bx bx-globe" aria-hidden="true" /></div>
                         <div className="about-content">
@@ -226,7 +228,25 @@ const CompanyDetail = () => {
                           <div className="about-value"><a href={company.company_website?.startsWith('http') ? company.company_website : `https://${company.company_website}`} target="_blank" rel="noreferrer">{company.company_website || "N/A"}</a></div>
                         </div>
                       </div>
-
+                      {company.is_seller == 0 ? (
+                      <>
+                      <div className="about-item">
+                        <div className="about-icon"><i className="bx bx-list-ul" aria-hidden="true" /></div>
+                        <div className="about-content">
+                          <div className="about-label">User Category</div>
+                          <div className="about-value">{company.user_category || "N/A"}</div>
+                        </div>
+                      </div>
+                      <div className="about-item">
+                        <div className="about-icon"><i className="bx bx-map" aria-hidden="true" /></div>
+                        <div className="about-content">
+                          <div className="about-label">Address</div>
+                          <div className="about-value">{company.address || "N/A"}</div>
+                        </div>
+                      </div>
+                      </>
+                      ):(
+                      <>
                       <div className="about-item">
                         <div className="about-icon"><i className="bx bx-briefcase" aria-hidden="true" /></div>
                         <div className="about-content">
@@ -258,6 +278,8 @@ const CompanyDetail = () => {
                           <div className="about-value">{company.sub_category_name || "N/A"}</div>
                         </div>
                       </div>
+                      </>
+                      )}
                     </div>
                     <div className="about-description mt-3">
                       <p className="mb-2">{company.brief_company || ""}</p>
@@ -265,13 +287,28 @@ const CompanyDetail = () => {
                     </div>
 
                     <div className="mt-4 text-start">
-                      <button
-                        className="btn btn-orange"
-                        onClick={() => setShowModal(true)}
-                        aria-label="Enquiry"
-                      >
-                        <i className="lni lni-phone pe-2" aria-hidden="true"></i> Enquiry
-                      </button>
+                      {company.is_seller == 1 ? (
+                        <button
+                          className="btn btn-orange"
+                          onClick={() => setShowEnquiryModal(true)}
+                          aria-label="Enquiry"
+                        >
+                          <i className="lni lni-phone pe-2"></i> Enquiry
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-orange"
+                          onClick={() => {
+                            if (!user) {
+                              navigate("/login");
+                            } else {
+                              setShowConnectModal(true);
+                            }
+                          }}
+                        >
+                          Connect
+                        </button>
+                      )}
                     </div>
 
                   </div>
@@ -348,14 +385,21 @@ const CompanyDetail = () => {
 
       {/* Enquiry modal form */}
       <EnquiryForm
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        productId={''}
-        companyId={`${company.id}`}
-        productTitle={''}
-        companyName={`${company.organization_name}`}
+        show={showEnquiryModal}
+        onHide={() => setShowEnquiryModal(false)}
+        productId=""
+        companyId={company?.id}
+        productTitle=""
+        companyName={company?.organization_name}
       />
-
+      <ConnectForm
+        show={showConnectModal}
+        onHide={() => setShowConnectModal(false)}
+        companyId={company?.id}
+        receiverName={company?.user?.fname}
+        isBuyer={true}
+        companyName={company?.organization_name}
+      />
       {/* Products Carousel */}
       <div className="container-xl mt-5">
         {company?.products?.length > 0 && (

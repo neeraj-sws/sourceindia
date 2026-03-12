@@ -1314,7 +1314,7 @@ exports.getCompanyInfoById = async (req, res) => {
         status: 1,
         is_approve: 1
       },
-      attributes: ['id'],
+      attributes: ['id', 'address', 'is_seller'],
       order: [['id', 'ASC']],
       raw: true
     });
@@ -1495,7 +1495,9 @@ exports.getCompanyInfoById = async (req, res) => {
       company_location: data.company_location,
       company_website: data.company_website,
       organizations_product_description: data.organizations_product_description,
-
+      user_category: data.user_category,
+      address: user?.address || null,   
+      is_seller: user?.is_seller || 0,
       coreactivity_name: data.CoreActivity?.name || null,
       activity_name: data.Activity?.name || null,
 
