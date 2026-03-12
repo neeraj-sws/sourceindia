@@ -131,13 +131,21 @@ exports.getBuyerInterestchecked = async (req, res) => {
     return res.status(500).json({ error: 'Failed to fetch buyer interest' });
   }
 };
-exports.getItemType = async (req, res) => {
+exports.getItemTypeOld = async (req, res) => {
   try {
     const { userId } = req.query;
 
     if (!userId) {
       return res.status(400).json({ error: "userId is required" });
     }
+    const subcategoryGroup = await SubCategories.findAll({
+      where: {
+        status: 1
+      },
+      order: [["id", "DESC"]],
+      raw: true,
+    });
+
 
     // 1️⃣ Categories
     const categories = await ItemCategory.findAll({
@@ -201,6 +209,83 @@ exports.getItemType = async (req, res) => {
   }
 };
 
+exports.getItemType = async (req, res) => {
+  try {
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+
+    // Subcategory Groups
+    const subcategoryGroup = await SubCategories.findAll({
+      where: { status: 1 },
+      order: [["id", "ASC"]],
+      raw: true,
+    });
+
+    // Categories
+    const categories = await ItemCategory.findAll({
+      where: { status: 1 },
+      order: [["id", "ASC"]],
+      raw: true,
+    });
+
+    // Buyer interests
+    const buyerInterests = await BuyerSourcingInterests.findAll({
+      where: { user_id: userId },
+      attributes: ["item_subcategory_id"],
+      raw: true,
+    });
+
+    const selectedSubIds = buyerInterests.map(i => i.item_subcategory_id);
+
+    let categoryCountMap = {};
+
+    if (selectedSubIds.length) {
+
+      const subcategories = await ItemSubCategory.findAll({
+        where: { id: selectedSubIds },
+        attributes: ["id", "item_category_id"],
+        raw: true,
+      });
+
+      subcategories.forEach(sub => {
+        categoryCountMap[sub.item_category_id] =
+          (categoryCountMap[sub.item_category_id] || 0) + 1;
+      });
+    }
+
+    // attach count
+    const categoriesWithCount = categories.map(cat => ({
+      ...cat,
+      count: categoryCountMap[cat.id] || 0,
+    }));
+
+    // group categories under subcategoryGroup
+    const data = subcategoryGroup
+      .map(group => {
+        const groupCategories = categoriesWithCount.filter(
+          cat => cat.subcategory_id === group.id
+        );
+
+        return {
+          ...group,
+          categories: groupCategories
+        };
+      })
+      .filter(group => group.categories.length > 0); // 👈 empty group remove
+
+    return res.json({ groups: data });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      error: "Failed to fetch Item Category data",
+    });
+  }
+};
+
 
 exports.getItemSubcategory = async (req, res) => {
   try {
@@ -216,7 +301,7 @@ exports.getItemSubcategory = async (req, res) => {
         status: 1,
         item_category_id: categoryId,
       },
-      order: [["id", "DESC"]],
+      order: [["id", "ASC"]],
       raw: true,
     });
 
