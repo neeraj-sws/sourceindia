@@ -321,7 +321,7 @@ const ProductsList = () => {
       setLoading(true);
     }
     try {
-      let url = `${API_BASE_URL}/products?is_delete=0&status=1&limit=15&page=${pageNumber}`;
+      let url = `${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=15&page=${pageNumber}`;
       if (selectedCategories.length > 0) {
         url += `&category=${selectedCategories.join(",")}`;
       }

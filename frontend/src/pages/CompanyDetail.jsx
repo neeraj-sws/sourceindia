@@ -28,7 +28,11 @@ const CompanyDetail = () => {
   const [showModal, setShowModal] = useState(false);
   const { user } = UseAuth();
   const [showEnquiryModal, setShowEnquiryModal] = useState(false);
-const [showConnectModal, setShowConnectModal] = useState(false);
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  // Sub Category showAll state
+  const [showAllSubCategories, setShowAllSubCategories] = useState(false);
+  // Category showAll state
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   useEffect(() => {
     const fetchCompany = async () => {
@@ -216,16 +220,16 @@ const [showConnectModal, setShowConnectModal] = useState(false);
                     <div>
                       <h4 className="text-orange mb-1">{company.organization_name}</h4>
                       <div className="company-subtitle text-muted"><i className="bx bx-map subtitle-icon" aria-hidden="true" />
-                      {company.is_seller === 0
-                        ? [
+                        {company.is_seller === 0
+                          ? [
                             company.country_name,
                             company.state_name,
                             company.city_name
                           ]
                             .filter(Boolean) // remove undefined/null
                             .join(', ')
-                        : company.company_location || ''
-                      }
+                          : company.company_location || ''
+                        }
                       </div>
                     </div>
                   </div>
@@ -240,63 +244,119 @@ const [showConnectModal, setShowConnectModal] = useState(false);
                         </div>
                       </div>
                       {company.is_seller == 0 ? (
-                      <>
-                      <div className="about-item">
-                        <div className="about-icon"><i className="bx bx-list-ul" aria-hidden="true" /></div>
-                        <div className="about-content">
-                          <div className="about-label">User Category</div>
-                          <div className="about-value">{company.user_category || "N/A"}</div>
-                        </div>
-                      </div>
-                      <div className="about-item">
-                        <div className="about-icon"><i className="bx bx-map" aria-hidden="true" /></div>
-                        <div className="about-content">
-                          <div className="about-label">Address</div>
-                          <div className="about-value">
-                            {company.address && (
-                              <>
-                                {company.address}
-                                {company.zipcode ? `, ${company.zipcode}` : ""}
-                              </>
-                            )}
+                        <>
+                          <div className="about-item">
+                            <div className="about-icon"><i className="bx bx-list-ul" aria-hidden="true" /></div>
+                            <div className="about-content">
+                              <div className="about-label">User Category</div>
+                              <div className="about-value">{company.user_category || "N/A"}</div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                      </>
-                      ):(
-                      <>
-                      <div className="about-item">
-                        <div className="about-icon"><i className="bx bx-briefcase" aria-hidden="true" /></div>
-                        <div className="about-content">
-                          <div className="about-label">Core Activity</div>
-                          <div className="about-value">{company.coreactivity_name || "N/A"}</div>
-                        </div>
-                      </div>
+                          <div className="about-item">
+                            <div className="about-icon"><i className="bx bx-map" aria-hidden="true" /></div>
+                            <div className="about-content">
+                              <div className="about-label">Address</div>
+                              <div className="about-value">
+                                {company.address && (
+                                  <>
+                                    {company.address}
+                                    {company.zipcode ? `, ${company.zipcode}` : ""}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="about-item">
+                            <div className="about-icon"><i className="bx bx-briefcase" aria-hidden="true" /></div>
+                            <div className="about-content">
+                              <div className="about-label">Core Activity</div>
+                              <div className="about-value">{company.coreactivity_name || "N/A"}</div>
+                            </div>
+                          </div>
 
-                      <div className="about-item">
-                        <div className="about-icon"><i className="bx bx-cog" aria-hidden="true" /></div>
-                        <div className="about-content">
-                          <div className="about-label">Activity</div>
-                          <div className="about-value">{company.activity_name || "N/A"}</div>
-                        </div>
-                      </div>
+                          <div className="about-item">
+                            <div className="about-icon"><i className="bx bx-cog" aria-hidden="true" /></div>
+                            <div className="about-content">
+                              <div className="about-label">Activity</div>
+                              <div className="about-value">{company.activity_name || "N/A"}</div>
+                            </div>
+                          </div>
 
-                      <div className="about-item">
-                        <div className="about-icon"><i className="bx bx-category" aria-hidden="true" /></div>
-                        <div className="about-content">
-                          <div className="about-label">Category</div>
-                          <div className="about-value">{company.category_name || "N/A"}</div>
-                        </div>
-                      </div>
+                          <div className="about-item">
+                            <div className="about-icon"><i className="bx bx-category" aria-hidden="true" /></div>
+                            <div className="about-content">
+                              <div className="about-label">Category</div>
+                              {(() => {
+                                const categories = company.category_name ? company.category_name.split(',').map(s => s.trim()) : [];
+                                if (categories.length === 0) return <div className="about-value">N/A</div>;
+                                const visible = showAllCategories ? categories : categories.slice(0, 4);
+                                return (
+                                  <div className="about-value">
+                                    {visible.join(', ')}
+                                    {categories.length > 4 && (
+                                      !showAllCategories ? (
+                                        <button
+                                          className="btn btn-link btn-sm ms-2"
+                                          style={{ padding: 0, fontSize: 'inherit', verticalAlign: 'middle' }}
+                                          onClick={() => setShowAllCategories(true)}
+                                        >
+                                          More
+                                        </button>
+                                      ) : (
+                                        <button
+                                          className="btn btn-link btn-sm ms-2"
+                                          style={{ padding: 0, fontSize: 'inherit', verticalAlign: 'middle' }}
+                                          onClick={() => setShowAllCategories(false)}
+                                        >
+                                          Less
+                                        </button>
+                                      )
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
 
-                      <div className="about-item">
-                        <div className="about-icon"><i className="bx bx-list-ul" aria-hidden="true" /></div>
-                        <div className="about-content">
-                          <div className="about-label">Sub Category</div>
-                          <div className="about-value">{company.sub_category_name || "N/A"}</div>
-                        </div>
-                      </div>
-                      </>
+                          <div className="about-item">
+                            <div className="about-icon"><i className="bx bx-list-ul" aria-hidden="true" /></div>
+                            <div className="about-content">
+                              <div className="about-label">Sub Category</div>
+                              {(() => {
+                                const subCategories = company.sub_category_name ? company.sub_category_name.split(',').map(s => s.trim()) : [];
+                                if (subCategories.length === 0) return <div className="about-value">N/A</div>;
+                                const visible = showAllSubCategories ? subCategories : subCategories.slice(0, 4);
+                                return (
+                                  <div className="about-value">
+                                    {visible.join(', ')}
+                                    {subCategories.length > 4 && (
+                                      !showAllSubCategories ? (
+                                        <button
+                                          className="btn btn-link btn-sm ms-2"
+                                          style={{ padding: 0, fontSize: 'inherit', verticalAlign: 'middle' }}
+                                          onClick={() => setShowAllSubCategories(true)}
+                                        >
+                                          More
+                                        </button>
+                                      ) : (
+                                        <button
+                                          className="btn btn-link btn-sm ms-2"
+                                          style={{ padding: 0, fontSize: 'inherit', verticalAlign: 'middle' }}
+                                          onClick={() => setShowAllSubCategories(false)}
+                                        >
+                                          Less
+                                        </button>
+                                      )
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        </>
                       )}
                     </div>
                     <div className="about-description mt-3">
