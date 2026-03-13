@@ -605,67 +605,60 @@ exports.updateSeller = async (req, res) => {
           featured_company: req.body.featured_company || 0
         });
       }
-
-      // Step 1: Add Categories without Subcategories first
       const categoryIds = req.body.categories
-        ? req.body.categories.split(',').map(id => parseInt(id.trim()))
-        : [];
-      const existingCategories = await SellerCategory.findAll({ where: { user_id: sellerId } });
-      const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
-      const incomingCategoryMap = [];
+  ? req.body.categories.split(',').map(id => parseInt(id.trim()))
+  : [];
+const subcategoryIds = req.body.subcategory_ids
+  ? req.body.subcategory_ids.split(',').map(id => parseInt(id.trim()))
+  : [];
+const existingRows = await SellerCategory.findAll({
+  where: { user_id: sellerId }
+});
+const existingMap = existingRows.map(
+  r => `${r.category_id}-${r.subcategory_id ?? 'null'}`
+);
+const incomingMap = [];
 
-      // First, create SellerCategory for all categories with subcategory_id = null
-      for (const categoryId of categoryIds) {
-        const key = `${categoryId}-null`;
-        incomingCategoryMap.push(key);
+/* CATEGORY ONLY */
+for (const categoryId of categoryIds) {
+  const key = `${categoryId}-null`;
+  incomingMap.push(key);
+  if (!existingMap.includes(key)) {
+    await SellerCategory.create({
+      user_id: sellerId,
+      category_id: categoryId,
+      subcategory_id: null
+    });
+  }
+}
 
-        // If category does not have a subcategory_id or it is not present in existing categories, create a record with null subcategory
-        if (!existingCategoryMap.includes(key)) {
-          await SellerCategory.create({ user_id: sellerId, category_id: categoryId, subcategory_id: null });
-        }
-      }
+/* SUBCATEGORIES */
+for (const subcategoryId of subcategoryIds) {
+  const sub = await SubCategories.findOne({
+    where: { id: subcategoryId, is_delete: 0 }
+  });
+  if (!sub) continue;
+  const categoryId = sub.category;
+  const key = `${categoryId}-${subcategoryId}`;
+  incomingMap.push(key);
+  if (!existingMap.includes(key)) {
+    await SellerCategory.create({
+      user_id: sellerId,
+      category_id: categoryId,
+      subcategory_id: subcategoryId
+    });
+  }
+}
 
-      // Step 2: Add Subcategories if available
-      const subcategoryIds = req.body.subcategory_ids ? req.body.subcategory_ids.split(',').map(id => parseInt(id.trim())) : [];
-
-      for (const subcategoryId of subcategoryIds) {
-        const subCategory = await SubCategories.findOne({ where: { id: subcategoryId, is_delete: 0 } });
-        if (subCategory) {
-          const categoryId = subCategory.category;
-          const key = `${categoryId}-${subcategoryId}`;
-          incomingCategoryMap.push(key);
-
-          // Add or update the category-subcategory pair
-          if (!existingCategoryMap.includes(key)) {
-            await SellerCategory.create({ user_id: sellerId, category_id: categoryId, subcategory_id: subcategoryId });
-          }
-        }
-      }
-
-      // Step 3: Cleanup redundant rows where subcategory_id is null
-      // Remove rows where subcategory_id = null for the same user_id and category_id
-      const nullSubcategoryRows = await SellerCategory.findAll({
-        where: {
-          user_id: sellerId,
-          subcategory_id: null
-        }
-      });
-
-      // We want to delete **only** redundant `null` rows that are already existing with category_id and user_id
-      for (const existing of nullSubcategoryRows) {
-        const categoryId = existing.category_id;
-
-        // If the category has valid subcategories added, remove the `null` row
-        if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
-          await SellerCategory.destroy({
-            where: {
-              user_id: sellerId,
-              category_id: categoryId,
-              subcategory_id: null
-            }
-          });
-        }
-      }
+/* DELETE UNCHECKED */
+for (const row of existingRows) {
+  const key = `${row.category_id}-${row.subcategory_id ?? 'null'}`;
+  if (!incomingMap.includes(key)) {
+    await SellerCategory.destroy({
+      where: { id: row.id }
+    });
+  }
+}
 
       res.status(200).json({ message: 'Seller updated successfully', user });
 
@@ -1190,7 +1183,6 @@ exports.getEmailtemplate = async (req, res) => {
     });
   }
 };
-
 
 exports.sendMail = async (req, res) => {
   try {

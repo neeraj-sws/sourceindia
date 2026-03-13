@@ -88,11 +88,11 @@ const UserHeader = () => {
                   {/* <div className="user-info ps-3">
                     <p className="user-name mb-0">{user.fname} {user.lname}</p>
                   </div> */}
-                   <div className="user-info ps-3">
-                  <p className="user-name mb-0">
-  {user?.fname?.charAt(0)?.toUpperCase()}
-  {user?.lname?.charAt(0)?.toUpperCase()}
-</p>
+                  <div className="user-info ps-3">
+                    <p className="user-name mb-0">
+                      {user?.fname?.charAt(0)?.toUpperCase()}
+                      {user?.lname?.charAt(0)?.toUpperCase()}
+                    </p>
                   </div>
                 </a>
                 <ul className="dropdown-menu dropdown-menu-end">

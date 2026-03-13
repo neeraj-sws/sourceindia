@@ -949,9 +949,6 @@ exports.updateProfile = async (req, res) => {
           .replace('{{ USER_MOBILE }}', user.mobile)
           .replace('{{ USER_ADDRESS }}', user.address)
           .replace('{{ USER_TYPE }}', user_type);
-
-
-
         await sendMail({ to: siteConfig['site_email'], subject: adminemailTemplate.subject, message: adminMessage });
 
       }
@@ -1076,99 +1073,73 @@ exports.updateProfile = async (req, res) => {
           redirectToMyProduct = true;
         }
 
-        // 🧩 Category/Subcategory Handling
-        /*let { category_sell, sub_category } = req.body;
-
-        if (typeof category_sell === 'string') category_sell = category_sell.split(',').map(Number);
-        if (typeof sub_category === 'string') sub_category = sub_category.split(',').map(Number);
-
-        // 1️⃣ Fetch all subcategories (with category_id)
-        const subCategories = await SubCategories.findAll({
-          where: { id: sub_category },
-          attributes: ['id', 'category'],
-        });
-
-        // 2️⃣ Prepare entries where subcategory exists
-        const sellerCategoryData = subCategories.map((sub) => ({
-          user_id: user.id,
-          category_id: sub.category,
-          subcategory_id: sub.id,
-        }));
-
-        // 3️⃣ Find categories that didn’t have subcategory
-        const categoriesWithSub = subCategories.map((sub) => sub.category);
-        const categoriesWithoutSub = category_sell.filter(
-          (catId) => !categoriesWithSub.includes(catId)
-        );
-
-        // 4️⃣ Add entries with null subcategory
-        categoriesWithoutSub.forEach((catId) => {
-          sellerCategoryData.push({
-            user_id: user.id,
-            category_id: catId,
-            subcategory_id: null,
-          });
-        });
-
-        // 5️⃣ Remove existing entries for this user, insert fresh clean data
-        await SellerCategory.destroy({ where: { user_id: user.id } });
-        await SellerCategory.bulkCreate(sellerCategoryData);*/
         if (req.body.categories !== undefined || req.body.subcategory_ids !== undefined) {
 
-          let categoryIds = [];
-          let subcategoryIds = [];
+  let categoryIds = [];
+  let subcategoryIds = [];
 
-          if (req.body.categories) {
-            categoryIds = req.body.categories.split(',').map(id => parseInt(id.trim()));
-          }
+  if (req.body.categories) {
+    categoryIds = req.body.categories.split(',').map(id => parseInt(id.trim()));
+  }
 
-          if (req.body.subcategory_ids) {
-            subcategoryIds = req.body.subcategory_ids.split(',').map(id => parseInt(id.trim()));
-          }
+  if (req.body.subcategory_ids) {
+    subcategoryIds = req.body.subcategory_ids.split(',').map(id => parseInt(id.trim()));
+  }
 
-          // ---------- SAFE because both are arrays now ----------
-          const existingCategories = await SellerCategory.findAll({ where: { user_id: userId } });
-          const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
-          const incomingCategoryMap = [];
+  const existingRows = await SellerCategory.findAll({
+    where: { user_id: userId }
+  });
 
-          // ADD categories
-          for (const categoryId of categoryIds) {
-            const key = `${categoryId}-null`;
-            incomingCategoryMap.push(key);
-            if (!existingCategoryMap.includes(key)) {
-              await SellerCategory.create({ user_id: userId, category_id: categoryId, subcategory_id: null });
-            }
-          }
+  const existingMap = existingRows.map(r => `${r.category_id}-${r.subcategory_id ?? 'null'}`);
 
-          // ADD subcategories
-          for (const subcategoryId of subcategoryIds) {
-            const subCategory = await SubCategories.findOne({ where: { id: subcategoryId, is_delete: 0 } });
-            if (subCategory) {
-              const categoryId = subCategory.category;
-              const key = `${categoryId}-${subcategoryId}`;
-              incomingCategoryMap.push(key);
-              if (!existingCategoryMap.includes(key)) {
-                await SellerCategory.create({ user_id: userId, category_id: categoryId, subcategory_id: subcategoryId });
-              }
-            }
-          }
+  const incomingMap = [];
 
-          // REMOVE only categories that are missing
-          const nullSubcategoryRows = await SellerCategory.findAll({
-            where: { user_id: userId, subcategory_id: null },
-          });
+  // handle categories
+  for (const categoryId of categoryIds) {
+    const key = `${categoryId}-null`;
+    incomingMap.push(key);
+    if (!existingMap.includes(key)) {
+      await SellerCategory.create({
+        user_id: userId,
+        category_id: categoryId,
+        subcategory_id: null
+      });
+    }
+  }
 
-          for (const existing of nullSubcategoryRows) {
-            const categoryId = existing.category_id;
-            if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
-              await SellerCategory.destroy({
-                where: { user_id: userId, category_id: categoryId, subcategory_id: null },
-              });
-            }
-          }
+  // handle subcategories
+  for (const subcategoryId of subcategoryIds) {
+    const sub = await SubCategories.findOne({
+      where: { id: subcategoryId, is_delete: 0 }
+    });
+    if (!sub) continue;
+    const categoryId = sub.category;
+    const key = `${categoryId}-${subcategoryId}`;
+    incomingMap.push(key);
+    if (!existingMap.includes(key)) {
+      await SellerCategory.create({
+        user_id: userId,
+        category_id: categoryId,
+        subcategory_id: subcategoryId
+      });
+    }
+  }
+
+  // DELETE unchecked rows
+  for (const row of existingRows) {
+    const key = `${row.category_id}-${row.subcategory_id ?? 'null'}`;
+    if (!incomingMap.includes(key)) {
+      await SellerCategory.destroy({
+        where: {
+          user_id: userId,
+          category_id: row.category_id,
+          subcategory_id: row.subcategory_id
         }
+      });
+    }
+  }
+}
       }
-
       return res.status(200).json({
         message: 'Profile updated successfully',
         user,

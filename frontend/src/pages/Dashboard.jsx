@@ -20,10 +20,6 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [interestData, setInterestData] = useState({ categories: [], subCategories: {} });
   const [itemCategoryData, setItemcategoryData] = useState({ categories: [] });
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
-  const [subCategories, setSubCategories] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ activity: {} });
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -39,10 +35,6 @@ const Dashboard = () => {
   const [enquiriesToDelete, setEnquiriesToDelete] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [sellerMessage, setSellerMessage] = useState("");
-  const [selectedSubIds, setSelectedSubIds] = useState([]);
-  const [categoryCounts, setCategoryCounts] = useState({});
-  const [categorySearch, setCategorySearch] = useState("");
-  const [subCategorySearch, setSubCategorySearch] = useState("");
 
   useEffect(() => {
     if (loading) return; // Wait until loading is false
@@ -82,14 +74,9 @@ const Dashboard = () => {
         });
         setItemcategoryData(itemcatgeoryResponse.data || { categories: [] });
 
-
-
         const openEnquiryCountResponse = await axios.get(`${API_BASE_URL}/open_enquiries/count/${user.id}`);
         setOpenEnquiryCountData(openEnquiryCountResponse.data.totalOpenEnquiries);
 
-        if (user.is_intrest === 0) {
-          setIsModalOpen(true);
-        }
       } catch (error) {
         setError("Failed to fetch data");
         console.error("Error fetching data:", error.response?.data || error.message);
@@ -99,66 +86,6 @@ const Dashboard = () => {
 
     fetchData();
   }, [user, loading, navigate]);
-
-  const handleCheckboxChange = (categoryId, subCategoryId) => {
-    setFormData((prevData) => {
-      const newActivity = { ...prevData.activity };
-      if (!newActivity[categoryId]) newActivity[categoryId] = [];
-      if (newActivity[categoryId].includes(subCategoryId)) {
-        newActivity[categoryId] = newActivity[categoryId].filter((id) => id !== subCategoryId);
-      } else {
-        newActivity[categoryId] = [...newActivity[categoryId], subCategoryId];
-      }
-      return { ...prevData, activity: newActivity };
-    });
-  };
-
-  const handleSubmit = async () => {
-    const token = localStorage.getItem("user_token");
-
-    if (!token || !user?.id) {
-      showNotification("User not authenticated", "error");
-      return;
-    }
-
-    if (
-      !formData.activity ||
-      !formData.activity.subcategory_ids ||
-      formData.activity.subcategory_ids.length === 0
-    ) {
-      showNotification("Please select at least one sub category", "error");
-      return;
-    }
-
-    try {
-      const res = await axios.post(
-        `${API_BASE_URL}/dashboard/store-item-subcategory`,
-        {
-          userId: user.id,
-          activity: formData.activity,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (res.data.success) {
-        showNotification("Interest Added Successfully", "success");
-
-        if (updateUser) {
-          updateUser({ ...user, is_intrest: 1 });
-        }
-
-        setIsModalOpen(false);
-      }
-    } catch (err) {
-      console.error(err);
-      showNotification("Failed to submit interest", "error");
-    }
-  };
-
 
   const fetchData = async () => {
     if (!user) return;
@@ -237,280 +164,6 @@ const Dashboard = () => {
       });
   }, [user]);
 
-
-  useEffect(() => {
-    if (selectedCategoryId && selectedSubIds.length > 0) {
-      setFormData({
-        activity: {
-          category_id: selectedCategoryId,
-          subcategory_ids: selectedSubIds,
-        },
-      });
-    } else {
-      setFormData({ activity: {} });
-    }
-  }, [selectedCategoryId, selectedSubIds]);
-
-
-  const handleCategoryChange = async (categoryId) => {
-    setSelectedCategoryId(categoryId);
-    setSelectedSubIds([]);
-
-    const token = localStorage.getItem("user_token");
-
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/dashboard/get-item-subcategory?categoryId=${categoryId}&userId=${user.id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setSubCategories(res.data?.subcategories || []);
-
-      // auto set checked ids
-      const checkedIds = res.data.subcategories
-        .filter((s) => s.checked)
-        .map((s) => s.id);
-
-      setSelectedSubIds(checkedIds);
-      setCategoryCounts(prev => ({
-        ...prev,
-        [categoryId]: checkedIds.length
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleCheckAll = async (e) => {
-    if (!selectedCategoryId) return;
-
-    const token = localStorage.getItem("user_token");
-    if (!token) return;
-
-    let updatedSubIds = [];
-
-    if (e.target.checked) {
-      updatedSubIds = subCategories.map((sub) => sub.id);
-    }
-
-    // Update local state
-    setSelectedSubIds(updatedSubIds);
-
-    // Update category count
-    setCategoryCounts((prev) => ({
-      ...prev,
-      [selectedCategoryId]: updatedSubIds.length,
-    }));
-
-    // Send all selected or deselected IDs to backend
-    try {
-      await axios.post(
-        `${API_BASE_URL}/dashboard/store-item-subcategory`,
-        {
-          userId: user.id,
-          activity: {
-            category_id: selectedCategoryId,
-            subcategory_ids: subCategories.map((sub) => sub.id), // all IDs
-            action: e.target.checked ? "add" : "remove",
-          },
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-    } catch (err) {
-      console.error(err);
-      showNotification("Failed to save all selections", "error");
-    }
-  };
-
-
-  const handleSubCheck = async (id) => {
-    const token = localStorage.getItem("user_token");
-    if (!token) return;
-
-    const isChecked = selectedSubIds.includes(id);
-    let updatedSubIds;
-
-    // Update local state
-    setSelectedSubIds((prev) => {
-      updatedSubIds = isChecked
-        ? prev.filter((item) => item !== id)
-        : [...prev, id];
-
-      // update category count
-      setCategoryCounts((prevCounts) => ({
-        ...prevCounts,
-        [selectedCategoryId]: updatedSubIds.length,
-      }));
-
-      return updatedSubIds;
-    });
-
-    // Send **single ID and action** to backend
-    try {
-      await axios.post(
-        `${API_BASE_URL}/dashboard/store-item-subcategory`,
-        {
-          userId: user.id,
-          activity: {
-            category_id: selectedCategoryId,
-            subcategory_ids: [id], // only this ID
-            action: isChecked ? "remove" : "add",
-          },
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-    } catch (err) {
-      console.error(err);
-      showNotification("Failed to save interest", "error");
-    }
-  };
-
-
-  const renderBuyerInterestForm = () => {
-    // if (!isModalOpen) return null;
-
-    return (
-      <Suspense fallback={<div></div>}>
-        <div className="modal" id="buyerSourcing" style={{ display: isModalOpen ? "block" : "none", position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: isModalOpen ? "rgba(0,0,0,0.5)" : "", zIndex: 10000 }}>
-          <div className="modal-dialog modal-lg" style={{ maxWidth: "1200px", margin: "50px auto" }}>
-            <div className="modal-content p-2">
-              <div className="modal-header">
-                <h4 className="modal-title"> Sourcing Interest</h4>
-                <button type="button" className="btn-close" data-bs-dismiss="modal" onClick={() => setIsModalOpen(false)}></button>
-              </div>
-              <div className="modal-body">
-                <div className="">
-
-                  <div className="row">
-                    <div className="col-9 border-end">
-                      <h6 className="mb-3">Category</h6>
-                      <input
-                        type="text"
-                        className="form-control mb-3"
-                        placeholder="Search category..."
-                        value={categorySearch}
-                        onChange={(e) => setCategorySearch(e.target.value)}
-                      />
-                      {itemCategoryData.categories.length === 0 && (
-                        <p className="text-muted">No categories found</p>
-                      )}
-                      <div className="heightPart">
-                        <div className="row">
-                          {(itemCategoryData?.categories || [])
-                            .filter((cat) =>
-                              cat.name?.toLowerCase().includes(categorySearch.toLowerCase())
-                            )
-                            .map((cat) => (
-                              <div className="col-lg-4">
-                                <div key={cat.id} className="form-check mb-2">
-                                  <input
-                                    className="form-check-input"
-                                    type="checkbox"
-                                    checked={selectedCategoryId === cat.id}
-                                    id={`categoryData_${cat.id}`}
-                                    onChange={() => handleCategoryChange(cat.id)}
-                                  />
-                                  <label className="form-check-label" for={`categoryData_${cat.id}`}>
-                                    {cat.name}
-                                    {(categoryCounts?.[cat.id] ?? cat.count) > 0 && (
-                                      <span className="ms-2 badge bg-primary">
-                                        {categoryCounts?.[cat.id] ?? cat.count}
-                                      </span>
-                                    )}
-                                  </label>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-3" style={{ background: "#ffe5e5" }}>
-                      <div className="p-2 rightPart ">
-                        <h6 className="mb-3 mt-2">Please Select The Type</h6>
-
-                        {loading && <p>Loading...</p>}
-
-                        {!loading && subCategories.length === 0 && (
-                          <p className="text-muted">
-                            Please select a type to see categories
-                          </p>
-                        )}
-
-                        {subCategories.length > 0 && (
-                          <>
-                            <input
-                              type="text"
-                              className="form-control mb-2"
-                              placeholder="Search sub-category..."
-                              value={subCategorySearch}
-                              onChange={(e) => setSubCategorySearch(e.target.value)}
-                            />
-                            <div className="subpart">
-                              {/* CHECK ALL */}
-                              <div className="mb-3 bg-primary p-2 rounded text-white">
-                                <label htmlFor="checkAllsub" className="d-flex">
-                                  <input
-                                    type="checkbox"
-                                    className="me-2"
-                                    id="checkAllsub"
-                                    checked={
-                                      selectedSubIds.length === subCategories.length &&
-                                      subCategories.length > 0
-                                    }
-                                    onChange={handleCheckAll}
-                                  />
-                                  Check All
-                                </label>
-                              </div>
-
-                              {/* SUB CATEGORIES */}
-                              {subCategories
-                                .filter((sub) =>
-                                  sub.name.toLowerCase().includes(subCategorySearch.toLowerCase())
-                                )
-                                .map((sub) => (
-                                  <div key={sub.id} className="subcate mb-3">
-                                    <div className="border p-2 rounded bg-white">
-                                      <label htmlFor={`itemtype_${sub.id}`}>
-                                        <input
-                                          type="checkbox"
-                                          className="me-2"
-                                          id={`itemtype_${sub.id}`}
-                                          checked={selectedSubIds.includes(sub.id)}
-                                          onChange={() => handleSubCheck(sub.id)}
-                                        />
-                                        {sub.name}
-                                      </label>
-                                    </div>
-                                  </div>
-                                ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                {/* <button className="btn btn-primary" onClick={handleSubmit}>
-                Submit
-              </button> */}
-                <button className="btn btn-secondary" data-bs-dismiss="modal" onClick={() => setIsModalOpen(false)}>
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Suspense>
-    );
-  };
-
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
 
@@ -559,7 +212,7 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-            {renderBuyerInterestForm()}
+            {/* {renderBuyerInterestForm()} */}
             {user.is_seller == 0 &&
               <div className="card mt-4">
                 <div className="card-body">

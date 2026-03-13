@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import { Suspense, lazy } from 'react';
@@ -9,6 +9,8 @@ import { useLocation } from "react-router-dom";
 const ProductsList = () => {
   const [productsData, setProductsData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const debounceTimeout = useRef();
   const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -89,7 +91,8 @@ const ProductsList = () => {
   useEffect(() => {
     const searchValue = searchParams.get("search");
     if (searchValue) {
-      setSearchTerm(searchValue); // Set state if search param exists
+      setSearchTerm(searchValue);
+      setSearchInput(searchValue);
     }
   }, [searchParams]);
 
@@ -332,7 +335,6 @@ const ProductsList = () => {
         url += `&item_subcategory_id=${selectedItemSubCategories.join(",")}`;
       }
 
-      console.log('selectedItems-' + selectedItems);
       if (selectedItems.length > 0) {
         url += `&item_id=${selectedItems.join(",")}`;
       }
@@ -344,6 +346,10 @@ const ProductsList = () => {
       }
       if (sortBy) {
         url += `&sort_by=${sortBy}`;
+      }
+      // Add searchTerm to server-side query
+      if (searchTerm && searchTerm.trim() !== "") {
+        url += `&search=${encodeURIComponent(searchTerm)}`;
       }
       const res = await axios.get(url);
       const newProducts = res.data.products || [];
@@ -390,7 +396,8 @@ const ProductsList = () => {
     selectedItems,
     selectedStates,
     selectedCompanies,
-    sortBy
+    sortBy,
+    searchTerm // <-- add searchTerm here
   ]);
 
   useEffect(() => {
@@ -411,8 +418,16 @@ const ProductsList = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [page, hasMore, scrollLoading, loading]);
 
+  // Debounced search handler
   const handleSearch = (e) => {
-    setSearchTerm(e.target.value.toLowerCase());
+    const value = e.target.value;
+    setSearchInput(value);
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+    debounceTimeout.current = setTimeout(() => {
+      setSearchTerm(value);
+    }, 700); // 700ms debounce
   };
 
   const handleCategoryCheckboxChange = (categoryId) => {
@@ -447,9 +462,8 @@ const ProductsList = () => {
     );
   };
 
-  const filteredProducts = productsData.filter((product) =>
-    product.title.toLowerCase().includes(searchTerm)
-  );
+  // Server-side search, so no need to filter client-side
+  const filteredProducts = productsData;
 
   const getNameById = (array, id) => {
     const item = array.find((el) => el.id === id);
@@ -547,8 +561,8 @@ const ProductsList = () => {
                   <input
                     type="text"
                     className="form-control"
-                    value={searchTerm}
-                    onChange={handleSearch}
+                    value={searchInput}
+                    onInput={handleSearch}
                     placeholder="Search products..."
                   />
                 </div>

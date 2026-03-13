@@ -8,6 +8,7 @@ const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
+const Countries = require('../models/Countries');
 const States = require('../models/States');
 const ReviewRating = require('../models/ReviewRating');
 const CoreActivity = require('../models/CoreActivity');
@@ -260,7 +261,7 @@ exports.createProducts = async (req, res) => {
   });
 };
 
-exports.getAllProducts = async (req, res) => {
+exports.getAllProductsold = async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const page = req.query.page ? parseInt(req.query.page) : null;
@@ -306,6 +307,122 @@ exports.getAllProducts = async (req, res) => {
     if (is_approve) {
       productWhereClause.is_approve = is_approve;
     }
+    let userWhereClause = {};
+    if (user_state) {
+      const stateIds = parseCsv(user_state);
+      userWhereClause.state = { [Op.in]: stateIds };
+    }
+    const { count, rows } = await Products.findAndCountAll({
+      where: productWhereClause,
+      order,
+      ...(limit && offset !== null ? { limit, offset } : {}),
+      include: [
+        { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+        { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
+        { model: Items, as: 'Items', attributes: ['id', 'name'] },
+        { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+        { model: UploadImage, as: 'file', attributes: ['file'] },
+        {
+          model: Users,
+          as: 'Users',
+          attributes: ['id', 'fname', 'lname', 'state'],
+          where: Object.keys(userWhereClause).length ? userWhereClause : undefined,
+          include: [{ model: States, as: 'state_data', attributes: ['id', 'name'] }]
+        }
+      ]
+    });
+    const modifiedProducts = rows.map(product => {
+      const productsData = product.toJSON();
+      productsData.getStatus = productsData.status === 1 ? 'Public' : 'Draft';
+      productsData.category_name = productsData.Categories?.name || null;
+      productsData.sub_category_name = productsData.SubCategories?.name || null;
+      productsData.item_category_name = productsData.ItemCategory?.name || null;
+      productsData.item_subcategory_name = productsData.ItemSubCategory?.name || null;
+      productsData.item_name = productsData.Items?.name || null;
+      productsData.color_name = null;
+      productsData.company_name = productsData.company_info?.organization_name || null;
+      productsData.file_name = productsData.file?.file || null;
+      productsData.state_name = productsData.Users?.state_data?.name || null;
+      productsData.user_full_name = productsData.Users ? `${productsData.Users.fname} ${productsData.Users.lname}` : null;
+      delete productsData.Categories;
+      delete productsData.SubCategories;
+      delete productsData.ItemCategory;
+      delete productsData.ItemSubCategory;
+      delete productsData.Items;
+      delete productsData.Color;
+      delete productsData.company_info;
+      delete productsData.file;
+      delete productsData.Users;
+      return productsData;
+    });
+    res.json({
+      total: count,
+      products: modifiedProducts
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getAllProducts = async (req, res) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : null;
+    const page = req.query.page ? parseInt(req.query.page) : null;
+    const offset = limit && page ? (page - 1) * limit : null;
+    const { user_state, sort_by, title, category, sub_category, company_id, is_delete, status, is_approve,
+      item_category_id, item_subcategory_id, item_id, search } = req.query;
+    let order = [['id', 'ASC']];
+    if (sort_by === 'newest') order = [['created_at', 'DESC']];
+    else if (sort_by === 'a_to_z') order = [['title', 'ASC']];
+    else if (sort_by === 'z_to_a') order = [['title', 'DESC']];
+    const productWhereClause = {};
+    if (title) productWhereClause.title = { [Op.iLike]: `%${title}%` };
+    if (category) {
+      const categoryArray = parseCsv(category);
+      productWhereClause.category = { [Op.in]: categoryArray };
+    }
+    if (sub_category) {
+      const subCategoryArray = parseCsv(sub_category);
+      productWhereClause.sub_category = { [Op.in]: subCategoryArray };
+    }
+    if (company_id) {
+      const companyArray = parseCsv(company_id);
+      productWhereClause.company_id = { [Op.in]: companyArray };
+    }
+    if (item_category_id) {
+      const arr = parseCsv(item_category_id);
+      productWhereClause.item_category_id = { [Op.in]: arr };
+    }
+    if (item_subcategory_id) {
+      const arr = parseCsv(item_subcategory_id);
+      productWhereClause.item_subcategory_id = { [Op.in]: arr };
+    }
+    if (item_id) {
+      const arr = parseCsv(item_id);
+      productWhereClause.item_id = { [Op.in]: arr };
+    }
+    if (is_delete) {
+      productWhereClause.is_delete = is_delete;
+    }
+    if (status) {
+      productWhereClause.status = status;
+    }
+    if (is_approve) {
+      productWhereClause.is_approve = is_approve;
+    }
+    // General search filter
+        if (search) {
+          productWhereClause[Op.or] = [
+            {
+              title: {
+                [Op.like]: `%${search}%`
+              }
+            }
+          ];
+        }
+    
     let userWhereClause = {};
     if (user_state) {
       const stateIds = parseCsv(user_state);
@@ -562,8 +679,8 @@ exports.getProductsCount = async (req, res) => {
 
     const [total, statusPublic, statusDraft, addedThisMonth] = await Promise.all([
       Products.count({ where: { is_delete: 0 } }),
-      Products.count({ where: { is_delete: 0, is_approve: 1 } }),
-      Products.count({ where: { is_delete: 0, is_approve: 0 } }),
+      Products.count({ where: { is_delete: 0,is_approve:1 } }),
+      Products.count({ where: {  is_delete: 0,is_approve:0 } }),
       Products.count({
         where: {
           created_at: {
@@ -837,26 +954,33 @@ exports.getAllCompanyInfo = async (req, res) => {
       const catIds = category ? parseCsv(category).map(x => parseInt(x)).filter(x => !isNaN(x)) : [];
       const subIds = sub_category ? parseCsv(sub_category).map(x => parseInt(x)).filter(x => !isNaN(x)) : [];
 
-      let sellerWhere = [];
+      let sellerConditions = [];
 
+if (catIds.length) {
+  sellerConditions.push(`sc.category_id IN (${catIds.join(',')})`);
+}
 
-      if (catIds.length) sellerWhere.push(`sc.category_id IN (${catIds.join(',')})`);
-      if (subIds.length) sellerWhere.push(`sc.subcategory_id IN (${subIds.join(',')})`);
+if (subIds.length) {
+  sellerConditions.push(`sc.subcategory_id IN (${subIds.join(',')})`);
+}
 
-      if (sellerWhere.length) {
-        whereClause[Op.and] = whereClause[Op.and] || [];
-        whereClause[Op.and].push(
-          literal(`
-            EXISTS (
-              SELECT 1 FROM users u 
-              INNER JOIN seller_categories sc ON sc.user_id = u.user_id
-              WHERE u.company_id = CompanyInfo.company_id
-              AND u.is_delete = 0 AND u.status = 1 AND u.is_approve = 1
-              AND (${sellerWhere.join(' OR ')})
-            )
-          `)
-        );
-      }
+if (sellerConditions.length) {
+  whereClause[Op.and] = whereClause[Op.and] || [];
+  whereClause[Op.and].push(
+    literal(`
+      EXISTS (
+        SELECT 1 
+        FROM users u
+        INNER JOIN seller_categories sc ON sc.user_id = u.user_id
+        WHERE u.company_id = CompanyInfo.company_id
+        AND u.is_delete = 0
+        AND u.status = 1
+        AND u.is_approve = 1
+        AND ${sellerConditions.join(' AND ')}
+      )
+    `)
+  );
+}
     }
     const coreWhere = [];
     if (core_activity || activity) {
@@ -967,15 +1091,33 @@ exports.getAllCompanyInfo = async (req, res) => {
     const allProducts = await Products.findAll({
       where: { company_id: { [Op.in]: companyIds }, is_delete: 0, is_approve: 1, status: 1 },
       attributes: ['id', 'title', 'slug', 'company_id'],
+      limit:10,
+      raw: true
+    });
+    
+    const productMap = {};
+
+await Promise.all(
+  companyIds.map(async (cid) => {
+    const products = await Products.findAll({
+      where: {
+        company_id: cid,
+        is_delete: 0,
+        is_approve: 1,
+        status: 1
+      },
+      attributes: ['id', 'title', 'slug'],
+      order: [['id', 'DESC']],
       limit: 10,
       raw: true
     });
 
-    const productMap = {};
-    allProducts.forEach(p => {
-      if (!productMap[p.company_id]) productMap[p.company_id] = [];
-      productMap[p.company_id].push({ id: p.id, title: p.title, slug: p.slug });
-    });
+    productMap[cid] = products;
+  })
+);
+
+    
+    
 
     // ✅ Fetch users (single user per company)
     const users = await Users.findAll({
@@ -1173,9 +1315,14 @@ exports.getCompanyInfoById = async (req, res) => {
         status: 1,
         is_approve: 1
       },
-      attributes: ['id'],
+      attributes: ['id', 'address', 'zipcode', 'is_seller'],
+      include: [
+        { model: Countries, as: 'country_data', attributes: ['name'] },
+        { model: States, as: 'state_data', attributes: ['name'] },
+        { model: Cities, as: 'city_data', attributes: ['name'] }
+      ],
       order: [['id', 'ASC']],
-      raw: true
+      // raw: true
     });
 
     // 2️⃣ Get seller categories
@@ -1354,7 +1501,13 @@ exports.getCompanyInfoById = async (req, res) => {
       company_location: data.company_location,
       company_website: data.company_website,
       organizations_product_description: data.organizations_product_description,
-
+      user_category: data.user_category,
+      address: user?.address || null,
+      zipcode: user?.zipcode || null,
+      is_seller: user?.is_seller || 0,
+      country_name: user?.country_data?.name || null,
+      state_name: user?.state_data?.name || null,
+      city_name: user?.city_data?.name || null,
       coreactivity_name: data.CoreActivity?.name || null,
       activity_name: data.Activity?.name || null,
 
