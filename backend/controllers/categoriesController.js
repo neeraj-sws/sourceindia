@@ -589,11 +589,8 @@ exports.getItemCategories = async (req, res) => {
 
     // If is_home=1 → filter by is_home
     if (is_home === 1) {
-      categoryWhere.is_home = 1;
-    } else {
-      // otherwise normal top category
       categoryWhere.top_category = 1;
-    }
+    } 
 
     const categories = await Categories.findAll({
       where: categoryWhere,
