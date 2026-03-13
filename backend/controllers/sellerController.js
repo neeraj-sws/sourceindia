@@ -2095,16 +2095,16 @@ exports.getSellerSubCategoriesByUser = async (req, res) => {
         {
           model: SubCategories,
           as: 'subcategory',
-          attributes: ['id', 'name', 'slug'],
-           where: {
-      status: 1
-    },
-     required: false  
+          attributes: ['id', 'name', 'slug'], where: {
+          status: 1, is_delete: 0,
+        },
         },
         {
           model: Categories,
           as: 'category',
-          attributes: ['id', 'name', 'slug'],
+          attributes: ['id', 'name', 'slug'], where: {
+          status: 1, is_delete: 0,
+        },
         },
       ],
       raw: true,

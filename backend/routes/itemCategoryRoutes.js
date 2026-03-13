@@ -15,6 +15,10 @@ router.get(
   itemCategoryController.getItemCategoriesByCategoryAndSubCategory
 );
 router.get(
+  '/by-category-subcategory-all/:category_id/:subcategory_id',
+  itemCategoryController.getItemCategoriesByCategoryAndSubCategoryAll
+);
+router.get(
   '/getitemtype/:category_id',
   itemCategoryController.getItemCategoryByItemType
 );

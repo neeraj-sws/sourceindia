@@ -12,6 +12,10 @@ router.get(
   '/by-category-subcategory-itemcategory-itemsubcategory/:category_id/:subcategory_id/:item_category_id/:item_sub_category_id',
   itemsController.getItemSubCategoriesByCategorySubCategoryItemCategoryItemSubCategory
 );
+router.get(
+  '/by-category-subcategory-itemcategory-itemsubcategory-all/:category_id/:subcategory_id/:item_category_id/:item_sub_category_id',
+  itemsController.getItemSubCategoriesByCategorySubCategoryItemCategoryItemSubCategoryAll
+);
 router.post(
   '/by-selected-category-subcategory-itemcategory-itemsubcategory',
   itemsController.getItemsBySelectedCategorySubCategoryItemCategoryItemSubCategory

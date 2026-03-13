@@ -286,7 +286,7 @@ const NewItems = ({ excludeItem }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/categories`);
+        const res = await axios.get(`${API_BASE_URL}/categories?is_delete=0&status=1`);
         setCategories(res.data);
       } catch (error) {
         console.error("Error fetching interest categories:", error);

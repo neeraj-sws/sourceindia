@@ -13,6 +13,10 @@ router.get(
   '/by-category-subcategory-itemcategory/:category_id/:subcategory_id/:item_category_id',
   itemSubCategoryController.getItemSubCategoriesByCategorySubCategoryItemCategory
 );
+router.get(
+  '/by-category-subcategory-itemcategory-all/:category_id/:subcategory_id/:item_category_id',
+  itemSubCategoryController.getItemSubCategoriesByCategorySubCategoryItemCategoryAll
+);
 router.post(
   '/by-selected-category-subcategory-itemcategory',
   itemSubCategoryController.getItemSubCategoriesBySelectedCategorySubCategoryItemCategory

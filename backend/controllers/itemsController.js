@@ -266,6 +266,42 @@ exports.getItemSubCategoriesByCategorySubCategoryItemCategoryItemSubCategory = a
     const items = await Items.findAll({
       where: { category_id, subcategory_id, item_category_id, item_sub_category_id, status: 1 },
       include: [
+        { model: Categories, as: 'Categories', attributes: ['id', 'name'], where: {
+          status: 1, is_delete: 0,
+        }},
+        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'], where: {
+          status: 1, is_delete: 0,
+        }},
+        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'], where: {
+          status: 1,
+        }},
+        { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'], where: {
+          status: 1,
+        }},
+      ],
+      order: [['id', 'ASC']],
+    });
+    if (items.length === 0) {
+      return res.status(404).json({ message: 'No item sub categories found for the given category, subcategory, itemcategory, itemsubcategory.' });
+    }
+    res.json(items);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getItemSubCategoriesByCategorySubCategoryItemCategoryItemSubCategoryAll = async (req, res) => {
+  try {
+    const { category_id, subcategory_id, item_category_id, item_sub_category_id } = req.params;
+    if (!category_id || !subcategory_id || !item_category_id || !item_sub_category_id) {
+      return res.status(400).json({
+        error: 'Both category_id, subcategory_id, item_category_id, item_sub_category_id are required.',
+      });
+    }
+    const items = await Items.findAll({
+      where: { category_id, subcategory_id, item_category_id, item_sub_category_id },
+      include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
         { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
