@@ -212,30 +212,34 @@ exports.getItemTypeOld = async (req, res) => {
 exports.getItemType = async (req, res) => {
   try {
     const { userId } = req.query;
-
     if (!userId) {
       return res.status(400).json({ error: "userId is required" });
     }
 
-    // Subcategory Groups
+    const categories = await Categories.findAll({
+      where: { status: 1, is_delete: 0 },
+      attributes: ["id", "name"],
+      order: [["id", "ASC"]],
+      raw: true
+    });
+
     const subcategoryGroup = await SubCategories.findAll({
-      where: { status: 1 },
+      where: { status: 1, is_delete: 0 },
+      attributes: ["id", "name", "category"],
       order: [["id", "ASC"]],
-      raw: true,
+      raw: true
     });
 
-    // Categories
-    const categories = await ItemCategory.findAll({
+    const itemCategories = await ItemCategory.findAll({
       where: { status: 1 },
       order: [["id", "ASC"]],
-      raw: true,
+      raw: true
     });
 
-    // Buyer interests
     const buyerInterests = await BuyerSourcingInterests.findAll({
       where: { user_id: userId },
       attributes: ["item_subcategory_id"],
-      raw: true,
+      raw: true
     });
 
     const selectedSubIds = buyerInterests.map(i => i.item_subcategory_id);
@@ -243,11 +247,10 @@ exports.getItemType = async (req, res) => {
     let categoryCountMap = {};
 
     if (selectedSubIds.length) {
-
       const subcategories = await ItemSubCategory.findAll({
         where: { id: selectedSubIds },
         attributes: ["id", "item_category_id"],
-        raw: true,
+        raw: true
       });
 
       subcategories.forEach(sub => {
@@ -256,36 +259,41 @@ exports.getItemType = async (req, res) => {
       });
     }
 
-    // attach count
-    const categoriesWithCount = categories.map(cat => ({
+    const categoriesWithCount = itemCategories.map(cat => ({
       ...cat,
-      count: categoryCountMap[cat.id] || 0,
+      count: categoryCountMap[cat.id] || 0
     }));
 
-    // group categories under subcategoryGroup
-    const data = subcategoryGroup
-      .map(group => {
-        const groupCategories = categoriesWithCount.filter(
-          cat => cat.subcategory_id === group.id
-        );
+    const data = categories.map(cat => {
+      const groups = subcategoryGroup
+        .filter(g => g.category === cat.id)
+        .map(group => {
+          const groupCategories = categoriesWithCount.filter(
+            c => c.subcategory_id === group.id
+          );
 
-        return {
-          ...group,
-          categories: groupCategories
-        };
-      })
-      .filter(group => group.categories.length > 0); // 👈 empty group remove
+          return {
+            ...group,
+            categories: groupCategories
+          };
+        })
+        .filter(g => g.categories.length > 0);
 
-    return res.json({ groups: data });
+      return {
+        ...cat,
+        groups
+      };
+    }).filter(cat => cat.groups.length > 0);
+
+    return res.json({ categories: data });
 
   } catch (err) {
     console.error(err);
     return res.status(500).json({
-      error: "Failed to fetch Item Category data",
+      error: "Failed to fetch Item Category data"
     });
   }
 };
-
 
 exports.getItemSubcategory = async (req, res) => {
   try {
