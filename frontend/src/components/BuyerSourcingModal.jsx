@@ -121,9 +121,19 @@ const BuyerSourcingModal = () => {
   }
 };
 
+const matchesSearch = (text, search) => {
+  if (!text) return false;
+  if (!search.trim()) return true;
+
+  const normalizedText = text.toLowerCase().replace(/\s+/g, " ").trim();
+  const normalizedSearch = search.toLowerCase().replace(/\s+/g, " ").trim();
+
+  return normalizedText.includes(normalizedSearch);
+};
+
   const term = categorySearch.trim().toLowerCase();
   const filteredCategories = (itemCategoryData?.categories || []).map((category) => {
-    const categoryMatch = category.name?.toLowerCase().includes(term);
+    const categoryMatch = matchesSearch(category.name, term);
     // ⭐ If category matches → return FULL category with all children
     if (categoryMatch) {
       return {
@@ -136,10 +146,10 @@ const BuyerSourcingModal = () => {
     }
     const matchedGroups = category.groups
       ?.map((group) => {
-        const groupMatch = group.name?.toLowerCase().includes(term);
-        const matchedItems = group.categories?.filter((item) =>
-          item.name?.toLowerCase().includes(term)
-        );
+        const groupMatch = matchesSearch(group.name, term);
+        const matchedItems = group.categories?.filter(item =>
+  matchesSearch(item.name, term)
+);
         // ⭐ If subcategory matches → return full group
         if (groupMatch) {
           return {
@@ -244,14 +254,11 @@ const BuyerSourcingModal = () => {
                               <div className="card-body">
                                 <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
                                   {group.categories
-                                    .filter(cat => {
-                                      const term = categorySearch.toLowerCase();
-                                      return (
-                                        cat.name?.toLowerCase().includes(term) ||
-                                        group.name?.toLowerCase().includes(term) ||
-                                        category.name?.toLowerCase().includes(term)
-                                      );
-                                    })
+                                    .filter(cat =>
+  matchesSearch(cat.name, categorySearch) ||
+  matchesSearch(group.name, categorySearch) ||
+  matchesSearch(category.name, categorySearch)
+)
                                     .map(cat => (
                                       <div className="col" key={cat.id}>
                                         <div className="form-check">
