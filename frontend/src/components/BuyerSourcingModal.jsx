@@ -14,6 +14,7 @@ const BuyerSourcingModal = () => {
   const [categoryCounts, setCategoryCounts] = useState({});
   const [categorySearch, setCategorySearch] = useState("");
   const [subCategorySearch, setSubCategorySearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
   useEffect(() => {
     if (!user?.id) return;
@@ -84,39 +85,114 @@ const BuyerSourcingModal = () => {
   };
 
   const handleSubCheck = async (id) => {
-    const token = localStorage.getItem("user_token");
-    const isChecked = selectedSubIds.includes(id);
-    let updatedIds = isChecked
-      ? selectedSubIds.filter(x => x !== id)
-      : [...selectedSubIds, id];
-    setSelectedSubIds(updatedIds);
-    setCategoryCounts(prev => ({
-      ...prev,
-      [selectedCategoryId]: updatedIds.length
-    }));
+  const token = localStorage.getItem("user_token");
+  const isChecked = selectedSubIds.includes(id);
+  let updatedIds = isChecked
+    ? selectedSubIds.filter(x => x !== id)
+    : [...selectedSubIds, id];
+  setSelectedSubIds(updatedIds);
 
-    try {
-      const res = await axios.post(
-        `${API_BASE_URL}/dashboard/store-item-subcategory`,
-        {
-          userId: user.id,
-          activity: {
-            category_id: selectedCategoryId,
-            subcategory_ids: [id],
-            action: isChecked ? "remove" : "add"
-          }
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
+  // Update categoryCounts for current category based on updatedIds count
+  setCategoryCounts(prev => ({
+    ...prev,
+    [selectedCategoryId]: updatedIds.length
+  }));
+
+  try {
+    const res = await axios.post(
+      `${API_BASE_URL}/dashboard/store-item-subcategory`,
+      {
+        userId: user.id,
+        activity: {
+          category_id: selectedCategoryId,
+          subcategory_ids: [id],
+          action: isChecked ? "remove" : "add"
         }
-      );
-      if (res.data.success) {
-        showNotification(res.data.message, "success");
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` }
       }
-    } catch (err) {
-      showNotification("Failed to save interest", "error");
+    );
+    if (res.data.success) {
+      showNotification(res.data.message, "success");
     }
-  };
+  } catch (err) {
+    showNotification("Failed to save interest", "error");
+  }
+};
+
+  const term = categorySearch.trim().toLowerCase();
+  const filteredCategories = (itemCategoryData?.categories || []).map((category) => {
+    const categoryMatch = category.name?.toLowerCase().includes(term);
+    // ⭐ If category matches → return FULL category with all children
+    if (categoryMatch) {
+      return {
+        ...category,
+        groups: category.groups?.map(group => ({
+          ...group,
+          categories: group.categories
+        }))
+      };
+    }
+    const matchedGroups = category.groups
+      ?.map((group) => {
+        const groupMatch = group.name?.toLowerCase().includes(term);
+        const matchedItems = group.categories?.filter((item) =>
+          item.name?.toLowerCase().includes(term)
+        );
+        // ⭐ If subcategory matches → return full group
+        if (groupMatch) {
+          return {
+            ...group,
+            categories: group.categories
+          };
+        }
+        // ⭐ If item matches → return group with only those items
+        if (matchedItems.length > 0) {
+          return {
+            ...group,
+            categories: matchedItems
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+    if (matchedGroups.length > 0) {
+      return {
+        ...category,
+        groups: matchedGroups
+      };
+    }
+    return null;
+  })
+  .filter(Boolean);
+
+  const finalCategories = filteredCategories
+  .map(category => {
+    let groups = category.groups?.map(group => {
+      let items = group.categories;
+
+      if (categoryFilter === "hasCount") {
+        items = items?.filter(item => {
+          const count = categoryCounts?.[item.id] ?? item.count ?? 0;
+          return count > 0;
+        });
+      }
+      if (!items || items.length === 0) return null;
+
+      return {
+        ...group,
+        categories: items
+      };
+    }).filter(Boolean);
+
+    if (!groups || groups.length === 0) return null;
+
+    return {
+      ...category,
+      groups
+    };
+  }).filter(Boolean);
 
   return (
     <div className="modal fade" id="buyerSourcing">
@@ -130,7 +206,17 @@ const BuyerSourcingModal = () => {
             <div className="row">
               {/* LEFT CATEGORY PART */}
               <div className="col-9 border-end">
-                <h6 className="mb-3">Category</h6>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+  <h6 className="mb-0">Category</h6>
+  <select
+    className="form-select form-select-sm w-auto"
+    value={categoryFilter}
+    onChange={(e) => setCategoryFilter(e.target.value)}
+  >
+    <option value="all">Show All</option>
+    <option value="hasCount">Show Categories With Count</option>
+  </select>
+</div>
                 <input
                   type="text"
                   className="form-control mb-3"
@@ -138,58 +224,66 @@ const BuyerSourcingModal = () => {
                   value={categorySearch}
                   onChange={(e) => setCategorySearch(e.target.value)}
                 />
-                <div className="heightPart">
-
-                  {(itemCategoryData?.groups || []).map(group => (
-
-                    <div key={group.id} className="mb-3">
-
-                      <h6 className="mb-3">{group.name}</h6>
-
-                      <div className="row">
-
-                        {group.categories
-                          .filter(cat =>
-                            cat.name?.toLowerCase().includes(categorySearch.toLowerCase())
-                          )
-                          .map(cat => (
-
-                            <div className="col-lg-4" key={cat.id}>
-                              <div className="form-check mb-2">
-
-                                <input
-                                  className="form-check-input"
-                                  type="checkbox"
-                                  checked={selectedCategoryId === cat.id}
-                                  onChange={() => handleCategoryChange(cat.id)}
-                                  id={`category_${cat.id}`}
-                                />
-
-                                <label
-                                  className="form-check-label"
-                                  htmlFor={`category_${cat.id}`}
-                                >
-                                  {cat.name}
-
-                                  {(categoryCounts?.[cat.id] ?? cat.count) > 0 && (
-                                    <span className="ms-2 badge bg-primary">
-                                      {categoryCounts?.[cat.id] ?? cat.count}
-                                    </span>
-                                  )}
-
-                                </label>
-
+                <div className="heightPart row g-3">
+                  {finalCategories.map(category => (
+                    <div key={category.id} className="col-12">
+                      {/* CATEGORY CARD */}
+                      <div className="card shadow-sm border mb-3">
+                        {/* Category Header */}
+                        <div className="card-header bg-primary text-white">
+                          <h5 className="mb-0">{category.name}</h5>
+                        </div>
+                        <div className="card-body">
+                          {category.groups?.map(group => (
+                            <div key={group.id} className="card mb-3 border">
+                              {/* SUBCATEGORY / GROUP HEADER */}
+                              <div className="card-header bg-light">
+                                <h6 className="mb-0">{group.name}</h6>
+                              </div>
+                              {/* ITEM CATEGORY LIST */}
+                              <div className="card-body">
+                                <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                                  {group.categories
+                                    .filter(cat => {
+                                      const term = categorySearch.toLowerCase();
+                                      return (
+                                        cat.name?.toLowerCase().includes(term) ||
+                                        group.name?.toLowerCase().includes(term) ||
+                                        category.name?.toLowerCase().includes(term)
+                                      );
+                                    })
+                                    .map(cat => (
+                                      <div className="col" key={cat.id}>
+                                        <div className="form-check">
+                                          <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            checked={selectedCategoryId === cat.id}
+                                            onChange={() => handleCategoryChange(cat.id)}
+                                            id={`category_${cat.id}`}
+                                          />
+                                          <label
+                                            className="form-check-label"
+                                            htmlFor={`category_${cat.id}`}
+                                          >
+                                            {cat.name}
+                                            {(categoryCounts?.[cat.id] ?? cat.count) > 0 && (
+                                              <span className="badge bg-success ms-2">
+                                                {categoryCounts?.[cat.id] ?? cat.count}
+                                              </span>
+                                            )}
+                                          </label>
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
                               </div>
                             </div>
-
                           ))}
-
+                        </div>
                       </div>
-
                     </div>
-
                   ))}
-
                 </div>
               </div>
               {/* RIGHT SUBCATEGORY PART */}
