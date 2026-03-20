@@ -427,7 +427,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     if (mailType === "selected") {
       ids = selectedBuyer;
     } else if (mailType === "all") {
-      ids = sellerData.map((s) => s.id);
+      ids = data.map((s) => s.id);
     } else if (mailType === "single") {
       ids = selectedBuyer;
     }
