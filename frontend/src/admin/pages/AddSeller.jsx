@@ -45,7 +45,6 @@ const AddSeller = () => {
   const [updateSection, setUpdateSection] = useState(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 const [categorySearch, setCategorySearch] = useState("");
-const [subCategorySearch, setSubCategorySearch] = useState("");
 const [modalSelectedCategory, setModalSelectedCategory] = useState([]);
 const [modalSelectedSubCategory, setModalSelectedSubCategory] = useState([]);
 const [filterType, setFilterType] = useState("all");
@@ -181,65 +180,6 @@ const [filterType, setFilterType] = useState("all");
   fetchAllSubCategories();
 }, [categories]);
 
-  const handleCategorySelect = async (categoryId) => {
-  let updatedCategories;
-
-  if (selectedCategory.includes(categoryId)) {
-    // ❌ uncheck
-    updatedCategories = selectedCategory.filter(id => id !== categoryId);
-
-    const subs = subCategoryMap[categoryId] || [];
-    const subIds = subs.map(s => s.id);
-
-    // ✅ remove selected subcategories only
-    setSelectedSubCategory(prev =>
-      prev.filter(id => !subIds.includes(id))
-    );
-
-  } else {
-    // ✅ check
-    if (categoryLimit && selectedCategory.length >= categoryLimit) {
-      showNotification(`Maximum ${categoryLimit} categories allowed`, "error");
-      return;
-    }
-
-    updatedCategories = [...selectedCategory, categoryId];
-
-    // ⚠️ fetch ONLY if not already loaded
-    if (!subCategoryMap[categoryId]) {
-      try {
-        const res = await axios.post(
-          `${API_BASE_URL}/sub_categories/categories`,
-          { categories: [categoryId] }
-        );
-
-        setSubCategoryMap(prev => ({
-          ...prev,
-          [categoryId]: res.data
-        }));
-      } catch (err) {
-        console.error(err);
-      }
-    }
-  }
-
-  setSelectedCategory(updatedCategories);
-};
-
-const handleSubCategorySelect = (subId, categoryId) => {
-  if (!selectedCategory.includes(categoryId)) return;
-
-  if (selectedSubCategory.includes(subId)) {
-    setSelectedSubCategory(prev =>
-      prev.filter(id => id !== subId)
-    );
-  } else {
-    setSelectedSubCategory(prev =>
-      [...prev, subId]
-    );
-  }
-};
-
 const matchesSearch = (text, search) => {
   if (!text) return false;
   if (!search.trim()) return true;
@@ -314,10 +254,10 @@ const handleModalCategorySelect = (categoryId) => {
       prev.filter(id => !subIds.includes(id))
     );
   } else {
-    if (categoryLimit && modalSelectedCategory.length >= categoryLimit) {
+    /*if (categoryLimit && modalSelectedCategory.length >= categoryLimit) {
       showNotification(`Maximum ${categoryLimit} categories allowed`, "error");
       return;
-    }
+    }*/
 
     setModalSelectedCategory(prev => [...prev, categoryId]);
   }
@@ -462,9 +402,9 @@ const handleVideoChange = (e) => {
     if (selectedCategory.length === 0) {
       errs.category_sell = "Category is required";
     }
-    if (categoryLimit && selectedCategory.length > categoryLimit) {
+    /*if (categoryLimit && selectedCategory.length > categoryLimit) {
       errs.category_sell = `You can select only ${categoryLimit} categories`;
-    }
+    }*/
     if (!selectedCoreActivity) errs.core_activity = "Core Activity is required";
     if (!selectedActivity) errs.activity = "Activity is required";
 
@@ -1215,7 +1155,7 @@ if (!section || section === "company") {
           
           {/* CATEGORY HEADER */}
           <div className="card-header bg-primary text-white">
-            <div className="form-check">
+            <div className="form-check m-0">
               <input
                 type="checkbox"
                 className="form-check-input"

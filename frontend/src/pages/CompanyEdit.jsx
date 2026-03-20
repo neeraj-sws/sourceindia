@@ -42,9 +42,7 @@ const CompanyEdit = () => {
   const isBlockingRef = useRef(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categorySearch, setCategorySearch] = useState("");
-  const [subCategorySearch, setSubCategorySearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-const [categoryCounts, setCategoryCounts] = useState({});
 const [modalSelectedCategory, setModalSelectedCategory] = useState([]);
 const [modalSelectedSubCategory, setModalSelectedSubCategory] = useState([]);
 
@@ -82,6 +80,10 @@ const handleCategorySelectModal = (categoryId) => {
     updatedSubCategories = updatedSubCategories.filter(id => !subIds.includes(id));
   } else {
     // Check category → just check category, don't auto-check subcategories
+    /*if (categoryLimit && modalSelectedCategory.length >= categoryLimit) {
+      showNotification(`Maximum ${categoryLimit} categories allowed`, "error");
+      return; // ⛔ STOP selection
+    }*/
     updatedCategories = [...modalSelectedCategory, categoryId];
   }
 
@@ -99,52 +101,10 @@ const handleSubCategorySelectModal = (subId) => {
   setModalSelectedSubCategory(updatedSubs);
 };
 
-  const handleCategorySelect = (categoryId) => {
-  const subs = subCategoryMap[categoryId] || [];
-  const subIds = subs.map(s => s.id);
-
-  if (selectedCategory.includes(categoryId)) {
-    // ❌ UNCHECK category → remove category + its subcategories
-    setSelectedCategory(prev =>
-      prev.filter(id => id !== categoryId)
-    );
-
-    setSelectedSubCategory(prev =>
-      prev.filter(id => !subIds.includes(id))
-    );
-
-  } else {
-    // ✅ CHECK category → only select category (no auto sub चयन)
-    setSelectedCategory(prev => [...prev, categoryId]);
-  }
-};
-
 const saveModalSelection = () => {
   setSelectedCategory([...modalSelectedCategory]);
   setSelectedSubCategory([...modalSelectedSubCategory]);
   setShowCategoryModal(false);
-};
-
-  const handleSubCategorySelect = (subId) => {
-  let updated;
-
-  if (selectedSubCategory.includes(subId)) {
-    updated = selectedSubCategory.filter(id => id !== subId);
-  } else {
-    updated = [...selectedSubCategory, subId];
-  }
-
-  setSelectedSubCategory(updated);
-
-  // 🔥 auto-select parent category
-  const newSelectedCategories = categories
-    .filter(cat => {
-      const subs = subCategoryMap[cat.id] || [];
-      return subs.some(sub => updated.includes(sub.id));
-    })
-    .map(cat => cat.id);
-
-  setSelectedCategory(newSelectedCategories);
 };
 
   const matchesSearch = (text, search) => {
@@ -487,6 +447,10 @@ const filteredCategories = (categories || [])
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    /*if (categoryLimit && selectedCategory.length > categoryLimit) {
+    showNotification(`Maximum ${categoryLimit} categories allowed`, "error");
+    return;
+  }*/
     if (!validateForm()) return;
     setSubmitting(true);
     const token = localStorage.getItem("user_token");
@@ -805,7 +769,7 @@ const filteredCategories = (categories || [])
                   <div className="card shadow-sm border">
                     {/* Category Header */}
                     <div className="card-header bg-primary text-white">
-                      <div className="form-check">
+                      <div className="form-check m-0">
                         <input
                           type="checkbox"
                           className="form-check-input"
