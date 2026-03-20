@@ -11,6 +11,20 @@ import EmailModals from "./modal/EmailModals";
 import ExcelExport from "../common/ExcelExport";
 
 const EmailsList = () => {
+  // Clone email template
+  const cloneEmail = async (id) => {
+    try {
+      const res = await axios.post(`${API_BASE_URL}/emails/clone`, { id });
+      if (res.data && res.data.newId) {
+        showNotification("Email cloned successfully!", "success");
+        navigate(`/admin/email-edit/${res.data.newId}`);
+      } else {
+        showNotification("Email cloned, but could not redirect.", "warning");
+      }
+    } catch (error) {
+      showNotification("Failed to clone email.", "error");
+    }
+  };
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -110,9 +124,9 @@ const EmailsList = () => {
     <>
       <div className="page-wrapper">
         <div className="page-content">
-          <Breadcrumb mainhead="Email" maincount={totalRecords} page="Emails Templates" title="Email List" 
-        //   add_button="Add Email" add_link="/admin/add_email"
-          actions={
+          <Breadcrumb mainhead="Email" maincount={totalRecords} page="Emails Templates" title="Email List"
+            //   add_button="Add Email" add_link="/admin/add_email"
+            actions={
               <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
             }
           />
@@ -142,7 +156,7 @@ const EmailsList = () => {
                   <button className="btn btn-secondary" onClick={() => { clearFilters() }}>Clear</button>
                 </div>
               </div>
-              </div>
+            </div>
           </div>
           <div className="card">
             <div className="card-body">
@@ -194,6 +208,11 @@ const EmailsList = () => {
                           <li>
                             <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
                               <i className="bx bx-trash me-2"></i> Delete
+                            </button>
+                          </li>
+                          <li>
+                            <button className="dropdown-item" onClick={() => cloneEmail(row.id)}>
+                              <i className="bx bx-copy me-2"></i> Clone
                             </button>
                           </li>
                         </ul>
