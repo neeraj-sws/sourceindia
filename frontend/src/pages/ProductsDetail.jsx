@@ -499,7 +499,7 @@ const ProductDetail = () => {
                   <div className="card-body text-center py-3 px-2">
                     <h6 className="mb-1">To List your Product</h6>
                     <p className="mb-2 text-muted small">Boost Your Business Visibility</p>
-                    <Link to="/register" className="btn btn-orange btn-sm">Register Now</Link>
+                    <Link to="/registration" className="btn btn-orange btn-sm">Register Now</Link>
                   </div>
                 </div>
 

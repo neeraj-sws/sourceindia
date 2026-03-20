@@ -452,7 +452,7 @@ const CompanyDetail = () => {
                 <div className="card-body text-center p-4">
                   <h5 className="mb-2">To List your Product</h5>
                   <p className="mb-3 text-muted">Boost Your Business Visibility Worldwide</p>
-                  <Link to="/register" className="btn btn-orange">Register Now</Link>
+                  <Link to="/registration" className="btn btn-orange">Register Now</Link>
                 </div>
               </div>
 
