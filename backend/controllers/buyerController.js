@@ -632,7 +632,8 @@ exports.getAllBuyerServerSide = async (req, res) => {
       state,
       city,
       full_name,
-      customerId
+      customerId,
+      sourcing_interest
     } = req.query;
     const validColumns = ['id', 'fname', 'lname', 'full_name', 'email', 'mobile', 'country_name', 'state_name',
       'city_name', 'zipcode', 'user_company', 'website', 'is_trading', 'elcina_member', 'address', 'products',
@@ -810,7 +811,7 @@ exports.getAllBuyerServerSide = async (req, res) => {
       });
       allSourcing.forEach(s => { sourcingMap[s.user_id] = true; });
     }
-    const mappedRows = rows.map(row => ({
+    let mappedRows = rows.map(row => ({
       id: row.id,
       full_name: `${row.fname} ${row.lname}`,
       email: row.email,
@@ -845,6 +846,11 @@ exports.getAllBuyerServerSide = async (req, res) => {
       updated_at: row.updated_at,
       is_sourcing_interest: sourcingMap[row.id] ? 'yes' : 'no',
     }));
+
+    // Filter by sourcing_interest if provided
+    if (typeof sourcing_interest !== 'undefined' && sourcing_interest !== '') {
+      mappedRows = mappedRows.filter(row => row.is_sourcing_interest === sourcing_interest);
+    }
     res.json({
       data: mappedRows,
       totalRecords,

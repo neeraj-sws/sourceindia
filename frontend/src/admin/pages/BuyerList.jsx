@@ -48,6 +48,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedSourcingInterest, setSelectedSourcingInterest] = useState("");
   const [selectedState, setSelectedState] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [appliedCountry, setAppliedCountry] = useState("");
@@ -137,6 +138,11 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
       console.error("Error fetching states:", err);
     }
   };
+  const handleSourcingInterestChange = async (event) => {
+    const sourcingInterest = event.target.value;
+    setSelectedSourcingInterest(sourcingInterest);
+
+  };
 
   const handleStateChange = async (event) => {
     const stateId = event.target.value;
@@ -193,10 +199,23 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     try {
       const response = await axios.get(`${API_BASE_URL}/buyers/server-side`, {
         params: {
-          page, limit, search, sortBy, sort: sortDirection, getInactive: getInactive ? "true" : "false",
-          getNotApproved: getNotApproved ? "true" : "false", getDeleted: getDeleted ? "true" : "false",
-          dateRange, startDate, endDate, country: appliedCountry || "", state: appliedState || "", city: appliedCity || "",
-          customerId: customerId || "", full_name: fullName || "",
+          page,
+          limit,
+          search,
+          sortBy,
+          sort: sortDirection,
+          getInactive: getInactive ? "true" : "false",
+          getNotApproved: getNotApproved ? "true" : "false",
+          getDeleted: getDeleted ? "true" : "false",
+          dateRange,
+          startDate,
+          endDate,
+          country: appliedCountry || "",
+          state: appliedState || "",
+          city: appliedCity || "",
+          customerId: customerId || "",
+          full_name: fullName || "",
+          sourcing_interest: selectedSourcingInterest || "",
         },
       });
       setData(response.data.data);
@@ -212,7 +231,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
   useEffect(() => {
     fetchData();
   }, [page, limit, search, sortBy, sortDirection, getInactive, getNotApproved, getDeleted, dateRange, startDate, endDate,
-    appliedCountry, appliedState, appliedCity, customerId, fullName,
+    appliedCountry, appliedState, appliedCity, customerId, fullName
   ]);
 
   const handleSortChange = (column) => {
@@ -350,6 +369,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
     setStartDate(null);
     setEndDate(null);
     setSelectedCountry("");
+    setSelectedSourcingInterest("");
     setSelectedState("");
     setSelectedCity("");
     setStates([]);
@@ -560,7 +580,15 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                         onChange={(e) => setTempFullName(e.target.value)}
                       />
                     </div>
-                    <div className="col-md-4 mb-3">
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label">Sourcing Interest</label>
+                      <select id="sourcingInterest" className="form-select select2" value={selectedSourcingInterest} onChange={handleSourcingInterestChange}>
+                        <option value="">All</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No</option>
+                      </select>
+                    </div>
+                    <div className="col-md-3 mb-3">
                       <label className="form-label">Country</label>
                       <select id="country" className="form-control select2" value={selectedCountry} onChange={handleCountryChange}>
                         <option value="">All</option>
@@ -569,7 +597,8 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                         ))}
                       </select>
                     </div>
-                    <div className="col-md-4 mb-3">
+
+                    <div className="col-md-3 mb-3">
                       <label className="form-label">State</label>
                       <select id="state" className="form-control select2" value={selectedState} onChange={handleStateChange}>
                         <option value="">All</option>
@@ -578,7 +607,7 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
                         ))}
                       </select>
                     </div>
-                    <div className="col-md-4 mb-3">
+                    <div className="col-md-3 mb-3">
                       <label className="form-label">City</label>
                       <select id="city" className="form-control select2" value={selectedCity} onChange={handleCityChange}>
                         <option value="">All</option>
