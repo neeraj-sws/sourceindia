@@ -149,7 +149,7 @@ const CategoryMain = ({ isHome, limit }) => {
                       <div className="col-lg-9">
                         <div className="row g-3">
                           {cat.subcategories?.length > 0 ? (
-                            cat.subcategories.map((sub) => (
+                            cat.subcategories.filter(sub => sub.product_count > 0).map((sub) => (
                               <div key={sub.id} className="col-sm-6 col-xxl-4">
                                 <div className="card card-hover h-100 shadow-sm border-0">
                                   <div className="card-body">

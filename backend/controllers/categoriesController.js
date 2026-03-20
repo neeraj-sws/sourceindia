@@ -678,12 +678,16 @@ exports.getItemCategories = async (req, res) => {
     const subByCategory = {};
     subcategories.forEach(sub => {
       if (!subByCategory[sub.category]) subByCategory[sub.category] = [];
+      const items = itemBySubcategory[sub.id] || [];
+      const subProductCount = items.reduce((sum, item) => sum + (item.product_count || 0), 0);
+
       subByCategory[sub.category].push({
         id: sub.id,
         name: sub.name,
         slug: sub.slug,
-        item_categories: itemBySubcategory[sub.id] || [],
-        file_name: imageMap[sub.file_id] || null
+        item_categories: items,
+        file_name: imageMap[sub.file_id] || null,
+        product_count: subProductCount  // ✅ add total product count
       });
     });
 
