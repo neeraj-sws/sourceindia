@@ -85,7 +85,7 @@ exports.getAllEmailsServerSide = async (req, res) => {
       sort = 'DESC',
       emailFor = ''
     } = req.query;
-    const validColumns = ['id', 'title', 'email_for', 'subject', 'description', 'is_seller_direct', 
+    const validColumns = ['id', 'title', 'email_for', 'subject', 'description', 'is_seller_direct',
       'message', 'status', 'created_at', 'updated_at'];
     const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -159,6 +159,30 @@ exports.getEmailsCount = async (req, res) => {
     res.json({ total });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Clone email template
+exports.cloneEmail = async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ message: 'Email ID required.' });
+    const email = await Emails.findByPk(id);
+    if (!email) return res.status(404).json({ message: 'Email not found.' });
+    // Prepare clone data
+    const cloneData = {
+      title: email.title + ' (Clone)',
+      email_for: email.email_for,
+      subject: email.subject,
+      description: email.description,
+      is_seller_direct: email.is_seller_direct,
+      message: email.message,
+      status: email.status
+    };
+    const newEmail = await Emails.create(cloneData);
+    res.json({ message: 'Email cloned successfully.', newId: newEmail.id });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
