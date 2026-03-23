@@ -15,27 +15,30 @@ const SubCategory = () => {
     const fetchCategories = async () => {
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/categories/sub-category-item?slug=${slug}&page=${page}&limit=8`
+          `${API_BASE_URL}/categories/sub-category-item?slug=${slug}&page=${page}&limit=9`
         );
 
         const data = res.data;
 
         setTimeout(() => {
           if (data && data.category) {
-            if (page === 1) {
-              setCategory(data.category);
-            } else {
-              setCategory((prev) => ({
-                ...prev,
-                subcategories: [
-                  ...(prev?.subcategories || []),
-                  ...(data.category.subcategories || []),
-                ],
-              }));
-            }
+  const visibleSubcategories = (data.category.subcategories || []).filter(
+    (sub) => sub.product_count > 0
+  );
 
-            setHasMore(data.pagination?.hasMore || false);
-          }
+  setCategory((prev) => ({
+  // Copy all other fields from API category
+  ...data.category,
+  // Replace subcategories with filtered ones
+  subcategories:
+    page === 1
+      ? visibleSubcategories
+      : [...(prev?.subcategories || []), ...visibleSubcategories],
+}));
+
+// Update hasMore based on visible subcategories
+setHasMore(visibleSubcategories.length === 9); // 9 is your limit
+}
 
           setShowSkeleton(false);
         }, 1000); // ⏱️ 1 second skeleton
@@ -142,7 +145,7 @@ const SubCategory = () => {
           <h4 className="fw-semibold mb-4">{category.name}</h4>
           <div className="row g-3">
             {category.subcategories?.length > 0 ? (
-              category.subcategories.map((sub) => (
+              category.subcategories.filter(sub => sub.product_count > 0).map((sub) => (
                 <div key={sub.id} className="col-sm-6 col-lg-4 text-center">
                   <div className="card card-hover h-100 shadow-sm border-0">
                     <div className="card-body">
@@ -157,7 +160,7 @@ const SubCategory = () => {
                       </a>
                       <div className="d-flex justify-content-between align-items--center gap-1 gridulimgcontainer">
                         <ul className="list-unstyled ps-0  mb-0 categorylistul">
-                          {(sub.item_categories || [])
+                          {(sub.item_categories || []).filter(item => item.product_count > 0)
                             .slice(0, 4)
                             .map((item, i) => (
                               <li key={i} className="text-start">

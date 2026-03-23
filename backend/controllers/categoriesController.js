@@ -746,8 +746,49 @@ exports.getItemSubCategories = async (req, res) => {
 
     const itemcategories = await ItemCategory.findAll({
       where: { status: 1, subcategory_id: subIds },
-      attributes: ['id', 'name', 'subcategory_id', 'slug', 'file_id'],
+      attributes: ['id', 'name', 'subcategory_id', 'category_id', 'slug', 'file_id'],
       raw: true
+    });
+
+    const subcategoryCounts = await Products.findAll({
+      attributes: [
+        'sub_category',
+        [sequelize.fn('COUNT', sequelize.col('product_id')), 'product_count']
+      ],
+      where: {
+        status: 1,
+        is_delete: 0,
+        sub_category: subIds
+      },
+      group: ['sub_category'],
+      raw: true
+    });
+
+    const subcategoryCountMap = {};
+    subcategoryCounts.forEach(s => {
+      subcategoryCountMap[s.sub_category] = Number(s.product_count);
+    });
+
+    const productCounts = await Products.findAll({
+      attributes: [
+        'category',
+        'sub_category',
+        'item_category_id',
+        [sequelize.fn('COUNT', sequelize.col('product_id')), 'product_count']
+      ],
+      where: {
+        status: 1,
+        is_delete: 0,
+        sub_category: subIds
+      },
+      group: ['category', 'sub_category', 'item_category_id'],
+      raw: true
+    });
+
+    const productCountMap = {};
+    productCounts.forEach(p => {
+      const key = `${p.category}_${p.sub_category}_${p.item_category_id}`;
+      productCountMap[key] = Number(p.product_count);
     });
 
     // 4️⃣ Fetch all images
@@ -770,7 +811,8 @@ exports.getItemSubCategories = async (req, res) => {
         id: item.id,
         name: item.name,
         slug: item.slug,
-        file_name: imageMap[item.file_id] || null
+        file_name: imageMap[item.file_id] || null,
+        product_count: productCountMap[`${item.category_id}_${item.subcategory_id}_${item.id}`] || 0
       });
     });
 
@@ -783,6 +825,7 @@ exports.getItemSubCategories = async (req, res) => {
         id: sub.id,
         name: sub.name,
         slug: sub.slug,
+        product_count: subcategoryCountMap[sub.id] || 0,
         item_categories: itemBySubcategory[sub.id] || [],
         file_name: imageMap[sub.file_id] || null
       });
