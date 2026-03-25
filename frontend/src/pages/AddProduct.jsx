@@ -27,18 +27,14 @@ const AddProduct = () => {
 
   const [imageToDelete, setImageToDelete] = useState(null);
   const [formData, setFormData] = useState({
-    user_id: '', title: '', code: '', article_number: '', status: '', short_description: '', description: '', item_category_id: '', item_subcategory_id: '', item_id: ''
+    user_id: '', title: '', code: '', article_number: '', status: '', short_description: '', description: '', item_category_id: ''
   });
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
   const [itemCategories, setItemCategories] = useState([]);
-  const [itemSubCategories, setItemSubCategories] = useState([]);
   const [selectedItemCategory, setSelectedItemCategory] = useState('');
-  const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
-  const [items, setItems] = useState([]);
-  const [selectedItem, setSelectedItem] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [categoryLabel, setCategoryLabel] = useState('');
 
@@ -66,42 +62,8 @@ const AddProduct = () => {
   }, [selectedCategory, selectedSubCategory]);
 
   useEffect(() => {
-    if (selectedCategory && selectedSubCategory && selectedItemCategory) {
-      axios.get(
-        `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}`
-      )
-        .then(res => setItemSubCategories(res.data))
-        .catch(err => {
-          if (err.response && err.response.status === 404) {
-            setItemSubCategories([]); // No data found, not fatal
-          } else {
-            console.error("Error fetching item subcategories:", err);
-          }
-        });
-    } else {
-      setItemSubCategories([]);
-    }
-  }, [selectedCategory, selectedSubCategory, selectedItemCategory]);
-
-  useEffect(() => {
-    if (selectedCategory && selectedSubCategory && selectedItemCategory && selectedItemSubCategory) {
-      axios.get(
-        `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${selectedItemSubCategory}`
-      )
-        .then(res => setItems(res.data))
-        .catch(err => {
-          console.error("Error fetching items:", err);
-          setItems([]);
-        });
-    } else {
-      setItems([]);
-    }
-  }, [selectedCategory, selectedSubCategory, selectedItemCategory, selectedItemSubCategory]);
-
-  useEffect(() => {
     const fetchCategories = async () => {
       try {
-        // const res = await axios.get(`${API_BASE_URL}/categories`);
         const res = await axios.get(
           `${API_BASE_URL}/sellers/seller-categories`,
           { params: { user_id: user?.id } }
@@ -143,11 +105,7 @@ const AddProduct = () => {
 
     // Reset dependent dropdowns
     setSelectedItemCategory('');
-    setSelectedItemSubCategory('');
-    setSelectedItem('');
     setItemCategories([]);
-    setItemSubCategories([]);
-    setItems([]);
 
     if (subCat) {
       try {
@@ -390,58 +348,9 @@ const AddProduct = () => {
   const handleItemCategoryChange = async (event) => {
     const itemCategoryId = event.target.value;
     setSelectedItemCategory(itemCategoryId);
-
-    // Reset lower dropdowns
-    setSelectedItemSubCategory('');
-    setSelectedItem('');
-    setItemSubCategories([]);
-    setItems([]);
-
-    if (selectedCategory && selectedSubCategory && itemCategoryId) {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
-        );
-        setItemSubCategories(res.data);
-      } catch (error) {
-        if (error.response && error.response.status === 404) {
-          setItemSubCategories([]); // No data found, not fatal
-        } else {
-          console.error("Error fetching item subcategories:", error);
-        }
-      }
-    }
-  };
-
-  // Handle Item Sub Category Change
-  const handleItemSubCategoryChange = async (event) => {
-    const itemSubCategoryId = event.target.value;
-    setSelectedItemSubCategory(itemSubCategoryId);
-
-    // Reset lower dropdown
-    setSelectedItem('');
-    setItems([]);
-
-    if (selectedCategory && selectedSubCategory && selectedItemCategory && itemSubCategoryId) {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
-        );
-        setItems(res.data);
-      } catch (error) {
-        console.error("Error fetching items:", error);
-        setItems([]);
-      }
-    }
-  };
-
-  // Handle Item Change
-  const handleItemChange = (event) => {
-    setSelectedItem(event.target.value);
   };
 
   useEffect(() => {
-
     $('#sub_category').select2({
       theme: "bootstrap",
       width: '100%',
@@ -456,18 +365,6 @@ const AddProduct = () => {
         handleItemCategoryChange({ target: { value: $(this).val() } });
       });
 
-    $('#item_sub_category_id')
-      .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
-      .on("change", function () {
-        handleItemSubCategoryChange({ target: { value: $(this).val() } });
-      });
-
-    $('#item_id')
-      .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item" })
-      .on("change", function () {
-        handleItemChange({ target: { value: $(this).val() } });
-      });
-
     return () => {
       if ($('#category').data('select2')) {
         $('#category').off("change").select2('destroy');
@@ -476,10 +373,8 @@ const AddProduct = () => {
         $('#sub_category').off("change").select2('destroy');
       }
       if ($('#item_category_id').data('select2')) $('#item_category_id').select2('destroy');
-      if ($('#item_sub_category_id').data('select2')) $('#item_sub_category_id').select2('destroy');
-      if ($('#item_id').data('select2')) $('#item_id').select2('destroy');
     };
-  }, [categories, subCategories, itemCategories, itemSubCategories, items]);
+  }, [categories, subCategories, itemCategories]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -558,34 +453,6 @@ const AddProduct = () => {
 
         // ✅ Now only set selectedItemCategory AFTER data is available
         setSelectedItemCategory(data.item_category_id || '');
-
-        let itemSubCatRes = [];
-        if (data.category && data.sub_category && data.item_category_id) {
-          try {
-            const resISC = await axios.get(
-              `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${data.category}/${data.sub_category}/${data.item_category_id}`
-            );
-            itemSubCatRes = resISC.data;
-            setItemSubCategories(itemSubCatRes);
-          } catch (err) {
-            if (err.response && err.response.status === 404) {
-              setItemSubCategories([]); // No data found, not fatal
-            } else {
-              console.error("Error fetching item subcategories:", err);
-            }
-          }
-        }
-
-        setSelectedItemSubCategory(data.item_subcategory_id || '');
-
-        if (data.category && data.sub_category && data.item_category_id && data.item_subcategory_id) {
-          const itemsRes = await axios.get(
-            `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${data.category}/${data.sub_category}/${data.item_category_id}/${data.item_subcategory_id}`
-          );
-          setItems(itemsRes.data);
-        }
-
-        setSelectedItem(data.item_id || '');
       } catch (error) {
         console.error('Error fetching Product:', error);
       }
@@ -610,8 +477,6 @@ const AddProduct = () => {
           category: selectedCategory,
           sub_category: selectedSubCategory,
           item_category_id: selectedItemCategory,
-          item_subcategory_id: selectedItemSubCategory,
-          item_id: selectedItem,
         };
         headers = { "Content-Type": "application/json" };
         await axios[method](endpoint, payload, { headers });
@@ -629,8 +494,6 @@ const AddProduct = () => {
         data.append("category", selectedCategory);
         data.append("sub_category", selectedSubCategory);
         data.append("item_category_id", selectedItemCategory);
-        data.append("item_subcategory_id", selectedItemSubCategory);
-        data.append("item_id", selectedItem);
         files.forEach((file) => {
           data.append("files", file);
         });
@@ -788,20 +651,6 @@ const AddProduct = () => {
                   <div className="card">
                     <div className="card-body p-4">
                       <div className="row">
-                        {/* <div className="form-group mb-3 col-md-12">
-                              <label htmlFor="category" className="form-label required">Category</label>
-                              <select
-                                id="category" className="form-control select2"
-                                value={selectedCategory}
-                                onChange={handleCategoryChange}
-                              >
-                                <option value="">Select Category</option>
-                                {categories?.map((category) => (
-                                  <option key={category.id} value={category.id}>{category.name}</option>
-                                ))}
-                              </select>
-                              {errors.category && (<div className="text-danger small">{errors.category}</div>)}
-                            </div> */}
                         <div className="col-12 mb-3 d-flex justify-content-end align-items-center">
                           <button type="button" className="btn btn-outline-secondary me-2" onClick={() => setShowCategoryPicker(true)}>Category Picker</button>
                         </div>
@@ -842,38 +691,6 @@ const AddProduct = () => {
                             ))}
                           </select>
                           {errors.item_category && (<div className="text-danger small">{errors.item_category}</div>)}
-                        </div>
-
-                        <div className="form-group mb-3 col-md-12 d-none">
-                          <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
-                          <select
-                            id="item_sub_category_id"
-                            className="form-control"
-                            value={selectedItemSubCategory}
-                            onChange={handleItemSubCategoryChange}
-                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
-                          >
-                            <option value="">Select Item Sub Category</option>
-                            {itemSubCategories.map((isc) => (
-                              <option key={isc.id} value={isc.id}>{isc.name}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="form-group mb-3 col-md-12 d-none">
-                          <label htmlFor="item_id" className="form-label">Items</label>
-                          <select
-                            id="item_id"
-                            className="form-control"
-                            value={selectedItem}
-                            onChange={handleItemChange}
-                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory || !selectedItemSubCategory}
-                          >
-                            <option value="">Select Item</option>
-                            {items.map((i) => (
-                              <option key={i.id} value={i.id}>{i.name}</option>
-                            ))}
-                          </select>
                         </div>
 
                         <div className="col-md-12">
