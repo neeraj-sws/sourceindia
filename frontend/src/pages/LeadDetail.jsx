@@ -267,6 +267,14 @@ const LeadDetail = () => {
                           })()}
                         </p>
                       </div>
+                      {formData.quantity &&
+                      <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Quantity</p>
+                        <p className="mb-0 text-dark">
+                          {formData.quantity}
+                        </p>
+                      </div>
+                    }
                       <div className="d-flex align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Enquiry Number</p>
                         <p className="mb-0 text-dark">
