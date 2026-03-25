@@ -259,6 +259,14 @@ const ViewEnquiry = () => {
                   <h6 className="mb-3 fw-semibold">Enquiry Detail</h6>
 
                   <div className="border-bottom mb-3 pb-3">
+                    {formData.quantity &&
+                      <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                        <p className="mb-0 text-secondary">Quantity</p>
+                        <p className="mb-0 text-dark">
+                          {formData.quantity}
+                        </p>
+                      </div>
+                    }
                     {formData.seller_category_names &&
                       <div className="d-flex flex-wrap align-items-center justify-content-between mb-2">
                         <p className="mb-0 text-secondary">Category</p>
@@ -413,10 +421,10 @@ const ViewEnquiry = () => {
                                 </div>
                               );
                             }
-                          ) : (
-                            <div className="text-center p-5">
-                              <img src="/no-data.jpg" alt="No Data" className="img-fluid mb-3 w-50" />
-                            </div>
+                            ) : (
+                              <div className="text-center p-5">
+                                <img src="/no-data.jpg" alt="No Data" className="img-fluid mb-3 w-50" />
+                              </div>
                             )}
                         </div>
 

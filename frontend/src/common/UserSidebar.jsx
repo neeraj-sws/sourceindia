@@ -97,7 +97,16 @@ const UserSidebar = () => {
     },
     { title: "Profile", icon: "bx bx-user", link: "/profile" },
 
-
+    // My Products (member_role == 1 or 3) && is_seller == 1 && is_company == 1
+    {
+      title: "Add Product/Service",
+      icon: "bx bx-comment-add",
+      link: "/add_product",
+      show:
+        (user?.member_role === 1 || user?.member_role === 3) &&
+        user?.is_seller === 1 &&
+        user?.is_company === 1,
+    },
 
     // My Products (member_role == 1 or 3) && is_seller == 1 && is_company == 1
     {
@@ -201,12 +210,12 @@ const UserSidebar = () => {
         <div className="sidebar-header">
           <div>
             <Link to="/">
-            <img src={logoUrl} className="logo-icon" alt="logo icon" loading="lazy"
-              decoding="async" onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = "/logo.png";
-              }} />
-              </Link>
+              <img src={logoUrl} className="logo-icon" alt="logo icon" loading="lazy"
+                decoding="async" onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/logo.png";
+                }} />
+            </Link>
           </div>
           <div className="toggle-icon ms-auto">
             <i className="bx bx-arrow-to-left" />
