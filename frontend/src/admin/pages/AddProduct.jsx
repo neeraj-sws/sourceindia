@@ -43,6 +43,10 @@ const AddProduct = () => {
     short_description: '',
     description: ''
   });
+  // For product name autocomplete
+  const [productSuggestions, setProductSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionLoading, setSuggestionLoading] = useState(false);
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
@@ -325,6 +329,51 @@ const AddProduct = () => {
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
+    // Product name autocomplete logic
+    if (id === 'title') {
+      if (value.length >= 2) {
+        setSuggestionLoading(true);
+        axios.get(`${API_BASE_URL}/products/suggest`, { params: { query: value } })
+          .then(res => {
+            setProductSuggestions(res.data.data || []);
+            setShowSuggestions(true);
+          })
+          .catch(() => setProductSuggestions([]))
+          .finally(() => setSuggestionLoading(false));
+      } else {
+        setProductSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }
+  };
+
+  // When user selects a suggestion
+  const handleSuggestionSelect = (suggestion) => {
+    setFormData(prev => ({ ...prev, title: suggestion.title }));
+    setShowSuggestions(false);
+    // Auto-select user (seller) if available and not already selected
+    let subCatExists = false;
+    if (String(selectedSellers)) {
+      if (suggestion.sub_category) {
+        subCatExists = subCategories.some(sc => String(sc.id) === String(suggestion.sub_category));
+      }
+      if (suggestion.category && subCatExists) {
+        setSelectedCategory(String(suggestion.category));
+      }
+      if (suggestion.sub_category && subCatExists) {
+        setSelectedSubCategory(String(suggestion.sub_category));
+      }
+      if (suggestion.item_category_id && subCatExists) {
+        setSelectedItemCategory(String(suggestion.item_category_id));
+      }
+     
+      if (suggestion.item_subcategory_id && subCatExists) {
+        setSelectedItemSubCategory(String(suggestion.item_subcategory_id));
+      }
+      if (suggestion.item_id && subCatExists) {
+        setSelectedItem(String(suggestion.item_id));
+      }
+    }
   };
 
   const handleFileChange = (e) => {
@@ -790,16 +839,67 @@ const AddProduct = () => {
                           </select>
                           {errors.user_id && (<div className="text-danger small">{errors.user_id}</div>)}
                         </div>
-                        <div className="form-group mb-3 col-md-6">
+                        <div className="form-group mb-3 col-md-6" style={{ position: 'relative' }}>
                           <label htmlFor="title" className="form-label required">Product Name</label>
                           <input
                             type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
                             id="title"
                             placeholder="Product Name"
                             value={formData.title}
+                            autoComplete="off"
                             onChange={handleInputChange}
+                            onFocus={() => { if (productSuggestions.length > 0) setShowSuggestions(true); }}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                            style={{ paddingRight: '2.5rem' }}
                           />
+                          {/* Clear button for Product Name */}
+                          {formData.title && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-secondary"
+                              style={{ position: 'absolute', right: 12, top: 28, zIndex: 11, padding: '0 8px', height: 28, lineHeight: 1 }}
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, title: '' }));
+                                setProductSuggestions([]);
+                                setShowSuggestions(false);
+                                // Optionally reset related selections:
+                                // setSelectedCategory(''); setSelectedSubCategory(''); setSelectedItemCategory(''); setSelectedItemSubCategory(''); setSelectedItem('');
+                              }}
+                              title="Clear Product Name"
+                            >
+                              ×
+                            </button>
+                          )}
                           {errors.title && (<div className="invalid-feedback">{errors.title}</div>)}
+                          {/* Suggestions dropdown */}
+                          {showSuggestions && (
+                            <div style={{ position: 'absolute', zIndex: 10, background: '#fff', border: '1px solid #ddd', width: '100%', maxHeight: 220, overflowY: 'auto', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                              {suggestionLoading ? (
+                                <div className="p-2 text-muted">Loading...</div>
+                              ) : (
+                                productSuggestions.length > 0 ? (
+                                  productSuggestions.map(s => (
+                                    <div
+                                      key={s.id}
+                                      style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
+                                      onMouseDown={() => handleSuggestionSelect(s)}
+                                    >
+                                      <div><b>{s.title}</b></div>
+                                      <div style={{ fontSize: 12, color: '#888' }}>
+                                        {s.category_name && <span>Category: {s.category_name} </span>}
+                                        {s.sub_category_name && <span> | Sub: {s.sub_category_name} </span>}
+                                        {s.item_category_name && <span> | ItemCat: {s.item_category_name} </span>}
+                                        {s.item_subcategory_name && <span> | ItemSub: {s.item_subcategory_name} </span>}
+                                        {s.item_name && <span> | Item: {s.item_name}</span>}
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="p-2 text-muted">No suggestions found</div>
+                                )
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="form-group mb-3 col-md-6">
                           <label htmlFor="code" className="form-label">Sku</label>
