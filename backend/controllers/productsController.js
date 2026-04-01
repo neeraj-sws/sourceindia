@@ -1,3 +1,62 @@
+// Product name autocomplete with master data
+exports.suggestProducts = async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query || query.length < 2) {
+      return res.status(400).json({ success: false, message: 'Query too short', data: [] });
+    }
+    // Find products by title (case-insensitive, partial match)
+    const products = await Products.findAll({
+      where: {
+        title: { [Op.like]: `%${query}%` },
+        is_delete: 0
+      },
+      limit: 10,
+      attributes: [
+        'id', 'title', 'category', 'sub_category', 'item_category_id', 'item_subcategory_id', 'item_id'
+      ]
+    });
+    // Fetch master data names for each product
+    const categoryIds = [...new Set(products.map(p => p.category).filter(Boolean))];
+    const subCategoryIds = [...new Set(products.map(p => p.sub_category).filter(Boolean))];
+    const itemCategoryIds = [...new Set(products.map(p => p.item_category_id).filter(Boolean))];
+    const itemSubCategoryIds = [...new Set(products.map(p => p.item_subcategory_id).filter(Boolean))];
+    const itemIds = [...new Set(products.map(p => p.item_id).filter(Boolean))];
+
+    const [categories, subCategories, itemCategories, itemSubCategories, items] = await Promise.all([
+      Categories.findAll({ where: { id: categoryIds }, attributes: ['id', 'name'], raw: true }),
+      SubCategories.findAll({ where: { id: subCategoryIds }, attributes: ['id', 'name'], raw: true }),
+      ItemCategory.findAll({ where: { id: itemCategoryIds }, attributes: ['id', 'name'], raw: true }),
+      ItemSubCategory.findAll({ where: { id: itemSubCategoryIds }, attributes: ['id', 'name'], raw: true }),
+      Items.findAll({ where: { id: itemIds }, attributes: ['id', 'name'], raw: true })
+    ]);
+    const catMap = Object.fromEntries(categories.map(c => [c.id, c.name]));
+    const subCatMap = Object.fromEntries(subCategories.map(c => [c.id, c.name]));
+    const itemCatMap = Object.fromEntries(itemCategories.map(c => [c.id, c.name]));
+    const itemSubCatMap = Object.fromEntries(itemSubCategories.map(c => [c.id, c.name]));
+    const itemMap = Object.fromEntries(items.map(c => [c.id, c.name]));
+
+    const suggestions = products.map(p => ({
+      id: p.id,
+      user_id: p.user_id,
+      title: p.title,
+      category: p.category,
+      category_name: catMap[p.category] || '',
+      sub_category: p.sub_category,
+      sub_category_name: subCatMap[p.sub_category] || '',
+      item_category_id: p.item_category_id,
+      item_category_name: itemCatMap[p.item_category_id] || '',
+      item_subcategory_id: p.item_subcategory_id,
+      item_subcategory_name: itemSubCatMap[p.item_subcategory_id] || '',
+      item_id: p.item_id,
+      item_name: itemMap[p.item_id] || ''
+    }));
+    res.json({ success: true, data: suggestions });
+  } catch (err) {
+    console.error('Error in suggestProducts:', err);
+    res.status(500).json({ success: false, message: 'Server error', data: [] });
+  }
+};
 const { Op, fn, col, literal, Sequelize } = require('sequelize');
 const moment = require('moment');
 const fs = require('fs');
@@ -413,16 +472,16 @@ exports.getAllProducts = async (req, res) => {
       productWhereClause.is_approve = is_approve;
     }
     // General search filter
-        if (search) {
-          productWhereClause[Op.or] = [
-            {
-              title: {
-                [Op.like]: `%${search}%`
-              }
-            }
-          ];
+    if (search) {
+      productWhereClause[Op.or] = [
+        {
+          title: {
+            [Op.like]: `%${search}%`
+          }
         }
-    
+      ];
+    }
+
     let userWhereClause = {};
     if (user_state) {
       const stateIds = parseCsv(user_state);
@@ -679,8 +738,8 @@ exports.getProductsCount = async (req, res) => {
 
     const [total, statusPublic, statusDraft, addedThisMonth] = await Promise.all([
       Products.count({ where: { is_delete: 0 } }),
-      Products.count({ where: { is_delete: 0,is_approve:1 } }),
-      Products.count({ where: {  is_delete: 0,is_approve:0 } }),
+      Products.count({ where: { is_delete: 0, is_approve: 1 } }),
+      Products.count({ where: { is_delete: 0, is_approve: 0 } }),
       Products.count({
         where: {
           created_at: {
@@ -956,18 +1015,18 @@ exports.getAllCompanyInfo = async (req, res) => {
 
       let sellerConditions = [];
 
-if (catIds.length) {
-  sellerConditions.push(`sc.category_id IN (${catIds.join(',')})`);
-}
+      if (catIds.length) {
+        sellerConditions.push(`sc.category_id IN (${catIds.join(',')})`);
+      }
 
-if (subIds.length) {
-  sellerConditions.push(`sc.subcategory_id IN (${subIds.join(',')})`);
-}
+      if (subIds.length) {
+        sellerConditions.push(`sc.subcategory_id IN (${subIds.join(',')})`);
+      }
 
-if (sellerConditions.length) {
-  whereClause[Op.and] = whereClause[Op.and] || [];
-  whereClause[Op.and].push(
-    literal(`
+      if (sellerConditions.length) {
+        whereClause[Op.and] = whereClause[Op.and] || [];
+        whereClause[Op.and].push(
+          literal(`
       EXISTS (
         SELECT 1 
         FROM users u
@@ -979,8 +1038,8 @@ if (sellerConditions.length) {
         AND ${sellerConditions.join(' AND ')}
       )
     `)
-  );
-}
+        );
+      }
     }
     const coreWhere = [];
     if (core_activity || activity) {
@@ -1091,33 +1150,33 @@ if (sellerConditions.length) {
     const allProducts = await Products.findAll({
       where: { company_id: { [Op.in]: companyIds }, is_delete: 0, is_approve: 1, status: 1 },
       attributes: ['id', 'title', 'slug', 'company_id'],
-      limit:10,
-      raw: true
-    });
-    
-    const productMap = {};
-
-await Promise.all(
-  companyIds.map(async (cid) => {
-    const products = await Products.findAll({
-      where: {
-        company_id: cid,
-        is_delete: 0,
-        is_approve: 1,
-        status: 1
-      },
-      attributes: ['id', 'title', 'slug'],
-      order: [['id', 'DESC']],
       limit: 10,
       raw: true
     });
 
-    productMap[cid] = products;
-  })
-);
+    const productMap = {};
 
-    
-    
+    await Promise.all(
+      companyIds.map(async (cid) => {
+        const products = await Products.findAll({
+          where: {
+            company_id: cid,
+            is_delete: 0,
+            is_approve: 1,
+            status: 1
+          },
+          attributes: ['id', 'title', 'slug'],
+          order: [['id', 'DESC']],
+          limit: 10,
+          raw: true
+        });
+
+        productMap[cid] = products;
+      })
+    );
+
+
+
 
     // ✅ Fetch users (single user per company)
     const users = await Users.findAll({

@@ -1,7 +1,9 @@
+// Product name autocomplete with master data
 const express = require('express');
 const router = express.Router();
 const productsController = require('../controllers/productsController');
 router.get('/all-products', productsController.allProduct);
+router.get('/suggest', productsController.suggestProducts);
 
 router.post('/', productsController.createProducts);
 router.get('/count', productsController.getProductsCount);
