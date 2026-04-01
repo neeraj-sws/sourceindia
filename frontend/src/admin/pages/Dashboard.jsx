@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
 import axios from "axios";
 import Breadcrumb from '../common/Breadcrumb';
 import API_BASE_URL from "../../config";
@@ -9,61 +8,35 @@ import EnquiryStockChart from '../dashboard/EnquiryStockChart';
 import LeadsList from '../dashboard/LeadsList';
 import TotalRegisterBuyers from "../dashboard/TotalRegisterBuyers";
 import TotalRegisterSellers from "../dashboard/TotalRegisterSellers";
+import ExcelExport from '../common/ExcelExport';
 
 const Dashboard = () => {
   const [counts, setCounts] = useState({});
+  const [categoryMasterData, setCategoryMasterData] = useState([]);
+  const excelExportRef = useRef();
   const buyerSectionRef = useRef(null);
   const sellerSectionRef = useRef(null);
 
-  const CountData = ({ label, value, icon, link, onClick }) => {
-    const randomNum = Math.floor(Math.random() * 4) + 1;
-    const imgSrc = `/element-0${randomNum}.svg`;
+  // Fetch category master data for Excel
+  const fetchCategoryMasterData = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/categories/master`);
+      setCategoryMasterData(response.data || []);
+    } catch (err) {
+      setCategoryMasterData([]);
+      alert('Failed to fetch category master data');
+    }
+  };
 
-    const colorMap = {
-      1: "bg-soft-primary border border-primary text-primary",
-      2: "bg-soft-success border border-success text-success",
-      3: "bg-soft-purple border border-purple text-purple",
-      4: "bg-soft-warning border border-warning text-warning",
-    };
-
-    const colorClass = colorMap[randomNum];
-
-    const content = (
-      <div className="card radius-2 overflow-hidden position-relative h-100 card-border">
-        <div className="card-body ps-4 py-4">
-          <div className="d-flex align-items-center">
-            <div className="labeltitle">
-              <p className="mb-2">{label}</p>
-              <h2 className="mb-0">{value}</h2>
-            </div>
-            <div className={`ms-auto dashicon avatar avatar-md rounded-circle ${colorClass}`}>
-              <i className={`${icon}`}></i>
-            </div>
-          </div>
-        </div>
-        <img
-          src={imgSrc}
-          className="img-fluid position-absolute top-0 start-0"
-          alt="logo icon"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-    );
-
-    return (
-      <div className="col mb-4">
-        {onClick ? (
-          <div style={{ cursor: "pointer" }} onClick={onClick}>
-            {content}
-          </div>
-        ) : link && link !== "#" ? (
-          <Link to={link}>{content}</Link>
-        ) : (
-          <div style={{ cursor: "pointer" }}>{content}</div>
-        )}
-      </div>
-    );
+  const handleDownload = async () => {
+    if (!categoryMasterData.length) {
+      await fetchCategoryMasterData();
+    }
+    setTimeout(() => {
+      if (excelExportRef.current) {
+        excelExportRef.current.exportToExcel();
+      }
+    }, 300);
   };
 
   useEffect(() => {
@@ -158,10 +131,85 @@ const Dashboard = () => {
 
   ];
 
+  // CountData component (restore)
+  const CountData = ({ label, value, icon, link, onClick }) => {
+    const randomNum = Math.floor(Math.random() * 4) + 1;
+    const imgSrc = `/element-0${randomNum}.svg`;
+
+    const colorMap = {
+      1: "bg-soft-primary border border-primary text-primary",
+      2: "bg-soft-success border border-success text-success",
+      3: "bg-soft-purple border border-purple text-purple",
+      4: "bg-soft-warning border border-warning text-warning",
+    };
+
+    const colorClass = colorMap[randomNum];
+
+    const content = (
+      <div className="card radius-2 overflow-hidden position-relative h-100 card-border">
+        <div className="card-body ps-4 py-4">
+          <div className="d-flex align-items-center">
+            <div className="labeltitle">
+              <p className="mb-2">{label}</p>
+              <h2 className="mb-0">{value}</h2>
+            </div>
+            <div className={`ms-auto dashicon avatar avatar-md rounded-circle ${colorClass}`}>
+              <i className={`${icon}`}></i>
+            </div>
+          </div>
+        </div>
+        <img
+          src={imgSrc}
+          className="img-fluid position-absolute top-0 start-0"
+          alt="logo icon"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    );
+
+    return (
+      <div className="col mb-4">
+        {onClick ? (
+          <div style={{ cursor: "pointer" }} onClick={onClick}>
+            {content}
+          </div>
+        ) : link && link !== "#" ? (
+          <a href={link}>{content}</a>
+        ) : (
+          <div style={{ cursor: "pointer" }}>{content}</div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead="Dashboard" title="" />
+        <div className="d-flex align-items-center justify-content-between">
+          <Breadcrumb mainhead="Dashboard" title="" />
+          <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}>
+            <i className="bx bx-download me-1" /> Download Category Master
+          </button>
+        </div>
+        <ExcelExport
+          ref={excelExportRef}
+          columnWidth={24}
+          fileName="Category_Master.xlsx"
+          data={categoryMasterData}
+          columns={[
+            { label: 'Category ID', key: 'category_id' },
+            { label: 'Category Name', key: 'category_name' },
+            { label: 'Subcategory ID', key: 'subcategory_id' },
+            { label: 'Subcategory Name', key: 'subcategory_name' },
+            { label: 'Item Category ID', key: 'item_category_id' },
+            { label: 'Item Category Name', key: 'item_category_name' },
+            { label: 'Item Subcategory ID', key: 'item_subcategory_id' },
+            { label: 'Item Subcategory Name', key: 'item_subcategory_name' },
+            { label: 'Item ID', key: 'item_id' },
+            { label: 'Item Name', key: 'item_name' },
+          ]}
+        />
         <div className="row row-cols-1 row-cols-md-2 row-cols-xl-4">
           {stats?.map((s, idx) => (
             <CountData key={idx} label={s.label} value={s.value || 0} icon={s.icon} link={s.link} onClick={s.onClick} />

@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
+
 const categoriesController = require('../controllers/categoriesController');
 
 router.post('/', categoriesController.createCategories);
+// Excel export route
+router.get('/master', categoriesController.getCategoryMaster);
 router.get('/count', categoriesController.getCategoriesCount);
 router.get('/', categoriesController.getAllCategories);
 router.get('/category-item', categoriesController.getItemCategories);

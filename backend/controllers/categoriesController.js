@@ -590,7 +590,7 @@ exports.getItemCategories = async (req, res) => {
     // If is_home=1 → filter by is_home
     if (is_home === 1) {
       categoryWhere.top_category = 1;
-    } 
+    }
 
     const categories = await Categories.findAll({
       where: categoryWhere,
@@ -902,11 +902,8 @@ exports.getItemCategory = async (req, res) => {
       attributes: ["id", "file"],
       raw: true,
     });
-
     const imageMap = {};
-    uploadImages.forEach((img) => {
-      imageMap[img.id] = img.file;
-    });
+    uploadImages.forEach((img) => (imageMap[img.id] = img.file));
 
     // 4️⃣ Fetch item subcategories
     const itemData = await ItemSubCategory.findAll({
@@ -1336,6 +1333,144 @@ exports.getSellerCategoryBarGraph = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+exports.getCategoryMaster = async (req, res) => {
+  try {
+    // Fetch all data
+    const categories = await Categories.findAll({
+      where: { is_delete: 0 },
+      attributes: ['id', 'name'],
+      raw: true
+    });
+    const subcategories = await SubCategories.findAll({
+      where: { is_delete: 0 },
+      attributes: ['id', 'name', 'category'],
+      raw: true
+    });
+    const itemCategories = await ItemCategory.findAll({
+      where: { status: 1 },
+      attributes: ['id', 'name', 'category_id', 'subcategory_id'],
+      raw: true
+    });
+    const itemSubCategories = await ItemSubCategory.findAll({
+      where: { status: 1 },
+      attributes: ['id', 'name', 'item_category_id'],
+      raw: true
+    });
+    const items = await Items.findAll({
+      where: { status: 1 },
+      attributes: ['id', 'name', 'item_category_id'],
+      raw: true
+    });
+
+    // Flattened array: Each row is a full path from category to item
+    const flatRows = [];
+    categories.forEach(category => {
+      const subCats = subcategories.filter(sc => sc.category === category.id);
+      if (subCats.length === 0) {
+        // No subcategory, still show category row
+        flatRows.push({
+          category_id: category.id,
+          category_name: category.name,
+          subcategory_id: '',
+          subcategory_name: '',
+          item_category_id: '',
+          item_category_name: '',
+          item_subcategory_id: '',
+          item_subcategory_name: '',
+          item_id: '',
+          item_name: ''
+        });
+      }
+      subCats.forEach(subcat => {
+        const itemCats = itemCategories.filter(ic => ic.category_id === category.id && ic.subcategory_id === subcat.id);
+        if (itemCats.length === 0) {
+          flatRows.push({
+            category_id: category.id,
+            category_name: category.name,
+            subcategory_id: subcat.id,
+            subcategory_name: subcat.name,
+            item_category_id: '',
+            item_category_name: '',
+            item_subcategory_id: '',
+            item_subcategory_name: '',
+            item_id: '',
+            item_name: ''
+          });
+        }
+        itemCats.forEach(itemcat => {
+          const itemSubCats = itemSubCategories.filter(isc => isc.item_category_id === itemcat.id);
+          if (itemSubCats.length === 0) {
+            const its = items.filter(it => it.item_category_id === itemcat.id);
+            if (its.length === 0) {
+              flatRows.push({
+                category_id: category.id,
+                category_name: category.name,
+                subcategory_id: subcat.id,
+                subcategory_name: subcat.name,
+                item_category_id: itemcat.id,
+                item_category_name: itemcat.name,
+                item_subcategory_id: '',
+                item_subcategory_name: '',
+                item_id: '',
+                item_name: ''
+              });
+            }
+            its.forEach(it => {
+              flatRows.push({
+                category_id: category.id,
+                category_name: category.name,
+                subcategory_id: subcat.id,
+                subcategory_name: subcat.name,
+                item_category_id: itemcat.id,
+                item_category_name: itemcat.name,
+                item_subcategory_id: '',
+                item_subcategory_name: '',
+                item_id: it.id,
+                item_name: it.name
+              });
+            });
+          }
+          itemSubCats.forEach(itemsubcat => {
+            const its = items.filter(it => it.item_category_id === itemcat.id);
+            if (its.length === 0) {
+              flatRows.push({
+                category_id: category.id,
+                category_name: category.name,
+                subcategory_id: subcat.id,
+                subcategory_name: subcat.name,
+                item_category_id: itemcat.id,
+                item_category_name: itemcat.name,
+                item_subcategory_id: itemsubcat.id,
+                item_subcategory_name: itemsubcat.name,
+                item_id: '',
+                item_name: ''
+              });
+            }
+            its.forEach(it => {
+              flatRows.push({
+                category_id: category.id,
+                category_name: category.name,
+                subcategory_id: subcat.id,
+                subcategory_name: subcat.name,
+                item_category_id: itemcat.id,
+                item_category_name: itemcat.name,
+                item_subcategory_id: itemsubcat.id,
+                item_subcategory_name: itemsubcat.name,
+                item_id: it.id,
+                item_name: it.name
+              });
+            });
+          });
+        });
+      });
+    });
+
+    res.json(flatRows);
+  } catch (err) {
+    console.error('getCategoryMaster error:', err);
     res.status(500).json({ error: err.message });
   }
 };
