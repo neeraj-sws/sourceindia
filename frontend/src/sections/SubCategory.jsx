@@ -6,7 +6,6 @@ import { useParams } from "react-router-dom";
 const SubCategory = () => {
   const { slug } = useParams();
   const [category, setCategory] = useState(null);
-  const [visibleCount, setVisibleCount] = useState(6);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(true);
@@ -15,7 +14,7 @@ const SubCategory = () => {
     const fetchCategories = async () => {
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/categories/sub-category-item?slug=${slug}&page=${page}&limit=9`
+          `${API_BASE_URL}/categories/sub-category-item?slug=${slug}&page=${page}&limit=200`
         );
 
         const data = res.data;

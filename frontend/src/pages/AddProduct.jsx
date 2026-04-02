@@ -618,7 +618,7 @@ const AddProduct = () => {
                     <div className="card-body p-4">
                       <div className="row">
                         <div className="form-group mb-3 col-md-6">
-                          <label htmlFor="title" className="form-label required">Product Name</label>
+                          <label htmlFor="title" className="form-label required">Product/Service Name</label>
                           <div style={{ position: 'relative' }}>
                             <input
                               type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}

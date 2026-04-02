@@ -840,7 +840,7 @@ const AddProduct = () => {
                           {errors.user_id && (<div className="text-danger small">{errors.user_id}</div>)}
                         </div>
                         <div className="form-group mb-3 col-md-6" style={{ position: 'relative' }}>
-                          <label htmlFor="title" className="form-label required">Product Name</label>
+                          <label htmlFor="title" className="form-label required">Product/Service Name</label>
                           <input
                             type="text" className={`form-control ${errors.title ? "is-invalid" : ""}`}
                             id="title"
