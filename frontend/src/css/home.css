@@ -1158,3 +1158,7 @@ button.nav-link:hover {
         margin-bottom: 6px !important;
     }
 }
+.sort-label input[type="radio"]:checked ~ span {
+    color: orange;
+    font-weight: 600;
+  }

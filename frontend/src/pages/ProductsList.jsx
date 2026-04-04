@@ -967,7 +967,7 @@ const ProductsList = () => {
                   <li className="sortPopular px-sm-2 ps-0 pe-2">
                     <label
                       htmlFor="sortByPopularAtoZ"
-                      className="m-0 cursor-pointer"
+                      className="m-0 cursor-pointer sort-label"
                     >
                       <input
                         type="radio"
@@ -978,14 +978,14 @@ const ProductsList = () => {
                         checked={sortBy === "a_to_z"}
                         onChange={(e) => setSortBy(e.target.value)}
                       />
-                      A to Z
-                      <i className="bx bx-sort-a-z ms-1" aria-hidden="true" />
+                      <span>A to 
+                      <i className="bx bx-sort-a-z ms-1" aria-hidden="true" />Z</span>
                     </label>
                   </li>
                   <li className="sortPopular px-2 border-0 border-start border-end">
                     <label
                       htmlFor="sortByPopularZtoA"
-                      className="m-0 cursor-pointer"
+                      className="m-0 cursor-pointer sort-label"
                     >
                       <input
                         type="radio"
@@ -996,14 +996,14 @@ const ProductsList = () => {
                         checked={sortBy === "z_to_a"}
                         onChange={(e) => setSortBy(e.target.value)}
                       />
-                      Z to A
-                      <i className="bx bx-sort-z-a ms-1" aria-hidden="true" />
+                      <span>Z to A
+                      <i className="bx bx-sort-z-a ms-1" aria-hidden="true" />Z</span>
                     </label>
                   </li>
                   <li className="sortPopular px-2">
                     <label
                       htmlFor="sortByPopularNewest"
-                      className="m-0 cursor-pointer"
+                      className="m-0 cursor-pointer sort-label"
                     >
                       <input
                         type="radio"
@@ -1014,10 +1014,22 @@ const ProductsList = () => {
                         checked={sortBy === "newest"}
                         onChange={(e) => setSortBy(e.target.value)}
                       />
-                      Newest First
-                      <i className="bx bx-sort ms-1" aria-hidden="true" />
+                      <span>Newest First
+                      <i className="fadeIn animated bx bx-sort-up ms-1" aria-hidden="true" /></span>
                     </label>
                   </li>
+                  <li>
+                  <a
+                    href="#"
+                    className="text-white ms-4 font-16"
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent default anchor behavior
+                      setSortBy(""); // Set sortBy to blank
+                    }}
+                  >
+                    <i className="fadeIn animated bx bx-refresh"></i>
+                  </a>
+                </li>
                 </ul>
               </div>
               <div className="ms-auto d-flex gap-2 align-items-center justify-content-between mobileblock">
@@ -1140,21 +1152,31 @@ const ProductsList = () => {
 
                     </div>
                     <button
-                      onClick={() => {
-                        setSelectedCategories([]);
-                        setSelectedSubCategories([]);
-                        setSelectedItemCategories([]);
-                        setSelectedItemSubCategories([]);
-                        setSelectedItems([]);
-                        setSelectedStates([]);
-                        setSelectedCompanies([]);
-                      }}
-                      className="btn btn-sm btn-outline-danger text-nowrap" style={{
-                        padding: '0.188rem 0.625rem'
-                      }}
-                    >
-                      Clear All
-                    </button>
+                  onClick={() => {
+                    // Clear state variables
+                    setSelectedCategories([]);
+                    setSelectedSubCategories([]);
+                    setSelectedItemCategories([]);
+                    setSelectedItemSubCategories([]);
+                    setSelectedItems([]);
+                    setSelectedStates([]);
+                    setSelectedCompanies([]);
+
+                    // Clear URL query parameters
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('category_id');
+                    url.searchParams.delete('subcategory_id');
+                    url.searchParams.delete('item_category_id');
+                    url.searchParams.delete('item_subcategory_id');
+                    window.history.pushState({}, '', url); // Update the URL without reloading the page
+                  }}
+                  className="btn btn-sm btn-outline-danger text-nowrap"
+                  style={{
+                    padding: '0.188rem 0.625rem',
+                  }}
+                >
+                  Clear All
+                </button>
                   </div>
 
                 </div>
@@ -1185,8 +1207,7 @@ const ProductsList = () => {
                         >
                           <img
                             src={product.file_name ? `${ROOT_URL}/${product.file_name}` : '/default-image.png'}
-                            width={40}
-                            height={40}
+                            className="img-fluid p-2"
                             alt={product.title || 'Product Image'}
                             style={{ objectFit: 'cover', borderRadius: '4px' }}
                             onError={e => { e.target.onerror = null; e.target.src = '/default-image.png'; }}
