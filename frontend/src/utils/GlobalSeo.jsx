@@ -35,9 +35,22 @@ const GlobalSeo = () => {
   const pathname = location.pathname;
 
   const fetchSeo = async () => {
+    const applySeo = (nextSeo) => {
+      const finalSeo = { ...DEFAULT_SEO, ...nextSeo };
+      setSeo(finalSeo);
+      window.dispatchEvent(
+        new CustomEvent('seo:updated', {
+          detail: {
+            path: pathname,
+            title: finalSeo.title,
+          },
+        })
+      );
+    };
+
     try {
       if (isTicketViewPage(pathname)) {
-        setSeo({
+        applySeo({
           title: 'Support Ticket | Source India',
           meta_title: 'Support Ticket',
           meta_description: 'View and respond to your support ticket on Source India.',
@@ -60,7 +73,7 @@ const GlobalSeo = () => {
           ?.map((c) => c.organization_name)
           .join(',');
 
-        setSeo({
+        applySeo({
           title: product.title || DEFAULT_SEO.title,
           meta_title: product.title || DEFAULT_SEO.meta_title,
           meta_description: product.short_description || DEFAULT_SEO.meta_description,
@@ -83,7 +96,7 @@ const GlobalSeo = () => {
           ?.map((p) => p.title)
           .join(',');
 
-        setSeo({
+        applySeo({
           title: company.organization_name || DEFAULT_SEO.title,
           meta_title: company.organization_name || DEFAULT_SEO.meta_title,
           meta_description: company.brief_company || DEFAULT_SEO.meta_description,
@@ -103,7 +116,7 @@ const GlobalSeo = () => {
 
       const data = res?.data || {};
 
-      setSeo({
+      applySeo({
         title: data.title || DEFAULT_SEO.title,
         meta_title: data.meta_title || DEFAULT_SEO.meta_title,
         meta_description: data.meta_description || DEFAULT_SEO.meta_description,
@@ -112,7 +125,7 @@ const GlobalSeo = () => {
       });
     } catch (error) {
       console.warn('SEO fallback to default', error);
-      setSeo(DEFAULT_SEO);
+      applySeo(DEFAULT_SEO);
     }
   };
 
