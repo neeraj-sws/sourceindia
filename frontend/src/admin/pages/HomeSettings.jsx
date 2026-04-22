@@ -10,6 +10,7 @@ import CounterSectionForm from '../forms/home/CounterSectionForm';
 import ContactUsInformationForm from '../forms/home/ContactUsInformationForm';
 import GetInTouchForm from '../forms/home/GetInTouchForm';
 import FooterSectionForm from '../forms/home/FooterSectionForm';
+import PopupSectionForm from '../forms/home/PopupSectionForm';
 
 const HomeSettings = () => {
 
@@ -103,6 +104,14 @@ const HomeSettings = () => {
                       </div>
                     </a>
                   </li>
+                  <li className="nav-item mb-1" role="presentation">
+                    <a className="nav-link" data-bs-toggle="pill" href="#primary-pills-popup" role="tab" aria-selected="false">
+                      <div className="d-flex align-items-center">
+                        <div className="tab-icon"><i className="bx bx-image font-18 me-1" /></div>
+                        <div className="tab-title">Pop-up Section</div>
+                      </div>
+                    </a>
+                  </li>
                 </ul>
 
               </div>
@@ -143,6 +152,9 @@ const HomeSettings = () => {
                   </div>
                   <div className="tab-pane fade" id="primary-pills-footer" role="tabpanel">
                     <FooterSectionForm />
+                  </div>
+                  <div className="tab-pane fade" id="primary-pills-popup" role="tabpanel">
+                    <PopupSectionForm />
                   </div>
                 </div>
               </div>

@@ -1,11 +1,71 @@
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
+const { randomUUID } = require('crypto');
 const SiteSettings = require('../models/SiteSettings');
 const HomeSettings = require('../models/HomeSettings');
 const UploadImage = require('../models/UploadImage');
 const FrontMenu = require('../models/FrontMenu');
 const getMulterUpload = require('../utils/upload');
+
+const HOME_IMAGE_KEY_MAP = {
+  about_file_id: 'about_file',
+  footer_logo_id: 'footer_logo',
+  footer_img_1_id: 'footer_img_1',
+  footer_img_2_id: 'footer_img_2',
+  popup_banner_file_id: 'popup_banner_file'
+};
+
+const FRONT_ALLOWED_HOME_KEYS = [
+  'footer_logo',
+  'footer_heading',
+  'footershort_description',
+  'footer_img_1',
+  'footer_img_2',
+  'contactphone_1',
+  'contactphone_2',
+  'contactemail',
+  'contact_map_url',
+  'contactaddress',
+  'facebook_url',
+  'twitter_url',
+  'linkedin_url',
+  'youtube_url',
+  'instagram_url',
+  'popup_banner_file',
+  'popup_banner_url',
+  'popup_banner_status',
+  'popup_banner_session_id'
+];
+
+const HOME_SETTING_SECTION_MAP = {
+  popup_banner_url: 'popup_section',
+  popup_banner_status: 'popup_section',
+  popup_banner_session_id: 'popup_section',
+  popup_banner_file_id: 'popup_section'
+};
+
+const HOME_SETTING_IMAGE_FIELDS = [
+  'about_file',
+  'footer_logo',
+  'footer_img_1',
+  'footer_img_2',
+  'popup_banner_file'
+];
+
+const getHomeSectionByKey = (metaKey) => HOME_SETTING_SECTION_MAP[metaKey] || 'home';
+
+async function ensureHomeSetting(metaKey, defaultValue = '') {
+  const [setting] = await HomeSettings.findOrCreate({
+    where: { meta_key: metaKey },
+    defaults: {
+      page: 'home',
+      section: getHomeSectionByKey(metaKey),
+      meta_value: defaultValue
+    }
+  });
+  return setting;
+}
 
 exports.getSiteSettings = async (req, res) => {
   try {
@@ -71,17 +131,10 @@ exports.getSiteSettings = async (req, res) => {
     const homeSettings = await HomeSettings.findAll();
     const homeFormatted = {};
 
-    const imageKeyMap = {
-      about_file_id: 'about_file',
-      footer_logo_id: 'footer_logo',
-      footer_img_1_id: 'footer_img_1',
-      footer_img_2_id: 'footer_img_2'
-    };
-
     const imageIds = {};
 
     for (const setting of homeSettings) {
-      if (imageKeyMap[setting.meta_key]) {
+      if (HOME_IMAGE_KEY_MAP[setting.meta_key]) {
         imageIds[setting.meta_key] = setting.meta_value;
         homeFormatted[setting.meta_key] = setting.meta_value;
       } else {
@@ -89,7 +142,7 @@ exports.getSiteSettings = async (req, res) => {
       }
     }
 
-    for (const [metaKey, fileKey] of Object.entries(imageKeyMap)) {
+    for (const [metaKey, fileKey] of Object.entries(HOME_IMAGE_KEY_MAP)) {
       const fileId = imageIds[metaKey];
       if (fileId) {
         const image = await UploadImage.findByPk(fileId);
@@ -99,27 +152,9 @@ exports.getSiteSettings = async (req, res) => {
       }
     }
 
-    const allowedHomeKeys = [
-      'footer_logo',
-      'footer_heading',
-      'footershort_description',
-      'footer_img_1',
-      'footer_img_2',
-      'contactphone_1',
-      'contactphone_2',
-      'contactemail',
-      'contact_map_url',
-      'contactaddress',
-      'facebook_url',
-      'twitter_url',
-      'linkedin_url',
-      'youtube_url',
-      'instagram_url'
-    ];
-
     const filteredHomeSettings = {};
 
-    allowedHomeKeys.forEach(key => {
+    FRONT_ALLOWED_HOME_KEYS.forEach(key => {
       if (homeFormatted[key] !== undefined) {
         filteredHomeSettings[key] = homeFormatted[key];
       }
@@ -214,17 +249,10 @@ exports.getFrontSiteSettings = async (req, res) => {
     const homeSettings = await HomeSettings.findAll();
     const homeFormatted = {};
 
-    const imageKeyMap = {
-      about_file_id: 'about_file',
-      footer_logo_id: 'footer_logo',
-      footer_img_1_id: 'footer_img_1',
-      footer_img_2_id: 'footer_img_2'
-    };
-
     const imageIds = {};
 
     for (const setting of homeSettings) {
-      if (imageKeyMap[setting.meta_key]) {
+      if (HOME_IMAGE_KEY_MAP[setting.meta_key]) {
         imageIds[setting.meta_key] = setting.meta_value;
         homeFormatted[setting.meta_key] = setting.meta_value;
       } else {
@@ -232,7 +260,7 @@ exports.getFrontSiteSettings = async (req, res) => {
       }
     }
 
-    for (const [metaKey, fileKey] of Object.entries(imageKeyMap)) {
+    for (const [metaKey, fileKey] of Object.entries(HOME_IMAGE_KEY_MAP)) {
       const fileId = imageIds[metaKey];
       if (fileId) {
         const image = await UploadImage.findByPk(fileId);
@@ -242,27 +270,9 @@ exports.getFrontSiteSettings = async (req, res) => {
       }
     }
 
-    const allowedHomeKeys = [
-      'footer_logo',
-      'footer_heading',
-      'footershort_description',
-      'footer_img_1',
-      'footer_img_2',
-      'contactphone_1',
-      'contactphone_2',
-      'contactemail',
-      'contact_map_url',
-      'contactaddress',
-      'facebook_url',
-      'twitter_url',
-      'linkedin_url',
-      'youtube_url',
-      'instagram_url'
-    ];
-
     const filteredHomeSettings = {};
 
-    allowedHomeKeys.forEach(key => {
+    FRONT_ALLOWED_HOME_KEYS.forEach(key => {
       if (homeFormatted[key] !== undefined) {
         filteredHomeSettings[key] = homeFormatted[key];
       }
@@ -329,23 +339,17 @@ exports.getHomeSettings = async (req, res) => {
   try {
     const settings = await HomeSettings.findAll();
     const formatted = {};
-    const imageKeyMap = {
-      about_file_id: 'about_file',
-      footer_logo_id: 'footer_logo',
-      footer_img_1_id: 'footer_img_1',
-      footer_img_2_id: 'footer_img_2'
-    };
 
     const imageIds = {};
     for (const setting of settings) {
-      if (imageKeyMap[setting.meta_key]) {
+      if (HOME_IMAGE_KEY_MAP[setting.meta_key]) {
         imageIds[setting.meta_key] = setting.meta_value;
         formatted[setting.meta_key] = setting.meta_value;
       } else {
         formatted[setting.meta_key] = setting.meta_value;
       }
     }
-    for (const [metaKey, fileKey] of Object.entries(imageKeyMap)) {
+    for (const [metaKey, fileKey] of Object.entries(HOME_IMAGE_KEY_MAP)) {
       const fileId = imageIds[metaKey];
       if (fileId) {
         const image = await UploadImage.findByPk(fileId);
@@ -367,7 +371,8 @@ exports.updateHomeSettings = async (req, res) => {
     { name: 'about_file', maxCount: 1 },
     { name: 'footer_logo', maxCount: 1 },
     { name: 'footer_img_1', maxCount: 1 },
-    { name: 'footer_img_2', maxCount: 1 }
+    { name: 'footer_img_2', maxCount: 1 },
+    { name: 'popup_banner_file', maxCount: 1 }
   ])(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
     try {
@@ -375,32 +380,34 @@ exports.updateHomeSettings = async (req, res) => {
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
-      const textSettingsToUpdate = req.body;
-      const keys = Object.keys(textSettingsToUpdate).filter(
-        key =>
-          ![
-            'about_file',
-            'footer_logo',
-            'footer_img_1',
-            'footer_img_2'
-          ].includes(key)
-      );
-      if (keys.length) {
-        const settings = await HomeSettings.findAll({
-          where: { meta_key: keys }
-        });
-        const foundKeys = settings.map(s => s.meta_key);
-        const missingKeys = keys.filter(k => !foundKeys.includes(k));
-        if (missingKeys.length) {
-          return res.status(404).json({
-            message: `Settings not found for keys: ${missingKeys.join(', ')}`
-          });
-        }
-        for (const setting of settings) {
-          setting.meta_value = textSettingsToUpdate[setting.meta_key];
-          await setting.save();
+      const textSettingsToUpdate = req.body || {};
+      const isPopupFileUpdated = Boolean(req.files?.popup_banner_file?.[0]);
+      const popupUrlFromRequest = typeof textSettingsToUpdate.popup_banner_url === 'string'
+        ? textSettingsToUpdate.popup_banner_url.trim()
+        : null;
+
+      let shouldRotatePopupSession = isPopupFileUpdated;
+      if (popupUrlFromRequest !== null) {
+        const popupUrlSetting = await ensureHomeSetting('popup_banner_url', '');
+        if ((popupUrlSetting.meta_value || '') !== popupUrlFromRequest) {
+          shouldRotatePopupSession = true;
         }
       }
+
+      if (shouldRotatePopupSession) {
+        textSettingsToUpdate.popup_banner_session_id = randomUUID();
+      }
+
+      const keys = Object.keys(textSettingsToUpdate).filter(
+        key => !HOME_SETTING_IMAGE_FIELDS.includes(key)
+      );
+
+      for (const key of keys) {
+        const setting = await ensureHomeSetting(key, '');
+        setting.meta_value = textSettingsToUpdate[key];
+        await setting.save();
+      }
+
       if (req.files?.about_file)
         await handleSettingImageUpdate('about_file_id', req.files.about_file[0], HomeSettings);
 
@@ -412,6 +419,10 @@ exports.updateHomeSettings = async (req, res) => {
 
       if (req.files?.footer_img_2)
         await handleSettingImageUpdate('footer_img_2_id', req.files.footer_img_2[0], HomeSettings);
+
+      if (req.files?.popup_banner_file)
+        await handleSettingImageUpdate('popup_banner_file_id', req.files.popup_banner_file[0], HomeSettings);
+
       res.json({ message: 'Home settings updated successfully' });
     } catch (err) {
       console.error(err);
@@ -422,7 +433,10 @@ exports.updateHomeSettings = async (req, res) => {
 
 
 async function handleSettingImageUpdate(metaKey, file, table) {
-  const setting = await table.findOne({ where: { meta_key: metaKey } });
+  let setting = await table.findOne({ where: { meta_key: metaKey } });
+  if (!setting && table === HomeSettings) {
+    setting = await ensureHomeSetting(metaKey, '');
+  }
   if (!setting) throw new Error(`Setting not found for key: ${metaKey}`);
   const existingFileId = setting.meta_value;
   if (existingFileId) {
