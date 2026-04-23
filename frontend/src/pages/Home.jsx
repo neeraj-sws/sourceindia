@@ -5,12 +5,14 @@ const CommonSection = lazy(() => import('../pages/CommonSection'));
 const Product = lazy(() => import('../sections/Product'));
 const Company = lazy(() => import('../sections/Company'));
 const CategoryMain = lazy(() => import('../sections/CategoryMain'));
+const HomePopupBanner = lazy(() => import('../components/HomePopupBanner'));
 
 const Home = () => {
 
   return (
     <>
       <Suspense fallback={<div></div>}>
+        <HomePopupBanner />
         <Banner />
         <CommonSection />
         <Product />
