@@ -1,3 +1,5 @@
+import { useLocation } from "react-router-dom";
+
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -21,7 +23,17 @@ const FrontHeader = () => {
   const [mobile, setMobile] = useState("+91-11-41615985");
   const [menuItems, setMenuItems] = useState([]);
   const [searchFocused, setSearchFocused] = useState(false);
-
+  const location = useLocation();
+  // Keep searchQuery in sync with URL ?search= param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const search = params.get("search");
+    if (search) {
+      setSearchQuery(search);
+    } else {
+      setSearchQuery("");
+    }
+  }, [location.search]);
   /* ================= SITE SETTINGS ================= */
   useEffect(() => {
     if (!loading && siteSettings) {
@@ -170,7 +182,10 @@ const FrontHeader = () => {
                           onClick={() => {
                             setSearchQuery(item.name);
                             setShowDropdown(false);
-                            navigate(item.url);
+                            const url = item.url.includes("?")
+                              ? `${item.url}&search=${encodeURIComponent(item.name)}`
+                              : `${item.url}?search=${encodeURIComponent(item.name)}`;
+                            navigate(url);
                           }}
                           style={{ cursor: "pointer" }}
                         >

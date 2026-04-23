@@ -667,7 +667,7 @@ exports.getProductsDetail = async (req, res) => {
 
     // Similar products
     const similarProducts = await Products.findAll({
-      where: { category: productData.category, id: { [Op.ne]: productData.id } },
+      where: { is_approve: 1, status: 1, category: productData.category, id: { [Op.ne]: productData.id } },
       attributes: ['id', 'title', 'file_ids', 'slug'],
       include: [{ model: UploadImage, as: 'file', attributes: ['file'] }]
     });
