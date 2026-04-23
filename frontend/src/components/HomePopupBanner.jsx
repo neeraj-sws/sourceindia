@@ -56,13 +56,13 @@ const HomePopupBanner = () => {
   }, [loading, popupConfig]);
 
   const handleClose = () => {
-    if (popupConfig.sessionId) {
-      localStorage.setItem(HOME_POPUP_STORAGE_KEY, JSON.stringify({
-        sessionId: popupConfig.sessionId,
-        clicked: true,
-        isCancled: true
-      }));
-    }
+    // if (popupConfig.sessionId) {
+    //   localStorage.setItem(HOME_POPUP_STORAGE_KEY, JSON.stringify({
+    //     sessionId: popupConfig.sessionId,
+    //     clicked: true,
+    //     isCancled: true
+    //   }));
+    // }
     setIsVisible(false);
   };
 
