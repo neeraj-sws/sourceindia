@@ -21,16 +21,40 @@ const AnalyticsTracker = () => {
             window.gtag = gtag;
 
             window.gtag('js', new Date());
+            window.gtag('config', GA_MEASUREMENT_ID, { send_page_view: false });
         }
+    }, []);
 
-        // 🔥 Track page view on every route change
-        if (window.gtag) {
-            window.gtag('config', GA_MEASUREMENT_ID, {
-                page_path: location.pathname,
+    useEffect(() => {
+        let tracked = false;
+
+        const onSeoUpdated = (event) => {
+            if (!window.gtag) {
+                return;
+            }
+            if (tracked) {
+                return;
+            }
+            if (event?.detail?.path !== location.pathname) {
+                return;
+            }
+
+            const pageTitle = event?.detail?.title || document.title;
+            const pagePath = location.pathname;
+            const pageLocation = window.location.href;
+
+            window.gtag('event', 'page_view', {
+                page_path: pagePath,
+                page_title: pageTitle,
+                page_location: pageLocation,
             });
-        }
 
-    }, [location]);
+            tracked = true;
+        };
+
+        window.addEventListener('seo:updated', onSeoUpdated);
+        return () => window.removeEventListener('seo:updated', onSeoUpdated);
+    }, [location.pathname]);
 
     return null;
 };
