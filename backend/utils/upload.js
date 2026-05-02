@@ -13,7 +13,9 @@ const getMulterUpload = (folderName) => {
       cb(null, dir);
     },
     filename: function (req, file, cb) {
-      cb(null, Date.now() + path.extname(file.originalname));
+      // Use custom image name if provided, else fallback to timestamp
+      let customName = req.body && req.body.imageName ? req.body.imageName : Date.now();
+      cb(null, customName + path.extname(file.originalname));
     }
   });
 

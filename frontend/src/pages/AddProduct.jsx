@@ -21,6 +21,13 @@ const AddProduct = () => {
   const isEditing = Boolean(productId);
   const navigate = useNavigate();
   const { user, loading } = UseAuth();
+
+  // Redirect to login if user is not present after loading
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -66,6 +73,7 @@ const AddProduct = () => {
   }, [selectedCategory, selectedSubCategory]);
 
   useEffect(() => {
+    console.log('User in AddProduct:', user);
     const fetchCategories = async () => {
       try {
         const res = await axios.get(
@@ -429,8 +437,9 @@ const AddProduct = () => {
 
   const validateForm = () => {
     const errs = {};
+    if (!user || !user.id) errs.user = 'User not found. Please login again.';
     if (!formData.title.trim()) errs.title = 'Title is required';
-    if (!selectedCategory) errs.category = "Category is required";
+    // if (!selectedCategory) errs.category = "Category is required";
     if (!selectedSubCategory) errs.sub_category = "Sub Category is required";
     if (!selectedItemCategory) errs.item_category = "Item Category is required";
     if (!formData.status) errs.status = 'Status is required';
@@ -455,7 +464,7 @@ const AddProduct = () => {
   };
 
   useEffect(() => {
-    if (!isEditing) return;
+    if (!isEditing || subCategories.length === 0) return;
 
     const fetchProduct = async () => {
       try {
@@ -476,12 +485,21 @@ const AddProduct = () => {
           best_product: Number(data.best_product) || 0,
         });
 
+        // Debug logs for category/subcategory
+        console.log('fetchProduct: data.category:', data.category);
+        console.log('fetchProduct: data.sub_category:', data.sub_category);
+        console.log('fetchProduct: subCategories:', subCategories);
+
         // Set category & subcategory first
         setSelectedCategory(data.category || "");
         if (data.sub_category) {
           setSelectedSubCategory(String(data.sub_category));
           const subCatObj = subCategories.find(sc => String(sc.id) === String(data.sub_category));
-          setSelectedCategory(subCatObj ? String(subCatObj.category_id) : "");
+          console.log('fetchProduct: subCatObj:', subCatObj);
+          if (subCatObj && subCatObj.category_id) {
+            setSelectedCategory(String(subCatObj.category_id));
+          }
+          // Agar subCatObj nahi mila, to selectedCategory ko data.category hi rehne do
         }
 
         let itemCatRes = [];
@@ -493,7 +511,6 @@ const AddProduct = () => {
           setItemCategories(itemCatRes);
         }
 
-        // ✅ Now only set selectedItemCategory AFTER data is available
         setSelectedItemCategory(data.item_category_id || '');
       } catch (error) {
         console.error('Error fetching Product:', error);
@@ -501,12 +518,20 @@ const AddProduct = () => {
     };
 
     fetchProduct();
-  }, [productId]);
+  }, [productId, subCategories]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    console.log('ttt');
+    if (!validateForm()) {
+      console.log('Validation errors:', errors);
+      Object.entries(errors).forEach(([key, value]) => {
+        console.log(`Field: ${key}, Error: ${value}`);
+      });
+      return;
+    }
     setSubmitting(true);
+    console.log('sssttt');
     try {
       let endpoint, method, payload, headers;
       const userId = user?.id;
