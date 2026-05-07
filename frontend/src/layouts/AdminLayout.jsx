@@ -63,6 +63,7 @@ const RegistrationsList = lazy(() => import('../admin/pages/RegistrationsList'))
 const UsersHistory = lazy(() => import('../admin/pages/UsersHistory'));
 const ItemCategory = lazy(() => import('../admin/pages/ItemCategory'));
 const ItemSubCategory = lazy(() => import('../admin/pages/ItemSubCategory'));
+const ProductKeywords = lazy(() => import('../admin/pages/ProductKeywords'));
 const NewItems = lazy(() => import('../admin/pages/NewItems'));
 const ShortcutPage = lazy(() => import('../admin/pages/ShortcutPage'));
 const PageEdit = lazy(() => import('../admin/pages/PageEdit'));
@@ -177,6 +178,7 @@ function AdminLayout() {
               <Route path="/user_history" element={<ProtectedRoute><UsersHistory /></ProtectedRoute>} />
               <Route path="/item_category" element={<ProtectedRoute><ItemCategory /></ProtectedRoute>} />
               <Route path="/item_sub_category" element={<ProtectedRoute><ItemSubCategory /></ProtectedRoute>} />
+              <Route path="/product_keywords" element={<ProtectedRoute><ProductKeywords /></ProtectedRoute>} />
               <Route path="/new_items" element={<ProtectedRoute><NewItems /></ProtectedRoute>} />
               <Route path="/terms_conditions" element={<ProtectedRoute><PageEdit pageId={9} title="Terms & Conditions" /></ProtectedRoute>} />
               <Route path="/privacy_policy" element={<ProtectedRoute><PageEdit pageId={8} title="Privacy Policy" /></ProtectedRoute>} />

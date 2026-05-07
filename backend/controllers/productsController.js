@@ -5,52 +5,46 @@ exports.suggestProducts = async (req, res) => {
     if (!query || query.length < 2) {
       return res.status(400).json({ success: false, message: 'Query too short', data: [] });
     }
-    // Find products by title (case-insensitive, partial match)
-    const products = await Products.findAll({
+
+    const products = await ProductKeyword.findAll({
       where: {
-        title: { [Op.like]: `%${query}%` },
-        is_delete: 0
+        name: { [Op.like]: `%${query}%` },
+        status: 1
       },
       limit: 10,
-      attributes: [
-        'id', 'title', 'category', 'sub_category', 'item_category_id', 'item_subcategory_id', 'item_id'
+      order: [['name', 'ASC']],
+      attributes: ['id', 'name', 'item_subcategory_id'],
+      include: [
+        {
+          model: ItemSubCategory,
+          as: 'ItemSubCategory',
+          required: false,
+          attributes: ['id', 'name', 'item_category_id', 'category_id', 'subcategory_id'],
+          include: [
+            { model: Categories, as: 'Categories', required: false, attributes: ['id', 'name'] },
+            { model: SubCategories, as: 'SubCategories', required: false, attributes: ['id', 'name'] },
+            { model: ItemCategory, as: 'ItemCategory', required: false, attributes: ['id', 'name'] }
+          ]
+        }
       ]
     });
-    // Fetch master data names for each product
-    const categoryIds = [...new Set(products.map(p => p.category).filter(Boolean))];
-    const subCategoryIds = [...new Set(products.map(p => p.sub_category).filter(Boolean))];
-    const itemCategoryIds = [...new Set(products.map(p => p.item_category_id).filter(Boolean))];
-    const itemSubCategoryIds = [...new Set(products.map(p => p.item_subcategory_id).filter(Boolean))];
-    const itemIds = [...new Set(products.map(p => p.item_id).filter(Boolean))];
-
-    const [categories, subCategories, itemCategories, itemSubCategories, items] = await Promise.all([
-      Categories.findAll({ where: { id: categoryIds }, attributes: ['id', 'name'], raw: true }),
-      SubCategories.findAll({ where: { id: subCategoryIds }, attributes: ['id', 'name'], raw: true }),
-      ItemCategory.findAll({ where: { id: itemCategoryIds }, attributes: ['id', 'name'], raw: true }),
-      ItemSubCategory.findAll({ where: { id: itemSubCategoryIds }, attributes: ['id', 'name'], raw: true }),
-      Items.findAll({ where: { id: itemIds }, attributes: ['id', 'name'], raw: true })
-    ]);
-    const catMap = Object.fromEntries(categories.map(c => [c.id, c.name]));
-    const subCatMap = Object.fromEntries(subCategories.map(c => [c.id, c.name]));
-    const itemCatMap = Object.fromEntries(itemCategories.map(c => [c.id, c.name]));
-    const itemSubCatMap = Object.fromEntries(itemSubCategories.map(c => [c.id, c.name]));
-    const itemMap = Object.fromEntries(items.map(c => [c.id, c.name]));
 
     const suggestions = products.map(p => ({
       id: p.id,
-      user_id: p.user_id,
-      title: p.title,
-      category: p.category,
-      category_name: catMap[p.category] || '',
-      sub_category: p.sub_category,
-      sub_category_name: subCatMap[p.sub_category] || '',
-      item_category_id: p.item_category_id,
-      item_category_name: itemCatMap[p.item_category_id] || '',
+      user_id: null,
+      title: p.name,
+      category: p.ItemSubCategory?.category_id || null,
+      category_name: p.ItemSubCategory?.Categories?.name || '',
+      sub_category: p.ItemSubCategory?.subcategory_id || null,
+      sub_category_name: p.ItemSubCategory?.SubCategories?.name || '',
+      item_category_id: p.ItemSubCategory?.item_category_id || null,
+      item_category_name: p.ItemSubCategory?.ItemCategory?.name || '',
       item_subcategory_id: p.item_subcategory_id,
-      item_subcategory_name: itemSubCatMap[p.item_subcategory_id] || '',
-      item_id: p.item_id,
-      item_name: itemMap[p.item_id] || ''
+      item_subcategory_name: p.ItemSubCategory?.name || '',
+      item_id: null,
+      item_name: ''
     }));
+
     res.json({ success: true, data: suggestions });
   } catch (err) {
     console.error('Error in suggestProducts:', err);
@@ -62,6 +56,7 @@ const moment = require('moment');
 const fs = require('fs');
 const path = require('path');
 const Products = require('../models/Products');
+const ProductKeyword = require('../models/ProductKeyword');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');

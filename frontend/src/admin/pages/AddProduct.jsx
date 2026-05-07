@@ -366,7 +366,7 @@ const AddProduct = () => {
       if (suggestion.item_category_id && subCatExists) {
         setSelectedItemCategory(String(suggestion.item_category_id));
       }
-     
+
       if (suggestion.item_subcategory_id && subCatExists) {
         setSelectedItemSubCategory(String(suggestion.item_subcategory_id));
       }

@@ -84,6 +84,14 @@ const menuData = [
     ],
   },
   {
+    key: 'keywords_total',
+    title: 'Keyword Master',
+    icon: 'lni lni-keyword-research',
+    subMenu: [
+      { key: 'product_keywords', title: 'Product Keywords', link: '/admin/product_keywords' },
+    ],
+  },
+  {
     key: 'total_product',
     title: 'Products',
     icon: 'bx bx-cart',
@@ -561,12 +569,12 @@ const Sidebar = () => {
                 <div className="sidebar-header">
                   <div>
                     <Link to="/admin" className="logo-icon">
-                    <img src={logoUrl} className="logo-icon" alt="logo icon" loading="lazy"
-                      decoding="async" onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "/logo.png";
-                      }} />
-                      </Link>
+                      <img src={logoUrl} className="logo-icon" alt="logo icon" loading="lazy"
+                        decoding="async" onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "/logo.png";
+                        }} />
+                    </Link>
                   </div>
                   <div className="toggle-icon ms-auto">
                     <i className="bx bx-arrow-to-left" />
