@@ -37,7 +37,8 @@ const FrontHeader = () => {
   /* ================= SITE SETTINGS ================= */
   useEffect(() => {
     if (!loading && siteSettings) {
-      if (siteSettings.logo_file) setLogoUrl(siteSettings.logo_file);
+
+      if (siteSettings.logo_file) setLogoUrl(`${ROOT_URL}/${siteSettings.logo_file}`);
       if (siteSettings.mobile) setMobile(siteSettings.mobile);
       if (Array.isArray(siteSettings.front_menu)) setMenuItems(siteSettings.front_menu);
     }
@@ -216,7 +217,7 @@ const FrontHeader = () => {
                       aria-expanded="false"
                       role="button"
                     >
-                      <div className="position-relative me-2 user-img-login">
+                      <div className="position-relative me-2 user-img-login ">
                         <ImageWithFallback
                           src={user.file && `${ROOT_URL}/${user.file.file}`}
                           width={50}
