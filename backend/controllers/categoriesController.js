@@ -40,6 +40,7 @@ exports.createCategories = async (req, res) => {
   });
 };
 
+
 exports.getAllCategories = async (req, res) => {
   try {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
@@ -1474,3 +1475,117 @@ exports.getCategoryMaster = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+exports.getProductCategories = async (req, res) => {
+  try {
+    const userId = req.params.userId || req.query.userId || req.body?.userId || req.user?.id;
+
+    const parseIds = (value) => {
+      if (value === null || value === undefined || value === '') return [];
+      return String(value)
+        .split(',')
+        .map((item) => parseInt(item.trim(), 10))
+        .filter((id) => Number.isInteger(id) && id > 0);
+    };
+
+    if (userId) {
+      const products = await Products.findAll({
+        where: {
+          user_id: userId,
+          is_delete: 0,
+        },
+        attributes: ['category'],
+        raw: true,
+      });
+
+      if (!products.length) {
+        return res.json({
+          userId: Number(userId),
+          category_ids: '',
+          categories: '',
+        });
+      }
+
+      const categoryIds = [...new Set(
+        products.flatMap((product) => parseIds(product.category))
+      )];
+
+      const categories = await Promise.all([
+        categoryIds.length ? Categories.findAll({
+          where: {
+            id: { [Op.in]: categoryIds },
+            is_delete: 0,
+          },
+          attributes: ['id', 'name'],
+          raw: true,
+        }) : [],
+      ]).then(([categoryRows]) => categoryRows);
+
+      const categoryNameMap = new Map(categories.map((cat) => [Number(cat.id), cat.name]));
+
+      const categoryNames = categoryIds
+        .map((id) => categoryNameMap.get(id))
+        .filter(Boolean);
+
+      return res.json({
+        userId: Number(userId),
+        category_ids: categoryIds.join(','),
+        categories: categoryNames.join(', '),
+      });
+    }
+
+    const products = await Products.findAll({
+      where: {
+        is_delete: 0,
+      },
+      attributes: ['company_id', 'category'],
+      raw: true,
+    });
+
+    const categoryCompanyMap = new Map();
+    const categoryIds = new Set();
+
+    products.forEach((product) => {
+      const ids = parseIds(product.category);
+      ids.forEach((id) => {
+        categoryIds.add(id);
+        if (!categoryCompanyMap.has(id)) {
+          categoryCompanyMap.set(id, new Set());
+        }
+        if (product.company_id) {
+          categoryCompanyMap.get(id).add(Number(product.company_id));
+        }
+      });
+    });
+
+    if (!categoryIds.size) {
+      return res.json([]);
+    }
+
+    const categories = await Categories.findAll({
+      where: {
+        id: { [Op.in]: [...categoryIds] },
+        is_delete: 0,
+        status: 1,
+      },
+      attributes: ['id', 'name'],
+      raw: true,
+    });
+
+    const categoryNameMap = new Map(categories.map((cat) => [Number(cat.id), cat.name]));
+
+    const response = [...categoryIds]
+      .map((id) => ({
+        id,
+        name: categoryNameMap.get(id) || '',
+        company_count: categoryCompanyMap.get(id)?.size || 0,
+      }))
+      .filter((category) => category.name);
+
+    response.sort((a, b) => a.name.localeCompare(b.name));
+
+    return res.json(response);
+  } catch (error) {
+    console.error('Error in getProductCategories:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+}

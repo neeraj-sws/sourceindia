@@ -21,6 +21,7 @@ const AddProduct = () => {
   const [selectedSellers, setSelectedSellers] = useState("");
   const [applications, setApplications] = useState([]);
   const [selectedApplications, setSelectedApplications] = useState("");
+  const [allCategories, setAllCategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -47,6 +48,7 @@ const AddProduct = () => {
   const [productSuggestions, setProductSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionLoading, setSuggestionLoading] = useState(false);
+  const suppressTitleAutoSelectRef = useRef(false);
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
@@ -67,6 +69,27 @@ const AddProduct = () => {
   const pickerDialogRef = useRef(null);
   const pickerSearchRef = useRef(null);
   const [pickerSelection, setPickerSelection] = useState({ categoryId: null, categoryName: '', subId: null, subName: '', itemCategoryId: null, itemCategoryName: '' });
+  const getSubCategoryCategoryId = (subCategory) => subCategory?.category_id ?? subCategory?.category ?? null;
+  const mergeCategoryOptions = (baseCategories = [], sellerCategories = []) => {
+    const categoryMap = new Map();
+
+    [...baseCategories, ...sellerCategories].forEach((category) => {
+      if (!category?.id) return;
+      categoryMap.set(String(category.id), category);
+    });
+
+    return Array.from(categoryMap.values());
+  };
+  const mergeSubCategoryOptions = (baseSubCategories = [], sellerSubCategories = []) => {
+    const subCategoryMap = new Map();
+
+    [...baseSubCategories, ...sellerSubCategories].forEach((subCategory) => {
+      if (!subCategory?.id) return;
+      subCategoryMap.set(String(subCategory.id), subCategory);
+    });
+
+    return Array.from(subCategoryMap.values());
+  };
 
   useEffect(() => {
     if (selectedCategory && selectedSubCategory) {
@@ -132,51 +155,113 @@ const AddProduct = () => {
   }, []);
 
   useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/categories?is_delete=0&status=1`);
+        const list = res.data || [];
+        setAllCategories(list);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
     if (!selectedSellers) {
-      setSubCategories([]);
-      setSelectedSubCategory("");
-      setSelectedCategory("");
+      setCategories(allCategories);
       return;
     }
 
-    const fetchSellerSubcategories = async () => {
+    const fetchSellerCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
+        const res = await axios.get(`${API_BASE_URL}/sellers/seller-categories`, {
           params: { user_id: selectedSellers }
         });
-        setSubCategories(res.data);
+        setCategories(mergeCategoryOptions(allCategories, res.data || []));
       } catch (error) {
-        console.error("Error fetching subcategories:", error);
+        console.error("Error fetching categories:", error);
+        setCategories(allCategories);
+      }
+    };
+
+    const fetchSellerSubcategories = async () => {
+      setSubCategories([]);
+    };
+
+    fetchSellerCategories();
+    fetchSellerSubcategories();
+  }, [selectedSellers, allCategories]);
+
+  useEffect(() => {
+    if (!selectedCategory) {
+      setSubCategories([]);
+      return;
+    }
+
+    const fetchSubcategoriesByCategory = async () => {
+      try {
+        const [masterRes, sellerRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/sub_categories/category/${selectedCategory}`),
+          selectedSellers
+            ? axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
+              params: { user_id: selectedSellers }
+            })
+            : Promise.resolve({ data: [] })
+        ]);
+
+        const masterSubCategories = masterRes.data || [];
+        const sellerSubCategories = (sellerRes.data || []).filter(
+          (subCategory) => String(getSubCategoryCategoryId(subCategory)) === String(selectedCategory)
+        );
+
+        setSubCategories(
+          selectedSellers
+            ? mergeSubCategoryOptions(masterSubCategories, sellerSubCategories)
+            : masterSubCategories
+        );
+      } catch (error) {
+        console.error("Error fetching subcategories by category:", error);
         setSubCategories([]);
       }
     };
 
-    fetchSellerSubcategories();
-  }, [selectedSellers]);
+    fetchSubcategoriesByCategory();
+  }, [selectedCategory, selectedSellers]);
 
   useEffect(() => {
-    if (subCategories.length > 0 && selectedSubCategory) {
-      $('#sub_category')
-        .val(selectedSubCategory)
-        .trigger('change.select2');
-    }
-  }, [subCategories, selectedSubCategory]);
+    const categoryExists = categories.some(c => String(c.id) === String(selectedCategory));
+    $('#category')
+      .val(categoryExists ? String(selectedCategory) : '')
+      .trigger('change.select2');
+  }, [categories, selectedCategory]);
+
+  useEffect(() => {
+    const visibleSubCategories = subCategories.filter(
+      sc => !selectedCategory || String(getSubCategoryCategoryId(sc)) === String(selectedCategory)
+    );
+    const subCategoryExists = visibleSubCategories.some(sc => String(sc.id) === String(selectedSubCategory));
+
+    $('#sub_category')
+      .val(subCategoryExists ? String(selectedSubCategory) : '')
+      .trigger('change.select2');
+  }, [subCategories, selectedSubCategory, selectedCategory]);
 
   const handleSellersChange = (event) => {
     const userId = event.target.value;
     setSelectedSellers(userId);
 
     // reset everything dependent on seller
-    setCategories([]);
-    setSubCategories([]);
-    setSelectedCategory('');
-    setSelectedSubCategory('');
-    setSelectedItemCategory('');
-    setSelectedItemSubCategory('');
-    setSelectedItem('');
-    setItemCategories([]);
-    setItemSubCategories([]);
-    setItems([]);
+    // setCategories([]);
+    // setSubCategories([]);
+    // setSelectedCategory('');
+    // setSelectedSubCategory('');
+    // setSelectedItemCategory('');
+    // setSelectedItemSubCategory('');
+    // setSelectedItem('');
+    // setItemCategories([]);
+    // setItemSubCategories([]);
+    // setItems([]);
   };
 
   useEffect(() => {
@@ -196,9 +281,10 @@ const AddProduct = () => {
   const handleSubCategoryChange = (event) => {
     const subCategoryId = event.target.value;
     const subCat = subCategories.find(sc => String(sc.id) === subCategoryId);
+    const subCatCategoryId = getSubCategoryCategoryId(subCat);
 
     setSelectedSubCategory(subCategoryId);
-    setSelectedCategory(subCat ? String(subCat.category_id) : "");
+    setSelectedCategory(subCatCategoryId ? String(subCatCategoryId) : "");
 
     // Reset dependent dropdowns
     setSelectedItemCategory('');
@@ -209,14 +295,34 @@ const AddProduct = () => {
     setItems([]);
 
     // fetch item categories for this subcategory
-    if (subCat) {
-      axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${subCat.category_id}/${subCategoryId}`)
+    if (subCat && subCatCategoryId) {
+      axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${subCatCategoryId}/${subCategoryId}`)
         .then(res => setItemCategories(res.data))
         .catch(err => {
           console.error("Error fetching item categories:", err);
           setItemCategories([]);
         });
     }
+  };
+
+  const handleCategoryChange = (event) => {
+    const categoryId = event.target.value;
+    setSelectedCategory(categoryId);
+
+    const subBelongsToCategory = subCategories.some(
+      (sc) => String(sc.id) === String(selectedSubCategory) && String(getSubCategoryCategoryId(sc)) === String(categoryId)
+    );
+
+    if (!subBelongsToCategory) {
+      setSelectedSubCategory('');
+    }
+
+    setSelectedItemCategory('');
+    setSelectedItemSubCategory('');
+    setSelectedItem('');
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setItems([]);
   };
 
   // Handle Item Category Change
@@ -297,6 +403,15 @@ const AddProduct = () => {
       const subCategoryId = $(this).val();
       handleSubCategoryChange({ target: { value: subCategoryId } });
     });
+
+    $('#category').select2({
+      theme: "bootstrap",
+      width: '100%',
+      placeholder: "Select Category"
+    }).on("change", function () {
+      const categoryId = $(this).val();
+      handleCategoryChange({ target: { value: categoryId } });
+    });
     $('#item_category_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
       .on("change", function () {
@@ -320,11 +435,12 @@ const AddProduct = () => {
       $('#user_id').off("change").select2('destroy');
       $('#application').off("change").select2('destroy');
       $('#sub_category').off("change").select2('destroy');
+      if ($('#category').data('select2')) $('#category').select2('destroy');
       if ($('#item_category_id').data('select2')) $('#item_category_id').select2('destroy');
       if ($('#item_sub_category_id').data('select2')) $('#item_sub_category_id').select2('destroy');
       if ($('#item_id').data('select2')) $('#item_id').select2('destroy');
     };
-  }, [sellers, applications, subCategories]);
+  }, [sellers, applications, subCategories, categories]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -351,29 +467,58 @@ const AddProduct = () => {
   const handleSuggestionSelect = (suggestion) => {
     setFormData(prev => ({ ...prev, title: suggestion.title }));
     setShowSuggestions(false);
-    // Auto-select user (seller) if available and not already selected
-    let subCatExists = false;
-    if (String(selectedSellers)) {
-      if (suggestion.sub_category) {
-        subCatExists = subCategories.some(sc => String(sc.id) === String(suggestion.sub_category));
-      }
-      if (suggestion.category && subCatExists) {
-        setSelectedCategory(String(suggestion.category));
-      }
-      if (suggestion.sub_category && subCatExists) {
-        setSelectedSubCategory(String(suggestion.sub_category));
-      }
-      if (suggestion.item_category_id && subCatExists) {
-        setSelectedItemCategory(String(suggestion.item_category_id));
+
+    if (suggestion.category && suggestion.category_name) {
+      setCategories(prev => {
+        const exists = prev.some(cat => String(cat.id) === String(suggestion.category));
+        if (exists) return prev;
+        return [{ id: suggestion.category, name: suggestion.category_name }, ...prev];
+      });
+    }
+
+    if (suggestion.sub_category && suggestion.sub_category_name) {
+      setSubCategories(prev => {
+        const exists = prev.some(sc => String(sc.id) === String(suggestion.sub_category));
+        if (exists) return prev;
+        return [{ id: suggestion.sub_category, name: suggestion.sub_category_name, category_id: suggestion.category || null }, ...prev];
+      });
+    }
+
+    if (suggestion.category) {
+      setSelectedCategory(String(suggestion.category));
+    }
+    if (suggestion.sub_category) {
+      setSelectedSubCategory(String(suggestion.sub_category));
+    }
+    if (suggestion.item_category_id) {
+      setSelectedItemCategory(String(suggestion.item_category_id));
+    }
+
+    if (suggestion.item_subcategory_id) {
+      setSelectedItemSubCategory(String(suggestion.item_subcategory_id));
+    }
+    if (suggestion.item_id) {
+      setSelectedItem(String(suggestion.item_id));
+    }
+
+  };
+
+  const handleTitleBlur = () => {
+    setTimeout(() => {
+      const shouldSuppress = suppressTitleAutoSelectRef.current;
+      suppressTitleAutoSelectRef.current = false;
+
+      if (shouldSuppress) {
+        setShowSuggestions(false);
+        return;
       }
 
-      if (suggestion.item_subcategory_id && subCatExists) {
-        setSelectedItemSubCategory(String(suggestion.item_subcategory_id));
+      if (productSuggestions.length > 0 && formData.title.trim().length >= 2) {
+        handleSuggestionSelect(productSuggestions[0]);
+      } else {
+        setShowSuggestions(false);
       }
-      if (suggestion.item_id && subCatExists) {
-        setSelectedItem(String(suggestion.item_id));
-      }
-    }
+    }, 150);
   };
 
   const handleFileChange = (e) => {
@@ -389,7 +534,7 @@ const AddProduct = () => {
     if (!selectedItemCategory) errs.item_category = "Item Category is required";
 
     if (!formData.status) errs.status = 'Status is required';
-    if (!formData.short_description) errs.short_description = 'Short description is required';
+    // if (!formData.short_description) errs.short_description = 'Short description is required';
 
     const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
@@ -849,7 +994,7 @@ const AddProduct = () => {
                             autoComplete="off"
                             onChange={handleInputChange}
                             onFocus={() => { if (productSuggestions.length > 0) setShowSuggestions(true); }}
-                            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                            onBlur={handleTitleBlur}
                             style={{ paddingRight: '2.5rem' }}
                           />
                           {/* Clear button for Product Name */}
@@ -858,6 +1003,7 @@ const AddProduct = () => {
                               type="button"
                               className="btn btn-sm btn-outline-secondary"
                               style={{ position: 'absolute', right: 12, top: 28, zIndex: 11, padding: '0 8px', height: 28, lineHeight: 1 }}
+                              onMouseDown={() => { suppressTitleAutoSelectRef.current = true; }}
                               onClick={() => {
                                 setFormData(prev => ({ ...prev, title: '' }));
                                 setProductSuggestions([]);
@@ -885,9 +1031,13 @@ const AddProduct = () => {
                                       onMouseDown={() => handleSuggestionSelect(s)}
                                     >
                                       <div><b>{s.title}</b></div>
-                                      <div style={{ fontSize: 12, color: '#888' }}>
-                                        {s.category_name && <span>Category: {s.category_name} </span>}
-                                        {s.sub_category_name && <span> | Sub: {s.sub_category_name} </span>}
+                                      <div className="d-none" style={{ fontSize: 12, color: '#888' }}>
+                                        {(s.category_name || s.sub_category_name) && (
+                                          <span>
+                                            {(s.category_name || 'Category')}
+                                            {s.sub_category_name ? ` > ${s.sub_category_name}` : ''}
+                                          </span>
+                                        )}
                                         {s.item_category_name && <span> | ItemCat: {s.item_category_name} </span>}
                                         {s.item_subcategory_name && <span> | ItemSub: {s.item_subcategory_name} </span>}
                                         {s.item_name && <span> | Item: {s.item_name}</span>}
@@ -895,7 +1045,7 @@ const AddProduct = () => {
                                     </div>
                                   ))
                                 ) : (
-                                  <div className="p-2 text-muted">No suggestions found</div>
+                                  <div className="d-none">No suggestions found</div>
                                 )
                               )}
                             </div>
@@ -1026,6 +1176,21 @@ const AddProduct = () => {
                           ) : null}
                         </div>
                         <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="category" className="form-label required">Category</label>
+                          <select
+                            id="category"
+                            className="form-control select2"
+                            value={selectedCategory}
+                            onChange={handleCategoryChange}
+                          >
+                            <option value="">Select Category</option>
+                            {categories.map((cat) => (
+                              <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                          </select>
+                          {errors.category && (<div className="text-danger small">{errors.category}</div>)}
+                        </div>
+                        <div className="form-group mb-3 col-md-12">
                           <label htmlFor="sub_category" className="form-label required">Sub Category</label>
                           <div className="d-flex flex-column">
                             <div>
@@ -1034,12 +1199,13 @@ const AddProduct = () => {
                                 className="form-control select2"
                                 value={selectedSubCategory}
                                 onChange={handleSubCategoryChange}
-                                disabled={!selectedSellers}
                               >
                                 <option value="">Select Sub Category</option>
-                                {subCategories.map(sc => (
-                                  <option key={sc.id} value={sc.id}>{sc.name}</option>
-                                ))}
+                                {subCategories
+                                  .filter(sc => !selectedCategory || String(getSubCategoryCategoryId(sc)) === String(selectedCategory))
+                                  .map(sc => (
+                                    <option key={sc.id} value={sc.id}>{sc.name}</option>
+                                  ))}
                               </select>
                               {errors.sub_category && (<div className="text-danger small">{errors.sub_category}</div>)}
                             </div>

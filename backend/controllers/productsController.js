@@ -1,24 +1,45 @@
 // Product name autocomplete with master data
 exports.suggestProducts = async (req, res) => {
   try {
-    const { query } = req.query;
+    const { query, category, sub_category, item_category_id, item_subcategory_id } = req.query;
     if (!query || query.length < 2) {
       return res.status(400).json({ success: false, message: 'Query too short', data: [] });
     }
 
+    const keywordWhere = {
+      name: { [Op.like]: `%${query}%` },
+      status: 1
+    };
+
+    if (item_subcategory_id) {
+      keywordWhere.item_subcategory_id = item_subcategory_id;
+    }
+
+    const itemSubCategoryWhere = {};
+    if (category) itemSubCategoryWhere.category_id = category;
+    if (sub_category) itemSubCategoryWhere.subcategory_id = sub_category;
+    if (item_category_id) itemSubCategoryWhere.item_category_id = item_category_id;
+
+    const normalizedQuery = query.toString().trim().toLowerCase();
+    const escapedQuery = sequelize.escape(normalizedQuery);
+    const escapedPrefixQuery = sequelize.escape(`${normalizedQuery}%`);
+
     const products = await ProductKeyword.findAll({
-      where: {
-        name: { [Op.like]: `%${query}%` },
-        status: 1
-      },
+      where: keywordWhere,
       limit: 10,
-      order: [['name', 'ASC']],
+      order: [
+        [literal(`CASE WHEN LOWER(ProductKeyword.name) = ${escapedQuery} THEN 0 ELSE 1 END`), 'ASC'],
+        [literal(`CASE WHEN LOWER(ProductKeyword.name) LIKE ${escapedPrefixQuery} THEN 0 ELSE 1 END`), 'ASC'],
+        [literal('CHAR_LENGTH(ProductKeyword.name)'), 'ASC'],
+        [col('ProductKeyword.name'), 'ASC']
+      ],
       attributes: ['id', 'name', 'item_subcategory_id'],
       include: [
         {
           model: ItemSubCategory,
           as: 'ItemSubCategory',
-          required: false,
+          required: Object.keys(itemSubCategoryWhere).length > 0,
+          where: Object.keys(itemSubCategoryWhere).length > 0 ? itemSubCategoryWhere : undefined,
           attributes: ['id', 'name', 'item_category_id', 'category_id', 'subcategory_id'],
           include: [
             { model: Categories, as: 'Categories', required: false, attributes: ['id', 'name'] },
@@ -1003,34 +1024,31 @@ exports.getAllCompanyInfo = async (req, res) => {
     if (typeof is_delete !== 'undefined') whereClause.is_delete = parseInt(is_delete);
     if (title) whereClause.organization_name = { [Op.like]: `%${title}%` };
 
-    // ✅ Category/Subcategory filter through SellerCategory relation
+    // ✅ Category/Subcategory filter through Products table
     if (category || sub_category) {
       const catIds = category ? parseCsv(category).map(x => parseInt(x)).filter(x => !isNaN(x)) : [];
       const subIds = sub_category ? parseCsv(sub_category).map(x => parseInt(x)).filter(x => !isNaN(x)) : [];
 
-      let sellerConditions = [];
+      const productConditions = [];
 
       if (catIds.length) {
-        sellerConditions.push(`sc.category_id IN (${catIds.join(',')})`);
+        productConditions.push(`(${catIds.map(id => `FIND_IN_SET(${id}, p.category) > 0`).join(' OR ')})`);
       }
 
       if (subIds.length) {
-        sellerConditions.push(`sc.subcategory_id IN (${subIds.join(',')})`);
+        productConditions.push(`(${subIds.map(id => `FIND_IN_SET(${id}, p.sub_category) > 0`).join(' OR ')})`);
       }
 
-      if (sellerConditions.length) {
+      if (productConditions.length) {
         whereClause[Op.and] = whereClause[Op.and] || [];
         whereClause[Op.and].push(
           literal(`
       EXISTS (
-        SELECT 1 
-        FROM users u
-        INNER JOIN seller_categories sc ON sc.user_id = u.user_id
-        WHERE u.company_id = CompanyInfo.company_id
-        AND u.is_delete = 0
-        AND u.status = 1
-        AND u.is_approve = 1
-        AND ${sellerConditions.join(' AND ')}
+        SELECT 1
+        FROM products p
+        WHERE p.company_id = CompanyInfo.company_id
+        AND p.is_delete = 0
+        AND ${productConditions.join(' AND ')}
       )
     `)
         );
@@ -1185,25 +1203,44 @@ exports.getAllCompanyInfo = async (req, res) => {
       if (!companyUsersMap[u.company_id]) companyUsersMap[u.company_id] = u;
     });
 
-    // ✅ Fetch SellerCategory
-    const sellerCats = await SellerCategory.findAll({
-      attributes: ['user_id', 'category_id', 'subcategory_id'],
+    const parseIdValues = (value) => {
+      if (value === null || value === undefined || value === '') return [];
+      return String(value)
+        .split(',')
+        .map(v => parseInt(v.trim(), 10))
+        .filter(v => !isNaN(v));
+    };
+
+    // ✅ Build category/subcategory mapping from Products table using user_id
+    const productCategoryRows = await Products.findAll({
+      where: {
+        user_id: { [Op.in]: users.map(u => u.id) },
+        is_delete: 0
+      },
+      attributes: ['user_id', 'category', 'sub_category'],
       raw: true
     });
 
-    const userSellerMap = {};
-    sellerCats.forEach(sc => {
-      if (!userSellerMap[sc.user_id]) userSellerMap[sc.user_id] = [];
-      userSellerMap[sc.user_id].push(sc);
+    const userProductCategoryMap = {};
+    productCategoryRows.forEach(row => {
+      if (!userProductCategoryMap[row.user_id]) {
+        userProductCategoryMap[row.user_id] = {
+          categoryIds: new Set(),
+          subCategoryIds: new Set()
+        };
+      }
+
+      parseIdValues(row.category).forEach(id => userProductCategoryMap[row.user_id].categoryIds.add(id));
+      parseIdValues(row.sub_category).forEach(id => userProductCategoryMap[row.user_id].subCategoryIds.add(id));
     });
 
     // ✅ Gather unique category & subcategory IDs
     const allCategoryIds = new Set();
     const allSubCategoryIds = new Set();
 
-    sellerCats.forEach(sc => {
-      if (sc.category_id) allCategoryIds.add(sc.category_id);
-      if (sc.subcategory_id) allSubCategoryIds.add(sc.subcategory_id);
+    Object.values(userProductCategoryMap).forEach(row => {
+      row.categoryIds.forEach(id => allCategoryIds.add(id));
+      row.subCategoryIds.forEach(id => allSubCategoryIds.add(id));
     });
 
     // ✅ Fetch category/subcategory names
@@ -1280,11 +1317,11 @@ exports.getAllCompanyInfo = async (req, res) => {
       const subSet = new Set();
 
       userIds.forEach(uid => {
-        const entries = userSellerMap[uid] || [];
-        entries.forEach(e => {
-          if (e.category_id) catSet.add(e.category_id);
-          if (e.subcategory_id) subSet.add(e.subcategory_id);
-        });
+        const entries = userProductCategoryMap[uid];
+        if (!entries) return;
+
+        entries.categoryIds.forEach(id => catSet.add(id));
+        entries.subCategoryIds.forEach(id => subSet.add(id));
       });
 
 
@@ -1342,10 +1379,8 @@ exports.getCompanyInfoById = async (req, res) => {
   try {
     const identifier = req.params.id;
 
-    // Check if identifier is numeric (ID) or a string slug
     const isNumeric = /^\d+$/.test(identifier);
 
-    // Fetch company by ID or organization_slug
     const company = await CompanyInfo.findOne({
       where: isNumeric ? { id: identifier } : { organization_slug: identifier },
       include: [
@@ -1375,108 +1410,79 @@ exports.getCompanyInfoById = async (req, res) => {
         { model: States, as: 'state_data', attributes: ['name'] },
         { model: Cities, as: 'city_data', attributes: ['name'] }
       ],
-      order: [['id', 'ASC']],
-      // raw: true
+      order: [['id', 'ASC']]
     });
 
-    // 2️⃣ Get seller categories
     let categoryNames = [];
     let subCategoryNames = [];
+    let productList = []; // FIXED scope issue
 
-    if (user) {
-      const sellerCats = await SellerCategory.findAll({
-        where: { user_id: user.id },
-        attributes: ['category_id', 'subcategory_id'],
+    const parseIdValues = (value) => {
+      if (!value) return [];
+      return String(value)
+        .split(',')
+        .map(v => parseInt(v.trim(), 10))
+        .filter(v => !isNaN(v));
+    };
+
+    const productRows = await Products.findAll({
+      where: { company_id: company.id, is_delete: 0 },
+      attributes: ['category', 'sub_category'],
+      raw: true
+    });
+
+    const categoryIds = [...new Set(
+      productRows.flatMap(row => parseIdValues(row.category))
+    )];
+
+    const subCategoryIds = [...new Set(
+      productRows.flatMap(row => parseIdValues(row.sub_category))
+    )];
+
+    if (categoryIds.length) {
+      const categories = await Categories.findAll({
+        where: { id: categoryIds },
+        attributes: ['name'],
         raw: true
       });
 
-      const categoryIds = [...new Set(
-        sellerCats.map(sc => sc.category_id).filter(Boolean)
-      )];
-
-      const subCategoryIds = [...new Set(
-        sellerCats.map(sc => sc.subcategory_id).filter(Boolean)
-      )];
-
-      if (categoryIds.length) {
-        const categories = await Categories.findAll({
-          where: { id: categoryIds },
-          attributes: ['name'],
-          raw: true
-        });
-        categoryNames = categories.map(c => c.name);
-      }
-
-      if (subCategoryIds.length) {
-        const subCategories = await SubCategories.findAll({
-          where: { id: subCategoryIds },
-          attributes: ['name'],
-          raw: true
-        });
-        subCategoryNames = subCategories.map(sc => sc.name);
-      }
+      categoryNames = categories.map(c => c.name);
     }
 
-
-    let itemcategoryNames = [];
-    let itemsubCategoryNames = [];
-    // console.log(user);
-    if (user) {
-      const buyerCats = await BuyerSourcingInterests.findAll({
-        where: { user_id: user.id },
-        attributes: ['item_category_id', 'item_subcategory_id'],
+    if (subCategoryIds.length) {
+      const subCategories = await SubCategories.findAll({
+        where: { id: subCategoryIds },
+        attributes: ['name'],
         raw: true
       });
 
-      const itemcategoryIds = [...new Set(
-        buyerCats.map(sc => sc.item_category_id).filter(Boolean)
-      )];
-
-      const itemsubCategoryIds = [...new Set(
-        buyerCats.map(sc => sc.item_subcategory_id).filter(Boolean)
-      )];
-
-      if (itemcategoryIds.length) {
-        const itemcategories = await ItemCategory.findAll({
-          where: { id: itemcategoryIds },
-          attributes: ['name'],
-          raw: true
-        });
-
-        itemcategoryNames = itemcategories.map(c => c.name);
-      }
-
-      if (itemsubCategoryIds.length) {
-        const itemsubCategories = await ItemSubCategory.findAll({
-          where: { id: itemsubCategoryIds },
-          attributes: ['name'],
-          raw: true
-        });
-        itemsubCategoryNames = itemsubCategories.map(sc => sc.name);
-      }
+      subCategoryNames = subCategories.map(sc => sc.name);
     }
 
-    // Get products belonging to the company
-    const products = await Products.findAll({
-      where: { company_id: company.id, is_delete: 0, status: 1, is_approve: 1 },
-      attributes: ['id', 'title', 'slug'],
-      include: [
-        { model: UploadImage, as: 'file', attributes: ['file'] }
-      ]
-    });
+    if (user) {
+      const products = await Products.findAll({
+        where: {
+          user_id: user.id,
+          is_delete: 0,
+          status: 1,
+          is_approve: 1
+        },
+        attributes: ['id', 'title', 'slug'],
+        include: [
+          { model: UploadImage, as: 'file', attributes: ['file'] }
+        ]
+      });
 
-    const productList = products.map(product => {
-      const p = product.toJSON();
-      return {
-        id: p.id,
-        slug: p.slug,
-        title: p.title,
-        image: p.file?.file || null
-      };
-    });
-
-    // Fetch other companies for recommendations
-
+      productList = products.map(product => {
+        const p = product.toJSON();
+        return {
+          id: p.id,
+          slug: p.slug,
+          title: p.title,
+          image: p.file?.file || null
+        };
+      });
+    }
 
     const allowedCategories = new Set();
 
@@ -1488,35 +1494,47 @@ exports.getCompanyInfoById = async (req, res) => {
       });
 
       sellerCats.forEach(sc => {
-        if (sc.category_id) allowedCategories.add(String(sc.category_id));
+        if (sc.category_id) {
+          allowedCategories.add(String(sc.category_id));
+        }
       });
     }
+
     const allCompanies = await CompanyInfo.findAll({
       where: {
         id: { [Op.ne]: company.id }
       },
-      attributes: ['id', 'organization_name', 'organization_slug'],
+      attributes: [
+        'id',
+        'organization_name',
+        'organization_slug',
+      ],
       include: [
         {
           model: UploadImage,
           as: 'companyLogo',
           attributes: ['file']
-        },
+        }
       ]
     });
 
-    /* 🔹 Step 1: category filter */
+    // FIXED filter logic
     const recommendedCompanies = allCompanies.filter(c => {
       if (!c.category_sell) return false;
 
+      const companyCats = String(c.category_sell)
+        .split(',')
+        .map(id => id.trim());
+
+      return companyCats.some(cat =>
+        allowedCategories.has(cat)
+      );
     });
 
-    /* 🔥 Step 2: loop + user se state / city nikaalo */
     for (const comp of recommendedCompanies) {
-
-      // 🔥 FIX: company.id = users.id (NOT company_id)
+      // FIXED lookup
       const usercon = await Users.findOne({
-        where: { id: comp.id },          // <<< YAHI MAIN FIX HAI
+        where: { company_id: comp.id },
         attributes: ['state', 'city']
       });
 
@@ -1529,7 +1547,7 @@ exports.getCompanyInfoById = async (req, res) => {
           attributes: ['name']
         });
 
-        stateName = state ? state.name : null;
+        stateName = state?.name || null;
       }
 
       if (usercon?.city) {
@@ -1538,13 +1556,11 @@ exports.getCompanyInfoById = async (req, res) => {
           attributes: ['name']
         });
 
-        cityName = city ? city.name : null;
+        cityName = city?.name || null;
       }
 
-      // attach to company object
       comp.dataValues.state_name = stateName;
       comp.dataValues.city_name = cityName;
-      // recommendedCompanies.push(comp);
     }
 
     const response = {
@@ -1554,14 +1570,17 @@ exports.getCompanyInfoById = async (req, res) => {
       company_logo_file: data.company_logo_file,
       company_location: data.company_location,
       company_website: data.company_website,
-      organizations_product_description: data.organizations_product_description,
+      organizations_product_description:
+        data.organizations_product_description,
       user_category: data.user_category,
+
       address: user?.address || null,
       zipcode: user?.zipcode || null,
       is_seller: user?.is_seller || 0,
       country_name: user?.country_data?.name || null,
       state_name: user?.state_data?.name || null,
       city_name: user?.city_data?.name || null,
+
       coreactivity_name: data.CoreActivity?.name || null,
       activity_name: data.Activity?.name || null,
 
@@ -1576,16 +1595,12 @@ exports.getCompanyInfoById = async (req, res) => {
         organization_name: c.organization_name,
         company_logo_file: c.companyLogo?.file || null,
         state_name: c.dataValues.state_name,
-        city_name: c.dataValues.city_name,
+        city_name: c.dataValues.city_name
       }))
     };
 
-    // Clean up included models
-    delete response.CoreActivity;
-    delete response.Activity;
-    delete response.companyLogo;
-
     res.json(response);
+
   } catch (err) {
     console.error("Error fetching company info:", err);
     res.status(500).json({ error: err.message });
@@ -2243,5 +2258,68 @@ exports.updateAccountStatus = async (req, res) => {
     res.json({ message: 'Product approved', products });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.productKeywordUpdate = async (req, res) => {
+  try {
+    const products = await Products.findAll({
+      where: {
+        is_delete: 0,
+        item_subcategory_id: { [Op.not]: null },
+        title: { [Op.ne]: null }
+      },
+      attributes: ['id', 'title', 'item_subcategory_id']
+    });
+
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const p of products) {
+      const keywordName = String(p.title || '').trim();
+      if (!keywordName || !p.item_subcategory_id) {
+        skipped += 1;
+        continue;
+      }
+
+      const existing = await ProductKeyword.findOne({
+        where: {
+          name: keywordName,
+          item_subcategory_id: p.item_subcategory_id
+        }
+      });
+
+      if (existing) {
+        if (existing.status !== 1) {
+          existing.status = 1;
+          await existing.save();
+          updated += 1;
+        } else {
+          skipped += 1;
+        }
+      } else {
+        await ProductKeyword.create({
+          name: keywordName,
+          item_subcategory_id: p.item_subcategory_id,
+          status: 1
+        });
+        created += 1;
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Product keywords sync completed',
+      totals: {
+        scanned: products.length,
+        created,
+        updated,
+        skipped
+      }
+    });
+  } catch (err) {
+    console.error('Error in productKeywordUpdate:', err);
+    return res.status(500).json({ success: false, message: 'Server error', error: err.message });
   }
 };

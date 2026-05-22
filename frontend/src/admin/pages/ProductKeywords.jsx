@@ -8,6 +8,7 @@ import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import ItemSubCategoryModals from "./modal/ItemSubCategoryModals";
 import ExcelExport from "../common/ExcelExport";
+import { read, utils } from 'xlsx';
 const initialForm = { id: null, name: "", status: "1", item_subcategory_id: "" };
 import { formatDateTime } from '../../utils/formatDate';
 
@@ -37,12 +38,44 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
   const [names, setNames] = useState([""]);
   const [showListModal, setShowListModal] = useState(false);
   const [listData, setListData] = useState([]);
+  const [listSearch, setListSearch] = useState("");
   const [listLoading, setListLoading] = useState(false);
   const [listParentId, setListParentId] = useState(null);
   const [inlineEditId, setInlineEditId] = useState(null);
   const [inlineEditName, setInlineEditName] = useState("");
   const [inlineSubmitting, setInlineSubmitting] = useState(false);
   const excelExportRef = useRef();
+
+  const getApiErrorMessage = (error, fallbackMessage) => {
+    return (
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      fallbackMessage
+    );
+  };
+
+  const getImportSummaryMessage = (payload, fallbackMessage) => {
+    const importedCount = Number(payload?.importedCount || 0);
+    const skippedCount = Number(payload?.skippedCount ?? payload?.errors?.length ?? 0);
+    const baseMessage = payload?.message || fallbackMessage;
+
+    if (importedCount > 0 && skippedCount > 0) {
+      return `${importedCount} keyword(s) imported. ${skippedCount} row(s) skipped.`;
+    }
+
+    if (importedCount > 0) {
+      return `${importedCount} keyword(s) imported successfully.`;
+    }
+
+    if (skippedCount > 0) {
+      return payload?.errors?.[0]?.reason
+        ? `${baseMessage} First issue: ${payload.errors[0].reason}`
+        : baseMessage;
+    }
+
+    return baseMessage;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -113,6 +146,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
   const openList = async (parentItemSubCategoryId) => {
     setListParentId(parentItemSubCategoryId);
     setListData([]);
+    setListSearch("");
     setInlineEditId(null);
     setInlineEditName("");
     setShowListModal(true);
@@ -130,10 +164,16 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
   const closeList = () => {
     setShowListModal(false);
     setListData([]);
+    setListSearch("");
     setListParentId(null);
     setInlineEditId(null);
     setInlineEditName("");
   };
+
+  const filteredListData = listData.filter((kw) => {
+    if (!listSearch.trim()) return true;
+    return (kw?.name || "").toLowerCase().includes(listSearch.trim().toLowerCase());
+  });
 
   const startInlineEdit = (keyword) => {
     setInlineEditId(keyword.id);
@@ -160,7 +200,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
       cancelInlineEdit();
     } catch (error) {
       console.error("Error updating keyword:", error);
-      showNotification("Failed to update keyword.", "error");
+      showNotification(getApiErrorMessage(error, "Failed to update keyword."), "error");
     } finally {
       setInlineSubmitting(false);
     }
@@ -234,7 +274,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
       resetForm();
     } catch (err) {
       console.error(err);
-      showNotification("Failed to save keyword.", "error");
+      showNotification(getApiErrorMessage(err, "Failed to save keyword."), "error");
     } finally {
       setSubmitting(false);
     }
@@ -278,8 +318,6 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
       closeDeleteModal();
     }
   };
-
-  const openStatusModal = (id, currentStatus) => { setStatusToggleInfo({ id, currentStatus }); setShowStatusModal(true); };
 
   const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null }); };
 
@@ -329,6 +367,62 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
   const handleDownload = () => {
     if (excelExportRef.current) {
       excelExportRef.current.exportToExcel();
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const extension = (file.name.split('.').pop() || '').toLowerCase();
+      let workbook;
+
+      if (extension === 'csv') {
+        const text = await file.text();
+        if (/<!doctype|<html|<head|<body/i.test(text.slice(0, 500))) {
+          throw new Error('Invalid CSV content detected. Please download template again.');
+        }
+        workbook = read(text, { type: 'string' });
+      } else {
+        const data = await file.arrayBuffer();
+        workbook = read(data, { type: 'array' });
+      }
+
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = utils.sheet_to_json(worksheet);
+
+      const formattedData = jsonData.map((row) => ({
+        name: row.Name || row.name || row.Keyword || row.keyword,
+        status: row.Status ?? row.status ?? 1,
+      }));
+
+      const response = await axios.post(`${API_BASE_URL}/keywords/import`, {
+        keywords: formattedData,
+        item_subcategory_id: listParentId,
+      });
+      const importMessage = getImportSummaryMessage(response.data, 'Keywords imported successfully!');
+      const notificationType = Number(response.data?.skippedCount || 0) > 0 ? 'warning' : 'success';
+      showNotification(importMessage, notificationType);
+      event.target.value = '';
+      if (listParentId) {
+        openList(listParentId);
+      } else {
+        setPage(1);
+      }
+    } catch (error) {
+      console.error('Error importing file:', error);
+      const responseData = error?.response?.data;
+      if (responseData?.importedCount >= 0 || Array.isArray(responseData?.errors)) {
+        showNotification(
+          getImportSummaryMessage(responseData, 'No keywords were imported.'),
+          'error'
+        );
+      } else {
+        showNotification(getApiErrorMessage(error, 'Failed to import keywords.'), 'error');
+      }
+      event.target.value = '';
     }
   };
 
@@ -491,16 +585,64 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
           <div className="modal-dialog modal-lg">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Product Keywords</h5>
+                {(() => {
+                  let subcatName = '';
+                  if (listParentId && itemSubCategoryData && Array.isArray(itemSubCategoryData)) {
+                    const found = itemSubCategoryData.find(x => String(x.id) === String(listParentId));
+                    if (found && found.name) subcatName = found.name;
+                  }
+                  return (
+                    <h5 className="modal-title">
+                      Product Keywords{subcatName ? ` – ${subcatName}` : ''}
+                    </h5>
+                  );
+                })()}
                 <button type="button" className="btn-close" onClick={closeList}></button>
               </div>
               <div className="modal-body">
+                <div className="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                  <div>
+                    {(() => {
+                      let subcatName = '';
+                      if (listParentId && itemSubCategoryData && Array.isArray(itemSubCategoryData)) {
+                        const found = itemSubCategoryData.find(x => String(x.id) === String(listParentId));
+                        if (found && found.name) subcatName = found.name;
+                      }
+                      // Sanitize for filename (remove spaces, special chars)
+                      const safeName = subcatName ? subcatName.replace(/[^a-z0-9]/gi, '_').replace(/_+/g, '_') : '';
+                      const fileName = safeName ? `${safeName}.csv` : 'example_keywords.csv';
+                      return (
+                        <a className="btn btn-sm btn-outline-primary" href="/example_keywords.csv" download={fileName}>
+                          <i className="bx bx-download me-1" /> Download Example CSV
+                        </a>
+                      );
+                    })()}
+                    <button className="btn btn-sm btn-success ms-2" onClick={() => document.getElementById('fileUpload').click()}>
+                      <i className="bx bx-upload me-1" /> Import Keywords
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Search keyword"
+                    value={listSearch}
+                    onChange={(e) => setListSearch(e.target.value)}
+                    style={{ maxWidth: 220 }}
+                  />
+                  <input
+                    type="file"
+                    id="fileUpload"
+                    accept=".xlsx, .xls, .csv"
+                    style={{ display: 'none' }}
+                    onChange={handleFileUpload}
+                  />
+                </div>
                 {listLoading ? (
                   <div className="text-center py-3">
                     <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                     Loading...
                   </div>
-                ) : listData.length === 0 ? (
+                ) : filteredListData.length === 0 ? (
                   <p className="text-muted text-center mb-0">No keywords found.</p>
                 ) : (
                   <table className="table table-sm table-bordered mb-0">
@@ -512,7 +654,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {listData.map((kw, idx) => (
+                      {filteredListData.map((kw, idx) => (
                         <tr key={kw.id}>
                           <td>{idx + 1}</td>
                           <td>

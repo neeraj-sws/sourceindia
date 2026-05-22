@@ -34,6 +34,8 @@ router.get('/cities', usersController.getCities);
 router.post('/forgot-password', usersController.forgotPassword);
 router.patch('/:id/status', usersController.updateUsersStatus);
 router.get('/insert-from-company', usersController.insertFromCompany);
+router.get('/product-category', usersController.getProductcategory);
+router.get('/product-category/:userId', usersController.getProductcategory);
 router.post('/verify-forgot-otp', usersController.verifyForgotOtp);
 router.post('/reset-password', usersController.resetPassword);
 router.post('/resend-otp', usersController.resendOtp);

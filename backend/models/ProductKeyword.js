@@ -10,15 +10,15 @@ const ProductKeyword = sequelize.define('ProductKeyword', {
     autoIncrement: true,
     field: 'product_keyword_id',
   },
-  uuid: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    allowNull: false,
-    unique: true,
-  },
+  
   name: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+  code: {
+    type: DataTypes.STRING(30),
+    allowNull: true,
+    unique: true,
   },
   item_subcategory_id: {
     type: DataTypes.INTEGER,

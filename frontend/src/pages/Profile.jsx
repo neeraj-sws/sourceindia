@@ -13,6 +13,8 @@ const Profile = () => {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [productCategories, setProductCategories] = useState('');
+  const [productSubcategories, setProductSubcategories] = useState('');
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -48,6 +50,25 @@ const Profile = () => {
       setSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (user?.id) {
+      const fetchProductCategories = async () => {
+        try {
+          const response = await axios.get(`${API_BASE_URL}/signup/product-category/${user.id}`);
+          setProductCategories(response.data.categories || '');
+          setProductSubcategories(response.data.subcategories || '');
+        } catch (error) {
+          console.error('Error fetching product categories:', error);
+        }
+      };
+      fetchProductCategories();
+    }
+  }, [user?.id]);
+
+
+
+
 
   if (loading) return <p>Loading...</p>;
 
@@ -152,6 +173,22 @@ const Profile = () => {
                                 </div>
                               </div>
                             )}
+                            {productCategories && (
+                              <div className="col-sm-6">
+                                <div className="pt-3 border-bottom">
+                                  <h6>Product Categories</h6>
+                                  <p>{productCategories}</p>
+                                </div>
+                              </div>
+                            )}
+                            {productSubcategories && (
+                              <div className="col-sm-6">
+                                <div className="pt-3 border-bottom">
+                                  <h6>Product Subcategories</h6>
+                                  <p>{productSubcategories}</p>
+                                </div>
+                              </div>
+                            )}
                           </>
                         )}
                         {user.state_data?.name && (
@@ -216,13 +253,13 @@ const Profile = () => {
                           <div className="col-sm-6">
                             <div className="pt-3 border-bottom">
                               <h6>Category</h6>
-                              <p>{user.company_info?.category_sell_names}</p>
+                              <p>{productCategories}</p>
                             </div>
                           </div>
                           <div className="col-sm-6">
                             <div className="pt-3 border-bottom">
                               <h6>Sub Category</h6>
-                              <p>{user.company_info?.sub_category_names}</p>
+                              <p>{productSubcategories}</p>
                             </div>
                           </div>
                           <div className="col-sm-6">
@@ -283,6 +320,7 @@ const Profile = () => {
                     </div>
                   </div>
                 )}
+
               </div>
             </div>
           </div>

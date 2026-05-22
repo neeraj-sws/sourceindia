@@ -3,7 +3,9 @@ const router = express.Router();
 const productKeywordsController = require('../controllers/productKeywordsController');
 
 router.post('/', productKeywordsController.createItemSubCategory);
+router.post('/import', productKeywordsController.importKeywords);
 router.get('/count', productKeywordsController.getItemSubCategoryCount);
+router.get('/all', productKeywordsController.getItemSubCategoryAll);
 router.get('/', productKeywordsController.getAllItemSubCategory);
 router.get('/server-side', productKeywordsController.getAllItemSubCategoryServerSide);
 router.get('/product-bar-graph', productKeywordsController.getItemSubCategoryBarGraph);

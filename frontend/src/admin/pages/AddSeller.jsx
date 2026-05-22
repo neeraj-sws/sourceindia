@@ -9,7 +9,7 @@ import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/bootstrap.css"; 
+import "react-phone-input-2/lib/bootstrap.css";
 const AddSeller = () => {
   const { showNotification } = useAlert();
   const { sellerId } = useParams();
@@ -44,10 +44,10 @@ const AddSeller = () => {
   const [categoryLimit, setCategoryLimit] = useState(null);
   const [updateSection, setUpdateSection] = useState(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
-const [categorySearch, setCategorySearch] = useState("");
-const [modalSelectedCategory, setModalSelectedCategory] = useState([]);
-const [modalSelectedSubCategory, setModalSelectedSubCategory] = useState([]);
-const [filterType, setFilterType] = useState("all");
+  const [categorySearch, setCategorySearch] = useState("");
+  const [modalSelectedCategory, setModalSelectedCategory] = useState([]);
+  const [modalSelectedSubCategory, setModalSelectedSubCategory] = useState([]);
+  const [filterType, setFilterType] = useState("all");
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -157,131 +157,131 @@ const [filterType, setFilterType] = useState("all");
   }, []);
 
   useEffect(() => {
-  if (!categories.length) return;
+    if (!categories.length) return;
 
-  const fetchAllSubCategories = async () => {
-    const map = {};
+    const fetchAllSubCategories = async () => {
+      const map = {};
 
-    for (const cat of categories) {
-      try {
-        const res = await axios.post(
-          `${API_BASE_URL}/sub_categories/categories`,
-          { categories: [cat.id] }
-        );
-        map[cat.id] = res.data;
-      } catch (err) {
-        console.error(err);
+      for (const cat of categories) {
+        try {
+          const res = await axios.post(
+            `${API_BASE_URL}/sub_categories/categories`,
+            { categories: [cat.id] }
+          );
+          map[cat.id] = res.data;
+        } catch (err) {
+          console.error(err);
+        }
       }
-    }
 
-    setSubCategoryMap(map);
+      setSubCategoryMap(map);
+    };
+
+    fetchAllSubCategories();
+  }, [categories]);
+
+  const matchesSearch = (text, search) => {
+    if (!text) return false;
+    if (!search.trim()) return true;
+
+    const normalizedText = text.toLowerCase().replace(/\s+/g, " ").trim();
+    const normalizedSearch = search.toLowerCase().replace(/\s+/g, " ").trim();
+
+    return normalizedText.includes(normalizedSearch);
   };
 
-  fetchAllSubCategories();
-}, [categories]);
+  const term = categorySearch.trim().toLowerCase();
 
-const matchesSearch = (text, search) => {
-  if (!text) return false;
-  if (!search.trim()) return true;
+  const filteredCategories = (categories || [])
+    .map(category => {
+      const subs = subCategoryMap[category.id] || [];
 
-  const normalizedText = text.toLowerCase().replace(/\s+/g, " ").trim();
-  const normalizedSearch = search.toLowerCase().replace(/\s+/g, " ").trim();
+      const categoryMatch = matchesSearch(category.name, term);
 
-  return normalizedText.includes(normalizedSearch);
-};
+      const matchedSubs = subs.filter(sub =>
+        matchesSearch(sub.name, term)
+      );
 
-const term = categorySearch.trim().toLowerCase();
+      // ✅ FILTER: Selected only (FIXED)
+      if (filterType === "selected") {
+        const isCategorySelected = modalSelectedCategory.includes(category.id);
 
-const filteredCategories = (categories || [])
-  .map(category => {
-    const subs = subCategoryMap[category.id] || [];
+        const selectedSubs = subs.filter(sub =>
+          modalSelectedSubCategory.includes(sub.id)
+        );
 
-    const categoryMatch = matchesSearch(category.name, term);
+        // ❌ nothing selected → hide
+        if (!isCategorySelected && selectedSubs.length === 0) {
+          return null;
+        }
 
-    const matchedSubs = subs.filter(sub =>
-      matchesSearch(sub.name, term)
-    );
+        return {
+          ...category,
+          // ✅ if category selected → show all subs
+          // ✅ if only subs selected → show only selected subs
+          filteredSubs: isCategorySelected ? subs : selectedSubs
+        };
+      }
 
-    // ✅ FILTER: Selected only (FIXED)
-    if (filterType === "selected") {
-  const isCategorySelected = modalSelectedCategory.includes(category.id);
+      // ✅ SEARCH logic
+      if (categoryMatch) return category;
 
-  const selectedSubs = subs.filter(sub =>
-    modalSelectedSubCategory.includes(sub.id)
-  );
+      if (matchedSubs.length > 0) {
+        return {
+          ...category,
+          filteredSubs: matchedSubs
+        };
+      }
 
-  // ❌ nothing selected → hide
-  if (!isCategorySelected && selectedSubs.length === 0) {
-    return null;
-  }
-
-  return {
-    ...category,
-    // ✅ if category selected → show all subs
-    // ✅ if only subs selected → show only selected subs
-    filteredSubs: isCategorySelected ? subs : selectedSubs
-  };
-}
-
-    // ✅ SEARCH logic
-    if (categoryMatch) return category;
-
-    if (matchedSubs.length > 0) {
-      return {
-        ...category,
-        filteredSubs: matchedSubs
-      };
-    }
-
-    return null;
-  })
-  .filter(Boolean);
+      return null;
+    })
+    .filter(Boolean);
 
   const openCategoryModal = () => {
-  setModalSelectedCategory([...selectedCategory]);
-  setModalSelectedSubCategory([...selectedSubCategory]);
-  setShowCategoryModal(true);
-};
+    setModalSelectedCategory([...selectedCategory]);
+    setModalSelectedSubCategory([...selectedSubCategory]);
+    setShowCategoryModal(true);
+  };
 
-const handleModalCategorySelect = (categoryId) => {
-  if (modalSelectedCategory.includes(categoryId)) {
-    setModalSelectedCategory(prev => prev.filter(id => id !== categoryId));
+  const handleModalCategorySelect = (categoryId) => {
+    if (modalSelectedCategory.includes(categoryId)) {
+      setModalSelectedCategory(prev => prev.filter(id => id !== categoryId));
 
-    const subs = subCategoryMap[categoryId] || [];
-    const subIds = subs.map(s => s.id);
+      const subs = subCategoryMap[categoryId] || [];
+      const subIds = subs.map(s => s.id);
 
-    setModalSelectedSubCategory(prev =>
-      prev.filter(id => !subIds.includes(id))
-    );
-  } else {
-    /*if (categoryLimit && modalSelectedCategory.length >= categoryLimit) {
-      showNotification(`Maximum ${categoryLimit} categories allowed`, "error");
-      return;
-    }*/
+      setModalSelectedSubCategory(prev =>
+        prev.filter(id => !subIds.includes(id))
+      );
+    } else {
+      /*if (categoryLimit && modalSelectedCategory.length >= categoryLimit) {
+        showNotification(`Maximum ${categoryLimit} categories allowed`, "error");
+        return;
+      }*/
 
-    setModalSelectedCategory(prev => [...prev, categoryId]);
-  }
-};
+      setModalSelectedCategory(prev => [...prev, categoryId]);
+    }
+  };
 
-const handleModalSubCategorySelect = (subId, categoryId) => {
-  if (!modalSelectedCategory.includes(categoryId)) return;
+  const handleModalSubCategorySelect = (subId, categoryId) => {
+    if (!modalSelectedCategory.includes(categoryId)) return;
 
-  if (modalSelectedSubCategory.includes(subId)) {
-    setModalSelectedSubCategory(prev =>
-      prev.filter(id => id !== subId)
-    );
-  } else {
-    setModalSelectedSubCategory(prev =>
-      [...prev, subId]
-    );
-  }
-};
+    if (modalSelectedSubCategory.includes(subId)) {
+      setModalSelectedSubCategory(prev =>
+        prev.filter(id => id !== subId)
+      );
+    } else {
+      setModalSelectedSubCategory(prev =>
+        [...prev, subId]
+      );
+    }
+  };
 
-const applyCategorySelection = () => {
-  setSelectedCategory(modalSelectedCategory);
-  setSelectedSubCategory(modalSelectedSubCategory);
-  setShowCategoryModal(false);
-};
+  const applyCategorySelection = () => {
+    setSelectedCategory(modalSelectedCategory);
+    setSelectedSubCategory(modalSelectedSubCategory);
+    setShowCategoryModal(false);
+  };
 
   useEffect(() => {
     const fetchCoreactivities = async () => {
@@ -337,12 +337,12 @@ const applyCategorySelection = () => {
   const handleCompanyBrochureChange = (e) => { setCompanyBrochure(e.target.files[0]); };
 
   const handlePptChange = (e) => {
-  setFormData({ ...formData, company_sample_ppt_file: e.target.files[0] });
-};
+    setFormData({ ...formData, company_sample_ppt_file: e.target.files[0] });
+  };
 
-const handleVideoChange = (e) => {
-  setFormData({ ...formData, company_video: e.target.files[0] });
-};
+  const handleVideoChange = (e) => {
+    setFormData({ ...formData, company_video: e.target.files[0] });
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -365,84 +365,84 @@ const handleVideoChange = (e) => {
     const videoTypes = ["video/mp4", "video/webm", "video/ogg", "video/mov", "video/avi"];
     const maxSize = 2 * 1024 * 1024;
     if (!section || section === "basic") {
-    if (!formData.fname?.trim()) errs.fname = "First Name is required";
-    if (!formData.lname?.trim()) errs.lname = "Last Name is required";
-    if (!formData.email?.trim()) errs.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) errs.email = "Invalid email format";
-    if (!isEditing) {
-      if (!formData.password?.trim()) {
-        errs.password = "Password is required";
-      } else if (formData.password.trim().length < 6) {
-        errs.password = "Password must be at least 6 characters";
+      if (!formData.fname?.trim()) errs.fname = "First Name is required";
+      if (!formData.lname?.trim()) errs.lname = "Last Name is required";
+      if (!formData.email?.trim()) errs.email = "Email is required";
+      else if (!/\S+@\S+\.\S+/.test(formData.email)) errs.email = "Invalid email format";
+      if (!isEditing) {
+        if (!formData.password?.trim()) {
+          errs.password = "Password is required";
+        } else if (formData.password.trim().length < 6) {
+          errs.password = "Password must be at least 6 characters";
+        }
+      }
+      if (!formData.mobile?.trim()) errs.mobile = "Mobile is required";
+      if (!selectedCountry) errs.country = "Country is required";
+      if (!selectedState) errs.state = "State is required";
+      // if (!selectedCity) errs.city = "City is required";
+      if (!formData.zipcode?.trim()) errs.zipcode = "Post Code is required";
+      if (!formData.address?.trim()) errs.address = "Address is required";
+      if (!file && !isEditing) {
+        errs.file = "Profile image is required";
+      } else if (file) {
+        if (!imageTypes.includes(file.type)) {
+          errs.file = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
+        } else if (file.size > maxSize) {
+          errs.file = "Image size must be under 2MB";
+        }
       }
     }
-    if (!formData.mobile?.trim()) errs.mobile = "Mobile is required";
-    if (!selectedCountry) errs.country = "Country is required";
-    if (!selectedState) errs.state = "State is required";
-    if (!selectedCity) errs.city = "City is required";
-    if (!formData.zipcode?.trim()) errs.zipcode = "Post Code is required";
-    if (!formData.address?.trim()) errs.address = "Address is required";
-    if (!file && !isEditing) {
-      errs.file = "Profile image is required";
-    } else if (file) {
-      if (!imageTypes.includes(file.type)) {
-        errs.file = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
-      } else if (file.size > maxSize) {
-        errs.file = "Image size must be under 2MB";
-      }
-    }
-  }
-  if (!section || section === "company") {
-    if (!formData.user_company?.trim()) errs.user_company = "Organization Name is required";
-    if (!formData.company_location?.trim()) errs.company_location = "Company Location is required";
-    if (!formData.brief_company?.trim()) errs.brief_company = "Brief Company Description is required";
-    if (!formData.is_star_seller) errs.is_star_seller = "Star Seller status is required";
-    if (!formData.is_verified) errs.is_verified = "Verification status is required";
-    if (!formData.elcina_member) errs.elcina_member = "ELCINA Member is required";
-    if (selectedCategory.length === 0) {
-      errs.category_sell = "Category is required";
-    }
-    /*if (categoryLimit && selectedCategory.length > categoryLimit) {
-      errs.category_sell = `You can select only ${categoryLimit} categories`;
-    }*/
-    if (!selectedCoreActivity) errs.core_activity = "Core Activity is required";
-    if (!selectedActivity) errs.activity = "Activity is required";
+    if (!section || section === "company") {
+      if (!formData.user_company?.trim()) errs.user_company = "Organization Name is required";
+      if (!formData.company_location?.trim()) errs.company_location = "Company Location is required";
+      if (!formData.brief_company?.trim()) errs.brief_company = "Brief Company Description is required";
+      if (!formData.is_star_seller) errs.is_star_seller = "Star Seller status is required";
+      if (!formData.is_verified) errs.is_verified = "Verification status is required";
+      if (!formData.elcina_member) errs.elcina_member = "ELCINA Member is required";
+      // if (selectedCategory.length === 0) {
+      //   errs.category_sell = "Category is required";
+      // }
+      /*if (categoryLimit && selectedCategory.length > categoryLimit) {
+        errs.category_sell = `You can select only ${categoryLimit} categories`;
+      }*/
+      if (!selectedCoreActivity) errs.core_activity = "Core Activity is required";
+      // if (!selectedActivity) errs.activity = "Activity is required";
 
-    if (!companyFile && !isEditing) {
-      errs.company_logo = "Company image is required";
-    } else if (companyFile) {
-      if (!imageTypes.includes(companyFile.type)) {
-        errs.company_logo = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
-      } else if (companyFile.size > maxSize) {
-        errs.company_logo = "Image size must be under 2MB";
+      if (!companyFile && !isEditing) {
+        errs.company_logo = "Company image is required";
+      } else if (companyFile) {
+        if (!imageTypes.includes(companyFile.type)) {
+          errs.company_logo = "Invalid image format (only JPG/JPEG/PNG/GIF/WEBP allowed)";
+        } else if (companyFile.size > maxSize) {
+          errs.company_logo = "Image size must be under 2MB";
+        }
       }
-    }
 
-    if (companyBrochure) {
-      if (!brochureTypes.includes(companyBrochure.type)) {
-        errs.sample_file_id = "Invalid Brochure format (only JPG/JPEG/PNG/GIF/WEBP/PDF allowed)";
-      } else if (companyBrochure.size > maxSize) {
-        errs.sample_file_id = "Brochure size must be under 2MB";
+      if (companyBrochure) {
+        if (!brochureTypes.includes(companyBrochure.type)) {
+          errs.sample_file_id = "Invalid Brochure format (only JPG/JPEG/PNG/GIF/WEBP/PDF allowed)";
+        } else if (companyBrochure.size > maxSize) {
+          errs.sample_file_id = "Brochure size must be under 2MB";
+        }
       }
-    }
 
-    if (formData.company_sample_ppt_file) {
-      if (!pptTypes.includes(formData.company_sample_ppt_file.type)) {
-        errs.company_sample_ppt_file = "Invalid file format for PPT";
-      } else if (formData.company_sample_ppt_file.size > maxSize) {
-        errs.company_sample_ppt_file = "File size must be under 2MB";
+      if (formData.company_sample_ppt_file) {
+        if (!pptTypes.includes(formData.company_sample_ppt_file.type)) {
+          errs.company_sample_ppt_file = "Invalid file format for PPT";
+        } else if (formData.company_sample_ppt_file.size > maxSize) {
+          errs.company_sample_ppt_file = "File size must be under 2MB";
+        }
       }
-    }
 
-    if (formData.company_video) {
-      if (!videoTypes.includes(formData.company_video.type)) {
-        errs.company_video = "Invalid video format";
-      } else if (formData.company_video.size > maxSize) {
-        errs.company_video = "Video file must be under 2MB";
+      if (formData.company_video) {
+        if (!videoTypes.includes(formData.company_video.type)) {
+          errs.company_video = "Invalid video format";
+        } else if (formData.company_video.size > maxSize) {
+          errs.company_video = "Video file must be under 2MB";
+        }
       }
     }
-  }
-  console.log(errs)
+    console.log(errs)
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -485,29 +485,29 @@ const handleVideoChange = (e) => {
         setSelectedCountry(data.country || "");
         setSelectedState(data.state || "");
         setSelectedCity(data.city || "");
-       if (data.categories && Array.isArray(data.categories)) {
-  const categoryIds = [
-    ...new Set(data.categories.map(c => c.category_id).filter(Boolean))
-  ];
-  const subCategoryIds = data.categories
-    .map(c => c.subcategory_id)
-    .filter(Boolean);
-  setSelectedCategory(categoryIds);
-  setSelectedSubCategory(subCategoryIds);
-  const map = {};
-  for (const catId of categoryIds) {
-    try {
-      const res = await axios.post(
-        `${API_BASE_URL}/sub_categories/categories`,
-        { categories: [catId] }
-      );
-      map[catId] = res.data;
-    } catch (err) {
-      console.error(err);
-    }
-  }
-  setSubCategoryMap(map);
-}
+        // if (data.categories && Array.isArray(data.categories)) {
+        //   const categoryIds = [
+        //     ...new Set(data.categories.map(c => c.category_id).filter(Boolean))
+        //   ];
+        //   const subCategoryIds = data.categories
+        //     .map(c => c.subcategory_id)
+        //     .filter(Boolean);
+        //   setSelectedCategory(categoryIds);
+        //   setSelectedSubCategory(subCategoryIds);
+        //   const map = {};
+        //   for (const catId of categoryIds) {
+        //     try {
+        //       const res = await axios.post(
+        //         `${API_BASE_URL}/sub_categories/categories`,
+        //         { categories: [catId] }
+        //       );
+        //       map[catId] = res.data;
+        //     } catch (err) {
+        //       console.error(err);
+        //     }
+        //   }
+        //   setSubCategoryMap(map);
+        // }
         setSelectedCoreActivity(data.core_activity || "");
         setSelectedActivity(data.activity || "");
         if (data.country) {
@@ -527,70 +527,70 @@ const handleVideoChange = (e) => {
   }, [sellerId]);
 
   const handleSubmit = async (e, section = null) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!validateForm(section)) return;
+    if (!validateForm(section)) return;
 
-  setSubmitting(true);
-  const data = new FormData();
+    setSubmitting(true);
+    const data = new FormData();
 
-  // Append only relevant fields based on section
-  Object.entries(formData).forEach(([key, value]) => {
-    if (!section || section === "basic") {
-      // basic fields
-      if (["fname","lname","email","password","mobile","alternate_number","zipcode","country_code","address","designation"].includes(key)) {
-        data.append(key, value);
+    // Append only relevant fields based on section
+    Object.entries(formData).forEach(([key, value]) => {
+      if (!section || section === "basic") {
+        // basic fields
+        if (["fname", "lname", "email", "password", "mobile", "alternate_number", "zipcode", "country_code", "address", "designation"].includes(key)) {
+          data.append(key, value);
+        }
       }
-    }
-    if (!section || section === "company") {
-      // company fields
-      if (["user_company","website","is_trading","elcina_member","user_category","brief_company","products","featured_company",
-        "company_location","is_star_seller","is_verified","company_meta_title","company_video_second"].includes(key)) {
-        data.append(key, value);
+      if (!section || section === "company") {
+        // company fields
+        if (["user_company", "website", "is_trading", "elcina_member", "user_category", "brief_company", "products", "featured_company",
+          "company_location", "is_star_seller", "is_verified", "company_meta_title", "company_video_second"].includes(key)) {
+          data.append(key, value);
+        }
       }
-    }
-  });
-
-  // location always
-  if (!section || section === "basic") {
-    data.append("country", selectedCountry);
-    data.append("state", selectedState);
-    data.append("city", selectedCity);
-  }
-if (!section || section === "company") {
-  data.append("categories", selectedCategory.join(','));
-    data.append("subcategory_ids", selectedSubCategory.join(','));
-    data.append("core_activity", selectedCoreActivity);
-    data.append("activity", selectedActivity);
-}
-
-  if ((!section || section === "basic") && file) data.append("file", file);
-  if ((!section || section === "company") && companyFile) data.append("company_logo", companyFile);
-  if ((!section || section === "company") && companyBrochure) data.append("sample_file_id", companyBrochure);
-  if ((!section || section === "company") && formData.company_sample_ppt_file) {
-    data.append("company_sample_ppt_file", formData.company_sample_ppt_file);
-  }
-  if ((!section || section === "company") && formData.company_video) {
-    data.append("company_video", formData.company_video);
-  }
-
-  try {
-    const endpoint = isEditing ? `${API_BASE_URL}/sellers/${sellerId}` : `${API_BASE_URL}/sellers`;
-    const method = isEditing ? "put" : "post";
-
-    await axios[method](endpoint, data, {
-      headers: { "Content-Type": "multipart/form-data" }
     });
 
-    showNotification(`Seller ${isEditing ? "updated" : "added"} successfully!`, "success");
-    if (!isEditing) navigate("/admin/sellers");
-  } catch (err) {
-    showNotification("Failed to save seller", "error");
-  } finally {
-    setSubmitting(false);
-    setUpdateSection(null);
-  }
-};
+    // location always
+    if (!section || section === "basic") {
+      data.append("country", selectedCountry);
+      data.append("state", selectedState);
+      data.append("city", selectedCity);
+    }
+    if (!section || section === "company") {
+      // data.append("categories", selectedCategory.join(','));
+      // data.append("subcategory_ids", selectedSubCategory.join(','));
+      data.append("core_activity", selectedCoreActivity);
+      data.append("activity", selectedActivity);
+    }
+
+    if ((!section || section === "basic") && file) data.append("file", file);
+    if ((!section || section === "company") && companyFile) data.append("company_logo", companyFile);
+    if ((!section || section === "company") && companyBrochure) data.append("sample_file_id", companyBrochure);
+    if ((!section || section === "company") && formData.company_sample_ppt_file) {
+      data.append("company_sample_ppt_file", formData.company_sample_ppt_file);
+    }
+    if ((!section || section === "company") && formData.company_video) {
+      data.append("company_video", formData.company_video);
+    }
+
+    try {
+      const endpoint = isEditing ? `${API_BASE_URL}/sellers/${sellerId}` : `${API_BASE_URL}/sellers`;
+      const method = isEditing ? "put" : "post";
+
+      await axios[method](endpoint, data, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+
+      showNotification(`Seller ${isEditing ? "updated" : "added"} successfully!`, "success");
+      if (!isEditing) navigate("/admin/sellers");
+    } catch (err) {
+      showNotification("Failed to save seller", "error");
+    } finally {
+      setSubmitting(false);
+      setUpdateSection(null);
+    }
+  };
 
   return (
     <>
@@ -865,28 +865,28 @@ if (!section || section === "company") {
                       </select>
                       {errors.activity && (<div className="text-danger small">{errors.activity}</div>)}
                     </div>
-                    <div className="col-md-4">
-  <label className="form-label required">
-    Category & Sub Category
-  </label>
-  <button
-    type="button"
-    className="btn btn-outline-primary w-100"
-    onClick={openCategoryModal}
-  >
-    Category Picker
-  </button>
-  {selectedCategory.length > 0 && (
-    <small className="text-success">
-      {selectedCategory.length} Category Selected
-    </small>
-  )}
-  {errors.category_sell && (
-    <div className="text-danger small">
-      {errors.category_sell}
-    </div>
-  )}
-</div>
+                    <div className="col-md-4 d-none">
+                      <label className="form-label required">
+                        Category & Sub Category
+                      </label>
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary w-100"
+                        onClick={openCategoryModal}
+                      >
+                        Category Picker
+                      </button>
+                      {selectedCategory.length > 0 && (
+                        <small className="text-success">
+                          {selectedCategory.length} Category Selected
+                        </small>
+                      )}
+                      {errors.category_sell && (
+                        <div className="text-danger small">
+                          {errors.category_sell}
+                        </div>
+                      )}
+                    </div>
                     <div className="col-md-4">
                       <label htmlFor="website" className="form-label">Company Website</label>
                       <input
@@ -1094,23 +1094,23 @@ if (!section || section === "company") {
                         </button>
                       </div>
                     )}
-                      {!isEditing && (
-                        <div className="col-md-12 text-end">
-                          <button type="submit" className="btn btn-primary px-4 mt-4">
-                            {submitting ? (
-                              <>
-                                <span className="spinner-border spinner-border-sm me-2" />
-                                Saving...
-                              </>
-                            ) : (
-                              "Save"
-                            )}
-                          </button>
-                        </div>
-                      )}
+                    {!isEditing && (
+                      <div className="col-md-12 text-end">
+                        <button type="submit" className="btn btn-primary px-4 mt-4">
+                          {submitting ? (
+                            <>
+                              <span className="spinner-border spinner-border-sm me-2" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save"
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
+
               </form>
               {/*end row*/}
             </div>
@@ -1118,100 +1118,100 @@ if (!section || section === "company") {
         </div>
       </div>
       {showCategoryModal && (
-<div className="modal show" style={{display:'block', background:'rgba(0,0,0,0.5)'}}>
-  <div className="modal-dialog modal-lg">
-    <div className="modal-content">
-      <div className="modal-header">
-        <h5>Select Category & Sub Category</h5>
-        <button className="btn-close" onClick={()=>setShowCategoryModal(false)} />
-      </div>
-      <div className="modal-body">
-  <div className="d-flex justify-content-between mb-3">
-  <input
-    type="text"
-    className="form-control me-2"
-    placeholder="Search category or subcategory..."
-    value={categorySearch}
-    onChange={(e) => setCategorySearch(e.target.value)}
-  />
+        <div className="modal show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5>Select Category & Sub Category</h5>
+                <button className="btn-close" onClick={() => setShowCategoryModal(false)} />
+              </div>
+              <div className="modal-body">
+                <div className="d-flex justify-content-between mb-3">
+                  <input
+                    type="text"
+                    className="form-control me-2"
+                    placeholder="Search category or subcategory..."
+                    value={categorySearch}
+                    onChange={(e) => setCategorySearch(e.target.value)}
+                  />
 
-  <select
-    className="form-select w-auto"
-    value={filterType}
-    onChange={(e) => setFilterType(e.target.value)}
-  >
-    <option value="all">Show All</option>
-    <option value="selected">Selected Only</option>
-  </select>
-</div>
+                  <select
+                    className="form-select w-auto"
+                    value={filterType}
+                    onChange={(e) => setFilterType(e.target.value)}
+                  >
+                    <option value="all">Show All</option>
+                    <option value="selected">Selected Only</option>
+                  </select>
+                </div>
 
-  <div style={{ maxHeight: "450px", overflowY: "auto" }}>
-    {filteredCategories.map(cat => {
-      const subs = subCategoryMap[cat.id] || [];
-      const displaySubs = cat.filteredSubs || subs;
+                <div style={{ maxHeight: "450px", overflowY: "auto" }}>
+                  {filteredCategories.map(cat => {
+                    const subs = subCategoryMap[cat.id] || [];
+                    const displaySubs = cat.filteredSubs || subs;
 
-      return (
-        <div key={cat.id} className="card mb-3 shadow-sm border">
-          
-          {/* CATEGORY HEADER */}
-          <div className="card-header bg-primary text-white">
-            <div className="form-check m-0">
-              <input
-                type="checkbox"
-                className="form-check-input"
-                checked={modalSelectedCategory.includes(cat.id)}
-                onChange={() => handleModalCategorySelect(cat.id)}
-                id={`cat-${cat.id}`}
-              />
-              <label
-                htmlFor={`cat-${cat.id}`}
-                className="form-check-label fw-bold"
-              >
-                {cat.name}
-              </label>
+                    return (
+                      <div key={cat.id} className="card mb-3 shadow-sm border">
+
+                        {/* CATEGORY HEADER */}
+                        <div className="card-header bg-primary text-white">
+                          <div className="form-check m-0">
+                            <input
+                              type="checkbox"
+                              className="form-check-input"
+                              checked={modalSelectedCategory.includes(cat.id)}
+                              onChange={() => handleModalCategorySelect(cat.id)}
+                              id={`cat-${cat.id}`}
+                            />
+                            <label
+                              htmlFor={`cat-${cat.id}`}
+                              className="form-check-label fw-bold"
+                            >
+                              {cat.name}
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* SUBCATEGORIES */}
+                        <div className="card-body">
+                          <div className="row">
+                            {displaySubs.map(sub => (
+                              <div key={sub.id} className="col-md-4 mb-2">
+                                <div className="form-check">
+                                  <input
+                                    type="checkbox"
+                                    className="form-check-input"
+                                    checked={modalSelectedSubCategory.includes(sub.id)}
+                                    onChange={() => handleModalSubCategorySelect(sub.id, cat.id)}
+                                    id={`sub-${sub.id}`}
+                                    disabled={!modalSelectedCategory.includes(cat.id)} // ✅ only disable
+                                  />
+                                  <label
+                                    htmlFor={`sub-${sub.id}`}
+                                    className="form-check-label"
+                                  >
+                                    {sub.name}
+                                  </label>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-primary" onClick={applyCategorySelection}>
+                  Done
+                </button>
+              </div>
+
             </div>
           </div>
-
-          {/* SUBCATEGORIES */}
-          <div className="card-body">
-  <div className="row">
-    {displaySubs.map(sub => (
-      <div key={sub.id} className="col-md-4 mb-2">
-        <div className="form-check">
-          <input
-            type="checkbox"
-            className="form-check-input"
-            checked={modalSelectedSubCategory.includes(sub.id)}
-            onChange={() => handleModalSubCategorySelect(sub.id, cat.id)}
-            id={`sub-${sub.id}`}
-            disabled={!modalSelectedCategory.includes(cat.id)} // ✅ only disable
-          />
-          <label
-            htmlFor={`sub-${sub.id}`}
-            className="form-check-label"
-          >
-            {sub.name}
-          </label>
         </div>
-      </div>
-    ))}
-  </div>
-</div>
-        </div>
-      );
-    })}
-  </div>
-</div>
-      <div className="modal-footer">
-        <button className="btn btn-primary" onClick={applyCategorySelection}>
-          Done
-        </button>
-      </div>
-
-    </div>
-  </div>
-</div>
-)}
+      )}
     </>
   );
 };

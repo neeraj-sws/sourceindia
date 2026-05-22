@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import { Suspense, lazy } from 'react';
@@ -25,10 +24,8 @@ const CompanyEdit = () => {
     company_video_second: "",
   });
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState([]);
   const [selectedSubCategory, setSelectedSubCategory] = useState([]);
-  const [subCategoryMap, setSubCategoryMap] = useState({});
   const [coreActivities, setCoreActivities] = useState([]);
   const [activities, setActivities] = useState([]);
   const [selectedCoreActivity, setSelectedCoreActivity] = useState('');
@@ -38,13 +35,6 @@ const CompanyEdit = () => {
   const [companyFile, setCompanyFile] = useState(null);
   const [companyBrochure, setCompanyBrochure] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [categoryLimit, setCategoryLimit] = useState(null);
-  const isBlockingRef = useRef(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [categorySearch, setCategorySearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-const [modalSelectedCategory, setModalSelectedCategory] = useState([]);
-const [modalSelectedSubCategory, setModalSelectedSubCategory] = useState([]);
 
   const countWords = (text) => {
     return text
@@ -52,93 +42,6 @@ const [modalSelectedSubCategory, setModalSelectedSubCategory] = useState([]);
       .split(/\s+/)
       .filter(word => word.length > 0).length;
   };
-
-  const openCategoryModal = () => {
-  setModalSelectedCategory([...selectedCategory]);
-  setModalSelectedSubCategory([...selectedSubCategory]);
-  setShowCategoryModal(true);
-};
-
-useEffect(() => {
-  if (showCategoryModal) {
-    // Initialize modal state from saved values when opening modal
-    setModalSelectedCategory(selectedCategory);
-    setModalSelectedSubCategory(selectedSubCategory);
-  }
-}, [showCategoryModal]);
-
-const handleCategorySelectModal = (categoryId) => {
-  const subs = subCategoryMap[categoryId] || [];
-  const subIds = subs.map(s => s.id);
-
-  let updatedCategories;
-  let updatedSubCategories = [...modalSelectedSubCategory];
-
-  if (modalSelectedCategory.includes(categoryId)) {
-    // Uncheck category → also uncheck all its subcategories
-    updatedCategories = modalSelectedCategory.filter(id => id !== categoryId);
-    updatedSubCategories = updatedSubCategories.filter(id => !subIds.includes(id));
-  } else {
-    // Check category → just check category, don't auto-check subcategories
-    /*if (categoryLimit && modalSelectedCategory.length >= categoryLimit) {
-      showNotification(`Maximum ${categoryLimit} categories allowed`, "error");
-      return; // ⛔ STOP selection
-    }*/
-    updatedCategories = [...modalSelectedCategory, categoryId];
-  }
-
-  setModalSelectedCategory(updatedCategories);
-  setModalSelectedSubCategory(updatedSubCategories);
-};
-
-const handleSubCategorySelectModal = (subId) => {
-  let updatedSubs;
-  if (modalSelectedSubCategory.includes(subId)) {
-    updatedSubs = modalSelectedSubCategory.filter(id => id !== subId);
-  } else {
-    updatedSubs = [...modalSelectedSubCategory, subId];
-  }
-  setModalSelectedSubCategory(updatedSubs);
-};
-
-const saveModalSelection = () => {
-  setSelectedCategory([...modalSelectedCategory]);
-  setSelectedSubCategory([...modalSelectedSubCategory]);
-  setShowCategoryModal(false);
-};
-
-  const matchesSearch = (text, search) => {
-  if (!text) return false;
-  if (!search.trim()) return true;
-
-  const normalizedText = text.toLowerCase().replace(/\s+/g, " ").trim();
-  const normalizedSearch = search.toLowerCase().replace(/\s+/g, " ").trim();
-
-  return normalizedText.includes(normalizedSearch);
-};
-
-const term = categorySearch.trim().toLowerCase();
-
-const filteredCategories = (categories || [])
-  .map(category => {
-    const categoryMatch = matchesSearch(category.name, term);
-
-    if (categoryMatch) return category;
-
-    const matchedSubs = (subCategoryMap[category.id] || []).filter(sub =>
-      matchesSearch(sub.name, term)
-    );
-
-    if (matchedSubs.length > 0) {
-      return {
-        ...category,
-        filteredSubs: matchedSubs
-      };
-    }
-
-    return null;
-  })
-  .filter(Boolean);
 
   useEffect(() => {
     const fetchCoreActivities = async () => {
@@ -167,41 +70,6 @@ const filteredCategories = (categories || [])
   const handleActivityChange = (event) => {
     setSelectedActivity(event.target.value);
   };
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/categories`);
-        setCategories(res.data);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  useEffect(() => {
-  if (!categories.length) return;
-
-  const fetchAllSubCategories = async () => {
-    const map = {};
-
-    for (const cat of categories) {
-      try {
-        const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
-          categories: [cat.id]
-        });
-        map[cat.id] = res.data;
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    setSubCategoryMap(map);
-  };
-
-  fetchAllSubCategories();
-}, [categories]);
 
   useEffect(() => {
     $('#core_activity').select2({
@@ -264,33 +132,6 @@ const filteredCategories = (categories || [])
         setSelectedCoreActivity(userData.company_info?.core_activity ?? '');
         setSelectedActivity(userData.company_info?.activity ?? '');
 
-        if (categoryArray.length > 0) {
-          // Fetch subcategories for selected categories
-          const cRes = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
-            categories: categoryArray,
-          });
-          const map = {};
-
-          for (const catId of categoryArray) {
-            try {
-              const res = await axios.post(`${API_BASE_URL}/sub_categories/categories`, {
-                categories: [catId]
-              });
-              map[catId] = res.data;
-            } catch (err) {
-              console.error(err);
-            }
-          }
-
-          setSubCategoryMap(map);
-
-          // ✅ wait for the subcategories to finish rendering before setting select2 value
-          setTimeout(() => {
-            $('#category_sell').val(categoryArray).trigger('change');
-            $('#sub_category').val(subCategoryArray).trigger('change');
-          }, 300);
-        }
-
         if (userData.company_info?.core_activity) {
           const ctRes = await axios.get(
             `${API_BASE_URL}/activities/coreactivity/${userData.company_info.core_activity}`
@@ -345,21 +186,6 @@ const filteredCategories = (categories || [])
       }));
     }
   };
-
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/settings/site`);
-        setCategoryLimit(Number(res.data.seller_category_limit)); // convert to number
-      } catch (err) {
-        console.error("Error fetching settings:", err);
-      }
-    };
-
-    fetchSettings();
-  }, []);
-
   const validateForm = () => {
     const errs = {};
 
@@ -394,14 +220,6 @@ const filteredCategories = (categories || [])
     // Activity
     if (!selectedActivity)
       errs.activity = "Activity is required";
-    // Sub category
-    if (!selectedSubCategory.length)
-      errs.sub_category = "Sub category is required";
-
-    // Category Sell
-    if (!selectedCategory.length)
-      errs.category_sell = "At least one category is required";
-
     // Company Introduction
     if (!user.company_info?.brief_company?.trim())
       errs.brief_company = "Company introduction is required";
@@ -590,24 +408,6 @@ const filteredCategories = (categories || [])
                             </select>
                             {errors.activity && <div className="text-danger small mt-1">{errors.activity}</div>}
                           </div>
-                          <div className="col-md-6">
-                            <label className="form-label required">Select Category & Sub Category</label>
-                            <button
-                              type="button"
-                              className="btn btn-outline-primary w-100"
-                              onClick={openCategoryModal}
-                            >
-                              Category Picker
-                            </button>
-                            {selectedCategory.length > 0 && (
-                              <small className="text-success">
-                                {selectedCategory.length} Category Selected
-                              </small>
-                            )}
-                            {errors.category_sell && (
-                              <div className="text-danger small">{errors.category_sell}</div>
-                            )}
-                          </div>
                           <div className="col-md-12">
                             <label className="form-label">Company Logo </label>
                             <input className="form-control" type="file"
@@ -726,98 +526,6 @@ const filteredCategories = (categories || [])
           {/*end row*/}
         </div>
       </div>
-      {showCategoryModal && (
-  <div className="modal show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }}>
-    <div className="modal-dialog modal-xl">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h5>Select Category & Sub Category</h5>
-          <button className="btn-close" onClick={() => setShowCategoryModal(false)} />
-        </div>
-        <div className="modal-body">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h6 className="mb-0">Category</h6>
-            <select
-              className="form-select form-select-sm w-auto"
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-            >
-              <option value="all">Show All</option>
-              <option value="selected">Selected Only</option>
-            </select>
-          </div>
-
-          <input
-            type="text"
-            className="form-control mb-3"
-            placeholder="Search category..."
-            value={categorySearch}
-            onChange={(e) => setCategorySearch(e.target.value)}
-          />
-
-          <div style={{ maxHeight: "450px", overflowY: "auto" }} className="row g-3 heightPart">
-            {filteredCategories.map(cat => {
-              const subs = subCategoryMap[cat.id] || [];
-              const displaySubs = cat.filteredSubs || subs;
-
-              if (categoryFilter === "selected" && !modalSelectedCategory.includes(cat.id)) {
-                return null;
-              }
-
-              return (
-                <div key={cat.id} className="col-12">
-                  <div className="card shadow-sm border">
-                    {/* Category Header */}
-                    <div className="card-header bg-primary text-white">
-                      <div className="form-check m-0">
-                        <input
-                          type="checkbox"
-                          className="form-check-input"
-                          checked={modalSelectedCategory.includes(cat.id)}
-                          onChange={() => handleCategorySelectModal(cat.id)}
-                          id={`cat-${cat.id}`}
-                        />
-                        <label htmlFor={`cat-${cat.id}`} className="form-check-label fw-bold">
-                          {cat.name}
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Subcategories */}
-                    <div className="card-body">
-                      <div className="row">
-                        {displaySubs.map(sub => (
-                          <div key={sub.id} className="col-md-4 mb-2">
-                            <div className="form-check">
-                              <input
-                                type="checkbox"
-                                className="form-check-input"
-                                checked={modalSelectedSubCategory.includes(sub.id)}
-                                onChange={() => handleSubCategorySelectModal(sub.id)}
-                                disabled={!modalSelectedCategory.includes(cat.id)}
-                                id={`sub-${sub.id}`}
-                              />
-                              <label htmlFor={`sub-${sub.id}`} className="form-check-label">
-                                {sub.name}
-                              </label>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-primary" onClick={saveModalSelection}>Done</button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
     </>
   )
 }

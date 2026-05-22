@@ -44,7 +44,9 @@ async function createUniqueSlug(name) {
 }
 
 exports.createSeller = async (req, res) => {
-  const upload = getMulterUpload('users'); // Fixed: Add 'users' param like updateSeller
+
+  const upload = getMulterUpload('users');
+
   upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'company_logo', maxCount: 1 },
@@ -52,131 +54,420 @@ exports.createSeller = async (req, res) => {
     { name: 'company_sample_ppt_file', maxCount: 1 },
     { name: 'company_video', maxCount: 1 },
   ])(req, res, async (err) => {
-    if (err) return res.status(500).json({ error: err.message });
+
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message
+      });
+    }
 
     const deleteUploadedFiles = () => {
+
       const files = [];
-      if (req.files?.file) files.push(req.files.file[0].path);
-      if (req.files?.company_logo) files.push(req.files.company_logo[0].path);
-      if (req.files?.sample_file_id) files.push(req.files.sample_file_id[0].path);
-      if (req.files?.company_sample_ppt_file) files.push(req.files.company_sample_ppt_file[0].path);
-      if (req.files?.company_video) files.push(req.files.company_video[0].path);
-      files.forEach(filePath => fs.unlink(filePath, err => {
-        if (err) console.error(`Error deleting file ${filePath}:`, err.message);
-      }));
+
+      if (req.files?.file)
+        files.push(req.files.file[0].path);
+
+      if (req.files?.company_logo)
+        files.push(req.files.company_logo[0].path);
+
+      if (req.files?.sample_file_id)
+        files.push(req.files.sample_file_id[0].path);
+
+      if (req.files?.company_sample_ppt_file)
+        files.push(req.files.company_sample_ppt_file[0].path);
+
+      if (req.files?.company_video)
+        files.push(req.files.company_video[0].path);
+
+      files.forEach(filePath => {
+
+        fs.unlink(filePath, (err) => {
+
+          if (err) {
+            console.error(`Error deleting file ${filePath}:`, err.message);
+          }
+
+        });
+
+      });
+
     };
 
     try {
+
       const {
-        fname, lname, email, password, mobile, alternate_number, country_code, country, state, city, zipcode,
-        address, status, is_trading, elcina_member, user_company, website, products,
-        step, mode, real_password, remember_token, payment_status, is_email_verify, featured_company, is_approve,
-        organization_name, organization_slug, is_seller, core_activity, activity, categories, subcategory_ids, // Added subcategory_ids
-        company_website, company_location, is_star_seller, is_verified, role,
-        company_meta_title, company_video_second, brief_company,
-        organizations_product_description, designation, is_profile, is_company, is_intrest, request_admin, is_complete
+        fname,
+        lname,
+        email,
+        password,
+        mobile,
+        alternate_number,
+        country_code,
+        country,
+        state,
+        city,
+        zipcode,
+        address,
+        status,
+        is_trading,
+        elcina_member,
+        user_company,
+        website,
+        products,
+        step,
+        mode,
+        real_password,
+        remember_token,
+        payment_status,
+        is_email_verify,
+        featured_company,
+        is_approve,
+        core_activity,
+        activity,
+        categories,
+        subcategory_ids,
+        company_location,
+        is_star_seller,
+        is_verified,
+        role,
+        company_meta_title,
+        company_video_second,
+        brief_company,
+        designation,
+        is_profile,
+        is_company,
+        is_intrest,
+        request_admin,
+        is_complete
+
       } = req.body;
 
-      // Validation (unchanged)
-      if (!fname || !lname || !email || !password || !mobile || !country || !state || !city || !zipcode || !address) {
+      // =========================
+      // Email Validation
+      // =========================
+
+      if (email && !validator.isEmail(email)) {
+
         deleteUploadedFiles();
-        return res.status(400).json({ message: 'Missing required user fields.' });
-      }
-      if (!validator.isEmail(email)) {
-        deleteUploadedFiles();
-        return res.status(400).json({ error: 'Invalid email format' });
-      }
-      if (!req.files?.file || !req.files?.company_logo) {
-        deleteUploadedFiles();
-        return res.status(400).json({ message: 'All required files must be uploaded' });
+
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid email format'
+        });
+
       }
 
-      // Create UploadImage records for files (same logic)
-      const profileImage = await UploadImage.create({ file: `upload/users/${req.files.file[0].filename}` });
-      const companyLogoImage = await UploadImage.create({ file: `upload/users/${req.files.company_logo[0].filename}` });
-      const companySampleFile = req.files?.sample_file_id ? await UploadImage.create({ file: `upload/users/${req.files.sample_file_id[0].filename}` }) : null;
-      const companyPptFile = req.files?.company_sample_ppt_file ? await UploadImage.create({ file: `upload/users/${req.files.company_sample_ppt_file[0].filename}` }) : null;
-      const companyVideoFile = req.files?.company_video ? await UploadImage.create({ file: `upload/users/video/${req.files.company_video[0].filename}` }) : null;
+      // =========================
+      // Upload Files
+      // =========================
 
-      // Create user (unchanged)
-      const hashedPassword = await bcrypt.hash(password, 10);
+      let profileImage = null;
+      let companyLogoImage = null;
+      let companySampleFile = null;
+      let companyPptFile = null;
+      let companyVideoFile = null;
+
+      if (req.files?.file) {
+
+        profileImage = await UploadImage.create({
+          file: `upload/users/${req.files.file[0].filename}`
+        });
+
+      }
+
+      if (req.files?.company_logo) {
+
+        companyLogoImage = await UploadImage.create({
+          file: `upload/users/${req.files.company_logo[0].filename}`
+        });
+
+      }
+
+      if (req.files?.sample_file_id) {
+
+        companySampleFile = await UploadImage.create({
+          file: `upload/users/${req.files.sample_file_id[0].filename}`
+        });
+
+      }
+
+      if (req.files?.company_sample_ppt_file) {
+
+        companyPptFile = await UploadImage.create({
+          file: `upload/users/${req.files.company_sample_ppt_file[0].filename}`
+        });
+
+      }
+
+      if (req.files?.company_video) {
+
+        companyVideoFile = await UploadImage.create({
+          file: `upload/users/video/${req.files.company_video[0].filename}`
+        });
+
+      }
+
+      // =========================
+      // Password Hash
+      // =========================
+
+      const hashedPassword = password
+        ? await bcrypt.hash(password, 10)
+        : null;
+
+      // =========================
+      // Create User
+      // =========================
+
       const user = await Users.create({
-        fname, lname, email, mobile, alternate_number, country_code, country, state, city, zipcode, address, products,
-        status: status || 1, is_trading: is_trading || 0, is_approve: is_approve || 1,
-        elcina_member: elcina_member || 2, user_company, website, step: step || 0, mode: mode || 0,
-        password: hashedPassword, real_password: real_password || '', remember_token: remember_token || '',
-        payment_status: payment_status || 0, featured_company: featured_company || 0, is_seller: 1,
-        file_id: profileImage.id, company_file_id: companyLogoImage.id,
-        is_email_verify: is_email_verify || 1, is_profile: is_profile || 1, is_company: is_company || 1,
-        is_intrest: is_intrest || 0, request_admin: request_admin || 0, is_complete: is_complete || 1
+
+        fname: fname || null,
+        lname: lname || null,
+        email: email || null,
+        mobile: mobile || null,
+        alternate_number: alternate_number || null,
+        country_code: country_code || null,
+        country: country || null,
+        state: state || null,
+        city: city || 0,
+        zipcode: zipcode || null,
+        address: address || null,
+        products: products || '',
+        status: status || 1,
+        is_trading: is_trading || 0,
+        is_approve: is_approve || 1,
+        elcina_member: elcina_member || 2,
+        user_company: user_company || null,
+        website: website || '',
+        step: step || 0,
+        mode: mode || 0,
+        password: hashedPassword,
+        real_password: real_password || '',
+        remember_token: remember_token || '',
+        payment_status: payment_status || 0,
+        featured_company: featured_company || 0,
+        is_seller: 1,
+
+        file_id: profileImage?.id || null,
+        company_file_id: companyLogoImage?.id || null,
+
+        is_email_verify: is_email_verify || 1,
+        is_profile: is_profile || 1,
+        is_company: is_company || 1,
+        is_intrest: is_intrest || 0,
+        request_admin: request_admin || 0,
+        is_complete: is_complete || 1
+
       });
 
-      // Create company info (unchanged)
+      console.log('USER CREATED => ');
+      console.log(user.toJSON());
+
+      // =========================
+      // Create Company
+      // =========================
+
       const companyInfo = await CompanyInfo.create({
-        organization_name: user_company, organization_slug: await createUniqueSlug(user_company), role, user_type: 1,
-        core_activity, activity, company_website: website, company_location,
-        is_star_seller: is_star_seller || 0, is_verified: is_verified || 0, company_meta_title,
-        company_video_second, brief_company, organizations_product_description: products, designation,
-        featured_company: featured_company || 0, company_logo: companyLogoImage.id,
-        sample_file_id: companySampleFile?.id || null, company_sample_ppt_file: companyPptFile?.id || null,
-        company_video: companyVideoFile?.id || null, is_delete: 0,
-      });
-      await user.update({ company_id: companyInfo.id });
 
-      // FIXED: Category handling - same exact logic as updateSeller
-      const existingCategories = await SellerCategory.findAll({ where: { user_id: user.id } });
-      const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
+        organization_name: user_company || null,
+
+        organization_slug: user_company
+          ? await createUniqueSlug(user_company)
+          : null,
+
+        role: role || null,
+        user_type: 1,
+
+        core_activity: core_activity || null,
+        activity: activity || null,
+
+        company_website: website || '',
+        company_location: company_location || null,
+
+        is_star_seller: is_star_seller || 0,
+        is_verified: is_verified || 0,
+
+        company_meta_title: company_meta_title || null,
+        company_video_second: company_video_second || null,
+        brief_company: brief_company || null,
+
+        organizations_product_description: products || '',
+        designation: designation || null,
+
+        featured_company: featured_company || 0,
+
+        company_logo: companyLogoImage?.id || null,
+        sample_file_id: companySampleFile?.id || null,
+        company_sample_ppt_file: companyPptFile?.id || null,
+        company_video: companyVideoFile?.id || null,
+
+        is_delete: 0,
+
+      });
+
+
+      // =========================
+      // Update User Company ID
+      // =========================
+
+      await Users.update(
+        {
+          company_id: companyInfo.id
+        },
+        {
+          where: {
+            user_id: user.id
+          }
+        }
+      );
+
+
+      // =========================
+      // Category Logic
+      // =========================
+
       const incomingCategoryMap = [];
 
-      // Handle categories (comma-separated string)
-      if (categories) {
-        const categoryIds = categories.split(',').map(id => parseInt(id.trim()));
-        for (const categoryId of categoryIds) {
-          const key = `${categoryId}-null`;
-          incomingCategoryMap.push(key);
-          if (!existingCategoryMap.includes(key)) {
-            await SellerCategory.create({ user_id: user.id, category_id: categoryId, subcategory_id: null });
-          }
+      const existingCategories = await SellerCategory.findAll({
+        where: {
+          user_id: user.id
         }
-      }
-
-      // Handle subcategories (comma-separated string)
-      const subcategoryIds = subcategory_ids ? subcategory_ids.split(',').map(id => parseInt(id.trim())) : [];
-      for (const subcategoryId of subcategoryIds) {
-        const subCategory = await SubCategories.findOne({ where: { id: subcategoryId, is_delete: 0 } });
-        if (subCategory) {
-          const categoryId = subCategory.category;
-          const key = `${categoryId}-${subcategoryId}`;
-          incomingCategoryMap.push(key);
-          if (!existingCategoryMap.includes(key)) {
-            await SellerCategory.create({ user_id: user.id, category_id: categoryId, subcategory_id: subcategoryId });
-          }
-        }
-      }
-
-      // Clean up removed categories (same logic)
-      const nullSubcategoryRows = await SellerCategory.findAll({
-        where: { user_id: user.id, subcategory_id: null }
       });
-      for (const existing of nullSubcategoryRows) {
-        const categoryId = existing.category_id;
-        if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
-          await SellerCategory.destroy({
-            where: { user_id: user.id, category_id: categoryId, subcategory_id: null }
-          });
+
+      const existingCategoryMap = existingCategories.map(
+        c => `${c.category_id}-${c.subcategory_id ?? 'null'}`
+      );
+
+      // Main Categories
+
+      if (categories) {
+
+        const categoryIds = categories
+          .split(',')
+          .map(id => parseInt(id.trim()));
+
+        for (const categoryId of categoryIds) {
+
+          const key = `${categoryId}-null`;
+
+          incomingCategoryMap.push(key);
+
+          if (!existingCategoryMap.includes(key)) {
+
+            await SellerCategory.create({
+              user_id: user.id,
+              category_id: categoryId,
+              subcategory_id: null
+            });
+
+          }
+
         }
+
       }
 
-      res.status(201).json({
+      // Sub Categories
+
+      const subcategoryIds = subcategory_ids
+        ? subcategory_ids.split(',').map(id => parseInt(id.trim()))
+        : [];
+
+      for (const subcategoryId of subcategoryIds) {
+
+        const subCategory = await SubCategories.findOne({
+          where: {
+            id: subcategoryId,
+            is_delete: 0
+          }
+        });
+
+        if (subCategory) {
+
+          const categoryId = subCategory.category;
+
+          const key = `${categoryId}-${subcategoryId}`;
+
+          incomingCategoryMap.push(key);
+
+          if (!existingCategoryMap.includes(key)) {
+
+            await SellerCategory.create({
+              user_id: user.id,
+              category_id: categoryId,
+              subcategory_id: subcategoryId
+            });
+
+          }
+
+        }
+
+      }
+
+      // Remove Old Categories
+
+      const nullSubcategoryRows = await SellerCategory.findAll({
+        where: {
+          user_id: user.id,
+          subcategory_id: null
+        }
+      });
+
+      for (const existing of nullSubcategoryRows) {
+
+        const categoryId = existing.category_id;
+
+        if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
+
+          await SellerCategory.destroy({
+            where: {
+              user_id: user.id,
+              category_id: categoryId,
+              subcategory_id: null
+            }
+          });
+
+        }
+
+      }
+
+      // =========================
+      // Success Response
+      // =========================
+
+      return res.status(201).json({
+        success: true,
         message: 'Seller created successfully',
         user,
         companyInfo
       });
+
     } catch (error) {
+
+      console.log('CREATE SELLER ERROR => ', error);
+      console.log('FULL ERROR => ', error);
+
+      if (error.errors) {
+
+        error.errors.forEach((err) => {
+          console.log('FIELD => ', err.path);
+          console.log('MESSAGE => ', err.message);
+          console.log('VALUE => ', err.value);
+        });
+
+      }
       deleteUploadedFiles();
-      return res.status(500).json({ error: error.message });
+
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+
     }
+
   });
+
 };
 
 exports.getAllSeller = async (req, res) => {
@@ -220,6 +511,33 @@ exports.getAllSeller = async (req, res) => {
       ]
     });
 
+    const sellerIds = sellers.map(s => s.id);
+    const sellerProducts = sellerIds.length
+      ? await Products.findAll({
+        attributes: ['user_id', 'category', 'sub_category'],
+        where: {
+          user_id: { [Sequelize.Op.in]: sellerIds },
+          is_delete: 0,
+        },
+        include: [
+          { model: Categories, as: 'Categories', attributes: ['name'], required: false },
+          { model: SubCategories, as: 'SubCategories', attributes: ['name'], required: false },
+        ],
+      })
+      : [];
+
+    const userCategoryMap = {};
+    const userSubCategoryMap = {};
+
+    for (const product of sellerProducts) {
+      const userId = product.user_id;
+      if (!userCategoryMap[userId]) userCategoryMap[userId] = new Set();
+      if (!userSubCategoryMap[userId]) userSubCategoryMap[userId] = new Set();
+
+      if (product.Categories?.name) userCategoryMap[userId].add(product.Categories.name);
+      if (product.SubCategories?.name) userSubCategoryMap[userId].add(product.SubCategories.name);
+    }
+
     const productCounts = await Products.findAll({
       attributes: ['user_id', [sequelize.fn('COUNT', sequelize.col('user_id')), 'product_count']],
       where: {
@@ -238,12 +556,12 @@ exports.getAllSeller = async (req, res) => {
       const s = seller.toJSON();
 
       // Map categories & subcategories
-      const categoryNames = s.seller_categories
-        ? Array.from(new Set(s.seller_categories.map(sc => sc.category?.name).filter(Boolean))).join(', ')
+      const categoryNames = userCategoryMap[s.id]?.size
+        ? Array.from(userCategoryMap[s.id]).join(', ')
         : 'NA';
 
-      const subCategoryNames = s.seller_categories
-        ? Array.from(new Set(s.seller_categories.map(sc => sc.subcategory?.name).filter(Boolean))).join(', ')
+      const subCategoryNames = userSubCategoryMap[s.id]?.size
+        ? Array.from(userSubCategoryMap[s.id]).join(', ')
         : 'NA';
 
       return {
@@ -1091,7 +1409,7 @@ exports.getAllSellerServerSide = async (req, res) => {
         ? [...new Set(s.seller_categories.map(sc => sc.subcategory?.name).filter(Boolean))].join(', ')
         : 'NA';
       const productCount = await Products.count({ where: { user_id: row.id } });
-
+      // console.log(categoryNames, subCategoryNames);
       return {
         id: row.id,
         company_id: row.company_id,

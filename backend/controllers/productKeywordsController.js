@@ -11,6 +11,48 @@ const Products = require('../models/Products');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
+const sequelize = require('../config/database');
+
+let keywordCodeColumnExistsCache = null;
+
+const hasKeywordCodeColumn = async () => {
+  if (keywordCodeColumnExistsCache !== null) return keywordCodeColumnExistsCache;
+  try {
+    const columns = await sequelize.getQueryInterface().describeTable('product_keywords');
+    keywordCodeColumnExistsCache = Object.prototype.hasOwnProperty.call(columns, 'code');
+  } catch (error) {
+    keywordCodeColumnExistsCache = false;
+  }
+  return keywordCodeColumnExistsCache;
+};
+
+const generateKeywordCodeCandidate = () => {
+  const ts = Date.now().toString(36).toUpperCase();
+  const rnd = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `PKW-${ts}-${rnd}`;
+};
+
+const generateUniqueKeywordCode = async () => {
+  const hasCodeColumn = await hasKeywordCodeColumn();
+  if (!hasCodeColumn) return null;
+
+  for (let i = 0; i < 10; i += 1) {
+    const code = generateKeywordCodeCandidate();
+    const exists = await ProductKeyword.findOne({ where: { code }, attributes: ['id'] });
+    if (!exists) return code;
+  }
+  throw new Error('Unable to generate unique keyword code. Please retry.');
+};
+
+const normalizeKeywordName = (name) => (name || '').toString().trim().toLowerCase();
+
+const isUniqueConstraintError = (error) => {
+  return (
+    error?.name === 'SequelizeUniqueConstraintError'
+    || error?.parent?.code === 'ER_DUP_ENTRY'
+    || error?.parent?.code === '23505'
+  );
+};
 
 exports.createItemSubCategory = async (req, res) => {
   try {
@@ -33,11 +75,40 @@ exports.createItemSubCategory = async (req, res) => {
       return res.status(400).json({ message: 'Invalid status. Use 1 or 0.' });
     }
 
-    const createPayload = sanitizedNames.map((name) => ({
-      name,
-      item_subcategory_id: itemSubCategoryId,
-      status,
-    }));
+    const normalizedNames = sanitizedNames.map(normalizeKeywordName);
+    if (new Set(normalizedNames).size !== normalizedNames.length) {
+      return res.status(409).json({ message: 'Duplicate names found in request.' });
+    }
+
+    const existingKeywords = await ProductKeyword.findAll({
+      where: {
+        [Op.and]: [
+          sequelize.where(fn('LOWER', col('name')), {
+            [Op.in]: normalizedNames,
+          }),
+        ],
+      },
+      attributes: ['name'],
+    });
+
+    if (existingKeywords.length > 0) {
+      return res.status(409).json({
+        message: 'Keyword name must be unique.',
+        duplicates: existingKeywords.map((k) => k.name),
+      });
+    }
+
+    const hasCodeColumn = await hasKeywordCodeColumn();
+    const createPayload = [];
+    for (const name of sanitizedNames) {
+      const code = hasCodeColumn ? await generateUniqueKeywordCode() : null;
+      createPayload.push({
+        name,
+        ...(hasCodeColumn ? { code } : {}),
+        item_subcategory_id: itemSubCategoryId,
+        status,
+      });
+    }
 
     const createdKeywords = await ProductKeyword.bulkCreate(createPayload);
     const createdRows = createdKeywords.map((keyword) => keyword.toJSON());
@@ -49,6 +120,154 @@ exports.createItemSubCategory = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+exports.importKeywords = async (req, res) => {
+  try {
+    const rawKeywords = Array.isArray(req.body.keywords)
+      ? req.body.keywords
+      : Array.isArray(req.body.items)
+        ? req.body.items
+        : [];
+
+    const fallbackItemSubCategoryId = Number(
+      req.body.item_subcategory_id || req.body.parentItemSubCategoryId || req.body.listParentId
+    );
+
+    if (!Number.isInteger(fallbackItemSubCategoryId) || fallbackItemSubCategoryId <= 0) {
+      return res.status(400).json({
+        message: 'item_subcategory_id is required for import.',
+      });
+    }
+
+    const validationErrors = [];
+    const seenInFile = new Map();
+    const payloadSeed = [];
+
+    rawKeywords.forEach((row, index) => {
+      const rowNumber = index + 1;
+      const name = (row?.name || row?.Name || row?.keyword || row?.Keyword || '').toString().trim();
+      const itemSubCategoryId = fallbackItemSubCategoryId;
+      const status = row?.status === undefined || row?.status === null
+        ? Number(row?.Status ?? 1)
+        : Number(row.status);
+
+      if (!name || !Number.isInteger(itemSubCategoryId) || itemSubCategoryId <= 0) {
+        validationErrors.push({
+          row: rowNumber,
+          name: name || null,
+          reason: 'Invalid row data. Name and item_subcategory_id are required.',
+        });
+        return;
+      }
+
+      const normalizedName = normalizeKeywordName(name);
+      if (seenInFile.has(normalizedName)) {
+        validationErrors.push({
+          row: rowNumber,
+          name,
+          reason: `Duplicate in import file (same as row ${seenInFile.get(normalizedName)}).`,
+        });
+        return;
+      }
+
+      seenInFile.set(normalizedName, rowNumber);
+      payloadSeed.push({
+        rowNumber,
+        name,
+        normalizedName,
+        item_subcategory_id: itemSubCategoryId,
+        status: [0, 1].includes(status) ? status : 1,
+      });
+    });
+
+    const hasCodeColumn = await hasKeywordCodeColumn();
+
+    if (payloadSeed.length === 0) {
+      return res.status(400).json({
+        message: 'No valid keywords found to import.',
+        importedCount: 0,
+        errors: validationErrors,
+      });
+    }
+
+    const normalizedImportNames = payloadSeed.map((row) => row.normalizedName);
+
+    const existingImportKeywords = await ProductKeyword.findAll({
+      where: {
+        [Op.and]: [
+          sequelize.where(fn('LOWER', col('name')), {
+            [Op.in]: normalizedImportNames,
+          }),
+        ],
+      },
+      attributes: ['name'],
+    });
+
+    const existingNameSet = new Set(
+      existingImportKeywords.map((keyword) => normalizeKeywordName(keyword.name))
+    );
+
+    const duplicateErrors = [];
+    const rowsToImport = payloadSeed.filter((row) => {
+      if (existingNameSet.has(row.normalizedName)) {
+        duplicateErrors.push({
+          row: row.rowNumber,
+          name: row.name,
+          reason: 'Keyword already exists.',
+        });
+        return false;
+      }
+      return true;
+    });
+
+    const importErrors = [...validationErrors, ...duplicateErrors];
+    const createdKeywords = [];
+
+    for (const row of rowsToImport) {
+      try {
+        const code = hasCodeColumn ? await generateUniqueKeywordCode() : null;
+        const createdKeyword = await ProductKeyword.create({
+          name: row.name,
+          item_subcategory_id: row.item_subcategory_id,
+          status: row.status,
+          ...(hasCodeColumn ? { code } : {}),
+        });
+        createdKeywords.push(createdKeyword);
+      } catch (createError) {
+        if (isUniqueConstraintError(createError)) {
+          importErrors.push({
+            row: row.rowNumber,
+            name: row.name,
+            reason: 'Keyword already exists.',
+          });
+          continue;
+        }
+        throw createError;
+      }
+    }
+
+    if (createdKeywords.length === 0) {
+      return res.status(409).json({
+        message: 'No keywords were imported due to duplicate/invalid rows.',
+        importedCount: 0,
+        duplicates: importErrors.filter((entry) => entry.reason === 'Keyword already exists.').map((entry) => entry.name),
+        errors: importErrors,
+      });
+    }
+
+    res.status(201).json({
+      message: `${createdKeywords.length} keyword(s) imported successfully.${importErrors.length ? ` ${importErrors.length} row(s) skipped.` : ''}`,
+      importedCount: createdKeywords.length,
+      skippedCount: importErrors.length,
+      duplicates: importErrors.filter((entry) => entry.reason === 'Keyword already exists.').map((entry) => entry.name),
+      errors: importErrors,
+      itemSubCategories: createdKeywords.map((keyword) => keyword.toJSON()),
+    });
+  } catch (err) {
+    console.error('Error importing keywords:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -113,32 +332,167 @@ exports.getAllItemSubCategory = async (req, res) => {
   }
 };
 
-exports.getItemSubCategoryById = async (req, res) => {
+exports.getItemSubCategoryAll = async (req, res) => {
   try {
-    const itemSubCategory = await ItemSubCategory.findByPk(req.params.id, {
-      include: [{
-        model: UploadImage,
-        attributes: ['file'],
-      }],
+    const itemSubCategories = await ItemSubCategory.findAll({
+      order: [['id', 'ASC']],
+      include: [
+        { model: UploadImage, attributes: ['id', 'file'] },
+        { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+      ],
     });
-    if (!itemSubCategory) return res.status(404).json({ message: 'Item Sub Category not found' });
-    const response = {
-      ...itemSubCategory.toJSON(),
-      file_name: itemSubCategory.UploadImage ? itemSubCategory.UploadImage.file : null,
-    };
-    res.json(response);
+
+    const hasCodeColumn = await hasKeywordCodeColumn();
+
+    const rows = [];
+
+    for (const itemSubCategory of itemSubCategories) {
+      const keywordName = (itemSubCategory.name || '').toString().trim();
+      let keywordSync = { action: 'skipped', reason: 'Empty item subcategory name' };
+
+      if (keywordName) {
+        const normalizedName = normalizeKeywordName(keywordName);
+        const existingKeyword = await ProductKeyword.findOne({
+          where: {
+            item_subcategory_id: itemSubCategory.id,
+            [Op.and]: [
+              sequelize.where(fn('LOWER', col('name')), normalizedName),
+            ],
+          },
+          attributes: ['id', 'name', 'status'],
+        });
+
+        if (existingKeyword) {
+          if (existingKeyword.status !== 1) {
+            existingKeyword.status = 1;
+            existingKeyword.updated_at = new Date();
+            await existingKeyword.save({ fields: ['status', 'updated_at'] });
+            keywordSync = { action: 'updated', keyword_id: existingKeyword.id, keyword_name: existingKeyword.name };
+          } else {
+            keywordSync = { action: 'exists', keyword_id: existingKeyword.id, keyword_name: existingKeyword.name };
+          }
+        } else {
+          const code = hasCodeColumn ? await generateUniqueKeywordCode() : null;
+          const createdKeyword = await ProductKeyword.create({
+            name: keywordName,
+            ...(hasCodeColumn ? { code } : {}),
+            item_subcategory_id: itemSubCategory.id,
+            status: 1,
+          });
+          keywordSync = { action: 'created', keyword_id: createdKeyword.id, keyword_name: createdKeyword.name };
+        }
+      }
+
+      rows.push({
+        ...itemSubCategory.toJSON(),
+        file_name: itemSubCategory.UploadImage ? itemSubCategory.UploadImage.file : null,
+        keyword_sync: keywordSync,
+      });
+    }
+
+    res.json(rows);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
 
+exports.getItemSubCategoryById = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ message: 'Invalid item sub category id' });
+    }
+
+    const itemSubCategory = await ItemSubCategory.findByPk(id, {
+      include: [
+        { model: UploadImage, attributes: ['id', 'file'] },
+        { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+      ],
+    });
+
+    if (!itemSubCategory) return res.status(404).json({ message: 'Item Sub Category not found' });
+
+    const keywordName = (itemSubCategory.name || '').toString().trim();
+    let keywordSync = { action: 'skipped', reason: 'Empty item subcategory name' };
+
+    if (keywordName) {
+      const normalizedName = normalizeKeywordName(keywordName);
+      const existingKeyword = await ProductKeyword.findOne({
+        where: {
+          item_subcategory_id: itemSubCategory.id,
+          [Op.and]: [
+            sequelize.where(fn('LOWER', col('name')), normalizedName),
+          ],
+        },
+        attributes: ['id', 'name', 'status'],
+      });
+
+      if (existingKeyword) {
+        if (existingKeyword.status !== 1) {
+          existingKeyword.status = 1;
+          existingKeyword.updated_at = new Date();
+          await existingKeyword.save({ fields: ['status', 'updated_at'] });
+          keywordSync = { action: 'updated', keyword_id: existingKeyword.id, keyword_name: existingKeyword.name };
+        } else {
+          keywordSync = { action: 'exists', keyword_id: existingKeyword.id, keyword_name: existingKeyword.name };
+        }
+      } else {
+        const hasCodeColumn = await hasKeywordCodeColumn();
+        const code = hasCodeColumn ? await generateUniqueKeywordCode() : null;
+        const createdKeyword = await ProductKeyword.create({
+          name: keywordName,
+          ...(hasCodeColumn ? { code } : {}),
+          item_subcategory_id: itemSubCategory.id,
+          status: 1,
+        });
+        keywordSync = { action: 'created', keyword_id: createdKeyword.id, keyword_name: createdKeyword.name };
+      }
+    }
+
+    const response = {
+      ...itemSubCategory.toJSON(),
+      file_name: itemSubCategory.UploadImage ? itemSubCategory.UploadImage.file : null,
+      keyword_sync: keywordSync,
+    };
+
+    res.json(response);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 exports.updateKeyword = async (req, res) => {
   try {
     const keyword = await ProductKeyword.findByPk(req.params.id);
-   
+
     if (!keyword) return res.status(404).json({ message: 'Keyword not found' });
     const name = (req.body.name || '').toString().trim();
     if (!name) return res.status(400).json({ message: 'Name is required.' });
+
+    const normalizedName = normalizeKeywordName(name);
+    const duplicateKeyword = await ProductKeyword.findOne({
+      where: {
+        id: { [Op.ne]: keyword.id },
+        [Op.and]: [
+          sequelize.where(fn('LOWER', col('name')), normalizedName),
+        ],
+      },
+      attributes: ['id', 'name'],
+    });
+
+    if (duplicateKeyword) {
+      return res.status(409).json({
+        message: 'Keyword name must be unique.',
+      });
+    }
+
     keyword.name = name;
     if (req.body.status !== undefined) keyword.status = Number(req.body.status);
     keyword.updated_at = new Date();
