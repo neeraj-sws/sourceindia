@@ -101,6 +101,7 @@ const AddProduct = () => {
     };
 
     fetchCategories();
+
   }, [user?.id]);
 
   useEffect(() => {
@@ -109,7 +110,7 @@ const AddProduct = () => {
     const fetchSubCategories = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
-          params: { user_id: user.id }
+          params: { user_id: user.id, category_id: selectedCategory || undefined }
         });
         setSubCategories(res.data || []);
       } catch (err) {
@@ -148,20 +149,32 @@ const AddProduct = () => {
     }
   };
 
-  const handleCategoryChange = (event) => {
+  const handleCategoryChange = async (event) => {
     const categoryId = event.target.value;
+
     setSelectedCategory(categoryId);
 
-    const subBelongsToCategory = subCategories.some(
-      (sc) => String(sc.id) === String(selectedSubCategory) && String(getSubCategoryCategoryId(sc)) === String(categoryId)
-    );
-
-    if (!subBelongsToCategory) {
-      setSelectedSubCategory('');
-    }
-
+    // reset dependent fields
+    setSelectedSubCategory('');
     setSelectedItemCategory('');
     setItemCategories([]);
+
+    try {
+      const res = await axios.get(
+        `${API_BASE_URL}/sellers/seller-subcategories-by-user`,
+        {
+          params: {
+            user_id: user.id,
+            category_id: categoryId || undefined,
+          },
+        }
+      );
+
+      setSubCategories(res.data || []);
+    } catch (err) {
+      console.error("Error fetching seller subcategories:", err);
+      setSubCategories([]);
+    }
   };
 
   const handleCategoryPick = async ({ category, categoryName, sub_category, subName, item_category_id, itemCategoryName }) => {

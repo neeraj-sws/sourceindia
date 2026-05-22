@@ -672,129 +672,58 @@ exports.getSellerCount = async (req, res) => {
       // console.log("\n🧠 Executing SQL Query:\n", sql, "\n");
     };
 
-    const [
-      total,
-      addedToday,
-      statusActive,
-      statusInactive,
-      notApproved,
-      notCompleted,
-      deleted
-    ] = await Promise.all([
-      // Total sellers
-      Users.count({
-        where: { is_seller: 1 },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
-        logging: logSQL,
-      }),
+    const companyExists = `
+      EXISTS (
+        SELECT 1
+        FROM company_info ci
+        WHERE ci.company_id = u.company_id
+      )
+    `;
 
-      // Sellers added today
-      Users.count({
-        where: {
-          is_seller: 1,
-          is_delete: 0,
-          created_at: { [Op.between]: [todayStart, todayEnd] },
-        },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
+    const [counts] = await sequelize.query(
+      `
+      SELECT
+        SUM(CASE WHEN ${companyExists} THEN 1 ELSE 0 END) AS total,
+        SUM(CASE WHEN ${companyExists}
+          AND u.is_delete = 0
+          AND u.created_at BETWEEN :todayStart AND :todayEnd THEN 1 ELSE 0 END) AS addedToday,
+        SUM(CASE WHEN ${companyExists}
+          AND u.status = 1
+          AND u.is_delete = 0
+          AND u.member_role = 1
+          AND u.is_complete = 1
+          AND u.is_approve = 1 THEN 1 ELSE 0 END) AS statusActive,
+        SUM(CASE WHEN ${companyExists}
+          AND u.status = 0
+          AND u.is_delete = 0
+          AND u.member_role = 1
+          AND u.is_complete = 1 THEN 1 ELSE 0 END) AS statusInactive,
+        SUM(CASE WHEN ${companyExists}
+          AND u.is_approve = 0
+          AND u.is_delete = 0
+          AND u.is_complete = 1 THEN 1 ELSE 0 END) AS notApproved,
+        SUM(CASE WHEN ${companyExists}
+          AND u.is_complete = 0
+          AND u.is_delete = 0
+          AND u.is_approve = 0 THEN 1 ELSE 0 END) AS notCompleted,
+        SUM(CASE WHEN u.is_delete = 1 THEN 1 ELSE 0 END) AS deleted
+      FROM users u
+      WHERE u.is_seller = 1
+      `,
+      {
+        replacements: { todayStart, todayEnd },
+        type: Sequelize.QueryTypes.SELECT,
         logging: logSQL,
-      }),
+      }
+    );
 
-      // Active sellers
-      Users.count({
-        where: {
-          is_seller: 1,
-          status: 1,
-          is_delete: 0,
-          member_role: 1,
-          is_complete: 1,
-          is_approve: 1,
-        },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
-        logging: logSQL,
-      }),
-
-      // Inactive sellers
-      Users.count({
-        where: {
-          is_seller: 1,
-          status: 0,
-          is_delete: 0,
-          member_role: 1,
-          is_complete: 1,
-        },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
-        logging: logSQL,
-      }),
-
-      // Not approved sellers
-      Users.count({
-        where: {
-          is_seller: 1,
-          is_approve: 0,
-          is_delete: 0,
-          is_complete: 1
-        },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
-        logging: logSQL,
-      }),
-
-      // Not completed sellers
-      Users.count({
-        where: {
-          is_seller: 1,
-          is_complete: 0,
-          is_delete: 0,
-          is_approve: 0,
-        },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
-        logging: logSQL,
-      }),
-
-      // Deleted sellers
-      Users.count({
-        where: {
-          is_seller: 1,
-          is_delete: 1,
-        },
-        logging: logSQL,
-      }),
-    ]);
+    const total = Number(counts.total) || 0;
+    const addedToday = Number(counts.addedToday) || 0;
+    const statusActive = Number(counts.statusActive) || 0;
+    const statusInactive = Number(counts.statusInactive) || 0;
+    const notApproved = Number(counts.notApproved) || 0;
+    const notCompleted = Number(counts.notCompleted) || 0;
+    const deleted = Number(counts.deleted) || 0;
 
     return res.json({
       total,
@@ -1400,7 +1329,25 @@ exports.getAllSellerServerSide = async (req, res) => {
     });
 
     // 🧠 Map Result
-    const mappedRows = await Promise.all(rows.map(async (row) => {
+    const sellerIds = rows.map(row => row.id);
+    const productCounts = sellerIds.length
+      ? await Products.findAll({
+        attributes: [
+          'user_id',
+          [sequelize.fn('COUNT', sequelize.col('user_id')), 'product_count']
+        ],
+        where: { user_id: { [Op.in]: sellerIds } },
+        group: ['user_id'],
+        raw: true,
+      })
+      : [];
+
+    const productCountMap = productCounts.reduce((acc, item) => {
+      acc[item.user_id] = Number(item.product_count) || 0;
+      return acc;
+    }, {});
+
+    const mappedRows = rows.map((row) => {
       const s = row.toJSON();
       const categoryNames = s.seller_categories?.length
         ? [...new Set(s.seller_categories.map(sc => sc.category?.name).filter(Boolean))].join(', ')
@@ -1408,7 +1355,6 @@ exports.getAllSellerServerSide = async (req, res) => {
       const subCategoryNames = s.seller_categories?.length
         ? [...new Set(s.seller_categories.map(sc => sc.subcategory?.name).filter(Boolean))].join(', ')
         : 'NA';
-      const productCount = await Products.count({ where: { user_id: row.id } });
       // console.log(categoryNames, subCategoryNames);
       return {
         id: row.id,
@@ -1435,7 +1381,7 @@ exports.getAllSellerServerSide = async (req, res) => {
         state_name: row.state_data?.name || null,
         city_name: row.city_data?.name || null,
         elcina_member: row.elcina_member,
-        user_count: productCount,
+        user_count: productCountMap[row.id] || 0,
         status: row.status,
         getStatus: row.status === 1 ? 'Active' : 'Inactive',
         is_approve: row.is_approve,
@@ -1445,7 +1391,7 @@ exports.getAllSellerServerSide = async (req, res) => {
         updated_at: row.updated_at,
         approve_date: row.approve_date
       };
-    }));
+    });
 
     res.json({ data: mappedRows, totalRecords, filteredRecords });
 
@@ -2000,61 +1946,56 @@ exports.updateSellerDeleteStatus = async (req, res) => {
 
 exports.getSellerCategories = async (req, res) => {
   try {
-    const { user_id } = req.query;
 
-    if (!user_id) return res.status(400).json({ error: 'user_id is required' });
 
-    const sellerCategories = await SellerCategory.findAll({
-      where: { user_id },
-      attributes: [], // we only want included category
-      include: [
-        {
-          model: Categories,
-          as: 'category',
-          attributes: ['id', 'name', 'slug'],
-        },
-      ],
+    const sellerCategories = await Categories.findAll({
+      where: {
+        is_delete: 0,
+        status: 1,
+      },
+      attributes: ["id", "name", "slug"],
       raw: true,
     });
 
-    // Deduplicate categories
+    // remove duplicate categories
     const categoryMap = {};
-    sellerCategories.forEach(sc => {
-      if (sc['category.id'] && !categoryMap[sc['category.id']]) {
-        categoryMap[sc['category.id']] = {
-          id: sc['category.id'],
-          name: sc['category.name'],
-          slug: sc['category.slug'],
+
+    sellerCategories.forEach((category) => {
+      if (category.id && !categoryMap[category.id]) {
+        categoryMap[category.id] = {
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
         };
       }
     });
 
     const categories = Object.values(categoryMap);
-    res.json(categories);
+
+    return res.status(200).json({
+      success: true,
+      data: categories,
+    });
   } catch (err) {
-    console.error('getSellerCategories error:', err);
-    res.status(500).json({ error: err.message });
+    console.error("getSellerCategories error:", err);
+
+    return res.status(500).json({
+      success: false,
+      error: err.message,
+    });
   }
 };
 
 // Get subcategories for a seller and category
 exports.getSellerSubCategories = async (req, res) => {
   try {
-    const { user_id, category_id } = req.query;
+    const { category_id } = req.query;
 
-    if (!user_id || !category_id)
-      return res.status(400).json({ error: 'user_id and category_id are required' });
+    if (!category_id)
+      return res.status(400).json({ error: 'category_id is required' });
 
-    const sellerSubCategories = await SellerCategory.findAll({
-      where: { user_id, category_id },
-      attributes: [],
-      include: [
-        {
-          model: SubCategories,
-          as: 'subcategory',
-          attributes: ['id', 'name', 'slug'],
-        },
-      ],
+    const sellerSubCategories = await SubCategories.findAll({
+      where: { category_id },
       raw: true,
     });
 
@@ -2395,7 +2336,7 @@ exports.getSellerChartData = async (req, res) => {
   }
 };
 
-exports.getSellerSubCategoriesByUser = async (req, res) => {
+exports.getSellerSubCategoriesByUserOLd = async (req, res) => {
   try {
     const { user_id } = req.query;
 
@@ -2403,7 +2344,7 @@ exports.getSellerSubCategoriesByUser = async (req, res) => {
       return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const rows = await SellerCategory.findAll({
+    const rows = await SubCategories.findAll({
       where: {
         user_id,
         subcategory_id: { [require('sequelize').Op.ne]: null },
@@ -2449,5 +2390,47 @@ exports.getSellerSubCategoriesByUser = async (req, res) => {
   } catch (err) {
     console.error('getSellerSubCategoriesByUser error:', err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.getSellerSubCategoriesByUser = async (req, res) => {
+  try {
+    const { category_id, user_id } = req.query;
+
+    if (!user_id) {
+      return res.status(400).json({
+        error: "user_id is required",
+      });
+    }
+
+    if (!category_id) {
+      return res.status(400).json({
+        error: "category_id is required",
+      });
+    }
+
+    const rows = await SubCategories.findAll({
+      where: {
+        category: category_id,
+        status: 1,
+        is_delete: 0,
+      },
+      attributes: ["id", "name", "slug", "category"],
+      raw: true,
+    });
+    const subcategories = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      category_id: row.category,
+    }));
+
+    return res.status(200).json(subcategories);
+  } catch (err) {
+    console.error("getSellerSubCategoriesByUser error:", err);
+    return res.status(500).json({
+      error: err.message,
+    });
   }
 };

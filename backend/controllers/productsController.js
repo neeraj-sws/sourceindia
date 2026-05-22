@@ -11,9 +11,9 @@ exports.suggestProducts = async (req, res) => {
       status: 1
     };
 
-    if (item_subcategory_id) {
-      keywordWhere.item_subcategory_id = item_subcategory_id;
-    }
+    // if (item_subcategory_id) {
+    //   keywordWhere.item_subcategory_id = item_subcategory_id;
+    // }
 
     const itemSubCategoryWhere = {};
     if (category) itemSubCategoryWhere.category_id = category;
