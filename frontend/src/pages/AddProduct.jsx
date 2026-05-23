@@ -61,6 +61,11 @@ const AddProduct = () => {
   const pickerDialogRef = React.useRef(null);
   const [pickerQuery, setPickerQuery] = useState('');
   const getSubCategoryCategoryId = (subCategory) => subCategory?.category_id ?? subCategory?.category ?? null;
+  const subCategoriesRef = useRef([]);
+
+  useEffect(() => {
+    subCategoriesRef.current = subCategories;
+  }, [subCategories]);
 
   useEffect(() => {
     if (selectedCategory && selectedSubCategory) {
@@ -120,13 +125,20 @@ const AddProduct = () => {
     };
 
     fetchSubCategories();
-  }, [user]);
+  }, [user?.id, selectedCategory]);
 
   const handleSubCategoryChange = async (event) => {
     const subCategoryId = event.target.value;
 
+    if (!subCategoryId) {
+      setSelectedSubCategory('');
+      setSelectedItemCategory('');
+      setItemCategories([]);
+      return;
+    }
+
     // Find subcategory object
-    const subCat = subCategories.find(sc => String(sc.id) === subCategoryId);
+    const subCat = subCategoriesRef.current.find(sc => String(sc.id) === subCategoryId);
     const subCatCategoryId = getSubCategoryCategoryId(subCat);
 
     setSelectedSubCategory(subCategoryId);
@@ -149,32 +161,14 @@ const AddProduct = () => {
     }
   };
 
-  const handleCategoryChange = async (event) => {
+  const handleCategoryChange = (event) => {
     const categoryId = event.target.value;
-
     setSelectedCategory(categoryId);
 
     // reset dependent fields
     setSelectedSubCategory('');
     setSelectedItemCategory('');
     setItemCategories([]);
-
-    try {
-      const res = await axios.get(
-        `${API_BASE_URL}/sellers/seller-subcategories-by-user`,
-        {
-          params: {
-            user_id: user.id,
-            category_id: categoryId || undefined,
-          },
-        }
-      );
-
-      setSubCategories(res.data || []);
-    } catch (err) {
-      console.error("Error fetching seller subcategories:", err);
-      setSubCategories([]);
-    }
   };
 
   const handleCategoryPick = async ({ category, categoryName, sub_category, subName, item_category_id, itemCategoryName }) => {
@@ -207,7 +201,7 @@ const AddProduct = () => {
       const token = localStorage.getItem('user_token');
       // Prefer seller-specific subcategories for this user
       const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
-        params: { user_id: user?.id },
+        params: { user_id: user?.id, category_id: selectedCategory || undefined },
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
 
@@ -408,39 +402,45 @@ const AddProduct = () => {
   };
 
   useEffect(() => {
-    $('#category').select2({
+    const $category = $('#category');
+    const $subCategory = $('#sub_category');
+    const $itemCategory = $('#item_category_id');
+
+    $category.select2({
       theme: "bootstrap",
       width: '100%',
       placeholder: "Select Category"
-    }).on("change", function () {
+    }).on("change.addProduct", function () {
       const categoryId = $(this).val();
       handleCategoryChange({ target: { value: categoryId } });
     });
 
-    $('#sub_category').select2({
+    $subCategory.select2({
       theme: "bootstrap",
       width: '100%',
       placeholder: "Select Sub Category"
-    }).on("change", function () {
+    }).on("change.addProduct", function () {
       const subCategoryId = $(this).val();
       handleSubCategoryChange({ target: { value: subCategoryId } });
     });
-    $('#item_category_id')
+    $itemCategory
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
-      .on("change", function () {
+      .on("change.addProduct", function () {
         handleItemCategoryChange({ target: { value: $(this).val() } });
       });
 
     return () => {
-      if ($('#category').data('select2')) {
-        $('#category').off("change").select2('destroy');
+      if ($category.data('select2')) {
+        $category.off("change.addProduct").select2('destroy');
       }
-      if ($('#sub_category').data('select2')) {
-        $('#sub_category').off("change").select2('destroy');
+      if ($subCategory.data('select2')) {
+        $subCategory.off("change.addProduct").select2('destroy');
       }
-      if ($('#item_category_id').data('select2')) $('#item_category_id').select2('destroy');
+      if ($itemCategory.data('select2')) {
+        $itemCategory.off("change.addProduct").select2('destroy');
+      }
     };
-  }, [categories, subCategories, itemCategories]);
+  }, []);
 
   useEffect(() => {
     const categoryExists = categories.some(c => String(c.id) === String(selectedCategory));
@@ -582,7 +582,7 @@ const AddProduct = () => {
   };
 
   useEffect(() => {
-    if (!isEditing || subCategories.length === 0) return;
+    if (!isEditing) return;
 
     const fetchProduct = async () => {
       try {
