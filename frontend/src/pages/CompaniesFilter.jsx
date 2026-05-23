@@ -164,7 +164,7 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
     const fetchCategories = async () => {
       try {
         const res = await axios.get(
-          `${API_BASE_URL}/categories?is_delete=0&status=1`
+          `${API_BASE_URL}/categories/product-categories?is_delete=0&status=1`
         );
         const cats = res.data || [];
         const filtered = cats.filter((cat) => cat.company_count > 0);

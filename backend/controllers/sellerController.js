@@ -44,7 +44,9 @@ async function createUniqueSlug(name) {
 }
 
 exports.createSeller = async (req, res) => {
-  const upload = getMulterUpload('users'); // Fixed: Add 'users' param like updateSeller
+
+  const upload = getMulterUpload('users');
+
   upload.fields([
     { name: 'file', maxCount: 1 },
     { name: 'company_logo', maxCount: 1 },
@@ -52,131 +54,420 @@ exports.createSeller = async (req, res) => {
     { name: 'company_sample_ppt_file', maxCount: 1 },
     { name: 'company_video', maxCount: 1 },
   ])(req, res, async (err) => {
-    if (err) return res.status(500).json({ error: err.message });
+
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message
+      });
+    }
 
     const deleteUploadedFiles = () => {
+
       const files = [];
-      if (req.files?.file) files.push(req.files.file[0].path);
-      if (req.files?.company_logo) files.push(req.files.company_logo[0].path);
-      if (req.files?.sample_file_id) files.push(req.files.sample_file_id[0].path);
-      if (req.files?.company_sample_ppt_file) files.push(req.files.company_sample_ppt_file[0].path);
-      if (req.files?.company_video) files.push(req.files.company_video[0].path);
-      files.forEach(filePath => fs.unlink(filePath, err => {
-        if (err) console.error(`Error deleting file ${filePath}:`, err.message);
-      }));
+
+      if (req.files?.file)
+        files.push(req.files.file[0].path);
+
+      if (req.files?.company_logo)
+        files.push(req.files.company_logo[0].path);
+
+      if (req.files?.sample_file_id)
+        files.push(req.files.sample_file_id[0].path);
+
+      if (req.files?.company_sample_ppt_file)
+        files.push(req.files.company_sample_ppt_file[0].path);
+
+      if (req.files?.company_video)
+        files.push(req.files.company_video[0].path);
+
+      files.forEach(filePath => {
+
+        fs.unlink(filePath, (err) => {
+
+          if (err) {
+            console.error(`Error deleting file ${filePath}:`, err.message);
+          }
+
+        });
+
+      });
+
     };
 
     try {
+
       const {
-        fname, lname, email, password, mobile, alternate_number, country_code, country, state, city, zipcode,
-        address, status, is_trading, elcina_member, user_company, website, products,
-        step, mode, real_password, remember_token, payment_status, is_email_verify, featured_company, is_approve,
-        organization_name, organization_slug, is_seller, core_activity, activity, categories, subcategory_ids, // Added subcategory_ids
-        company_website, company_location, is_star_seller, is_verified, role,
-        company_meta_title, company_video_second, brief_company,
-        organizations_product_description, designation, is_profile, is_company, is_intrest, request_admin, is_complete
+        fname,
+        lname,
+        email,
+        password,
+        mobile,
+        alternate_number,
+        country_code,
+        country,
+        state,
+        city,
+        zipcode,
+        address,
+        status,
+        is_trading,
+        elcina_member,
+        user_company,
+        website,
+        products,
+        step,
+        mode,
+        real_password,
+        remember_token,
+        payment_status,
+        is_email_verify,
+        featured_company,
+        is_approve,
+        core_activity,
+        activity,
+        categories,
+        subcategory_ids,
+        company_location,
+        is_star_seller,
+        is_verified,
+        role,
+        company_meta_title,
+        company_video_second,
+        brief_company,
+        designation,
+        is_profile,
+        is_company,
+        is_intrest,
+        request_admin,
+        is_complete
+
       } = req.body;
 
-      // Validation (unchanged)
-      if (!fname || !lname || !email || !password || !mobile || !country || !state || !city || !zipcode || !address) {
+      // =========================
+      // Email Validation
+      // =========================
+
+      if (email && !validator.isEmail(email)) {
+
         deleteUploadedFiles();
-        return res.status(400).json({ message: 'Missing required user fields.' });
-      }
-      if (!validator.isEmail(email)) {
-        deleteUploadedFiles();
-        return res.status(400).json({ error: 'Invalid email format' });
-      }
-      if (!req.files?.file || !req.files?.company_logo) {
-        deleteUploadedFiles();
-        return res.status(400).json({ message: 'All required files must be uploaded' });
+
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid email format'
+        });
+
       }
 
-      // Create UploadImage records for files (same logic)
-      const profileImage = await UploadImage.create({ file: `upload/users/${req.files.file[0].filename}` });
-      const companyLogoImage = await UploadImage.create({ file: `upload/users/${req.files.company_logo[0].filename}` });
-      const companySampleFile = req.files?.sample_file_id ? await UploadImage.create({ file: `upload/users/${req.files.sample_file_id[0].filename}` }) : null;
-      const companyPptFile = req.files?.company_sample_ppt_file ? await UploadImage.create({ file: `upload/users/${req.files.company_sample_ppt_file[0].filename}` }) : null;
-      const companyVideoFile = req.files?.company_video ? await UploadImage.create({ file: `upload/users/video/${req.files.company_video[0].filename}` }) : null;
+      // =========================
+      // Upload Files
+      // =========================
 
-      // Create user (unchanged)
-      const hashedPassword = await bcrypt.hash(password, 10);
+      let profileImage = null;
+      let companyLogoImage = null;
+      let companySampleFile = null;
+      let companyPptFile = null;
+      let companyVideoFile = null;
+
+      if (req.files?.file) {
+
+        profileImage = await UploadImage.create({
+          file: `upload/users/${req.files.file[0].filename}`
+        });
+
+      }
+
+      if (req.files?.company_logo) {
+
+        companyLogoImage = await UploadImage.create({
+          file: `upload/users/${req.files.company_logo[0].filename}`
+        });
+
+      }
+
+      if (req.files?.sample_file_id) {
+
+        companySampleFile = await UploadImage.create({
+          file: `upload/users/${req.files.sample_file_id[0].filename}`
+        });
+
+      }
+
+      if (req.files?.company_sample_ppt_file) {
+
+        companyPptFile = await UploadImage.create({
+          file: `upload/users/${req.files.company_sample_ppt_file[0].filename}`
+        });
+
+      }
+
+      if (req.files?.company_video) {
+
+        companyVideoFile = await UploadImage.create({
+          file: `upload/users/video/${req.files.company_video[0].filename}`
+        });
+
+      }
+
+      // =========================
+      // Password Hash
+      // =========================
+
+      const hashedPassword = password
+        ? await bcrypt.hash(password, 10)
+        : null;
+
+      // =========================
+      // Create User
+      // =========================
+
       const user = await Users.create({
-        fname, lname, email, mobile, alternate_number, country_code, country, state, city, zipcode, address, products,
-        status: status || 1, is_trading: is_trading || 0, is_approve: is_approve || 1,
-        elcina_member: elcina_member || 2, user_company, website, step: step || 0, mode: mode || 0,
-        password: hashedPassword, real_password: real_password || '', remember_token: remember_token || '',
-        payment_status: payment_status || 0, featured_company: featured_company || 0, is_seller: 1,
-        file_id: profileImage.id, company_file_id: companyLogoImage.id,
-        is_email_verify: is_email_verify || 1, is_profile: is_profile || 1, is_company: is_company || 1,
-        is_intrest: is_intrest || 0, request_admin: request_admin || 0, is_complete: is_complete || 1
+
+        fname: fname || null,
+        lname: lname || null,
+        email: email || null,
+        mobile: mobile || null,
+        alternate_number: alternate_number || null,
+        country_code: country_code || null,
+        country: country || null,
+        state: state || null,
+        city: city || 0,
+        zipcode: zipcode || null,
+        address: address || null,
+        products: products || '',
+        status: status || 1,
+        is_trading: is_trading || 0,
+        is_approve: is_approve || 1,
+        elcina_member: elcina_member || 2,
+        user_company: user_company || null,
+        website: website || '',
+        step: step || 0,
+        mode: mode || 0,
+        password: hashedPassword,
+        real_password: real_password || '',
+        remember_token: remember_token || '',
+        payment_status: payment_status || 0,
+        featured_company: featured_company || 0,
+        is_seller: 1,
+
+        file_id: profileImage?.id || null,
+        company_file_id: companyLogoImage?.id || null,
+
+        is_email_verify: is_email_verify || 1,
+        is_profile: is_profile || 1,
+        is_company: is_company || 1,
+        is_intrest: is_intrest || 0,
+        request_admin: request_admin || 0,
+        is_complete: is_complete || 1
+
       });
 
-      // Create company info (unchanged)
+      console.log('USER CREATED => ');
+      console.log(user.toJSON());
+
+      // =========================
+      // Create Company
+      // =========================
+
       const companyInfo = await CompanyInfo.create({
-        organization_name: user_company, organization_slug: await createUniqueSlug(user_company), role, user_type: 1,
-        core_activity, activity, company_website: website, company_location,
-        is_star_seller: is_star_seller || 0, is_verified: is_verified || 0, company_meta_title,
-        company_video_second, brief_company, organizations_product_description: products, designation,
-        featured_company: featured_company || 0, company_logo: companyLogoImage.id,
-        sample_file_id: companySampleFile?.id || null, company_sample_ppt_file: companyPptFile?.id || null,
-        company_video: companyVideoFile?.id || null, is_delete: 0,
-      });
-      await user.update({ company_id: companyInfo.id });
 
-      // FIXED: Category handling - same exact logic as updateSeller
-      const existingCategories = await SellerCategory.findAll({ where: { user_id: user.id } });
-      const existingCategoryMap = existingCategories.map(c => `${c.category_id}-${c.subcategory_id ?? 'null'}`);
+        organization_name: user_company || null,
+
+        organization_slug: user_company
+          ? await createUniqueSlug(user_company)
+          : null,
+
+        role: role || null,
+        user_type: 1,
+
+        core_activity: core_activity || null,
+        activity: activity || null,
+
+        company_website: website || '',
+        company_location: company_location || null,
+
+        is_star_seller: is_star_seller || 0,
+        is_verified: is_verified || 0,
+
+        company_meta_title: company_meta_title || null,
+        company_video_second: company_video_second || null,
+        brief_company: brief_company || null,
+
+        organizations_product_description: products || '',
+        designation: designation || null,
+
+        featured_company: featured_company || 0,
+
+        company_logo: companyLogoImage?.id || null,
+        sample_file_id: companySampleFile?.id || null,
+        company_sample_ppt_file: companyPptFile?.id || null,
+        company_video: companyVideoFile?.id || null,
+
+        is_delete: 0,
+
+      });
+
+
+      // =========================
+      // Update User Company ID
+      // =========================
+
+      await Users.update(
+        {
+          company_id: companyInfo.id
+        },
+        {
+          where: {
+            user_id: user.id
+          }
+        }
+      );
+
+
+      // =========================
+      // Category Logic
+      // =========================
+
       const incomingCategoryMap = [];
 
-      // Handle categories (comma-separated string)
-      if (categories) {
-        const categoryIds = categories.split(',').map(id => parseInt(id.trim()));
-        for (const categoryId of categoryIds) {
-          const key = `${categoryId}-null`;
-          incomingCategoryMap.push(key);
-          if (!existingCategoryMap.includes(key)) {
-            await SellerCategory.create({ user_id: user.id, category_id: categoryId, subcategory_id: null });
-          }
+      const existingCategories = await SellerCategory.findAll({
+        where: {
+          user_id: user.id
         }
-      }
-
-      // Handle subcategories (comma-separated string)
-      const subcategoryIds = subcategory_ids ? subcategory_ids.split(',').map(id => parseInt(id.trim())) : [];
-      for (const subcategoryId of subcategoryIds) {
-        const subCategory = await SubCategories.findOne({ where: { id: subcategoryId, is_delete: 0 } });
-        if (subCategory) {
-          const categoryId = subCategory.category;
-          const key = `${categoryId}-${subcategoryId}`;
-          incomingCategoryMap.push(key);
-          if (!existingCategoryMap.includes(key)) {
-            await SellerCategory.create({ user_id: user.id, category_id: categoryId, subcategory_id: subcategoryId });
-          }
-        }
-      }
-
-      // Clean up removed categories (same logic)
-      const nullSubcategoryRows = await SellerCategory.findAll({
-        where: { user_id: user.id, subcategory_id: null }
       });
-      for (const existing of nullSubcategoryRows) {
-        const categoryId = existing.category_id;
-        if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
-          await SellerCategory.destroy({
-            where: { user_id: user.id, category_id: categoryId, subcategory_id: null }
-          });
+
+      const existingCategoryMap = existingCategories.map(
+        c => `${c.category_id}-${c.subcategory_id ?? 'null'}`
+      );
+
+      // Main Categories
+
+      if (categories) {
+
+        const categoryIds = categories
+          .split(',')
+          .map(id => parseInt(id.trim()));
+
+        for (const categoryId of categoryIds) {
+
+          const key = `${categoryId}-null`;
+
+          incomingCategoryMap.push(key);
+
+          if (!existingCategoryMap.includes(key)) {
+
+            await SellerCategory.create({
+              user_id: user.id,
+              category_id: categoryId,
+              subcategory_id: null
+            });
+
+          }
+
         }
+
       }
 
-      res.status(201).json({
+      // Sub Categories
+
+      const subcategoryIds = subcategory_ids
+        ? subcategory_ids.split(',').map(id => parseInt(id.trim()))
+        : [];
+
+      for (const subcategoryId of subcategoryIds) {
+
+        const subCategory = await SubCategories.findOne({
+          where: {
+            id: subcategoryId,
+            is_delete: 0
+          }
+        });
+
+        if (subCategory) {
+
+          const categoryId = subCategory.category;
+
+          const key = `${categoryId}-${subcategoryId}`;
+
+          incomingCategoryMap.push(key);
+
+          if (!existingCategoryMap.includes(key)) {
+
+            await SellerCategory.create({
+              user_id: user.id,
+              category_id: categoryId,
+              subcategory_id: subcategoryId
+            });
+
+          }
+
+        }
+
+      }
+
+      // Remove Old Categories
+
+      const nullSubcategoryRows = await SellerCategory.findAll({
+        where: {
+          user_id: user.id,
+          subcategory_id: null
+        }
+      });
+
+      for (const existing of nullSubcategoryRows) {
+
+        const categoryId = existing.category_id;
+
+        if (!incomingCategoryMap.includes(`${categoryId}-null`)) {
+
+          await SellerCategory.destroy({
+            where: {
+              user_id: user.id,
+              category_id: categoryId,
+              subcategory_id: null
+            }
+          });
+
+        }
+
+      }
+
+      // =========================
+      // Success Response
+      // =========================
+
+      return res.status(201).json({
+        success: true,
         message: 'Seller created successfully',
         user,
         companyInfo
       });
+
     } catch (error) {
+
+      console.log('CREATE SELLER ERROR => ', error);
+      console.log('FULL ERROR => ', error);
+
+      if (error.errors) {
+
+        error.errors.forEach((err) => {
+          console.log('FIELD => ', err.path);
+          console.log('MESSAGE => ', err.message);
+          console.log('VALUE => ', err.value);
+        });
+
+      }
       deleteUploadedFiles();
-      return res.status(500).json({ error: error.message });
+
+      return res.status(500).json({
+        success: false,
+        error: error.message
+      });
+
     }
+
   });
+
 };
 
 exports.getAllSeller = async (req, res) => {
@@ -220,6 +511,33 @@ exports.getAllSeller = async (req, res) => {
       ]
     });
 
+    const sellerIds = sellers.map(s => s.id);
+    const sellerProducts = sellerIds.length
+      ? await Products.findAll({
+        attributes: ['user_id', 'category', 'sub_category'],
+        where: {
+          user_id: { [Sequelize.Op.in]: sellerIds },
+          is_delete: 0,
+        },
+        include: [
+          { model: Categories, as: 'Categories', attributes: ['name'], required: false },
+          { model: SubCategories, as: 'SubCategories', attributes: ['name'], required: false },
+        ],
+      })
+      : [];
+
+    const userCategoryMap = {};
+    const userSubCategoryMap = {};
+
+    for (const product of sellerProducts) {
+      const userId = product.user_id;
+      if (!userCategoryMap[userId]) userCategoryMap[userId] = new Set();
+      if (!userSubCategoryMap[userId]) userSubCategoryMap[userId] = new Set();
+
+      if (product.Categories?.name) userCategoryMap[userId].add(product.Categories.name);
+      if (product.SubCategories?.name) userSubCategoryMap[userId].add(product.SubCategories.name);
+    }
+
     const productCounts = await Products.findAll({
       attributes: ['user_id', [sequelize.fn('COUNT', sequelize.col('user_id')), 'product_count']],
       where: {
@@ -238,12 +556,12 @@ exports.getAllSeller = async (req, res) => {
       const s = seller.toJSON();
 
       // Map categories & subcategories
-      const categoryNames = s.seller_categories
-        ? Array.from(new Set(s.seller_categories.map(sc => sc.category?.name).filter(Boolean))).join(', ')
+      const categoryNames = userCategoryMap[s.id]?.size
+        ? Array.from(userCategoryMap[s.id]).join(', ')
         : 'NA';
 
-      const subCategoryNames = s.seller_categories
-        ? Array.from(new Set(s.seller_categories.map(sc => sc.subcategory?.name).filter(Boolean))).join(', ')
+      const subCategoryNames = userSubCategoryMap[s.id]?.size
+        ? Array.from(userSubCategoryMap[s.id]).join(', ')
         : 'NA';
 
       return {
@@ -354,129 +672,58 @@ exports.getSellerCount = async (req, res) => {
       // console.log("\n🧠 Executing SQL Query:\n", sql, "\n");
     };
 
-    const [
-      total,
-      addedToday,
-      statusActive,
-      statusInactive,
-      notApproved,
-      notCompleted,
-      deleted
-    ] = await Promise.all([
-      // Total sellers
-      Users.count({
-        where: { is_seller: 1 },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
-        logging: logSQL,
-      }),
+    const companyExists = `
+      EXISTS (
+        SELECT 1
+        FROM company_info ci
+        WHERE ci.company_id = u.company_id
+      )
+    `;
 
-      // Sellers added today
-      Users.count({
-        where: {
-          is_seller: 1,
-          is_delete: 0,
-          created_at: { [Op.between]: [todayStart, todayEnd] },
-        },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
+    const [counts] = await sequelize.query(
+      `
+      SELECT
+        SUM(CASE WHEN ${companyExists} THEN 1 ELSE 0 END) AS total,
+        SUM(CASE WHEN ${companyExists}
+          AND u.is_delete = 0
+          AND u.created_at BETWEEN :todayStart AND :todayEnd THEN 1 ELSE 0 END) AS addedToday,
+        SUM(CASE WHEN ${companyExists}
+          AND u.status = 1
+          AND u.is_delete = 0
+          AND u.member_role = 1
+          AND u.is_complete = 1
+          AND u.is_approve = 1 THEN 1 ELSE 0 END) AS statusActive,
+        SUM(CASE WHEN ${companyExists}
+          AND u.status = 0
+          AND u.is_delete = 0
+          AND u.member_role = 1
+          AND u.is_complete = 1 THEN 1 ELSE 0 END) AS statusInactive,
+        SUM(CASE WHEN ${companyExists}
+          AND u.is_approve = 0
+          AND u.is_delete = 0
+          AND u.is_complete = 1 THEN 1 ELSE 0 END) AS notApproved,
+        SUM(CASE WHEN ${companyExists}
+          AND u.is_complete = 0
+          AND u.is_delete = 0
+          AND u.is_approve = 0 THEN 1 ELSE 0 END) AS notCompleted,
+        SUM(CASE WHEN u.is_delete = 1 THEN 1 ELSE 0 END) AS deleted
+      FROM users u
+      WHERE u.is_seller = 1
+      `,
+      {
+        replacements: { todayStart, todayEnd },
+        type: Sequelize.QueryTypes.SELECT,
         logging: logSQL,
-      }),
+      }
+    );
 
-      // Active sellers
-      Users.count({
-        where: {
-          is_seller: 1,
-          status: 1,
-          is_delete: 0,
-          member_role: 1,
-          is_complete: 1,
-          is_approve: 1,
-        },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
-        logging: logSQL,
-      }),
-
-      // Inactive sellers
-      Users.count({
-        where: {
-          is_seller: 1,
-          status: 0,
-          is_delete: 0,
-          member_role: 1,
-          is_complete: 1,
-        },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
-        logging: logSQL,
-      }),
-
-      // Not approved sellers
-      Users.count({
-        where: {
-          is_seller: 1,
-          is_approve: 0,
-          is_delete: 0,
-          is_complete: 1
-        },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
-        logging: logSQL,
-      }),
-
-      // Not completed sellers
-      Users.count({
-        where: {
-          is_seller: 1,
-          is_complete: 0,
-          is_delete: 0,
-          is_approve: 0,
-        },
-        include: [
-          {
-            model: CompanyInfo,
-            as: 'company_info',
-            required: true,
-          },
-        ],
-        logging: logSQL,
-      }),
-
-      // Deleted sellers
-      Users.count({
-        where: {
-          is_seller: 1,
-          is_delete: 1,
-        },
-        logging: logSQL,
-      }),
-    ]);
+    const total = Number(counts.total) || 0;
+    const addedToday = Number(counts.addedToday) || 0;
+    const statusActive = Number(counts.statusActive) || 0;
+    const statusInactive = Number(counts.statusInactive) || 0;
+    const notApproved = Number(counts.notApproved) || 0;
+    const notCompleted = Number(counts.notCompleted) || 0;
+    const deleted = Number(counts.deleted) || 0;
 
     return res.json({
       total,
@@ -1082,7 +1329,25 @@ exports.getAllSellerServerSide = async (req, res) => {
     });
 
     // 🧠 Map Result
-    const mappedRows = await Promise.all(rows.map(async (row) => {
+    const sellerIds = rows.map(row => row.id);
+    const productCounts = sellerIds.length
+      ? await Products.findAll({
+        attributes: [
+          'user_id',
+          [sequelize.fn('COUNT', sequelize.col('user_id')), 'product_count']
+        ],
+        where: { user_id: { [Op.in]: sellerIds } },
+        group: ['user_id'],
+        raw: true,
+      })
+      : [];
+
+    const productCountMap = productCounts.reduce((acc, item) => {
+      acc[item.user_id] = Number(item.product_count) || 0;
+      return acc;
+    }, {});
+
+    const mappedRows = rows.map((row) => {
       const s = row.toJSON();
       const categoryNames = s.seller_categories?.length
         ? [...new Set(s.seller_categories.map(sc => sc.category?.name).filter(Boolean))].join(', ')
@@ -1090,8 +1355,7 @@ exports.getAllSellerServerSide = async (req, res) => {
       const subCategoryNames = s.seller_categories?.length
         ? [...new Set(s.seller_categories.map(sc => sc.subcategory?.name).filter(Boolean))].join(', ')
         : 'NA';
-      const productCount = await Products.count({ where: { user_id: row.id } });
-
+      // console.log(categoryNames, subCategoryNames);
       return {
         id: row.id,
         company_id: row.company_id,
@@ -1117,7 +1381,7 @@ exports.getAllSellerServerSide = async (req, res) => {
         state_name: row.state_data?.name || null,
         city_name: row.city_data?.name || null,
         elcina_member: row.elcina_member,
-        user_count: productCount,
+        user_count: productCountMap[row.id] || 0,
         status: row.status,
         getStatus: row.status === 1 ? 'Active' : 'Inactive',
         is_approve: row.is_approve,
@@ -1127,7 +1391,7 @@ exports.getAllSellerServerSide = async (req, res) => {
         updated_at: row.updated_at,
         approve_date: row.approve_date
       };
-    }));
+    });
 
     res.json({ data: mappedRows, totalRecords, filteredRecords });
 
@@ -1682,61 +1946,56 @@ exports.updateSellerDeleteStatus = async (req, res) => {
 
 exports.getSellerCategories = async (req, res) => {
   try {
-    const { user_id } = req.query;
 
-    if (!user_id) return res.status(400).json({ error: 'user_id is required' });
 
-    const sellerCategories = await SellerCategory.findAll({
-      where: { user_id },
-      attributes: [], // we only want included category
-      include: [
-        {
-          model: Categories,
-          as: 'category',
-          attributes: ['id', 'name', 'slug'],
-        },
-      ],
+    const sellerCategories = await Categories.findAll({
+      where: {
+        is_delete: 0,
+        status: 1,
+      },
+      attributes: ["id", "name", "slug"],
       raw: true,
     });
 
-    // Deduplicate categories
+    // remove duplicate categories
     const categoryMap = {};
-    sellerCategories.forEach(sc => {
-      if (sc['category.id'] && !categoryMap[sc['category.id']]) {
-        categoryMap[sc['category.id']] = {
-          id: sc['category.id'],
-          name: sc['category.name'],
-          slug: sc['category.slug'],
+
+    sellerCategories.forEach((category) => {
+      if (category.id && !categoryMap[category.id]) {
+        categoryMap[category.id] = {
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
         };
       }
     });
 
     const categories = Object.values(categoryMap);
-    res.json(categories);
+
+    return res.status(200).json({
+      success: true,
+      data: categories,
+    });
   } catch (err) {
-    console.error('getSellerCategories error:', err);
-    res.status(500).json({ error: err.message });
+    console.error("getSellerCategories error:", err);
+
+    return res.status(500).json({
+      success: false,
+      error: err.message,
+    });
   }
 };
 
 // Get subcategories for a seller and category
 exports.getSellerSubCategories = async (req, res) => {
   try {
-    const { user_id, category_id } = req.query;
+    const { category_id } = req.query;
 
-    if (!user_id || !category_id)
-      return res.status(400).json({ error: 'user_id and category_id are required' });
+    if (!category_id)
+      return res.status(400).json({ error: 'category_id is required' });
 
-    const sellerSubCategories = await SellerCategory.findAll({
-      where: { user_id, category_id },
-      attributes: [],
-      include: [
-        {
-          model: SubCategories,
-          as: 'subcategory',
-          attributes: ['id', 'name', 'slug'],
-        },
-      ],
+    const sellerSubCategories = await SubCategories.findAll({
+      where: { category_id },
       raw: true,
     });
 
@@ -2077,7 +2336,7 @@ exports.getSellerChartData = async (req, res) => {
   }
 };
 
-exports.getSellerSubCategoriesByUser = async (req, res) => {
+exports.getSellerSubCategoriesByUserOLd = async (req, res) => {
   try {
     const { user_id } = req.query;
 
@@ -2085,7 +2344,7 @@ exports.getSellerSubCategoriesByUser = async (req, res) => {
       return res.status(400).json({ error: 'user_id is required' });
     }
 
-    const rows = await SellerCategory.findAll({
+    const rows = await SubCategories.findAll({
       where: {
         user_id,
         subcategory_id: { [require('sequelize').Op.ne]: null },
@@ -2131,5 +2390,47 @@ exports.getSellerSubCategoriesByUser = async (req, res) => {
   } catch (err) {
     console.error('getSellerSubCategoriesByUser error:', err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+
+exports.getSellerSubCategoriesByUser = async (req, res) => {
+  try {
+    const { category_id, user_id } = req.query;
+
+    if (!user_id) {
+      return res.status(400).json({
+        error: "user_id is required",
+      });
+    }
+
+    if (!category_id) {
+      return res.status(400).json({
+        error: "category_id is required",
+      });
+    }
+
+    const rows = await SubCategories.findAll({
+      where: {
+        category: category_id,
+        status: 1,
+        is_delete: 0,
+      },
+      attributes: ["id", "name", "slug", "category"],
+      raw: true,
+    });
+    const subcategories = rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      category_id: row.category,
+    }));
+
+    return res.status(200).json(subcategories);
+  } catch (err) {
+    console.error("getSellerSubCategoriesByUser error:", err);
+    return res.status(500).json({
+      error: err.message,
+    });
   }
 };

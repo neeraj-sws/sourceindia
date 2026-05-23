@@ -8,6 +8,7 @@ router.post('/', categoriesController.createCategories);
 router.get('/master', categoriesController.getCategoryMaster);
 router.get('/count', categoriesController.getCategoriesCount);
 router.get('/', categoriesController.getAllCategories);
+router.get('/product-categories', categoriesController.getProductCategories);
 router.get('/category-item', categoriesController.getItemCategories);
 router.get('/sub-category-item', categoriesController.getItemSubCategories);
 router.get('/item-category', categoriesController.getItemCategory);

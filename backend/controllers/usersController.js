@@ -20,6 +20,7 @@ const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
+const Products = require('../models/Products');
 const UploadImage = require('../models/UploadImage');
 const SellerCategory = require('../models/SellerCategory');
 const { getTransporter, generateUniqueSlug, insertSellerCategoriesFromCompany, sendMail, sendOtp, generateOtp, getSiteConfig } = require('../helpers/mailHelper');
@@ -1075,70 +1076,70 @@ exports.updateProfile = async (req, res) => {
 
         if (req.body.categories !== undefined || req.body.subcategory_ids !== undefined) {
 
-  let categoryIds = [];
-  let subcategoryIds = [];
+          let categoryIds = [];
+          let subcategoryIds = [];
 
-  if (req.body.categories) {
-    categoryIds = req.body.categories.split(',').map(id => parseInt(id.trim()));
-  }
+          if (req.body.categories) {
+            categoryIds = req.body.categories.split(',').map(id => parseInt(id.trim()));
+          }
 
-  if (req.body.subcategory_ids) {
-    subcategoryIds = req.body.subcategory_ids.split(',').map(id => parseInt(id.trim()));
-  }
+          if (req.body.subcategory_ids) {
+            subcategoryIds = req.body.subcategory_ids.split(',').map(id => parseInt(id.trim()));
+          }
 
-  const existingRows = await SellerCategory.findAll({
-    where: { user_id: userId }
-  });
+          const existingRows = await SellerCategory.findAll({
+            where: { user_id: userId }
+          });
 
-  const existingMap = existingRows.map(r => `${r.category_id}-${r.subcategory_id ?? 'null'}`);
+          const existingMap = existingRows.map(r => `${r.category_id}-${r.subcategory_id ?? 'null'}`);
 
-  const incomingMap = [];
+          const incomingMap = [];
 
-  // handle categories
-  for (const categoryId of categoryIds) {
-    const key = `${categoryId}-null`;
-    incomingMap.push(key);
-    if (!existingMap.includes(key)) {
-      await SellerCategory.create({
-        user_id: userId,
-        category_id: categoryId,
-        subcategory_id: null
-      });
-    }
-  }
+          // handle categories
+          for (const categoryId of categoryIds) {
+            const key = `${categoryId}-null`;
+            incomingMap.push(key);
+            if (!existingMap.includes(key)) {
+              await SellerCategory.create({
+                user_id: userId,
+                category_id: categoryId,
+                subcategory_id: null
+              });
+            }
+          }
 
-  // handle subcategories
-  for (const subcategoryId of subcategoryIds) {
-    const sub = await SubCategories.findOne({
-      where: { id: subcategoryId, is_delete: 0 }
-    });
-    if (!sub) continue;
-    const categoryId = sub.category;
-    const key = `${categoryId}-${subcategoryId}`;
-    incomingMap.push(key);
-    if (!existingMap.includes(key)) {
-      await SellerCategory.create({
-        user_id: userId,
-        category_id: categoryId,
-        subcategory_id: subcategoryId
-      });
-    }
-  }
+          // handle subcategories
+          for (const subcategoryId of subcategoryIds) {
+            const sub = await SubCategories.findOne({
+              where: { id: subcategoryId, is_delete: 0 }
+            });
+            if (!sub) continue;
+            const categoryId = sub.category;
+            const key = `${categoryId}-${subcategoryId}`;
+            incomingMap.push(key);
+            if (!existingMap.includes(key)) {
+              await SellerCategory.create({
+                user_id: userId,
+                category_id: categoryId,
+                subcategory_id: subcategoryId
+              });
+            }
+          }
 
-  // DELETE unchecked rows
-  for (const row of existingRows) {
-    const key = `${row.category_id}-${row.subcategory_id ?? 'null'}`;
-    if (!incomingMap.includes(key)) {
-      await SellerCategory.destroy({
-        where: {
-          user_id: userId,
-          category_id: row.category_id,
-          subcategory_id: row.subcategory_id
+          // DELETE unchecked rows
+          for (const row of existingRows) {
+            const key = `${row.category_id}-${row.subcategory_id ?? 'null'}`;
+            if (!incomingMap.includes(key)) {
+              await SellerCategory.destroy({
+                where: {
+                  user_id: userId,
+                  category_id: row.category_id,
+                  subcategory_id: row.subcategory_id
+                }
+              });
+            }
+          }
         }
-      });
-    }
-  }
-}
       }
       return res.status(200).json({
         message: 'Profile updated successfully',
@@ -1560,6 +1561,92 @@ exports.verifyForgotOtp = async (req, res) => {
     return res.json({ message: 'OTP verified successfully', email });
   } catch (error) {
     console.error('Error in verifyForgotOtp:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.getProductcategory = async (req, res) => {
+  try {
+    const userId = req.params.userId || req.query.userId || req.body?.userId || req.user?.id;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' });
+    }
+
+    const products = await Products.findAll({
+      where: {
+        user_id: userId,
+        is_delete: 0,
+      },
+      attributes: ['category', 'sub_category'],
+      raw: true,
+    });
+
+    if (!products.length) {
+      return res.json({
+        userId: Number(userId),
+        category_ids: '',
+        categories: '',
+        subcategory_ids: '',
+        subcategories: '',
+      });
+    }
+
+    // Extract unique category IDs
+    const categoryIds = [...new Set(
+      products
+        .map((p) => Number(p.category))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    )];
+
+    // Extract unique subcategory IDs
+    const subcategoryIds = [...new Set(
+      products
+        .map((p) => Number(p.sub_category))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    )];
+
+    // Fetch categories and subcategories in parallel
+    const [categories, subcategories] = await Promise.all([
+      categoryIds.length ? Categories.findAll({
+        where: {
+          id: { [Op.in]: categoryIds },
+          is_delete: 0,
+        },
+        attributes: ['id', 'name'],
+        raw: true,
+      }) : [],
+      subcategoryIds.length ? SubCategories.findAll({
+        where: {
+          id: { [Op.in]: subcategoryIds },
+          is_delete: 0,
+        },
+        attributes: ['id', 'name'],
+        raw: true,
+      }) : [],
+    ]);
+
+    // Map IDs to names
+    const categoryNameMap = new Map(categories.map((cat) => [Number(cat.id), cat.name]));
+    const subcategoryNameMap = new Map(subcategories.map((sub) => [Number(sub.id), sub.name]));
+
+    const categoryNames = categoryIds
+      .map((id) => categoryNameMap.get(id))
+      .filter(Boolean);
+
+    const subcategoryNames = subcategoryIds
+      .map((id) => subcategoryNameMap.get(id))
+      .filter(Boolean);
+
+    return res.json({
+      userId: Number(userId),
+      category_ids: categoryIds.join(','),
+      categories: categoryNames.join(', '),
+      subcategory_ids: subcategoryIds.join(','),
+      subcategories: subcategoryNames.join(', '),
+    });
+  } catch (error) {
+    console.error('Error in getProductcategory:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };

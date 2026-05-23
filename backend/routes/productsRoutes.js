@@ -17,7 +17,9 @@ router.post('/company-review', productsController.companyReview);
 router.get('/companies/:id', productsController.getCompanyInfoById);
 router.get('/details/:id', productsController.getProductsDetail);
 router.get('/item-hierarchy/:type/:item_id', productsController.getItemHierarchy);
+router.get('/product-keyword-update', productsController.productKeywordUpdate);
 router.get('/:id', productsController.getProductsById);
+
 router.put('/:id', productsController.updateProducts);
 router.delete('/:id', productsController.deleteProducts);
 router.patch('/:id/status', productsController.updateProductsStatus);
