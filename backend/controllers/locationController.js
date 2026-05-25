@@ -1,5 +1,6 @@
 const { Op, fn, col } = require('sequelize');
 const sequelize = require('../config/database');
+const https = require('https'); // built-in Node.js, no install needed
 const Countries = require('../models/Countries');
 const States = require('../models/States');
 const Cities = require('../models/Cities');
@@ -160,5 +161,37 @@ exports.getCitiesByState = async (req, res) => {
     res.json(cities);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+exports.getPincodeDetails = async (req, res) => {
+  try {
+    const { pin } = req.params;
+ 
+    if (!/^\d{6}$/.test(pin)) {
+      return res.status(400).json({ error: 'Invalid pincode format' });
+    }
+ 
+    const data = await new Promise((resolve, reject) => {
+      https.get(
+        `https://api.postalpincode.in/pincode/${pin}`,
+        { rejectUnauthorized: false },
+        (response) => {
+          let raw = '';
+          response.on('data', (chunk) => raw += chunk);
+          response.on('end', () => {
+            try {
+              resolve(JSON.parse(raw));
+            } catch (e) {
+              reject(new Error('Invalid JSON response'));
+            }
+          });
+        }
+      ).on('error', reject);
+    });
+ 
+    return res.json(data);
+  } catch (err) {
+    console.error('getPincodeDetails error:', err.message);
+    return res.status(500).json({ error: 'Failed to fetch pincode data' });
   }
 };

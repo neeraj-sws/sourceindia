@@ -302,7 +302,7 @@ const Registration = () => {
             return;
         }
         try {
-            const res = await axios.get(`https://api.postalpincode.in/pincode/${form.pinCode}`);
+            const res = await axios.get(`${API_BASE_URL}/location/pincode/${form.pinCode}`);
             const data = res.data[0];
             console.log('API Response:', data);
 
