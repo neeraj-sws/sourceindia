@@ -5,6 +5,7 @@ const locationController = require('../controllers/locationController');
 router.get('/countries', locationController.getAllCountries);
 router.get('/states', locationController.getAllStates);
 router.get('/cities', locationController.getAllCities);
+router.get('/pincode/:pin', locationController.getPincodeDetails);
 router.get('/states/:country_id', locationController.getStatesByCountry);
 router.get('/cities/:state_id', locationController.getCitiesByState);
 
