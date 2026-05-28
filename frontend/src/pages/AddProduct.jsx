@@ -34,6 +34,8 @@ const AddProduct = () => {
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productSuggestions, setProductSuggestions] = useState([]);
+  const [activeSuggestionKey, setActiveSuggestionKey] = useState('');
+  const [selectedSuggestionTitle, setSelectedSuggestionTitle] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionLoading, setSuggestionLoading] = useState(false);
   const [imageToDelete, setImageToDelete] = useState(null);
@@ -48,8 +50,133 @@ const AddProduct = () => {
   const [submitting, setSubmitting] = useState(false);
   const [itemCategories, setItemCategories] = useState([]);
   const [selectedItemCategory, setSelectedItemCategory] = useState('');
+  const [itemSubCategories, setItemSubCategories] = useState([]);
+  const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
+  const [keywords, setKeywords] = useState([]);
+  const [selectedKeyword, setSelectedKeyword] = useState('');
+  const [items, setItems] = useState([]);
+  const [selectedItem, setSelectedItem] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [categoryLabel, setCategoryLabel] = useState('');
+  const normalizeCategoryList = (payload) => {
+    const rows = Array.isArray(payload)
+      ? payload
+      : (Array.isArray(payload?.data) ? payload.data : []);
+
+    return rows.map((category) => ({
+      ...category,
+      is_other: Number(category?.is_other ?? category?.isOther ?? category?.isother ?? 0),
+    }));
+  };
+
+  const normalizeSuggestText = (text = '') =>
+    String(text)
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const tokenizeSuggestText = (text = '') =>
+    normalizeSuggestText(text)
+      .split(' ')
+      .map((w) => w.trim())
+      .filter(Boolean);
+
+  const getSuggestionKey = (suggestion = {}) =>
+    `${String(suggestion?.id ?? '')}::${normalizeSuggestText(suggestion?.title || '')}`;
+
+  const getLeadingPrefixTokenScore = (queryTokens = [], titleTokens = []) => {
+    let score = 0;
+    const limit = Math.min(queryTokens.length, titleTokens.length);
+    for (let i = 0; i < limit; i += 1) {
+      if (titleTokens[i].startsWith(queryTokens[i])) score += 1;
+      else break;
+    }
+    return score;
+  };
+
+  const rankSuggestionsByQuery = (suggestions = [], query = '') => {
+    const normalizedQuery = normalizeSuggestText(query);
+    const queryTokens = tokenizeSuggestText(query);
+    if (!normalizedQuery) return suggestions;
+
+    return [...suggestions].sort((a, b) => {
+      const aTitle = normalizeSuggestText(a?.title || '');
+      const bTitle = normalizeSuggestText(b?.title || '');
+      const aExact = aTitle === normalizedQuery ? 1 : 0;
+      const bExact = bTitle === normalizedQuery ? 1 : 0;
+      if (aExact !== bExact) return bExact - aExact;
+
+      const aTokens = tokenizeSuggestText(a?.title || '');
+      const bTokens = tokenizeSuggestText(b?.title || '');
+      const aLeadingScore = getLeadingPrefixTokenScore(queryTokens, aTokens);
+      const bLeadingScore = getLeadingPrefixTokenScore(queryTokens, bTokens);
+      if (aLeadingScore !== bLeadingScore) return bLeadingScore - aLeadingScore;
+
+      const aPrefix = aTitle.startsWith(normalizedQuery) ? 1 : 0;
+      const bPrefix = bTitle.startsWith(normalizedQuery) ? 1 : 0;
+      if (aPrefix !== bPrefix) return bPrefix - aPrefix;
+
+      const aContains = aTitle.includes(normalizedQuery) ? 1 : 0;
+      const bContains = bTitle.includes(normalizedQuery) ? 1 : 0;
+      if (aContains !== bContains) return bContains - aContains;
+
+      const aScore = Number(a?.match_score || 0);
+      const bScore = Number(b?.match_score || 0);
+      if (aScore !== bScore) return bScore - aScore;
+
+      return aTitle.length - bTitle.length;
+    });
+  };
+
+  const findOtherCategoryOption = () =>
+    (Array.isArray(categories) ? categories : []).find((category) => {
+      const name = String(category?.name || '').toLowerCase();
+      return Number(category?.is_other) === 1 || name === 'others' || name.includes('uncategorized');
+    }) || null;
+
+  const applyOtherCategorySelection = () => {
+    const otherCategory = findOtherCategoryOption();
+    if (!otherCategory) return;
+
+    setSelectedCategory(String(otherCategory.id));
+    setSelectedSubCategory('');
+    setSelectedItemCategory('');
+    setSelectedItemSubCategory('');
+    setSelectedKeyword('');
+    setSelectedItem('');
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setKeywords([]);
+    setItems([]);
+    setActiveSuggestionKey('');
+    setErrors((prev) => {
+      const next = { ...(prev || {}) };
+      delete next.sub_category;
+      delete next.item_category;
+      return next;
+    });
+  };
+
+  const getSelectedNameById = (list = [], id = '') => {
+    if (!id) return '';
+    const match = (Array.isArray(list) ? list : []).find((item) => String(item?.id) === String(id));
+    return match?.name || '';
+  };
+  const getSubCategoryCategoryId = (subCategory) => subCategory?.category_id ?? subCategory?.category ?? null;
+  const isSuggestionTagActive = (suggestion) => activeSuggestionKey === getSuggestionKey(suggestion);
+
+  const isOtherCategorySelected = (() => {
+    const selectedCategoryObj = (Array.isArray(categories) ? categories : []).find(
+      (category) => String(category?.id) === String(selectedCategory)
+    );
+    const selectedName = String(selectedCategoryObj?.name || '').toLowerCase();
+    return Number(selectedCategoryObj?.is_other) === 1 || selectedName === 'others' || selectedName.includes('uncategorized');
+  })();
+
+  const visibleSubCategories = subCategories.filter(
+    (subCategory) => !selectedCategory || String(getSubCategoryCategoryId(subCategory)) === String(selectedCategory)
+  );
 
   // Inline Category Picker state
   const [pickerData, setPickerData] = useState([]);
@@ -57,15 +184,33 @@ const AddProduct = () => {
   const [pickerSubExpanded, setPickerSubExpanded] = useState({});
   const [pickerLoading, setPickerLoading] = useState(true);
   const [pickerError, setPickerError] = useState(null);
-  const [pickerSelection, setPickerSelection] = useState({ categoryId: null, categoryName: '', subId: null, subName: '', itemCategoryId: null, itemCategoryName: '' });
+  const emptyPickerSelection = { categoryId: null, categoryName: '', subId: null, subName: '', itemCategoryId: null, itemCategoryName: '' };
+  const [pickerSelection, setPickerSelection] = useState(emptyPickerSelection);
   const pickerDialogRef = React.useRef(null);
   const [pickerQuery, setPickerQuery] = useState('');
-  const getSubCategoryCategoryId = (subCategory) => subCategory?.category_id ?? subCategory?.category ?? null;
   const subCategoriesRef = useRef([]);
 
   useEffect(() => {
     subCategoriesRef.current = subCategories;
   }, [subCategories]);
+
+  const resetCategorySelections = () => {
+    setSelectedCategory('');
+    setSelectedSubCategory('');
+    setSelectedItemCategory('');
+    setSelectedItemSubCategory('');
+    setSelectedKeyword('');
+    setSelectedItem('');
+    setActiveSuggestionKey('');
+    setSelectedSuggestionTitle('');
+    setSubCategories([]);
+    setItemCategories([]);
+    setItemSubCategories([]);
+    setKeywords([]);
+    setItems([]);
+    setCategoryLabel('');
+    setPickerSelection(emptyPickerSelection);
+  };
 
   useEffect(() => {
     if (selectedCategory && selectedSubCategory) {
@@ -81,24 +226,10 @@ const AddProduct = () => {
   }, [selectedCategory, selectedSubCategory]);
 
   useEffect(() => {
-    if (!user?.id) return;
-
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(
-          `${API_BASE_URL}/sellers/seller-categories`,
-          { params: { user_id: user.id } }
-        );
-
-        const sellerCategories = res.data || [];
-        if (sellerCategories.length > 0) {
-          setCategories(sellerCategories);
-          return;
-        }
-
-        // Fallback: allow manual category selection from global categories list
-        const fallbackRes = await axios.get(`${API_BASE_URL}/categories?is_delete=0&status=1`);
-        setCategories(fallbackRes.data || []);
+        const res = await axios.get(`${API_BASE_URL}/categories?is_delete=0&status=1`);
+        setCategories(normalizeCategoryList(res.data));
       } catch (error) {
         console.error("Error fetching categories:", error);
         setCategories([]);
@@ -106,26 +237,60 @@ const AddProduct = () => {
     };
 
     fetchCategories();
-
-  }, [user?.id]);
+  }, []);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!selectedCategory) {
+      setSubCategories([]);
+      return;
+    }
 
     const fetchSubCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
-          params: { user_id: user.id, category_id: selectedCategory || undefined }
-        });
+        const res = await axios.get(`${API_BASE_URL}/sub_categories/category/${selectedCategory}`);
         setSubCategories(res.data || []);
       } catch (err) {
-        console.error("Error fetching seller subcategories:", err);
+        console.error("Error fetching subcategories:", err);
         setSubCategories([]);
       }
     };
 
     fetchSubCategories();
-  }, [user?.id, selectedCategory]);
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    if (!(selectedCategory && selectedSubCategory && selectedItemCategory)) {
+      setItemSubCategories([]);
+      setKeywords([]);
+      setSelectedKeyword('');
+      return;
+    }
+
+    axios.get(
+      `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}`
+    )
+      .then(res => setItemSubCategories(res.data || []))
+      .catch(err => {
+        console.error("Error fetching item sub categories:", err);
+        setItemSubCategories([]);
+      });
+  }, [selectedCategory, selectedSubCategory, selectedItemCategory]);
+
+  useEffect(() => {
+    if (!(selectedCategory && selectedSubCategory && selectedItemCategory && selectedItemSubCategory)) {
+      setItems([]);
+      return;
+    }
+
+    axios.get(
+      `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${selectedItemSubCategory}`
+    )
+      .then(res => setItems(res.data || []))
+      .catch(err => {
+        console.error("Error fetching items:", err);
+        setItems([]);
+      });
+  }, [selectedCategory, selectedSubCategory, selectedItemCategory, selectedItemSubCategory]);
 
   const handleSubCategoryChange = async (event) => {
     const subCategoryId = event.target.value;
@@ -133,7 +298,13 @@ const AddProduct = () => {
     if (!subCategoryId) {
       setSelectedSubCategory('');
       setSelectedItemCategory('');
+      setSelectedItemSubCategory('');
+      setSelectedKeyword('');
+      setSelectedItem('');
       setItemCategories([]);
+      setItemSubCategories([]);
+      setKeywords([]);
+      setItems([]);
       return;
     }
 
@@ -146,7 +317,13 @@ const AddProduct = () => {
 
     // Reset dependent dropdowns
     setSelectedItemCategory('');
+    setSelectedItemSubCategory('');
+    setSelectedKeyword('');
+    setSelectedItem('');
     setItemCategories([]);
+    setItemSubCategories([]);
+    setKeywords([]);
+    setItems([]);
 
     if (subCat && subCatCategoryId) {
       try {
@@ -168,13 +345,23 @@ const AddProduct = () => {
     // reset dependent fields
     setSelectedSubCategory('');
     setSelectedItemCategory('');
+    setSelectedItemSubCategory('');
+    setSelectedKeyword('');
+    setSelectedItem('');
     setItemCategories([]);
+    setItemSubCategories([]);
+    setKeywords([]);
+    setItems([]);
   };
 
   const handleCategoryPick = async ({ category, categoryName, sub_category, subName, item_category_id, itemCategoryName }) => {
     setSelectedCategory(category || '');
     setSelectedSubCategory(sub_category || '');
     setSelectedItemCategory(item_category_id || '');
+    setSelectedItemSubCategory('');
+    setSelectedKeyword('');
+    setSelectedItem('');
+    setKeywords([]);
 
     const parts = [];
     if (categoryName) parts.push(categoryName);
@@ -399,12 +586,35 @@ const AddProduct = () => {
   const handleItemCategoryChange = async (event) => {
     const itemCategoryId = event.target.value;
     setSelectedItemCategory(itemCategoryId);
+    setSelectedItemSubCategory('');
+    setSelectedKeyword('');
+    setSelectedItem('');
+    setItemSubCategories([]);
+    setKeywords([]);
+    setItems([]);
+  };
+
+  const handleItemSubCategoryChange = async (event) => {
+    const itemSubCategoryId = event.target.value;
+    setSelectedItemSubCategory(itemSubCategoryId);
+    setSelectedKeyword('');
+    setSelectedItem('');
+    setKeywords([]);
+    setItems([]);
+  };
+
+  const handleItemChange = async (event) => {
+    const itemId = event.target.value;
+    setSelectedItem(itemId);
   };
 
   useEffect(() => {
     const $category = $('#category');
     const $subCategory = $('#sub_category');
     const $itemCategory = $('#item_category_id');
+    const $itemSubCategory = $('#item_sub_category_id');
+    const $keyword = $('#keyword_id');
+    const $item = $('#item_id');
 
     $category.select2({
       theme: "bootstrap",
@@ -429,6 +639,24 @@ const AddProduct = () => {
         handleItemCategoryChange({ target: { value: $(this).val() } });
       });
 
+    $itemSubCategory
+      .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
+      .on("change.addProduct", function () {
+        handleItemSubCategoryChange({ target: { value: $(this).val() } });
+      });
+
+    $keyword
+      .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Keyword" })
+      .on("change.addProduct", function () {
+        setSelectedKeyword($(this).val() || '');
+      });
+
+    $item
+      .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item" })
+      .on("change.addProduct", function () {
+        handleItemChange({ target: { value: $(this).val() } });
+      });
+
     return () => {
       if ($category.data('select2')) {
         $category.off("change.addProduct").select2('destroy');
@@ -438,6 +666,15 @@ const AddProduct = () => {
       }
       if ($itemCategory.data('select2')) {
         $itemCategory.off("change.addProduct").select2('destroy');
+      }
+      if ($itemSubCategory.data('select2')) {
+        $itemSubCategory.off("change.addProduct").select2('destroy');
+      }
+      if ($keyword.data('select2')) {
+        $keyword.off("change.addProduct").select2('destroy');
+      }
+      if ($item.data('select2')) {
+        $item.off("change.addProduct").select2('destroy');
       }
     };
   }, []);
@@ -467,27 +704,101 @@ const AddProduct = () => {
       .trigger('change.select2');
   }, [itemCategories, selectedItemCategory]);
 
+  useEffect(() => {
+    const itemSubCategoryExists = itemSubCategories.some(isc => String(isc.id) === String(selectedItemSubCategory));
+    $('#item_sub_category_id')
+      .val(itemSubCategoryExists ? String(selectedItemSubCategory) : '')
+      .trigger('change.select2');
+  }, [itemSubCategories, selectedItemSubCategory]);
+
+  useEffect(() => {
+    const keywordExists = keywords.some((keyword) => String(keyword.id) === String(selectedKeyword));
+    $('#keyword_id')
+      .val(keywordExists ? String(selectedKeyword) : '')
+      .trigger('change.select2');
+  }, [keywords, selectedKeyword]);
+
+  useEffect(() => {
+    const itemExists = items.some(i => String(i.id) === String(selectedItem));
+    $('#item_id')
+      .val(itemExists ? String(selectedItem) : '')
+      .trigger('change.select2');
+  }, [items, selectedItem]);
+
+  useEffect(() => {
+    if (!selectedItemSubCategory) {
+      setKeywords([]);
+      setSelectedKeyword('');
+      return;
+    }
+
+    axios.get(`${API_BASE_URL}/keywords/by-subcategory/${selectedItemSubCategory}`)
+      .then((res) => {
+        const rows = Array.isArray(res.data) ? res.data : [];
+        setKeywords(rows);
+      })
+      .catch((err) => {
+        console.error("Error fetching keywords:", err);
+        setKeywords([]);
+      });
+  }, [selectedItemSubCategory]);
+
+  const fetchProductSuggestions = async (queryValue) => {
+    const filteredParams = {
+      query: queryValue,
+      category: selectedCategory || undefined,
+      sub_category: selectedSubCategory || undefined,
+      item_category_id: selectedItemCategory || undefined,
+      item_subcategory_id: selectedItemSubCategory || undefined,
+    };
+
+    const fetchSuggestions = async (params) => {
+      const res = await axios.get(`${API_BASE_URL}/products/suggest`, { params });
+      return res.data?.data || [];
+    };
+
+    let suggestions = await fetchSuggestions(filteredParams);
+    const hasHierarchyFilter = !!(
+      filteredParams.category ||
+      filteredParams.sub_category ||
+      filteredParams.item_category_id ||
+      filteredParams.item_subcategory_id
+    );
+
+    if (suggestions.length === 0 && hasHierarchyFilter) {
+      suggestions = await fetchSuggestions({
+        query: queryValue,
+      });
+    }
+
+    return rankSuggestionsByQuery(suggestions, queryValue);
+  };
+
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
     // Product name autocomplete logic
     if (id === 'title') {
+      setActiveSuggestionKey('');
+      setSelectedSuggestionTitle('');
+      if (!value.trim()) {
+        resetCategorySelections();
+      }
       if (value.length >= 2) {
         setSuggestionLoading(true);
-        axios.get(`${API_BASE_URL}/products/suggest`, {
-          params: {
-            query: value,
-            category: selectedCategory || undefined,
-            sub_category: selectedSubCategory || undefined,
-            item_category_id: selectedItemCategory || undefined,
-          }
-        })
-          .then(res => {
-            setProductSuggestions(res.data.data || []);
+
+        (async () => {
+          try {
+            const rankedSuggestions = await fetchProductSuggestions(value);
+            setProductSuggestions(rankedSuggestions);
             setShowSuggestions(true);
-          })
-          .catch(() => setProductSuggestions([]))
-          .finally(() => setSuggestionLoading(false));
+          } catch {
+            setProductSuggestions([]);
+            setShowSuggestions(false);
+          } finally {
+            setSuggestionLoading(false);
+          }
+        })();
       } else {
         setProductSuggestions([]);
         setShowSuggestions(false);
@@ -496,15 +807,44 @@ const AddProduct = () => {
   };
 
   // When user selects a suggestion
-  const handleSuggestionSelect = async (suggestion) => {
-    setFormData(prev => ({ ...prev, title: suggestion.title }));
+  const handleSuggestionSelect = async (suggestion, options = {}) => {
+    const { preserveTypedTitle = false, typedTitle = '', isAutoSelect = false } = options;
+    const suggestionCategoryIsOther = Number(
+      suggestion?.category_is_other ?? suggestion?.is_other ?? suggestion?.categoryIsOther ?? 0
+    );
+    setFormData(prev => ({
+      ...prev,
+      title: preserveTypedTitle ? typedTitle : suggestion.title
+    }));
+    setActiveSuggestionKey(getSuggestionKey(suggestion));
+    if (!isAutoSelect) {
+      setSelectedSuggestionTitle(String(suggestion?.title || '').trim());
+    }
     setShowSuggestions(false);
 
     if (suggestion.category && suggestion.category_name) {
       setCategories(prev => {
-        const exists = prev.some(cat => String(cat.id) === String(suggestion.category));
-        if (exists) return prev;
-        return [{ id: suggestion.category, name: suggestion.category_name }, ...prev];
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const existingIndex = safePrev.findIndex(
+          (cat) => String(cat.id) === String(suggestion.category)
+        );
+        if (existingIndex >= 0) {
+          const existing = safePrev[existingIndex];
+          if (
+            existing?.is_other === undefined &&
+            suggestionCategoryIsOther
+          ) {
+            const next = [...safePrev];
+            next[existingIndex] = { ...existing, is_other: suggestionCategoryIsOther };
+            return next;
+          }
+          return safePrev;
+        }
+        return [{
+          id: suggestion.category,
+          name: suggestion.category_name,
+          is_other: suggestionCategoryIsOther
+        }, ...safePrev];
       });
     }
 
@@ -525,6 +865,12 @@ const AddProduct = () => {
     if (suggestion.item_category_id) {
       setSelectedItemCategory(String(suggestion.item_category_id));
     }
+    if (suggestion.item_subcategory_id) {
+      setSelectedItemSubCategory(String(suggestion.item_subcategory_id));
+    }
+    if (suggestion.id) {
+      setSelectedKeyword(String(suggestion.id));
+    }
   };
 
 
@@ -540,8 +886,18 @@ const AddProduct = () => {
       }
 
       if (productSuggestions.length > 0 && formData.title.trim().length >= 2) {
-        handleSuggestionSelect(productSuggestions[0]);
+        const topSuggestion = productSuggestions[0];
+        handleSuggestionSelect(topSuggestion, {
+          preserveTypedTitle: true,
+          typedTitle: formData.title,
+          isAutoSelect: true
+        });
+        return;
       } else {
+        if (formData.title.trim().length > 0) {
+          applyOtherCategorySelection();
+        }
+        setActiveSuggestionKey('');
         setShowSuggestions(false);
       }
     }, 150);
@@ -558,8 +914,8 @@ const AddProduct = () => {
     if (!user || !user.id) errs.user = 'User not found. Please login again.';
     if (!formData.title.trim()) errs.title = 'Title is required';
     // if (!selectedCategory) errs.category = "Category is required";
-    if (!selectedSubCategory) errs.sub_category = "Sub Category is required";
-    if (!selectedItemCategory) errs.item_category = "Item Category is required";
+    if (!isOtherCategorySelected && !selectedSubCategory) errs.sub_category = "Sub Category is required";
+    if (!isOtherCategorySelected && !selectedItemCategory) errs.item_category = "Item Category is required";
     if (!formData.status) errs.status = 'Status is required';
     if (!formData.short_description) errs.short_description = 'Short description is required';
 
@@ -603,23 +959,9 @@ const AddProduct = () => {
           best_product: Number(data.best_product) || 0,
         });
 
-        // Debug logs for category/subcategory
-        console.log('fetchProduct: data.category:', data.category);
-        console.log('fetchProduct: data.sub_category:', data.sub_category);
-        console.log('fetchProduct: subCategories:', subCategories);
-
-        // Set category & subcategory first
+        // Initialize hierarchy once for edit mode.
         setSelectedCategory(data.category || "");
-        if (data.sub_category) {
-          setSelectedSubCategory(String(data.sub_category));
-          const subCatObj = subCategories.find(sc => String(sc.id) === String(data.sub_category));
-          console.log('fetchProduct: subCatObj:', subCatObj);
-          const subCatCategoryId = getSubCategoryCategoryId(subCatObj);
-          if (subCatObj && subCatCategoryId) {
-            setSelectedCategory(String(subCatCategoryId));
-          }
-          // Agar subCatObj nahi mila, to selectedCategory ko data.category hi rehne do
-        }
+        setSelectedSubCategory(data.sub_category ? String(data.sub_category) : "");
 
         let itemCatRes = [];
         if (data.category && data.sub_category) {
@@ -631,13 +973,38 @@ const AddProduct = () => {
         }
 
         setSelectedItemCategory(data.item_category_id || '');
+        setSelectedItemSubCategory(data.item_subcategory_id || '');
+        setSelectedKeyword(data.keyword_id ? String(data.keyword_id) : '');
+        setSelectedItem(data.item_id || '');
+
+        if (data.category && data.sub_category && data.item_category_id) {
+          try {
+            const subRes = await axios.get(
+              `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${data.category}/${data.sub_category}/${data.item_category_id}`
+            );
+            setItemSubCategories(subRes.data || []);
+          } catch (err) {
+            setItemSubCategories([]);
+          }
+        }
+
+        if (data.category && data.sub_category && data.item_category_id && data.item_subcategory_id) {
+          try {
+            const itemRes = await axios.get(
+              `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${data.category}/${data.sub_category}/${data.item_category_id}/${data.item_subcategory_id}`
+            );
+            setItems(itemRes.data || []);
+          } catch (err) {
+            setItems([]);
+          }
+        }
       } catch (error) {
         console.error('Error fetching Product:', error);
       }
     };
 
     fetchProduct();
-  }, [productId, subCategories]);
+  }, [productId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -663,6 +1030,9 @@ const AddProduct = () => {
           category: selectedCategory,
           sub_category: selectedSubCategory,
           item_category_id: selectedItemCategory,
+          item_subcategory_id: selectedItemSubCategory || '',
+          keyword_id: selectedKeyword || '',
+          item_id: selectedItem || '',
         };
         headers = { "Content-Type": "application/json" };
         await axios[method](endpoint, payload, { headers });
@@ -680,6 +1050,9 @@ const AddProduct = () => {
         data.append("category", selectedCategory);
         data.append("sub_category", selectedSubCategory);
         data.append("item_category_id", selectedItemCategory);
+        data.append("item_subcategory_id", selectedItemSubCategory || '');
+        data.append("keyword_id", selectedKeyword || '');
+        data.append("item_id", selectedItem || '');
         files.forEach((file) => {
           data.append("files", file);
         });
@@ -763,7 +1136,7 @@ const AddProduct = () => {
                   <div className="card">
                     <div className="card-body p-4">
                       <div className="row">
-                        <div className="form-group mb-3 col-md-6">
+                        <div className="form-group mb-3 col-md-12">
                           <label htmlFor="title" className="form-label required">Product/Service Name</label>
                           <div style={{ position: 'relative' }}>
                             <input
@@ -773,7 +1146,29 @@ const AddProduct = () => {
                               value={formData.title}
                               autoComplete="off"
                               onChange={handleInputChange}
-                              onFocus={() => { if (productSuggestions.length > 0) setShowSuggestions(true); }}
+                              onFocus={() => {
+                                suppressTitleAutoSelectRef.current = false;
+                                const title = (formData.title || '').trim();
+                                const selectedTitle = (selectedSuggestionTitle || '').trim();
+                                const queryForDropdown = selectedTitle.length >= 2 ? selectedTitle : title;
+                                if (queryForDropdown.length >= 2) {
+                                  setSuggestionLoading(true);
+                                  (async () => {
+                                    try {
+                                      const latestSuggestions = await fetchProductSuggestions(queryForDropdown);
+                                      setProductSuggestions(latestSuggestions);
+                                      setShowSuggestions(true);
+                                    } catch {
+                                      setProductSuggestions([]);
+                                      setShowSuggestions(false);
+                                    } finally {
+                                      setSuggestionLoading(false);
+                                    }
+                                  })();
+                                  return;
+                                }
+                                if (productSuggestions.length > 0) setShowSuggestions(true);
+                              }}
                               onBlur={handleTitleBlur}
                               style={{ paddingRight: '2.5rem' }}
                             />
@@ -783,10 +1178,14 @@ const AddProduct = () => {
                                 type="button"
                                 className="btn btn-sm btn-outline-secondary"
                                 style={{ position: 'absolute', right: 5, top: 3, zIndex: 11, padding: '0 8px', height: 28, lineHeight: 1 }}
+                                onMouseDown={() => { suppressTitleAutoSelectRef.current = true; }}
                                 onClick={() => {
                                   setFormData(prev => ({ ...prev, title: '' }));
                                   setProductSuggestions([]);
+                                  setActiveSuggestionKey('');
+                                  setSelectedSuggestionTitle('');
                                   setShowSuggestions(false);
+                                  resetCategorySelections();
                                 }}
                                 title="Clear Product Name"
                               >
@@ -804,7 +1203,10 @@ const AddProduct = () => {
                                       <div
                                         key={s.id}
                                         style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                                        onMouseDown={() => handleSuggestionSelect(s)}
+                                        onMouseDown={() => {
+                                          suppressTitleAutoSelectRef.current = true;
+                                          handleSuggestionSelect(s);
+                                        }}
                                       >
                                         <div><b>{s.title}</b></div>
                                         <div className="d-none" style={{ fontSize: 12, color: '#888' }}>
@@ -821,8 +1223,32 @@ const AddProduct = () => {
                               </div>
                             )}
                           </div>
+                          {productSuggestions.length > 0 && (
+                            <div className="d-flex flex-wrap gap-2 mt-2">
+                              {productSuggestions.map((suggestion) => (
+                                (() => {
+                                  const isActive = isSuggestionTagActive(suggestion);
+                                  return (
+                                <button
+                                  key={`tag-${getSuggestionKey(suggestion)}`}
+                                  type="button"
+                                  className={`btn rounded-pill px-2 py-1 ${isActive ? 'btn-primary' : 'btn-outline-primary'}`}
+                                  style={{ fontSize: '0.72rem', lineHeight: 1.4 }}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    suppressTitleAutoSelectRef.current = true;
+                                    handleSuggestionSelect(suggestion);
+                                  }}
+                                >
+                                  {suggestion.title}
+                                </button>
+                                  );
+                                })()
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <div className="form-group mb-3 col-md-6">
+                        <div className="form-group mb-3 col-md-4">
                           <label htmlFor="code" className="form-label">Sku</label>
                           <input
                             type="text" className="form-control"
@@ -832,7 +1258,7 @@ const AddProduct = () => {
                             onChange={handleInputChange}
                           />
                         </div>
-                        <div className="form-group mb-3 col-md-6">
+                        <div className="form-group mb-3 col-md-4">
                           <label htmlFor="article_number" className="form-label">Part Number</label>
                           <input
                             type="number" className="form-control"
@@ -842,7 +1268,7 @@ const AddProduct = () => {
                             onChange={handleInputChange}
                           />
                         </div>
-                        <div className="form-group mb-3 col-md-6">
+                        <div className="form-group mb-3 col-md-4">
                           <label htmlFor="status" className="form-label required">Status</label>
                           <select
                             id="status" className={`form-control ${errors.status ? "is-invalid" : ""}`}
@@ -887,65 +1313,85 @@ const AddProduct = () => {
                   <div className="card">
                     <div className="card-body p-4">
                       <div className="row">
-                        <div className="col-12 mb-3 d-flex justify-content-end align-items-center">
+                        {/* <div className="col-12 mb-3 d-flex justify-content-end align-items-center">
                           <button type="button" className="btn btn-outline-secondary me-2" onClick={() => setShowCategoryPicker(true)}>Category Picker</button>
-                        </div>
-                        <div className="form-group mb-3 col-md-12">
+                        </div> */}
+                        {/* <div className="form-group mb-3 col-md-12">
                           <label htmlFor="category" className="form-label">Category</label>
-                          <select
-                            id="category"
-                            className="form-control select2"
-                            value={selectedCategory}
-                            onChange={handleCategoryChange}
-                          >
-                            <option value="">Select Category</option>
-                            {categories.map((cat) => (
-                              <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="sub_category" className="form-label required">Sub Category</label>
-                          <div className="d-flex flex-column">
-                            <div>
-                              <select
-                                id="sub_category"
-                                className="form-control select2"
-                                value={selectedSubCategory}
-                                onChange={handleSubCategoryChange}
-                              >
-                                <option value="">Select Sub Category</option>
-                                {subCategories
-                                  .filter(sc => !selectedCategory || String(getSubCategoryCategoryId(sc)) === String(selectedCategory))
-                                  .map(sc => (
-                                    <option key={sc.id} value={sc.id}>{sc.name}</option>
-                                  ))}
-                              </select>
-                              {errors.sub_category && (<div className="text-danger small">{errors.sub_category}</div>)}
+                          {selectedCategory && (
+                            <div className="small text-muted mb-1">
+                              Selected: {getSelectedNameById(categories, selectedCategory)} 
                             </div>
-
-                          </div>
+                          )}
                         </div>
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="item_category_id" className="form-label required">Item Category</label>
+                          <label htmlFor="sub_category" className={`form-label ${isOtherCategorySelected ? '' : 'required'}`}>Sub Category</label>
+                          {selectedSubCategory && (
+                            <div className="small text-muted mb-1">
+                              Selected: {getSelectedNameById(visibleSubCategories, selectedSubCategory)} 
+                            </div>
+                          )}
+                          {errors.sub_category && (<div className="text-danger small">{errors.sub_category}</div>)}
+                        </div> */}
+                        {/* <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="item_category_id" className={`form-label ${isOtherCategorySelected ? '' : 'required'}`}>Item Category</label>
+                          {selectedItemCategory && (
+                            <div className="small text-muted mb-1">
+                              Selected: {getSelectedNameById(itemCategories, selectedItemCategory)}
+                            </div>
+                          )}
+                          {errors.item_category && (<div className="text-danger small">{errors.item_category}</div>)}
+                        </div> */}
+                        <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
                           <select
-                            id="item_category_id"
+                            id="item_sub_category_id"
                             className="form-control"
-                            value={selectedItemCategory}
-                            onChange={handleItemCategoryChange}
-                            disabled={
-                              !selectedItemCategory && (!selectedCategory || !selectedSubCategory)
-                            }
+                            value={selectedItemSubCategory}
+                            onChange={handleItemSubCategoryChange}
+                            disabled={isOtherCategorySelected || !selectedCategory || !selectedSubCategory || !selectedItemCategory}
                           >
-                            <option value="">Select Item Category</option>
-                            {itemCategories.map((ic) => (
-                              <option key={ic.id} value={ic.id}>{ic.name}</option>
+                            <option value="">Select Item Sub Category</option>
+                            {itemSubCategories.map((isc) => (
+                              <option key={isc.id} value={isc.id}>{isc.name}</option>
                             ))}
                           </select>
-                          {errors.item_category && (<div className="text-danger small">{errors.item_category}</div>)}
                         </div>
+                        {/* <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="keyword_id" className="form-label">Keyword</label>
+                          <select
+                            id="keyword_id"
+                            className="form-control"
+                            value={selectedKeyword}
+                            onChange={(event) => setSelectedKeyword(event.target.value)}
+                            disabled={isOtherCategorySelected || !selectedItemSubCategory}
+                          >
+                            <option value="">Select Keyword</option>
+                            {keywords.map((keyword) => (
+                              <option key={keyword.id} value={keyword.id}>{keyword.name}</option>
+                            ))}
+                          </select>
+                        </div> */}
+                        {/* <div className="form-group mb-3 col-md-12">
+                          <label htmlFor="item_id" className="form-label">Items</label>
+                          <div className="small text-muted mb-1">
+                            Selected: {getSelectedNameById(items, selectedItem) || '-'}
+                          </div>
+                          <select
+                            id="item_id"
+                            className="form-control"
+                            value={selectedItem}
+                            onChange={handleItemChange}
+                            disabled={isOtherCategorySelected || !selectedCategory || !selectedSubCategory || !selectedItemCategory || !selectedItemSubCategory}
+                          >
+                            <option value="">Select Item</option>
+                            {items.map((i) => (
+                              <option key={i.id} value={i.id}>{i.name}</option>
+                            ))}
+                          </select>
+                        </div> */}
 
-                        <div className="col-md-12">
+                        {/* <div className="col-md-12">
                           <label htmlFor="file" className="form-label required">Product Images</label><br />
                           <input
                             ref={fileInputRef}
@@ -1008,10 +1454,80 @@ const AddProduct = () => {
                               </div>
                             ))}
                           </div>
+                        </div> */}
+                      </div>
+                    </div>
+                  </div>
+                <div className="card mt-2">
+                  <div className="card-body p-4">
+                    <div className="row">
+                                                <div className="col-md-12">
+                        <label htmlFor="file" className="form-label required">Product Images</label><br />
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          style={{ display: "none" }}
+                          onChange={handleFileChange}
+                          multiple
+                          accept="image/png, image/jpeg"
+                        />
+                        <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
+                          <i className="bx bxs-plus-square me-1" />Add Image
+                        </button>
+                        {errors.file && (<div className="text-danger small mt-1">{errors.file}</div>)}
+                      </div>
+                      <div className="col-md-12">
+                        <div className="mt-3 d-flex flex-wrap">
+                          {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
+                            <div key={index} className="position-relative m-2">
+                              <img
+                                src={`${ROOT_URL}/${image.file}`}
+                                alt={`Preview ${index}`}
+                                className="object-fit-cover m-3"
+                                width={80}
+                                height={80}
+                                loading="lazy"
+                                decoding="async"
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-danger btn-remove-image"
+                                style={{ width: '1.5rem', height: '1.5rem' }}
+                                onClick={() => openDeleteModal(image.id)}
+                              >
+                                <i className="bx bx-x me-0" />
+                              </button>
+                            </div>
+                          ))}
+                          {files.length > 0 && files?.map((file, index) => (
+                            <div key={index} className="position-relative m-2">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`New Preview ${index}`}
+                                className="object-fit-cover m-3"
+                                width={80}
+                                height={80}
+                                loading="lazy"
+                                decoding="async"
+                              />
+                              <button
+                                variant="danger"
+                                size="sm"
+                                className="btn btn-danger btn-remove-image"
+                                style={{ width: '1.5rem', height: '1.5rem' }}
+                                onClick={() => {
+                                  setFiles(prev => prev.filter((_, i) => i !== index));
+                                }}
+                              >
+                                <i className="bx bx-x me-0" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
                   </div>
+                </div>
                 </div>
                 <div className="col-12 text-end mt-2">
                   <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
