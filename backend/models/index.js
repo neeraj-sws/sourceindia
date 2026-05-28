@@ -11,6 +11,7 @@ const ItemCategory = require('./ItemCategory');
 const ItemSubCategory = require('./ItemSubCategory');
 const Products = require('./Products');
 const Items = require('./Items');
+const ProductKeyword = require('./ProductKeyword');
 
 // ===== DEFINE ASSOCIATIONS HERE =====
 
@@ -47,4 +48,5 @@ module.exports = {
   ItemSubCategory,
   Products,
   Items,
+  ProductKeyword,
 };

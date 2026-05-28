@@ -48,6 +48,11 @@ const Categories = sequelize.define('Categories', {
     allowNull: false, 
     defaultValue: 0, 
   },
+  is_other: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+  },
   is_delete: { 
     type: DataTypes.INTEGER, 
     allowNull: false, 

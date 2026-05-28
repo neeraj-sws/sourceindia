@@ -1,38 +1,164 @@
 // Product name autocomplete with master data
+const SUGGEST_STOP_WORDS = new Set([
+  'a', 'an', 'the', 'and', 'or', 'for', 'with', 'to', 'of', 'by', 'on', 'in', 'at', 'from'
+]);
+
+const normalizeTextForSuggest = (text = '') =>
+  text
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const tokenizeForSuggest = (text = '') =>
+  normalizeTextForSuggest(text)
+    .split(' ')
+    .map((w) => w.trim())
+    .filter((w) => w.length > 1 && !SUGGEST_STOP_WORDS.has(w));
+
+const tokenizeForOrder = (text = '') =>
+  normalizeTextForSuggest(text)
+    .split(' ')
+    .map((w) => w.trim())
+    .filter(Boolean);
+
+const getLeadingPrefixTokenScore = (queryTokens = [], titleTokens = []) => {
+  if (!queryTokens.length || !titleTokens.length) return 0;
+  let score = 0;
+  const limit = Math.min(queryTokens.length, titleTokens.length);
+  for (let i = 0; i < limit; i += 1) {
+    if (titleTokens[i].startsWith(queryTokens[i])) {
+      score += 1;
+    } else {
+      break;
+    }
+  }
+  return score;
+};
+
+const getLevenshteinDistance = (a = '', b = '') => {
+  const s = a.toLowerCase();
+  const t = b.toLowerCase();
+  const rows = s.length + 1;
+  const cols = t.length + 1;
+  const dp = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+  for (let i = 0; i < rows; i += 1) dp[i][0] = i;
+  for (let j = 0; j < cols; j += 1) dp[0][j] = j;
+
+  for (let i = 1; i < rows; i += 1) {
+    for (let j = 1; j < cols; j += 1) {
+      const cost = s[i - 1] === t[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return dp[s.length][t.length];
+};
+
+const isSuggestWordMatch = (queryWord = '', keywordWord = '') => {
+  if (!queryWord || !keywordWord) return false;
+  if (queryWord === keywordWord) return true;
+
+  // Allow controlled prefix matching for partial typing like "asse" -> "assebley".
+  const minPrefixLength = 2;
+  if (queryWord.length >= minPrefixLength && keywordWord.startsWith(queryWord)) return true;
+  if (keywordWord.length >= minPrefixLength && queryWord.startsWith(keywordWord)) return true;
+
+  // Typo tolerance (elastic-like): e.g., "cable" vs "cabel".
+  const minFuzzyLength = 5;
+  if (queryWord.length >= minFuzzyLength && keywordWord.length >= minFuzzyLength) {
+    const distance = getLevenshteinDistance(queryWord, keywordWord);
+    if (distance <= 1) return true;
+  }
+
+  return false;
+};
+
+const getSuggestWordMatchStats = (queryWords = [], keywordWords = []) => {
+  const usedKeywordIndexes = new Set();
+  const matchedQueryWords = [];
+  const matchedKeywordWords = [];
+
+  queryWords.forEach((queryWord) => {
+    const keywordIndex = keywordWords.findIndex(
+      (keywordWord, index) => !usedKeywordIndexes.has(index) && isSuggestWordMatch(queryWord, keywordWord)
+    );
+
+    if (keywordIndex === -1) return;
+    usedKeywordIndexes.add(keywordIndex);
+    matchedQueryWords.push(queryWord);
+    matchedKeywordWords.push(keywordWords[keywordIndex]);
+  });
+
+  return {
+    matchedQueryWords: Array.from(new Set(matchedQueryWords)),
+    matchedKeywordWords: Array.from(new Set(matchedKeywordWords)),
+  };
+};
+
 exports.suggestProducts = async (req, res) => {
   try {
-    const { query, category, sub_category, item_category_id, item_subcategory_id } = req.query;
+    const {
+      query,
+      category,
+      sub_category,
+      item_category_id,
+      item_subcategory_id,
+    } = req.query;
     if (!query || query.length < 2) {
-      return res.status(400).json({ success: false, message: 'Query too short', data: [] });
+      return res.json({
+        success: true,
+        data: [],
+        auto_classification: {
+          matched: false,
+          reason: 'query_too_short',
+          bucket: 'Others / Uncategorized',
+        },
+        alternatives: [],
+      });
+    }
+
+    const normalizedQuery = normalizeTextForSuggest(query);
+    const queryWords = tokenizeForSuggest(query);
+    const queryOrderTokens = tokenizeForOrder(query);
+    if (!queryWords.length) {
+      return res.json({
+        success: true,
+        data: [],
+        auto_classification: {
+          matched: false,
+          reason: 'no_meaningful_tokens',
+          bucket: 'Others / Uncategorized',
+        },
+        alternatives: [],
+        normalized_query: normalizedQuery,
+      });
     }
 
     const keywordWhere = {
-      name: { [Op.like]: `%${query}%` },
       status: 1
     };
 
-    // if (item_subcategory_id) {
-    //   keywordWhere.item_subcategory_id = item_subcategory_id;
-    // }
+    // Candidate filtering: keep dataset small while still allowing scoring logic.
+    keywordWhere[Op.or] = queryWords.map((word) => ({
+      name: { [Op.like]: `%${word}%` },
+    }));
 
     const itemSubCategoryWhere = {};
     if (category) itemSubCategoryWhere.category_id = category;
     if (sub_category) itemSubCategoryWhere.subcategory_id = sub_category;
     if (item_category_id) itemSubCategoryWhere.item_category_id = item_category_id;
+    if (item_subcategory_id) itemSubCategoryWhere.id = item_subcategory_id;
 
-    const normalizedQuery = query.toString().trim().toLowerCase();
-    const escapedQuery = sequelize.escape(normalizedQuery);
-    const escapedPrefixQuery = sequelize.escape(`${normalizedQuery}%`);
-
-    const products = await ProductKeyword.findAll({
+    const keywords = await ProductKeyword.findAll({
       where: keywordWhere,
-      limit: 10,
-      order: [
-        [literal(`CASE WHEN LOWER(ProductKeyword.name) = ${escapedQuery} THEN 0 ELSE 1 END`), 'ASC'],
-        [literal(`CASE WHEN LOWER(ProductKeyword.name) LIKE ${escapedPrefixQuery} THEN 0 ELSE 1 END`), 'ASC'],
-        [literal('CHAR_LENGTH(ProductKeyword.name)'), 'ASC'],
-        [col('ProductKeyword.name'), 'ASC']
-      ],
+      limit: 200,
       attributes: ['id', 'name', 'item_subcategory_id'],
       include: [
         {
@@ -50,23 +176,95 @@ exports.suggestProducts = async (req, res) => {
       ]
     });
 
-    const suggestions = products.map(p => ({
-      id: p.id,
-      user_id: null,
-      title: p.name,
-      category: p.ItemSubCategory?.category_id || null,
-      category_name: p.ItemSubCategory?.Categories?.name || '',
-      sub_category: p.ItemSubCategory?.subcategory_id || null,
-      sub_category_name: p.ItemSubCategory?.SubCategories?.name || '',
-      item_category_id: p.ItemSubCategory?.item_category_id || null,
-      item_category_name: p.ItemSubCategory?.ItemCategory?.name || '',
-      item_subcategory_id: p.item_subcategory_id,
-      item_subcategory_name: p.ItemSubCategory?.name || '',
-      item_id: null,
-      item_name: ''
-    }));
+    const scored = keywords.map((keyword) => {
+      const normalizedKeyword = normalizeTextForSuggest(keyword.name);
+      const keywordWords = tokenizeForSuggest(keyword.name);
+      const keywordOrderTokens = tokenizeForOrder(keyword.name);
+      const { matchedQueryWords, matchedKeywordWords } = getSuggestWordMatchStats(queryWords, keywordWords);
+      const matchedQueryWordCount = matchedQueryWords.length;
+      const matchedKeywordWordCount = matchedKeywordWords.length;
+      const matchScore = matchedKeywordWordCount;
+      const exactMatch = normalizedKeyword === normalizedQuery;
+      const phrasePrefixMatch = normalizedQuery.length >= 2 && normalizedKeyword.startsWith(normalizedQuery);
+      const phraseIncludesMatch = normalizedQuery.length >= 2 && normalizedKeyword.includes(normalizedQuery);
+      const leadingPrefixTokenScore = getLeadingPrefixTokenScore(queryOrderTokens, keywordOrderTokens);
 
-    res.json({ success: true, data: suggestions });
+      const keywordCoverage = keywordWords.length ? matchedKeywordWordCount / keywordWords.length : 0;
+      const queryCoverage = queryWords.length ? matchedQueryWordCount / queryWords.length : 0;
+      const confidenceScore = exactMatch
+        ? 1
+        : Number((0.7 * keywordCoverage + 0.3 * queryCoverage).toFixed(3));
+
+      const isConfidentMatch = exactMatch || (matchedKeywordWordCount >= 2 && matchedQueryWordCount >= 2);
+
+      return {
+        id: keyword.id,
+        user_id: null,
+        title: keyword.name,
+        category: keyword.ItemSubCategory?.category_id || null,
+        category_name: keyword.ItemSubCategory?.Categories?.name || '',
+        sub_category: keyword.ItemSubCategory?.subcategory_id || null,
+        sub_category_name: keyword.ItemSubCategory?.SubCategories?.name || '',
+        item_category_id: keyword.ItemSubCategory?.item_category_id || null,
+        item_category_name: keyword.ItemSubCategory?.ItemCategory?.name || '',
+        item_subcategory_id: keyword.item_subcategory_id,
+        item_subcategory_name: keyword.ItemSubCategory?.name || '',
+        item_id: null,
+        item_name: '',
+        match_score: matchScore,
+        confidence_score: confidenceScore,
+        exact_match: exactMatch,
+        phrase_prefix_match: phrasePrefixMatch,
+        phrase_includes_match: phraseIncludesMatch,
+        leading_prefix_token_score: leadingPrefixTokenScore,
+        matched_words: matchedKeywordWords,
+        matched_query_words: matchedQueryWords,
+        matched_query_word_count: matchedQueryWordCount,
+        matched_keyword_word_count: matchedKeywordWordCount,
+        query_word_count: queryWords.length,
+        keyword_word_count: keywordWords.length,
+        full_query_match: queryWords.length > 0 && matchedQueryWordCount === queryWords.length,
+        is_confident_match: isConfidentMatch,
+      };
+    });
+
+    scored.sort((a, b) => {
+      if (a.exact_match !== b.exact_match) return a.exact_match ? -1 : 1;
+      if (a.leading_prefix_token_score !== b.leading_prefix_token_score) {
+        return b.leading_prefix_token_score - a.leading_prefix_token_score;
+      }
+      if (a.phrase_prefix_match !== b.phrase_prefix_match) return a.phrase_prefix_match ? -1 : 1;
+      if (a.phrase_includes_match !== b.phrase_includes_match) return a.phrase_includes_match ? -1 : 1;
+      if (a.match_score !== b.match_score) return b.match_score - a.match_score;
+      if (a.confidence_score !== b.confidence_score) return b.confidence_score - a.confidence_score;
+      return a.title.length - b.title.length;
+    });
+
+    const suggestions = scored.slice(0, 6);
+    const bestConfidentMatch = suggestions.find((s) => s.is_confident_match) || null;
+
+    const autoClassification = bestConfidentMatch
+      ? {
+        matched: true,
+        reason: bestConfidentMatch.exact_match ? 'exact_match' : 'best_score_match',
+        best_match: bestConfidentMatch,
+      }
+      : {
+        matched: false,
+        reason: suggestions.length ? 'low_confidence' : 'no_keyword_match',
+        bucket: 'Others / Uncategorized',
+      };
+
+    const alternatives = suggestions.filter((s) => !bestConfidentMatch || s.id !== bestConfidentMatch.id);
+
+    res.json({
+      success: true,
+      normalized_query: normalizedQuery,
+      tokens: queryWords,
+      data: suggestions,
+      auto_classification: autoClassification,
+      alternatives,
+    });
   } catch (err) {
     console.error('Error in suggestProducts:', err);
     res.status(500).json({ success: false, message: 'Server error', data: [] });
@@ -157,7 +355,7 @@ exports.createProducts = async (req, res) => {
     try {
       let {
         user_id, title, code, article_number, category, sub_category,
-        item_category_id, item_subcategory_id, item_id,
+        item_category_id, item_subcategory_id, item_id, keyword_id,
         is_gold, is_featured, is_recommended, best_product, status,
         application, short_description, description, slug,
         core_activity, activity, segment, product_service
@@ -166,11 +364,11 @@ exports.createProducts = async (req, res) => {
       // Inline clean for all values
       [
         user_id, category, sub_category, item_category_id,
-        item_subcategory_id, item_id, application, core_activity,
+        item_subcategory_id, item_id, keyword_id, application, core_activity,
         activity, segment, product_service
       ] = [
         user_id, category, sub_category, item_category_id,
-        item_subcategory_id, item_id, application, core_activity,
+        item_subcategory_id, item_id, keyword_id, application, core_activity,
         activity, segment, product_service
       ].map(v =>
         Array.isArray(v)
@@ -220,6 +418,7 @@ exports.createProducts = async (req, res) => {
         item_category_id,
         item_subcategory_id,
         item_id,
+        keyword_id,
         company_id: user.company_id,
       });
 
@@ -797,6 +996,7 @@ exports.updateProducts = async (req, res) => {
       item_category_id,
       item_subcategory_id,
       item_id,
+      keyword_id,
     } = req.body;
 
     const product = await Products.findByPk(req.params.id);
@@ -828,6 +1028,7 @@ exports.updateProducts = async (req, res) => {
       item_category_id,
       item_subcategory_id,
       item_id,
+      keyword_id,
     });
 
     res.status(200).json({
@@ -1757,6 +1958,7 @@ exports.getAllProductsServerSide = async (req, res) => {
         { model: ItemCategory, attributes: ['name'], as: 'ItemCategory' },
         { model: ItemSubCategory, attributes: ['name'], as: 'ItemSubCategory' },
         { model: Items, attributes: ['name'], as: 'Items' },
+        { model: ProductKeyword, attributes: ['name'], as: 'Keyword' },
         { model: CompanyInfo, attributes: ['organization_name', 'organization_slug'], as: 'company_info' },
         { model: UploadImage, attributes: ['file'], as: 'file' },
       ],
@@ -1777,6 +1979,8 @@ exports.getAllProductsServerSide = async (req, res) => {
       item_subcategory_name: row.ItemSubCategory ? row.ItemSubCategory.name : null,
       item_id: row.item_id,
       item_name: row.Items ? row.Items.name : null,
+      keyword_id: row.keyword_id,
+      keyword_name: row.Keyword ? row.Keyword.name : null,
       color_name: null,
       company_id: row.company_id,
       company_name: row.company_info ? row.company_info.organization_name : null,

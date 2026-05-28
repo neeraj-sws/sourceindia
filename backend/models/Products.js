@@ -11,6 +11,7 @@ const ReviewRating = require('./ReviewRating');
 const ItemCategory = require('./ItemCategory');
 const ItemSubCategory = require('./ItemSubCategory');
 const Items = require('./Items');
+const ProductKeyword = require('./ProductKeyword');
 
 const Products = sequelize.define('Products', {
   id: {
@@ -50,6 +51,7 @@ const Products = sequelize.define('Products', {
   item_category_id: { type: DataTypes.INTEGER, allowNull: true },
   item_subcategory_id: { type: DataTypes.INTEGER, allowNull: true },
   item_id: { type: DataTypes.INTEGER, allowNull: true },
+  keyword_id: { type: DataTypes.INTEGER, allowNull: true },
 }, {
   tableName: 'products',
   timestamps: true,
@@ -73,5 +75,6 @@ Products.belongsTo(Categories, { foreignKey: 'category', as: 'Categories', const
 Products.belongsTo(SubCategories, { foreignKey: 'sub_category', targetKey: 'id', as: 'SubCategories', constraints: false });
 Products.belongsTo(Applications, { foreignKey: 'application', targetKey: 'id', as: 'Applications', constraints: false });
 Products.belongsTo(Items, { foreignKey: 'item_id', targetKey: 'id', as: 'Items', constraints: false });
+Products.belongsTo(ProductKeyword, { foreignKey: 'keyword_id', targetKey: 'id', as: 'Keyword', constraints: false });
 
 module.exports = Products;
