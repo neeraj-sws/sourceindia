@@ -69,25 +69,30 @@ const AddProduct = () => {
       .replace(/\s+/g, ' ')
       .trim();
 
-  const tokenizeSuggestText = (text = '') =>
+  const tokenizeSuggestText = (text = '', minLength = 1) =>
     normalizeSuggestText(text)
       .split(' ')
       .map((w) => w.trim())
-      .filter(Boolean);
+      .filter((w) => w.length >= minLength);
 
-  const getLeadingPrefixTokenScore = (queryTokens = [], titleTokens = []) => {
+  const getTokenMatchScore = (queryTokens = [], titleTokens = []) => {
+    if (!queryTokens.length || !titleTokens.length) return 0;
+
     let score = 0;
-    const limit = Math.min(queryTokens.length, titleTokens.length);
-    for (let i = 0; i < limit; i += 1) {
-      if (titleTokens[i].startsWith(queryTokens[i])) score += 1;
-      else break;
-    }
+    queryTokens.forEach((queryToken) => {
+      const bestMatch = titleTokens.some((titleToken) => {
+        if (!queryToken || !titleToken) return false;
+        return titleToken.includes(queryToken) || titleToken.startsWith(queryToken) || queryToken.startsWith(titleToken);
+      });
+      if (bestMatch) score += 1;
+    });
+
     return score;
   };
 
   const rankSuggestionsByQuery = (suggestions = [], query = '') => {
     const normalizedQuery = normalizeSuggestText(query);
-    const queryTokens = tokenizeSuggestText(query);
+    const queryTokens = tokenizeSuggestText(query, 3);
     if (!normalizedQuery) return suggestions;
 
     return [...suggestions].sort((a, b) => {
@@ -97,11 +102,11 @@ const AddProduct = () => {
       const bExact = bTitle === normalizedQuery ? 1 : 0;
       if (aExact !== bExact) return bExact - aExact;
 
-      const aTokens = tokenizeSuggestText(a?.title || '');
-      const bTokens = tokenizeSuggestText(b?.title || '');
-      const aLeadingScore = getLeadingPrefixTokenScore(queryTokens, aTokens);
-      const bLeadingScore = getLeadingPrefixTokenScore(queryTokens, bTokens);
-      if (aLeadingScore !== bLeadingScore) return bLeadingScore - aLeadingScore;
+      const aTokens = tokenizeSuggestText(a?.title || '', 1);
+      const bTokens = tokenizeSuggestText(b?.title || '', 1);
+      const aTokenMatchScore = getTokenMatchScore(queryTokens, aTokens);
+      const bTokenMatchScore = getTokenMatchScore(queryTokens, bTokens);
+      if (aTokenMatchScore !== bTokenMatchScore) return bTokenMatchScore - aTokenMatchScore;
 
       const aPrefix = aTitle.startsWith(normalizedQuery) ? 1 : 0;
       const bPrefix = bTitle.startsWith(normalizedQuery) ? 1 : 0;
