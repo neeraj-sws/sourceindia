@@ -1,6 +1,13 @@
 // Product name autocomplete with master data
-const SUGGEST_STOP_WORDS = new Set([
+const SUGGEST_MATCH_STOP_WORDS = new Set([
   'a', 'an', 'the', 'and', 'or', 'for', 'with', 'to', 'of', 'by', 'on', 'in', 'at', 'from'
+]);
+
+const SUGGEST_RANKING_STOP_WORDS = new Set([
+  ...SUGGEST_MATCH_STOP_WORDS,
+  'we', 'our', 'us', 'are', 'is', 'am', 'be', 'being', 'been',
+  'manufacturer', 'manufacturing', 'manufacture', 'suppliers', 'supplier', 'trader', 'dealers', 'dealer',
+  'company', 'companies', 'products', 'product', 'services', 'service', 'provide', 'providing'
 ]);
 
 const normalizeTextForSuggest = (text = '') =>
@@ -15,13 +22,13 @@ const tokenizeForSuggest = (text = '') =>
   normalizeTextForSuggest(text)
     .split(' ')
     .map((w) => w.trim())
-    .filter((w) => w.length > 1 && !SUGGEST_STOP_WORDS.has(w));
+    .filter((w) => w.length > 1 && !SUGGEST_MATCH_STOP_WORDS.has(w));
 
 const tokenizeForOrder = (text = '') =>
   normalizeTextForSuggest(text)
     .split(' ')
     .map((w) => w.trim())
-    .filter(Boolean);
+    .filter((w) => w.length > 0 && !SUGGEST_RANKING_STOP_WORDS.has(w));
 
 const getLeadingPrefixTokenScore = (queryTokens = [], titleTokens = []) => {
   if (!queryTokens.length || !titleTokens.length) return 0;
