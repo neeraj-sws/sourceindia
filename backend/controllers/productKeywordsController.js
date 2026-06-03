@@ -470,7 +470,9 @@ exports.getItemSubCategoryById = async (req, res) => {
 
 exports.updateKeyword = async (req, res) => {
   try {
-    const keyword = await ProductKeyword.findByPk(req.params.id);
+    const keyword = await ProductKeyword.findByPk(req.params.id, {
+      attributes: ['id', 'name', 'status', 'updated_at'],
+    });
 
     if (!keyword) return res.status(404).json({ message: 'Keyword not found' });
     const name = (req.body.name || '').toString().trim();
@@ -507,7 +509,9 @@ exports.updateKeyword = async (req, res) => {
 
 exports.deleteItemSubCategory = async (req, res) => {
   try {
-    const keyword = await ProductKeyword.findByPk(req.params.id);
+    const keyword = await ProductKeyword.findByPk(req.params.id, {
+      attributes: ['id'],
+    });
     if (!keyword) return res.status(404).json({ message: 'Keyword not found' });
     await keyword.destroy();
     res.json({ message: 'Keyword deleted successfully' });
