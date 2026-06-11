@@ -16,12 +16,15 @@ import { format } from "date-fns";
 
 const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }) => {
   const navigate = useNavigate();
+  const defaultSortBy =
+    getNotCompleted ? "updated_at" :
+      (!getInactive && !getNotApproved && !getDeleted ? "approve_date" : "id");
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState("id");
+  const [sortBy, setSortBy] = useState(defaultSortBy);
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
@@ -384,6 +387,12 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
   };
 
   useEffect(() => {
+    setSortBy(defaultSortBy);
+    setSortDirection("DESC");
+    setPage(1);
+  }, [defaultSortBy]);
+
+  useEffect(() => {
     fetchData();
   }, [page, limit, search, sortBy, sortDirection, getInactive, getNotApproved, getNotCompleted, getDeleted, dateRange, startDate, endDate,
     appliedState, appliedCity, customerId, firstName, lastName, appliedCoreActivity, appliedActivity, organizationName,
@@ -593,6 +602,8 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
     setAppliedNatureBusiness("");
     setSelectedElcinaMember("");
     setAppliedElcinaMember("");
+    setSortBy(defaultSortBy);
+    setSortDirection("DESC");
     setPage(1);
     $("#state").val("").trigger("change");
     $("#city").val("").trigger("change");

@@ -221,6 +221,9 @@ exports.createSeller = async (req, res) => {
       // Create User
       // =========================
 
+      const parsedIsApprove = is_approve !== undefined ? Number(is_approve) : 1;
+      const approveDate = parsedIsApprove === 1 ? new Date() : null;
+
       const user = await Users.create({
 
         fname: fname || null,
@@ -237,7 +240,8 @@ exports.createSeller = async (req, res) => {
         products: products || '',
         status: status || 1,
         is_trading: is_trading || 0,
-        is_approve: is_approve || 1,
+        is_approve: parsedIsApprove,
+        approve_date: approveDate,
         elcina_member: elcina_member || 2,
         user_company: user_company || null,
         website: website || '',
@@ -1082,6 +1086,12 @@ exports.getAllSellerServerSide = async (req, res) => {
     const sortDirection = (sort === 'DESC' || sort === 'ASC') ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitValue = parseInt(limit);
+    const isNotCompletedView = req.query.getNotCompleted === 'true';
+    const isMainSellerListView =
+      req.query.getInactive !== 'true' &&
+      req.query.getNotApproved !== 'true' &&
+      req.query.getNotCompleted !== 'true' &&
+      req.query.getDeleted !== 'true';
 
     // 🧭 Dynamic Sorting Logic
     let order = [];
@@ -1105,6 +1115,14 @@ exports.getAllSellerServerSide = async (req, res) => {
       order = [[{ model: CompanyInfo, as: 'company_info' }, 'designation', sortDirection]];
     } else if (sortBy === 'full_name') {
       order = [[fn('concat', col('fname'), ' ', col('lname')), sortDirection]];
+    } else if (sortBy === 'id') {
+      if (isNotCompletedView) {
+        order = [['updated_at', 'DESC']];
+      } else if (isMainSellerListView) {
+        order = [['approve_date', 'DESC'], ['updated_at', 'DESC']];
+      } else {
+        order = [['id', sortDirection]];
+      }
     } else if (validColumns.includes(sortBy)) {
       order = [[sortBy, sortDirection]];
     } else {
@@ -1238,7 +1256,14 @@ exports.getAllSellerServerSide = async (req, res) => {
         };
       }
     }
-    if (dateCondition) searchWhere.created_at = dateCondition;
+    if (dateCondition) {
+      searchWhere[Op.and] = searchWhere[Op.and] || [];
+      if (isNotCompletedView) {
+        searchWhere[Op.and].push({ updated_at: dateCondition });
+      } else {
+        searchWhere[Op.and].push({ approve_date: dateCondition });
+      }
+    }
 
     const requiresSellerCategoryJoin =
       search ||
