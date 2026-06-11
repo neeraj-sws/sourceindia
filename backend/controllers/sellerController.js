@@ -19,6 +19,7 @@ const Designations = require('../models/Designations');
 const NatureBusinesses = require('../models/NatureBusinesses');
 const Products = require('../models/Products');
 const SellerCategory = require('../models/SellerCategory');
+const MailMaster = require('../models/MailMaster');
 const SellerMailHistories = require('../models/SellerMailHistories');
 const Emails = require('../models/Emails');
 const { getTransporter, sendMail, getSiteConfig } = require('../helpers/mailHelper');
@@ -26,6 +27,7 @@ const SellerMessages = require('../models/SellerMessages');
 const getMulterUpload = require('../utils/upload');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const logSQL = false;
 
 async function createUniqueSlug(name) {
@@ -1473,7 +1475,7 @@ exports.getEmailtemplate = async (req, res) => {
   }
 };
 
-exports.sendMail = async (req, res) => {
+exports.sendMailold = async (req, res) => {
   try {
     const { ids, template_id } = req.body;
     console.log(ids);
@@ -1541,6 +1543,7 @@ exports.sendMail = async (req, res) => {
       const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
       await SellerMailHistories.create({
+        open_token: crypto.randomBytes(24).toString('hex'),
         mail_type: 3,
         mail: seller.email,
         mail_template_id: template.id,
@@ -1565,6 +1568,288 @@ exports.sendMail = async (req, res) => {
   } catch (error) {
     console.error("Send mail error:", error);
     return res.status(500).json({ status: false, message: "Internal error" });
+  }
+};
+
+exports.sendMail = async (req, res) => {
+  try {
+    console.log(req.body);
+    const { ids, template_id, getNotCompleted, is_seller_direct, lastParam } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        status: false,
+        message: "Seller IDs missing"
+      });
+    }
+
+    if (!template_id) {
+      return res.status(400).json({
+        status: false,
+        message: "Template not selected"
+      });
+    }
+
+    const template = await Emails.findOne({
+      where: {
+        id: template_id,
+        is_seller_direct: 1
+      }
+    });
+
+    if (!template) {
+      return res.status(404).json({
+        status: false,
+        message: "Template not found"
+      });
+    }
+
+    const sellers = await Users.findAll({
+      where: {
+        user_id: ids, // agar table me user_id hai
+        status: 1
+      }
+    });
+
+    const ipaddress =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.socket.remoteAddress ||
+      "0.0.0.0";
+
+    let city = "";
+    let state = "";
+    let country = "";
+    let location = "";
+
+    try {
+      const currentUserInfo = await Location.get(ipaddress);
+
+      city = currentUserInfo?.cityName || "";
+      state = currentUserInfo?.regionName || "";
+      country = currentUserInfo?.countryName || "";
+      location = JSON.stringify(currentUserInfo || {});
+    } catch (e) {
+      console.warn("Location fetch failed:", e.message);
+    }
+
+    const now = new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace("T", " ");
+
+
+
+    const mailMaster = await MailMaster.create({
+      code: `MAIL_${Date.now()}`,
+      list: lastParam,
+      type: is_seller_direct,
+    });
+
+
+    for (const seller of sellers) {
+
+      await SellerMailHistories.create({
+        mail_code: mailMaster.code,
+        open_token: crypto.randomBytes(24).toString('hex'),
+        mail_type: 3,
+        mail: seller.email,
+        mail_template_id: template.id,
+        user_id: seller.id,
+        email_id: template.id,
+        status: 1,
+        company_id: seller.company_id,
+        ip_address: ipaddress,
+        city,
+        state,
+        country,
+        location,
+        mail_send_time: now,
+
+        // queue status
+        is_sent: 0,
+        is_failed: 0,
+
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    }
+
+    return res.json({
+      status: true,
+      message: `${sellers.length} emails queued successfully`
+    });
+
+  } catch (error) {
+    console.error("Send mail error:", error);
+
+    return res.status(500).json({
+      status: false,
+      message: error.message
+    });
+  }
+};
+
+
+
+exports.sendMailoldget = async (req, res) => {
+  try {
+
+    console.log("===== EMAIL PROCESS STARTED =====");
+
+    const sellers = await sequelize.query(`
+      SELECT smh.*, u.*
+      FROM seller_mail_histories smh
+      LEFT JOIN users u ON u.user_id = smh.user_id
+      WHERE smh.status = 1
+        AND smh.is_sent = 0
+        AND smh.is_failed = 0
+        `, {
+      type: sequelize.QueryTypes.SELECT
+    });
+
+    console.log("Pending Emails Found:", sellers.length);
+
+    if (sellers.length === 0) {
+      return res.json({
+        status: true,
+        message: "No pending emails"
+      });
+    }
+
+    for (const seller of sellers) {
+
+      console.log("--------------------------------");
+      console.log("Processing User:", seller.user_id);
+      console.log("Email:", seller.mail || seller.email);
+
+      try {
+
+        console.log("Finding Template:", seller.email_id);
+
+        const template = await Emails.findOne({
+          where: {
+            id: seller.email_id,
+            is_seller_direct: 1
+          }
+        });
+
+        console.log("Template Result:", template ? "FOUND" : "NOT FOUND");
+
+        if (!template) {
+
+          await SellerMailHistories.update(
+            {
+              is_sent: 0,
+              is_failed: 1,
+              updated_at: new Date()
+            },
+            {
+              where: {
+                seller_mail_history_id: seller.seller_mail_history_id
+              }
+            }
+          );
+
+          console.log("Template Missing -> Marked Failed");
+
+          continue;
+        }
+
+        const APP_URL = process.env.APP_URL;
+
+        const verification_link = `
+          <a href="${APP_URL}">
+            Click and Login Account
+          </a>
+        `;
+
+        console.log("Building Email Body");
+
+        const msgStr = template.message.toString("utf8");
+
+        const userMessage = msgStr
+          .replace("{{ USER_NAME }}", `${seller.fname || ""} ${seller.lname || ""}`)
+          .replace("{{ USER_EMAIL }}", seller.mail || seller.email || "")
+          .replace("{{ USER_PASSWORD }}", seller.real_password || "")
+          .replace("{{ APP_URL }}", APP_URL)
+          .replace("{{ VERIFICATION_LINK }}", verification_link);
+
+        console.log("Sending Email To:", seller.mail || seller.email);
+
+        await sendMail({
+          to: seller.mail || seller.email,
+          subject: template.subject,
+          message: userMessage
+        });
+
+        console.log("Email Sent Successfully");
+
+        const updateResult = await SellerMailHistories.update(
+          {
+            is_sent: 1,
+            is_failed: 0,
+            updated_at: new Date()
+          },
+          {
+            where: {
+              seller_mail_history_id: seller.seller_mail_history_id
+            }
+          }
+        );
+
+        console.log("History Updated:", updateResult);
+
+      } catch (err) {
+
+        console.log("ERROR FOR USER:", seller.user_id);
+        console.log("MESSAGE:", err.message);
+        console.log("STACK:", err.stack);
+
+        if (err.parent) {
+          console.log("SQL MESSAGE:", err.parent.sqlMessage);
+          console.log("SQL CODE:", err.parent.code);
+        }
+
+        await SellerMailHistories.update(
+          {
+            is_sent: 0,
+            is_failed: 1,
+            updated_at: new Date()
+          },
+          {
+            where: {
+              seller_mail_history_id: seller.seller_mail_history_id
+            }
+          }
+        );
+
+        console.log("Marked As Failed");
+      }
+    }
+
+    console.log("===== EMAIL PROCESS COMPLETED =====");
+
+    return res.json({
+      status: true,
+      message: "Batch processed successfully!"
+    });
+
+  } catch (error) {
+
+    console.log("===== OUTER ERROR =====");
+    console.log("MESSAGE:", error.message);
+    console.log("STACK:", error.stack);
+
+    if (error.parent) {
+      console.log("SQL MESSAGE:", error.parent.sqlMessage);
+      console.log("SQL CODE:", error.parent.code);
+      console.log("SQL:", error.sql);
+    }
+
+    return res.status(500).json({
+      status: false,
+      message: error.message
+    });
   }
 };
 

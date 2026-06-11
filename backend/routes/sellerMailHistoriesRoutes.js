@@ -4,6 +4,9 @@ const sellerMailHistoriesController = require('../controllers/sellerMailHistorie
 
 router.get('/', sellerMailHistoriesController.getAllSellerMailHistories);
 router.get('/server-side', sellerMailHistoriesController.getAllSellerMailHistoriesServerSide);
+router.get('/details/:mailCode', sellerMailHistoriesController.getSellerMailHistoryDetails);
+router.get('/track-open/:token', sellerMailHistoriesController.trackSellerMailOpen);
+router.post('/:id/resend', sellerMailHistoriesController.resendSellerMailHistory);
 router.delete('/delete-selected', sellerMailHistoriesController.deleteSelectedSellerMailHistories);
 router.delete('/:id', sellerMailHistoriesController.deleteSellerMailHistories);
 router.patch('/:id/status', sellerMailHistoriesController.updateSellerMailHistoriesStatus);

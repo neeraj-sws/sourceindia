@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate, Link } from 'react-router-dom';
 import axios from "axios";
 import dayjs from "dayjs";
@@ -14,7 +14,20 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { format } from "date-fns";
 
-const MailHistory = ({getDeleted}) => {
+const modalBackdropStyle = {
+  backgroundColor: "rgba(0, 0, 0, 0.45)",
+};
+
+const escapeHtml = (value) => {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+};
+
+const MailHistory = ({ getDeleted }) => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -26,33 +39,30 @@ const MailHistory = ({getDeleted}) => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
- const [showDeleteModal, setShowDeleteModal] = useState(false);
-   const [mailHistoryToDelete, setMailHistoryToDelete] = useState(null);
-   const [selectedMailHistory, setSelectedMailHistory] = useState([]);
-   const [showStatusModal, setShowStatusModal] = useState(false);
-   const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
-   const [isBulkDelete, setIsBulkDelete] = useState(false);
-   const [mailHistoryData, setMailHistoryData] = useState([]);
-     const excelExportRef = useRef();
-  const [organizationName, setOrganizationName] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [mailHistoryToDelete, setMailHistoryToDelete] = useState(null);
+  const [selectedMailHistory, setSelectedMailHistory] = useState([]);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
+  const [mailHistoryData, setMailHistoryData] = useState([]);
+  const excelExportRef = useRef();
   const [dateRange, setDateRange] = useState('');
-    const [startDate, setStartDate] = useState(null);
-    const [endDate, setEndDate] = useState(null);
-    const [tempStartDate, setTempStartDate] = useState(null);
-    const [tempEndDate, setTempEndDate] = useState(null);
-    const [showPicker, setShowPicker] = useState(false);
-    const [range, setRange] = useState([
-      {startDate: new Date(), endDate: new Date(), key: 'selection'}
-    ]);
-  const [tempOrganizationName, setTempOrganizationName] = useState("");
-  const [companies, setCompanies] = useState([]);
-  const [selectedCompanies, setSelectedCompanies] = useState("");
-  const [appliedCompanies, setAppliedCompanies] = useState("");
-  const [mailType, setMailType] = useState([]);
-  const [selectedMailType, setSelectedMailType] = useState("");
-  const [appliedMailType, setAppliedMailType] = useState("");
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [tempStartDate, setTempStartDate] = useState(null);
+  const [tempEndDate, setTempEndDate] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [range, setRange] = useState([
+    { startDate: new Date(), endDate: new Date(), key: 'selection' }
+  ]);
   const datePickerRef = useRef(null);
-        
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [previewRow, setPreviewRow] = useState(null);
+  const [previewSummary, setPreviewSummary] = useState(null);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
@@ -69,56 +79,17 @@ const MailHistory = ({getDeleted}) => {
     };
   }, [showPicker]);
 
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/products/companies`);
-        setCompanies(res.data.companies);
-      } catch (err) {
-        console.error("Error fetching states:", err);
-      }
-    };
-    fetchCompanies();
-  }, []);
-
-  const handleCompaniesChange = (event) => { setSelectedCompanies(event.target.value); };
-
-  useEffect(() => {
-      setMailType([{id:0,name:"Direct"}, {id:1,name:"Selected"}, {id:3,name:"All"}]);
-    }, []);
-  
-    const handleMailTypeChange = (event) => { setSelectedMailType(event.target.value); };
-
-  useEffect(() => {
-    $("#companies_list").select2({
-      theme: "bootstrap",
-      width: "100%",
-      placeholder: "Select companies",
-    })
-    .on("change", function () {
-      handleCompaniesChange({ target: { value: $(this).val() } });
-    });
-    $("#mail_type").select2({
-      theme: "bootstrap",
-      width: "100%",
-      placeholder: "Select mail type",
-    })
-    .on("change", function () {
-      handleMailTypeChange({ target: { value: $(this).val() } });
-    });
-    return () => {
-      $("#mail_type").off("change").select2("destroy");
-    };
-  }, [companies, mailType]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/seller_mail_histories/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false',
-        dateRange, startDate, endDate, companyId: appliedCompanies || "", mail_type: appliedMailType },
+        params: {
+          page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false',
+          dateRange, startDate, endDate
+        },
       });
       setData(response.data.data);
+      setMailHistoryData(response.data.data || []);
       setTotalRecords(response.data.totalRecords);
       setFilteredRecords(response.data.filteredRecords);
     } catch (error) {
@@ -126,9 +97,9 @@ const MailHistory = ({getDeleted}) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate]);
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate, appliedCompanies, appliedMailType]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -156,7 +127,6 @@ const MailHistory = ({getDeleted}) => {
     }
   };
 
-  const openDeleteModal = (mailHistoryId) => { setMailHistoryToDelete(mailHistoryId); setIsBulkDelete(false); setShowDeleteModal(true); };
   const openBulkDeleteModal = () => { setMailHistoryToDelete(null); setIsBulkDelete(true); setShowDeleteModal(true); };
   const closeDeleteModal = () => { setMailHistoryToDelete(null); setShowDeleteModal(false); };
 
@@ -192,27 +162,6 @@ const MailHistory = ({getDeleted}) => {
     }
   };
 
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelectedMailHistory(data?.map((item) => item.id));
-    } else {
-      setSelectedMailHistory([]);
-    }
-  };
-
-  const handleSelectMailHistory = (mailHistoryId) => {
-    setSelectedMailHistory((prevSelectedMailHistory) =>
-      prevSelectedMailHistory.includes(mailHistoryId)
-        ? prevSelectedMailHistory.filter((id) => id !== mailHistoryId)
-        : [...prevSelectedMailHistory, mailHistoryId]
-    );
-  };
-
-  const openStatusModal = (id, currentStatus, field, valueKey) => {
-    setStatusToggleInfo({ id, currentStatus, field, valueKey });
-    setShowStatusModal(true);
-  };
-
   const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
 
   const handleStatusConfirm = async () => {
@@ -239,30 +188,17 @@ const MailHistory = ({getDeleted}) => {
     setDateRange("");
     setStartDate(null);
     setEndDate(null);
-    setSelectedCompanies("");
-    setAppliedCompanies("");
-    setSelectedMailType("");
-    setAppliedMailType("");
     setPage(1);
-    $("#companies_list").val("").trigger("change");
-    $("#mail_type").val("").trigger("change");
   };
 
   const handleRangeChange = (item) => {
-      const start = item.selection.startDate;
-      const end = item.selection.endDate;
-      setRange([item.selection]);
-      setTempStartDate(format(start, "yyyy-MM-dd"));
-      setTempEndDate(format(end, "yyyy-MM-dd"));
-      setShowPicker(false);
-    };
-
-    useEffect(() => {
-    axios.get(`${API_BASE_URL}/seller_mail_histories`).then((res) => {
-      const filtered = res.data.filter((c) => c.is_delete === (getDeleted ? 1 : 0));
-      setMailHistoryData(filtered);
-    });
-  }, []);
+    const start = item.selection.startDate;
+    const end = item.selection.endDate;
+    setRange([item.selection]);
+    setTempStartDate(format(start, "yyyy-MM-dd"));
+    setTempEndDate(format(end, "yyyy-MM-dd"));
+    setShowPicker(false);
+  };
 
   const handleDownload = () => {
     if (excelExportRef.current) {
@@ -270,20 +206,166 @@ const MailHistory = ({getDeleted}) => {
     }
   };
 
+  const closePreviewModal = () => {
+    setShowPreviewModal(false);
+    setPreviewLoading(false);
+    setPreviewData(null);
+    setPreviewRow(null);
+    setPreviewSummary(null);
+  };
+
+  const handlePreview = async (row) => {
+    if (!row?.mail_code) {
+      showNotification("Mail code not found for preview.", "error");
+      return;
+    }
+
+    setShowPreviewModal(true);
+    setPreviewLoading(true);
+    setPreviewData(null);
+    setPreviewRow(null);
+    setPreviewSummary(row);
+
+    try {
+      const detailsResponse = await axios.get(`${API_BASE_URL}/seller_mail_histories/details/${encodeURIComponent(row.mail_code)}`, {
+        params: {
+          page: 1,
+          limit: 1,
+          sortBy: "id",
+          sort: "ASC",
+          getDeleted: getDeleted ? "true" : "false",
+        },
+      });
+
+      const firstRow = detailsResponse?.data?.data?.[0] || null;
+      setPreviewRow(firstRow);
+
+      if (!firstRow?.email_id) {
+        showNotification("Template not mapped for this mail batch.", "error");
+        return;
+      }
+
+      const templateResponse = await axios.get(`${API_BASE_URL}/emails/${firstRow.email_id}`);
+      setPreviewData(templateResponse.data || null);
+    } catch (error) {
+      console.error("Error loading mail preview:", error);
+      showNotification(error?.response?.data?.message || "Failed to load mail preview.", "error");
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const getMailTypeLabel = (type) => {
+    if (Number(type) === 0) return "Buyer";
+    if (Number(type) === 1) return "Seller";
+    return type || "-";
+  };
+
+  const getMailTypeBadgeClass = (type) => {
+    if (Number(type) === 0) return "bg-primary-subtle text-dark border border-primary-subtle";
+    if (Number(type) === 1) return "bg-success-subtle text-dark border border-success-subtle";
+    return "bg-secondary-subtle text-dark border border-secondary-subtle";
+  };
+
+  const formatMailHistoryListLabel = (value) => {
+    if (!value) return "-";
+
+    return value
+      .toString()
+      .replace(/_/g, " ")
+      .split(" ")
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  const getRenderedPreviewTemplateBody = () => {
+    const rawTemplate = previewData?.message || "";
+    if (!rawTemplate) return "";
+
+    const userName = escapeHtml(previewRow?.user_name || "-");
+    const userEmail = escapeHtml(previewRow?.user_email || previewRow?.mail || "-");
+
+    return rawTemplate
+      .replace(/\{\{\s*USER_NAME\s*\}\}/gi, userName)
+      .replace(/\{\{\s*USER_EMAIL\s*\}\}/gi, userEmail);
+  };
+
+  const pageSummary = useMemo(() => {
+    return data.reduce((acc, row) => {
+      acc.pending += Number(row.pending_count || 0);
+      acc.success += Number(row.success_count || 0);
+      acc.failed += Number(row.failed_count || 0);
+      acc.opened += Number(row.opened_count || 0);
+      acc.notOpened += Number(row.not_opened_count || 0);
+      acc.total += Number(row.total_mail_histories || 0);
+      return acc;
+    }, { pending: 0, success: 0, failed: 0, opened: 0, notOpened: 0, total: 0 });
+  }, [data]);
+
+  const renderCountBadge = (value, variantClass) => (
+    <span className={`badge rounded-pill ${variantClass}`}>{Number(value || 0)}</span>
+  );
+
+  const counterCards = [
+    {
+      key: "pending",
+      label: "Pending",
+      value: pageSummary.pending,
+      cardClass: "border-warning-subtle bg-warning-subtle",
+      iconClass: "bx bx-time-five text-warning",
+    },
+    {
+      key: "success",
+      label: "Success",
+      value: pageSummary.success,
+      cardClass: "border-success-subtle bg-success-subtle",
+      iconClass: "bx bx-check-circle text-success",
+    },
+    {
+      key: "failed",
+      label: "Failed",
+      value: pageSummary.failed,
+      cardClass: "border-danger-subtle bg-danger-subtle",
+      iconClass: "bx bx-error-circle text-danger",
+    },
+    {
+      key: "opened",
+      label: "Opened",
+      value: pageSummary.opened,
+      cardClass: "border-success-subtle bg-success-subtle",
+      iconClass: "bx bx-envelope-open text-success",
+    },
+    {
+      key: "notOpened",
+      label: "Not Opened",
+      value: pageSummary.notOpened,
+      cardClass: "border-secondary-subtle bg-secondary-subtle",
+      iconClass: "bx bx-envelope text-secondary",
+    },
+    {
+      key: "total",
+      label: "Total",
+      value: pageSummary.total,
+      cardClass: "border-info-subtle bg-info-subtle",
+      iconClass: "bx bx-bar-chart-alt-2 text-info",
+    },
+  ];
+
   return (
     <>
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb mainhead="Mail History" maincount={totalRecords} page="" title={getDeleted ? "Recently Deleted Mail History" : "Mail History List"}
-          actions={
+            actions={
               <>
-                <button className="btn  btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                <button className="btn  btn-primary mb-2 me-2 d-none" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
                 {!getDeleted ? (
                   <>
-                    <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedMailHistory.length === 0}>
+                    <button className="btn btn-sm btn-danger mb-2 me-2 d-none" onClick={openBulkDeleteModal} disabled={selectedMailHistory.length === 0}>
                       <i className="bx bx-trash me-1" /> Delete Selected
                     </button>
-                    <Link className="btn  btn-primary mb-2" to="/admin/mail-history-remove-list">
+                    <Link className="btn  btn-primary mb-2 d-none" to="/admin/mail-history-remove-list">
                       Recently Deleted Mail History
                     </Link>
                   </>
@@ -294,27 +376,31 @@ const MailHistory = ({getDeleted}) => {
                 )}
               </>
             } />
+
+          <div className="row g-3 mb-4">
+            {counterCards.map((card) => (
+              <div className="col-12 col-sm-6 col-lg-3" key={card.key}>
+                <div className={`border rounded-3 p-3 h-100 shadow-sm ${card.cardClass}`}>
+                  <div className="d-flex align-items-center justify-content-between mb-2">
+                    <span className="small text-muted fw-semibold">{card.label}</span>
+                    <span className="d-inline-flex align-items-center justify-content-center rounded-circle bg-white" style={{ width: 34, height: 34 }}>
+                      <i className={`${card.iconClass} fs-5`} />
+                    </span>
+                  </div>
+                  <div className="d-flex align-items-end justify-content-between">
+                    <div className="fw-bold" style={{ fontSize: "1.65rem", lineHeight: 1 }}>
+                      {card.value}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="card">
             <div className="card-body">
-              <div className="row mb-3">
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Company</label>
-                  <select id="companies_list" className="form-control select2" value={selectedCompanies} onChange={handleCompaniesChange}>
-                    <option value="">-- Select --</option>
-                    {companies.map((c) => (
-                      <option key={c.id} value={c.id}>{c.organization_name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-3 mb-3">
-                  <label className="form-label">Mail Type</label>
-                  <select id="mail_type" className="form-control select2">
-                    <option value="">-- Select --</option>
-                    {mailType.map((item) => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="row mb-3 align-items-center">
                 <div className="col-md-6 mb-3">
                   <label className="form-label">Date Filter:</label>
                   <div className="position-relative">
@@ -357,15 +443,13 @@ const MailHistory = ({getDeleted}) => {
                     )}
                   </div>
                 </div>
-                <div className="col-md-12 d-flex justify-content-end gap-2">
+                <div className="col-md-6 d-flex justify-content-end gap-2">
                   <button
                     className="btn btn-primary"
                     onClick={() => {
                       setStartDate(tempStartDate);
                       setEndDate(tempEndDate);
                       setDateRange("customrange");
-                      setAppliedCompanies(selectedCompanies);
-                      setAppliedMailType(selectedMailType);
                       setPage(1);
                     }}
                   >
@@ -374,15 +458,18 @@ const MailHistory = ({getDeleted}) => {
                   <button className="btn btn-secondary" onClick={() => { clearFilters(); }}>Clear</button>
                 </div>
               </div>
+
               <DataTable
                 columns={[
-                  ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                   { key: "id", label: "S.No.", sortable: true },
-                  { key: "user_name", label: "Company", sortable: true },
-                  { key: "mail_type", label: "Mail type", sortable: true },
-                  { key: "user_is_seller", label: "Is Seller", sortable: true },
+                  { key: "mail_master_list", label: "List", sortable: true },
+                  { key: "mail_master_type", label: "Type", sortable: true },
+                  { key: "total_mail_histories", label: "Total", sortable: true },
+
+                  { key: "pending_count", label: "Pending", sortable: true },
+                  { key: "success_count", label: "Success", sortable: true },
+                  { key: "failed_count", label: "Failed", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },
-                  { key: "updated_at", label: "Updated At", sortable: true },
                   { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}
@@ -401,56 +488,39 @@ const MailHistory = ({getDeleted}) => {
                 getRangeText={getRangeText}
                 renderRow={(row, index) => (
                   <tr key={row.id}>
-                    {!getDeleted && (
-                      <td>
-                        <input type="checkbox" checked={selectedMailHistory.includes(row.id)} onChange={() => handleSelectMailHistory(row.id)} />
-                      </td>
-                    )}
                     <td>{(page - 1) * limit + index + 1}</td>
-                    <td>{row.user_name}</td>
-                    <td>{row.mail_type==0 ? "Direct" : row.mail_type==1 ? "Selected" : row.mail_type==3 ? "All" : ""}</td>
-                    <td>{row.user_company_name}</td>
-                    <td>{formatDateTime(row.created_at)}</td>
-                    <td>{formatDateTime(row.updated_at)}</td>
                     <td>
-                      <div className="dropdown">
-                        <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                          <i className="bx bx-dots-vertical-rounded"></i>
+                      <Link to={`/admin/mail_history_details/${encodeURIComponent(row.mail_code)}${getDeleted ? '?deleted=true' : ''}`}>
+                        {formatMailHistoryListLabel(row.mail_master_list)}
+                      </Link>
+                    </td>
+                    <td>
+                      <span className={`badge rounded-pill ${getMailTypeBadgeClass(row.mail_master_type)}`}>
+                        {getMailTypeLabel(row.mail_master_type)}
+                      </span>
+                    </td>
+                    <td>{renderCountBadge(row.total_mail_histories, "bg-info-subtle text-info")}</td>
+                    <td>{renderCountBadge(row.pending_count, "bg-warning-subtle text-warning")}</td>
+                    <td>{renderCountBadge(row.success_count, "bg-success-subtle text-success")}</td>
+                    <td>{renderCountBadge(row.failed_count, "bg-danger-subtle text-danger")}</td>
+
+                    <td>{formatDateTime(row.created_at)}</td>
+                    <td>
+                      <div className="d-flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={() => handlePreview(row)}
+                        >
+                          Preview
                         </button>
-                        <ul className="dropdown-menu">
-                          {!getDeleted ? (
-                            <>
-                              <li>
-                                <button className="dropdown-item"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                                  }}
-                                >
-                                  <i className="bx bx-trash me-2"></i> Delete
-                                </button>
-                              </li>
-                            </>
-                          ) : (
-                            <>
-                              <li>
-                                <button className="dropdown-item"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                                  }}
-                                >
-                                  <i className="bx bx-windows me-2"></i> Restore
-                                </button>
-                              </li>
-                              <li>
-                                <button className="dropdown-item" onClick={() => openDeleteModal(row.id)}>
-                                  <i className="bx bx-trash me-2"></i> Delete
-                                </button>
-                              </li>
-                            </>
-                          )}
-                        </ul>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => navigate(`/admin/mail_history_details/${encodeURIComponent(row.mail_code)}${getDeleted ? '?deleted=true' : ''}`)}
+                        >
+                          <i className="bx bx-show me-1"></i>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -476,15 +546,93 @@ const MailHistory = ({getDeleted}) => {
         fileName="Mail History Export.xlsx"
         data={mailHistoryData}
         columns={[
-          { label: "Fname", key: "fname" },
-          { label: "Lname", key: "lname" },
-          { label: "Email", key: "email" },
-          { label: "Mail Type", key: "mail_type" },
-          { label: "Company Name", key: "user_company_name" },
+          { label: "Code", key: "mail_code" },
+          { label: "List", key: "mail_master_list" },
+          { label: "Mail Type", key: "mail_master_type", format: (val) => getMailTypeLabel(val) },
+          { label: "Pending", key: "pending_count" },
+          { label: "Success", key: "success_count" },
+          { label: "Failed", key: "failed_count" },
+          { label: "Total Details", key: "total_mail_histories" },
           { label: "Created", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
           { label: "Last Update", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
         ]}
       />
+
+      {showPreviewModal && (
+        <>
+          <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+            <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <div>
+                    <h5 className="modal-title mb-1">Template Preview</h5>
+                    <small className="text-muted d-none">
+                      {previewData?.title || previewData?.subject || formatMailHistoryListLabel(previewSummary?.mail_master_list)}
+                    </small>
+                  </div>
+                  <button type="button" className="btn-close" onClick={closePreviewModal} />
+                </div>
+                <div className="modal-body">
+                  <div className="row g-3">
+                    <div className="col-lg-4 d-none">
+                      <div className="border rounded-3 p-3 h-100 bg-light">
+                        <h6 className="mb-3">First User Detail</h6>
+                        <div className="mb-2">
+                          <small className="text-muted d-block">List</small>
+                          <div className="fw-semibold">{formatMailHistoryListLabel(previewSummary?.mail_master_list)}</div>
+                        </div>
+                        <div className="mb-2">
+                          <small className="text-muted d-block">Code</small>
+                          <div className="fw-semibold">{previewSummary?.mail_code || "-"}</div>
+                        </div>
+                        <div className="mb-2">
+                          <small className="text-muted d-block">Name</small>
+                          <div className="fw-semibold">{previewRow?.user_name || "-"}</div>
+                        </div>
+                        <div className="mb-2">
+                          <small className="text-muted d-block">Email</small>
+                          <div className="fw-semibold">{previewRow?.user_email || previewRow?.mail || "-"}</div>
+                        </div>
+                        <div className="mb-2">
+                          <small className="text-muted d-block">Company</small>
+                          <div className="fw-semibold">{previewRow?.organization_name || "-"}</div>
+                        </div>
+                        <div className="mb-2">
+                          <small className="text-muted d-block">Location</small>
+                          <div className="fw-semibold">
+                            {[previewRow?.city, previewRow?.state, previewRow?.country].filter(Boolean).join(", ") || "-"}
+                          </div>
+                        </div>
+                        <div className="mb-0">
+                          <small className="text-muted d-block">Status</small>
+                          <div className="fw-semibold">{previewRow?.delivery_status || "-"}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-lg-12">
+                      <div className="border rounded-3 p-3 h-100">
+                        <h6 className="mb-3">Template Body</h6>
+                        {previewLoading ? (
+                          <div className="py-5 text-center text-muted">Loading template preview...</div>
+                        ) : previewData?.message ? (
+                          <div className="preview-email-body" dangerouslySetInnerHTML={{ __html: getRenderedPreviewTemplateBody() }} />
+                        ) : (
+                          <div className="py-5 text-center text-muted">No template content found.</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={closePreviewModal}>Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="modal-backdrop fade show" style={modalBackdropStyle} />
+        </>
+      )}
     </>
   );
 };

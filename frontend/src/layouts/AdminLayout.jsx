@@ -56,6 +56,7 @@ const SeoPages = lazy(() => import('../admin/pages/SeoPages'));
 const UserActivities = lazy(() => import('../admin/pages/UserActivities'));
 const UserActivityDetails = lazy(() => import('../admin/pages/UserActivityDetails'));
 const MailHistory = lazy(() => import('../admin/pages/MailHistory'));
+const MailHistoryDetails = lazy(() => import('../admin/pages/MailHistoryDetails'));
 const EmailsList = lazy(() => import('../admin/pages/EmailsList'));
 const AddEmail = lazy(() => import('../admin/pages/AddEmail'));
 const ContactsList = lazy(() => import('../admin/pages/ContactsList'));
@@ -167,6 +168,7 @@ function AdminLayout() {
               <Route path="/user_activity" element={<ProtectedRoute><UserActivities /></ProtectedRoute>} />
               <Route path="/user-activity-details/:userId" element={<ProtectedRoute><UserActivityDetails /></ProtectedRoute>} />
               <Route path="/mail_history" element={<ProtectedRoute><MailHistory /></ProtectedRoute>} />
+              <Route path="/mail_history_details/:mailCode" element={<ProtectedRoute><MailHistoryDetails /></ProtectedRoute>} />
               <Route path="/mail-history-remove-list" element={<ProtectedRoute><MailHistory getDeleted={true} /></ProtectedRoute>} />
               <Route path="/emails-list" element={<ProtectedRoute><EmailsList /></ProtectedRoute>} />
               <Route path="/add_email" element={<ProtectedRoute><AddEmail /></ProtectedRoute>} />
@@ -188,6 +190,9 @@ function AdminLayout() {
               <Route path="/product_category_graph" element={<ProtectedRoute><ProductCategoriesGraph /></ProtectedRoute>} />
               <Route path="/seller_category_graph" element={<ProtectedRoute><SellerCategoriesGraph /></ProtectedRoute>} />
               <Route path="/sourcing_interest_graph" element={<ProtectedRoute><SourcingInterestsGraph /></ProtectedRoute>} />
+
+
+
               <Route path="/buyer-enquiries" element={<ProtectedRoute><Suspense fallback={<div></div>}><AdminBuyerEnquiries /></Suspense></ProtectedRoute>} />
             </Routes>
           </Suspense>

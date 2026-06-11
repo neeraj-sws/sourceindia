@@ -64,8 +64,8 @@ const DataTable = ({
           />
         </div>
       </div>
-      <div className="table-responsive  border  rounded-2 mt-4">
-        <table className="table table-striped dataTable">
+      <div className="table-responsive border rounded-2 mt-4">
+        <table className="table table-striped table-hover align-middle dataTable mb-0">
           <thead>
             <tr>
               {columns?.map((col, colIndex) => {
@@ -161,71 +161,71 @@ const DataTable = ({
                   );
                 })}
               </tr>
-          ) : data.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length} className="text-center">
-                No records found.
-              </td>
-            </tr>
-          ) : (
-            data?.map((item, index) => renderRow(item, index))
-          )}
-        </tbody>
-      </table>
-    </div>
-    {data.length > 0 && !loading && (
-      <div className="row mt-2 justify-content-between">
-        <div className="col-md-auto me-auto">{getRangeText()}</div>
-        <div className="col-md-auto ms-auto">
-          <ul className="pagination">
-            <li className="page-item">
-              <button
-                className="page-link"
-                onClick={() => onPageChange(1)}
-                disabled={page === 1 || isPaginationDisabled}
-              >
-                <i className="bx bx-chevrons-left" />
-              </button>
-            </li>
-            <li className="page-item">
-              <button
-                className="page-link"
-                onClick={() => onPageChange(page - 1)}
-                disabled={page === 1 || isPaginationDisabled}
-              >
-                <i className="bx bx-chevron-left" />
-              </button>
-            </li>
-            {pageNumbers?.map((p) => (
-              <li key={p} className={`page-item ${p === page ? "active" : ""}`}>
-                <button className="page-link" onClick={() => onPageChange(p)} disabled={isPaginationDisabled}>
-                  {p}
+            ) : data.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="text-center">
+                  No records found.
+                </td>
+              </tr>
+            ) : (
+              data?.map((item, index) => renderRow(item, index))
+            )}
+          </tbody>
+        </table>
+      </div>
+      {data.length > 0 && !loading && (
+        <div className="row mt-2 justify-content-between">
+          <div className="col-md-auto me-auto">{getRangeText()}</div>
+          <div className="col-md-auto ms-auto">
+            <ul className="pagination">
+              <li className="page-item">
+                <button
+                  className="page-link"
+                  onClick={() => onPageChange(1)}
+                  disabled={page === 1 || isPaginationDisabled}
+                >
+                  <i className="bx bx-chevrons-left" />
                 </button>
               </li>
-            ))}
-            <li className="page-item">
-              <button
-                className="page-link"
-                onClick={() => onPageChange(page + 1)}
-                disabled={page === totalPages || isPaginationDisabled}
-              >
-                <i className="bx bx-chevron-right" />
-              </button>
-            </li>
-            <li className="page-item">
-              <button
-                className="page-link"
-                onClick={() => onPageChange(totalPages)}
-                disabled={page === totalPages || isPaginationDisabled}
-              >
-                <i className="bx bx-chevrons-right" />
-              </button>
-            </li>
-          </ul>
+              <li className="page-item">
+                <button
+                  className="page-link"
+                  onClick={() => onPageChange(page - 1)}
+                  disabled={page === 1 || isPaginationDisabled}
+                >
+                  <i className="bx bx-chevron-left" />
+                </button>
+              </li>
+              {pageNumbers?.map((p) => (
+                <li key={p} className={`page-item ${p === page ? "active" : ""}`}>
+                  <button className="page-link" onClick={() => onPageChange(p)} disabled={isPaginationDisabled}>
+                    {p}
+                  </button>
+                </li>
+              ))}
+              <li className="page-item">
+                <button
+                  className="page-link"
+                  onClick={() => onPageChange(page + 1)}
+                  disabled={page === totalPages || isPaginationDisabled}
+                >
+                  <i className="bx bx-chevron-right" />
+                </button>
+              </li>
+              <li className="page-item">
+                <button
+                  className="page-link"
+                  onClick={() => onPageChange(totalPages)}
+                  disabled={page === totalPages || isPaginationDisabled}
+                >
+                  <i className="bx bx-chevrons-right" />
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
-      </div>
-    )}
-  </>
+      )}
+    </>
   );
 };
 
