@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
@@ -89,6 +89,7 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
   const [declineUserId, setDeclineUserId] = useState(null);
   const [declineMessage, setDeclineMessage] = useState("");
   const [usersWithMessages, setUsersWithMessages] = useState([]);
+  const location = useLocation();
 
   useEffect(() => {
     const fetchUsersWithMessages = async () => {
@@ -652,10 +653,13 @@ const SellerList = ({ getInactive, getNotApproved, getNotCompleted, getDeleted }
 
     try {
       setMailLoading(true);  // <-- START LOADING
+      const lastParam = location.pathname.split('/').pop();
 
       const res = await axios.post(`${API_BASE_URL}/sellers/send-mail`, {
         ids,
         template_id: selectedTemplate,
+        lastParam: lastParam,
+        is_seller_direct: 1,
       });
 
       showNotification(res.data.message, "success");

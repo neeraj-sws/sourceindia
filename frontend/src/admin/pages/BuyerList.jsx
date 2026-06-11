@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
@@ -71,6 +71,9 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
   const [sourcingData, setSourcingData] = useState([]);
   const [sourcingLoading, setSourcingLoading] = useState(false);
   const [sourcingError, setSourcingError] = useState("");
+
+  const location = useLocation();
+
 
   const handleShowSourcingInterests = async (userId) => {
     setSourcingLoading(true);
@@ -434,10 +437,13 @@ const BuyerList = ({ getInactive, getNotApproved, getDeleted }) => {
 
     try {
       setMailLoading(true);  // <-- START LOADING
+      const lastParam = location.pathname.split('/').pop();
 
       const res = await axios.post(`${API_BASE_URL}/sellers/send-mail`, {
         ids,
         template_id: selectedTemplate,
+        is_seller_direct: 0,
+        lastParam: lastParam,
       });
 
       showNotification(res.data.message, "success");

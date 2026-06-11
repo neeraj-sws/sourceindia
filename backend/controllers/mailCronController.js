@@ -9,9 +9,25 @@ const SellerMailHistories = require('../models/SellerMailHistories');
 const Emails = require('../models/Emails');
 const { getTransporter, sendMail } = require('../helpers/mailHelper');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+
+const getTrackingBaseUrl = () => {
+  const root = (process.env.ROOT_URL || process.env.APP_URL || 'http://localhost:5000').replace(/\/$/, '');
+  const apiBasePath = (process.env.API_BASE_PATH || '/v2').trim();
+  if (!apiBasePath || apiBasePath === '/') return root;
+  const normalizedApiBasePath = apiBasePath.startsWith('/') ? apiBasePath : `/${apiBasePath}`;
+  return root.endsWith(normalizedApiBasePath) ? root : `${root}${normalizedApiBasePath}`;
+};
+
+const appendTrackingPixel = (html, token) => {
+  if (!html || !token) return html || '';
+  const trackingUrl = `${getTrackingBaseUrl()}/api/seller_mail_histories/track-open/${encodeURIComponent(token)}`;
+  const pixelTag = `<img src="${trackingUrl}" width="1" height="1" style="display:none;" alt="" />`;
+  return `${html}${pixelTag}`;
+};
 
 
-exports.sendMail = async (req, res) => {
+exports.sendMailold = async (req, res) => {
   try {
 
 
@@ -56,14 +72,28 @@ exports.sendMail = async (req, res) => {
 
         const APP_URL = process.env.APP_URL;
 
-        const msgStr = template.message.toString('utf8');
+        const msgStr = template.message.toString("utf8");
+        const openToken = seller.open_token || crypto.randomBytes(24).toString('hex');
+        if (!seller.open_token) {
+          await SellerMailHistories.update(
+            { open_token: openToken },
+            {
+              where: {
+                seller_mail_history_id: seller.seller_mail_history_id
+              }
+            }
+          );
+        }
 
-        let userMessage = msgStr
-          .replace("{{ USER_NAME }}", `${seller.fname} ${seller.lname}`)
-          .replace("{{ USER_EMAIL }}", seller.mail)
-          .replace("{{ USER_PASSWORD }}", seller.real_password)
-          .replace("{{ APP_URL }}", APP_URL)
-          .replace("{{ VERIFICATION_LINK }}", verification_link);
+        const userMessage = appendTrackingPixel(
+          msgStr
+            .replace("{{ USER_NAME }}", `${seller.fname || ""} ${seller.lname || ""}`)
+            .replace("{{ USER_EMAIL }}", seller.email || "")
+            .replace("{{ USER_PASSWORD }}", seller.real_password || "")
+            .replace("{{ APP_URL }}", APP_URL)
+            .replace("{{ VERIFICATION_LINK }}", verification_link),
+          openToken
+        );
 
 
         // Send Mail via centralized helper
@@ -94,3 +124,173 @@ exports.sendMail = async (req, res) => {
   }
 };
 
+
+exports.sendMail = async (req, res) => {
+  try {
+
+    const sellers = await sequelize.query(`
+      SELECT smh.*, u.*
+      FROM seller_mail_histories smh
+      LEFT JOIN users u ON u.user_id = smh.user_id
+      WHERE smh.status = 1
+        AND smh.is_sent = 0
+        AND smh.is_failed = 0
+        `, {
+      type: sequelize.QueryTypes.SELECT
+    });
+
+
+    if (sellers.length === 0) {
+      return res.json({
+        status: true,
+        message: "No pending emails"
+      });
+    }
+
+    for (const seller of sellers) {
+
+      console.log("--------------------------------");
+      console.log("Processing User:", seller.user_id);
+      console.log("Email:", seller.email || seller.email);
+
+      try {
+
+        console.log("Finding Template:", seller.email_id);
+
+        const template = await Emails.findOne({
+          where: {
+            id: seller.email_id,
+            is_seller_direct: 1
+          }
+        });
+
+        console.log("Template Result:", template ? "FOUND" : "NOT FOUND");
+
+        if (!template) {
+
+          await SellerMailHistories.update(
+            {
+              is_sent: 0,
+              is_failed: 1,
+              updated_at: new Date()
+            },
+            {
+              where: {
+                seller_mail_history_id: seller.seller_mail_history_id
+              }
+            }
+          );
+
+          console.log("Template Missing -> Marked Failed");
+
+          continue;
+        }
+
+        const APP_URL = process.env.APP_URL;
+
+        const verification_link = `
+          <a href="${APP_URL}">
+            Click and Login Account
+          </a>
+        `;
+
+        console.log("Building Email Body");
+
+        const msgStr = template.message.toString("utf8");
+
+        const openToken = seller.open_token || crypto.randomBytes(24).toString('hex');
+        if (!seller.open_token) {
+          await SellerMailHistories.update(
+            { open_token: openToken },
+            {
+              where: {
+                seller_mail_history_id: seller.seller_mail_history_id
+              }
+            }
+          );
+        }
+
+        const userMessage = appendTrackingPixel(
+          msgStr
+            .replace("{{ USER_NAME }}", `${seller.fname || ""} ${seller.lname || ""}`)
+            .replace("{{ USER_EMAIL }}", seller.email || "")
+            .replace("{{ USER_PASSWORD }}", seller.real_password || "")
+            .replace("{{ APP_URL }}", APP_URL)
+            .replace("{{ VERIFICATION_LINK }}", verification_link),
+          openToken
+        );
+
+        console.log("Sending Email To:", seller.email || seller.email);
+
+        await sendMail({
+          to: seller.email || seller.email,
+          subject: template.subject,
+          message: userMessage
+        });
+
+        console.log("Email Sent Successfully");
+
+        const updateResult = await SellerMailHistories.update(
+          {
+            is_sent: 1,
+            is_failed: 0,
+            updated_at: new Date()
+          },
+          {
+            where: {
+              seller_mail_history_id: seller.seller_mail_history_id
+            }
+          }
+        );
+
+        console.log("History Updated:", updateResult);
+
+      } catch (err) {
+
+
+        if (err.parent) {
+          console.log("SQL MESSAGE:", err.parent.sqlMessage);
+          console.log("SQL CODE:", err.parent.code);
+        }
+
+        await SellerMailHistories.update(
+          {
+            is_sent: 0,
+            is_failed: 1,
+            updated_at: new Date()
+          },
+          {
+            where: {
+              seller_mail_history_id: seller.seller_mail_history_id
+            }
+          }
+        );
+
+      }
+    }
+
+    console.log("===== EMAIL PROCESS COMPLETED =====");
+
+    return res.json({
+      status: true,
+      message: "Batch processed successfully!"
+    });
+
+  } catch (error) {
+
+    console.log("===== OUTER ERROR =====");
+    console.log("MESSAGE:", error.message);
+    console.log("STACK:", error.stack);
+
+    if (error.parent) {
+      console.log("SQL MESSAGE:", error.parent.sqlMessage);
+      console.log("SQL CODE:", error.parent.code);
+      console.log("SQL:", error.sql);
+    }
+
+    return res.status(500).json({
+      status: false,
+      message: error.message
+    });
+  }
+};
