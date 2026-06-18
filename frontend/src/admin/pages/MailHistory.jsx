@@ -284,11 +284,18 @@ const MailHistory = ({ getDeleted }) => {
     if (!rawTemplate) return "";
 
     const userName = escapeHtml(previewRow?.user_name || "-");
-    const userEmail = escapeHtml(previewRow?.user_email || previewRow?.mail || "-");
+    const userEmail = escapeHtml(previewRow?.user_email || previewRow?.email || "-");
+    const userPassword = escapeHtml(
+      previewRow?.real_password ||
+      "-"
+    );
+    const loginUrl = escapeHtml(`${window.location.origin}/login`);
 
     return rawTemplate
       .replace(/\{\{\s*USER_NAME\s*\}\}/gi, userName)
-      .replace(/\{\{\s*USER_EMAIL\s*\}\}/gi, userEmail);
+      .replace(/\{\{\s*USER_EMAIL\s*\}\}/gi, userEmail)
+      .replace(/\{\{\s*USER_PASSWORD\s*\}\}/gi, userPassword)
+      .replace(/\{\{\s*LOGIN_URL\s*\}\}/gi, loginUrl);
   };
 
   const pageSummary = useMemo(() => {
@@ -309,6 +316,13 @@ const MailHistory = ({ getDeleted }) => {
 
   const counterCards = [
     {
+      key: "total",
+      label: "Total",
+      value: pageSummary.total,
+      cardClass: "border-info-subtle bg-info-subtle",
+      iconClass: "bx bx-bar-chart-alt-2 text-info",
+    },
+    {
       key: "pending",
       label: "Pending",
       value: pageSummary.pending,
@@ -323,17 +337,10 @@ const MailHistory = ({ getDeleted }) => {
       iconClass: "bx bx-check-circle text-success",
     },
     {
-      key: "failed",
-      label: "Failed",
-      value: pageSummary.failed,
-      cardClass: "border-danger-subtle bg-danger-subtle",
-      iconClass: "bx bx-error-circle text-danger",
-    },
-    {
       key: "opened",
       label: "Opened",
       value: pageSummary.opened,
-      cardClass: "border-success-subtle bg-success-subtle",
+      cardClass: "border-success-subtle bg-secondary-subtledark",
       iconClass: "bx bx-envelope-open text-success",
     },
     {
@@ -344,12 +351,14 @@ const MailHistory = ({ getDeleted }) => {
       iconClass: "bx bx-envelope text-secondary",
     },
     {
-      key: "total",
-      label: "Total",
-      value: pageSummary.total,
-      cardClass: "border-info-subtle bg-info-subtle",
-      iconClass: "bx bx-bar-chart-alt-2 text-info",
+      key: "failed",
+      label: "Failed",
+      value: pageSummary.failed,
+      cardClass: "border-danger-subtle bg-danger-subtle",
+      iconClass: "bx bx-error-circle text-danger",
     },
+
+
   ];
 
   return (
@@ -379,7 +388,7 @@ const MailHistory = ({ getDeleted }) => {
 
           <div className="row g-3 mb-4">
             {counterCards.map((card) => (
-              <div className="col-12 col-sm-6 col-lg-3" key={card.key}>
+              <div className="col-12 col-sm-6 col-lg-2" key={card.key}>
                 <div className={`border rounded-3 p-3 h-100 shadow-sm ${card.cardClass}`}>
                   <div className="d-flex align-items-center justify-content-between mb-2">
                     <span className="small text-muted fw-semibold">{card.label}</span>
@@ -388,7 +397,7 @@ const MailHistory = ({ getDeleted }) => {
                     </span>
                   </div>
                   <div className="d-flex align-items-end justify-content-between">
-                    <div className="fw-bold" style={{ fontSize: "1.65rem", lineHeight: 1 }}>
+                    <div className="fw-bold" style={{ fontSize: "1.20rem", lineHeight: 1 }}>
                       {card.value}
                     </div>
 
@@ -468,6 +477,7 @@ const MailHistory = ({ getDeleted }) => {
 
                   { key: "pending_count", label: "Pending", sortable: true },
                   { key: "success_count", label: "Success", sortable: true },
+                  { key: "opened_count", label: "Opened", sortable: true },
                   { key: "failed_count", label: "Failed", sortable: true },
                   { key: "created_at", label: "Created At", sortable: true },
                   { key: "action", label: "Action", sortable: false },
@@ -502,6 +512,7 @@ const MailHistory = ({ getDeleted }) => {
                     <td>{renderCountBadge(row.total_mail_histories, "bg-info-subtle text-info")}</td>
                     <td>{renderCountBadge(row.pending_count, "bg-warning-subtle text-warning")}</td>
                     <td>{renderCountBadge(row.success_count, "bg-success-subtle text-success")}</td>
+                    <td>{renderCountBadge(row.opened_count, "bg-secondary-subtle text-secondary")}</td>
                     <td>{renderCountBadge(row.failed_count, "bg-danger-subtle text-danger")}</td>
 
                     <td>{formatDateTime(row.created_at)}</td>
@@ -564,12 +575,6 @@ const MailHistory = ({ getDeleted }) => {
             <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
               <div className="modal-content">
                 <div className="modal-header">
-                  <div>
-                    <h5 className="modal-title mb-1">Template Preview</h5>
-                    <small className="text-muted d-none">
-                      {previewData?.title || previewData?.subject || formatMailHistoryListLabel(previewSummary?.mail_master_list)}
-                    </small>
-                  </div>
                   <button type="button" className="btn-close" onClick={closePreviewModal} />
                 </div>
                 <div className="modal-body">
@@ -611,15 +616,35 @@ const MailHistory = ({ getDeleted }) => {
                     </div>
 
                     <div className="col-lg-12">
-                      <div className="border rounded-3 p-3 h-100">
-                        <h6 className="mb-3">Template Body</h6>
-                        {previewLoading ? (
-                          <div className="py-5 text-center text-muted">Loading template preview...</div>
-                        ) : previewData?.message ? (
-                          <div className="preview-email-body" dangerouslySetInnerHTML={{ __html: getRenderedPreviewTemplateBody() }} />
-                        ) : (
-                          <div className="py-5 text-center text-muted">No template content found.</div>
-                        )}
+                      <div className="border rounded-3 p-3 h-100 bg-light">
+                        <div className="mx-auto bg-white border rounded-4 shadow-sm overflow-hidden" style={{ maxWidth: "760px" }}>
+                          <div className="border-bottom px-4 py-3 bg-white">
+
+                            <h6 className="mb-1">
+                              {previewData?.subject || previewData?.title || formatMailHistoryListLabel(previewSummary?.mail_master_list)}
+                            </h6>
+                            <div className="small text-muted">
+                              {previewRow?.user_name || previewRow?.user_email || previewRow?.mail ? (
+                                <>
+                                  To: {previewRow?.user_name || "-"} {previewRow?.user_email || previewRow?.mail ? `(${previewRow?.user_email || previewRow?.mail})` : ""}
+                                </>
+                              ) : (
+                                ""
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="px-4 py-4 preview-email-body" style={{ color: "#212529", lineHeight: 1.65 }}>
+                            <h6 className="mb-3 d-none">Template Body</h6>
+                            {previewLoading ? (
+                              <div className="py-5 text-center text-muted">Loading template preview...</div>
+                            ) : previewData?.message ? (
+                              <div className="preview-email-body" dangerouslySetInnerHTML={{ __html: getRenderedPreviewTemplateBody() }} />
+                            ) : (
+                              <div className="py-5 text-center text-muted">No template content found.</div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

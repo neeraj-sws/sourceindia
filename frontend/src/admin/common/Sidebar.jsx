@@ -150,6 +150,12 @@ const menuData = [
     link: '/admin/contacts-list',
   },
   {
+    key: 'mail_history',
+    title: 'Mail History',
+    icon: 'bx bx-envelope',
+    link: '/admin/mail_history',
+  },
+  {
     key: 'newsletters_list',
     title: 'Email Circular',
     icon: 'bx bx-envelope',
@@ -233,7 +239,6 @@ const menuData = [
       { title: 'Seller Categories Graph', link: '/admin/seller_category_graph' },
       { title: 'Product Categories Graph', link: '/admin/product_category_graph' },
       { title: 'Sourcing Interest Graph', link: '/admin/sourcing_interest_graph' },
-      { title: 'Mail History', link: '/admin/mail_history' },
     ],
   },
 ];

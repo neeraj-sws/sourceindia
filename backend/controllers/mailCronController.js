@@ -26,6 +26,25 @@ const appendTrackingPixel = (html, token) => {
   return `${html}${pixelTag}`;
 };
 
+const getMailFailureReason = (err) => {
+  // Build a concise server-side reason (SMTP/auth/network/db) for storing in DB.
+  const parts = [];
+
+  if (err?.response) parts.push(`SMTP response: ${err.response}`);
+  if (err?.responseCode) parts.push(`SMTP code: ${err.responseCode}`);
+  if (err?.code) parts.push(`Error code: ${err.code}`);
+  if (err?.command) parts.push(`SMTP command: ${err.command}`);
+  if (err?.errno) parts.push(`Errno: ${err.errno}`);
+  if (err?.parent?.sqlMessage) parts.push(`SQL: ${err.parent.sqlMessage}`);
+  if (err?.message) parts.push(`Message: ${err.message}`);
+
+  const reason = parts.join(" | ");
+  if (!reason) return "Mail send failed due to unknown server error";
+
+  // Keep reason bounded in case DB column is VARCHAR(255).
+  return reason.length > 500 ? `${reason.slice(0, 497)}...` : reason;
+};
+
 
 exports.sendMailold = async (req, res) => {
   try {
@@ -147,6 +166,9 @@ exports.sendMail = async (req, res) => {
       });
     }
 
+    const failedMails = [];
+    let sentCount = 0;
+
     for (const seller of sellers) {
 
       console.log("--------------------------------");
@@ -168,10 +190,13 @@ exports.sendMail = async (req, res) => {
 
         if (!template) {
 
+          const templateReason = "Template not found for this email_id";
+
           await SellerMailHistories.update(
             {
               is_sent: 0,
               is_failed: 1,
+              reason: templateReason,
               updated_at: new Date()
             },
             {
@@ -182,6 +207,13 @@ exports.sendMail = async (req, res) => {
           );
 
           console.log("Template Missing -> Marked Failed");
+
+          failedMails.push({
+            seller_mail_history_id: seller.seller_mail_history_id,
+            user_id: seller.user_id,
+            email: seller.email || null,
+            reason: templateReason
+          });
 
           continue;
         }
@@ -234,6 +266,7 @@ exports.sendMail = async (req, res) => {
           {
             is_sent: 1,
             is_failed: 0,
+            reason: null,
             updated_at: new Date()
           },
           {
@@ -244,8 +277,11 @@ exports.sendMail = async (req, res) => {
         );
 
         console.log("History Updated:", updateResult);
+        sentCount += 1;
 
       } catch (err) {
+
+        const failureReason = getMailFailureReason(err);
 
 
         if (err.parent) {
@@ -253,10 +289,13 @@ exports.sendMail = async (req, res) => {
           console.log("SQL CODE:", err.parent.code);
         }
 
+        console.log("MAIL SEND ERROR:", failureReason);
+
         await SellerMailHistories.update(
           {
             is_sent: 0,
             is_failed: 1,
+            reason: failureReason,
             updated_at: new Date()
           },
           {
@@ -266,14 +305,31 @@ exports.sendMail = async (req, res) => {
           }
         );
 
+        failedMails.push({
+          seller_mail_history_id: seller.seller_mail_history_id,
+          user_id: seller.user_id,
+          email: seller.email || null,
+          reason: failureReason
+        });
+
       }
     }
 
     console.log("===== EMAIL PROCESS COMPLETED =====");
 
+    const failedCount = failedMails.length;
+    const totalCount = sellers.length;
+    const success = failedCount === 0;
+
     return res.json({
-      status: true,
-      message: "Batch processed successfully!"
+      status: success,
+      message: success ? "Batch processed successfully!" : "Batch processed with failures",
+      summary: {
+        total: totalCount,
+        sent: sentCount,
+        failed: failedCount
+      },
+      failures: failedMails
     });
 
   } catch (error) {

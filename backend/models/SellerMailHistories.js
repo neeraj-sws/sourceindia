@@ -37,6 +37,7 @@ const SellerMailHistories = sequelize.define('SellerMailHistories', {
   state: { type: DataTypes.STRING, allowNull: true },
   country: { type: DataTypes.STRING, allowNull: true },
   location: { type: DataTypes.TEXT, allowNull: true },
+  reason: { type: DataTypes.TEXT, allowNull: true },
   status: { type: DataTypes.INTEGER, allowNull: true },
   is_delete: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
 }, {

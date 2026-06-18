@@ -561,6 +561,53 @@ exports.resendSellerMailHistory = async (req, res) => {
   }
 };
 
+exports.bulkResendFailedByMailCode = async (req, res) => {
+  try {
+    const mailCode = decodeURIComponent((req.params.mailCode || '').trim());
+    if (!mailCode) {
+      return res.status(400).json({ message: 'Invalid mail code.' });
+    }
+
+    const [affectedCount] = await SellerMailHistories.update(
+      {
+        is_sent: 0,
+        is_failed: 0,
+        status: 1,
+        reason: null,
+        updated_at: new Date()
+      },
+      {
+        where: {
+          mail_code: mailCode,
+          is_failed: 1,
+          is_delete: 0
+        }
+      }
+    );
+
+    if (!affectedCount) {
+      return res.status(404).json({
+        status: false,
+        message: 'No failed records found for this mail code.'
+      });
+    }
+
+    return res.json({
+      status: true,
+      message: `${affectedCount} failed records moved to pending.`,
+      updatedCount: affectedCount,
+      mailCode
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      status: false,
+      message: 'Failed to process bulk resend request.',
+      error: err.message
+    });
+  }
+};
+
 exports.trackSellerMailOpen = async (req, res) => {
   try {
     const token = decodeURIComponent((req.params.token || '').trim());
@@ -601,8 +648,13 @@ exports.getSellerMailHistoryDetails = async (req, res) => {
       limit = 25,
       search = '',
       sortBy = 'id',
-      sort = 'DESC'
+      sort = 'DESC',
+      statusFilter = 'all'
     } = req.query;
+
+    const normalizedStatusFilter = String(
+      statusFilter || req.query.status || 'all'
+    ).toLowerCase();
 
     const mailCode = decodeURIComponent((req.params.mailCode || '').trim());
     if (!mailCode) {
@@ -638,6 +690,7 @@ exports.getSellerMailHistoryDetails = async (req, res) => {
       mailCode,
       isDeletedFilter,
       search: `%${search || ''}%`,
+      statusFilter: normalizedStatusFilter,
       limitValue,
       offset
     };
@@ -654,6 +707,8 @@ exports.getSellerMailHistoryDetails = async (req, res) => {
         SUM(CASE WHEN smh.is_sent = 0 AND smh.is_failed = 0 AND smh.status = 1 THEN 1 ELSE 0 END) AS pending_count,
         SUM(CASE WHEN smh.is_sent = 1 THEN 1 ELSE 0 END) AS success_count,
         SUM(CASE WHEN smh.is_failed = 1 THEN 1 ELSE 0 END) AS failed_count,
+        SUM(CASE WHEN smh.is_open = 1 THEN 1 ELSE 0 END) AS opened_count,
+        SUM(CASE WHEN smh.is_open = 0 THEN 1 ELSE 0 END) AS not_opened_count,
         COUNT(smh.seller_mail_history_id) AS total_mail_histories
       FROM seller_mail_histories smh
       LEFT JOIN mail_master mm ON mm.code = smh.mail_code
@@ -675,6 +730,12 @@ exports.getSellerMailHistoryDetails = async (req, res) => {
     const detailFilterSql = `
       smh.mail_code = :mailCode
       AND smh.is_delete = :isDeletedFilter
+      AND (
+        :statusFilter = 'all'
+        OR (:statusFilter = 'pending' AND smh.is_sent = 0 AND smh.is_failed = 0 AND smh.status = 1)
+        OR (:statusFilter = 'success' AND smh.is_sent = 1)
+        OR (:statusFilter = 'failed' AND smh.is_failed = 1)
+      )
       AND (
         CONCAT(COALESCE(u.fname, ''), ' ', COALESCE(u.lname, '')) LIKE :search
         OR COALESCE(u.email, '') LIKE :search
@@ -760,6 +821,8 @@ exports.getSellerMailHistoryDetails = async (req, res) => {
         pending_count: Number(summary.pending_count || 0),
         success_count: Number(summary.success_count || 0),
         failed_count: Number(summary.failed_count || 0),
+        opened_count: Number(summary.opened_count || 0),
+        not_opened_count: Number(summary.not_opened_count || 0),
         total_mail_histories: Number(summary.total_mail_histories || 0),
         created_at: summary.created_at,
         updated_at: summary.updated_at

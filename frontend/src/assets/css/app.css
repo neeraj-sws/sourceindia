@@ -760,9 +760,11 @@ a {
 .font-14 {
 	font-size: 14px
 }
+
 .font-16 {
 	font-size: 16px
 }
+
 .font-18 {
 	font-size: 18px
 }
@@ -3298,4 +3300,8 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 .scrollable {
 	max-height: 400px;
 	overflow-y: scroll;
+}
+
+.bg-secondary-subtledark {
+	background-color: #9ade96;
 }
