@@ -3,11 +3,12 @@ const { Op, fn, col } = Sequelize;
 const FrontMenu = require('../models/FrontMenu');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
-const { ItemCategory, ItemSubCategory, Products } = require('../models');
+const { ItemCategory, ItemSubCategory } = require('../models');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const SellerCategory = require('../models/SellerCategory');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
+const { fetchWeightedProductKeywordSuggestions } = require('../utils/productSuggest');
 
 exports.createFrontMenu = async (req, res) => {
   try {
@@ -20,114 +21,24 @@ exports.createFrontMenu = async (req, res) => {
 };
 
 const searchProducts = async (q, type) => {
-  /* -------------------------------
-   1️⃣ PRODUCT NAME MATCH (MAX 3)
-  --------------------------------*/
-  const productMatches = await Products.findAll({
-    where: {
-      title: { [Op.like]: `%${q}%` },
-      is_approve: 1,
-      status: 1,
-      is_delete: 0,
-    },
-    attributes: [
-      "id",
-      ["title", "name"],
-      "slug",
-    ],
-    limit: 3,
-    raw: true,
+  const { suggestions } = await fetchWeightedProductKeywordSuggestions({
+    query: q,
+    only_with_products: true,
+    header_strict: true,
+    limit: 6,
   });
-
-  const excludeIds = productMatches.map((p) => p.id);
-
-  /* -------------------------------
-   2️⃣ UNIQUE CATEGORY MATCH
-  --------------------------------*/
-  const categoryMatches = await ItemCategory.findAll({
-    where: { name: { [Op.like]: `%${q}%` } },
-    include: [
-      {
-        model: Products,
-        as: 'products', // must match the hasMany alias above
-        attributes: [],
-        required: true,
-        where: {
-          status: 1, is_delete: 0,
-          category: { [Op.col]: 'ItemCategory.category_id' },
-          sub_category: { [Op.col]: 'ItemCategory.subcategory_id' }
-        }
-      }
-    ],
-    attributes: ['id', 'name', 'category_id', 'subcategory_id'],
-    group: ['item_category_id'],
-    limit: 5,
-  });
-
-  /* -------------------------------
-   3️⃣ UNIQUE SUBCATEGORY MATCH
-  --------------------------------*/
-  const subCategoryMatches = await ItemSubCategory.findAll({
-    where: { name: { [Op.like]: `%${q}%` } },
-    include: [
-      {
-        model: Products,
-        as: 'products', // must match the hasMany alias above
-        attributes: [],
-        required: true,
-        where: {
-          status: 1, is_delete: 0,
-          category: { [Op.col]: 'ItemSubCategory.category_id' },
-          sub_category: { [Op.col]: 'ItemSubCategory.subcategory_id' },
-          item_category_id: { [Op.col]: 'ItemSubCategory.item_category_id' },
-        }
-      }
-    ],
-    attributes: ['id', 'name', 'category_id', 'subcategory_id', 'item_category_id'],
-    group: ['item_subcategory_id'],
-    limit: 5,
-  });
-
-  return [
-    // 🔹 Products first
-    ...productMatches.map((p) => ({
-      id: p.id,
-      category_id: 0,
-      subcategory_id: 0,
-      item_category_id: 0,
-      item_subcategory_id: 0,
-      name: p.name,
-      slug: p.slug,
-      type: "product",
-      search_type: type,
-    })),
-
-    // 🔹 Categories
-    ...categoryMatches.map((c) => ({
-      id: c.id,
-      category_id: c.category_id,
-      subcategory_id: c.subcategory_id,
-      item_category_id: c.id,
-      item_subcategory_id: 0,
-      name: c.name,
-      type: "category",
-      search_type: type
-    })),
-
-    // 🔹 Subcategories
-    ...subCategoryMatches.map((s) => ({
-      id: s.id,
-      category_id: s.category_id,
-      subcategory_id: s.subcategory_id,
-      item_category_id: s.item_category_id,
-      item_subcategory_id: s.id,
-      name: s.name,
-      type: "subcategory",
-      search_type: type
-    })),
-  ];
+  return suggestions.map((item) => ({
+    id: item.id,
+    keyword_id: item.id,
+    category_id: item.category || 0,
+    subcategory_id: item.sub_category || 0,
+    item_category_id: item.item_category_id || 0,
+    item_subcategory_id: item.item_subcategory_id || 0,
+    name: item.title,
+    type: 'keyword',
+    search_type: type,
+  }));
 };
-
 const searchSellers = async (q, type) => {
 
   const companyMatches = await Users.findAll({
@@ -589,4 +500,5 @@ exports.getFrontMenuCount = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
