@@ -131,7 +131,7 @@ const searchProducts = async (q, type) => {
 const searchSellers = async (q, type) => {
 
   const companyMatches = await Users.findAll({
-    where: { is_seller: 1, status: 1, is_delete: 0 },
+    where: { is_seller: 1, status: 1, is_delete: 0, is_approve: 1 },
     include: [
       {
         model: CompanyInfo,
@@ -154,7 +154,7 @@ const searchSellers = async (q, type) => {
     item_subcategory_id: 0,
     name: u.company_info.organization_name,
     slug: u.company_info.organization_slug,
-    type: "buyer",
+    type: "seller",
     search_type: type
   }));
 
