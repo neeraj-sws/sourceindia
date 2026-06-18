@@ -90,6 +90,20 @@ const FrontHeader = () => {
     return () => clearTimeout(timer);
   }, [searchQuery, searchType]);
 
+  const navigateToSuggestion = (item) => {
+    if (!item?.url) return false;
+
+    setSearchQuery(item.name || "");
+    setShowDropdown(false);
+
+    const url = item.url.includes("?")
+      ? `${item.url}&search=${encodeURIComponent(item.name || "")}`
+      : `${item.url}?search=${encodeURIComponent(item.name || "")}`;
+
+    navigate(url);
+    return true;
+  };
+
   /* ================= SUBMIT ================= */
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -105,6 +119,13 @@ const FrontHeader = () => {
         : searchType === "seller"
           ? "/company-list"
           : "/buyer-list";
+
+    if (searchType === "product" && suggestions.length > 0) {
+      const topSuggestion = suggestions[0];
+      if (navigateToSuggestion(topSuggestion)) {
+        return;
+      }
+    }
 
     navigate(`${path}?search=${encodeURIComponent(searchQuery.trim())}`);
   };
@@ -180,14 +201,7 @@ const FrontHeader = () => {
                       {suggestions.map((item) => (
                         <li
                           key={item.id}
-                          onClick={() => {
-                            setSearchQuery(item.name);
-                            setShowDropdown(false);
-                            const url = item.url.includes("?")
-                              ? `${item.url}&search=${encodeURIComponent(item.name)}`
-                              : `${item.url}?search=${encodeURIComponent(item.name)}`;
-                            navigate(url);
-                          }}
+                          onClick={() => navigateToSuggestion(item)}
                           style={{ cursor: "pointer" }}
                         >
                           <div className="d-flex align-items-center gap-2">
