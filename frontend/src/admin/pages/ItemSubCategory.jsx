@@ -8,13 +8,14 @@ import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import ItemSubCategoryModals from "./modal/ItemSubCategoryModals";
 import ExcelExport from "../common/ExcelExport";
+import { Link, useNavigate } from "react-router-dom";
 const initialForm = { id: null, name: "", category_id: "", subcategory_id: "", item_category_id: "", status: "1", file: null };
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 import { formatDateTime } from '../../utils/formatDate';
 
-const ItemSubCategory = ({ excludeItemSubCategories }) => {
+const ItemSubCategory = ({ getDeleted, excludeItemSubCategories }) => {
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -25,6 +26,7 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -35,7 +37,7 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemSubCategoryToDelete, setItemSubCategoryToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null, field: '', valueKey: '' });
   const [submitting, setSubmitting] = useState(false);
   const [selectedItemSubCategory, setSelectedItemSubCategory] = useState([]);
   const [isBulkDelete, setIsBulkDelete] = useState(false);
@@ -62,7 +64,11 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/item_sub_category/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false' },
+        params: {
+          page, limit, search, sortBy, sort: sortDirection,
+          getDeleted: getDeleted ? 'true' : 'false',
+          excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false'
+        },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -74,7 +80,7 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, excludeItemSubCategories]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, excludeItemSubCategories]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -245,7 +251,12 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
       resetForm();
     } catch (err) {
       console.error(err);
-      showNotification("Failed to save item sub category.", "error");
+      // ✅ Handle unique constraint violation
+      if (err.response?.status === 400 && err.response?.data?.error?.includes('already exists')) {
+        showNotification(err.response.data.error, "error");
+      } else {
+        showNotification("Failed to save item sub category.", "error");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -352,17 +363,27 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
     }
   };
 
-  const openStatusModal = (id, currentStatus) => { setStatusToggleInfo({ id, currentStatus }); setShowStatusModal(true); };
+  const openStatusModal = (id, currentStatus, field = "status", valueKey = "status") => {
+    setStatusToggleInfo({ id, currentStatus, field, valueKey });
+    setShowStatusModal(true);
+  };
 
-  const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null }); };
+  const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
 
   const handleStatusConfirm = async () => {
-    const { id, currentStatus } = statusToggleInfo;
+    const { id, currentStatus, field, valueKey } = statusToggleInfo;
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
-      await axios.patch(`${API_BASE_URL}/item_sub_category/${id}/status`, { status: newStatus });
-      setData(data?.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
-      showNotification("Status updated!", "success");
+      await axios.patch(`${API_BASE_URL}/item_sub_category/${id}/${field}`, { [valueKey]: newStatus });
+      setData(data?.map((d) => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
+      if (field === "delete_status") {
+        setData((prevData) => prevData.filter((item) => item.id !== id));
+        setTotalRecords((prev) => prev - 1);
+        setFilteredRecords((prev) => prev - 1);
+        showNotification(newStatus === 1 ? "Removed from list" : "Restored from deleted", "success");
+      } else {
+        showNotification("Status updated!", "success");
+      }
     } catch (error) {
       console.error("Error updating status:", error);
       showNotification("Failed to update status.", "danger");
@@ -393,11 +414,14 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
     //   setItemSubCategoryData(res.data);
     // });
     axios.get(`${API_BASE_URL}/item_sub_category`, {
-      params: { excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false' }
+      params: {
+        getDeleted: getDeleted ? 'true' : 'false',
+        excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false'
+      }
     }).then((res) => {
       setItemSubCategoryData(res.data);
     });
-  }, []);
+  }, [getDeleted, excludeItemSubCategories]);
 
   const handleDownload = () => {
     if (excelExportRef.current) {
@@ -410,19 +434,30 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
       <div className={excludeItemSubCategories ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
           {!excludeItemSubCategories &&
-            <Breadcrumb mainhead="Item Sub Category" maincount={totalRecords} page="Category Master" title="Item Sub Category" add_button={<><i className="bx bxs-plus-square me-1" /> Add Item Sub Category</>} add_link="#" onClick={() => openForm()}
+            <Breadcrumb mainhead="Item Sub Category" maincount={totalRecords} page="Category Master" title={getDeleted ? "Recently Deleted Item Sub Category" : "Item Sub Category"} add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Item Sub Category</>)} add_link="#" onClick={() => openForm()}
               actions={
                 <>
                   <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-                  <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItemSubCategory.length === 0}>
-                    <i className="bx bx-trash me-1" /> Delete Selected
-                  </button>
+                  {!getDeleted ? (
+                    <>
+                      <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItemSubCategory.length === 0}>
+                        <i className="bx bx-trash me-1" /> Delete Selected
+                      </button>
+                      <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/item-sub-category-remove-list">
+                        Recently Deleted Item Sub Category
+                      </Link>
+                    </>
+                  ) : (
+                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                      Back
+                    </button>
+                  )}
                 </>
               }
             />
           }
           <div className="row">
-            {!excludeItemSubCategories && (
+            {!getDeleted && !excludeItemSubCategories && (
               <div className="col-md-4">
                 <div className="card">
                   <div className="card-body">
@@ -559,7 +594,7 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
                 </div>
               </div>
             )}
-            <div className={!excludeItemSubCategories ? "col-md-8" : "col-md-12"}>
+            <div className={!getDeleted && !excludeItemSubCategories ? "col-md-8" : "col-md-12"}>
               {excludeItemSubCategories && (
                 <div className="card mb-3">
                   <div className="card-body">
@@ -570,11 +605,18 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
                   </div>
                 </div>
               )}
+              {getDeleted && (
+                <div className="card mb-3">
+                  <div className="card-body">
+                    <h5 className="card-title mb-0">Recently Deleted Item Sub Category List</h5>
+                  </div>
+                </div>
+              )}
               <div className="card">
                 <div className="card-body">
                   <DataTable
                     columns={[
-                      ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
+                      ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
@@ -600,9 +642,11 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
                       <tr key={row.id}>
-                        <td>
-                          <input type="checkbox" checked={selectedItemSubCategory.includes(row.id)} onChange={() => handleSelectItemSubCategory(row.id)} />
-                        </td>
+                        {!getDeleted && (
+                          <td>
+                            <input type="checkbox" checked={selectedItemSubCategory.includes(row.id)} onChange={() => handleSelectItemSubCategory(row.id)} />
+                          </td>
+                        )}
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td><ImageWithFallback
                           src={`${ROOT_URL}/${row.file_name}`}
@@ -615,16 +659,20 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
                         {!excludeItemSubCategories && (
                           <>
                             <td>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input"
-                                  type="checkbox"
-                                  id={`statusSwitch_${row.id}`}
-                                  checked={row.status == 1}
-                                  onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                                  readOnly
-                                />
-                              </div>
+                              {!getDeleted ? (
+                                <div className="form-check form-switch">
+                                  <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    id={`statusSwitch_${row.id}`}
+                                    checked={row.status == 1}
+                                    onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                                    readOnly
+                                  />
+                                </div>
+                              ) : (
+                                row.status == 1 ? (<span className="badge bg-success">Active</span>) : (<span className="badge bg-danger">Inactive</span>)
+                              )}
                             </td>
                             <td>
                               <div className="dropdown">
@@ -632,16 +680,43 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
                                   <i className="bx bx-dots-vertical-rounded"></i>
                                 </button>
                                 <ul className="dropdown-menu">
-                                  <li>
-                                    <button className="dropdown-item" onClick={() => openForm(row)}>
-                                      <i className="bx bx-edit me-2"></i> Edit
-                                    </button>
-                                  </li>
-                                  <li>
-                                    <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                      <i className="bx bx-trash me-2"></i> Delete
-                                    </button>
-                                  </li>
+                                  {!getDeleted ? (
+                                    <>
+                                      <li>
+                                        <button className="dropdown-item" onClick={() => openForm(row)}>
+                                          <i className="bx bx-edit me-2"></i> Edit
+                                        </button>
+                                      </li>
+                                      <li>
+                                        <button className="dropdown-item text-danger"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                          }}
+                                        >
+                                          <i className="bx bx-trash me-2"></i> Delete
+                                        </button>
+                                      </li>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <li>
+                                        <button className="dropdown-item"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                          }}
+                                        >
+                                          <i className="bx bx-windows me-2"></i> Restore
+                                        </button>
+                                      </li>
+                                      <li>
+                                        <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                          <i className="bx bx-trash me-2"></i> Delete
+                                        </button>
+                                      </li>
+                                    </>
+                                  )}
                                 </ul>
                               </div>
                             </td>
@@ -675,7 +750,7 @@ const ItemSubCategory = ({ excludeItemSubCategories }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName={excludeItemSubCategories ? "Unused Item SubCategory.xlsx" : "Item SubCategory Export.xlsx"}
+        fileName={getDeleted ? "Recently Deleted Item SubCategory.xlsx" : excludeItemSubCategories ? "Unused Item SubCategory.xlsx" : "Item SubCategory Export.xlsx"}
         data={itemSubCategoryData}
         columns={[
           { label: "Name", key: "name" },

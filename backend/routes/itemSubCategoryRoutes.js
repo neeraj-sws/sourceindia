@@ -25,5 +25,6 @@ router.get('/:id', itemSubCategoryController.getItemSubCategoryById);
 router.put('/:id', itemSubCategoryController.updateItemSubCategory);
 router.delete('/:id', itemSubCategoryController.deleteItemSubCategory);
 router.patch('/:id/status', itemSubCategoryController.updateItemSubCategoryStatus);
+router.patch('/:id/delete_status', itemSubCategoryController.updateItemSubCategoryDeleteStatus);
 
 module.exports = router;

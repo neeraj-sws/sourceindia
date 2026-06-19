@@ -179,9 +179,12 @@ function AdminLayout() {
               <Route path="/registrations-remove-list" element={<ProtectedRoute><RegistrationsList getDeleted={true} /></ProtectedRoute>} />
               <Route path="/user_history" element={<ProtectedRoute><UsersHistory /></ProtectedRoute>} />
               <Route path="/item_category" element={<ProtectedRoute><ItemCategory /></ProtectedRoute>} />
+              <Route path="/item-category-remove-list" element={<ProtectedRoute><ItemCategory getDeleted={true} /></ProtectedRoute>} />
               <Route path="/item_sub_category" element={<ProtectedRoute><ItemSubCategory /></ProtectedRoute>} />
+              <Route path="/item-sub-category-remove-list" element={<ProtectedRoute><ItemSubCategory getDeleted={true} /></ProtectedRoute>} />
               <Route path="/product_keywords" element={<ProtectedRoute><ProductKeywords /></ProtectedRoute>} />
               <Route path="/new_items" element={<ProtectedRoute><NewItems /></ProtectedRoute>} />
+              <Route path="/items-remove-list" element={<ProtectedRoute><NewItems getDeleted={true} /></ProtectedRoute>} />
               <Route path="/terms_conditions" element={<ProtectedRoute><PageEdit pageId={9} title="Terms & Conditions" /></ProtectedRoute>} />
               <Route path="/privacy_policy" element={<ProtectedRoute><PageEdit pageId={8} title="Privacy Policy" /></ProtectedRoute>} />
               <Route path="/front_menu" element={<ProtectedRoute><FrontMenu /></ProtectedRoute>} />

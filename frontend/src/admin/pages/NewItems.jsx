@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, Link } from 'react-router-dom';
 import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
@@ -14,7 +15,8 @@ import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 import { formatDateTime } from '../../utils/formatDate';
 
-const NewItems = ({ excludeItem }) => {
+const NewItems = ({ excludeItem, getDeleted }) => {
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -35,7 +37,7 @@ const NewItems = ({ excludeItem }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemsToDelete, setItemsToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null, field: '', valueKey: '' });
   const [submitting, setSubmitting] = useState(false);
   const [selectedItems, setSelectedItems] = useState([]);
   const [isBulkDelete, setIsBulkDelete] = useState(false);
@@ -78,7 +80,7 @@ const NewItems = ({ excludeItem }) => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/items/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, excludeItem: excludeItem ? 'true' : 'false' },
+        params: { page, limit, search, sortBy, sort: sortDirection, excludeItem: excludeItem ? 'true' : 'false', getDeleted: getDeleted ? 'true' : 'false' },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -90,7 +92,7 @@ const NewItems = ({ excludeItem }) => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, excludeItem]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, excludeItem, getDeleted]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -277,7 +279,12 @@ const NewItems = ({ excludeItem }) => {
       resetForm();
     } catch (err) {
       console.error(err);
-      showNotification("Failed to save item sub category.", "error");
+      // ✅ Handle unique constraint violation
+      if (err.response?.status === 400 && err.response?.data?.error?.includes('already exists')) {
+        showNotification(err.response.data.error, "error");
+      } else {
+        showNotification("Failed to save item sub category.", "error");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -386,17 +393,24 @@ const NewItems = ({ excludeItem }) => {
     }
   };
 
-  const openStatusModal = (id, currentStatus) => { setStatusToggleInfo({ id, currentStatus }); setShowStatusModal(true); };
+  const openStatusModal = (id, currentStatus, field = "status", valueKey = "status") => { setStatusToggleInfo({ id, currentStatus, field, valueKey }); setShowStatusModal(true); };
 
-  const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null }); };
+  const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
 
   const handleStatusConfirm = async () => {
-    const { id, currentStatus } = statusToggleInfo;
+    const { id, currentStatus, field, valueKey } = statusToggleInfo;
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
-      await axios.patch(`${API_BASE_URL}/items/${id}/status`, { status: newStatus });
-      setData(data?.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
-      showNotification("Status updated!", "success");
+      await axios.patch(`${API_BASE_URL}/items/${id}/${field}`, { [valueKey]: newStatus });
+      setData(data?.map((d) => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
+      if (field == "delete_status") {
+        setData((prevData) => prevData.filter((item) => item.id !== id));
+        setTotalRecords((prev) => prev - 1);
+        setFilteredRecords((prev) => prev - 1);
+        showNotification(newStatus == 1 ? "Removed from list" : "Restored from deleted", "success");
+      } else {
+        showNotification("Status updated!", "success");
+      }
     } catch (error) {
       console.error("Error updating status:", error);
       showNotification("Failed to update status.", "danger");
@@ -427,11 +441,11 @@ const NewItems = ({ excludeItem }) => {
     //   setItemsData(res.data);
     // });
     axios.get(`${API_BASE_URL}/items`, {
-      params: { excludeItem: excludeItem ? 'true' : 'false' }
+      params: { excludeItem: excludeItem ? 'true' : 'false', getDeleted: getDeleted ? 'true' : 'false' }
     }).then((res) => {
       setItemsData(res.data);
     });
-  }, []);
+  }, [excludeItem, getDeleted]);
 
   const handleDownload = () => {
     if (excelExportRef.current) {
@@ -444,19 +458,30 @@ const NewItems = ({ excludeItem }) => {
       <div className={excludeItem ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
           {!excludeItem &&
-            <Breadcrumb mainhead="Items" maincount={totalRecords} page="Category Master" title="Items" add_button={<><i className="bx bxs-plus-square me-1" /> Add Items</>} add_link="#" onClick={() => openForm()}
+            <Breadcrumb mainhead="Items" maincount={totalRecords} page="Category Master" title={getDeleted ? "Recently Deleted Items" : "Items"} add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Items</>)} add_link="#" onClick={() => openForm()}
               actions={
                 <>
                   <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-                  <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItems.length === 0}>
-                    <i className="bx bx-trash me-1" /> Delete Selected
-                  </button>
+                  {!getDeleted ? (
+                    <>
+                      <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItems.length === 0}>
+                        <i className="bx bx-trash me-1" /> Delete Selected
+                      </button>
+                      <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/items-remove-list">
+                        Recently Deleted Items
+                      </Link>
+                    </>
+                  ) : (
+                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                      Back
+                    </button>
+                  )}
                 </>
               }
             />
           }
           <div className="row">
-            {!excludeItem && (
+            {!excludeItem && !getDeleted && (
               <div className="col-md-4">
                 <div className="card">
                   <div className="card-body">
@@ -616,7 +641,14 @@ const NewItems = ({ excludeItem }) => {
                 </div>
               </div>
             )}
-            <div className={!excludeItem ? "col-md-8" : "col-md-12"}>
+            <div className={!excludeItem && !getDeleted ? "col-md-8" : "col-md-12"}>
+              {getDeleted && (
+                <div className="card mb-3">
+                  <div className="card-body">
+                    <h5 className="card-title mb-0">Recently Deleted Item List</h5>
+                  </div>
+                </div>
+              )}
               {excludeItem && (
                 <div className="card mb-3">
                   <div className="card-body">
@@ -631,7 +663,7 @@ const NewItems = ({ excludeItem }) => {
                 <div className="card-body">
                   <DataTable
                     columns={[
-                      ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
+                      ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
@@ -658,9 +690,11 @@ const NewItems = ({ excludeItem }) => {
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
                       <tr key={row.id}>
-                        <td>
-                          <input type="checkbox" checked={selectedItems.includes(row.id)} onChange={() => handleSelectItems(row.id)} />
-                        </td>
+                        {!getDeleted && (
+                          <td>
+                            <input type="checkbox" checked={selectedItems.includes(row.id)} onChange={() => handleSelectItems(row.id)} />
+                          </td>
+                        )}
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td><ImageWithFallback
                           src={`${ROOT_URL}/${row.file_name}`}
@@ -691,16 +725,43 @@ const NewItems = ({ excludeItem }) => {
                                   <i className="bx bx-dots-vertical-rounded"></i>
                                 </button>
                                 <ul className="dropdown-menu">
-                                  <li>
-                                    <button className="dropdown-item" onClick={() => openForm(row)}>
-                                      <i className="bx bx-edit me-2"></i> Edit
-                                    </button>
-                                  </li>
-                                  <li>
-                                    <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                      <i className="bx bx-trash me-2"></i> Delete
-                                    </button>
-                                  </li>
+                                  {!getDeleted ? (
+                                    <>
+                                      <li>
+                                        <button className="dropdown-item" onClick={() => openForm(row)}>
+                                          <i className="bx bx-edit me-2"></i> Edit
+                                        </button>
+                                      </li>
+                                      <li>
+                                        <button className="dropdown-item text-danger"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                          }}
+                                        >
+                                          <i className="bx bx-trash me-2"></i> Delete
+                                        </button>
+                                      </li>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <li>
+                                        <button className="dropdown-item"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                          }}
+                                        >
+                                          <i className="bx bx-windows me-2"></i> Restore
+                                        </button>
+                                      </li>
+                                      <li>
+                                        <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                          <i className="bx bx-trash me-2"></i> Delete
+                                        </button>
+                                      </li>
+                                    </>
+                                  )}
                                 </ul>
                               </div>
                             </td>
@@ -734,7 +795,7 @@ const NewItems = ({ excludeItem }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName={excludeItem ? "Unused Item.xlsx" : "Item Export.xlsx"}
+        fileName={getDeleted ? "Item Remove Export.xlsx" : excludeItem ? "Unused Item.xlsx" : "Item Export.xlsx"}
         data={itemsData}
         columns={[
           { label: "Name", key: "name" },

@@ -45,11 +45,24 @@ const ItemCategory = sequelize.define('ItemCategory', {
     defaultValue: 1,
     comment: '1 = Active, 0 = Inactive'
   },
+  is_delete: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+  },
 }, {
   tableName: 'item_category',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: 'updated_at',
+  indexes: [
+    {
+      unique: true,
+      fields: ['name'],
+      where: { is_delete: 0 }, // ✅ Only apply unique constraint to active records
+      name: 'uq_item_category_name'
+    }
+  ]
 });
 
 // 🟢 Associations
@@ -86,6 +99,13 @@ ItemCategory.beforeCreate((itemCategory, options) => {
 
 // 🟢 Hook: Auto-update slug if name changes
 ItemCategory.beforeUpdate((itemCategory, options) => {
+  // ✅ When marking as deleted, append -deleted-{id} to name
+  if (itemCategory.changed('is_delete') && itemCategory.is_delete === 1) {
+    if (!itemCategory.name.includes('-deleted-')) {
+      itemCategory.name = `${itemCategory.name}-deleted-${itemCategory.id}`;
+    }
+  }
+
   if (itemCategory.changed('name')) {
     itemCategory.slug = slugify(itemCategory.name, {
       lower: true,

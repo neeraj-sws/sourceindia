@@ -50,7 +50,15 @@ const SubCategories = sequelize.define('SubCategories', {
   tableName: 'sub_categories',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: 'updated_at',
+  indexes: [
+    {
+      unique: true,
+      fields: ['name'],
+      where: { is_delete: 0 }, // ✅ Only apply unique constraint to active records
+      name: 'uq_sub_categories_name'
+    }
+  ]
 });
 
 // 🟢 Relation: SubCategory belongs to Category
@@ -67,9 +75,9 @@ Categories.belongsTo(UploadImage, {
   targetKey: 'id',
   onDelete: 'CASCADE'
 });
-SubCategories.belongsTo(UploadImage, { 
-  foreignKey: 'file_id', 
-  targetKey: 'id', 
+SubCategories.belongsTo(UploadImage, {
+  foreignKey: 'file_id',
+  targetKey: 'id',
   onDelete: 'CASCADE'
 });
 
@@ -86,6 +94,13 @@ SubCategories.beforeCreate((subCategory, options) => {
 
 // 🟢 Hook: Auto-update slug if name changes
 SubCategories.beforeUpdate((subCategory, options) => {
+  // ✅ When marking as deleted, append -deleted-{id} to name
+  if (subCategory.changed('is_delete') && subCategory.is_delete === 1) {
+    if (!subCategory.name.includes('-deleted-')) {
+      subCategory.name = `${subCategory.name}-deleted-${subCategory.id}`;
+    }
+  }
+
   if (subCategory.changed('name')) {
     subCategory.slug = slugify(subCategory.name, {
       lower: true,

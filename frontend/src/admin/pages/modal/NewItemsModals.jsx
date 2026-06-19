@@ -46,11 +46,16 @@ const NewItemsModals = ({
                 <button type="button" className="btn-close" onClick={closeStatusModal} aria-label="Close" ></button>
               </div>
               <div className="modal-body">
-                Are you sure you want to {statusToggleInfo.currentStatus === 1 ? "deactivate" : "activate"} this source items?
+                {
+                  statusToggleInfo.field === "status" ? `Are you sure you want to ${statusToggleInfo.currentStatus === 1 ? "deactivate" : "activate"} this source items` :
+                    statusToggleInfo.field === "delete_status" ? `Are you sure want to ${statusToggleInfo.currentStatus === 1 ? "restore deleted" : "remove from list"}` : "item"
+                }?
               </div>
               <div className="modal-footer justify-content-between">
                 <button type="button" className="btn btn-secondary btn-sm" onClick={closeStatusModal}>Cancel</button>
-                <button type="button" className="btn btn-warning" onClick={handleStatusConfirm}>Yes, Change</button>
+                <button type="button" className="btn btn-warning" onClick={handleStatusConfirm}>
+                  {statusToggleInfo.field === "delete_status" ? statusToggleInfo.currentStatus === 1 ? "Restore" : "Remove" : "Yes, Change"}
+                </button>
               </div>
             </div>
           </div>

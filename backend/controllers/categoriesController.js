@@ -35,6 +35,12 @@ exports.createCategories = async (req, res) => {
       });
       res.status(201).json({ message: 'Categories created', categories });
     } catch (err) {
+      // ✅ Handle unique constraint violation
+      if (err.name === 'SequelizeUniqueConstraintError' || err.errors?.[0]?.validatorKey === 'not_unique') {
+        return res.status(400).json({
+          error: 'Category name already exists. Please use a different name.'
+        });
+      }
       res.status(500).json({ error: err.message });
     }
   });

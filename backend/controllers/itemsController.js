@@ -15,42 +15,48 @@ exports.createItems = async (req, res) => {
   const upload = getMulterUpload('items');
   upload.single('file')(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
-  try {
-    const { name, category_id, subcategory_id, item_category_id, item_sub_category_id, status } = req.body;
-    /*if (!name || !category_id || !subcategory_id || !item_category_id || !item_sub_category_id || status === undefined) {
-      return res.status(400).json({ message: 'All fields (name, category_id, subcategory_id, item_category_id, item_sub_category_id, status) are required' });
-    }*/
-    const uploadImage = await UploadImage.create({
-      file: `upload/items/${req.file.filename}`,
-    });
-    const items = await Items.create({
-      name, category_id, subcategory_id, item_category_id, item_sub_category_id, status, file_id: uploadImage.id,
-    });
-    const category = await Categories.findByPk(category_id);
-    const subCategory = await SubCategories.findByPk(subcategory_id);
-    const itemCategory = await ItemCategory.findByPk(item_category_id);
-    const itemSubCategory = await ItemSubCategory.findByPk(item_sub_category_id);
-    const itemsWithNames = {
-      ...items.toJSON(),
-      category_name: category ? category.name : '',
-      subcategory_name: subCategory ? subCategory.name : '',
-      itemcategory_name: itemCategory ? itemCategory.name : '',
-      item_subcategory_name: itemSubCategory ? itemSubCategory.name : ''
-    };
-    res.status(201).json({
-      message: 'Item created',
-      items: itemsWithNames
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
+    try {
+      const { name, category_id, subcategory_id, item_category_id, item_sub_category_id, status } = req.body;
+      /*if (!name || !category_id || !subcategory_id || !item_category_id || !item_sub_category_id || status === undefined) {
+        return res.status(400).json({ message: 'All fields (name, category_id, subcategory_id, item_category_id, item_sub_category_id, status) are required' });
+      }*/
+      const uploadImage = await UploadImage.create({
+        file: `upload/items/${req.file.filename}`,
+      });
+      const items = await Items.create({
+        name, category_id, subcategory_id, item_category_id, item_sub_category_id, status, file_id: uploadImage.id,
+      });
+      const category = await Categories.findByPk(category_id);
+      const subCategory = await SubCategories.findByPk(subcategory_id);
+      const itemCategory = await ItemCategory.findByPk(item_category_id);
+      const itemSubCategory = await ItemSubCategory.findByPk(item_sub_category_id);
+      const itemsWithNames = {
+        ...items.toJSON(),
+        category_name: category ? category.name : '',
+        subcategory_name: subCategory ? subCategory.name : '',
+        itemcategory_name: itemCategory ? itemCategory.name : '',
+        item_subcategory_name: itemSubCategory ? itemSubCategory.name : ''
+      };
+      res.status(201).json({
+        message: 'Item created',
+        items: itemsWithNames
+      });
+    } catch (err) {
+      console.error(err);
+      // ✅ Handle unique constraint violation
+      if (err.name === 'SequelizeUniqueConstraintError' || err.errors?.[0]?.validatorKey === 'not_unique') {
+        return res.status(400).json({
+          error: 'Item name already exists. Please use a different name.'
+        });
+      }
+      res.status(500).json({ error: err.message });
+    }
   });
 };
 
 exports.getAllItems = async (req, res) => {
   try {
-    const where = {};
+    const where = { is_delete: req.query.getDeleted === 'true' ? 1 : 0 };
 
     // Exclude items linked to products
     if (req.query.excludeItem === 'true') {
@@ -124,11 +130,11 @@ exports.updateItems = async (req, res) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-  try {
-    const { name, category_id, subcategory_id, item_category_id, item_sub_category_id, status } = req.body;
-    const items = await Items.findByPk(req.params.id);
-    if (!items) return res.status(404).json({ message: 'Item not found' });
-    const uploadDir = path.resolve('upload/items');
+    try {
+      const { name, category_id, subcategory_id, item_category_id, item_sub_category_id, status } = req.body;
+      const items = await Items.findByPk(req.params.id);
+      if (!items) return res.status(404).json({ message: 'Item not found' });
+      const uploadDir = path.resolve('upload/items');
       if (!fs.existsSync(uploadDir)) {
         console.log("Directory does not exist, creating:", uploadDir);
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -158,20 +164,20 @@ exports.updateItems = async (req, res) => {
           items.file_id = newImage.id;
         }
       }
-    items.name = name;
-    items.category_id = category_id;
-    items.subcategory_id = subcategory_id;
-    items.item_category_id = item_category_id;
-    items.item_sub_category_id = item_sub_category_id;
-    items.status = status;
-    items.updated_at = new Date();
-    await items.save();
+      items.name = name;
+      items.category_id = category_id;
+      items.subcategory_id = subcategory_id;
+      items.item_category_id = item_category_id;
+      items.item_sub_category_id = item_sub_category_id;
+      items.status = status;
+      items.updated_at = new Date();
+      await items.save();
 
-    res.json({ message: 'Item updated', items });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      res.json({ message: 'Item updated', items });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 };
 
 exports.deleteItems = async (req, res) => {
@@ -181,7 +187,7 @@ exports.deleteItems = async (req, res) => {
     if (items.file_id && items.file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(items.file_id);
       if (uploadImage) {
-        const oldImagePath = path.resolve(uploadImage.file);        
+        const oldImagePath = path.resolve(uploadImage.file);
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }
@@ -204,33 +210,21 @@ exports.deleteSelectedItems = async (req, res) => {
 
     const parsedIds = ids.map(id => parseInt(id, 10));
 
-    // Find all items
     const items = await Items.findAll({
-      where: { id: { [Op.in]: parsedIds } },
+      where: {
+        id: { [Op.in]: parsedIds },
+        is_delete: 0,
+      },
     });
 
     if (items.length === 0) {
       return res.status(404).json({ message: 'No Item found with the given IDs.' });
     }
 
-    // Delete associated files
-    for (const item of items) {
-      if (item.file_id) {
-        const uploadImage = await UploadImage.findByPk(item.file_id);
-        if (uploadImage) {
-          const oldImagePath = path.resolve(uploadImage.file);
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
-          }
-          await uploadImage.destroy();
-        }
-      }
-    }
-
-    // Delete all items
-    await Items.destroy({
-      where: { id: { [Op.in]: parsedIds } },
-    });
+    await Items.update(
+      { is_delete: 1 },
+      { where: { id: { [Op.in]: parsedIds } } }
+    );
 
     res.json({ message: `${items.length} Item(s) deleted successfully.` });
   } catch (err) {
@@ -255,6 +249,22 @@ exports.updateItemsStatus = async (req, res) => {
   }
 };
 
+exports.updateItemsDeleteStatus = async (req, res) => {
+  try {
+    const { is_delete } = req.body;
+    if (is_delete !== 0 && is_delete !== 1) {
+      return res.status(400).json({ message: 'Invalid delete status. Use 1 (Deleted) or 0 (Restored).' });
+    }
+    const items = await Items.findByPk(req.params.id);
+    if (!items) return res.status(404).json({ message: 'Item not found' });
+    items.is_delete = is_delete;
+    await items.save();
+    res.json({ message: 'Item delete status updated', items });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getItemSubCategoriesByCategorySubCategoryItemCategoryItemSubCategory = async (req, res) => {
   try {
     const { category_id, subcategory_id, item_category_id, item_sub_category_id } = req.params;
@@ -264,20 +274,28 @@ exports.getItemSubCategoriesByCategorySubCategoryItemCategoryItemSubCategory = a
       });
     }
     const items = await Items.findAll({
-      where: { category_id, subcategory_id, item_category_id, item_sub_category_id, status: 1 },
+      where: { category_id, subcategory_id, item_category_id, item_sub_category_id, status: 1, is_delete: 0 },
       include: [
-        { model: Categories, as: 'Categories', attributes: ['id', 'name'], where: {
-          status: 1, is_delete: 0,
-        }},
-        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'], where: {
-          status: 1, is_delete: 0,
-        }},
-        { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'], where: {
-          status: 1,
-        }},
-        { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'], where: {
-          status: 1,
-        }},
+        {
+          model: Categories, as: 'Categories', attributes: ['id', 'name'], where: {
+            status: 1, is_delete: 0,
+          }
+        },
+        {
+          model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'], where: {
+            status: 1, is_delete: 0,
+          }
+        },
+        {
+          model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'], where: {
+            status: 1,
+          }
+        },
+        {
+          model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'], where: {
+            status: 1,
+          }
+        },
       ],
       order: [['id', 'ASC']],
     });
@@ -300,7 +318,7 @@ exports.getItemSubCategoriesByCategorySubCategoryItemCategoryItemSubCategoryAll 
       });
     }
     const items = await Items.findAll({
-      where: { category_id, subcategory_id, item_category_id, item_sub_category_id },
+      where: { category_id, subcategory_id, item_category_id, item_sub_category_id, is_delete: 0 },
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
@@ -342,7 +360,8 @@ exports.getItemsBySelectedCategorySubCategoryItemCategoryItemSubCategory = async
         subcategory_id: { [Op.in]: subcategories },
         item_category_id: { [Op.in]: itemCategories },
         item_sub_category_id: { [Op.in]: itemSubCategories },
-        status: 1
+        status: 1,
+        is_delete: 0
       },
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
@@ -361,9 +380,9 @@ exports.getItemsBySelectedCategorySubCategoryItemCategoryItemSubCategory = async
         // is_approve: 1,
         status: 1,
         category: { [Op.in]: categories },
-    sub_category: { [Op.in]: subcategories },
-    item_category_id: { [Op.in]: itemCategories },
-    item_subcategory_id: { [Op.in]: itemSubCategories },
+        sub_category: { [Op.in]: subcategories },
+        item_category_id: { [Op.in]: itemCategories },
+        item_subcategory_id: { [Op.in]: itemSubCategories },
       },
       group: ['item_id'],
       raw: true,
@@ -430,7 +449,7 @@ exports.getAllItemsServerSide = async (req, res) => {
     } else {
       order = [['id', 'DESC']];
     }
-    const where = {};
+    const where = { is_delete: req.query.getDeleted === 'true' ? 1 : 0 };
     if (req.query.excludeItem === 'true') {
       where.id = {
         [Op.notIn]: literal(`(
@@ -476,6 +495,7 @@ exports.getAllItemsServerSide = async (req, res) => {
       item_subcategory_name: row.ItemSubCategory ? row.ItemSubCategory.name : null,
       file_id: row.file_id,
       file_name: row.UploadImage ? row.UploadImage.file : null,
+      is_delete: row.is_delete,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -494,7 +514,7 @@ exports.getItemBarGraph = async (req, res) => {
   try {
     const items = await Items.findAll({
       attributes: ['id', 'name'],
-      where: { status: 1 },
+      where: { status: 1, is_delete: 0 },
       order: [['id', 'ASC']],
       raw: true,
     });
@@ -549,9 +569,9 @@ exports.getAllCatalogCounts = async (req, res) => {
     ] = await Promise.all([
       Categories.count({ where: { is_delete: 0 } }),
       SubCategories.count({ where: { is_delete: 0 } }),
-      ItemCategory.count(),
-      ItemSubCategory.count(),
-      Items.count()
+      ItemCategory.count({ where: { is_delete: 0 } }),
+      ItemSubCategory.count({ where: { is_delete: 0 } }),
+      Items.count({ where: { is_delete: 0 } })
     ]);
 
     res.json({

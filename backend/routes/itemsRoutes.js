@@ -24,5 +24,6 @@ router.get('/:id', itemsController.getItemsById);
 router.put('/:id', itemsController.updateItems);
 router.delete('/:id', itemsController.deleteItems);
 router.patch('/:id/status', itemsController.updateItemsStatus);
+router.patch('/:id/delete_status', itemsController.updateItemsDeleteStatus);
 
 module.exports = router;
