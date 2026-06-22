@@ -24,16 +24,16 @@ const FrontHeader = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [searchFocused, setSearchFocused] = useState(false);
   const location = useLocation();
+  const normalizeSearchValue = (value = "") =>
+    value.toString().replace(/\s+/g, " ").trim();
   // Keep searchQuery in sync with URL ?search= param
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const search = params.get("search");
-    if (search) {
-      setSearchQuery(search);
-    } else {
-      setSearchQuery("");
-    }
-  }, [location.search]);
+    const displaySearch = normalizeSearchValue(
+      location.state?.headerDisplaySearch ?? params.get("search") ?? ""
+    );
+    setSearchQuery(displaySearch);
+  }, [location]);
   /* ================= SITE SETTINGS ================= */
   useEffect(() => {
     if (!loading && siteSettings) {
@@ -68,7 +68,7 @@ const FrontHeader = () => {
 
   /* ================= AUTOCOMPLETE ================= */
   useEffect(() => {
-    if (searchQuery.length < 1) {
+    if (normalizeSearchValue(searchQuery).length < 1) {
       setSuggestions([]);
       setShowDropdown(false);
       return;
@@ -76,8 +76,15 @@ const FrontHeader = () => {
 
     const timer = setTimeout(async () => {
       try {
+        const normalizedQuery = normalizeSearchValue(searchQuery);
+        if (!normalizedQuery) {
+          setSuggestions([]);
+          setShowDropdown(false);
+          return;
+        }
+
         const res = await axios.post(
-          `${API_BASE_URL}/front_menu/main-search?q=${searchQuery}&type=${searchType}`
+          `${API_BASE_URL}/front_menu/main-search?q=${encodeURIComponent(normalizedQuery)}&type=${searchType}`
         );
 
         setSuggestions(res.data || []);
@@ -90,25 +97,34 @@ const FrontHeader = () => {
     return () => clearTimeout(timer);
   }, [searchQuery, searchType]);
 
-  const navigateToSuggestion = (item) => {
+  const navigateToSuggestion = (item, options = {}) => {
     if (!item?.url) return false;
 
-    setSearchQuery(item.name || "");
+    const keywordName = normalizeSearchValue(item.name || "");
+    const searchValue = normalizeSearchValue(options.searchValue ?? item.name ?? "");
+    const displayValue = normalizeSearchValue(options.displayValue ?? item.name ?? "");
+
+    if (!keywordName || !searchValue) return false;
+
+    setSearchQuery(displayValue);
     setShowDropdown(false);
 
     const url = item.url.includes("?")
-      ? `${item.url}&search=${encodeURIComponent(item.name || "")}`
-      : `${item.url}?search=${encodeURIComponent(item.name || "")}`;
+      ? `${item.url}&search=${encodeURIComponent(searchValue)}`
+      : `${item.url}?search=${encodeURIComponent(searchValue)}`;
 
-    navigate(url);
+    navigate(url, {
+      state: { headerDisplaySearch: displayValue }
+    });
     return true;
   };
 
   /* ================= SUBMIT ================= */
   const handleSubmit = (e) => {
     e.preventDefault();
+    const normalizedSearch = normalizeSearchValue(searchQuery);
 
-    if (searchQuery.trim().length < 3) {
+    if (normalizedSearch.length < 3) {
       alert("Enter Product / Service Keyword(s) at least three characters");
       return;
     }
@@ -122,12 +138,17 @@ const FrontHeader = () => {
 
     if (searchType === "product" && suggestions.length > 0) {
       const topSuggestion = suggestions[0];
-      if (navigateToSuggestion(topSuggestion)) {
+      if (navigateToSuggestion(topSuggestion, {
+        searchValue: normalizeSearchValue(topSuggestion.name || ""),
+        displayValue: normalizedSearch,
+      })) {
         return;
       }
     }
 
-    navigate(`${path}?search=${encodeURIComponent(searchQuery.trim())}`);
+    navigate(`${path}?search=${encodeURIComponent(normalizedSearch)}`, {
+      state: { headerDisplaySearch: normalizedSearch }
+    });
   };
 
   const handleLogout = (e) => {
