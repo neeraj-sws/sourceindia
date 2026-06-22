@@ -27,6 +27,12 @@ exports.createSubCategories = async (req, res) => {
       const subCategories = await SubCategories.create({ name, category, status, file_id: uploadImage.id });
       res.status(201).json({ message: 'Sub Category created', subCategories });
     } catch (err) {
+      // ✅ Handle unique constraint violation
+      if (err.name === 'SequelizeUniqueConstraintError' || err.errors?.[0]?.validatorKey === 'not_unique') {
+        return res.status(400).json({
+          error: 'Sub Category name already exists. Please use a different name.'
+        });
+      }
       res.status(500).json({ error: err.message });
     }
   });
@@ -120,7 +126,7 @@ exports.getSubCategoriesByCategory = async (req, res) => {
       return res.status(400).json({ error: 'category is required' });
     }*/
     const interestSubCategories = await SubCategories.findAll({
-      where: { category : category, status: 1, is_delete: 0 },
+      where: { category: category, status: 1, is_delete: 0 },
       order: [['id', 'ASC']],
     });
     res.json(interestSubCategories);
@@ -188,7 +194,7 @@ exports.getSubCategoriesByCategories = async (req, res) => {
 
     // 3. Company counts per subcategory (CSV field logic)
     const companyCountsRaw = await sequelize.query(
-`SELECT 
+      `SELECT 
     sc.subcategory_id,
     COUNT(DISTINCT u.company_id) AS count
  FROM seller_categories sc
@@ -204,15 +210,15 @@ exports.getSubCategoriesByCategories = async (req, res) => {
  WHERE sc.subcategory_id IS NOT NULL
    AND sc.category_id IN (:categories)
  GROUP BY sc.subcategory_id`,
-{
-  replacements: { categories },
-  type: QueryTypes.SELECT
-});
+      {
+        replacements: { categories },
+        type: QueryTypes.SELECT
+      });
 
-const companyCountMap = {};
-companyCountsRaw.forEach(item => {
-  companyCountMap[item.subcategory_id] = parseInt(item.count) || 0;
-});
+    const companyCountMap = {};
+    companyCountsRaw.forEach(item => {
+      companyCountMap[item.subcategory_id] = parseInt(item.count) || 0;
+    });
 
     // 4. Format response
     const modifiedSubCategories = subCategories.map(subCat => {

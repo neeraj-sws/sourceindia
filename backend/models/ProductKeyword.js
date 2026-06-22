@@ -15,11 +15,6 @@ const ProductKeyword = sequelize.define('ProductKeyword', {
     type: DataTypes.STRING,
     allowNull: false
   },
-  code: {
-    type: DataTypes.STRING(30),
-    allowNull: true,
-    unique: true,
-  },
   item_subcategory_id: {
     type: DataTypes.INTEGER,
     allowNull: false
@@ -29,6 +24,12 @@ const ProductKeyword = sequelize.define('ProductKeyword', {
     allowNull: false,
     defaultValue: 1,
     comment: '1 = Active, 0 = Inactive'
+  },
+  is_main: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    comment: '1 = managed by Item Sub Category, 0 = manually managed keyword'
   },
 }, {
   tableName: 'product_keywords',

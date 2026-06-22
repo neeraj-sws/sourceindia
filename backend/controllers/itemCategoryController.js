@@ -10,7 +10,59 @@ const UploadImage = require('../models/UploadImage');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const getMulterUpload = require('../utils/upload');
 const ItemSubCategory = require('../models/ItemSubCategory');
+const ProductKeyword = require('../models/ProductKeyword');
 const sequelize = require('../config/database');
+
+let keywordCodeColumnExistsCache = null;
+
+const normalizeName = (name) => (name || '').toString().trim().toLowerCase();
+
+const hasKeywordCodeColumn = async () => {
+  if (keywordCodeColumnExistsCache !== null) return keywordCodeColumnExistsCache;
+  try {
+    const columns = await sequelize.getQueryInterface().describeTable('product_keywords');
+    keywordCodeColumnExistsCache = Object.prototype.hasOwnProperty.call(columns, 'code');
+  } catch (error) {
+    keywordCodeColumnExistsCache = false;
+  }
+  return keywordCodeColumnExistsCache;
+};
+
+const generateKeywordCodeCandidate = () => {
+  const ts = Date.now().toString(36).toUpperCase();
+  const rnd = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `PKW-${ts}-${rnd}`;
+};
+
+const generateUniqueKeywordCode = async () => {
+  const hasCodeColumn = await hasKeywordCodeColumn();
+  if (!hasCodeColumn) return null;
+
+  for (let i = 0; i < 10; i += 1) {
+    const code = generateKeywordCodeCandidate();
+    const exists = await ProductKeyword.findOne({ where: { code }, attributes: ['id'] });
+    if (!exists) return code;
+  }
+  throw new Error('Unable to generate unique keyword code. Please retry.');
+};
+
+const splitKeywords = (value) => {
+  if (Array.isArray(value)) return value;
+  return (value || '')
+    .toString()
+    .split(/[,|\n]/)
+    .map((keyword) => keyword.trim())
+    .filter(Boolean);
+};
+
+const getImportValue = (row, keys) => {
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+      return row[key];
+    }
+  }
+  return '';
+};
 
 exports.createItemCategory = async (req, res) => {
   const upload = getMulterUpload('item_category');
@@ -45,6 +97,12 @@ exports.createItemCategory = async (req, res) => {
       });
     } catch (err) {
       console.error(err);
+      // ✅ Handle unique constraint violation
+      if (err.name === 'SequelizeUniqueConstraintError' || err.errors?.[0]?.validatorKey === 'not_unique') {
+        return res.status(400).json({
+          error: 'Item Category name already exists. Please use a different name.'
+        });
+      }
       res.status(500).json({ error: err.message });
     }
   });
@@ -53,7 +111,7 @@ exports.createItemCategory = async (req, res) => {
 exports.getAllItemCategory = async (req, res) => {
   try {
     // Build the "where" clause dynamically
-    const where = {};
+    const where = { is_delete: req.query.getDeleted === 'true' ? 1 : 0 };
 
     // Exclude item categories that are already linked to products
     if (req.query.excludeItemCategories === 'true') {
@@ -205,7 +263,7 @@ exports.getAllItemCategories = async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const status = req.query.status;
 
-    const whereCondition = {};
+    const whereCondition = { is_delete: 0 };
 
     if (typeof status !== 'undefined') {
       whereCondition.status = parseInt(status);
@@ -324,31 +382,20 @@ exports.deleteSelectedItemCategory = async (req, res) => {
 
     // Find all item categories with the given IDs
     const itemCategories = await ItemCategory.findAll({
-      where: { id: { [Op.in]: parsedIds } },
+      where: {
+        id: { [Op.in]: parsedIds },
+        is_delete: 0,
+      },
     });
 
     if (itemCategories.length === 0) {
       return res.status(404).json({ message: 'No Item Category found with the given IDs.' });
     }
 
-    // Loop through each item category to delete associated files
-    for (const itemCategory of itemCategories) {
-      if (itemCategory.file_id) {
-        const uploadImage = await UploadImage.findByPk(itemCategory.file_id);
-        if (uploadImage) {
-          const oldImagePath = path.resolve(uploadImage.file);
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
-          }
-          await uploadImage.destroy();
-        }
-      }
-    }
-
-    // Delete all item categories
-    await ItemCategory.destroy({
-      where: { id: { [Op.in]: parsedIds } },
-    });
+    await ItemCategory.update(
+      { is_delete: 1 },
+      { where: { id: { [Op.in]: parsedIds } } }
+    );
 
     res.json({ message: `${itemCategories.length} Item Category(s) deleted successfully.` });
   } catch (err) {
@@ -377,6 +424,22 @@ exports.updateItemCategoryStatus = async (req, res) => {
   }
 };
 
+exports.updateItemCategoryDeleteStatus = async (req, res) => {
+  try {
+    const { is_delete } = req.body;
+    if (is_delete !== 0 && is_delete !== 1) {
+      return res.status(400).json({ message: 'Invalid delete status. Use 1 (Deleted) or 0 (Restored).' });
+    }
+    const itemCategory = await ItemCategory.findByPk(req.params.id);
+    if (!itemCategory) return res.status(404).json({ message: 'Item Category not found' });
+    itemCategory.is_delete = is_delete;
+    await itemCategory.save();
+    res.json({ message: 'Item Category delete status updated', itemCategory });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getItemCategoriesByCategoryAndSubCategory = async (req, res) => {
   try {
     const { category_id, subcategory_id } = req.params;
@@ -386,14 +449,18 @@ exports.getItemCategoriesByCategoryAndSubCategory = async (req, res) => {
       });
     }
     const itemCategories = await ItemCategory.findAll({
-      where: { category_id, subcategory_id, status: 1, },
+      where: { category_id, subcategory_id, status: 1, is_delete: 0 },
       include: [
-        { model: Categories, as: 'Categories', attributes: ['id', 'name'], where: {
-          status: 1, is_delete: 0,
-        }},
-        { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'], where: {
-          status: 1, is_delete: 0,
-        }},
+        {
+          model: Categories, as: 'Categories', attributes: ['id', 'name'], where: {
+            status: 1, is_delete: 0,
+          }
+        },
+        {
+          model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'], where: {
+            status: 1, is_delete: 0,
+          }
+        },
       ],
       order: [['id', 'ASC']],
     });
@@ -416,7 +483,7 @@ exports.getItemCategoriesByCategoryAndSubCategoryAll = async (req, res) => {
       });
     }
     const itemCategories = await ItemCategory.findAll({
-      where: { category_id, subcategory_id },
+      where: { category_id, subcategory_id, is_delete: 0 },
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
@@ -430,6 +497,240 @@ exports.getItemCategoriesByCategoryAndSubCategoryAll = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.importItemSubCategoriesAndKeywords = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const itemCategoryId = Number(req.params.id);
+    const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
+
+    if (!Number.isInteger(itemCategoryId) || itemCategoryId <= 0) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'Invalid item category id.' });
+    }
+
+    if (rows.length === 0) {
+      await transaction.rollback();
+      return res.status(400).json({ message: 'No rows found to import.' });
+    }
+
+    const itemCategory = await ItemCategory.findOne({
+      where: { id: itemCategoryId, is_delete: 0 },
+      attributes: ['id', 'category_id', 'subcategory_id'],
+      transaction,
+    });
+
+    if (!itemCategory) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Item Category not found.' });
+    }
+
+    const errors = [];
+    const preparedRows = [];
+    const seenSubCategories = new Map();
+    const seenKeywords = new Map();
+
+    rows.forEach((row, index) => {
+      const rowNumber = index + 1;
+      const itemSubCategoryName = getImportValue(row, [
+        'Item Sub Category',
+        'ItemSubCategory',
+        'item_subcategory',
+        'item_subcategory_name',
+        'Sub Category',
+        'Name',
+        'name',
+      ]).toString().trim();
+
+      let keywords = splitKeywords(getImportValue(row, [
+        'Product Keywords',
+        'Product Keyword',
+        'Keywords',
+        'Keyword',
+        'product_keywords',
+        'product_keyword',
+        'keywords',
+        'keyword',
+      ]));
+      if (keywords.length === 0 && itemSubCategoryName) {
+        keywords = [itemSubCategoryName];
+      }
+
+      const status = Number(getImportValue(row, ['Status', 'status']) || 1);
+
+      if (!itemSubCategoryName) {
+        errors.push({
+          row: rowNumber,
+          reason: 'Item Sub Category is required.',
+        });
+        return;
+      }
+
+      const normalizedSubCategory = normalizeName(itemSubCategoryName);
+      if (!seenSubCategories.has(normalizedSubCategory)) {
+        seenSubCategories.set(normalizedSubCategory, itemSubCategoryName);
+      }
+
+      const uniqueKeywords = [];
+      keywords.forEach((keyword) => {
+        const normalizedKeyword = normalizeName(keyword);
+        if (!normalizedKeyword) return;
+        const importKey = `${normalizedSubCategory}::${normalizedKeyword}`;
+        if (seenKeywords.has(importKey)) {
+          errors.push({
+            row: rowNumber,
+            name: keyword,
+            reason: `Duplicate keyword in file for same item sub category (same as row ${seenKeywords.get(importKey)}).`,
+          });
+          return;
+        }
+        seenKeywords.set(importKey, rowNumber);
+        uniqueKeywords.push(keyword);
+      });
+
+      if (uniqueKeywords.length === 0) return;
+
+      preparedRows.push({
+        rowNumber,
+        itemSubCategoryName,
+        normalizedSubCategory,
+        keywords: uniqueKeywords,
+        status: [0, 1].includes(status) ? status : 1,
+      });
+    });
+
+    if (preparedRows.length === 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        message: 'No valid rows found to import.',
+        importedSubCategoryCount: 0,
+        importedKeywordCount: 0,
+        errors,
+      });
+    }
+
+    const normalizedSubCategoryNames = [...seenSubCategories.keys()];
+    const existingSubCategories = await ItemSubCategory.findAll({
+      where: {
+        is_delete: 0,
+        [Op.and]: [
+          sequelize.where(fn('LOWER', col('name')), {
+            [Op.in]: normalizedSubCategoryNames,
+          }),
+        ],
+      },
+      attributes: ['id', 'name'],
+      transaction,
+    });
+
+    const subCategoryMap = new Map(
+      existingSubCategories.map((item) => [normalizeName(item.name), item])
+    );
+
+    let createdSubCategoryCount = 0;
+
+    for (const [normalizedName, itemSubCategoryName] of seenSubCategories.entries()) {
+      if (subCategoryMap.has(normalizedName)) continue;
+
+      const createdSubCategory = await ItemSubCategory.create({
+        name: itemSubCategoryName,
+        item_category_id: itemCategory.id,
+        category_id: itemCategory.category_id,
+        subcategory_id: itemCategory.subcategory_id,
+        status: 1,
+        file_id: 0,
+        is_delete: 0,
+      }, { transaction });
+
+      subCategoryMap.set(normalizedName, createdSubCategory);
+      createdSubCategoryCount += 1;
+    }
+
+    const allKeywordNames = [
+      ...new Set(preparedRows.flatMap((row) => row.keywords.map(normalizeName))),
+    ];
+
+    const existingKeywords = await ProductKeyword.findAll({
+      where: {
+        [Op.and]: [
+          sequelize.where(fn('LOWER', col('name')), {
+            [Op.in]: allKeywordNames,
+          }),
+        ],
+      },
+      attributes: ['name'],
+      transaction,
+    });
+
+    const existingKeywordSet = new Set(
+      existingKeywords.map((keyword) => normalizeName(keyword.name))
+    );
+
+    const createdKeywords = [];
+
+    for (const row of preparedRows) {
+      const itemSubCategory = subCategoryMap.get(row.normalizedSubCategory);
+      if (!itemSubCategory) {
+        errors.push({
+          row: row.rowNumber,
+          name: row.itemSubCategoryName,
+          reason: 'Unable to resolve item sub category.',
+        });
+        continue;
+      }
+
+      for (const keywordName of row.keywords) {
+        const normalizedKeyword = normalizeName(keywordName);
+        if (existingKeywordSet.has(normalizedKeyword)) {
+          errors.push({
+            row: row.rowNumber,
+            name: keywordName,
+            reason: 'Keyword already exists.',
+          });
+          continue;
+        }
+
+        const code = await generateUniqueKeywordCode();
+        const createdKeyword = await ProductKeyword.create({
+          name: keywordName,
+          ...(code ? { code } : {}),
+          item_subcategory_id: itemSubCategory.id,
+          status: row.status,
+          is_main: 1,
+        }, { transaction });
+
+        existingKeywordSet.add(normalizedKeyword);
+        createdKeywords.push(createdKeyword);
+      }
+    }
+
+    if (createdSubCategoryCount === 0 && createdKeywords.length === 0) {
+      await transaction.rollback();
+      return res.status(409).json({
+        message: 'No records were imported due to duplicate/invalid rows.',
+        importedSubCategoryCount: 0,
+        importedKeywordCount: 0,
+        skippedCount: errors.length,
+        errors,
+      });
+    }
+
+    await transaction.commit();
+
+    return res.status(201).json({
+      message: `${createdSubCategoryCount} item sub categor${createdSubCategoryCount === 1 ? 'y' : 'ies'} and ${createdKeywords.length} keyword(s) imported successfully.${errors.length ? ` ${errors.length} row(s) skipped.` : ''}`,
+      importedSubCategoryCount: createdSubCategoryCount,
+      importedKeywordCount: createdKeywords.length,
+      skippedCount: errors.length,
+      errors,
+    });
+  } catch (err) {
+    await transaction.rollback();
+    console.error('importItemSubCategoriesAndKeywords error:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
@@ -468,7 +769,7 @@ exports.getItemCategoriesBySelectedCategoryAndSubCategory = async (req, res) => 
         // is_approve: 1,
         status: 1,
         category: { [Op.in]: categories },
-    sub_category: { [Op.in]: subcategories },
+        sub_category: { [Op.in]: subcategories },
       },
       group: ['item_category_id'],
       raw: true,
@@ -528,7 +829,7 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
     } else {
       order = [['id', 'DESC']];
     }
-    const where = {};
+    const where = { is_delete: req.query.getDeleted === 'true' ? 1 : 0 };
     if (req.query.excludeItemCategories === 'true') {
       where.id = {
         [Op.notIn]: literal(`(
@@ -568,6 +869,7 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
       subcategory_name: row.SubCategories ? row.SubCategories.name : null,
       file_id: row.file_id,
       file_name: row.UploadImage ? row.UploadImage.file : null,
+      is_delete: row.is_delete,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -584,7 +886,7 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
 
 exports.getItemCategoryCount = async (req, res) => {
   try {
-    const total = await ItemCategory.count();
+    const total = await ItemCategory.count({ where: { is_delete: 0 } });
     res.json({ total });
   } catch (err) {
     console.error(err);
@@ -596,7 +898,7 @@ exports.getItemCategoryBarGraph = async (req, res) => {
   try {
     const categories = await ItemCategory.findAll({
       attributes: ['id', 'name'],
-      where: { status: 1 },
+      where: { status: 1, is_delete: 0 },
       order: [['id', 'ASC']],
       raw: true,
     });
@@ -644,7 +946,7 @@ exports.getBuyerSourcingInterestsBarGraph = async (req, res) => {
   try {
     const itemCategory = await ItemCategory.findAll({
       attributes: ['id', 'name'],
-      where: { status: 1 },
+      where: { status: 1, is_delete: 0 },
       order: [['id', 'ASC']],
       raw: true,
     });

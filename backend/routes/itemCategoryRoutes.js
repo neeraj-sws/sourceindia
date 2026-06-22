@@ -26,9 +26,14 @@ router.post(
   '/by-selected-category-subcategory',
   itemCategoryController.getItemCategoriesBySelectedCategoryAndSubCategory
 );
+router.post(
+  '/:id/import-subcategories-keywords',
+  itemCategoryController.importItemSubCategoriesAndKeywords
+);
 router.get('/:id', itemCategoryController.getItemCategoryById);
 router.put('/:id', itemCategoryController.updateItemCategory);
 router.delete('/:id', itemCategoryController.deleteItemCategory);
 router.patch('/:id/status', itemCategoryController.updateItemCategoryStatus);
+router.patch('/:id/delete_status', itemCategoryController.updateItemCategoryDeleteStatus);
 
 module.exports = router;

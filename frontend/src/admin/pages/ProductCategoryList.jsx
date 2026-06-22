@@ -201,7 +201,12 @@ const ProductCategoryList = ({ getDeleted, excludeSellerCategories, excludeProdu
       resetForm();
     } catch (err) {
       console.error(err);
-      showNotification("Failed to save Product Category.", "error");
+      // ✅ Handle unique constraint violation
+      if (err.response?.status === 400 && err.response?.data?.error?.includes('already exists')) {
+        showNotification(err.response.data.error, "error");
+      } else {
+        showNotification("Failed to save Product Category.", "error");
+      }
     } finally {
       setSubmitting(false);
     }

@@ -7,6 +7,7 @@ const cors = require('cors');
 const companiesRoutes = require('./routes/companiesRoutes');
 
 const sequelize = require('./config/database');
+const { backfillMainProductKeywords } = require('./utils/mainProductKeywordSync');
 const fileRoutes = require('./routes/fileRoutes');
 const adminAuthRoutes = require('./routes/adminAuthRoutes');
 const activityRoutes = require('./routes/activityRoutes');
@@ -137,7 +138,9 @@ app.use(basePath + '/api/companies', companiesRoutes);
 
 sequelize
   .sync()
-  .then(() => {
+  .then(async () => {
+    const backfilledKeywords = await backfillMainProductKeywords();
+    console.log(`Product keyword main records synchronized: ${backfilledKeywords}`);
     console.log('MySQL connected and models synced');
     app.listen(5000, () =>
       console.log('Server running on http://localhost:5000' + basePath)

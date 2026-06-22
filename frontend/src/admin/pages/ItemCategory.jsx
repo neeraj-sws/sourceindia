@@ -8,13 +8,15 @@ import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
 import ItemCategoryModals from "./modal/ItemCategoryModals";
 import ExcelExport from "../common/ExcelExport";
+import { Link, useNavigate } from "react-router-dom";
+import { read, utils, writeFile } from "xlsx";
 const initialForm = { id: null, name: "", category_id: "", subcategory_id: "", status: "1", file: null };
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
 import { formatDateTime } from '../../utils/formatDate';
 
-const ItemCategory = ({ excludeItemCategories }) => {
+const ItemCategory = ({ getDeleted, excludeItemCategories }) => {
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [filteredRecords, setFilteredRecords] = useState(0);
@@ -25,6 +27,7 @@ const ItemCategory = ({ excludeItemCategories }) => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
+  const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
@@ -35,18 +38,27 @@ const ItemCategory = ({ excludeItemCategories }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemCategoryToDelete, setItemCategoryToDelete] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null });
+  const [statusToggleInfo, setStatusToggleInfo] = useState({ id: null, currentStatus: null, field: '', valueKey: '' });
   const [submitting, setSubmitting] = useState(false);
   const [selectedItemCategory, setSelectedItemCategory] = useState([]);
   const [isBulkDelete, setIsBulkDelete] = useState(false);
   const [itemCategoryData, setItemCategoryData] = useState([]);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importItemCategory, setImportItemCategory] = useState(null);
+  const [importFile, setImportFile] = useState(null);
+  const [importSubmitting, setImportSubmitting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
   const excelExportRef = useRef();
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/item_category/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, excludeItemCategories: excludeItemCategories ? 'true' : 'false' },
+        params: {
+          page, limit, search, sortBy, sort: sortDirection,
+          getDeleted: getDeleted ? 'true' : 'false',
+          excludeItemCategories: excludeItemCategories ? 'true' : 'false'
+        },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -58,7 +70,7 @@ const ItemCategory = ({ excludeItemCategories }) => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, excludeItemCategories]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, excludeItemCategories]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -225,7 +237,12 @@ const ItemCategory = ({ excludeItemCategories }) => {
       fetchData();
     } catch (err) {
       console.error("Error submitting form:", err);
-      showNotification("Failed to save item category.", "error");
+      // ✅ Handle unique constraint violation
+      if (err.response?.status === 400 && err.response?.data?.error?.includes('already exists')) {
+        showNotification(err.response.data.error, "error");
+      } else {
+        showNotification("Failed to save item category.", "error");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -318,17 +335,27 @@ const ItemCategory = ({ excludeItemCategories }) => {
     }
   };
 
-  const openStatusModal = (id, currentStatus) => { setStatusToggleInfo({ id, currentStatus }); setShowStatusModal(true); };
+  const openStatusModal = (id, currentStatus, field = "status", valueKey = "status") => {
+    setStatusToggleInfo({ id, currentStatus, field, valueKey });
+    setShowStatusModal(true);
+  };
 
-  const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null }); };
+  const closeStatusModal = () => { setShowStatusModal(false); setStatusToggleInfo({ id: null, currentStatus: null, field: '', valueKey: '' }); };
 
   const handleStatusConfirm = async () => {
-    const { id, currentStatus } = statusToggleInfo;
+    const { id, currentStatus, field, valueKey } = statusToggleInfo;
     const newStatus = Number(currentStatus) === 1 ? 0 : 1;
     try {
-      await axios.patch(`${API_BASE_URL}/item_category/${id}/status`, { status: newStatus });
-      setData(data?.map((d) => (d.id === id ? { ...d, status: newStatus } : d)));
-      showNotification("Status updated!", "success");
+      await axios.patch(`${API_BASE_URL}/item_category/${id}/${field}`, { [valueKey]: newStatus });
+      setData(data?.map((d) => (d.id === id ? { ...d, [valueKey]: newStatus } : d)));
+      if (field === "delete_status") {
+        setData((prevData) => prevData.filter((item) => item.id !== id));
+        setTotalRecords((prev) => prev - 1);
+        setFilteredRecords((prev) => prev - 1);
+        showNotification(newStatus === 1 ? "Removed from list" : "Restored from deleted", "success");
+      } else {
+        showNotification("Status updated!", "success");
+      }
     } catch (error) {
       console.error("Error updating status:", error);
       showNotification("Failed to update status.", "danger");
@@ -359,11 +386,14 @@ const ItemCategory = ({ excludeItemCategories }) => {
     //   setItemCategoryData(res.data);
     // });
     axios.get(`${API_BASE_URL}/item_category`, {
-      params: { excludeItemCategories: excludeItemCategories ? 'true' : 'false' }
+      params: {
+        getDeleted: getDeleted ? 'true' : 'false',
+        excludeItemCategories: excludeItemCategories ? 'true' : 'false'
+      }
     }).then((res) => {
       setItemCategoryData(res.data);
     });
-  }, []);
+  }, [getDeleted, excludeItemCategories]);
 
   const handleDownload = () => {
     if (excelExportRef.current) {
@@ -371,24 +401,125 @@ const ItemCategory = ({ excludeItemCategories }) => {
     }
   };
 
+  const openImportModal = (itemCategory) => {
+    setImportItemCategory(itemCategory);
+    setImportFile(null);
+    setImportResult(null);
+    setShowImportModal(true);
+  };
+
+  const closeImportModal = () => {
+    if (importSubmitting) return;
+    setShowImportModal(false);
+    setImportItemCategory(null);
+    setImportFile(null);
+    setImportResult(null);
+  };
+
+  const getApiErrorMessage = (error, fallbackMessage) => {
+    return (
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      fallbackMessage
+    );
+  };
+
+  const parseImportFile = async (file) => {
+    const extension = (file.name.split(".").pop() || "").toLowerCase();
+    let workbook;
+
+    if (extension === "csv") {
+      const text = await file.text();
+      workbook = read(text, { type: "string" });
+    } else {
+      const data = await file.arrayBuffer();
+      workbook = read(data, { type: "array" });
+    }
+
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    return utils.sheet_to_json(worksheet);
+  };
+
+  const handleImportSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!importItemCategory?.id) {
+      showNotification("Please select an item category row first.", "error");
+      return;
+    }
+
+    if (!importFile) {
+      showNotification("Please choose an Excel or CSV file.", "error");
+      return;
+    }
+
+    setImportSubmitting(true);
+    setImportResult(null);
+
+    try {
+      const rows = await parseImportFile(importFile);
+      const response = await axios.post(
+        `${API_BASE_URL}/item_category/${importItemCategory.id}/import-subcategories-keywords`,
+        { rows }
+      );
+
+      setImportResult(response.data);
+      showNotification(response.data?.message || "Import completed successfully.", response.data?.skippedCount ? "warning" : "success");
+      fetchData();
+    } catch (error) {
+      console.error("Error importing item sub categories and keywords:", error);
+      const responseData = error?.response?.data;
+      setImportResult(responseData || null);
+      showNotification(getApiErrorMessage(error, "Failed to import file."), "error");
+    } finally {
+      setImportSubmitting(false);
+    }
+  };
+
+  const downloadImportTemplate = () => {
+    const rows = [
+      {
+        "Item Sub Category": "Example Item Sub Category",
+        Status: 1,
+      },
+    ];
+    const worksheet = utils.json_to_sheet(rows);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, "Import");
+    writeFile(workbook, "item_subcategory_keywords_import.xlsx");
+  };
+
   return (
     <>
       <div className={excludeItemCategories ? "page-wrapper h-auto my-3" : "page-wrapper"}>
         <div className="page-content">
           {!excludeItemCategories &&
-            <Breadcrumb mainhead="Item Category" maincount={totalRecords} page="Category Master" title="Item Category" add_button={<><i className="bx bxs-plus-square me-1" /> Add Item Category</>} add_link="#" onClick={() => openForm()}
+            <Breadcrumb mainhead="Item Category" maincount={totalRecords} page="Category Master" title={getDeleted ? "Recently Deleted Item Category" : "Item Category"} add_button={!getDeleted && (<><i className="bx bxs-plus-square me-1" /> Add Item Category</>)} add_link="#" onClick={() => openForm()}
               actions={
                 <>
                   <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-                  <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItemCategory.length === 0}>
-                    <i className="bx bx-trash me-1" /> Delete Selected
-                  </button>
+                  {!getDeleted ? (
+                    <>
+                      <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedItemCategory.length === 0}>
+                        <i className="bx bx-trash me-1" /> Delete Selected
+                      </button>
+                      <Link className="btn btn-sm btn-primary mb-2 me-2" to="/admin/item-category-remove-list">
+                        Recently Deleted Item Category
+                      </Link>
+                    </>
+                  ) : (
+                    <button className="btn btn-sm btn-primary mb-2 me-2" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
+                      Back
+                    </button>
+                  )}
                 </>
               }
             />
           }
           <div className="row">
-            {!excludeItemCategories && (
+            {!getDeleted && !excludeItemCategories && (
               <div className="col-md-4">
                 <div className="card">
                   <div className="card-body">
@@ -505,7 +636,7 @@ const ItemCategory = ({ excludeItemCategories }) => {
                 </div>
               </div>
             )}
-            <div className={!excludeItemCategories ? "col-md-8" : "col-md-12"}>
+            <div className={!getDeleted && !excludeItemCategories ? "col-md-8" : "col-md-12"}>
               {excludeItemCategories && (
                 <div className="card mb-3">
                   <div className="card-body">
@@ -516,11 +647,18 @@ const ItemCategory = ({ excludeItemCategories }) => {
                   </div>
                 </div>
               )}
+              {getDeleted && (
+                <div className="card mb-3">
+                  <div className="card-body">
+                    <h5 className="card-title mb-0">Recently Deleted Item Category List</h5>
+                  </div>
+                </div>
+              )}
               <div className="card">
                 <div className="card-body">
                   <DataTable
                     columns={[
-                      ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
+                      ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
@@ -547,9 +685,11 @@ const ItemCategory = ({ excludeItemCategories }) => {
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
                       <tr key={row.id}>
-                        <td>
-                          <input type="checkbox" checked={selectedItemCategory.includes(row.id)} onChange={() => handleSelectItemCategory(row.id)} />
-                        </td>
+                        {!getDeleted && (
+                          <td>
+                            <input type="checkbox" checked={selectedItemCategory.includes(row.id)} onChange={() => handleSelectItemCategory(row.id)} />
+                          </td>
+                        )}
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td><ImageWithFallback
                           src={`${ROOT_URL}/${row.file_name}`}
@@ -563,34 +703,71 @@ const ItemCategory = ({ excludeItemCategories }) => {
                         {!excludeItemCategories && (
                           <>
                             <td>
-                              <div className="form-check form-switch">
-                                <input
-                                  className="form-check-input"
-                                  type="checkbox"
-                                  id={`statusSwitch_${row.id}`}
-                                  checked={row.status == 1}
-                                  onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
-                                  readOnly
-                                />
-                              </div>
+                              {!getDeleted ? (
+                                <div className="form-check form-switch">
+                                  <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    id={`statusSwitch_${row.id}`}
+                                    checked={row.status == 1}
+                                    onClick={(e) => { e.preventDefault(); openStatusModal(row.id, row.status); }}
+                                    readOnly
+                                  />
+                                </div>
+                              ) : (
+                                row.status == 1 ? (<span className="badge bg-success">Active</span>) : (<span className="badge bg-danger">Inactive</span>)
+                              )}
                             </td>
                             <td>
+                              <div className="d-flex align-items-center gap-2">
+                               <button className="btn btn-sm btn-success ps-2 py-1 pe-0" onClick={() => openImportModal(row)}>
+                                          <i className="bx bx-upload me-2"></i> 
+                                        </button>
                               <div className="dropdown">
                                 <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                   <i className="bx bx-dots-vertical-rounded"></i>
                                 </button>
                                 <ul className="dropdown-menu">
-                                  <li>
-                                    <button className="dropdown-item" onClick={() => openForm(row)}>
-                                      <i className="bx bx-edit me-2"></i> Edit
-                                    </button>
-                                  </li>
-                                  <li>
-                                    <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                      <i className="bx bx-trash me-2"></i> Delete
-                                    </button>
-                                  </li>
+                                  {!getDeleted ? (
+                                    <>
+                                      <li>
+                                        <button className="dropdown-item" onClick={() => openForm(row)}>
+                                          <i className="bx bx-edit me-2"></i> Edit
+                                        </button>
+                                      </li>
+                                     
+                                      <li>
+                                        <button className="dropdown-item text-danger"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                          }}
+                                        >
+                                          <i className="bx bx-trash me-2"></i> Delete
+                                        </button>
+                                      </li>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <li>
+                                        <button className="dropdown-item"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                          }}
+                                        >
+                                          <i className="bx bx-windows me-2"></i> Restore
+                                        </button>
+                                      </li>
+                                      <li>
+                                        <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                          <i className="bx bx-trash me-2"></i> Delete
+                                        </button>
+                                      </li>
+                                    </>
+                                  )}
                                 </ul>
+                              </div>
                               </div>
                             </td>
                           </>
@@ -610,6 +787,76 @@ const ItemCategory = ({ excludeItemCategories }) => {
           </div>
         </div>
       </div>
+      {showImportModal && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Import Item Sub Categories: {importItemCategory?.name || ""}</h5>
+                <button type="button" className="btn-close" onClick={closeImportModal} disabled={importSubmitting}></button>
+              </div>
+              <form onSubmit={handleImportSubmit}>
+                <div className="modal-body">
+                  
+                  <div className="mb-3">
+                    <div className="d-flex align-items-center justify-content-between mb-2">
+                      <label htmlFor="itemCategoryImportFile" className="form-label mb-0">Import File</label>
+                      <button type="button" className="btn btn-sm btn-outline-primary" onClick={downloadImportTemplate}>
+                        <i className="bx bx-download me-1"></i> Download Example File
+                      </button>
+                    </div>
+                    <input
+                      type="file"
+                      id="itemCategoryImportFile"
+                      className="form-control"
+                      accept=".xlsx,.xls,.csv"
+                      onChange={(event) => {
+                        setImportFile(event.target.files?.[0] || null);
+                        setImportResult(null);
+                      }}
+                    />
+                    <div className="form-text">
+                      Columns: Item Sub Category, Status. Product keyword will be created with the same Item Sub Category name.
+                    </div>
+                  </div>
+                  {importResult && (
+                    <div className={`alert ${Number(importResult.importedKeywordCount || 0) > 0 || Number(importResult.importedSubCategoryCount || 0) > 0 ? "alert-success" : "alert-warning"} mb-0`}>
+                      <div>{importResult.message || "Import completed."}</div>
+                      <div className="small mt-1">
+                        Item Sub Categories: {Number(importResult.importedSubCategoryCount || 0)} | Keywords: {Number(importResult.importedKeywordCount || 0)} | Skipped: {Number(importResult.skippedCount || importResult.errors?.length || 0)}
+                      </div>
+                      {Array.isArray(importResult.errors) && importResult.errors.length > 0 && (
+                        <ul className="small mb-0 mt-2 ps-3">
+                          {importResult.errors.slice(0, 5).map((err, idx) => (
+                            <li key={`${err.row || idx}-${err.reason || idx}`}>
+                              Row {err.row || "-"}{err.name ? ` (${err.name})` : ""}: {err.reason}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="modal-footer justify-content-between">
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={closeImportModal} disabled={importSubmitting}>Close</button>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={importSubmitting}>
+                    {importSubmitting ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bx bx-upload me-1"></i> Import
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
       <ItemCategoryModals
         showDeleteModal={showDeleteModal}
         closeDeleteModal={closeDeleteModal}
@@ -623,7 +870,7 @@ const ItemCategory = ({ excludeItemCategories }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName={excludeItemCategories ? "Unused Item Category.xlsx" : "Item Category Export.xlsx"}
+        fileName={getDeleted ? "Recently Deleted Item Category.xlsx" : excludeItemCategories ? "Unused Item Category.xlsx" : "Item Category Export.xlsx"}
         data={itemCategoryData}
         columns={[
           { label: "Name", key: "name" },

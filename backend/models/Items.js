@@ -55,11 +55,25 @@ const Items = sequelize.define('Items', {
     defaultValue: 1,
     comment: '1 = Active, 0 = Inactive'
   },
+  is_delete: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    comment: '1 = Deleted, 0 = Not Deleted'
+  },
 }, {
   tableName: 'items',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: 'updated_at',
+  indexes: [
+    {
+      unique: true,
+      fields: ['name'],
+      where: { is_delete: 0 }, // ✅ Only apply unique constraint to active records
+      name: 'uq_items_name'
+    }
+  ]
 });
 
 // 🟢 Associations
@@ -110,6 +124,11 @@ Items.beforeCreate((item, options) => {
 
 // 🟢 Hook: Auto-update slug if name changes
 Items.beforeUpdate((item, options) => {
+  if (item.changed('is_delete') && item.is_delete === 1) {
+    if (!item.name.includes('-deleted-')) {
+      item.name = `${item.name}-deleted-${item.id}`;
+    }
+  }
   if (item.changed('name')) {
     item.slug = slugify(item.name, {
       lower: true,

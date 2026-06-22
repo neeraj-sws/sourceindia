@@ -354,6 +354,7 @@ exports.getItemSubCategoryAll = async (req, res) => {
 
       if (keywordName) {
         const normalizedName = normalizeKeywordName(keywordName);
+        const desiredStatus = Number(itemSubCategory.status) === 0 ? 0 : 1;
         const existingKeyword = await ProductKeyword.findOne({
           where: {
             item_subcategory_id: itemSubCategory.id,
@@ -361,14 +362,15 @@ exports.getItemSubCategoryAll = async (req, res) => {
               sequelize.where(fn('LOWER', col('name')), normalizedName),
             ],
           },
-          attributes: ['id', 'name', 'status'],
+          attributes: ['id', 'name', 'status', 'is_main'],
         });
 
         if (existingKeyword) {
-          if (existingKeyword.status !== 1) {
-            existingKeyword.status = 1;
+          if (Number(existingKeyword.status) !== desiredStatus || Number(existingKeyword.is_main) !== 1) {
+            existingKeyword.status = desiredStatus;
+            existingKeyword.is_main = 1;
             existingKeyword.updated_at = new Date();
-            await existingKeyword.save({ fields: ['status', 'updated_at'] });
+            await existingKeyword.save({ fields: ['status', 'is_main', 'updated_at'] });
             keywordSync = { action: 'updated', keyword_id: existingKeyword.id, keyword_name: existingKeyword.name };
           } else {
             keywordSync = { action: 'exists', keyword_id: existingKeyword.id, keyword_name: existingKeyword.name };
@@ -379,7 +381,8 @@ exports.getItemSubCategoryAll = async (req, res) => {
             name: keywordName,
             ...(hasCodeColumn ? { code } : {}),
             item_subcategory_id: itemSubCategory.id,
-            status: 1,
+            status: desiredStatus,
+            is_main: 1,
           });
           keywordSync = { action: 'created', keyword_id: createdKeyword.id, keyword_name: createdKeyword.name };
         }
@@ -422,6 +425,7 @@ exports.getItemSubCategoryById = async (req, res) => {
 
     if (keywordName) {
       const normalizedName = normalizeKeywordName(keywordName);
+      const desiredStatus = Number(itemSubCategory.status) === 0 ? 0 : 1;
       const existingKeyword = await ProductKeyword.findOne({
         where: {
           item_subcategory_id: itemSubCategory.id,
@@ -429,14 +433,15 @@ exports.getItemSubCategoryById = async (req, res) => {
             sequelize.where(fn('LOWER', col('name')), normalizedName),
           ],
         },
-        attributes: ['id', 'name', 'status'],
+        attributes: ['id', 'name', 'status', 'is_main'],
       });
 
       if (existingKeyword) {
-        if (existingKeyword.status !== 1) {
-          existingKeyword.status = 1;
+        if (Number(existingKeyword.status) !== desiredStatus || Number(existingKeyword.is_main) !== 1) {
+          existingKeyword.status = desiredStatus;
+          existingKeyword.is_main = 1;
           existingKeyword.updated_at = new Date();
-          await existingKeyword.save({ fields: ['status', 'updated_at'] });
+          await existingKeyword.save({ fields: ['status', 'is_main', 'updated_at'] });
           keywordSync = { action: 'updated', keyword_id: existingKeyword.id, keyword_name: existingKeyword.name };
         } else {
           keywordSync = { action: 'exists', keyword_id: existingKeyword.id, keyword_name: existingKeyword.name };
@@ -448,7 +453,8 @@ exports.getItemSubCategoryById = async (req, res) => {
           name: keywordName,
           ...(hasCodeColumn ? { code } : {}),
           item_subcategory_id: itemSubCategory.id,
-          status: 1,
+          status: desiredStatus,
+          is_main: 1,
         });
         keywordSync = { action: 'created', keyword_id: createdKeyword.id, keyword_name: createdKeyword.name };
       }
@@ -471,10 +477,13 @@ exports.getItemSubCategoryById = async (req, res) => {
 exports.updateKeyword = async (req, res) => {
   try {
     const keyword = await ProductKeyword.findByPk(req.params.id, {
-      attributes: ['id', 'name', 'status', 'updated_at'],
+      attributes: ['id', 'name', 'status', 'is_main', 'updated_at'],
     });
 
     if (!keyword) return res.status(404).json({ message: 'Keyword not found' });
+    if (Number(keyword.is_main) === 1) {
+      return res.status(403).json({ message: 'This keyword is managed by Item Sub Category and cannot be edited here.' });
+    }
     const name = (req.body.name || '').toString().trim();
     if (!name) return res.status(400).json({ message: 'Name is required.' });
 
@@ -510,9 +519,25 @@ exports.updateKeyword = async (req, res) => {
 exports.deleteItemSubCategory = async (req, res) => {
   try {
     const keyword = await ProductKeyword.findByPk(req.params.id, {
-      attributes: ['id'],
+      attributes: ['id', 'item_subcategory_id', 'is_main'],
     });
     if (!keyword) return res.status(404).json({ message: 'Keyword not found' });
+    if (Number(keyword.is_main) === 1) {
+      return res.status(403).json({ message: 'This keyword is managed by Item Sub Category and cannot be deleted here.' });
+    }
+    const productUsageCount = await Products.count({
+      where: {
+        [Op.or]: [
+          { keyword_id: keyword.id },
+          { item_subcategory_id: keyword.item_subcategory_id },
+        ],
+      },
+    });
+    if (productUsageCount > 0) {
+      return res.status(409).json({
+        message: `Product Keyword cannot be deleted because it is used in ${productUsageCount} product(s).`,
+      });
+    }
     await keyword.destroy();
     res.json({ message: 'Keyword deleted successfully' });
   } catch (err) {
@@ -530,35 +555,54 @@ exports.deleteSelectedItemSubCategory = async (req, res) => {
 
     const parsedIds = ids.map(id => parseInt(id, 10));
 
-    // Find all subcategories
-    const itemSubCategories = await ItemSubCategory.findAll({
+    const keywords = await ProductKeyword.findAll({
       where: { id: { [Op.in]: parsedIds } },
+      attributes: ['id', 'item_subcategory_id', 'is_main'],
     });
 
-    if (itemSubCategories.length === 0) {
-      return res.status(404).json({ message: 'No Item Sub Category found with the given IDs.' });
+    if (keywords.length === 0) {
+      return res.status(404).json({ message: 'No Product Keywords found with the given IDs.' });
     }
 
-    // Delete associated files
-    for (const subCategory of itemSubCategories) {
-      if (subCategory.file_id) {
-        const uploadImage = await UploadImage.findByPk(subCategory.file_id);
-        if (uploadImage) {
-          const oldImagePath = path.resolve(uploadImage.file);
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
-          }
-          await uploadImage.destroy();
-        }
-      }
+    const deletableIds = keywords
+      .filter((keyword) => Number(keyword.is_main) !== 1)
+      .map((keyword) => keyword.id);
+
+    const productUsageCount = deletableIds.length
+      ? await Products.count({
+        where: {
+          [Op.or]: [
+            { keyword_id: { [Op.in]: deletableIds } },
+            {
+              item_subcategory_id: {
+                [Op.in]: keywords
+                  .filter((keyword) => deletableIds.includes(keyword.id))
+                  .map((keyword) => keyword.item_subcategory_id),
+              },
+            },
+          ],
+        },
+      })
+      : 0;
+    if (productUsageCount > 0) {
+      return res.status(409).json({
+        message: `Selected Product Keywords cannot be deleted because one or more are used in ${productUsageCount} product(s).`,
+      });
     }
 
-    // Delete all subcategories
-    await ItemSubCategory.destroy({
-      where: { id: { [Op.in]: parsedIds } },
+    if (deletableIds.length) {
+      await ProductKeyword.destroy({
+        where: { id: { [Op.in]: deletableIds }, is_main: { [Op.ne]: 1 } },
+        force: true,
+      });
+    }
+
+    const skippedCount = keywords.length - deletableIds.length;
+    res.json({
+      message: `${deletableIds.length} Product Keyword(s) deleted.${skippedCount ? ` ${skippedCount} main keyword(s) skipped.` : ''}`,
+      deletedIds: deletableIds,
+      skippedCount,
     });
-
-    res.json({ message: `${itemSubCategories.length} Item Sub Category(s) deleted successfully.` });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -738,38 +782,23 @@ exports.getAllItemSubCategoryServerSide = async (req, res) => {
       sortBy = 'id',
       sort = 'DESC',
     } = req.query;
-    const validColumns = ['id', 'name', 'category_id', 'subcategory_id', 'category_name', 'subcategory_name', 'itemcategory_name', 'created_at', 'updated_at'];
+    const validColumns = ['id', 'name', 'created_at', 'updated_at'];
     const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const limitValue = parseInt(limit);
     let order = [];
-    if (sortBy === 'category_name') {
-      order = [[{ model: Categories, as: 'Categories' }, 'name', sortDirection]];
-    } else if (sortBy === 'subcategory_name') {
-      order = [[{ model: SubCategories, as: 'SubCategories' }, 'name', sortDirection]];
-    } else if (sortBy === 'itemcategory_name') {
+    if (sortBy === 'itemcategory_name') {
       order = [[{ model: ItemCategory, as: 'ItemCategory' }, 'name', sortDirection]];
     } else if (validColumns.includes(sortBy)) {
       order = [[sortBy, sortDirection]];
     } else {
       order = [['id', 'DESC']];
     }
-    const where = {};
-    if (req.query.excludeItemSubCategories === 'true') {
-      where.id = {
-        [Op.notIn]: literal(`(
-          SELECT DISTINCT item_subcategory_id
-          FROM products
-          WHERE item_subcategory_id IS NOT NULL
-        )`)
-      };
-    }
+    const where = { is_delete: 0 };
     const searchWhere = { ...where };
     if (search) {
       searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
-        /*{ '$Categories.name$': { [Op.like]: `%${search}%` } },
-        { '$SubCategories.name$': { [Op.like]: `%${search}%` } },*/
         { '$ItemCategory.name$': { [Op.like]: `%${search}%` } },
       ];
     }
@@ -779,24 +808,22 @@ exports.getAllItemSubCategoryServerSide = async (req, res) => {
       order,
       limit: limitValue,
       offset,
+      distinct: true,
+      attributes: ['id', 'name', 'item_category_id', 'file_id', 'status', 'created_at', 'updated_at'],
       include: [
-        { model: Categories, attributes: ['name'], as: 'Categories' },
-        { model: SubCategories, attributes: ['name'], as: 'SubCategories' },
-        { model: ItemCategory, attributes: ['name'], as: 'ItemCategory' },
-        { model: UploadImage, attributes: ['file'] },
+        { model: ItemCategory, attributes: ['id', 'name'], as: 'ItemCategory', required: false },
+        { model: UploadImage, attributes: ['file'], required: false },
       ],
     });
     const mappedRows = rows.map(row => ({
       id: row.id,
       name: row.name,
       status: row.status,
-      category_id: row.category_id,
-      subcategory_id: row.subcategory_id,
-      category_name: row.Categories ? row.Categories.name : null,
-      subcategory_name: row.SubCategories ? row.SubCategories.name : null,
-      itemcategory_name: row.ItemCategory ? row.ItemCategory.name : null,
-      file_id: row.file_id,
-      file_name: row.UploadImage ? row.UploadImage.file : null,
+      is_parent: true,
+      item_subcategory_id: row.id,
+      item_subcategory_name: row.name,
+      itemcategory_name: row.ItemCategory?.name || null,
+      file_name: row.UploadImage?.file || null,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -877,11 +904,28 @@ exports.getKeywordsBySubcategoryId = async (req, res) => {
     }
     const keywords = await ProductKeyword.findAll({
       where: { item_subcategory_id },
-      attributes: ['id', 'name', 'status', 'created_at', 'updated_at'],
+      attributes: ['id', 'name', 'status', 'is_main', 'created_at', 'updated_at'],
       order: [['id', 'ASC']],
       raw: true,
     });
-    res.json(keywords);
+    const keywordIds = keywords.map((keyword) => keyword.id);
+    const usedKeywordRows = keywordIds.length
+      ? await Products.findAll({
+        where: { keyword_id: { [Op.in]: keywordIds } },
+        attributes: ['keyword_id'],
+        group: ['keyword_id'],
+        raw: true,
+      })
+      : [];
+    const usedKeywordIds = new Set(usedKeywordRows.map((row) => Number(row.keyword_id)));
+    const itemSubCategoryUsageCount = await Products.count({
+      where: { item_subcategory_id },
+    });
+
+    res.json(keywords.map((keyword) => ({
+      ...keyword,
+      is_used: itemSubCategoryUsageCount > 0 || usedKeywordIds.has(Number(keyword.id)),
+    })));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
