@@ -118,6 +118,14 @@ ItemSubCategory.beforeUpdate((itemSubCategory, options) => {
     }
   }
 
+  // Restore the original name when moving an entry out of Recently Deleted.
+  if (itemSubCategory.changed('is_delete') && itemSubCategory.is_delete === 0) {
+    itemSubCategory.name = itemSubCategory.name.replace(
+      new RegExp(`-deleted-${itemSubCategory.id}$`, 'i'),
+      ''
+    );
+  }
+
   if (itemSubCategory.changed('name')) {
     itemSubCategory.slug = slugify(itemSubCategory.name, {
       lower: true,

@@ -344,7 +344,7 @@ const ItemSubCategory = ({ getDeleted, excludeItemSubCategories }) => {
         showNotification(res.data?.message || "Selected category deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting selected category:", error);
-        showNotification("Failed to delete selected category.", "error");
+        showNotification(error?.response?.data?.message || "Failed to delete selected category.", "error");
       } finally {
         closeDeleteModal();
       }
@@ -358,7 +358,7 @@ const ItemSubCategory = ({ getDeleted, excludeItemSubCategories }) => {
         showNotification("Category deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting item sub category:", error);
-        showNotification("Failed to delete item sub category.", "error");
+        showNotification(error?.response?.data?.message || "Failed to delete item sub category.", "error");
       }
     }
   };

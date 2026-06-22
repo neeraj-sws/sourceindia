@@ -10,6 +10,10 @@ const Products = require('../models/Products');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
+const {
+  syncMainProductKeyword,
+  deleteMainProductKeywords,
+} = require('../utils/mainProductKeywordSync');
 
 exports.createItemSubCategory = async (req, res) => {
   const upload = getMulterUpload('item_sub_category');
@@ -26,9 +30,16 @@ exports.createItemSubCategory = async (req, res) => {
       const itemSubCategory = await ItemSubCategory.create({
         name, category_id, subcategory_id, item_category_id, status, file_id: uploadImage.id,
       });
-      const category = await Categories.findByPk(category_id);
-      const subCategory = await SubCategories.findByPk(subcategory_id);
-      const itemCategory = await ItemCategory.findByPk(item_category_id);
+      const productKeyword = await syncMainProductKeyword(itemSubCategory);
+      const category = await Categories.findByPk(category_id, {
+        attributes: ['id', 'name'],
+      });
+      const subCategory = await SubCategories.findByPk(subcategory_id, {
+        attributes: ['id', 'name'],
+      });
+      const itemCategory = await ItemCategory.findByPk(item_category_id, {
+        attributes: ['id', 'name'],
+      });
       const itemSubCategoryWithNames = {
         ...itemSubCategory.toJSON(),
         category_name: category ? category.name : '',
@@ -36,8 +47,9 @@ exports.createItemSubCategory = async (req, res) => {
         itemcategory_name: itemCategory ? itemCategory.name : ''
       };
       res.status(201).json({
-        message: 'Item Sub Category created',
-        itemSubCategory: itemSubCategoryWithNames
+        message: 'Item Sub Category and Product Keyword created',
+        itemSubCategory: itemSubCategoryWithNames,
+        productKeyword,
       });
     } catch (err) {
       console.error(err);
@@ -178,6 +190,7 @@ exports.updateItemSubCategory = async (req, res) => {
       itemSubCategory.status = status;
       itemSubCategory.updated_at = new Date();
       await itemSubCategory.save();
+      await syncMainProductKeyword(itemSubCategory);
 
       res.json({ message: 'Item Sub Category updated', itemSubCategory });
     } catch (err) {
@@ -190,6 +203,15 @@ exports.deleteItemSubCategory = async (req, res) => {
   try {
     const itemSubCategory = await ItemSubCategory.findByPk(req.params.id);
     if (!itemSubCategory) return res.status(404).json({ message: 'Item Sub Category not found' });
+    const productUsageCount = await Products.count({
+      where: { item_subcategory_id: itemSubCategory.id },
+    });
+    if (productUsageCount > 0) {
+      return res.status(409).json({
+        message: `Item Sub Category cannot be deleted because it is used in ${productUsageCount} product(s).`,
+      });
+    }
+    await deleteMainProductKeywords(itemSubCategory.id);
     if (itemSubCategory.file_id && itemSubCategory.file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(itemSubCategory.file_id);
       if (uploadImage) {
@@ -228,10 +250,20 @@ exports.deleteSelectedItemSubCategory = async (req, res) => {
       return res.status(404).json({ message: 'No Item Sub Category found with the given IDs.' });
     }
 
+    const productUsageCount = await Products.count({
+      where: { item_subcategory_id: { [Op.in]: parsedIds } },
+    });
+    if (productUsageCount > 0) {
+      return res.status(409).json({
+        message: `Selected Item Sub Category cannot be deleted because one or more are used in ${productUsageCount} product(s).`,
+      });
+    }
+
     await ItemSubCategory.update(
       { is_delete: 1 },
       { where: { id: { [Op.in]: parsedIds } } }
     );
+    await deleteMainProductKeywords(parsedIds);
 
     res.json({ message: `${itemSubCategories.length} Item Sub Category(s) deleted successfully.` });
   } catch (err) {
@@ -253,6 +285,7 @@ exports.updateItemSubCategoryStatus = async (req, res) => {
 
     itemSubCategory.status = status;
     await itemSubCategory.save();
+    await syncMainProductKeyword(itemSubCategory);
 
     res.json({ message: 'Status updated', itemSubCategory });
   } catch (err) {
@@ -593,8 +626,23 @@ exports.updateItemSubCategoryDeleteStatus = async (req, res) => {
     }
     const itemSubCategory = await ItemSubCategory.findByPk(req.params.id);
     if (!itemSubCategory) return res.status(404).json({ message: 'Item Sub Category not found' });
+    if (is_delete === 1) {
+      const productUsageCount = await Products.count({
+        where: { item_subcategory_id: itemSubCategory.id },
+      });
+      if (productUsageCount > 0) {
+        return res.status(409).json({
+          message: `Item Sub Category cannot be deleted because it is used in ${productUsageCount} product(s).`,
+        });
+      }
+    }
     itemSubCategory.is_delete = is_delete;
     await itemSubCategory.save();
+    if (is_delete === 1) {
+      await deleteMainProductKeywords(itemSubCategory.id);
+    } else {
+      await syncMainProductKeyword(itemSubCategory);
+    }
     res.json({ message: 'Item Sub Category delete status updated', itemSubCategory });
   } catch (err) {
     res.status(500).json({ error: err.message });

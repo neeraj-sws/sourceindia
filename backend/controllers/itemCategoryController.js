@@ -699,6 +699,7 @@ exports.importItemSubCategoriesAndKeywords = async (req, res) => {
           ...(code ? { code } : {}),
           item_subcategory_id: itemSubCategory.id,
           status: row.status,
+          is_main: 1,
         }, { transaction });
 
         existingKeywordSet.add(normalizedKeyword);

@@ -176,6 +176,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
   });
 
   const startInlineEdit = (keyword) => {
+    if (Number(keyword.is_main) === 1) return;
     setInlineEditId(keyword.id);
     setInlineEditName(keyword.name || "");
   };
@@ -289,11 +290,14 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
       try {
         await axios.delete(`${API_BASE_URL}/keywords/${keywordToDelete}`);
         setListData((prevData) => prevData.filter((item) => item.id !== keywordToDelete));
+        setData((prevData) => prevData.filter((item) => item.id !== keywordToDelete));
+        setTotalRecords((prev) => Math.max(0, prev - 1));
+        setFilteredRecords((prev) => Math.max(0, prev - 1));
         closeDeleteModal();
         showNotification("Keyword deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting keyword:", error);
-        showNotification("Failed to delete keyword.", "error");
+        showNotification(getApiErrorMessage(error, "Failed to delete keyword."), "error");
       }
       return;
     }
@@ -303,14 +307,15 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
         const res = await axios.delete(`${API_BASE_URL}/keywords/delete-selected`, {
           data: { ids: selectedItemSubCategory }
         });
-        setData((prevData) => prevData.filter((item) => !selectedItemSubCategory.includes(item.id)));
-        setTotalRecords((prev) => prev - selectedItemSubCategory.length);
-        setFilteredRecords((prev) => prev - selectedItemSubCategory.length);
+        const deletedIds = res.data?.deletedIds || [];
+        setData((prevData) => prevData.filter((item) => !deletedIds.includes(item.id)));
+        setTotalRecords((prev) => Math.max(0, prev - deletedIds.length));
+        setFilteredRecords((prev) => Math.max(0, prev - deletedIds.length));
         setSelectedItemSubCategory([]);
         showNotification(res.data?.message || "Selected category deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting selected category:", error);
-        showNotification("Failed to delete selected category.", "error");
+        showNotification(getApiErrorMessage(error, "Failed to delete selected Product Keywords."), "error");
       } finally {
         closeDeleteModal();
       }
@@ -339,7 +344,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
 
   const handleSelectAll = (event) => {
     if (event.target.checked) {
-      setSelectedItemSubCategory(data?.map((item) => item.id));
+      setSelectedItemSubCategory(data?.filter((item) => !item.is_parent && Number(item.is_main) !== 1).map((item) => item.id));
     } else {
       setSelectedItemSubCategory([]);
     }
@@ -485,7 +490,12 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
                     renderRow={(row, index) => (
                       <tr key={row.id}>
                         <td>
-                          <input type="checkbox" checked={selectedItemSubCategory.includes(row.id)} onChange={() => handleSelectItemSubCategory(row.id)} />
+                          <input
+                            type="checkbox"
+                            checked={selectedItemSubCategory.includes(row.id)}
+                            disabled={row.is_parent || Number(row.is_main) === 1}
+                            onChange={() => handleSelectItemSubCategory(row.id)}
+                          />
                         </td>
                         <td>{(page - 1) * limit + index + 1}</td>
                         <td><ImageWithFallback
@@ -500,12 +510,27 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
                           <>
                             <td>
 
-                              <button className="btn btn-primary btn-sm" onClick={() => openForm(null, row.id)}>
+                              <button className="btn btn-primary btn-sm" title="Add keyword for this item subcategory" onClick={() => openForm(null, row.item_subcategory_id)}>
                                 <i className="bx bx-plus"></i>
                               </button>
-                              <button className="btn btn-info btn-sm ms-2" onClick={() => openList(row.id)}>
+                              <button
+                                className="btn btn-info btn-sm ms-2"
+                                title="Keyword list"
+                                onClick={() => openList(row.item_subcategory_id)}
+                              >
                                 <i className="fadeIn animated bx bx-list-ul"></i>
                               </button>
+                              {row.is_parent ? null : Number(row.is_main) === 1 ? (
+                                <></>) : (
+                                <>
+                                  {/* <button className="btn btn-info btn-sm ms-2" title="Edit" onClick={() => openForm(row)}>
+                                    <i className="bx bx-edit"></i>
+                                  </button> */}
+                                  {/* <button className="btn btn-danger btn-sm ms-2" title="Delete" onClick={() => openDeleteModal(row.id)}>
+                                    <i className="bx bx-trash"></i>
+                                  </button> */}
+                                </>
+                              )}
 
                             </td>
 
@@ -680,7 +705,9 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
                             )}
                           </td>
                           <td>
-                            {inlineEditId === kw.id ? (
+                            {Number(kw.is_main) === 1 ? (
+                              <span className="badge bg-secondary">Managed by Item Subcategory</span>
+                            ) : inlineEditId === kw.id ? (
                               <>
                                 <button
                                   className="btn btn-success btn-sm me-1"
@@ -705,13 +732,15 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
                                 <i className="bx bx-edit"></i>
                               </button>
                             )}
-                            <button
-                              className="btn pe-0 ps-1 text-danger btn-sm"
-                              disabled={inlineSubmitting}
-                              onClick={() => openDeleteModal(kw.id)}
-                            >
-                              <i className="bx bx-trash"></i>
-                            </button>
+                            {Number(kw.is_main) !== 1 && !kw.is_used && (
+                              <button
+                                className="btn pe-0 ps-1 text-danger btn-sm"
+                                disabled={inlineSubmitting}
+                                onClick={() => openDeleteModal(kw.id)}
+                              >
+                                <i className="bx bx-trash"></i>
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -745,14 +774,14 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
       <ExcelExport
         ref={excelExportRef}
         columnWidth={34.29}
-        fileName={excludeItemSubCategories ? "Unused Item SubCategory.xlsx" : "Item SubCategory Export.xlsx"}
-        data={itemSubCategoryData}
+        fileName="Product Keywords.xlsx"
+        data={data}
         columns={[
           { label: "Name", key: "name" },
-          { label: "Category", key: "category_name" },
-          { label: "SubCategory", key: "subcategory_name" },
+          { label: "Item SubCategory", key: "item_subcategory_name" },
           { label: "ItemCategory", key: "itemcategory_name" },
-          { label: "Status", key: "getStatus" },
+          { label: "Status", key: "status" },
+          { label: "Main", key: "is_main" },
           { label: "Created At", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
           { label: "Updated At", key: "updated_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },
         ]}
