@@ -485,10 +485,18 @@ const ItemCategory = ({ getDeleted, excludeItemCategories }) => {
         Status: 1,
       },
     ];
+
     const worksheet = utils.json_to_sheet(rows);
     const workbook = utils.book_new();
     utils.book_append_sheet(workbook, worksheet, "Import");
-    writeFile(workbook, "item_subcategory_keywords_import.xlsx");
+
+    // Selected Item Category ka naam
+    const fileName = `${(importItemCategory?.name || "Item_Category")
+        .replace(/[\\/:*?"<>|]/g, "_")
+        .replace(/\s+/g, "_")
+      }_Import_Template.xlsx`;
+
+    writeFile(workbook, fileName);
   };
 
   return (
@@ -720,54 +728,54 @@ const ItemCategory = ({ getDeleted, excludeItemCategories }) => {
                             </td>
                             <td>
                               <div className="d-flex align-items-center gap-2">
-                               <button className="btn btn-sm btn-success ps-2 py-1 pe-0" onClick={() => openImportModal(row)}>
-                                          <i className="bx bx-upload me-2"></i> 
-                                        </button>
-                              <div className="dropdown">
-                                <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                  <i className="bx bx-dots-vertical-rounded"></i>
+                                <button className="btn btn-sm btn-success ps-2 py-1 pe-0" onClick={() => openImportModal(row)}>
+                                  <i className="bx bx-upload me-2"></i>
                                 </button>
-                                <ul className="dropdown-menu">
-                                  {!getDeleted ? (
-                                    <>
-                                      <li>
-                                        <button className="dropdown-item" onClick={() => openForm(row)}>
-                                          <i className="bx bx-edit me-2"></i> Edit
-                                        </button>
-                                      </li>
-                                     
-                                      <li>
-                                        <button className="dropdown-item text-danger"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                                          }}
-                                        >
-                                          <i className="bx bx-trash me-2"></i> Delete
-                                        </button>
-                                      </li>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <li>
-                                        <button className="dropdown-item"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
-                                          }}
-                                        >
-                                          <i className="bx bx-windows me-2"></i> Restore
-                                        </button>
-                                      </li>
-                                      <li>
-                                        <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
-                                          <i className="bx bx-trash me-2"></i> Delete
-                                        </button>
-                                      </li>
-                                    </>
-                                  )}
-                                </ul>
-                              </div>
+                                <div className="dropdown">
+                                  <button className="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i className="bx bx-dots-vertical-rounded"></i>
+                                  </button>
+                                  <ul className="dropdown-menu">
+                                    {!getDeleted ? (
+                                      <>
+                                        <li>
+                                          <button className="dropdown-item" onClick={() => openForm(row)}>
+                                            <i className="bx bx-edit me-2"></i> Edit
+                                          </button>
+                                        </li>
+
+                                        <li>
+                                          <button className="dropdown-item text-danger"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                            }}
+                                          >
+                                            <i className="bx bx-trash me-2"></i> Delete
+                                          </button>
+                                        </li>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <li>
+                                          <button className="dropdown-item"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              openStatusModal(row.id, row.is_delete, "delete_status", "is_delete");
+                                            }}
+                                          >
+                                            <i className="bx bx-windows me-2"></i> Restore
+                                          </button>
+                                        </li>
+                                        <li>
+                                          <button className="dropdown-item text-danger" onClick={() => openDeleteModal(row.id)}>
+                                            <i className="bx bx-trash me-2"></i> Delete
+                                          </button>
+                                        </li>
+                                      </>
+                                    )}
+                                  </ul>
+                                </div>
                               </div>
                             </td>
                           </>
@@ -797,12 +805,12 @@ const ItemCategory = ({ getDeleted, excludeItemCategories }) => {
               </div>
               <form onSubmit={handleImportSubmit}>
                 <div className="modal-body">
-                  
+
                   <div className="mb-3">
                     <div className="d-flex align-items-center justify-content-between mb-2">
                       <label htmlFor="itemCategoryImportFile" className="form-label mb-0">Import File</label>
                       <button type="button" className="btn btn-sm btn-outline-primary" onClick={downloadImportTemplate}>
-                        <i className="bx bx-download me-1"></i> Download Example File
+                        <i className="bx bx-download me-1"></i> Example File
                       </button>
                     </div>
                     <input
