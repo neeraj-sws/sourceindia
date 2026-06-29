@@ -7,14 +7,95 @@ const SubCategories = require('../models/SubCategories');
 const Products = require('../models/Products');
 
 const SUGGEST_MATCH_STOP_WORDS = new Set([
-  'a', 'an', 'the', 'and', 'or', 'for', 'with', 'to', 'of', 'by', 'on', 'in', 'at', 'from'
+  'i', 'we', 'our', 'us', 'are', 'is', 'am', 'be', 'being', 'been', 'me', 'my', 'mine', 'ours', 'you', 'your', 'yours',
+  'need', 'needs', 'needed',
+  'want', 'wants', 'wanted',
+  'looking', 'look',
+  'find', 'search', 'searching',
+  'show', 'showing',
+  'suggest', 'suggestion',
+  'get', 'give',
+  'please', 'kindly',
+  'can', 'could', 'would', 'will', 'shall',
+  'like',
+  'require', 'required', 'requires',
+  'help',
+  'tell',
+  'lookingfor',
+  'buy', 'purchase', 'order',
+  'available', 'availability',
+  'best', 'top',
+  'new', 'latest',
+  'needing',
+  'searchingfor', 'a', 'an', 'the',
+  'and', 'or',
+  'for', 'to', 'of', 'in', 'on', 'at', 'by', 'from', 'with', 'personal',
+  'use',
+  'uses',
+  'using',
+  'own',
+  'self', 'type',
+  'types', 'special',
+  'specially',
+  'general',
+  'generic',
+  'custom',
+  'customized',
+  'other',
+  'any',
+  'some',
+  'various',
+  'different'
 ]);
 
 const SUGGEST_RANKING_STOP_WORDS = new Set([
   ...SUGGEST_MATCH_STOP_WORDS,
-  'we', 'our', 'us', 'are', 'is', 'am', 'be', 'being', 'been',
+  'i', 'we', 'our', 'us', 'are', 'is', 'am', 'be', 'being', 'been',
   'manufacturer', 'manufacturing', 'manufacture', 'suppliers', 'supplier', 'trader', 'dealers', 'dealer',
-  'company', 'companies', 'products', 'product', 'services', 'service', 'provide', 'providing'
+  'company', 'companies', 'products', 'product', 'services', 'service', 'provide', 'providing', 'need', 'wants', 'look', 'find', 'me', 'my', 'mine', 'we', 'our', 'ours', 'you', 'your', 'yours',
+  'need', 'needs', 'needed',
+  'want', 'wants', 'wanted',
+  'lookingfor',
+  'find', 'search', 'searching',
+  'show', 'showing',
+  'suggest', 'suggestion',
+  'get', 'give',
+  'please', 'kindly',
+  'can', 'could', 'would', 'will', 'shall',
+  'like',
+  'require', 'required', 'requires',
+  'help',
+  'tell',
+  'looking',
+  'lookingfor',
+  'buy', 'purchase', 'order',
+  'available', 'availability',
+  'best', 'top',
+  'new', 'latest',
+  'needing',
+  'searchingfor'
+]);
+
+
+const LOCATION_STOP_WORDS = new Set([
+  'india',
+  'delhi',
+  'mumbai',
+  'pune',
+  'bangalore',
+  'bengaluru',
+  'hyderabad',
+  'chennai',
+  'kolkata',
+  'ahmedabad',
+  'surat',
+  'jaipur',
+  'indore',
+  'dewas',
+  'bhopal',
+  'noida',
+  'gurgaon',
+  'gurugram'
 ]);
 
 const normalizeTextForSuggest = (text = '') =>
@@ -25,11 +106,24 @@ const normalizeTextForSuggest = (text = '') =>
     .replace(/\s+/g, ' ')
     .trim();
 
+const normalizeWord = (word = '') =>
+  word
+    .toLowerCase()
+    .replace(/'s$/i, '')
+    .replace(/ies$/i, 'y')
+    .replace(/s$/i, '');
+
 const tokenizeForSuggest = (text = '') =>
   normalizeTextForSuggest(text)
     .split(' ')
     .map((w) => w.trim())
-    .filter((w) => w.length > 1 && !SUGGEST_MATCH_STOP_WORDS.has(w));
+    .filter((w) =>
+      w.length > 1 &&
+      !SUGGEST_MATCH_STOP_WORDS.has(w) &&
+      !LOCATION_STOP_WORDS.has(w) &&
+      !/^\d+$/.test(w) &&
+      !/(.)\1{4,}/.test(w)
+    );
 
 const tokenizeForOrder = (text = '') =>
   normalizeTextForSuggest(text)
@@ -79,17 +173,30 @@ const getLevenshteinDistance = (a = '', b = '') => {
 };
 
 const isSuggestWordMatch = (queryWord = '', keywordWord = '') => {
-  if (!queryWord || !keywordWord) return false;
+  queryWord = normalizeWord(queryWord);
+  keywordWord = normalizeWord(keywordWord);
+
   if (queryWord === keywordWord) return true;
 
-  const minPrefixLength = 2;
-  if (queryWord.length >= minPrefixLength && keywordWord.startsWith(queryWord)) return true;
-  if (keywordWord.length >= minPrefixLength && queryWord.startsWith(keywordWord)) return true;
+  if (keywordWord.startsWith(queryWord)) return true;
 
-  const minFuzzyLength = 5;
-  if (queryWord.length >= minFuzzyLength && keywordWord.length >= minFuzzyLength) {
+  if (
+    queryWord.length >= 4 &&
+    keywordWord.includes(queryWord)
+  )
+    return true;
+
+  if (queryWord.startsWith(keywordWord)) return true;
+
+  if (
+    queryWord.length >= 5 &&
+    keywordWord.length >= 5
+  ) {
     const distance = getLevenshteinDistance(queryWord, keywordWord);
-    if (distance <= 1) return true;
+
+    if (distance <= 2)
+      return true;
+
   }
 
   return false;
@@ -119,12 +226,25 @@ const getSuggestWordMatchStats = (queryWords = [], keywordWords = []) => {
 };
 
 const isStrongHeaderSuggestion = (suggestion) => {
+
   if (suggestion.exact_match) return true;
+
+  if (suggestion.full_query_match) return true;
+
+  if (suggestion.confidence_score >= 0.80) return true;
+
+  // NEW CONDITION
+  if (
+    suggestion.matched_query_word_count >= 2 &&
+    suggestion.match_score >= 2
+  ) return true;
+
   if (suggestion.phrase_prefix_match) return true;
+
   if (suggestion.leading_prefix_token_score >= 1) return true;
-  if (suggestion.matched_keyword_word_count >= 2) return true;
-  if (suggestion.matched_query_word_count >= 2) return true;
-  if (suggestion.phrase_includes_match && suggestion.matched_query_word_count >= 1) return true;
+
+  if (suggestion.phrase_includes_match) return true;
+
   return false;
 };
 
@@ -151,9 +271,34 @@ const fetchWeightedProductKeywordSuggestions = async ({
   }
 
   const keywordWhere = { status: 1 };
-  keywordWhere[Op.or] = queryWords.map((word) => ({
-    name: { [Op.like]: `%${word}%` },
-  }));
+  const dbSearchWords = queryWords
+    .filter(word => word.length >= 2);
+
+  if (!dbSearchWords.length) {
+    return {
+      normalizedQuery,
+      queryWords,
+      suggestions: [],
+    };
+  }
+
+  // const longestWord = dbSearchWords.reduce(
+  //     (a, b) => a.length >= b.length ? a : b
+  // );
+
+  keywordWhere[Op.or] = dbSearchWords.map(word => {
+
+    const prefix =
+      word.length >= 8
+        ? word.substring(0, 3)
+        : word.substring(0, Math.min(4, word.length));
+
+    return {
+      name: {
+        [Op.like]: `%${prefix}%`
+      }
+    };
+  });
 
   const itemSubCategoryWhere = {};
   if (category) itemSubCategoryWhere.category_id = category;
@@ -163,22 +308,9 @@ const fetchWeightedProductKeywordSuggestions = async ({
 
   const keywords = await ProductKeyword.findAll({
     where: keywordWhere,
-    limit: 200,
     attributes: ['id', 'name', 'item_subcategory_id'],
-    include: [
-      {
-        model: ItemSubCategory,
-        as: 'ItemSubCategory',
-        required: Object.keys(itemSubCategoryWhere).length > 0,
-        where: Object.keys(itemSubCategoryWhere).length > 0 ? itemSubCategoryWhere : undefined,
-        attributes: ['id', 'name', 'item_category_id', 'category_id', 'subcategory_id'],
-        include: [
-          { model: Categories, as: 'Categories', required: false, attributes: ['id', 'name'] },
-          { model: SubCategories, as: 'SubCategories', required: false, attributes: ['id', 'name'] },
-          { model: ItemCategory, as: 'ItemCategory', required: false, attributes: ['id', 'name'] }
-        ]
-      }
-    ]
+    limit: 1000,
+    raw: true
   });
 
   const scored = keywords.map((keyword) => {
@@ -188,25 +320,39 @@ const fetchWeightedProductKeywordSuggestions = async ({
     const { matchedQueryWords, matchedKeywordWords } = getSuggestWordMatchStats(queryWords, keywordWords);
     const matchedQueryWordCount = matchedQueryWords.length;
     const matchedKeywordWordCount = matchedKeywordWords.length;
-    const matchScore = matchedKeywordWordCount;
+
     const exactMatch = normalizedKeyword === normalizedQuery;
     const phrasePrefixMatch = normalizedQuery.length >= 2 && normalizedKeyword.startsWith(normalizedQuery);
     const phraseIncludesMatch = normalizedQuery.length >= 2 && normalizedKeyword.includes(normalizedQuery);
     const leadingPrefixTokenScore = getLeadingPrefixTokenScore(queryOrderTokens, keywordOrderTokens);
 
+    const matchScore =
+      matchedQueryWordCount * 100 +
+      leadingPrefixTokenScore * 20 +
+      matchedKeywordWordCount * 10;
+
     const keywordCoverage = keywordWords.length ? matchedKeywordWordCount / keywordWords.length : 0;
     const queryCoverage = queryWords.length ? matchedQueryWordCount / queryWords.length : 0;
-    const confidenceScore = exactMatch
-      ? 1
-      : Number((0.7 * keywordCoverage + 0.3 * queryCoverage).toFixed(3));
+    let confidenceScore =
+      (queryCoverage * 0.9) +
+      (keywordCoverage * 0.1);
 
-    const isConfidentMatch = exactMatch || (matchedKeywordWordCount >= 2 && matchedQueryWordCount >= 2);
+    if (exactMatch)
+      confidenceScore = 1;
+
+    confidenceScore = Number(confidenceScore.toFixed(3));
+
+    const isConfidentMatch =
+      exactMatch ||
+      queryCoverage >= 0.8 ||
+      confidenceScore >= 0.8;
 
     return {
       id: keyword.id,
       user_id: null,
       title: keyword.name,
       category: keyword.ItemSubCategory?.category_id || null,
+      exact_title_match: normalizedKeyword === normalizedQuery,
       category_name: keyword.ItemSubCategory?.Categories?.name || '',
       sub_category: keyword.ItemSubCategory?.subcategory_id || null,
       sub_category_name: keyword.ItemSubCategory?.SubCategories?.name || '',
@@ -233,24 +379,82 @@ const fetchWeightedProductKeywordSuggestions = async ({
     };
   });
 
-  const matchedScored = scored.filter((item) => (
-    item.matched_query_word_count > 0
-    || item.matched_keyword_word_count > 0
-    || item.leading_prefix_token_score > 0
-    || item.phrase_prefix_match
-    || item.phrase_includes_match
-  ));
+
+  const fullyMatched = scored.filter(
+    x => x.full_query_match
+  );
+
+  if (fullyMatched.length) {
+    return {
+      normalizedQuery,
+      queryWords,
+      suggestions: fullyMatched.slice(0, limit)
+    };
+  }
+
+  const matchedScored = scored.filter(item =>
+    item.matched_query_word_count > 0 ||
+    item.matched_keyword_word_count > 0 ||
+    item.leading_prefix_token_score > 0 ||
+    item.phrase_prefix_match ||
+    item.phrase_includes_match
+  );
 
   matchedScored.sort((a, b) => {
-    if (a.exact_match !== b.exact_match) return a.exact_match ? -1 : 1;
-    if (a.leading_prefix_token_score !== b.leading_prefix_token_score) {
+
+    if (a.exact_title_match !== b.exact_title_match)
+      return a.exact_title_match ? -1 : 1;
+
+    if (a.exact_match !== b.exact_match)
+      return a.exact_match ? -1 : 1;
+
+    if (a.full_query_match !== b.full_query_match)
+      return a.full_query_match ? -1 : 1;
+
+
+    const aCoverage = a.matched_query_word_count / Math.max(1, a.query_word_count);
+    const bCoverage = b.matched_query_word_count / Math.max(1, b.query_word_count);
+
+    if (aCoverage !== bCoverage)
+      return bCoverage - aCoverage;
+
+
+
+    if (a.matched_query_word_count !== b.matched_query_word_count)
+      return b.matched_query_word_count - a.matched_query_word_count;
+
+    if (a.match_score !== b.match_score)
+      return b.match_score - a.match_score;
+
+    if (a.confidence_score !== b.confidence_score)
+      return b.confidence_score - a.confidence_score;
+
+    if (a.phrase_prefix_match !== b.phrase_prefix_match)
+      return a.phrase_prefix_match ? -1 : 1;
+
+    if (a.leading_prefix_token_score !== b.leading_prefix_token_score)
       return b.leading_prefix_token_score - a.leading_prefix_token_score;
-    }
-    if (a.phrase_prefix_match !== b.phrase_prefix_match) return a.phrase_prefix_match ? -1 : 1;
-    if (a.phrase_includes_match !== b.phrase_includes_match) return a.phrase_includes_match ? -1 : 1;
-    if (a.match_score !== b.match_score) return b.match_score - a.match_score;
-    if (a.confidence_score !== b.confidence_score) return b.confidence_score - a.confidence_score;
+
+    if (a.phrase_includes_match !== b.phrase_includes_match)
+      return a.phrase_includes_match ? -1 : 1;
+
+
+    // // Same first word ko priority
+    // const aStarts = tokenizeForSuggest(a.title)[0] === queryWords[0];
+    // const bStarts = tokenizeForSuggest(b.title)[0] === queryWords[0];
+
+    // if (aStarts !== bStarts)
+    //     return aStarts ? -1 : 1;
+
+    // Jis keyword me extra words kam hon usko priority
+    const aExtraWords = a.keyword_word_count - a.matched_keyword_word_count;
+    const bExtraWords = b.keyword_word_count - b.matched_keyword_word_count;
+
+    if (aExtraWords !== bExtraWords)
+      return aExtraWords - bExtraWords;
+
     return a.title.length - b.title.length;
+
   });
 
   let suggestions = matchedScored;

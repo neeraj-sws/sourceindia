@@ -1250,7 +1250,7 @@ const AddProduct = () => {
                         <div className="form-group mb-3 col-md-6">
                           <label htmlFor="article_number" className="form-label">Part Number</label>
                           <input
-                            type="number" className="form-control"
+                            type="text" className="form-control"
                             id="article_number"
                             placeholder="Part Number"
                             value={formData.article_number}

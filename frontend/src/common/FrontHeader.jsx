@@ -109,6 +109,13 @@ const FrontHeader = () => {
     setSearchQuery(displayValue);
     setShowDropdown(false);
 
+    if (searchType === "product") {
+      navigate(`/products?search=${encodeURIComponent(searchValue)}`, {
+        state: { headerDisplaySearch: displayValue }
+      });
+      return true;
+    }
+
     const url = item.url.includes("?")
       ? `${item.url}&search=${encodeURIComponent(searchValue)}`
       : `${item.url}?search=${encodeURIComponent(searchValue)}`;
@@ -135,16 +142,6 @@ const FrontHeader = () => {
         : searchType === "seller"
           ? "/company-list"
           : "/buyer-list";
-
-    if (searchType === "product" && suggestions.length > 0) {
-      const topSuggestion = suggestions[0];
-      if (navigateToSuggestion(topSuggestion, {
-        searchValue: normalizeSearchValue(topSuggestion.name || ""),
-        displayValue: normalizedSearch,
-      })) {
-        return;
-      }
-    }
 
     navigate(`${path}?search=${encodeURIComponent(normalizedSearch)}`, {
       state: { headerDisplaySearch: normalizedSearch }
