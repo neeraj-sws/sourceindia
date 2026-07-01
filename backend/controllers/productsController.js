@@ -1,4 +1,8 @@
 // Product name autocomplete with master data
+const { fetchWeightedProductKeywordSuggestions } = require('../utils/productAdminsuggest');
+
+const isTruthyQueryFlag = (value) => value === true || value === 'true' || value === '1' || value === 1;
+
 const SUGGEST_MATCH_STOP_WORDS = new Set([
   'a', 'an', 'the', 'and', 'or', 'for', 'with', 'to', 'of', 'by', 'on', 'in', 'at', 'from'
 ]);
@@ -117,6 +121,8 @@ exports.suggestProducts = async (req, res) => {
       sub_category,
       item_category_id,
       item_subcategory_id,
+      header_strict,
+      only_with_products,
     } = req.query;
     if (!query || query.length < 2) {
       return res.json({
@@ -128,6 +134,41 @@ exports.suggestProducts = async (req, res) => {
           bucket: 'Others / Uncategorized',
         },
         alternatives: [],
+      });
+    }
+
+    if (isTruthyQueryFlag(header_strict)) {
+      const { normalizedQuery, queryWords, suggestions } = await fetchWeightedProductKeywordSuggestions({
+        query,
+        category,
+        sub_category,
+        item_category_id,
+        item_subcategory_id,
+        header_strict: true,
+        only_with_products: isTruthyQueryFlag(only_with_products),
+        limit: 6,
+      });
+
+      const bestConfidentMatch = suggestions.find((s) => s.is_confident_match) || suggestions[0] || null;
+      const alternatives = suggestions.filter((s) => !bestConfidentMatch || s.id !== bestConfidentMatch.id);
+
+      return res.json({
+        success: true,
+        normalized_query: normalizedQuery,
+        tokens: queryWords,
+        data: suggestions,
+        auto_classification: bestConfidentMatch
+          ? {
+            matched: true,
+            reason: bestConfidentMatch.exact_match ? 'exact_match' : 'best_score_match',
+            best_match: bestConfidentMatch,
+          }
+          : {
+            matched: false,
+            reason: suggestions.length ? 'low_confidence' : 'no_keyword_match',
+            bucket: 'Others / Uncategorized',
+          },
+        alternatives,
       });
     }
 

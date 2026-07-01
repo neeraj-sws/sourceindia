@@ -36,6 +36,7 @@ const AddProduct = () => {
   const [productSuggestions, setProductSuggestions] = useState([]);
   const [activeSuggestionKey, setActiveSuggestionKey] = useState('');
   const [selectedSuggestionTitle, setSelectedSuggestionTitle] = useState('');
+  const [isOtherLabelSelected, setIsOtherLabelSelected] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionLoading, setSuggestionLoading] = useState(false);
   const [imageToDelete, setImageToDelete] = useState(null);
@@ -84,6 +85,7 @@ const AddProduct = () => {
 
   const getSuggestionKey = (suggestion = {}) =>
     `${String(suggestion?.id ?? '')}::${normalizeSuggestText(suggestion?.title || '')}`;
+  const OTHER_SUGGESTION_KEY = '__other__';
 
   const getTokenMatchScore = (queryTokens = [], titleTokens = []) => {
     if (!queryTokens.length || !titleTokens.length) return 0;
@@ -142,9 +144,8 @@ const AddProduct = () => {
 
   const applyOtherCategorySelection = () => {
     const otherCategory = findOtherCategoryOption();
-    if (!otherCategory) return;
 
-    setSelectedCategory(String(otherCategory.id));
+    setSelectedCategory(otherCategory ? String(otherCategory.id) : '');
     setSelectedSubCategory('');
     setSelectedItemCategory('');
     setSelectedItemSubCategory('');
@@ -155,8 +156,11 @@ const AddProduct = () => {
     setKeywords([]);
     setItems([]);
     setActiveSuggestionKey('');
+    setIsOtherLabelSelected(true);
+    setCategoryLabel(otherCategory?.name || 'Other');
     setErrors((prev) => {
       const next = { ...(prev || {}) };
+      delete next.category;
       delete next.sub_category;
       delete next.item_category;
       return next;
@@ -172,6 +176,7 @@ const AddProduct = () => {
   const isSuggestionTagActive = (suggestion) => activeSuggestionKey === getSuggestionKey(suggestion);
 
   const isOtherCategorySelected = (() => {
+    if (isOtherLabelSelected) return true;
     const selectedCategoryObj = (Array.isArray(categories) ? categories : []).find(
       (category) => String(category?.id) === String(selectedCategory)
     );
@@ -208,6 +213,7 @@ const AddProduct = () => {
     setSelectedItem('');
     setActiveSuggestionKey('');
     setSelectedSuggestionTitle('');
+    setIsOtherLabelSelected(false);
     setSubCategories([]);
     setItemCategories([]);
     setItemSubCategories([]);
@@ -786,6 +792,7 @@ const AddProduct = () => {
     if (id === 'title') {
       setActiveSuggestionKey('');
       setSelectedSuggestionTitle('');
+      setIsOtherLabelSelected(false);
       if (!value.trim()) {
         resetCategorySelections();
       }
@@ -822,6 +829,7 @@ const AddProduct = () => {
       title: preserveTypedTitle ? typedTitle : suggestion.title
     }));
     setActiveSuggestionKey(getSuggestionKey(suggestion));
+    setIsOtherLabelSelected(false);
     if (!isAutoSelect) {
       setSelectedSuggestionTitle(String(suggestion?.title || '').trim());
     }
@@ -876,6 +884,13 @@ const AddProduct = () => {
     if (suggestion.id) {
       setSelectedKeyword(String(suggestion.id));
     }
+  };
+
+  const handleOtherSuggestionSelect = () => {
+    applyOtherCategorySelection();
+    setActiveSuggestionKey(OTHER_SUGGESTION_KEY);
+    setSelectedSuggestionTitle('');
+    setShowSuggestions(false);
   };
 
 
@@ -1026,13 +1041,14 @@ const AddProduct = () => {
     try {
       let endpoint, method, payload, headers;
       const userId = user?.id;
+      const categoryForSubmit = selectedCategory || (isOtherCategorySelected ? '0' : '');
       if (isEditing) {
         endpoint = `${API_BASE_URL}/products/${productId}`;
         method = "put";
         payload = {
           ...formData,
           user_id: userId,
-          category: selectedCategory,
+          category: categoryForSubmit,
           sub_category: selectedSubCategory,
           item_category_id: selectedItemCategory,
           item_subcategory_id: selectedItemSubCategory || '',
@@ -1052,7 +1068,7 @@ const AddProduct = () => {
           if (key !== "images") data.append(key, value);
         });
         data.append("user_id", userId);
-        data.append("category", selectedCategory);
+        data.append("category", categoryForSubmit);
         data.append("sub_category", selectedSubCategory);
         data.append("item_category_id", selectedItemCategory);
         data.append("item_subcategory_id", selectedItemSubCategory || '');
@@ -1189,6 +1205,7 @@ const AddProduct = () => {
                                   setProductSuggestions([]);
                                   setActiveSuggestionKey('');
                                   setSelectedSuggestionTitle('');
+                                  setIsOtherLabelSelected(false);
                                   setShowSuggestions(false);
                                   resetCategorySelections();
                                 }}
@@ -1228,7 +1245,7 @@ const AddProduct = () => {
                               </div>
                             )}
                           </div>
-                          {productSuggestions.length > 0 && (
+                          {formData.title.trim().length >= 2 && !suggestionLoading && (
                             <div className="d-flex flex-wrap gap-2 mt-2">
                               {productSuggestions.map((suggestion) => (
                                 (() => {
@@ -1250,6 +1267,18 @@ const AddProduct = () => {
                                   );
                                 })()
                               ))}
+                              <button
+                                type="button"
+                                className={`btn rounded-pill px-2 py-1 ${activeSuggestionKey === OTHER_SUGGESTION_KEY || isOtherLabelSelected ? 'btn-primary' : 'btn-outline-primary'}`}
+                                style={{ fontSize: '0.72rem', lineHeight: 1.4 }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  suppressTitleAutoSelectRef.current = true;
+                                  handleOtherSuggestionSelect();
+                                }}
+                              >
+                                Other
+                              </button>
                             </div>
                           )}
                         </div>
