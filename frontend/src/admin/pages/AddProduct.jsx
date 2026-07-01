@@ -584,6 +584,8 @@ const AddProduct = () => {
           sub_category: selectedSubCategory || undefined,
           item_category_id: selectedItemCategory || undefined,
           item_subcategory_id: selectedItemSubCategory || undefined,
+          header_strict: true,
+          only_with_products: true,
         };
 
         const fetchSuggestions = async (params) => {
@@ -602,7 +604,11 @@ const AddProduct = () => {
             );
 
             if (suggestions.length === 0 && hasHierarchyFilter) {
-              suggestions = await fetchSuggestions({ query: value });
+              suggestions = await fetchSuggestions({
+                query: value,
+                header_strict: true,
+                only_with_products: true,
+              });
             }
 
             setProductSuggestions(rankSuggestionsByQuery(suggestions, value));
