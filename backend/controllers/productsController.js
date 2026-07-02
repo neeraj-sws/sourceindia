@@ -694,7 +694,7 @@ exports.getAllProducts = async (req, res) => {
     const page = req.query.page ? parseInt(req.query.page) : null;
     const offset = limit && page ? (page - 1) * limit : null;
     const { user_state, sort_by, title, category, sub_category, company_id, is_delete, status, is_approve,
-      item_category_id, item_subcategory_id, item_id, search } = req.query;
+      item_category_id, item_subcategory_id, item_id, search, keyword_ids } = req.query;
     let order = [['id', 'ASC']];
     if (sort_by === 'newest') order = [['created_at', 'DESC']];
     else if (sort_by === 'a_to_z') order = [['title', 'ASC']];
@@ -725,6 +725,15 @@ exports.getAllProducts = async (req, res) => {
       const arr = parseCsv(item_id);
       productWhereClause.item_id = { [Op.in]: arr };
     }
+    const keywordIdsArray = keyword_ids
+      ? parseCsv(keyword_ids)
+        .map((id) => Number(id))
+        .filter((id) => Number.isInteger(id) && id > 0)
+      : [];
+
+    if (keywordIdsArray.length > 0 && !search) {
+      productWhereClause.keyword_id = { [Op.in]: keywordIdsArray };
+    }
     if (is_delete) {
       productWhereClause.is_delete = is_delete;
     }
@@ -736,13 +745,23 @@ exports.getAllProducts = async (req, res) => {
     }
     // General search filter
     if (search) {
-      productWhereClause[Op.or] = [
+      const searchOrConditions = [
         {
           title: {
             [Op.like]: `%${search}%`
           }
         }
       ];
+
+      if (keywordIdsArray.length > 0) {
+        searchOrConditions.push({
+          keyword_id: {
+            [Op.in]: keywordIdsArray,
+          },
+        });
+      }
+
+      productWhereClause[Op.or] = searchOrConditions;
     }
 
     let userWhereClause = {};

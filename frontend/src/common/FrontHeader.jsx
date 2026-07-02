@@ -137,9 +137,12 @@ const FrontHeader = () => {
           : "/buyer-list";
 
     if (searchType === "product" && suggestions.length > 0) {
-      const topSuggestion = suggestions[0];
-      if (navigateToSuggestion(topSuggestion, {
-        searchValue: normalizeSearchValue(topSuggestion.name || ""),
+      const exactSuggestion = suggestions.find(
+        (item) => normalizeSearchValue(item?.name || "") === normalizedSearch
+      );
+
+      if (exactSuggestion && navigateToSuggestion(exactSuggestion, {
+        searchValue: normalizedSearch,
         displayValue: normalizedSearch,
       })) {
         return;

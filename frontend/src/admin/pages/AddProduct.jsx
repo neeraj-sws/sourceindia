@@ -267,7 +267,7 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/categories?is_delete=0&status=1`);
+        const res = await axios.get(`${API_BASE_URL}/categories?is_delete=0`);
         const list = res.data || [];
         setAllCategories(list);
       } catch (error) {
@@ -278,30 +278,9 @@ const AddProduct = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedSellers) {
-      setCategories(allCategories);
-      return;
-    }
-
-    const fetchSellerCategories = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/sellers/seller-categories`, {
-          params: { user_id: selectedSellers }
-        });
-        const sellerCategoryList = normalizeList(res.data);
-        setCategories(mergeCategoryOptions(allCategories, sellerCategoryList));
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-        setCategories(allCategories);
-      }
-    };
-
-    const fetchSellerSubcategories = async () => {
-      setSubCategories([]);
-    };
-
-    fetchSellerCategories();
-    fetchSellerSubcategories();
+    // Admin product form should always show full master category list.
+    setCategories(allCategories);
+    setSubCategories([]);
   }, [selectedSellers, allCategories]);
 
   useEffect(() => {
@@ -584,8 +563,6 @@ const AddProduct = () => {
           sub_category: selectedSubCategory || undefined,
           item_category_id: selectedItemCategory || undefined,
           item_subcategory_id: selectedItemSubCategory || undefined,
-          header_strict: true,
-          only_with_products: true,
         };
 
         const fetchSuggestions = async (params) => {
@@ -606,8 +583,6 @@ const AddProduct = () => {
             if (suggestions.length === 0 && hasHierarchyFilter) {
               suggestions = await fetchSuggestions({
                 query: value,
-                header_strict: true,
-                only_with_products: true,
               });
             }
 
@@ -1541,9 +1516,9 @@ const AddProduct = () => {
                     </div>
                   </div>
                   <div className="card mt-2">
-                  <div className="card-body p-4 ">
-                    <div className="row">
-                       <div className="col-md-12">
+                    <div className="card-body p-4 ">
+                      <div className="row">
+                        <div className="col-md-12">
                           <label htmlFor="file" className="form-label required">Product Images</label><br />
                           <input
                             ref={fileInputRef}
@@ -1607,9 +1582,9 @@ const AddProduct = () => {
                             ))}
                           </div>
                         </div>
+                      </div>
                     </div>
                   </div>
-                </div>
                 </div>
                 <div className="col-12 text-end mt-2">
                   <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>

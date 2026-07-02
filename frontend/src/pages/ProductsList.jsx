@@ -6,6 +6,50 @@ const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback')
 import { Link, useSearchParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 
+const resolveProductKeywordIds = async ({
+  searchTerm,
+  selectedCategories,
+  selectedSubCategories,
+  selectedItemCategories,
+  selectedItemSubCategories,
+}) => {
+  const trimmedSearch = searchTerm.trim();
+  if (trimmedSearch.length < 2) return [];
+
+  const params = new URLSearchParams({
+    query: trimmedSearch,
+    header_strict: 'true',
+    only_with_products: 'true',
+  });
+
+  if (selectedCategories.length > 0) {
+    params.set('category', selectedCategories.join(','));
+  }
+  if (selectedSubCategories.length > 0) {
+    params.set('sub_category', selectedSubCategories.join(','));
+  }
+  if (selectedItemCategories.length > 0) {
+    params.set('item_category_id', selectedItemCategories.join(','));
+  }
+  if (selectedItemSubCategories.length > 0) {
+    params.set('item_subcategory_id', selectedItemSubCategories.join(','));
+  }
+
+  try {
+    const res = await axios.get(`${API_BASE_URL}/products/suggest?${params.toString()}`);
+    const suggestions = Array.isArray(res.data?.data) ? res.data.data : [];
+
+    return [...new Set(
+      suggestions
+        .map((item) => Number(item?.id))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    )];
+  } catch (err) {
+    console.error('Error resolving product keyword IDs:', err);
+    return [];
+  }
+};
+
 const ProductsList = () => {
   const [productsData, setProductsData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -322,6 +366,14 @@ const ProductsList = () => {
     }
     try {
       let url = `${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=15&page=${pageNumber}`;
+      const resolvedKeywordIds = await resolveProductKeywordIds({
+        searchTerm,
+        selectedCategories,
+        selectedSubCategories,
+        selectedItemCategories,
+        selectedItemSubCategories,
+      });
+
       if (selectedCategories.length > 0) {
         url += `&category=${selectedCategories.join(",")}`;
       }
@@ -350,6 +402,9 @@ const ProductsList = () => {
       // Add searchTerm to server-side query
       if (searchTerm && searchTerm.trim() !== "") {
         url += `&search=${encodeURIComponent(searchTerm)}`;
+      }
+      if (resolvedKeywordIds.length > 0) {
+        url += `&keyword_ids=${resolvedKeywordIds.join(',')}`;
       }
       const res = await axios.get(url);
       const newProducts = res.data.products || [];
@@ -978,8 +1033,8 @@ const ProductsList = () => {
                         checked={sortBy === "a_to_z"}
                         onChange={(e) => setSortBy(e.target.value)}
                       />
-                      <span>A to 
-                      <i className="bx bx-sort-a-z ms-1" aria-hidden="true" />Z</span>
+                      <span>A to
+                        <i className="bx bx-sort-a-z ms-1" aria-hidden="true" />Z</span>
                     </label>
                   </li>
                   <li className="sortPopular px-2 border-0 border-start border-end">
@@ -997,7 +1052,7 @@ const ProductsList = () => {
                         onChange={(e) => setSortBy(e.target.value)}
                       />
                       <span>Z to A
-                      <i className="bx bx-sort-z-a ms-1" aria-hidden="true" />Z</span>
+                        <i className="bx bx-sort-z-a ms-1" aria-hidden="true" />Z</span>
                     </label>
                   </li>
                   <li className="sortPopular px-2">
@@ -1015,21 +1070,21 @@ const ProductsList = () => {
                         onChange={(e) => setSortBy(e.target.value)}
                       />
                       <span>Newest First
-                      <i className="fadeIn animated bx bx-sort-up ms-1" aria-hidden="true" /></span>
+                        <i className="fadeIn animated bx bx-sort-up ms-1" aria-hidden="true" /></span>
                     </label>
                   </li>
                   <li>
-                  <a
-                    href="#"
-                    className="text-white ms-4 font-16"
-                    onClick={(e) => {
-                      e.preventDefault(); // Prevent default anchor behavior
-                      setSortBy(""); // Set sortBy to blank
-                    }}
-                  >
-                    <i className="fadeIn animated bx bx-refresh"></i>
-                  </a>
-                </li>
+                    <a
+                      href="#"
+                      className="text-white ms-4 font-16"
+                      onClick={(e) => {
+                        e.preventDefault(); // Prevent default anchor behavior
+                        setSortBy(""); // Set sortBy to blank
+                      }}
+                    >
+                      <i className="fadeIn animated bx bx-refresh"></i>
+                    </a>
+                  </li>
                 </ul>
               </div>
               <div className="ms-auto d-flex gap-2 align-items-center justify-content-between mobileblock">
@@ -1152,31 +1207,31 @@ const ProductsList = () => {
 
                     </div>
                     <button
-                  onClick={() => {
-                    // Clear state variables
-                    setSelectedCategories([]);
-                    setSelectedSubCategories([]);
-                    setSelectedItemCategories([]);
-                    setSelectedItemSubCategories([]);
-                    setSelectedItems([]);
-                    setSelectedStates([]);
-                    setSelectedCompanies([]);
+                      onClick={() => {
+                        // Clear state variables
+                        setSelectedCategories([]);
+                        setSelectedSubCategories([]);
+                        setSelectedItemCategories([]);
+                        setSelectedItemSubCategories([]);
+                        setSelectedItems([]);
+                        setSelectedStates([]);
+                        setSelectedCompanies([]);
 
-                    // Clear URL query parameters
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete('category_id');
-                    url.searchParams.delete('subcategory_id');
-                    url.searchParams.delete('item_category_id');
-                    url.searchParams.delete('item_subcategory_id');
-                    window.history.pushState({}, '', url); // Update the URL without reloading the page
-                  }}
-                  className="btn btn-sm btn-outline-danger text-nowrap"
-                  style={{
-                    padding: '0.188rem 0.625rem',
-                  }}
-                >
-                  Clear All
-                </button>
+                        // Clear URL query parameters
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('category_id');
+                        url.searchParams.delete('subcategory_id');
+                        url.searchParams.delete('item_category_id');
+                        url.searchParams.delete('item_subcategory_id');
+                        window.history.pushState({}, '', url); // Update the URL without reloading the page
+                      }}
+                      className="btn btn-sm btn-outline-danger text-nowrap"
+                      style={{
+                        padding: '0.188rem 0.625rem',
+                      }}
+                    >
+                      Clear All
+                    </button>
                   </div>
 
                 </div>
