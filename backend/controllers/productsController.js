@@ -318,6 +318,226 @@ exports.suggestProducts = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error', data: [] });
   }
 };
+
+exports.getSuggestedItemSubCategories = async (req, res) => {
+  try {
+    const {
+      search,
+      category,
+      sub_category,
+      item_category_id,
+      item_subcategory_id,
+      item_id,
+      user_state,
+      company_id,
+      keyword_ids,
+      limit,
+    } = req.query;
+
+    const normalizedSearch = normalizeTextForSuggest(search || '');
+    const maxLimit = Math.min(Math.max(parseInt(limit, 10) || 8, 1), 8);
+
+    if (!normalizedSearch || normalizedSearch.length < 2) {
+      return res.json({
+        success: true,
+        matched_keyword: null,
+        matched_item_category_id: null,
+        data: [],
+      });
+    }
+
+    const keywordIdsArray = keyword_ids
+      ? parseCsv(keyword_ids)
+        .map((id) => Number(id))
+        .filter((id) => Number.isInteger(id) && id > 0)
+      : [];
+
+    let matchedKeyword = null;
+
+    if (keywordIdsArray.length > 0) {
+      matchedKeyword = await ProductKeyword.findOne({
+        where: {
+          id: { [Op.in]: keywordIdsArray },
+          status: 1,
+        },
+        include: [
+          {
+            model: ItemSubCategory,
+            as: 'ItemSubCategory',
+            required: true,
+            where: {
+              status: 1,
+              is_delete: 0,
+            },
+            attributes: ['id', 'name', 'item_category_id'],
+          },
+        ],
+        order: [['id', 'ASC']],
+      });
+    }
+
+    if (!matchedKeyword) {
+      const { suggestions } = await fetchWeightedProductKeywordSuggestions({
+        query: normalizedSearch,
+        category,
+        sub_category,
+        item_category_id,
+        item_subcategory_id,
+        header_strict: true,
+        only_with_products: true,
+        limit: 1,
+      });
+
+      const bestSuggestion = suggestions && suggestions.length > 0 ? suggestions[0] : null;
+
+      if (bestSuggestion?.id) {
+        matchedKeyword = await ProductKeyword.findOne({
+          where: {
+            id: bestSuggestion.id,
+            status: 1,
+          },
+          include: [
+            {
+              model: ItemSubCategory,
+              as: 'ItemSubCategory',
+              required: true,
+              where: {
+                status: 1,
+                is_delete: 0,
+              },
+              attributes: ['id', 'name', 'item_category_id'],
+            },
+          ],
+        });
+      }
+    }
+
+    const matchedItemCategoryId = matchedKeyword?.ItemSubCategory?.item_category_id || null;
+
+    if (!matchedItemCategoryId) {
+      return res.json({
+        success: true,
+        matched_keyword: null,
+        matched_item_category_id: null,
+        data: [],
+      });
+    }
+
+    const effectiveKeywordIds = keywordIdsArray.length > 0
+      ? keywordIdsArray
+      : (matchedKeyword?.id ? [matchedKeyword.id] : []);
+
+    const productWhere = {
+      is_delete: 0,
+      status: 1,
+      is_approve: 1,
+      item_category_id: matchedItemCategoryId,
+      item_subcategory_id: { [Op.ne]: null },
+    };
+
+    const searchOrConditions = [];
+    if (normalizedSearch) {
+      searchOrConditions.push({
+        title: {
+          [Op.like]: `%${normalizedSearch}%`,
+        },
+      });
+    }
+    if (effectiveKeywordIds.length > 0) {
+      searchOrConditions.push({
+        keyword_id: {
+          [Op.in]: effectiveKeywordIds,
+        },
+      });
+    }
+    if (searchOrConditions.length > 0) {
+      productWhere[Op.or] = searchOrConditions;
+    }
+
+    if (category) productWhere.category = { [Op.in]: parseCsv(category) };
+    if (sub_category) productWhere.sub_category = { [Op.in]: parseCsv(sub_category) };
+    if (item_id) productWhere.item_id = { [Op.in]: parseCsv(item_id) };
+    if (company_id) productWhere.company_id = { [Op.in]: parseCsv(company_id) };
+
+    const userWhereClause = {};
+    if (user_state) {
+      const stateIds = parseCsv(user_state);
+      if (stateIds.length > 0) {
+        userWhereClause.state = { [Op.in]: stateIds };
+      }
+    }
+
+    const rows = await Products.findAll({
+      where: productWhere,
+      attributes: [
+        'item_subcategory_id',
+        [fn('COUNT', col('Products.product_id')), 'product_count'],
+      ],
+      include: [
+        {
+          model: ItemSubCategory,
+          as: 'ItemSubCategory',
+          required: true,
+          attributes: ['id', 'name', 'item_category_id'],
+          where: {
+            status: 1,
+            is_delete: 0,
+            item_category_id: matchedItemCategoryId,
+          },
+        },
+        {
+          model: Users,
+          as: 'Users',
+          required: Object.keys(userWhereClause).length > 0,
+          attributes: [],
+          where: Object.keys(userWhereClause).length > 0 ? userWhereClause : undefined,
+        },
+      ],
+      group: ['item_subcategory_id', 'ItemSubCategory.item_subcategory_id'],
+      order: [[literal('product_count'), 'DESC'], [col('ItemSubCategory.name'), 'ASC']],
+      limit: maxLimit,
+      subQuery: false,
+    });
+
+    const data = rows
+      .map((row) => {
+        const raw = row.toJSON();
+        const sub = raw.ItemSubCategory;
+        const subId = Number(raw.item_subcategory_id);
+
+        if (!sub || !Number.isInteger(subId) || subId <= 0) return null;
+
+        return {
+          id: subId,
+          name: sub.name,
+          item_category_id: sub.item_category_id,
+          product_count: Number(raw.product_count) || 0,
+        };
+      })
+      .filter(Boolean);
+
+    return res.json({
+      success: true,
+      matched_keyword: matchedKeyword
+        ? {
+          id: matchedKeyword.id,
+          name: matchedKeyword.name,
+          item_subcategory_id: matchedKeyword.item_subcategory_id,
+        }
+        : null,
+      matched_item_category_id: matchedItemCategoryId,
+      data,
+    });
+  } catch (err) {
+    console.error('Error in getSuggestedItemSubCategories:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      data: [],
+    });
+  }
+};
+
 const { Op, fn, col, literal, Sequelize } = require('sequelize');
 const moment = require('moment');
 const fs = require('fs');

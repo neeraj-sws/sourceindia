@@ -9,8 +9,21 @@ import API_BASE_URL, { ROOT_URL } from "../config";
 import ImageWithFallback from "../admin/common/ImageWithFallback";
 import "../css/home.css";
 
+const LOGO_CACHE_KEY = "front_logo_url";
+
+const getInitialLogoUrl = () => {
+  try {
+    const cachedLogo = localStorage.getItem(LOGO_CACHE_KEY);
+    if (cachedLogo && cachedLogo.trim()) return cachedLogo;
+  } catch (err) {
+    console.error("Unable to read logo cache:", err);
+  }
+  return "/logo.png";
+};
+
 const FrontHeader = () => {
-  const { isLoggedIn, logout, user, setUser } = useAuth();
+  const { isLoggedIn, logout,
+    user, setUser } = useAuth();
   const token = localStorage.getItem("user_token");
   const navigate = useNavigate();
 
@@ -19,7 +32,7 @@ const FrontHeader = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const { siteSettings, loading } = useSiteSettings();
-  const [logoUrl, setLogoUrl] = useState("/logo.png");
+  const [logoUrl, setLogoUrl] = useState(() => getInitialLogoUrl());
   const [mobile, setMobile] = useState("+91-11-41615985");
   const [menuItems, setMenuItems] = useState([]);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -37,8 +50,17 @@ const FrontHeader = () => {
   /* ================= SITE SETTINGS ================= */
   useEffect(() => {
     if (!loading && siteSettings) {
+      const nextLogoUrl = siteSettings.logo_file
+        ? `${ROOT_URL}/${siteSettings.logo_file}`
+        : "/logo.png";
 
-      if (siteSettings.logo_file) setLogoUrl(`${ROOT_URL}/${siteSettings.logo_file}`);
+      setLogoUrl(nextLogoUrl);
+      try {
+        localStorage.setItem(LOGO_CACHE_KEY, nextLogoUrl);
+      } catch (err) {
+        console.error("Unable to write logo cache:", err);
+      }
+
       if (siteSettings.mobile) setMobile(siteSettings.mobile);
       if (Array.isArray(siteSettings.front_menu)) setMenuItems(siteSettings.front_menu);
     }
@@ -64,7 +86,7 @@ const FrontHeader = () => {
     };
 
     fetchProfile();
-  }, [token]);
+  }, [isLoggedIn, token, logout, navigate, setUser]);
 
   /* ================= AUTOCOMPLETE ================= */
   useEffect(() => {
@@ -209,10 +231,8 @@ const FrontHeader = () => {
                     }}
 
                     onBlur={() => {
-                      setTimeout(() => {
-                        setSearchFocused(false);               // ⭐ remove overlay
-                        setShowDropdown(false);
-                      }, 2000); // click allow for suggestions
+                      setSearchFocused(false);
+                      setShowDropdown(false);
                     }}
                   />
 
@@ -225,7 +245,10 @@ const FrontHeader = () => {
                       {suggestions.map((item) => (
                         <li
                           key={item.id}
-                          onClick={() => navigateToSuggestion(item)}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            navigateToSuggestion(item);
+                          }}
                           style={{ cursor: "pointer" }}
                         >
                           <div className="d-flex align-items-center gap-2">
@@ -337,6 +360,11 @@ const FrontHeader = () => {
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = "/logo.png";
+                      try {
+                        localStorage.setItem(LOGO_CACHE_KEY, "/logo.png");
+                      } catch (err) {
+                        console.error("Unable to reset logo cache:", err);
+                      }
                     }}
                   />
                 </Link>

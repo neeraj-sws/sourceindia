@@ -433,7 +433,7 @@ const ProductDetail = () => {
             <div className="col-xl-3 col-lg-4 mb-lg-0 mb-3">
               <div className="card sidebar-company-card">
                 <div className="card-body">
-                  <div className="d-flex align-items-start gap-3 mb-3">
+                  <div className="sidebar-company-head mb-3">
                     <Link to={`/companies/${product.company_slug}`} className="d-block">
                       <div className="sidebar-logo">
                         <ImageFront
@@ -441,15 +441,15 @@ const ProductDetail = () => {
                           alt={product.company_name}
                           showFallback={true}
                           defaultimg="/company.png"
-                          style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 6, border: '1px solid #eee' }}
+                          style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 6, border: '1px solid #eee' }}
                         />
                       </div>
                     </Link>
                     <div className="flex-grow-1">
                       <Link to={`/companies/${product.company_slug}`} className="text-dark text-decoration-none">
-                        <h6 className="mb-1">{product.company_name}</h6>
+                        <h6 className="sidebar-company-name mb-1">{product.company_name}</h6>
                       </Link>
-                      <div className="text-muted small"><i className="bx bx-map me-1" />{product.company_location || 'N/A'}</div>
+                      <div className="sidebar-company-location text-muted small"><i className="bx bx-map me-1" />{product.company_location || 'N/A'}</div>
 
                       <div className="mt-2 rating-row">
                         <span className="rating-stars" style={{ color: '#f5c518' }}>

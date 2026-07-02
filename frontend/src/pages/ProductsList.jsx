@@ -54,8 +54,10 @@ const ProductsList = () => {
   const [productsData, setProductsData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [resolvedKeywordIds, setResolvedKeywordIds] = useState([]);
+  const [suggestedItemSubCategories, setSuggestedItemSubCategories] = useState([]);
   const debounceTimeout = useRef();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
@@ -93,54 +95,26 @@ const ProductsList = () => {
   const [showFilter, setShowFilter] = useState(false);
   const [filtersReady, setFiltersReady] = useState(false);
 
-  useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-
-    const mapping = [
-      { key: 'item_id', type: 'item' },
-      { key: 'item_subcategory_id', type: 'item_subcategory' },
-      { key: 'item_category_id', type: 'item_category' },
-      { key: 'subcategory_id', type: 'subcategory' },
-      { key: 'category_id', type: 'category' }
-    ];
-
-    const found = mapping.find(m => queryParams.get(m.key));
-
-    if (!found) return;
-
-    const id = Number(queryParams.get(found.key));
-
-    (async () => {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/products/item-hierarchy/${found.type}/${id}`
-        );
-
-        const data = res.data;
-
-        setSelectedCategories(data.category_id ? [data.category_id] : []);
-        setSelectedSubCategories(data.sub_category_id ? [data.sub_category_id] : []);
-        setSelectedItemCategories(data.item_category_id ? [data.item_category_id] : []);
-        setSelectedItemSubCategories(
-          data.item_subcategory_id ? [data.item_subcategory_id] : []
-        );
-        setSelectedItems(data.item_id ? [data.item_id] : []);
-      } catch (err) {
-        console.error("Error fetching item hierarchy:", err);
-      }
-    })();
-  }, [location.search]);
-
+  const selectedSuggestedItemSubCategorySet = new Set(
+    selectedItemSubCategories.map((id) => Number(id))
+  );
 
   useEffect(() => {
-    const searchValue = searchParams.get("search");
-    if (searchValue) {
-      setSearchTerm(searchValue);
-      setSearchInput(searchValue);
-    }
+    const searchValue = (searchParams.get("search") || "").trim();
+
+    setSearchTerm(searchValue);
+    setSearchInput(searchValue);
+
+    // Prevent stale suggestion filter from previous search term.
+    setSelectedItemSubCategories([]);
+    setSelectedItems([]);
+    setResolvedKeywordIds([]);
+    setSuggestedItemSubCategories([]);
   }, [searchParams]);
 
   useEffect(() => {
+    setFiltersReady(false);
+
     const queryParams = new URLSearchParams(location.search);
 
     const mapping = [
@@ -154,6 +128,13 @@ const ProductsList = () => {
     const found = mapping.find(m => queryParams.get(m.key));
 
     if (!found) {
+      setSelectedCategories([]);
+      setSelectedSubCategories([]);
+      setSelectedItemCategories([]);
+      setSelectedItemSubCategories([]);
+      setSelectedItems([]);
+      setSelectedStates([]);
+      setSelectedCompanies([]);
       setFiltersReady(true); // no URL filters
       return;
     }
@@ -175,6 +156,8 @@ const ProductsList = () => {
           data.item_subcategory_id ? [data.item_subcategory_id] : []
         );
         setSelectedItems(data.item_id ? [data.item_id] : []);
+        setSelectedStates([]);
+        setSelectedCompanies([]);
       } catch (err) {
         console.error(err);
       } finally {
@@ -355,6 +338,80 @@ const ProductsList = () => {
     fetchCompanies();
   }, []);
 
+  useEffect(() => {
+    const fetchSuggestedItemSubCategories = async () => {
+      const trimmedSearch = searchTerm.trim();
+
+      if (trimmedSearch.length < 2) {
+        setSuggestedItemSubCategories([]);
+        return;
+      }
+
+      try {
+        const params = new URLSearchParams({
+          search: trimmedSearch,
+          limit: '8',
+        });
+
+        if (selectedCategories.length > 0) {
+          params.set('category', selectedCategories.join(','));
+        }
+        if (selectedSubCategories.length > 0) {
+          params.set('sub_category', selectedSubCategories.join(','));
+        }
+        if (selectedItemCategories.length > 0) {
+          params.set('item_category_id', selectedItemCategories.join(','));
+        }
+        if (selectedItems.length > 0) {
+          params.set('item_id', selectedItems.join(','));
+        }
+        if (selectedStates.length > 0) {
+          params.set('user_state', selectedStates.join(','));
+        }
+        if (selectedCompanies.length > 0) {
+          params.set('company_id', selectedCompanies.join(','));
+        }
+        if (resolvedKeywordIds.length > 0) {
+          params.set('keyword_ids', resolvedKeywordIds.join(','));
+        }
+
+        const res = await axios.get(`${API_BASE_URL}/products/suggested-item-subcategories?${params.toString()}`);
+        const suggestions = Array.isArray(res.data?.data) ? res.data.data : [];
+        setSuggestedItemSubCategories(suggestions);
+      } catch (err) {
+        console.error('Error fetching suggested item subcategories:', err);
+        setSuggestedItemSubCategories([]);
+      }
+    };
+
+    fetchSuggestedItemSubCategories();
+  }, [
+    searchTerm,
+    selectedCategories,
+    selectedSubCategories,
+    selectedItemCategories,
+    selectedItemSubCategories,
+    selectedItems,
+    selectedStates,
+    selectedCompanies,
+    resolvedKeywordIds,
+  ]);
+
+  useEffect(() => {
+    if (searchTerm.trim().length < 2 || suggestedItemSubCategories.length === 0) return;
+
+    const validSuggestedIds = new Set(
+      suggestedItemSubCategories
+        .map((item) => Number(item?.id))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    );
+
+    setSelectedItemSubCategories((prev) => {
+      const next = prev.filter((id) => validSuggestedIds.has(Number(id)));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [suggestedItemSubCategories, searchTerm]);
+
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const fetchProducts = async (pageNumber = 1, append = false) => {
@@ -373,6 +430,7 @@ const ProductsList = () => {
         selectedItemCategories,
         selectedItemSubCategories,
       });
+      setResolvedKeywordIds(resolvedKeywordIds);
 
       if (selectedCategories.length > 0) {
         url += `&category=${selectedCategories.join(",")}`;
@@ -523,6 +581,17 @@ const ProductsList = () => {
   const getNameById = (array, id) => {
     const item = array.find((el) => el.id === id);
     return item ? item.name || item.organization_name : "";
+  };
+
+  const getItemSubCategoryName = (id) => {
+    const fromFilter = getNameById(itemSubCategories, id);
+    if (fromFilter) return fromFilter;
+
+    const fromSuggested = suggestedItemSubCategories.find(
+      (item) => Number(item.id) === Number(id)
+    );
+
+    return fromSuggested?.name || '';
   };
   const ProductSkeletonLoader = ({ count = 15, isListView = false }) => {
     const items = Array.from({ length: count });
@@ -1119,8 +1188,41 @@ const ProductsList = () => {
                 </div>
               </div>
             </div>
+
+            {searchTerm.trim().length >= 2 && suggestedItemSubCategories.length > 0 && (
+              <div className="mb-3 border px-3 py-2 bg-white rounded-2">
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  <strong>Suggested</strong>
+                  {suggestedItemSubCategories.map((suggestion) => {
+                    const isActive = selectedSuggestedItemSubCategorySet.has(Number(suggestion.id));
+
+                    return (
+                      <button
+                        key={`suggest-item-sub-${suggestion.id}`}
+                        type="button"
+                        className={`btn btn-sm rounded-pill ${isActive ? 'btn-primary' : 'btn-outline-primary'}`}
+                        onClick={() => {
+                          const targetId = Number(suggestion.id);
+                          if (!Number.isInteger(targetId) || targetId <= 0) return;
+
+                          setSelectedItemSubCategories((prev) =>
+                            prev.length === 1 && Number(prev[0]) === targetId ? [] : [targetId]
+                          );
+                        }}
+                      >
+                        {suggestion.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {(selectedCategories.length > 0 ||
               selectedSubCategories.length > 0 ||
+              selectedItemCategories.length > 0 ||
+              selectedItemSubCategories.length > 0 ||
+              selectedItems.length > 0 ||
               selectedStates.length > 0 ||
               selectedCompanies.length > 0) && (
                 <div className="mb-3 border px-3 py-2 bg-white rounded-2">
@@ -1162,7 +1264,7 @@ const ProductsList = () => {
                       ))}
                       {selectedItemSubCategories.map(id => (
                         <span key={`itemsub-${id}`} className="badge bg-info text-white d-flex align-items-center">
-                          {getNameById(itemSubCategories, id)}
+                          {getItemSubCategoryName(id)}
                           <button
                             onClick={() => setSelectedItemSubCategories(prev => prev.filter(cid => cid !== id))}
                             className="btn-close btn-close-white ms-2"
