@@ -246,7 +246,6 @@ const buildUrlParams = (item) => {
     category_id: item.category_id,
     subcategory_id: item.subcategory_id,
     item_category_id: item.item_category_id,
-    item_subcategory_id: item.item_subcategory_id,
   })
     .filter(([_, v]) => v && v !== 0)
     .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)

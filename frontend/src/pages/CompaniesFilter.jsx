@@ -193,17 +193,17 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
         const subs = res.data || [];
         const querySubcat = Number(new URLSearchParams(location.search).get("subcategory_id"));
 
-const filtered = subs.filter(
-  (sub) => sub.company_count > 0 || sub.id === querySubcat
-);
+        const filtered = subs.filter(
+          (sub) => sub.company_count > 0 || sub.id === querySubcat
+        );
         setSubCategories(filtered);
         if (querySubcat && filtered.some((s) => s.id === querySubcat)) {
-      setSelectedSubCategories([querySubcat]);
-    } else {
-      setSelectedSubCategories((prev) =>
-        prev.filter((id) => filtered.some((sub) => sub.id === id))
-      );
-    }
+          setSelectedSubCategories([querySubcat]);
+        } else {
+          setSelectedSubCategories((prev) =>
+            prev.filter((id) => filtered.some((sub) => sub.id === id))
+          );
+        }
       } catch (err) {
         console.error("Error fetching sub-categories by categories:", err);
       }
@@ -211,25 +211,25 @@ const filtered = subs.filter(
     fetchSubCategoriesByCategories();
   }, [selectedCategories]);
 
-useEffect(() => {
-  const searchValue = searchParams.get("search");
-  if (searchValue) {
-    setSearchTerm(searchValue);
-  }
+  useEffect(() => {
+    const searchValue = searchParams.get("search");
+    if (searchValue) {
+      setSearchTerm(searchValue);
+    }
 
-  const cateIdParam = searchParams.get("category_id");
-  const subcateIdParam = searchParams.get("subcategory_id");
+    const cateIdParam = searchParams.get("category_id");
+    const subcateIdParam = searchParams.get("subcategory_id");
 
-  if (cateIdParam) {
-    setSelectedCategories([Number(cateIdParam)]);
-  }
+    if (cateIdParam) {
+      setSelectedCategories([Number(cateIdParam)]);
+    }
 
-  if (subcateIdParam) {
-    setSelectedSubCategories([Number(subcateIdParam)]);
-  }
+    if (subcateIdParam) {
+      setSelectedSubCategories([Number(subcateIdParam)]);
+    }
 
-  setFiltersInitialized(true);
-}, [searchParams]);
+    setFiltersInitialized(true);
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchItemCategories = async () => {
@@ -853,7 +853,8 @@ useEffect(() => {
             </div>
 
             <div className="ms-auto d-flex gap-2 align-items-center justify-content-between mobileblock">
-              <p className="mb-0 text-nowrap">{companiesTotal} Companies</p>
+              <p className="mb-0 text-nowrap d-none">{companiesTotal} Companies</p>
+              <p className="mb-0 text-nowrap">410 Companies</p>
               <div className="text-end d-lg-none d-sm-block d-none">
                 <button
                   className="filterbutton btn btn-primary"
