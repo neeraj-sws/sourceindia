@@ -56,7 +56,7 @@ const searchProducts = async (q, type) => {
     header_strict: true,
     limit: 6,
   });
-  return suggestions.map((item) => ({
+  const results = suggestions.map((item) => ({
     id: item.id,
     keyword_id: item.id,
     category_id: item.category || 0,
