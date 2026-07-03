@@ -6,6 +6,31 @@ const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const Products = require('../models/Products');
 
+const SUGGESTION_CACHE_TTL_MS = 2 * 60 * 1000;
+const suggestionCache = new Map();
+
+const buildSuggestionCacheKey = (parts = []) =>
+  parts.map((part) => String(part ?? '').trim().toLowerCase()).join('|');
+
+const getCachedSuggestionResult = (cacheKey) => {
+  const cached = suggestionCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (cached.expiresAt <= Date.now()) {
+    suggestionCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.value;
+};
+
+const setCachedSuggestionResult = (cacheKey, value) => {
+  suggestionCache.set(cacheKey, {
+    value,
+    expiresAt: Date.now() + SUGGESTION_CACHE_TTL_MS,
+  });
+};
+
 const SUGGEST_MATCH_STOP_WORDS = new Set([
   'i', 'we', 'our', 'us', 'are', 'is', 'am', 'be', 'being', 'been', 'me', 'my', 'mine', 'ours', 'you', 'your', 'yours',
   'need', 'needs', 'needed',
@@ -268,16 +293,35 @@ const fetchWeightedProductKeywordSuggestions = async ({
   header_strict = false,
   limit = 6,
 }) => {
+  const cacheKey = buildSuggestionCacheKey([
+    query,
+    category,
+    sub_category,
+    item_category_id,
+    item_subcategory_id,
+    only_with_products ? 1 : 0,
+    header_strict ? 1 : 0,
+    limit,
+  ]);
+
+  const cachedResult = getCachedSuggestionResult(cacheKey);
+  if (cachedResult) {
+    return cachedResult;
+  }
+
   const normalizedQuery = normalizeTextForSuggest(query);
   const queryWords = tokenizeForSuggest(query);
   const queryOrderTokens = tokenizeForOrder(query);
 
   if (!queryWords.length) {
-    return {
+    const emptyResult = {
       normalizedQuery,
       queryWords,
       suggestions: [],
     };
+
+    setCachedSuggestionResult(cacheKey, emptyResult);
+    return emptyResult;
   }
 
   const keywordWhere = { status: 1 };
@@ -285,11 +329,14 @@ const fetchWeightedProductKeywordSuggestions = async ({
     .filter(word => word.length >= 2);
 
   if (!dbSearchWords.length) {
-    return {
+    const emptyResult = {
       normalizedQuery,
       queryWords,
       suggestions: [],
     };
+
+    setCachedSuggestionResult(cacheKey, emptyResult);
+    return emptyResult;
   }
 
   // const longestWord = dbSearchWords.reduce(
@@ -422,11 +469,14 @@ AND keyword_id IS NOT NULL
     });
 
   if (fullyMatched.length) {
-    return {
+    const result = {
       normalizedQuery,
       queryWords,
       suggestions: fullyMatched.slice(0, limit)
     };
+
+    setCachedSuggestionResult(cacheKey, result);
+    return result;
   }
 
   const matchedScored = scored.filter(item =>
@@ -530,11 +580,14 @@ AND keyword_id IS NOT NULL
     suggestions = suggestions.filter(isStrongHeaderSuggestion);
   }
 
-  return {
+  const result = {
     normalizedQuery,
     queryWords,
     suggestions: suggestions.slice(0, limit),
   };
+
+  setCachedSuggestionResult(cacheKey, result);
+  return result;
 };
 
 module.exports = {

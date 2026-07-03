@@ -10,6 +10,31 @@ const SellerCategory = require('../models/SellerCategory');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const { fetchWeightedProductKeywordSuggestions } = require('../utils/productSuggest');
 
+const SEARCH_CACHE_TTL_MS = 90 * 1000;
+const searchCache = new Map();
+
+const buildSearchCacheKey = (...parts) =>
+  parts.map((part) => String(part ?? '').trim().toLowerCase()).join('|');
+
+const getCachedSearchResult = (cacheKey) => {
+  const cached = searchCache.get(cacheKey);
+  if (!cached) return null;
+
+  if (cached.expiresAt <= Date.now()) {
+    searchCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.value;
+};
+
+const setCachedSearchResult = (cacheKey, value) => {
+  searchCache.set(cacheKey, {
+    value,
+    expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
+  });
+};
+
 exports.createFrontMenu = async (req, res) => {
   try {
     const { parent_id, name, link, is_show, status, type, position } = req.body;
@@ -21,6 +46,10 @@ exports.createFrontMenu = async (req, res) => {
 };
 
 const searchProducts = async (q, type) => {
+  const cacheKey = buildSearchCacheKey('product', q, type);
+  const cached = getCachedSearchResult(cacheKey);
+  if (cached) return cached;
+
   const { suggestions } = await fetchWeightedProductKeywordSuggestions({
     query: q,
     only_with_products: true,
@@ -38,8 +67,14 @@ const searchProducts = async (q, type) => {
     type: 'keyword',
     search_type: type,
   }));
+
+  setCachedSearchResult(cacheKey, results);
+  return results;
 };
 const searchSellers = async (q, type) => {
+  const cacheKey = buildSearchCacheKey('seller', q, type);
+  const cached = getCachedSearchResult(cacheKey);
+  if (cached) return cached;
 
   const companyMatches = await Users.findAll({
     where: { is_seller: 1, status: 1, is_delete: 0, is_approve: 1 },
@@ -133,14 +168,20 @@ const searchSellers = async (q, type) => {
   /* -------------------------------
    4️⃣ FINAL MERGED RESPONSE
   --------------------------------*/
-  return [
+  const results = [
     ...companies,      // 🔹 buyers first
     ...categories,     // 🔹 categories
     ...subcategories,  // 🔹 subcategories
   ];
+
+  setCachedSearchResult(cacheKey, results);
+  return results;
 };
 
 const searchBuyers = async (q, type) => {
+  const cacheKey = buildSearchCacheKey('buyer', q, type);
+  const cached = getCachedSearchResult(cacheKey);
+  if (cached) return cached;
 
   const companyMatches = await Users.findAll({
     where: { is_seller: 0, status: 1, is_delete: 0 },
@@ -234,11 +275,14 @@ const searchBuyers = async (q, type) => {
   /* -------------------------------
    4️⃣ FINAL MERGED RESPONSE
   --------------------------------*/
-  return [
+  const results = [
     ...companies,      // 🔹 buyers first
     // ...categories,     // 🔹 categories
     // ...subcategories,  // 🔹 subcategories
   ];
+
+  setCachedSearchResult(cacheKey, results);
+  return results;
 };
 
 const buildUrlParams = (item) => {
