@@ -90,11 +90,18 @@ const FrontHeader = () => {
 
   /* ================= AUTOCOMPLETE ================= */
   useEffect(() => {
+    if (!searchFocused) {
+      setShowDropdown(false);
+      return;
+    }
+
     if (normalizeSearchValue(searchQuery).length < 1) {
       setSuggestions([]);
       setShowDropdown(false);
       return;
     }
+
+    let cancelled = false;
 
     const timer = setTimeout(async () => {
       try {
@@ -109,15 +116,20 @@ const FrontHeader = () => {
           `${API_BASE_URL}/front_menu/main-search?q=${encodeURIComponent(normalizedQuery)}&type=${searchType}`
         );
 
+        if (cancelled) return;
+
         setSuggestions(res.data || []);
-        setShowDropdown(true);
+        setShowDropdown(Array.isArray(res.data) && res.data.length > 0);
       } catch (err) {
         console.error(err);
       }
     }, 300);
 
-    return () => clearTimeout(timer);
-  }, [searchQuery, searchType]);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, searchType, searchFocused]);
 
   const navigateToSuggestion = (item, options = {}) => {
     if (!item?.url) return false;

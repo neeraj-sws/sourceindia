@@ -332,10 +332,13 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
       company_id,
       keyword_ids,
       limit,
+      debug,
     } = req.query;
 
+    const isDebug = String(debug ?? '') === '1' || String(debug ?? '').toLowerCase() === 'true';
+
     const normalizedSearch = normalizeTextForSuggest(search || '');
-    const maxLimit = Math.min(Math.max(parseInt(limit, 10) || 8, 1), 8);
+    const maxLimit = Math.min(Math.max(parseInt(limit, 8) || 8, 1), 8);
 
     if (!normalizedSearch || normalizedSearch.length < 2) {
       return res.json({
@@ -353,9 +356,30 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
       : [];
 
     let matchedKeyword = null;
+    let matchedKeywords = [];
+    const loadKeywordWithItemSubCategory = async (keywordId) => ProductKeyword.findOne({
+      where: {
+        id: keywordId,
+        status: 1,
+      },
+      include: [
+        {
+          model: ItemSubCategory,
+          as: 'ItemSubCategory',
+          required: true,
+          where: {
+            status: 1,
+            is_delete: 0,
+          },
+          attributes: ['id', 'name', 'item_category_id'],
+        },
+      ],
+    });
 
+    // Header flow priority: if keyword_ids are provided, use the same ordered keyword set
+    // so suggestions can cover all related item categories from the header result.
     if (keywordIdsArray.length > 0) {
-      matchedKeyword = await ProductKeyword.findOne({
+      const keywordCandidates = await ProductKeyword.findAll({
         where: {
           id: { [Op.in]: keywordIdsArray },
           status: 1,
@@ -372,8 +396,17 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
             attributes: ['id', 'name', 'item_category_id'],
           },
         ],
-        order: [['id', 'ASC']],
       });
+
+      if (keywordCandidates.length > 0) {
+        const byId = new Map(keywordCandidates.map((k) => [Number(k.id), k]));
+        const ordered = keywordIdsArray.map((id) => byId.get(Number(id))).filter(Boolean);
+        matchedKeywords = ordered;
+
+        const exact = ordered.find((k) => normalizeTextForSuggest(k.name) === normalizedSearch);
+        const prefix = ordered.find((k) => normalizeTextForSuggest(k.name).startsWith(normalizedSearch));
+        matchedKeyword = exact || prefix || ordered[0] || null;
+      }
     }
 
     if (!matchedKeyword) {
@@ -385,74 +418,58 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
         item_subcategory_id,
         header_strict: true,
         only_with_products: true,
-        limit: 1,
+        limit: 8,
       });
 
-      const bestSuggestion = suggestions && suggestions.length > 0 ? suggestions[0] : null;
-
-      if (bestSuggestion?.id) {
-        matchedKeyword = await ProductKeyword.findOne({
-          where: {
-            id: bestSuggestion.id,
-            status: 1,
-          },
-          include: [
-            {
-              model: ItemSubCategory,
-              as: 'ItemSubCategory',
-              required: true,
-              where: {
-                status: 1,
-                is_delete: 0,
-              },
-              attributes: ['id', 'name', 'item_category_id'],
-            },
-          ],
-        });
+      if (Array.isArray(suggestions) && suggestions.length > 0) {
+        const bestSuggestion = suggestions[0];
+        if (bestSuggestion?.id) {
+          matchedKeyword = await loadKeywordWithItemSubCategory(bestSuggestion.id);
+          matchedKeywords = matchedKeyword ? [matchedKeyword] : [];
+        }
       }
     }
 
-    const matchedItemCategoryId = matchedKeyword?.ItemSubCategory?.item_category_id || null;
+    const matchedItemCategoryIds = Array.from(
+      new Set(
+        matchedKeywords
+          .map((k) => Number(k?.ItemSubCategory?.item_category_id))
+          .filter((id) => Number.isInteger(id) && id > 0)
+      )
+    );
+    const matchedItemCategoryId = matchedItemCategoryIds[0] || null;
 
-    if (!matchedItemCategoryId) {
+    if (isDebug) {
+      console.log('[suggested-item-subcategories] match trace', {
+        search,
+        keyword_ids,
+        matched_keyword_id: matchedKeyword?.id || null,
+        matched_keyword_name: matchedKeyword?.name || null,
+        matched_item_subcategory_id: matchedKeyword?.item_subcategory_id || null,
+        matched_item_category_id: matchedItemCategoryId,
+        matched_item_category_ids: matchedItemCategoryIds,
+        matched_keyword_ids: matchedKeywords.map((k) => k.id),
+      });
+    }
+
+    if (!matchedItemCategoryIds.length) {
       return res.json({
         success: true,
         matched_keyword: null,
         matched_item_category_id: null,
+        matched_item_category_ids: [],
+        matched_keywords: [],
         data: [],
       });
     }
-
-    const effectiveKeywordIds = keywordIdsArray.length > 0
-      ? keywordIdsArray
-      : (matchedKeyword?.id ? [matchedKeyword.id] : []);
 
     const productWhere = {
       is_delete: 0,
       status: 1,
       is_approve: 1,
-      item_category_id: matchedItemCategoryId,
+      item_category_id: { [Op.in]: matchedItemCategoryIds },
       item_subcategory_id: { [Op.ne]: null },
     };
-
-    const searchOrConditions = [];
-    if (normalizedSearch) {
-      searchOrConditions.push({
-        title: {
-          [Op.like]: `%${normalizedSearch}%`,
-        },
-      });
-    }
-    if (effectiveKeywordIds.length > 0) {
-      searchOrConditions.push({
-        keyword_id: {
-          [Op.in]: effectiveKeywordIds,
-        },
-      });
-    }
-    if (searchOrConditions.length > 0) {
-      productWhere[Op.or] = searchOrConditions;
-    }
 
     if (category) productWhere.category = { [Op.in]: parseCsv(category) };
     if (sub_category) productWhere.sub_category = { [Op.in]: parseCsv(sub_category) };
@@ -473,16 +490,22 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
         'item_subcategory_id',
         [fn('COUNT', col('Products.product_id')), 'product_count'],
       ],
+      logging: isDebug ? (sql) => console.log('[suggested-item-subcategories][sql]', sql) : false,
       include: [
         {
           model: ItemSubCategory,
           as: 'ItemSubCategory',
           required: true,
-          attributes: ['id', 'name', 'item_category_id'],
+          attributes: ['id', 'name', 'item_category_id', 'category_id', 'subcategory_id'],
+          include: [
+            { model: ItemCategory, as: 'ItemCategory', required: false, attributes: ['id', 'name', 'category_id', 'subcategory_id'] },
+            { model: Categories, as: 'Categories', required: false, attributes: ['id', 'name'] },
+            { model: SubCategories, as: 'SubCategories', required: false, attributes: ['id', 'name'] },
+          ],
           where: {
             status: 1,
             is_delete: 0,
-            item_category_id: matchedItemCategoryId,
+            item_category_id: { [Op.in]: matchedItemCategoryIds },
           },
         },
         {
@@ -510,11 +533,25 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
         return {
           id: subId,
           name: sub.name,
+          category_id: sub.category_id || sub.ItemCategory?.category_id || null,
+          category_name: sub.Categories?.name || '',
+          subcategory_id: sub.subcategory_id || sub.ItemCategory?.subcategory_id || null,
+          subcategory_name: sub.SubCategories?.name || '',
           item_category_id: sub.item_category_id,
+          item_category_name: sub.ItemCategory?.name || '',
           product_count: Number(raw.product_count) || 0,
         };
       })
       .filter(Boolean);
+
+    if (isDebug) {
+      console.log('[suggested-item-subcategories] output trace', {
+        matched_item_category_id: matchedItemCategoryId,
+        matched_item_category_ids: matchedItemCategoryIds,
+        total_suggestions: data.length,
+        suggestion_ids: data.map((d) => d.id),
+      });
+    }
 
     return res.json({
       success: true,
@@ -526,6 +563,13 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
         }
         : null,
       matched_item_category_id: matchedItemCategoryId,
+      matched_item_category_ids: matchedItemCategoryIds,
+      matched_keywords: matchedKeywords.map((k) => ({
+        id: k.id,
+        name: k.name,
+        item_subcategory_id: k.item_subcategory_id,
+        item_category_id: k.ItemSubCategory?.item_category_id || null,
+      })),
       data,
     });
   } catch (err) {
@@ -910,6 +954,7 @@ exports.getAllProductsold = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   try {
+    const isDebug = String(req.query.debug ?? '') === '1' || String(req.query.debug ?? '').toLowerCase() === 'true';
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
     const page = req.query.page ? parseInt(req.query.page) : null;
     const offset = limit && page ? (page - 1) * limit : null;
@@ -993,6 +1038,7 @@ exports.getAllProducts = async (req, res) => {
       where: productWhereClause,
       order,
       ...(limit && offset !== null ? { limit, offset } : {}),
+      logging: isDebug ? (sql) => console.log('[getAllProducts][sql]', sql) : false,
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
@@ -1010,6 +1056,16 @@ exports.getAllProducts = async (req, res) => {
         }
       ]
     });
+
+    if (isDebug) {
+      console.log('[getAllProducts][request_query]', req.query);
+      console.log('[getAllProducts][result_summary]', {
+        total: count,
+        returned: rows.length,
+        product_ids: rows.map((row) => row.id),
+      });
+    }
+
     const modifiedProducts = rows.map(product => {
       const productsData = product.toJSON();
       productsData.getStatus = productsData.status === 1 ? 'Public' : 'Draft';

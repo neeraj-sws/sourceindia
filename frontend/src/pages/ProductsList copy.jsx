@@ -38,8 +38,6 @@ const ProductsList = () => {
   const debounceTimeout = useRef();
   const suggestionRequestIdRef = useRef(0);
   const productsRequestIdRef = useRef(0);
-  const loadingRef = useRef(false);
-  const scrollLoadingRef = useRef(false);
   const [searchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -346,6 +344,9 @@ const ProductsList = () => {
         if (selectedItemCategories.length > 0) {
           params.set('item_category_id', selectedItemCategories.join(','));
         }
+        if (selectedItems.length > 0) {
+          params.set('item_id', selectedItems.join(','));
+        }
         if (selectedStates.length > 0) {
           params.set('user_state', selectedStates.join(','));
         }
@@ -359,17 +360,7 @@ const ProductsList = () => {
         const res = await axios.get(`${API_BASE_URL}/products/suggested-item-subcategories?${params.toString()}`);
         if (requestId !== suggestionRequestIdRef.current) return;
         const suggestions = Array.isArray(res.data?.data) ? res.data.data : [];
-        setSuggestedItemSubCategories((prev) => {
-          if (suggestions.length > 0) return suggestions;
-
-          // Keep current chips visible after selecting one suggestion,
-          // even if the narrowed request returns no alternatives.
-          if (selectedItemSubCategories.length > 0) {
-            return prev;
-          }
-
-          return [];
-        });
+        setSuggestedItemSubCategories(suggestions);
       } catch (err) {
         if (requestId !== suggestionRequestIdRef.current) return;
         console.error('Error fetching suggested item subcategories:', err);
@@ -392,7 +383,6 @@ const ProductsList = () => {
 
   useEffect(() => {
     if (searchTerm.trim().length < 2 || suggestedItemSubCategories.length === 0) return;
-    if (selectedItemSubCategories.length > 0) return;
 
     const validSuggestedIds = new Set(
       suggestedItemSubCategories
@@ -404,22 +394,27 @@ const ProductsList = () => {
       const next = prev.filter((id) => validSuggestedIds.has(Number(id)));
       return next.length === prev.length ? prev : next;
     });
-  }, [suggestedItemSubCategories, searchTerm, selectedItemSubCategories.length]);
+  }, [suggestedItemSubCategories, searchTerm]);
+
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const fetchProducts = useCallback(async (pageNumber = 1, append = false) => {
-    if ((append && scrollLoadingRef.current) || (!append && loadingRef.current)) return;
+    if ((append && scrollLoading) || (!append && loading)) return;
     const requestId = ++productsRequestIdRef.current;
 
     if (append) {
-      scrollLoadingRef.current = true;
       setScrollLoading(true);
     } else {
-      loadingRef.current = true;
       setLoading(true);
     }
     try {
       let url = `${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=15&page=${pageNumber}`;
-      const hasSuggestedSubcategorySelection = selectedItemSubCategories.length > 0;
+      const suggestedIdSet = new Set(
+        suggestedItemSubCategories
+          .map((item) => Number(item?.id))
+          .filter((id) => Number.isInteger(id) && id > 0)
+      );
+      const hasSuggestedSubcategorySelection = selectedItemSubCategories.some((id) => suggestedIdSet.has(Number(id)));
       const effectiveSearchTerm = hasSuggestedSubcategorySelection ? '' : searchTerm;
       const shouldApplyKeywordIds = !hasSuggestedSubcategorySelection;
 
@@ -472,8 +467,11 @@ const ProductsList = () => {
       } else {
         setProductsData(newProducts);
       }
-      const loadedSoFar = pageNumber * 15;
-      if (newProducts.length === 0 || newProducts.length < 15 || loadedSoFar >= res.data.total) {
+      if (
+        newProducts.length === 0 ||
+        (!append && newProducts.length < 15) ||
+        (append && productsData.length + newProducts.length >= res.data.total)
+      ) {
         setHasMore(false);
       } else {
         setHasMore(true);
@@ -482,18 +480,22 @@ const ProductsList = () => {
       if (requestId !== productsRequestIdRef.current) return;
       console.error("Error fetching products:", err);
     } finally {
+      await sleep(1000);
+
       if (requestId === productsRequestIdRef.current) {
         if (append) {
-          scrollLoadingRef.current = false;
           setScrollLoading(false);
         } else {
-          loadingRef.current = false;
           setLoading(false);
         }
       }
     }
   }, [
+    loading,
+    scrollLoading,
+    productsData.length,
     searchTerm,
+    suggestedItemSubCategories,
     selectedCategories,
     selectedSubCategories,
     selectedItemCategories,
@@ -1211,7 +1213,7 @@ const ProductsList = () => {
               </div>
             </div>
 
-            {searchTerm.trim().length >= 2 && (suggestedItemSubCategories.length > 0 || selectedItemSubCategories.length > 0) && (
+            {searchTerm.trim().length >= 2 && suggestedItemSubCategories.length > 0 && (
               <div className="mb-3 border px-3 py-2 bg-white rounded-2">
                 <div className="d-flex align-items-center gap-2 flex-wrap">
                   <strong>Suggested</strong>
