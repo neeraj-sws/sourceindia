@@ -1027,6 +1027,28 @@ exports.getAllProducts = async (req, res) => {
       }
 
       productWhereClause[Op.or] = searchOrConditions;
+
+      if (!sort_by) {
+        const safeSearch = String(search)
+          .replace(/\\/g, '\\\\')
+          .replace(/'/g, "''");
+        const escapedPrefixSearch = `'${safeSearch}%'`;
+        const escapedContainsSearch = `'%${safeSearch}%'`;
+        const keywordRelevanceClause = keywordIdsArray.length > 0
+          ? ` WHEN keyword_id IN (${keywordIdsArray.join(',')}) THEN 2`
+          : '';
+
+        order = [
+          [
+            literal(
+              `CASE WHEN title LIKE ${escapedPrefixSearch} THEN 0 WHEN title LIKE ${escapedContainsSearch} THEN 1${keywordRelevanceClause} ELSE 3 END`
+            ),
+            'ASC',
+          ],
+          ['title', 'ASC'],
+          ['id', 'DESC'],
+        ];
+      }
     }
 
     let userWhereClause = {};
