@@ -21,12 +21,22 @@ exports.createFrontMenu = async (req, res) => {
 };
 
 const searchProducts = async (q, type) => {
-  const { suggestions } = await fetchWeightedProductKeywordSuggestions({
+  let { suggestions } = await fetchWeightedProductKeywordSuggestions({
     query: q,
     only_with_products: true,
     header_strict: true,
     limit: 6,
   });
+
+  if (!suggestions.length) {
+    ({ suggestions } = await fetchWeightedProductKeywordSuggestions({
+      query: q,
+      only_with_products: true,
+      header_strict: false,
+      limit: 6,
+    }));
+  }
+
   return suggestions.map((item) => ({
     id: item.id,
     keyword_id: item.id,
