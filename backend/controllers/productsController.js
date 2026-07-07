@@ -1266,13 +1266,15 @@ exports.getProductsDetail = async (req, res) => {
       include: [{ model: UploadImage, as: 'companyLogo', attributes: ['file'] }]
     });
 
-    const recommendedCompanies = allCompanies.map(c => ({
-      id: c.id,
-      organization_name: c.organization_name,
-      organization_slug: c.organization_slug,
-      company_logo_file: c.companyLogo?.file || null,
-      company_website: c.company_website || null
-    }));
+    const recommendedCompanies = allCompanies
+      .map((c) => ({
+        id: c.id,
+        organization_name: c.organization_name,
+        organization_slug: c.organization_slug,
+        company_logo_file: c.companyLogo?.file || null,
+        company_website: c.company_website || null
+      }))
+      .filter((c) => Boolean(c.company_logo_file));
 
     // Build response
     const response = {
