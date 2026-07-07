@@ -38,10 +38,8 @@ const ProductDetail = () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/products/details/${slug}`);
 
-        setTimeout(() => {
-          setProduct(res.data);
-          setShowSkeleton(false);
-        }, 1000); // ⏱️ 1 second skeleton
+        setProduct(res.data);
+        setShowSkeleton(false);
       } catch (error) {
         console.error("Error fetching product:", error);
         setShowSkeleton(false);
@@ -176,10 +174,17 @@ const ProductDetail = () => {
 
   // Combine main file_name with images array; use fallbacks to avoid exceptions
   const allImages = (() => {
-    const imgs = Array.isArray(product.images) ? product.images : [];
-    if (product.file_name) return [{ file: product.file_name, id: 'main' }, ...imgs];
+    const imgs = Array.isArray(product?.images) ? product.images : [];
+    if (product?.file_name) return [{ file: product.file_name, id: 'main' }, ...imgs];
     return imgs;
   })();
+
+  const similarProducts = Array.isArray(product?.similar_products) ? product.similar_products : [];
+
+  const recommendedCompanies = (Array.isArray(product?.recommended_companies)
+    ? product.recommended_companies
+    : []
+  ).filter((item) => item?.company_logo_file);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -690,7 +695,7 @@ const ProductDetail = () => {
       </section >
       <div className="product-detail-container companyProducts">
         <div className="container-xl">
-          {product?.similar_products?.length > 0 && (
+          {similarProducts.length > 0 && (
             <div className="companyProducts">
               <h2 className="color-primary">Similar Products</h2>
               <Swiper
@@ -700,7 +705,7 @@ const ProductDetail = () => {
                 watchOverflow={true}
                 slidesPerView={4}
                 slidesPerGroup={1}
-                loop={product?.similar_products && product.similar_products.length > 4}
+                loop={similarProducts.length > 4}
                 className="similar-products-carousel"
                 style={{ padding: "20px 0" }}
                 breakpoints={{
@@ -710,7 +715,7 @@ const ProductDetail = () => {
                   1200: { slidesPerView: 4, slidesPerGroup: 1 },
                 }}
               >
-                {product.similar_products.map((similar) => (
+                {similarProducts.map((similar, index) => (
                   <SwiperSlide key={similar.id}>
                     <div className="productBox productBoxswiper p-3 bg-white">
                       <div className="middlepro">
@@ -719,6 +724,8 @@ const ProductDetail = () => {
                             src={`${ROOT_URL}/${similar.file_name}`}
                             width={180}
                             height={180}
+                            loading={index < 2 ? 'eager' : 'lazy'}
+                            fetchPriority={index < 2 ? 'high' : 'auto'}
                             showFallback
                           />
                         </div>
@@ -743,7 +750,7 @@ const ProductDetail = () => {
 
 
         {/* Recommended Companies */}
-        {product?.recommended_companies?.length > 0 && (
+        {recommendedCompanies.length > 0 && (
           <div className='container'>
             <div className="similerCompany mt-lg-5 mt-3">
               <h2 className="color-primary">Recommended Companies</h2>
@@ -751,7 +758,8 @@ const ProductDetail = () => {
                 modules={[Navigation, Pagination]}
                 spaceBetween={20}
                 navigation
-                loop
+                watchOverflow={true}
+                loop={recommendedCompanies.length > 5}
                 className="recommended-companies-carousel"
                 style={{ padding: "20px 0" }}
                 breakpoints={{
@@ -772,7 +780,7 @@ const ProductDetail = () => {
                   },
                 }}
               >
-                {product.recommended_companies.map((item) => (
+                {recommendedCompanies.map((item, index) => (
                   <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
                     <div className='productContainer'>
                       <Link to={`/companies/${item.organization_slug}`}>
@@ -781,6 +789,8 @@ const ProductDetail = () => {
                             src={`${ROOT_URL}/${item.company_logo_file}`}
                             width={180}
                             height={180}
+                            loading={index < 2 ? 'eager' : 'lazy'}
+                            fetchPriority={index < 2 ? 'high' : 'auto'}
                             showFallback
                           />
                         </div>

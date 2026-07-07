@@ -1,93 +1,56 @@
-import React, { useEffect, useState } from 'react';
-
-// Simple in-memory cache for image existence checks to avoid repeated network probes
-const _imageExistenceCache = new Map();
+import React, { useEffect, useMemo, useState } from 'react';
 
 const ImageFront = ({
   src,
   alt = 'Image',
   width = 80,
   height = 80,
+  loading = 'lazy',
+  fetchPriority = 'auto',
   showFallback = true,
   style = null,
   className = null,
   defaultimg = null
 }) => {
-  const [imageExists, setImageExists] = useState(false);
-
-  useEffect(() => {
-    if (!src || src === 'null' || src.endsWith('/null')) {
-      setImageExists(false);
-      return;
-    }
-
-    // Return cached result when available
-    if (_imageExistenceCache.has(src)) {
-      setImageExists(Boolean(_imageExistenceCache.get(src)));
-      return;
-    }
-
-    let mounted = true;
-    const img = new Image();
-    let timeoutId = null;
-
-    const onLoad = () => {
-      if (!mounted) return;
-      _imageExistenceCache.set(src, true);
-      setImageExists(true);
-      cleanup();
-    };
-
-    const onError = () => {
-      if (!mounted) return;
-      _imageExistenceCache.set(src, false);
-      setImageExists(false);
-      cleanup();
-    };
-
-    const cleanup = () => {
-      try { img.onload = null; img.onerror = null; } catch (e) {}
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-
-    img.onload = onLoad;
-    img.onerror = onError;
-    // small timeout to guard against very slow responses (treat as not available)
-    timeoutId = setTimeout(() => {
-      if (!mounted) return;
-      _imageExistenceCache.set(src, false);
-      setImageExists(false);
-      cleanup();
-    }, 5000);
-
-    // start loading image (this triggers browser image fetch, not a HEAD request)
-    img.src = src;
-
-    return () => { mounted = false; cleanup(); };
+  const fallbackSrc = useMemo(() => defaultimg || '/default.png', [defaultimg]);
+  const normalizedSrc = useMemo(() => {
+    if (!src || src === 'null' || src.endsWith('/null')) return '';
+    return src;
   }, [src]);
 
-  if (!imageExists) {
-    if (!showFallback) return null;
+  const [currentSrc, setCurrentSrc] = useState(normalizedSrc || fallbackSrc);
 
-    return (
-      <img
-        className={`img-fluid ${className || ''}`}
-        src={defaultimg || '/default.png'}
-        alt={alt}
-        loading="lazy"
-        decoding="async"
-        style={style}
-      />
-    );
-  }
+  useEffect(() => {
+    if (normalizedSrc) {
+      setCurrentSrc(normalizedSrc);
+      return;
+    }
+
+    if (showFallback) {
+      setCurrentSrc(fallbackSrc);
+      return;
+    }
+
+    setCurrentSrc('');
+  }, [normalizedSrc, fallbackSrc, showFallback]);
+
+  if (!currentSrc) return null;
 
   return (
     <img
       className={`img-fluid ${className || ''}`}
-      src={src}
+      src={currentSrc}
       alt={alt}
-      loading="lazy"
+      loading={loading}
+      fetchPriority={fetchPriority}
       decoding="async"
+      width={width}
+      height={height}
+      onError={(e) => {
+        if (!showFallback) return;
+        if (e.currentTarget.src.includes(fallbackSrc)) return;
+        e.currentTarget.src = fallbackSrc;
+      }}
       style={style}
     />
   );

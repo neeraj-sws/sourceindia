@@ -382,6 +382,7 @@ const FrontHeader = () => {
                 </Link>
 
                 {/* DESKTOP BUTTON */}
+
                 <a
                   href="https://elcina.com"
                   target="_blank"
@@ -457,7 +458,11 @@ const FrontHeader = () => {
                         );
                       })}
                   </ul>
+                  <a className="nav-link" href="https://www.meity.gov.in/" target="_blank" rel="noreferrer">
+                    <img src="/icon1.svg" className="img-fluid sourcesatya" alt="Source India" style={{ width: "100px" }} />
+                  </a>
                 </div>
+
               </div>
             </nav>
           </div>
