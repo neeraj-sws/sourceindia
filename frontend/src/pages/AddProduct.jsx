@@ -1316,11 +1316,11 @@ const AddProduct = () => {
                           {errors.status && (<div className="invalid-feedback">{errors.status}</div>)}
                         </div>
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="short_description" className="form-label">Short Description</label>
+                          <label htmlFor="short_description" className="form-label">Short Specifications</label>
                           <textarea
                             className={`form-control ${errors.brief_company ? "is-invalid" : ""}`}
                             id="short_description"
-                            placeholder="Short Description"
+                            placeholder="Short Specifications"
                             rows={3}
                             value={formData.short_description}
                             onChange={handleInputChange}
@@ -1328,7 +1328,7 @@ const AddProduct = () => {
                           {errors.short_description && (<div className="invalid-feedback">{errors.short_description}</div>)}
                         </div>
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="description" className="form-label required">Long Description</label>
+                          <label htmlFor="description" className="form-label required">Long Specifications</label>
                           <CKEditor
                             editor={ClassicEditor}
                             data={formData.description || ''}
