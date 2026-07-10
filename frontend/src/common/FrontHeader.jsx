@@ -355,7 +355,7 @@ const FrontHeader = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white py-3">
+        <div className="bg-white py-0">
           <div className="container-xl">
             <nav className="navbar navbar-expand-lg py-0">
               <div className="container-fluid px-0">
@@ -364,7 +364,7 @@ const FrontHeader = () => {
                   <img
                     src={logoUrl}
                     alt="Site Logo"
-                    height="40"
+                    height="50"
                     className="me-2"
                     style={{ width: "auto" }}
                     loading="lazy"
@@ -459,7 +459,7 @@ const FrontHeader = () => {
                       })}
                   </ul>
                   <a className="nav-link" href="https://www.meity.gov.in/" target="_blank" rel="noreferrer">
-                    <img src="/icon1.svg" className="img-fluid sourcesatya" alt="Source India" style={{ width: "100px" }} />
+                    <img src="/icon1.svg" className="img-fluid sourcesatya" alt="Source India" style={{ width: "150px" }} />
                   </a>
                 </div>
 
