@@ -1,7 +1,24 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-const GA_MEASUREMENT_ID = 'G-GV1NBV98CK';
+const getGAMeasurementID = () => {
+    const hostname = window.location.hostname;
+
+    // react.sourceindia-electronics.com
+    if (hostname.includes('react.sourceindia-electronics.com')) {
+        return 'G-GV1NBV98CK';
+    }
+
+    // sourceindia-electronics.com (production)
+    if (hostname.includes('sourceindia-electronics.com')) {
+        return 'G-YSQQDLNG4E';
+    }
+
+    // Default for localhost
+    return 'G-GV1NBV98CK';
+};
+
+const GA_MEASUREMENT_ID = getGAMeasurementID();
 
 const AnalyticsTracker = () => {
     const location = useLocation();
@@ -29,31 +46,37 @@ const AnalyticsTracker = () => {
         let tracked = false;
 
         const onSeoUpdated = (event) => {
-            if (!window.gtag) {
-                return;
-            }
-            if (tracked) {
-                return;
-            }
-            if (event?.detail?.path !== location.pathname) {
-                return;
-            }
-
-            const pageTitle = event?.detail?.title || document.title;
-            const pagePath = location.pathname;
-            const pageLocation = window.location.href;
-
-            window.gtag('event', 'page_view', {
-                page_path: pagePath,
-                page_title: pageTitle,
-                page_location: pageLocation,
-            });
+            if (!window.gtag) return;
+            if (tracked) return;
+            if (event?.detail?.path !== location.pathname) return;
 
             tracked = true;
+            window.gtag('event', 'page_view', {
+                page_path: location.pathname,
+                page_title: event?.detail?.title || document.title,
+                page_location: window.location.href,
+            });
         };
 
         window.addEventListener('seo:updated', onSeoUpdated);
-        return () => window.removeEventListener('seo:updated', onSeoUpdated);
+
+        // Fallback: admin/user-layout pages par GlobalSeo nahi hota,
+        // isliye seo:updated kabhi fire nahi hoti.
+        // 3 second baad directly page_view bhejo.
+        const fallbackTimer = setTimeout(() => {
+            if (!tracked && window.gtag) {
+                window.gtag('event', 'page_view', {
+                    page_path: location.pathname,
+                    page_title: document.title,
+                    page_location: window.location.href,
+                });
+            }
+        }, 3000);
+
+        return () => {
+            window.removeEventListener('seo:updated', onSeoUpdated);
+            clearTimeout(fallbackTimer);
+        };
     }, [location.pathname]);
 
     return null;
