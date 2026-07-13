@@ -313,7 +313,11 @@ const ProductCategoryList = ({ getDeleted, excludeSellerCategories, excludeProdu
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      showNotification("Failed to update status.", "danger");
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Failed to update status.";
+      showNotification(errorMessage, "error");
     } finally {
       closeStatusModal();
       document.activeElement.blur();
