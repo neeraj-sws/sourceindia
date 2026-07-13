@@ -212,7 +212,11 @@ const TicketCategoryList = () => {
       showNotification("Status updated!", "success");
     } catch (error) {
       console.error("Error updating status:", error);
-      showNotification("Failed to update status.", "danger");
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Failed to update status.";
+      showNotification(errorMessage, "error");
     } finally {
       closeStatusModal();
       document.activeElement.blur();
@@ -224,15 +228,15 @@ const TicketCategoryList = () => {
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb mainhead="Ticket Category" maincount={totalRecords} page="Support System" title="Ticket Category"
-          add_button={<><i className="bx bxs-plus-square me-1" /> Add Ticket Category</>} add_link="#" onClick={() => openForm()}
-          actions={
-            <>
-            <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
-            <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedTicketCategory.length === 0}>
-              <i className="bx bx-trash me-1" /> Delete Selected
-            </button>
-            </>
-          }
+            add_button={<><i className="bx bxs-plus-square me-1" /> Add Ticket Category</>} add_link="#" onClick={() => openForm()}
+            actions={
+              <>
+                <button className="btn btn-sm btn-primary mb-2 me-2" onClick={handleDownload}><i className="bx bx-download me-1" /> Excel</button>
+                <button className="btn btn-sm btn-danger mb-2 me-2" onClick={openBulkDeleteModal} disabled={selectedTicketCategory.length === 0}>
+                  <i className="bx bx-trash me-1" /> Delete Selected
+                </button>
+              </>
+            }
           />
           <div className="row">
             <div className="col-md-4">
@@ -324,7 +328,7 @@ const TicketCategoryList = () => {
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
                       <tr key={row.id}>
-                        <td>                    
+                        <td>
                           <input type="checkbox" checked={selectedTicketCategory.includes(row.id)} onChange={() => handleSelectTicketCategory(row.id)} />
                         </td>
                         <td>{(page - 1) * limit + index + 1}</td>

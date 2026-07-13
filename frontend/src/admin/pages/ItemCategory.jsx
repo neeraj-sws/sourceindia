@@ -358,7 +358,11 @@ const ItemCategory = ({ getDeleted, excludeItemCategories }) => {
       }
     } catch (error) {
       console.error("Error updating status:", error);
-      showNotification("Failed to update status.", "danger");
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Failed to update status.";
+      showNotification(errorMessage, "error");
     } finally {
       closeStatusModal();
       document.activeElement.blur();
@@ -492,8 +496,8 @@ const ItemCategory = ({ getDeleted, excludeItemCategories }) => {
 
     // Selected Item Category ka naam
     const fileName = `${(importItemCategory?.name || "Item_Category")
-        .replace(/[\\/:*?"<>|]/g, "_")
-        .replace(/\s+/g, "_")
+      .replace(/[\\/:*?"<>|]/g, "_")
+      .replace(/\s+/g, "_")
       }_Import_Template.xlsx`;
 
     writeFile(workbook, fileName);
