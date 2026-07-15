@@ -959,7 +959,7 @@ exports.getAllProducts = async (req, res) => {
     const page = req.query.page ? parseInt(req.query.page) : null;
     const offset = limit && page ? (page - 1) * limit : null;
     const { user_state, sort_by, title, category, sub_category, company_id, is_delete, status, is_approve,
-      item_category_id, item_subcategory_id, item_id, search, keyword_ids } = req.query;
+      item_category_id, item_subcategory_id, item_id, search, keyword_ids, is_front } = req.query;
     let order = [['id', 'ASC']];
     if (sort_by === 'newest') order = [['created_at', 'DESC']];
     else if (sort_by === 'a_to_z') order = [['title', 'ASC']];
@@ -1008,6 +1008,7 @@ exports.getAllProducts = async (req, res) => {
     if (is_approve) {
       productWhereClause.is_approve = is_approve;
     }
+
     // General search filter
     if (search) {
       const searchOrConditions = [
@@ -1055,6 +1056,11 @@ exports.getAllProducts = async (req, res) => {
     if (user_state) {
       const stateIds = parseCsv(user_state);
       userWhereClause.state = { [Op.in]: stateIds };
+    }
+    if (is_front) {
+      userWhereClause.is_approve = 1;
+      userWhereClause.is_delete = 0;
+      userWhereClause.status = 1;
     }
     const { count, rows } = await Products.findAndCountAll({
       where: productWhereClause,

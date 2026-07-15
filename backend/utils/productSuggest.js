@@ -318,13 +318,17 @@ const fetchWeightedProductKeywordSuggestions = async ({
 
   keywordWhere.id = {
     [Op.in]: literal(`(
-SELECT DISTINCT keyword_id
-FROM products
-WHERE status = 1
-AND is_approve = 1
-AND is_delete = 0
-AND keyword_id IS NOT NULL
-)`)
+    SELECT DISTINCT p.keyword_id
+    FROM products p
+    INNER JOIN users u ON p.user_id = u.user_id
+    WHERE p.status = 1
+      AND p.is_approve = 1
+      AND p.is_delete = 0
+      AND p.keyword_id IS NOT NULL
+      AND u.status = 1
+      AND u.is_approve = 1
+      AND u.is_delete = 0
+  )`)
   };
 
 
