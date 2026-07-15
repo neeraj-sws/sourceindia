@@ -14,6 +14,39 @@ import UseAuth from '../sections/UseAuth';
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
+import OtherSpecifications from '../components/OtherSpecifications';
+
+const OPTION_INPUT_TYPES = ['radio', 'checkbox', 'select', 'multiselect'];
+
+const toArrayValue = (value) => {
+  if (Array.isArray(value)) return value;
+  if (value === undefined || value === null || value === '') return [];
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch (error) {
+        return [value];
+      }
+    }
+    return [value];
+  }
+  return [value];
+};
+
+const hasDynamicFieldValue = (field, value) => {
+  if (OPTION_INPUT_TYPES.includes(field.inputType)) {
+    if (field.inputType === 'checkbox' || field.inputType === 'multiselect') {
+      return toArrayValue(value).length > 0;
+    }
+    return String(value ?? '').trim() !== '';
+  }
+
+  return String(value ?? '').trim() !== '';
+};
 
 const AddProduct = () => {
   const { showNotification } = useAlert();
@@ -57,6 +90,9 @@ const AddProduct = () => {
   const [selectedKeyword, setSelectedKeyword] = useState('');
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState('');
+  const [dynamicFields, setDynamicFields] = useState([]);
+  const [dynamicFieldValues, setDynamicFieldValues] = useState({});
+  const [otherSpecifications, setOtherSpecifications] = useState([{ name: '', value: '', isCustom: false }]);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [categoryLabel, setCategoryLabel] = useState('');
   const normalizeCategoryList = (payload) => {
@@ -219,6 +255,8 @@ const AddProduct = () => {
     setItemSubCategories([]);
     setKeywords([]);
     setItems([]);
+    setDynamicFields([]);
+    setDynamicFieldValues({});
     setCategoryLabel('');
     setPickerSelection(emptyPickerSelection);
   };
@@ -286,6 +324,55 @@ const AddProduct = () => {
         setItemSubCategories([]);
       });
   }, [selectedCategory, selectedSubCategory, selectedItemCategory]);
+
+  useEffect(() => {
+    if (!selectedItemCategory || isOtherCategorySelected) {
+      setDynamicFields([]);
+      setDynamicFieldValues({});
+      setErrors((prev) => {
+        const next = {};
+        Object.keys(prev).forEach((key) => {
+          if (!key.startsWith('dynamic_')) next[key] = prev[key];
+        });
+        return next;
+      });
+      return;
+    }
+
+    const fetchDynamicFields = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/item_category_fields/by-item-category/${selectedItemCategory}`);
+        const rows = Array.isArray(res.data) ? res.data : [];
+        const activeFields = rows.filter((field) => field?.isActive !== false);
+        setDynamicFields(activeFields);
+
+        setDynamicFieldValues((prev) => {
+          const next = {};
+          activeFields.forEach((field) => {
+            const existing = prev[field.id];
+            if (existing !== undefined) {
+              next[field.id] = existing;
+              return;
+            }
+
+            const defaultValue = field.defaultValue ?? '';
+            if (field.inputType === 'checkbox' || field.inputType === 'multiselect') {
+              next[field.id] = toArrayValue(defaultValue);
+            } else {
+              next[field.id] = defaultValue;
+            }
+          });
+          return next;
+        });
+      } catch (error) {
+        console.error('Error fetching dynamic fields:', error);
+        setDynamicFields([]);
+        setDynamicFieldValues({});
+      }
+    };
+
+    fetchDynamicFields();
+  }, [selectedItemCategory, isOtherCategorySelected]);
 
   useEffect(() => {
     if (!(selectedCategory && selectedSubCategory && selectedItemCategory && selectedItemSubCategory)) {
@@ -617,6 +704,21 @@ const AddProduct = () => {
   const handleItemChange = async (event) => {
     const itemId = event.target.value;
     setSelectedItem(itemId);
+  };
+
+  const handleDynamicFieldChange = (fieldId, value) => {
+    setDynamicFieldValues((prev) => ({
+      ...prev,
+      [fieldId]: value,
+    }));
+
+    setErrors((prev) => {
+      const key = `dynamic_${fieldId}`;
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -953,6 +1055,22 @@ const AddProduct = () => {
       });
     }
 
+    dynamicFields.forEach((field) => {
+      if (!field.required) return;
+      const currentValue = dynamicFieldValues[field.id];
+      if (!hasDynamicFieldValue(field, currentValue)) {
+        errs[`dynamic_${field.id}`] = `${field.label} is required`;
+      }
+    });
+
+    const hasIncompleteOtherSpecification = otherSpecifications.some((specification) => {
+      const hasName = Boolean(String(specification.name || '').trim());
+      const hasValue = Boolean(String(specification.value || '').trim());
+      return hasName !== hasValue;
+    });
+    if (hasIncompleteOtherSpecification) errs.other_specifications = 'Each other specification needs both a name and a value';
+
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -997,6 +1115,32 @@ const AddProduct = () => {
         setSelectedKeyword(data.keyword_id ? String(data.keyword_id) : '');
         setSelectedItem(data.item_id || '');
 
+        if (Array.isArray(data.dynamic_fields)) {
+          const mappedValues = {};
+          data.dynamic_fields.forEach((entry) => {
+            if (!entry?.item_category_field_id) return;
+            const fieldId = String(entry.item_category_field_id);
+            const rawValue = entry.value;
+            const inputType = entry?.field?.inputType;
+
+            if (inputType === 'checkbox' || inputType === 'multiselect') {
+              mappedValues[fieldId] = toArrayValue(rawValue);
+            } else {
+              mappedValues[fieldId] = rawValue ?? '';
+            }
+          });
+          setDynamicFieldValues(mappedValues);
+        }
+        setOtherSpecifications(
+          Array.isArray(data.other_specifications) && data.other_specifications.length
+            ? data.other_specifications.map((specification) => ({
+              name: specification.name || '',
+              value: specification.value || '',
+              isCustom: !['Type', 'Brand', 'Material', 'Color', 'Size', 'Warranty', 'Country of Origin'].includes(specification.name),
+            }))
+            : [{ name: '', value: '', isCustom: false }]
+        );
+
         if (data.category && data.sub_category && data.item_category_id) {
           try {
             const subRes = await axios.get(
@@ -1039,6 +1183,14 @@ const AddProduct = () => {
     setSubmitting(true);
     console.log('sssttt');
     try {
+      const dynamicFieldsPayload = Object.entries(dynamicFieldValues).map(([fieldId, value]) => ({
+        item_category_field_id: Number(fieldId),
+        value,
+      }));
+      const otherSpecificationsPayload = otherSpecifications
+        .filter((specification) => String(specification.name || '').trim() && String(specification.value || '').trim())
+        .map(({ name, value }) => ({ name: String(name).trim(), value: String(value).trim() }));
+
       let endpoint, method, payload, headers;
       const userId = user?.id;
       const categoryForSubmit = selectedCategory || (isOtherCategorySelected ? '0' : '');
@@ -1054,6 +1206,8 @@ const AddProduct = () => {
           item_subcategory_id: selectedItemSubCategory || '',
           keyword_id: selectedKeyword || '',
           item_id: selectedItem || '',
+          dynamic_fields: dynamicFieldsPayload,
+          other_specifications: otherSpecificationsPayload,
         };
         headers = { "Content-Type": "application/json" };
         await axios[method](endpoint, payload, { headers });
@@ -1074,6 +1228,8 @@ const AddProduct = () => {
         data.append("item_subcategory_id", selectedItemSubCategory || '');
         data.append("keyword_id", selectedKeyword || '');
         data.append("item_id", selectedItem || '');
+        data.append("dynamic_fields", JSON.stringify(dynamicFieldsPayload));
+        data.append("other_specifications", JSON.stringify(otherSpecificationsPayload));
         files.forEach((file) => {
           data.append("files", file);
         });
@@ -1153,7 +1309,7 @@ const AddProduct = () => {
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <form className="row g-3" onSubmit={handleSubmit}>
-                <div className="col-md-8">
+                <div className="col-md-7">
                   <div className="card">
                     <div className="card-body p-4">
                       <div className="row">
@@ -1251,19 +1407,19 @@ const AddProduct = () => {
                                 (() => {
                                   const isActive = isSuggestionTagActive(suggestion);
                                   return (
-                                <button
-                                  key={`tag-${getSuggestionKey(suggestion)}`}
-                                  type="button"
-                                  className={`btn rounded-pill px-2 py-1 ${isActive ? 'btn-primary' : 'btn-outline-primary'}`}
-                                  style={{ fontSize: '0.72rem', lineHeight: 1.4 }}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    suppressTitleAutoSelectRef.current = true;
-                                    handleSuggestionSelect(suggestion);
-                                  }}
-                                >
-                                  {suggestion.title}
-                                </button>
+                                    <button
+                                      key={`tag-${getSuggestionKey(suggestion)}`}
+                                      type="button"
+                                      className={`btn rounded-pill px-2 py-1 ${isActive ? 'btn-primary' : 'btn-outline-primary'}`}
+                                      style={{ fontSize: '0.72rem', lineHeight: 1.4 }}
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        suppressTitleAutoSelectRef.current = true;
+                                        handleSuggestionSelect(suggestion);
+                                      }}
+                                    >
+                                      {suggestion.title}
+                                    </button>
                                   );
                                 })()
                               ))}
@@ -1343,7 +1499,7 @@ const AddProduct = () => {
                     </div>
                   </div>
                 </div>
-                <div className="col-md-4">
+                <div className="col-md-5">
                   <div className="card">
                     <div className="card-body p-4">
                       <div className="row">
@@ -1391,6 +1547,151 @@ const AddProduct = () => {
                             ))}
                           </select>
                         </div>
+
+                        {dynamicFields.length > 0 && (
+                          <div className="col-md-12">
+                            <div className="card border mt-2">
+                              <div className="card-body p-3">
+                                <h6 className="mb-3">Dynamic Fields</h6>
+                                <div className="row g-3">
+                                  {dynamicFields.map((field) => {
+                                    const fieldId = String(field.id);
+                                    const value = dynamicFieldValues[fieldId];
+                                    const errorKey = `dynamic_${field.id}`;
+                                    const options = Array.isArray(field.options)
+                                      ? field.options.filter((option) => option?.isActive !== false)
+                                      : [];
+
+                                    return (
+                                      <div className="col-md-12" key={field.id}>
+                                        <label className="form-label">
+                                          {field.label}
+                                          {field.required ? <span className="text-danger ms-1">*</span> : null}
+                                        </label>
+
+                                        {field.inputType === 'textarea' && (
+                                          <textarea
+                                            className={`form-control ${errors[errorKey] ? 'is-invalid' : ''}`}
+                                            rows={3}
+                                            placeholder={field.placeholder || ''}
+                                            value={value ?? ''}
+                                            onChange={(event) => handleDynamicFieldChange(fieldId, event.target.value)}
+                                          />
+                                        )}
+
+                                        {(field.inputType === 'text' || field.inputType === 'email' || field.inputType === 'url' || field.inputType === 'date' || field.inputType === 'number' || field.inputType === 'decimal') && (
+                                          <input
+                                            type={field.inputType === 'decimal' ? 'number' : field.inputType}
+                                            step={field.inputType === 'decimal' ? '0.01' : undefined}
+                                            className={`form-control ${errors[errorKey] ? 'is-invalid' : ''}`}
+                                            placeholder={field.placeholder || ''}
+                                            value={value ?? ''}
+                                            onChange={(event) => handleDynamicFieldChange(fieldId, event.target.value)}
+                                          />
+                                        )}
+
+                                        {field.inputType === 'select' && (
+                                          <select
+                                            className={`form-control ${errors[errorKey] ? 'is-invalid' : ''}`}
+                                            value={value ?? ''}
+                                            onChange={(event) => handleDynamicFieldChange(fieldId, event.target.value)}
+                                          >
+                                            <option value="">Select {field.label}</option>
+                                            {options.map((option) => (
+                                              <option key={option.id} value={option.value}>{option.label}</option>
+                                            ))}
+                                          </select>
+                                        )}
+
+                                        {field.inputType === 'radio' && (
+                                          <div>
+                                            {options.map((option) => (
+                                              <div className="form-check form-check-inline" key={option.id}>
+                                                <input
+                                                  className="form-check-input"
+                                                  type="radio"
+                                                  name={`dynamic_${field.id}`}
+                                                  id={`dynamic_${field.id}_${option.id}`}
+                                                  value={option.value}
+                                                  checked={String(value ?? '') === String(option.value)}
+                                                  onChange={(event) => handleDynamicFieldChange(fieldId, event.target.value)}
+                                                />
+                                                <label className="form-check-label" htmlFor={`dynamic_${field.id}_${option.id}`}>
+                                                  {option.label}
+                                                </label>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        {field.inputType === 'checkbox' && (
+                                          <div>
+                                            {options.map((option) => {
+                                              const selectedValues = toArrayValue(value);
+                                              const checked = selectedValues.map(String).includes(String(option.value));
+
+                                              return (
+                                                <div className="form-check form-check-inline" key={option.id}>
+                                                  <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    id={`dynamic_${field.id}_${option.id}`}
+                                                    checked={checked}
+                                                    onChange={(event) => {
+                                                      const current = toArrayValue(dynamicFieldValues[fieldId]).map(String);
+                                                      const optionValue = String(option.value);
+                                                      const next = event.target.checked
+                                                        ? [...new Set([...current, optionValue])]
+                                                        : current.filter((entry) => entry !== optionValue);
+                                                      handleDynamicFieldChange(fieldId, next);
+                                                    }}
+                                                  />
+                                                  <label className="form-check-label" htmlFor={`dynamic_${field.id}_${option.id}`}>
+                                                    {option.label}
+                                                  </label>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+
+                                        {field.inputType === 'multiselect' && (
+                                          <select
+                                            multiple
+                                            className={`form-control ${errors[errorKey] ? 'is-invalid' : ''}`}
+                                            value={toArrayValue(value).map(String)}
+                                            onChange={(event) => {
+                                              const selectedOptions = Array.from(event.target.selectedOptions).map((option) => option.value);
+                                              handleDynamicFieldChange(fieldId, selectedOptions);
+                                            }}
+                                          >
+                                            {options.map((option) => (
+                                              <option key={option.id} value={option.value}>{option.label}</option>
+                                            ))}
+                                          </select>
+                                        )}
+
+                                        {!['textarea', 'text', 'email', 'url', 'date', 'number', 'decimal', 'select', 'radio', 'checkbox', 'multiselect'].includes(field.inputType) && (
+                                          <input
+                                            type="text"
+                                            className={`form-control ${errors[errorKey] ? 'is-invalid' : ''}`}
+                                            placeholder={field.placeholder || ''}
+                                            value={value ?? ''}
+                                            onChange={(event) => handleDynamicFieldChange(fieldId, event.target.value)}
+                                          />
+                                        )}
+
+                                        {field.helpText ? <div className="form-text">{field.helpText}</div> : null}
+                                        {errors[errorKey] ? <div className="text-danger small mt-1">{errors[errorKey]}</div> : null}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <OtherSpecifications specifications={otherSpecifications} onChange={setOtherSpecifications} error={errors.other_specifications} />
                         {/* <div className="form-group mb-3 col-md-12">
                           <label htmlFor="keyword_id" className="form-label">Keyword</label>
                           <select
@@ -1492,76 +1793,76 @@ const AddProduct = () => {
                       </div>
                     </div>
                   </div>
-                <div className="card mt-2">
-                  <div className="card-body p-4">
-                    <div className="row">
-                                                <div className="col-md-12">
-                        <label htmlFor="file" className="form-label required">Product Images</label><br />
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          style={{ display: "none" }}
-                          onChange={handleFileChange}
-                          multiple
-                          accept="image/png, image/jpeg"
-                        />
-                        <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
-                          <i className="bx bxs-plus-square me-1" />Add Image
-                        </button>
-                        {errors.file && (<div className="text-danger small mt-1">{errors.file}</div>)}
-                      </div>
-                      <div className="col-md-12">
-                        <div className="mt-3 d-flex flex-wrap">
-                          {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
-                            <div key={index} className="position-relative m-2">
-                              <img
-                                src={`${ROOT_URL}/${image.file}`}
-                                alt={`Preview ${index}`}
-                                className="object-fit-cover m-3"
-                                width={80}
-                                height={80}
-                                loading="lazy"
-                                decoding="async"
-                              />
-                              <button
-                                type="button"
-                                className="btn btn-danger btn-remove-image"
-                                style={{ width: '1.5rem', height: '1.5rem' }}
-                                onClick={() => openDeleteModal(image.id)}
-                              >
-                                <i className="bx bx-x me-0" />
-                              </button>
-                            </div>
-                          ))}
-                          {files.length > 0 && files?.map((file, index) => (
-                            <div key={index} className="position-relative m-2">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={`New Preview ${index}`}
-                                className="object-fit-cover m-3"
-                                width={80}
-                                height={80}
-                                loading="lazy"
-                                decoding="async"
-                              />
-                              <button
-                                variant="danger"
-                                size="sm"
-                                className="btn btn-danger btn-remove-image"
-                                style={{ width: '1.5rem', height: '1.5rem' }}
-                                onClick={() => {
-                                  setFiles(prev => prev.filter((_, i) => i !== index));
-                                }}
-                              >
-                                <i className="bx bx-x me-0" />
-                              </button>
-                            </div>
-                          ))}
+                  <div className="card mt-2">
+                    <div className="card-body p-4">
+                      <div className="row">
+                        <div className="col-md-12">
+                          <label htmlFor="file" className="form-label required">Product Images</label><br />
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            style={{ display: "none" }}
+                            onChange={handleFileChange}
+                            multiple
+                            accept="image/png, image/jpeg"
+                          />
+                          <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
+                            <i className="bx bxs-plus-square me-1" />Add Image
+                          </button>
+                          {errors.file && (<div className="text-danger small mt-1">{errors.file}</div>)}
+                        </div>
+                        <div className="col-md-12">
+                          <div className="mt-3 d-flex flex-wrap">
+                            {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
+                              <div key={index} className="position-relative m-2">
+                                <img
+                                  src={`${ROOT_URL}/${image.file}`}
+                                  alt={`Preview ${index}`}
+                                  className="object-fit-cover m-3"
+                                  width={80}
+                                  height={80}
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-remove-image"
+                                  style={{ width: '1.5rem', height: '1.5rem' }}
+                                  onClick={() => openDeleteModal(image.id)}
+                                >
+                                  <i className="bx bx-x me-0" />
+                                </button>
+                              </div>
+                            ))}
+                            {files.length > 0 && files?.map((file, index) => (
+                              <div key={index} className="position-relative m-2">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`New Preview ${index}`}
+                                  className="object-fit-cover m-3"
+                                  width={80}
+                                  height={80}
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                                <button
+                                  variant="danger"
+                                  size="sm"
+                                  className="btn btn-danger btn-remove-image"
+                                  style={{ width: '1.5rem', height: '1.5rem' }}
+                                  onClick={() => {
+                                    setFiles(prev => prev.filter((_, i) => i !== index));
+                                  }}
+                                >
+                                  <i className="bx bx-x me-0" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
                 </div>
                 <div className="col-12 text-end mt-2">
                   <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>

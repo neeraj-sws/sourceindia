@@ -74,6 +74,8 @@ const ProductUnusedCategories = lazy(() => import('../admin/pages/ProductUnusedC
 const ProductCategoriesGraph = lazy(() => import('../admin/pages/ProductCategoriesGraph'));
 const SellerCategoriesGraph = lazy(() => import('../admin/pages/SellerCategoriesGraph'));
 const SourcingInterestsGraph = lazy(() => import('../admin/pages/SourcingInterestsGraph'));
+const ProductCategoryFormName = lazy(() => import('../admin/pages/ProductCategoryFormName'));
+const ItemCategoryFormBuilder = lazy(() => import('../admin/pages/ItemCategoryFormBuilder'));
 
 function AdminLayout() {
   const location = useLocation();
@@ -179,6 +181,8 @@ function AdminLayout() {
               <Route path="/registrations-remove-list" element={<ProtectedRoute><RegistrationsList getDeleted={true} /></ProtectedRoute>} />
               <Route path="/user_history" element={<ProtectedRoute><UsersHistory /></ProtectedRoute>} />
               <Route path="/item_category" element={<ProtectedRoute><ItemCategory /></ProtectedRoute>} />
+              <Route path="/product_category_form_name" element={<ProtectedRoute><ProductCategoryFormName /></ProtectedRoute>} />
+              <Route path="/item-category-form-builder" element={<ProtectedRoute><ItemCategoryFormBuilder /></ProtectedRoute>} />
               <Route path="/item-category-remove-list" element={<ProtectedRoute><ItemCategory getDeleted={true} /></ProtectedRoute>} />
               <Route path="/item_sub_category" element={<ProtectedRoute><ItemSubCategory /></ProtectedRoute>} />
               <Route path="/item-sub-category-remove-list" element={<ProtectedRoute><ItemSubCategory getDeleted={true} /></ProtectedRoute>} />

@@ -53,6 +53,7 @@ const pagesRoutes = require('./routes/pagesRoutes');
 const frontMenuRoutes = require('./routes/frontMenuRoutes');
 const membershipPlansRoutes = require('./routes/membershipPlansRoutes');
 const buyerEnquiryRoutes = require('./routes/buyerEnquiryRoutes');
+const itemCategoryFieldRoutes = require('./routes/itemCategoryFieldRoutes');
 
 
 const app = express();
@@ -135,6 +136,7 @@ app.use(basePath + '/api/front_menu', frontMenuRoutes);
 app.use(basePath + '/api/membership_plans', membershipPlansRoutes);
 app.use(basePath + '/api/buyerenquiry', buyerEnquiryRoutes);
 app.use(basePath + '/api/companies', companiesRoutes);
+app.use(basePath + '/api/item_category_fields', itemCategoryFieldRoutes);
 
 sequelize
   .sync()

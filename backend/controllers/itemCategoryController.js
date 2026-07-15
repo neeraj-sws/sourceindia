@@ -814,6 +814,8 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
       search = '',
       sortBy = 'id',
       sort = 'DESC',
+      category_id,
+      subcategory_id,
     } = req.query;
     const validColumns = ['id', 'name', 'category_id', 'subcategory_id', 'category_name', 'subcategory_name', 'created_at', 'updated_at'];
     const sortDirection = sort === 'DESC' || sort === 'ASC' ? sort : 'ASC';
@@ -830,6 +832,15 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
       order = [['id', 'DESC']];
     }
     const where = { is_delete: req.query.getDeleted === 'true' ? 1 : 0 };
+
+    if (category_id) {
+      where.category_id = Number(category_id);
+    }
+
+    if (subcategory_id) {
+      where.subcategory_id = Number(subcategory_id);
+    }
+
     if (req.query.excludeItemCategories === 'true') {
       where.id = {
         [Op.notIn]: literal(`(
@@ -861,6 +872,7 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
     });
     const mappedRows = rows.map(row => ({
       id: row.id,
+      uuid: row.uuid,
       name: row.name,
       status: row.status,
       category_id: row.category_id,

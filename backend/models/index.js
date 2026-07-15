@@ -12,6 +12,9 @@ const ItemSubCategory = require('./ItemSubCategory');
 const Products = require('./Products');
 const Items = require('./Items');
 const ProductKeyword = require('./ProductKeyword');
+const ItemCategoryField = require('./ItemCategoryField');
+const ItemCategoryFieldOption = require('./ItemCategoryFieldOption');
+const ProductDynamicFieldValue = require('./ProductDynamicFieldValue');
 
 // ===== DEFINE ASSOCIATIONS HERE =====
 
@@ -49,4 +52,7 @@ module.exports = {
   Products,
   Items,
   ProductKeyword,
+  ItemCategoryField,
+  ItemCategoryFieldOption,
+  ProductDynamicFieldValue,
 };

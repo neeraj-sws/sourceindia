@@ -16,6 +16,7 @@ import EnquiryForm from "./EnquiryForm";
 import { useAlert } from "../context/AlertContext";
 import UseAuth from '../sections/UseAuth';
 import GlobalSeo from '../utils/GlobalSeo';
+import ProductSpecificationsTable from '../components/ProductSpecificationsTable';
 
 const ProductDetail = () => {
   const navigate = useNavigate();
@@ -411,7 +412,7 @@ const ProductDetail = () => {
                           </div>
                         </div>
                         <div>
-                          <p>{product.short_description || 'N/A'}</p>
+                          <p>{product.short_description || ''}</p>
                         </div>
                       </div>
                       <div className="card-footer ps-0 bg-white border-0">
@@ -432,7 +433,10 @@ const ProductDetail = () => {
                   </div>
                 </div>
               </div>
-
+  <ProductSpecificationsTable
+                            dynamicFields={product.dynamic_fields}
+                            otherSpecifications={product.other_specifications}
+                          />
             </div>
             {/* Sidebar column */}
             <div className="col-xl-3 col-lg-4 mb-lg-0 mb-3">
@@ -510,6 +514,7 @@ const ProductDetail = () => {
 
           </div>
           <div className="col-12">
+            
             <div className='card mt-5'>
               <div className='card-body'>
                 <div className="tabs-container">
@@ -562,6 +567,8 @@ const ProductDetail = () => {
                               dangerouslySetInnerHTML={{ __html: product.description || 'N/A' }}
                             />
                           </div>
+
+
                         </div>
                       </div>
                     )}

@@ -602,6 +602,9 @@ const SellerCategory = require('../models/SellerCategory');
 const ItemCategory = require('../models/ItemCategory');
 const ItemSubCategory = require('../models/ItemSubCategory');
 const Items = require('../models/Items');
+const ItemCategoryField = require('../models/ItemCategoryField');
+const ProductDynamicFieldValue = require('../models/ProductDynamicFieldValue');
+const ProductOtherSpecification = require('../models/ProductOtherSpecification');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
 const { sendMail, getSiteConfig } = require('../helpers/mailHelper');
@@ -609,6 +612,217 @@ const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const Cities = require('../models/Cities');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
 const parseCsv2 = (value) => value.split(',').map(item => item.trim());
+
+const toInteger = (value) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : null;
+};
+
+const parseDynamicFieldsPayload = (rawValue) => {
+  if (rawValue === undefined || rawValue === null || rawValue === '') return [];
+
+  let payload = rawValue;
+  if (typeof rawValue === 'string') {
+    try {
+      payload = JSON.parse(rawValue);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  if (Array.isArray(payload)) {
+    return payload
+      .map((entry) => ({
+        item_category_field_id: toInteger(entry?.item_category_field_id),
+        value: entry?.value,
+      }))
+      .filter((entry) => entry.item_category_field_id);
+  }
+
+  if (typeof payload === 'object') {
+    return Object.entries(payload)
+      .map(([fieldId, value]) => ({
+        item_category_field_id: toInteger(fieldId),
+        value,
+      }))
+      .filter((entry) => entry.item_category_field_id);
+  }
+
+  return [];
+};
+
+const parseOtherSpecificationsPayload = (rawValue) => {
+  if (rawValue === undefined || rawValue === null || rawValue === '') return [];
+
+  let payload = rawValue;
+  if (typeof rawValue === 'string') {
+    try {
+      payload = JSON.parse(rawValue);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(payload)) return [];
+
+  return payload
+    .map((entry) => ({ name: String(entry?.name || '').trim(), value: String(entry?.value || '').trim() }))
+    .filter((entry) => entry.name && entry.value);
+};
+
+
+const serializeDynamicFieldValue = (value) => {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch (error) {
+    return null;
+  }
+};
+
+const parseStoredDynamicFieldValue = (value) => {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value !== 'string') return value;
+
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+    try {
+      return JSON.parse(trimmed);
+    } catch (error) {
+      return value;
+    }
+  }
+
+  return value;
+};
+
+const saveProductDynamicFields = async ({ productId, itemCategoryId, dynamicFieldsPayload }) => {
+  const resolvedProductId = toInteger(productId);
+  if (!resolvedProductId) return;
+
+  await ProductDynamicFieldValue.destroy({ where: { product_id: resolvedProductId } });
+
+  const categoryId = toInteger(itemCategoryId);
+  if (!categoryId || !Array.isArray(dynamicFieldsPayload) || dynamicFieldsPayload.length === 0) return;
+
+  const fieldIds = Array.from(
+    new Set(
+      dynamicFieldsPayload
+        .map((entry) => toInteger(entry.item_category_field_id))
+        .filter((id) => id)
+    )
+  );
+
+  if (!fieldIds.length) return;
+
+  const validFields = await ItemCategoryField.findAll({
+    where: {
+      id: { [Op.in]: fieldIds },
+      item_category_id: categoryId,
+      is_delete: 0,
+    },
+    attributes: ['id'],
+  });
+
+  const validFieldIdSet = new Set(validFields.map((field) => Number(field.id)));
+
+  const rows = dynamicFieldsPayload
+    .map((entry) => {
+      const fieldId = toInteger(entry.item_category_field_id);
+      if (!fieldId || !validFieldIdSet.has(fieldId)) return null;
+
+      const serializedValue = serializeDynamicFieldValue(entry.value);
+      if (serializedValue === null) return null;
+
+      return {
+        product_id: resolvedProductId,
+        item_category_field_id: fieldId,
+        value: serializedValue,
+      };
+    })
+    .filter(Boolean);
+
+  if (!rows.length) return;
+  await ProductDynamicFieldValue.bulkCreate(rows);
+};
+
+const saveProductOtherSpecifications = async ({ productId, specifications }) => {
+  const resolvedProductId = toInteger(productId);
+  if (!resolvedProductId) return;
+
+  await ProductOtherSpecification.destroy({ where: { product_id: resolvedProductId } });
+  if (!Array.isArray(specifications) || !specifications.length) return;
+
+  await ProductOtherSpecification.bulkCreate(specifications.map((specification) => ({
+    product_id: resolvedProductId,
+    name: specification.name,
+    value: specification.value,
+  })));
+};
+
+const loadProductOtherSpecifications = async (productId) => {
+  const resolvedProductId = toInteger(productId);
+  if (!resolvedProductId) return [];
+
+  const rows = await ProductOtherSpecification.findAll({
+    where: { product_id: resolvedProductId, is_delete: 0 },
+    attributes: ['id', 'name', 'value'],
+    order: [['id', 'ASC']],
+  });
+
+  return rows.map((row) => ({ id: row.id, name: row.name, value: row.value }));
+};
+
+
+const loadProductDynamicFields = async (productId) => {
+  const resolvedProductId = toInteger(productId);
+  if (!resolvedProductId) return [];
+
+  const rows = await ProductDynamicFieldValue.findAll({
+    where: {
+      product_id: resolvedProductId,
+      is_delete: 0,
+    },
+    include: [
+      {
+        model: ItemCategoryField,
+        as: 'field',
+        required: false,
+        attributes: [
+          'id',
+          'field_label',
+          'field_key',
+          'input_type',
+          'display_order',
+          'is_active',
+          'show_on_detail',
+        ],
+      },
+    ],
+    order: [['item_category_field_id', 'ASC']],
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    item_category_field_id: row.item_category_field_id,
+    value: parseStoredDynamicFieldValue(row.value),
+    field: row.field
+      ? {
+        id: row.field.id,
+        label: row.field.field_label,
+        key: row.field.field_key,
+        inputType: row.field.input_type,
+        displayOrder: row.field.display_order,
+        isActive: Boolean(row.field.is_active),
+        showOnDetail: Boolean(row.field.show_on_detail),
+      }
+      : null,
+  }));
+};
 
 async function createUniqueProductSlug(title) {
   if (!title) return '';
@@ -670,8 +884,11 @@ exports.createProducts = async (req, res) => {
         item_category_id, item_subcategory_id, item_id, keyword_id,
         is_gold, is_featured, is_recommended, best_product, status,
         application, short_description, description, slug,
-        core_activity, activity, segment, product_service
+        core_activity, activity, segment, product_service, dynamic_fields, other_specifications
       } = req.body;
+
+      const dynamicFieldsPayload = parseDynamicFieldsPayload(dynamic_fields);
+      const otherSpecificationsPayload = parseOtherSpecificationsPayload(other_specifications);
 
       // Inline clean for all values
       [
@@ -733,6 +950,26 @@ exports.createProducts = async (req, res) => {
         keyword_id,
         company_id: user.company_id,
       });
+
+      const createdProductId =
+        products?.id ??
+        products?.product_id ??
+        products?.get?.('id') ??
+        products?.get?.('product_id') ??
+        products?.dataValues?.id ??
+        products?.dataValues?.product_id;
+
+      await saveProductDynamicFields({
+        productId: createdProductId,
+        itemCategoryId: item_category_id,
+        dynamicFieldsPayload,
+      });
+
+      await saveProductOtherSpecifications({
+        productId: createdProductId,
+        specifications: otherSpecificationsPayload,
+      });
+
 
       try {
         const Emails = require('../models/Emails');
@@ -1169,10 +1406,15 @@ exports.getProductsById = async (req, res) => {
         .map(img => ({ id: img.id, file: img.file }));
     }
 
+    const dynamicFields = await loadProductDynamicFields(product.id);
+    const otherSpecifications = await loadProductOtherSpecifications(product.id);
+
     res.json({
       ...productData,
       file_name: productData.file_id ? images.find(img => img.id === productData.file_id)?.file || null : null,
-      images
+      images,
+      dynamic_fields: dynamicFields,
+      other_specifications: otherSpecifications,
     });
 
   } catch (err) {
@@ -1276,6 +1518,9 @@ exports.getProductsDetail = async (req, res) => {
       }))
       .filter((c) => Boolean(c.company_logo_file));
 
+    const dynamicFields = await loadProductDynamicFields(productData.id);
+    const otherSpecifications = await loadProductOtherSpecifications(productData.id);
+
     // Build response
     const response = {
       id: productData.id,
@@ -1300,6 +1545,8 @@ exports.getProductsDetail = async (req, res) => {
       activity_name: productData.company_info?.Activity?.name || null,
       brief_company: productData.company_info?.brief_company || null,
       organizations_product_description: productData.description || null,
+      dynamic_fields: dynamicFields,
+      other_specifications: otherSpecifications,
       similar_products: formattedSimilarProducts,
       recommended_companies: recommendedCompanies
     };
@@ -1364,7 +1611,12 @@ exports.updateProducts = async (req, res) => {
       item_subcategory_id,
       item_id,
       keyword_id,
+      dynamic_fields,
+      other_specifications,
     } = req.body;
+
+    const dynamicFieldsPayload = parseDynamicFieldsPayload(dynamic_fields);
+    const otherSpecificationsPayload = parseOtherSpecificationsPayload(other_specifications);
 
     const product = await Products.findByPk(req.params.id);
     if (!product) {
@@ -1397,6 +1649,22 @@ exports.updateProducts = async (req, res) => {
       item_id,
       keyword_id,
     });
+
+    if (dynamic_fields !== undefined) {
+      await saveProductDynamicFields({
+        productId: product.id,
+        itemCategoryId: item_category_id,
+        dynamicFieldsPayload,
+      });
+    }
+
+    if (other_specifications !== undefined) {
+      await saveProductOtherSpecifications({
+        productId: product.id,
+        specifications: otherSpecificationsPayload,
+      });
+    }
+
 
     res.status(200).json({
       message: "Product updated successfully",

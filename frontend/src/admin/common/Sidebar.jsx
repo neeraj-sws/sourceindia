@@ -84,6 +84,12 @@ const menuData = [
     ],
   },
   {
+    key: 'product_category_form_name',
+    title: 'Product Category Form',
+    icon: 'bx bx-category',
+    link: '/admin/product_category_form_name',
+  },
+  {
     key: 'keywords_total',
     title: 'Keyword Master',
     icon: 'lni lni-keyword-research',
