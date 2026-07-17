@@ -296,19 +296,39 @@ const fetchWeightedProductKeywordSuggestions = async ({
   //     (a, b) => a.length >= b.length ? a : b
   // );
 
-  keywordWhere[Op.or] = dbSearchWords.map(word => {
+  // keywordWhere[Op.or] = dbSearchWords.map(word => {
 
-    const prefix =
-      word.length >= 8
-        ? word.substring(0, 3)
-        : word.substring(0, Math.min(4, word.length));
+  //   const prefix =
+  //     word.length >= 8
+  //       ? word.substring(0, 3)
+  //       : word.substring(0, Math.min(4, word.length));
 
-    return {
+  //   return {
+  //     name: {
+  //       [Op.like]: `%${prefix}%`
+  //     }
+  //   };
+  // });
+
+
+  // Fetch candidates matching any search word.
+  // Ranking below will prioritize full multi-word matches.
+  keywordWhere[Op.or] = [
+    ...dbSearchWords.map(word => ({
       name: {
-        [Op.like]: `%${prefix}%`
+        [Op.like]: `%${word}%`
       }
-    };
-  });
+    })),
+    ...(dbSearchWords.length > 1
+      ? [{
+        name: {
+          [Op.like]: `%${dbSearchWords.join('%')}%`
+        }
+      }]
+      : [])
+  ];
+
+
 
   const itemSubCategoryWhere = {};
   if (category) itemSubCategoryWhere.category_id = category;
@@ -318,13 +338,17 @@ const fetchWeightedProductKeywordSuggestions = async ({
 
   keywordWhere.id = {
     [Op.in]: literal(`(
-SELECT DISTINCT keyword_id
-FROM products
-WHERE status = 1
-AND is_approve = 1
-AND is_delete = 0
-AND keyword_id IS NOT NULL
-)`)
+    SELECT DISTINCT p.keyword_id
+    FROM products p
+    INNER JOIN users u ON p.user_id = u.user_id
+    WHERE p.status = 1
+      AND p.is_approve = 1
+      AND p.is_delete = 0
+      AND p.keyword_id IS NOT NULL
+      AND u.status = 1
+      AND u.is_approve = 1
+      AND u.is_delete = 0
+  )`)
   };
 
 
@@ -429,7 +453,7 @@ AND keyword_id IS NOT NULL
     };
   }
 
-  const matchedScored = scored.filter(item =>
+  let matchedScored = scored.filter(item =>
     item.matched_query_word_count > 0 ||
     item.matched_keyword_word_count > 0 ||
     item.leading_prefix_token_score > 0 ||
@@ -437,7 +461,45 @@ AND keyword_id IS NOT NULL
     item.phrase_includes_match
   );
 
+  const fullyMatchedSuggestions = matchedScored.filter(
+    item => item.matched_query_word_count === queryWords.length
+  );
+
+  if (queryWords.length > 1 && fullyMatchedSuggestions.length) {
+    matchedScored = fullyMatchedSuggestions;
+  }
+
+
+
+
   matchedScored.sort((a, b) => {
+    const aExactPhrase = normalizeTextForSuggest(a.title) === normalizedQuery;
+    const bExactPhrase = normalizeTextForSuggest(b.title) === normalizedQuery;
+    if (aExactPhrase !== bExactPhrase) return aExactPhrase ? -1 : 1;
+
+    const aContainsPhrase = normalizeTextForSuggest(a.title).includes(normalizedQuery);
+    const bContainsPhrase = normalizeTextForSuggest(b.title).includes(normalizedQuery);
+    if (aContainsPhrase !== bContainsPhrase) return aContainsPhrase ? -1 : 1;
+
+    const aHasAllWords =
+      a.matched_query_word_count === queryWords.length;
+
+    const bHasAllWords =
+      b.matched_query_word_count === queryWords.length;
+
+    if (aHasAllWords !== bHasAllWords)
+      return aHasAllWords ? -1 : 1;
+
+
+
+    if (aHasAllWords !== bHasAllWords)
+      return aHasAllWords ? -1 : 1;
+
+    if (a.full_query_match !== b.full_query_match)
+      return a.full_query_match ? -1 : 1;
+
+    if (a.matched_query_word_count !== b.matched_query_word_count)
+      return b.matched_query_word_count - a.matched_query_word_count;
 
     if (a.exact_word_match !== b.exact_word_match)
       return a.exact_word_match ? -1 : 1;

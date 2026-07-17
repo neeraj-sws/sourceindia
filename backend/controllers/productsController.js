@@ -146,8 +146,9 @@ exports.suggestProducts = async (req, res) => {
         item_subcategory_id,
         header_strict: true,
         only_with_products: isTruthyQueryFlag(only_with_products),
-        limit: 6,
+        limit: 15,
       });
+
 
       const bestConfidentMatch = suggestions.find((s) => s.is_confident_match) || suggestions[0] || null;
       const alternatives = suggestions.filter((s) => !bestConfidentMatch || s.id !== bestConfidentMatch.id);
@@ -194,9 +195,37 @@ exports.suggestProducts = async (req, res) => {
     };
 
     // Candidate filtering: keep dataset small while still allowing scoring logic.
-    keywordWhere[Op.or] = queryWords.map((word) => ({
-      name: { [Op.like]: `%${word}%` },
-    }));
+    if (queryWords.length > 1) {
+
+      keywordWhere[Op.or] = [
+        {
+          name: {
+            [Op.like]: `%${queryWords.join('%')}%`
+          }
+        },
+        {
+          [Op.and]: queryWords.map(word => ({
+            name: {
+              [Op.like]: `%${word}%`
+            }
+          }))
+        },
+        ...queryWords.map(word => ({
+          name: {
+            [Op.like]: `%${word}%`
+          }
+        }))
+      ];
+
+    } else {
+
+      keywordWhere[Op.or] = queryWords.map(word => ({
+        name: {
+          [Op.like]: `%${word}%`
+        }
+      }));
+
+    }
 
     const itemSubCategoryWhere = {};
     if (category) itemSubCategoryWhere.category_id = category;
@@ -231,17 +260,26 @@ exports.suggestProducts = async (req, res) => {
       const { matchedQueryWords, matchedKeywordWords } = getSuggestWordMatchStats(queryWords, keywordWords);
       const matchedQueryWordCount = matchedQueryWords.length;
       const matchedKeywordWordCount = matchedKeywordWords.length;
-      const matchScore = matchedKeywordWordCount;
-      const exactMatch = normalizedKeyword === normalizedQuery;
+     
       const phrasePrefixMatch = normalizedQuery.length >= 2 && normalizedKeyword.startsWith(normalizedQuery);
       const phraseIncludesMatch = normalizedQuery.length >= 2 && normalizedKeyword.includes(normalizedQuery);
       const leadingPrefixTokenScore = getLeadingPrefixTokenScore(queryOrderTokens, keywordOrderTokens);
 
       const keywordCoverage = keywordWords.length ? matchedKeywordWordCount / keywordWords.length : 0;
       const queryCoverage = queryWords.length ? matchedQueryWordCount / queryWords.length : 0;
-      const confidenceScore = exactMatch
-        ? 1
-        : Number((0.7 * keywordCoverage + 0.3 * queryCoverage).toFixed(3));
+       const matchScore =
+        matchedQueryWordCount * 100 +
+        matchedKeywordWordCount * 50 +
+        leadingPrefixTokenScore * 20 -
+        (keywordWords.length - matchedKeywordWordCount) * 10; const exactMatch = normalizedKeyword === normalizedQuery;
+      let confidenceScore =
+        (queryCoverage * 0.9) +
+        (keywordCoverage * 0.1);
+
+      if (exactMatch)
+        confidenceScore = 1;
+
+      confidenceScore = Number(confidenceScore.toFixed(3));
 
       const isConfidentMatch = exactMatch || (matchedKeywordWordCount >= 2 && matchedQueryWordCount >= 2);
 
@@ -277,6 +315,20 @@ exports.suggestProducts = async (req, res) => {
     });
 
     scored.sort((a, b) => {
+      const aAllWords = a.matched_query_word_count === queryWords.length;
+      const bAllWords = b.matched_query_word_count === queryWords.length;
+
+      if (aAllWords !== bAllWords)
+        return aAllWords ? -1 : 1;
+
+      const aPhrase =
+        normalizeTextForSuggest(a.title).includes(normalizedQuery);
+
+      const bPhrase =
+        normalizeTextForSuggest(b.title).includes(normalizedQuery);
+
+      if (aPhrase !== bPhrase)
+        return aPhrase ? -1 : 1;
       if (a.exact_match !== b.exact_match) return a.exact_match ? -1 : 1;
       if (a.leading_prefix_token_score !== b.leading_prefix_token_score) {
         return b.leading_prefix_token_score - a.leading_prefix_token_score;
@@ -959,7 +1011,7 @@ exports.getAllProducts = async (req, res) => {
     const page = req.query.page ? parseInt(req.query.page) : null;
     const offset = limit && page ? (page - 1) * limit : null;
     const { user_state, sort_by, title, category, sub_category, company_id, is_delete, status, is_approve,
-      item_category_id, item_subcategory_id, item_id, search, keyword_ids } = req.query;
+      item_category_id, item_subcategory_id, item_id, search, keyword_ids, is_front } = req.query;
     let order = [['id', 'ASC']];
     if (sort_by === 'newest') order = [['created_at', 'DESC']];
     else if (sort_by === 'a_to_z') order = [['title', 'ASC']];
@@ -1008,6 +1060,7 @@ exports.getAllProducts = async (req, res) => {
     if (is_approve) {
       productWhereClause.is_approve = is_approve;
     }
+
     // General search filter
     if (search) {
       const searchOrConditions = [
@@ -1055,6 +1108,11 @@ exports.getAllProducts = async (req, res) => {
     if (user_state) {
       const stateIds = parseCsv(user_state);
       userWhereClause.state = { [Op.in]: stateIds };
+    }
+    if (is_front) {
+      userWhereClause.is_approve = 1;
+      userWhereClause.is_delete = 0;
+      userWhereClause.status = 1;
     }
     const { count, rows } = await Products.findAndCountAll({
       where: productWhereClause,

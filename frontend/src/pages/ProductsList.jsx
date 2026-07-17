@@ -467,7 +467,7 @@ const ProductsList = () => {
       setLoading(true);
     }
     try {
-      let url = `${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=15&page=${pageNumber}`;
+      let url = `${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&is_front=1&limit=15&page=${pageNumber}`;
       const hasSuggestedSubcategorySelection = selectedItemSubCategories.length > 0;
       const effectiveSearchTerm = hasSuggestedSubcategorySelection ? '' : searchTerm;
       const shouldApplyKeywordIds = !hasSuggestedSubcategorySelection;
