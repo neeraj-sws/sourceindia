@@ -113,6 +113,151 @@ exports.getFieldsByItemCategory = async (req, res) => {
     }
 };
 
+// Returns only item categories that already have an active dynamic field.
+// These are the valid sources shown in the Clone dialog.
+exports.getCloneSources = async (req, res) => {
+    try {
+        const fieldCategories = await ItemCategoryField.findAll({
+            where: { is_delete: 0 },
+            attributes: ['item_category_id'],
+            group: ['item_category_id'],
+            raw: true,
+        });
+        const itemCategoryIds = fieldCategories
+            .map((field) => Number(field.item_category_id))
+            .filter((id) => Number.isInteger(id) && id > 0);
+
+        if (!itemCategoryIds.length) return res.json([]);
+
+        const itemCategories = await ItemCategory.findAll({
+            where: { id: { [Op.in]: itemCategoryIds }, is_delete: 0 },
+            attributes: ['id', 'name', 'category_id', 'subcategory_id'],
+            order: [['name', 'ASC']],
+            raw: true,
+        });
+
+        return res.json(itemCategories);
+    } catch (error) {
+        console.error('Error loading clone source item categories:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+// Copies the complete dynamic-form definition (including select/radio options)
+// from one item category to another. Product data is intentionally not copied.
+exports.cloneFields = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const sourceItemCategoryId = Number(req.body?.source_item_category_id);
+        const targetItemCategoryId = Number(req.body?.target_item_category_id);
+
+        if (!Number.isInteger(sourceItemCategoryId) || !Number.isInteger(targetItemCategoryId)) {
+            await transaction.rollback();
+            return res.status(400).json({ message: 'Source and destination item categories are required.' });
+        }
+
+        if (sourceItemCategoryId === targetItemCategoryId) {
+            await transaction.rollback();
+            return res.status(400).json({ message: 'Choose a different destination item category.' });
+        }
+
+        const [sourceCategory, targetCategory] = await Promise.all([
+            ItemCategory.findOne({ where: { id: sourceItemCategoryId, is_delete: 0 }, transaction }),
+            ItemCategory.findOne({ where: { id: targetItemCategoryId, is_delete: 0 }, transaction }),
+        ]);
+
+        if (!sourceCategory || !targetCategory) {
+            await transaction.rollback();
+            return res.status(404).json({ message: 'Source or destination item category was not found.' });
+        }
+
+        const sourceFields = await ItemCategoryField.findAll({
+            where: { item_category_id: sourceItemCategoryId, is_delete: 0 },
+            include: [{ model: ItemCategoryFieldOption, as: 'options', required: false }],
+            order: [
+                ['display_order', 'ASC'],
+                [{ model: ItemCategoryFieldOption, as: 'options' }, 'sort_order', 'ASC'],
+            ],
+            transaction,
+        });
+
+        if (!sourceFields.length) {
+            await transaction.rollback();
+            return res.status(400).json({ message: 'The selected source item category has no dynamic fields to copy.' });
+        }
+
+        const targetFields = await ItemCategoryField.findAll({
+            where: { item_category_id: targetItemCategoryId, is_delete: 0 },
+            attributes: ['field_key', 'display_order'],
+            transaction,
+        });
+        const targetKeys = new Set(targetFields.map((field) => String(field.field_key).toLowerCase()));
+        let nextDisplayOrder = targetFields.reduce(
+            (maxOrder, field) => Math.max(maxOrder, Number(field.display_order) || 0),
+            0
+        ) + 1;
+
+        let copiedCount = 0;
+        let skippedCount = 0;
+
+        for (const sourceField of sourceFields) {
+            const normalizedKey = String(sourceField.field_key).toLowerCase();
+            if (targetKeys.has(normalizedKey)) {
+                skippedCount += 1;
+                continue;
+            }
+
+            const clonedField = await ItemCategoryField.create({
+                item_category_id: targetItemCategoryId,
+                field_label: sourceField.field_label,
+                field_key: sourceField.field_key,
+                input_type: sourceField.input_type,
+                required: sourceField.required,
+                placeholder: sourceField.placeholder,
+                default_value: sourceField.default_value,
+                help_text: sourceField.help_text,
+                display_order: nextDisplayOrder++,
+                is_active: sourceField.is_active,
+                min_length: sourceField.min_length,
+                max_length: sourceField.max_length,
+                min_value: sourceField.min_value,
+                max_value: sourceField.max_value,
+                regex_pattern: sourceField.regex_pattern,
+                is_searchable: sourceField.is_searchable,
+                is_filterable: sourceField.is_filterable,
+                show_on_detail: sourceField.show_on_detail,
+                show_on_listing: sourceField.show_on_listing,
+                allow_edit_after_create: sourceField.allow_edit_after_create,
+            }, { transaction });
+
+            const options = (sourceField.options || [])
+                .filter((option) => Number(option.is_delete) === 0)
+                .map((option) => ({
+                    item_category_field_id: clonedField.id,
+                    option_label: option.option_label,
+                    option_value: option.option_value,
+                    sort_order: option.sort_order,
+                    is_active: option.is_active,
+                }));
+            if (options.length) await ItemCategoryFieldOption.bulkCreate(options, { transaction });
+
+            targetKeys.add(normalizedKey);
+            copiedCount += 1;
+        }
+
+        await transaction.commit();
+        return res.json({
+            message: `${copiedCount} dynamic field${copiedCount === 1 ? '' : 's'} copied successfully.`,
+            copiedCount,
+            skippedCount,
+        });
+    } catch (error) {
+        await transaction.rollback();
+        console.error('Error cloning item category fields:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
 exports.createField = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {

@@ -127,6 +127,17 @@ exports.getAllItemCategory = async (req, res) => {
     const itemCategories = await ItemCategory.findAll({
       where,
       order: [['id', 'ASC']],
+      attributes: {
+        include: [[
+          literal(`(
+            SELECT COUNT(*)
+            FROM item_category_fields AS dynamic_fields
+            WHERE dynamic_fields.item_category_id = ItemCategory.item_category_id
+              AND dynamic_fields.is_delete = 0
+          )`),
+          'dynamic_field_count',
+        ]],
+      },
       include: [
         {
           model: Categories,
@@ -149,6 +160,7 @@ exports.getAllItemCategory = async (req, res) => {
         getStatus: itemData.status === 1 ? 'Active' : 'Inactive',
         category_name: itemData.Categories?.name || null,
         subcategory_name: itemData.SubCategories?.name || null,
+        dynamic_field_count: Number(itemData.dynamic_field_count || 0),
         // Remove nested objects as frontend only needs flat structure
         Categories: undefined,
         SubCategories: undefined,
@@ -864,6 +876,17 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
       order,
       limit: limitValue,
       offset,
+      attributes: {
+        include: [[
+          literal(`(
+            SELECT COUNT(*)
+            FROM item_category_fields AS dynamic_fields
+            WHERE dynamic_fields.item_category_id = ItemCategory.item_category_id
+              AND dynamic_fields.is_delete = 0
+          )`),
+          'dynamic_field_count',
+        ]],
+      },
       include: [
         { model: Categories, attributes: ['name'], as: 'Categories' },
         { model: SubCategories, attributes: ['name'], as: 'SubCategories' },
@@ -884,6 +907,7 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
       is_delete: row.is_delete,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      dynamic_field_count: Number(row.get('dynamic_field_count') || 0),
     }));
     res.json({
       data: mappedRows,

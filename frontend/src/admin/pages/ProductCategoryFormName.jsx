@@ -6,6 +6,7 @@ import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import ExcelExport from "../common/ExcelExport";
 import API_BASE_URL from "../../config";
+import { useAlert } from "../../context/AlertContext";
 
 const ProductCategoryFormName = () => {
     const navigate = useNavigate();
@@ -23,8 +24,13 @@ const ProductCategoryFormName = () => {
     const [excelData, setExcelData] = useState([]);
     const [categories, setCategories] = useState([]);
     const [subCategories, setSubCategories] = useState([]);
+    const [cloneSourceCategories, setCloneSourceCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState("");
     const [selectedSubCategory, setSelectedSubCategory] = useState("");
+    const [cloneTarget, setCloneTarget] = useState(null);
+    const [cloneSourceId, setCloneSourceId] = useState("");
+    const [cloneSubmitting, setCloneSubmitting] = useState(false);
+    const { showNotification } = useAlert();
 
     const fetchData = async () => {
         setLoading(true);
@@ -93,6 +99,20 @@ const ProductCategoryFormName = () => {
     }, []);
 
     useEffect(() => {
+        const fetchCloneSources = async () => {
+            try {
+                const res = await axios.get(`${API_BASE_URL}/item_category_fields/clone-sources`);
+                setCloneSourceCategories(res.data || []);
+            } catch (error) {
+                console.error("Error fetching clone sources:", error);
+                setCloneSourceCategories([]);
+            }
+        };
+
+        fetchCloneSources();
+    }, []);
+
+    useEffect(() => {
         if (!selectedCategory) {
             setSubCategories([]);
             setSelectedSubCategory("");
@@ -144,6 +164,60 @@ const ProductCategoryFormName = () => {
             excelExportRef.current.exportToExcel();
         }
     };
+
+    const openCloneModal = (row) => {
+        setCloneTarget(row);
+        setCloneSourceId("");
+    };
+
+    const closeCloneModal = () => {
+        if (cloneSubmitting) return;
+        setCloneTarget(null);
+        setCloneSourceId("");
+    };
+
+    const handleClone = async () => {
+        if (!cloneTarget?.id || !cloneSourceId) {
+            showNotification("Please choose the item category to copy fields from.", "error");
+            return;
+        }
+
+        setCloneSubmitting(true);
+        try {
+            const response = await axios.post(`${API_BASE_URL}/item_category_fields/clone`, {
+                source_item_category_id: Number(cloneSourceId),
+                target_item_category_id: cloneTarget.id,
+            });
+            const { copiedCount = 0, skippedCount = 0 } = response.data || {};
+
+            // Refresh the current table view without changing its page, filters, or search.
+            await fetchData();
+            try {
+                const sourcesResponse = await axios.get(`${API_BASE_URL}/item_category_fields/clone-sources`);
+                setCloneSourceCategories(sourcesResponse.data || []);
+            } catch (refreshError) {
+                console.error("Error refreshing clone sources:", refreshError);
+            }
+
+            showNotification(
+                `${copiedCount} field(s) copied${skippedCount ? `; ${skippedCount} duplicate key(s) skipped` : ""}.`,
+                "success"
+            );
+            setCloneTarget(null);
+            setCloneSourceId("");
+        } catch (error) {
+            showNotification(
+                error?.response?.data?.message || error?.response?.data?.error || "Failed to copy dynamic fields.",
+                "error"
+            );
+        } finally {
+            setCloneSubmitting(false);
+        }
+    };
+
+    const hasConfiguredDynamicFields = (itemCategoryId) =>
+        Number(itemCategoryId) > 0 &&
+        cloneSourceCategories.some((item) => Number(item.id) === Number(itemCategoryId));
 
     return (
         <>
@@ -265,6 +339,15 @@ const ProductCategoryFormName = () => {
                                             >
                                                 Manage Fields
                                             </button>
+                                            {!hasConfiguredDynamicFields(row.id) && (
+                                                <button
+                                                    className="btn btn-sm btn-outline-primary ms-2"
+                                                    onClick={() => openCloneModal(row)}
+                                                    title="Copy dynamic fields from another item category"
+                                                >
+                                                    <i className="bx bx-copy me-1" /> Clone
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 )}
@@ -295,6 +378,50 @@ const ProductCategoryFormName = () => {
                     },
                 ]}
             />
+
+            {cloneTarget && (
+                <div className="modal d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+                    <div className="modal-dialog modal-dialog-centered" role="document">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Clone Dynamic Form Fields</h5>
+                                <button type="button" className="btn-close" onClick={closeCloneModal} disabled={cloneSubmitting} aria-label="Close" />
+                            </div>
+                            <div className="modal-body">
+                                <p className="mb-3">
+                                    Copy dynamic fields, validation rules, and field options into <strong>{cloneTarget.name}</strong>.
+                                </p>
+                                <label htmlFor="cloneSourceItemCategory" className="form-label required">Copy From Item Category</label>
+                                <select
+                                    id="cloneSourceItemCategory"
+                                    className="form-select"
+                                    value={cloneSourceId}
+                                    onChange={(event) => setCloneSourceId(event.target.value)}
+                                    disabled={cloneSubmitting}
+                                >
+                                    <option value="">Select item category</option>
+                                    {cloneSourceCategories
+                                        .filter((item) => String(item.id) !== String(cloneTarget.id))
+                                        .map((item) => (
+                                            <option key={item.id} value={item.id}>
+                                                {item.name} (Item Category ID: {item.id})
+                                            </option>
+                                        ))}
+                                </select>
+                                <small className="text-muted d-block mt-2">
+                                    Fields with a matching key already in this item category are skipped. Product keywords are not copied because they belong to item sub-categories, not this form configuration.
+                                </small>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-light" onClick={closeCloneModal} disabled={cloneSubmitting}>Cancel</button>
+                                <button type="button" className="btn btn-primary" onClick={handleClone} disabled={cloneSubmitting || !cloneSourceId}>
+                                    {cloneSubmitting ? "Copying..." : "Copy Fields"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
