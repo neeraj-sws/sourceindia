@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-const moment = require('moment');
+const moment = require('moment-timezone');
 const { Op, fn, col } = Sequelize;
 const fs = require('fs');
 const path = require('path');
@@ -667,11 +667,10 @@ exports.getSellerById = async (req, res) => {
 };
 exports.getSellerCount = async (req, res) => {
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    // Dashboard dates are business dates and must not depend on the server's
+    // deployment timezone. SourceIndia operates on India time.
+    const todayStart = moment.tz('Asia/Kolkata').startOf('day').toDate();
+    const todayEnd = moment.tz('Asia/Kolkata').endOf('day').toDate();
 
     // Optional SQL logger
     const logSQL = (sql) => {
@@ -690,8 +689,7 @@ exports.getSellerCount = async (req, res) => {
       `
       SELECT
         SUM(CASE WHEN ${companyExists} THEN 1 ELSE 0 END) AS total,
-        SUM(CASE WHEN ${companyExists}
-          AND u.is_delete = 0
+        SUM(CASE WHEN u.is_delete = 0
           AND u.created_at BETWEEN :todayStart AND :todayEnd THEN 1 ELSE 0 END) AS addedToday,
         SUM(CASE WHEN ${companyExists}
           AND u.status = 1
@@ -1140,10 +1138,8 @@ exports.getAllSellerServerSide = async (req, res) => {
       // Only apply is_seller, is_delete, and date filter
       where.is_seller = 1;
       where.is_delete = 0;
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date();
-      endOfDay.setHours(23, 59, 59, 999);
+      const startOfDay = moment.tz('Asia/Kolkata').startOf('day').toDate();
+      const endOfDay = moment.tz('Asia/Kolkata').endOf('day').toDate();
       where.created_at = {
         [Op.between]: [startOfDay, endOfDay],
       };

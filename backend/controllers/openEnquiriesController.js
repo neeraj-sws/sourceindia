@@ -432,9 +432,13 @@ exports.getAllOpenEnquiriesServerSide = async (req, res) => {
       id: row.id,
       user_id: row.user_id,
       title: row.title,
-      name: row?.Users?.fname + " " + row?.Users?.lname,
-      email: row.email,
-      phone: row.phone,
+      name: row.Users
+        ? [row.Users.fname, row.Users.lname].filter(Boolean).join(' ')
+        : row.name,
+      // Logged-in users submit only user_id. Their contact information lives
+      // in users, while public enquiries retain it on the enquiry itself.
+      email: row.email || row.Users?.email || null,
+      phone: row.phone || row.Users?.mobile || null,
       description: row.description,
       company: row.company,
       is_home: row.is_home,
@@ -503,7 +507,7 @@ exports.getOpenEnquiriesById = async (req, res) => {
         {
           model: Users,
           as: 'Users',
-          attributes: ['fname', 'lname', 'email', 'user_company'],
+          attributes: ['fname', 'lname', 'email', 'mobile', 'user_company'],
           include: [
             { model: UploadImage, as: 'file', attributes: ['file'] }
           ]

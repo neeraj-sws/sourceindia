@@ -298,7 +298,7 @@ const OpenEnquiry = ({ getDeleted }) => {
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td>{row.name && (<>{row.name}<br /></>)}
                       {row.email && (<>{row.email}<br /></>)}
-                      {row.email && (<>{row.phone}<br /></>)}
+                      {row.phone && (<>{row.phone}<br /></>)}
                       <span className="badge bg-primary">{row.user_type == 1 ? "Seller" : row.user_type == 0 ? "Buyer" : "Public Enquery"}</span>
                     </td>
                     <td>{row.title}</td>
