@@ -52,6 +52,7 @@ const InterestCategories = lazy(() => import('../admin/pages/InterestCategories'
 const LeadsList = lazy(() => import('../admin/pages/LeadsList'));
 const ViewEnquiry = lazy(() => import('../admin/pages/ViewEnquiry'));
 const OpenEnquiry = lazy(() => import('../admin/pages/OpenEnquiry'));
+const OpenEnquiryView = lazy(() => import('../admin/pages/OpenEnquiryView'));
 const SeoPages = lazy(() => import('../admin/pages/SeoPages'));
 const UserActivities = lazy(() => import('../admin/pages/UserActivities'));
 const UserActivityDetails = lazy(() => import('../admin/pages/UserActivityDetails'));
@@ -162,8 +163,7 @@ function AdminLayout() {
               <Route path="/admin-view-enquiry/:enquiry_number" element={<ProtectedRoute><ViewEnquiry /></ProtectedRoute>} />
               <Route path="/open_enquiries" element={<ProtectedRoute><OpenEnquiry /></ProtectedRoute>} />
               <Route path="/open-enquiry-remove-list" element={<ProtectedRoute><OpenEnquiry getDeleted={true} /></ProtectedRoute>} />
-              {/* Admin Open Enquiry View, same as user style */}
-              <Route path="/open-enquiries/:id" element={<ProtectedRoute><ViewEnquiry role="admin" /></ProtectedRoute>} />
+              <Route path="/open-enquiries/:id" element={<ProtectedRoute><OpenEnquiryView /></ProtectedRoute>} />
               <Route path="/seo_pages" element={<ProtectedRoute><SeoPages /></ProtectedRoute>} />
               <Route path="/user_activity" element={<ProtectedRoute><UserActivities /></ProtectedRoute>} />
               <Route path="/user-activity-details/:userId" element={<ProtectedRoute><UserActivityDetails /></ProtectedRoute>} />

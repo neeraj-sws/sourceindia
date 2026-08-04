@@ -101,6 +101,13 @@ const ViewEnquiry = ({ role = 'user' }) => {
                     <div className="card-body">
                         <h3>{formData.title}</h3>
                         <p>{formData.description}</p>
+                        {(formData.fname || formData.name || formData.email || formData.mobile || formData.phone) && (
+                            <div className="mb-3">
+                                <p className="mb-1"><b>Contact:</b> {[formData.fname, formData.lname].filter(Boolean).join(' ') || formData.name}</p>
+                                {formData.email && <p className="mb-1"><b>Email:</b> {formData.email}</p>}
+                                {(formData.mobile || formData.phone) && <p className="mb-0"><b>Mobile:</b> {formData.mobile || formData.phone}</p>}
+                            </div>
+                        )}
                         <div className="d-flex">
                             <p className="pe-5">
                                 <i className="bx bx-time" aria-hidden="true"></i>{' '}

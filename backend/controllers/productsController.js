@@ -260,14 +260,14 @@ exports.suggestProducts = async (req, res) => {
       const { matchedQueryWords, matchedKeywordWords } = getSuggestWordMatchStats(queryWords, keywordWords);
       const matchedQueryWordCount = matchedQueryWords.length;
       const matchedKeywordWordCount = matchedKeywordWords.length;
-     
+
       const phrasePrefixMatch = normalizedQuery.length >= 2 && normalizedKeyword.startsWith(normalizedQuery);
       const phraseIncludesMatch = normalizedQuery.length >= 2 && normalizedKeyword.includes(normalizedQuery);
       const leadingPrefixTokenScore = getLeadingPrefixTokenScore(queryOrderTokens, keywordOrderTokens);
 
       const keywordCoverage = keywordWords.length ? matchedKeywordWordCount / keywordWords.length : 0;
       const queryCoverage = queryWords.length ? matchedQueryWordCount / queryWords.length : 0;
-       const matchScore =
+      const matchScore =
         matchedQueryWordCount * 100 +
         matchedKeywordWordCount * 50 +
         leadingPrefixTokenScore * 20 -
@@ -786,6 +786,20 @@ exports.createProducts = async (req, res) => {
         company_id: user.company_id,
       });
 
+      // A seller becomes complete as soon as at least one product is saved.
+      // Keep this independent from email delivery: a mail/template failure must
+      // not leave a seller in the "Not Completed" list after their product was
+      // successfully created.
+      const wasIncompleteSeller = user && user.is_delete === 0 && user.is_complete === 0;
+      if (user && user.is_delete === 0) {
+        const updateObj = {};
+        if (user.is_product === 0) updateObj.is_product = 1;
+        if (user.is_complete === 0) updateObj.is_complete = 1;
+        if (Object.keys(updateObj).length > 0) {
+          await user.update(updateObj);
+        }
+      }
+
       try {
         const Emails = require('../models/Emails');
         const siteConfig = await getSiteConfig();
@@ -831,11 +845,11 @@ exports.createProducts = async (req, res) => {
           await sendMail({ to: siteConfig['site_email'], subject: adminTpl.subject || 'New company product added', message: adminMsg });
         }
 
-        // Additionally, when this is the company's second product, send template 65 to the company user
-        // and send template 102 to admin. Keep existing guard (user.is_complete === 0 && user.is_delete === 0).
+        // For the first product, send template 65 to the company user and
+        // template 102 to the admin.
 
 
-        if (existingCount === 0 && user && user.is_complete === 0 && user.is_delete === 0) {
+        if (existingCount === 0 && wasIncompleteSeller) {
           // Send template 65 to company user
           const userLastTpl = await Emails.findByPk(65);
           if (userLastTpl) {
@@ -874,12 +888,6 @@ exports.createProducts = async (req, res) => {
             } catch (e) {
               console.error('Error sending template 102 to admin:', e);
             }
-          }
-          let updateObj = {};
-          if (user.is_product === 0) updateObj.is_product = 1;
-          if (user.is_complete === 0) updateObj.is_complete = 1;
-          if (Object.keys(updateObj).length > 0) {
-            await user.update(updateObj);
           }
         }
 
