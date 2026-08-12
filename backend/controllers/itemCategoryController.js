@@ -12,6 +12,7 @@ const getMulterUpload = require('../utils/upload');
 const ItemSubCategory = require('../models/ItemSubCategory');
 const ProductKeyword = require('../models/ProductKeyword');
 const sequelize = require('../config/database');
+const { findCategoryNameConflict, logCategoryConflict } = require('../utils/categoryNameConflictHelper');
 
 let keywordCodeColumnExistsCache = null;
 
@@ -76,6 +77,24 @@ exports.createItemCategory = async (req, res) => {
       const uploadImage = await UploadImage.create({
         file: `upload/item_category/${req.file.filename}`,
       });
+      const categoryConflict = await findCategoryNameConflict(name, [
+        { model: Categories, module: 'Category' },
+        { model: SubCategories, module: 'Sub Category' },
+        { model: ItemCategory, module: 'Item Category' },
+        { model: ItemSubCategory, module: 'Item Sub Category' },
+      ], null);
+      if (categoryConflict) {
+        await logCategoryConflict({
+          sourceModule: 'Item Category',
+          conflictModule: categoryConflict.conflictModule,
+          conflictFlow: categoryConflict.conflictFlow,
+          conflictName: name,
+        });
+        await uploadImage.destroy();
+        return res.status(400).json({
+          error: 'Item Category name already exists. Please check logs.',
+        });
+      }
       const itemCategory = await ItemCategory.create({
         name,
         category_id,
@@ -100,7 +119,7 @@ exports.createItemCategory = async (req, res) => {
       // ✅ Handle unique constraint violation
       if (err.name === 'SequelizeUniqueConstraintError' || err.errors?.[0]?.validatorKey === 'not_unique') {
         return res.status(400).json({
-          error: 'Item Category name already exists. Please use a different name.'
+          error: 'Item Category name already exists. Please check logs.'
         });
       }
       res.status(500).json({ error: err.message });
@@ -240,6 +259,23 @@ exports.updateItemCategory = async (req, res) => {
           });
           itemCategory.file_id = newImage.id;
         }
+      }
+      const categoryConflict = await findCategoryNameConflict(name, [
+        { model: Categories, module: 'Category' },
+        { model: SubCategories, module: 'Sub Category' },
+        { model: ItemCategory, module: 'Item Category' },
+        { model: ItemSubCategory, module: 'Item Sub Category' },
+      ], itemCategory.id);
+      if (categoryConflict) {
+        await logCategoryConflict({
+          sourceModule: 'Item Category',
+          conflictModule: categoryConflict.conflictModule,
+          conflictFlow: categoryConflict.conflictFlow,
+          conflictName: name,
+        });
+        return res.status(400).json({
+          error: 'Item Category name already exists. Please check logs.',
+        });
       }
       itemCategory.name = name;
       itemCategory.category_id = category_id;
@@ -614,14 +650,7 @@ exports.importItemSubCategoriesAndKeywords = async (req, res) => {
 
     const normalizedSubCategoryNames = [...seenSubCategories.keys()];
     const existingSubCategories = await ItemSubCategory.findAll({
-      where: {
-        is_delete: 0,
-        [Op.and]: [
-          sequelize.where(fn('LOWER', col('name')), {
-            [Op.in]: normalizedSubCategoryNames,
-          }),
-        ],
-      },
+      where: { is_delete: 0 },
       attributes: ['id', 'name'],
       transaction,
     });
@@ -633,6 +662,25 @@ exports.importItemSubCategoriesAndKeywords = async (req, res) => {
     let createdSubCategoryCount = 0;
 
     for (const [normalizedName, itemSubCategoryName] of seenSubCategories.entries()) {
+      const globalConflict = await findCategoryNameConflict(itemSubCategoryName, [
+        { model: Categories, module: 'Category' },
+        { model: SubCategories, module: 'Sub Category' },
+        { model: ItemCategory, module: 'Item Category' },
+        { model: ItemSubCategory, module: 'Item Sub Category' },
+      ], null, transaction);
+      if (globalConflict) {
+        await logCategoryConflict({
+          sourceModule: 'Item Sub Category',
+          conflictModule: globalConflict.conflictModule,
+          conflictFlow: globalConflict.conflictFlow,
+          conflictName: itemSubCategoryName,
+        });
+        errors.push({
+          name: itemSubCategoryName,
+          reason: 'Item Sub Category name already exists. Please check logs.',
+        });
+        continue;
+      }
       if (subCategoryMap.has(normalizedName)) continue;
 
       const createdSubCategory = await ItemSubCategory.create({

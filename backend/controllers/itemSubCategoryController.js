@@ -10,6 +10,7 @@ const Products = require('../models/Products');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
+const { findCategoryNameConflict, logCategoryConflict } = require('../utils/categoryNameConflictHelper');
 const {
   syncMainProductKeyword,
   deleteMainProductKeywords,
@@ -27,6 +28,24 @@ exports.createItemSubCategory = async (req, res) => {
       const uploadImage = await UploadImage.create({
         file: `upload/item_sub_category/${req.file.filename}`,
       });
+      const nameConflict = await findCategoryNameConflict(name, [
+        { model: Categories, module: 'Category' },
+        { model: SubCategories, module: 'Sub Category' },
+        { model: ItemCategory, module: 'Item Category' },
+        { model: ItemSubCategory, module: 'Item Sub Category' },
+      ]);
+      if (nameConflict) {
+        await logCategoryConflict({
+          sourceModule: 'Item Sub Category',
+          conflictModule: nameConflict.conflictModule,
+          conflictFlow: nameConflict.conflictFlow,
+          conflictName: name,
+        });
+        await uploadImage.destroy();
+        return res.status(400).json({
+          error: 'Item Sub Category name already exists. Please check logs.',
+        });
+      }
       const itemSubCategory = await ItemSubCategory.create({
         name, category_id, subcategory_id, item_category_id, status, file_id: uploadImage.id,
       });
@@ -56,7 +75,7 @@ exports.createItemSubCategory = async (req, res) => {
       // ✅ Handle unique constraint violation
       if (err.name === 'SequelizeUniqueConstraintError' || err.errors?.[0]?.validatorKey === 'not_unique') {
         return res.status(400).json({
-          error: 'Item Sub Category name already exists. Please use a different name.'
+          error: 'Item Sub Category name already exists. Please check logs.'
         });
       }
       res.status(500).json({ error: err.message });
@@ -189,6 +208,23 @@ exports.updateItemSubCategory = async (req, res) => {
       itemSubCategory.item_category_id = item_category_id;
       itemSubCategory.status = status;
       itemSubCategory.updated_at = new Date();
+      const nameConflict = await findCategoryNameConflict(name, [
+        { model: Categories, module: 'Category' },
+        { model: SubCategories, module: 'Sub Category' },
+        { model: ItemCategory, module: 'Item Category' },
+        { model: ItemSubCategory, module: 'Item Sub Category' },
+      ], itemSubCategory.id);
+      if (nameConflict) {
+        await logCategoryConflict({
+          sourceModule: 'Item Sub Category',
+          conflictModule: nameConflict.conflictModule,
+          conflictFlow: nameConflict.conflictFlow,
+          conflictName: name,
+        });
+        return res.status(400).json({
+          error: 'Item Sub Category name already exists. Please check logs.',
+        });
+      }
       await itemSubCategory.save();
       await syncMainProductKeyword(itemSubCategory);
 

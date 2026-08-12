@@ -56,6 +56,7 @@ const OpenEnquiryView = lazy(() => import('../admin/pages/OpenEnquiryView'));
 const SeoPages = lazy(() => import('../admin/pages/SeoPages'));
 const UserActivities = lazy(() => import('../admin/pages/UserActivities'));
 const UserActivityDetails = lazy(() => import('../admin/pages/UserActivityDetails'));
+const CategoryConflictLogs = lazy(() => import('../admin/pages/CategoryConflictLogs'));
 const MailHistory = lazy(() => import('../admin/pages/MailHistory'));
 const MailHistoryDetails = lazy(() => import('../admin/pages/MailHistoryDetails'));
 const EmailsList = lazy(() => import('../admin/pages/EmailsList'));
@@ -167,6 +168,7 @@ function AdminLayout() {
               <Route path="/seo_pages" element={<ProtectedRoute><SeoPages /></ProtectedRoute>} />
               <Route path="/user_activity" element={<ProtectedRoute><UserActivities /></ProtectedRoute>} />
               <Route path="/user-activity-details/:userId" element={<ProtectedRoute><UserActivityDetails /></ProtectedRoute>} />
+              <Route path="/category_conflict_logs" element={<ProtectedRoute><CategoryConflictLogs /></ProtectedRoute>} />
               <Route path="/mail_history" element={<ProtectedRoute><MailHistory /></ProtectedRoute>} />
               <Route path="/mail_history_details/:mailCode" element={<ProtectedRoute><MailHistoryDetails /></ProtectedRoute>} />
               <Route path="/mail-history-remove-list" element={<ProtectedRoute><MailHistory getDeleted={true} /></ProtectedRoute>} />

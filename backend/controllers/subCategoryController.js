@@ -6,11 +6,14 @@ const sequelize = require('../config/database');
 const { QueryTypes } = require('sequelize');
 const SubCategories = require('../models/SubCategories');
 const Categories = require('../models/Categories');
+const ItemCategory = require('../models/ItemCategory');
+const ItemSubCategory = require('../models/ItemSubCategory');
 const Products = require('../models/Products');
 const CompanyInfo = require('../models/CompanyInfo');
 const SellerCategory = require('../models/SellerCategory');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
+const { findCategoryNameConflict, logCategoryConflict } = require('../utils/categoryNameConflictHelper');
 
 exports.createSubCategories = async (req, res) => {
   const upload = getMulterUpload('sub_category');
@@ -24,13 +27,31 @@ exports.createSubCategories = async (req, res) => {
       const uploadImage = await UploadImage.create({
         file: `upload/sub_category/${req.file.filename}`,
       });
+      const nameConflict = await findCategoryNameConflict(name, [
+        { model: Categories, module: 'Category' },
+        { model: SubCategories, module: 'Sub Category' },
+        { model: ItemCategory, module: 'Item Category' },
+        { model: ItemSubCategory, module: 'Item Sub Category' },
+      ]);
+      if (nameConflict) {
+        await logCategoryConflict({
+          sourceModule: 'Sub Category',
+          conflictModule: nameConflict.conflictModule,
+          conflictFlow: nameConflict.conflictFlow,
+          conflictName: name,
+        });
+        await uploadImage.destroy();
+        return res.status(400).json({
+          error: 'Sub Category name already exists. Please check logs.'
+        });
+      }
       const subCategories = await SubCategories.create({ name, category, status, file_id: uploadImage.id });
       res.status(201).json({ message: 'Sub Category created', subCategories });
     } catch (err) {
       // ✅ Handle unique constraint violation
       if (err.name === 'SequelizeUniqueConstraintError' || err.errors?.[0]?.validatorKey === 'not_unique') {
         return res.status(400).json({
-          error: 'Sub Category name already exists. Please use a different name.'
+          error: 'Sub Category name already exists. Please check logs.'
         });
       }
       res.status(500).json({ error: err.message });
@@ -292,6 +313,23 @@ exports.updateSubCategories = async (req, res) => {
       subCategories.name = name;
       subCategories.category = category;
       subCategories.status = status;
+      const nameConflict = await findCategoryNameConflict(name, [
+        { model: Categories, module: 'Category' },
+        { model: SubCategories, module: 'Sub Category' },
+        { model: ItemCategory, module: 'Item Category' },
+        { model: ItemSubCategory, module: 'Item Sub Category' },
+      ], subCategories.id);
+      if (nameConflict) {
+        await logCategoryConflict({
+          sourceModule: 'Sub Category',
+          conflictModule: nameConflict.conflictModule,
+          conflictFlow: nameConflict.conflictFlow,
+          conflictName: name,
+        });
+        return res.status(400).json({
+          error: 'Sub Category name already exists. Please check logs.'
+        });
+      }
       subCategories.updated_at = new Date();
       await subCategories.save();
 
