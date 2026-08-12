@@ -4,6 +4,7 @@ import API_BASE_URL, { ROOT_URL } from '../config'; // Assuming you have ROOT_UR
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import '../assets/css/companydetails.css';
+import '../assets/css/product-detail.css';
 import { Navigation, Thumbs, Pagination } from 'swiper/modules'; // Removed Zoom module, added Thumbs
 import 'swiper/css'; // Core Swiper styles
 import 'swiper/css/navigation';
@@ -23,7 +24,6 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const thumbsSwiper = useRef(null); // Correct use of useRef
-  const [activeTab, setActiveTab] = useState('productDetails'); // Manage active tab
   const { showNotification } = useAlert();
   // ⭐ Review form state
   const [rating, setRating] = useState(0);
@@ -31,6 +31,13 @@ const ProductDetail = () => {
   const [review, setReview] = useState("");
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [quoteQty, setQuoteQty] = useState("");
+  const [sellerProducts, setSellerProducts] = useState([]);
+  const [sharePhone, setSharePhone] = useState("");
+  const [shareQty, setShareQty] = useState("");
+  const [relatedCategories, setRelatedCategories] = useState([]);
+  const [popularCategories, setPopularCategories] = useState([]);
   const { user } = UseAuth();
 
   useEffect(() => {
@@ -52,6 +59,22 @@ const ProductDetail = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [slug]);
+
+  useEffect(() => {
+    if (!product?.company_slug) return;
+    axios.get(`${API_BASE_URL}/products/companies/${product.company_slug}`)
+      .then(res => setSellerProducts((res.data?.products || []).filter(p => p.slug !== slug).slice(0, 8)))
+      .catch(() => { });
+  }, [product?.company_slug, slug]);
+
+  useEffect(() => {
+    axios.get(`${API_BASE_URL}/categories/category-item?is_delete=0&status=1&limit=8`)
+      .then(res => setRelatedCategories(res.data || []))
+      .catch(() => { });
+    axios.get(`${API_BASE_URL}/categories?is_delete=0&status=1&limit=40`)
+      .then(res => setPopularCategories(res.data || []))
+      .catch(() => { });
+  }, []);
 
   const timeAgo = (date) => {
     if (!date) return '—';
@@ -186,12 +209,6 @@ const ProductDetail = () => {
     : []
   ).filter((item) => item?.company_logo_file);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({ ...prevData, [name]: value }));
-  };
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -235,469 +252,448 @@ const ProductDetail = () => {
   const fullStars = Math.floor(avgRating);
   const hasHalfStar = (avgRating - fullStars) >= 0.5;
 
-  // Render rating stars for the review form
-  const renderReviewStars = () => {
-    return [...Array(5)].map((_, index) => {
-      const ratingValue = index + 1;
-      return (
-        <span
-          key={ratingValue}
-          onClick={() => setRating(ratingValue)}
-          onMouseEnter={() => setHover(ratingValue)}
-          onMouseLeave={() => setHover(0)}
-          style={{ cursor: "pointer", fontSize: "28px", color: ratingValue <= (hover || rating) ? "#ffc107" : "#ccc" }}
-        >
-          ★
-        </span>
-      );
-    });
-  };
-
   return (
     <>
 
-      <section className="productDetail py-5">
-        <div className="container-xl">
-          <div className="row">
-            <nav aria-label="breadcrumb" className="mb-3">
-              <ol className="breadcrumb mb-0">
-                <li className="breadcrumb-item">
-                  <a href="/" className="text-decoration-none">Home</a>
-                </li>
+      <section className="productDetail pt-2 pb-4">
+        <div className="container-fluid px-4">
 
-                <li className="breadcrumb-item">
-                  <a href="/products" className="text-decoration-none">Products</a>
-                </li>
+          {/* Breadcrumb */}
+          <nav aria-label="breadcrumb" className="mb-3">
+            <ol className="breadcrumb mb-0">
+              <li className="breadcrumb-item"><a href="/" className="text-decoration-none">Home</a></li>
+              <li className="breadcrumb-item"><a href="/products" className="text-decoration-none">Products</a></li>
+              <li className="breadcrumb-item active" aria-current="page">{product.title}</li>
+            </ol>
+          </nav>
 
-                <li className="breadcrumb-item active" aria-current="page">
-                  {product.title}
-                </li>
-              </ol>
-            </nav>
-            <div className="col-xl-9 col-lg-8 mb-lg-0 mb-3">
-              <div className="card">
-                <div className="card-body">
-                  <div className="row">
-                    <div className="col-md-5">
-                      {/* Main Swiper Slider with Hover Zoom */}
-                      <Swiper
-                        modules={[Navigation, Thumbs, Pagination]} // Added Thumbs for thumbnail sync
-                        thumbs={{ swiper: thumbsSwiper.current && !thumbsSwiper.current.destroyed ? thumbsSwiper.current : null }}
-                        navigation={true} // Arrows for navigation
-                        pagination={{ clickable: true }} // Dots for pagination
-                        loop={true} // Infinite loop
-                        grabCursor={true} // Cursor changes to grab when hovering
-                        style={{ maxWidth: '100%', height: '300px' }} // Adjust height as needed
-                        className="custom-swiper" // Custom class for styling
-                      >
-                        {allImages.map((image, index) => (
-                          <SwiperSlide key={image.id || index}>
-                            <div className="swiper-slide-content text-center">
+          <div className="row g-3 pd-main-row">
 
-                              <ImageFront
-                                src={`${ROOT_URL}/${image.file}`}
-                                alt={`${product.title} ${index + 1}`}
+            {/* ── LEFT: Sticky image gallery ── */}
+            <div className="col-xl-3 col-lg-4 col-md-5">
+              <div className="pd-img-sticky">
+                {/* Main Swiper Slider with Hover Zoom */}
+                <Swiper
+                  modules={[Navigation, Thumbs, Pagination]} // Added Thumbs for thumbnail sync
+                  thumbs={{ swiper: thumbsSwiper.current && !thumbsSwiper.current.destroyed ? thumbsSwiper.current : null }}
+                  navigation={true} // Arrows for navigation
+                  pagination={{ clickable: true }} // Dots for pagination
+                  loop={true} // Infinite loop
+                  grabCursor={true} // Cursor changes to grab when hovering
+                  style={{ maxWidth: '100%', height: '300px' }} // Adjust height as needed
+                  className="custom-swiper" // Custom class for styling
+                >
+                  {allImages.map((image, index) => (
+                    <SwiperSlide key={image.id || index}>
+                      <div className="swiper-slide-content text-center">
 
-                                style={{ width: 'auto', height: '100%', objectFit: 'contain', transition: 'transform 0.3s ease' }}
-                                showFallback={true}
-                                className="swiper-zoom-image"
-                              />
-                            </div>
-                          </SwiperSlide>
-                        ))}
-                      </Swiper>
+                        <ImageFront
+                          src={`${ROOT_URL}/${image.file}`}
+                          alt={`${product.title} ${index + 1}`}
 
-                      {/* Thumbnail Swiper */}
-                      <Swiper
-                        onSwiper={(swiper) => (thumbsSwiper.current = swiper)} // Assign swiper instance to useRef
-                        spaceBetween={10}
-                        slidesPerView={4} // Show 4 thumbnails at a time
-                        watchSlidesProgress={true}
-                        modules={[Thumbs]}
-                        className="mt-3"
-                        style={{ maxWidth: '100%', height: '80px' }} // Adjust height for thumbnails
-                      >
-                        {allImages.map((image, index) => (
-                          <SwiperSlide key={image.id || index}>
+                          style={{ width: 'auto', height: '100%', objectFit: 'contain', transition: 'transform 0.3s ease' }}
+                          showFallback={true}
+                          className="swiper-zoom-image"
+                        />
+                      </div>
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
 
-                            <ImageFront
-                              src={`${ROOT_URL}/${image.file}`}
-                              alt={`${product.title} ${index + 1}`}
+                {/* Thumbnail Swiper */}
+                <Swiper
+                  onSwiper={(swiper) => (thumbsSwiper.current = swiper)} // Assign swiper instance to useRef
+                  spaceBetween={10}
+                  slidesPerView={4} // Show 4 thumbnails at a time
+                  watchSlidesProgress={true}
+                  modules={[Thumbs]}
+                  className="mt-3"
+                  style={{ maxWidth: '100%', height: '80px' }} // Adjust height for thumbnails
+                >
+                  {allImages.map((image, index) => (
+                    <SwiperSlide key={image.id || index}>
 
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                                border: '1px solid #ddd',
-                                borderRadius: '5px',
-                                cursor: 'pointer'
-                              }}
-                              showFallback={true}
+                      <ImageFront
+                        src={`${ROOT_URL}/${image.file}`}
+                        alt={`${product.title} ${index + 1}`}
 
-                            />
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          border: '1px solid #ddd',
+                          borderRadius: '5px',
+                          cursor: 'pointer'
+                        }}
+                        showFallback={true}
 
-                          </SwiperSlide>
-                        ))}
-                      </Swiper>
-                    </div>
-                    <div className="col-md-7">
-                      <div className="product-details mt-md-0 mt-3">
-                        <div className="detailhead">
-                          <h4 className="text-orange">{product.title}</h4>
+                      />
+
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              </div>
+            </div>
+
+            {/* ── CENTER: Scrollable content ── */}
+            <div className="col-xl-6 col-lg-5 col-md-7">
+              <div className="pd-center-col">
+
+                <h4 className="text-orange fw-bold mb-2">{product.title}</h4>
+
+                {/* Sold By */}
+                {product.company_name && (
+                  <p className="mb-3 text-secondary" style={{ fontSize: 14 }}>
+                    Sold By&nbsp;:&nbsp;
+                    <Link to={`/companies/${product.company_slug}`} className="fw-semibold text-dark text-decoration-none">{product.company_name}</Link>
+                  </p>
+                )}
+
+                {/* Send Inquiry — top CTA */}
+                <button className="btn btn-orange px-5 py-2 mb-4" style={{ borderRadius: 50 }} onClick={() => setShowModal(true)}>
+                  <i className="bx bx-phone pe-2" /> Send Inquiry
+                </button>
+
+                <EnquiryForm
+                  show={showModal}
+                  onHide={() => setShowModal(false)}
+                  productId={`${product.id}`}
+                  companyId={`${product.company_id}`}
+                  productTitle={`${product.title}`}
+                  companyName={`${product.company_name}`}
+                />
+
+                {/* Specs Table */}
+                {(product.category_name || product.sub_category_name || product.item_category_name || product.item_subcategory_name || product.core_activity_name) && (
+                  <div className="mb-4">
+                    <h6 className="pd-section-title">Product Specifications</h6>
+                    <table className="pd-spec-table">
+                      <tbody>
+                        {product.category_name && <tr><td className="spec-key">Category</td><td className="spec-val">{product.category_name}</td></tr>}
+                        {product.sub_category_name && <tr><td className="spec-key">Sub Category</td><td className="spec-val">{product.sub_category_name}</td></tr>}
+                        {product.item_category_name && <tr><td className="spec-key">Item Category</td><td className="spec-val">{product.item_category_name}</td></tr>}
+                        {product.item_subcategory_name && <tr><td className="spec-key">Item Type</td><td className="spec-val">{product.item_subcategory_name}</td></tr>}
+                        {product.core_activity_name && <tr><td className="spec-key">Nature of Business</td><td className="spec-val">{product.core_activity_name}</td></tr>}
+                        {product.company_website && (
+                          <tr>
+                            <td className="spec-key">Website</td>
+                            <td className="spec-val">
+                              <a href={product.company_website?.startsWith('http') ? product.company_website : `https://${product.company_website}`} target="_blank" rel="noreferrer">{product.company_website}</a>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Product Overview */}
+                {product.short_description && (
+                  <div className="mb-4">
+                    <h6 className="pd-section-title">Product Overview</h6>
+                    <p className="text-secondary mb-0" style={{ lineHeight: '1.7' }}>{product.short_description}</p>
+                  </div>
+                )}
+
+                {/* Description */}
+                {product.description && (
+                  <div className="mb-4">
+                    <h6 className="pd-section-title">Additional Information</h6>
+                    <div className="pd-description" dangerouslySetInnerHTML={{ __html: product.description }} />
+                  </div>
+                )}
+
+
+
+                {/* ── removed duplicate EnquiryForm; single instance above ── */}
+
+                {/* Interested in this product? banner */}
+                <div className="pd-interested-banner mb-4">
+                  <div className="pd-ib-text">
+                    <h6>Interested in this product?</h6>
+                    <p>Ask for more details &amp; Latest Price from seller</p>
+                  </div>
+                  <button className="btn btn-primary" onClick={() => setShowModal(true)}>Send Inquiry</button>
+                </div>
+
+                {/* Product Images grid */}
+                {allImages.length > 1 && (
+                  <div className="mb-4">
+                    <h6 className="pd-section-title">Product Images</h6>
+                    <div className="pd-images-grid">
+                      {allImages.map((image, index) => (
+                        <div key={image.id || index} className="pd-img-thumb">
+                          <ImageFront
+                            src={`${ROOT_URL}/${image.file}`}
+                            alt={`${product.title} ${index + 1}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            showFallback={true}
+                          />
                         </div>
-                        <div className="product-meta-grid mt-2">
-                          <div className="row g-3">
-                            {product.company_website && (
-                              <div className="col-md-6 col-sm-6">
-                                <div className="meta-item d-flex align-items-start">
-                                  <div className="meta-icon"><i className="bx bx-globe" /></div>
-                                  <div>
-                                    <div className="meta-label">Website</div>
-                                    <div className="meta-value"><a href={product.company_website?.startsWith('http') ? product.company_website : `https://${product.company_website}`} target="_blank" rel="noreferrer">{product.company_website}</a></div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                            {/* Core Activity and Activity removed per request */}
+                {/* Company Overview */}
+                {(product.brief_company || product.organizations_product_description) && (
+                  <div className="mb-4">
+                    <h6 className="pd-section-title">Company Overview</h6>
+                    {product.brief_company && <p className="text-secondary mb-2">{product.brief_company}</p>}
+                    {product.organizations_product_description && (
+                      <div className="text-secondary" dangerouslySetInnerHTML={{ __html: product.organizations_product_description }} />
+                    )}
+                  </div>
+                )}
 
-                            {product.category_name && (
-                              <div className="col-md-6 col-sm-6">
-                                <div className="meta-item d-flex align-items-start">
-                                  <div className="meta-icon"><i className="bx bx-category" /></div>
-                                  <div>
-                                    <div className="meta-label">Category</div>
-                                    <div className="meta-value">{product.category_name}</div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                {/* Ratings & Reviews */}
+                {Number(product.reviews_count || 0) > 0 && (
+                  <div className="mb-4">
+                    <h6 className="pd-section-title">Ratings &amp; Reviews</h6>
 
-                            {product.sub_category_name && (
-                              <div className="col-md-6 col-sm-6">
-                                <div className="meta-item d-flex align-items-start">
-                                  <div className="meta-icon"><i className="bx bx-list-ul" /></div>
-                                  <div>
-                                    <div className="meta-label">Sub Category</div>
-                                    <div className="meta-value">{product.sub_category_name}</div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                    <div className="pd-rating-summary">
+                      <div className="pd-overall-rating">
+                        <div className="pd-rbox-header">
+                          <span className="pd-rbox-dot" />
+                          <span>Overall Rating</span>
+                        </div>
 
-                            {product.item_category_name && (
-                              <div className="col-md-6 col-sm-6">
-                                <div className="meta-item d-flex align-items-start">
-                                  <div className="meta-icon"><i className="bx bx-box" /></div>
-                                  <div>
-                                    <div className="meta-label">Item Category</div>
-                                    <div className="meta-value">{product.item_category_name}</div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {product.item_subcategory_name && (
-                              <div className="col-md-6 col-sm-6">
-                                <div className="meta-item d-flex align-items-start">
-                                  <div className="meta-icon"><i className="bx bx-package" /></div>
-                                  <div>
-                                    <div className="meta-label">Item Type</div>
-                                    <div className="meta-value">{product.item_subcategory_name}</div>
-                                  </div>
-                                </div>
-                              </div>
+                        <div className="pd-rbox-body">
+                          <div className="pd-rating-num">
+                            {avgRating > 0 && (
+                              <>
+                                {avgRating.toFixed(1)}
+                                <span className="pd-of5">/5</span>
+                              </>
                             )}
                           </div>
-                        </div>
-                        <div>
-                          <p>{product.short_description || 'N/A'}</p>
+
+                          <div className="pd-rating-stars">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                style={{
+                                  color:
+                                    i < fullStars ||
+                                      (i === fullStars && hasHalfStar)
+                                      ? '#f5a623'
+                                      : '#ddd'
+                                }}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+
+                          <div className="pd-rating-count">
+                            Reviewed by {product.reviews_count} Users
+                          </div>
+
+                          <button
+                            className="btn btn-outline-primary btn-sm mt-2 rounded-pill px-3"
+                            onClick={() => setShowReviewModal(true)}
+                          >
+                            Write a Review
+                          </button>
                         </div>
                       </div>
-                      <div className="card-footer ps-0 bg-white border-0">
-                        <button className="btn btn-orange w-50" onClick={() => setShowModal(true)}>
-                          <i className="lni lni-phone pe-2"></i> Enquiry
-                        </button>
 
-                        <EnquiryForm
-                          show={showModal}
-                          onHide={() => setShowModal(false)}
-                          productId={`${product.id}`}
-                          companyId={`${product.company_id}`}
-                          productTitle={`${product.title}`}
-                          companyName={`${product.company_name}`}
-                        />
+                      <div className="pd-satisfaction">
+                        <div className="pd-rbox-header">
+                          <span className="pd-rbox-dot" />
+                          <span>User Satisfaction</span>
+                        </div>
+
+                        <div className="pd-rbox-body">
+                          <div className="pd-sat-circles">
+                            {[
+                              ['Response', avgRating * 20],
+                              ['Quality', avgRating * 20],
+                              ['Delivery', avgRating * 20]
+                            ].map(([label, pct]) => (
+                              <div className="pd-sat-circle" key={label}>
+                                {/* existing SVG */}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                )}
 
+              </div>
             </div>
-            {/* Sidebar column */}
-            <div className="col-xl-3 col-lg-4 mb-lg-0 mb-3">
-              <div className="card sidebar-company-card">
-                <div className="card-body">
-                  <div className="sidebar-company-head mb-3">
-                    <Link to={`/companies/${product.company_slug}`} className="d-block">
-                      <div className="sidebar-logo">
-                        <ImageFront
-                          src={`${ROOT_URL}/${product.company_logo}`}
-                          alt={product.company_name}
-                          showFallback={true}
-                          defaultimg="/company.png"
-                          style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 6, border: '1px solid #eee' }}
-                        />
-                      </div>
-                    </Link>
-                    <div className="flex-grow-1">
-                      <Link to={`/companies/${product.company_slug}`} className="text-dark text-decoration-none">
-                        <h6 className="sidebar-company-name mb-1">{product.company_name}</h6>
+
+            {/* ── RIGHT: Sticky sidebar ── */}
+            <div className="col-xl-3 col-lg-3 col-md-12">
+              <div className="pd-sidebar-sticky">
+                <div className="card sidebar-company-card">
+                  <div className="card-body">
+                    <div className="sidebar-company-head mb-3">
+                      <Link to={`/companies/${product.company_slug}`} className="d-block">
+                        <div className="sidebar-logo">
+                          <ImageFront
+                            src={`${ROOT_URL}/${product.company_logo}`}
+                            alt={product.company_name}
+                            showFallback={true}
+                            defaultimg="/company.png"
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 6, border: '1px solid #eee' }}
+                          />
+                        </div>
                       </Link>
-                      <div className="sidebar-company-location text-muted small"><i className="bx bx-map me-1" />{product.company_location || 'N/A'}</div>
-
-                      <div className="mt-2 rating-row">
-                        <span className="rating-stars" style={{ color: '#f5c518' }}>
-                          {[...Array(5)].map((_, i) => (i < Math.round(product.averageRating || 0) ? '★' : '☆')).join('')}
-                        </span>
-                        <small className="text-muted ms-2">{product.reviews_count ? `(${product.reviews_count})` : ''}</small>
-                      </div>
-
-                      {/* phone button removed per request */}
-                    </div>
-                  </div>
-
-                  <hr />
-
-                  <div className="meta-list">
-                    <div className="d-flex align-items-start gap-2 mb-3">
-                      <i className="bx bx-calendar text-secondary" />
-                      <div>
-                        <div className="meta-label">Member Since</div>
-                        <div className="meta-value">{timeAgo(product.created_at) || '—'}</div>
+                      <div className="flex-grow-1">
+                        <Link to={`/companies/${product.company_slug}`} className="text-dark text-decoration-none">
+                          <h6 className="sidebar-company-name mb-1">{product.company_name}</h6>
+                        </Link>
+                        <div className="sidebar-company-location text-muted small"><i className="bx bx-map me-1" />{product.company_location || 'N/A'}</div>
+                        <div className="mt-2 rating-row">
+                          <span className="rating-stars" style={{ color: '#f5c518' }}>
+                            {[...Array(5)].map((_, i) => (i < Math.round(product.averageRating || 0) ? '★' : '☆')).join('')}
+                          </span>
+                          <small className="text-muted ms-2">{product.reviews_count ? `(${product.reviews_count})` : ''}</small>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="d-flex align-items-start gap-2 mb-3">
-                      <i className="bx bx-building text-secondary" />
-                      <div>
-                        <div className="meta-label">Nature of Business</div>
-                        <div className="meta-value">{product.core_activity_name || product.core_activity_name || 'N/A'}</div>
+                    <hr />
+                    <div className="meta-list">
+                      <div className="d-flex align-items-start gap-2 mb-3">
+                        <i className="bx bx-calendar text-secondary" />
+                        <div>
+                          <div className="meta-label">Member Since</div>
+                          <div className="meta-value">{timeAgo(product.created_at) || '—'}</div>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* GST removed per request */}
-
-                    <div className="mt-2">
-                      <Link to={`/companies/${product.company_slug}`} className="view-company-link text-decoration-none">View Company Details →</Link>
+                      <div className="d-flex align-items-start gap-2 mb-3">
+                        <i className="bx bx-building text-secondary" />
+                        <div>
+                          <div className="meta-label">Nature of Business</div>
+                          <div className="meta-value">{product.core_activity_name || 'N/A'}</div>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <Link to={`/companies/${product.company_slug}`} className="view-company-link text-decoration-none">View Company Details →</Link>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Separate compact Register CTA card below the sidebar company card */}
-              <div className="card mt-3 shadow-sm list-cta-small">
-                <div className="card-body text-center py-3 px-2">
-                  <h6 className="mb-1">To List your Product</h6>
-                  <p className="mb-2 text-muted small">Boost Your Business Visibility</p>
-                  <Link to="/registration" className="btn btn-orange btn-sm">Register Now</Link>
+                <div className="pd-quote-widget">
+                  <p className="pd-qw-title">Looking for <span>{product.title}?</span></p>
+                  <label>Quantity</label>
+                  <div className="pd-qty-row">
+                    <input type="number" className="form-control" placeholder="Qty" value={quoteQty} onChange={e => setQuoteQty(e.target.value)} min="1" />
+                    <input type="text" className="form-control" placeholder="Unit" defaultValue="Piece" />
+                  </div>
+                  <button className="btn-get-quote" onClick={() => setShowModal(true)}>Get Quote Now</button>
+                </div>
+
+                <div className="card mt-3 shadow-sm pd-boost-card">
+                  <div className="card-body p-3">
+                    <div className="d-flex align-items-start justify-content-between">
+                      <div>
+                        <p className="mb-1" style={{ fontSize: 13, color: '#444' }}>Boost Business <span style={{ fontSize: 16 }}>⚡</span></p>
+                        <h5 className="fw-bold mb-1" style={{ color: '#1a2233', lineHeight: 1.2 }}>Growth 10X<br />Faster</h5>
+                        <p className="mb-3" style={{ fontSize: 12, color: '#6c7a94' }}>🚀 More Leads, More Buyers. More Growth.</p>
+                      </div>
+                      <span style={{ fontSize: 32 }}>🏪</span>
+                    </div>
+                    <Link to="/registration" className="btn btn-sm w-100 pd-boost-btn">Sell on Source India →</Link>
+                  </div>
                 </div>
               </div>
-
             </div>
-
-
 
           </div>
-          <div className="col-12">
-            <div className='card mt-5'>
-              <div className='card-body'>
-                <div className="tabs-container">
-                  {/* Tab Navigation */}
-                  <ul className="nav nav-tabs border-bottom" role="tablist" style={{ paddingBottom: '1px' }}>
-                    <li className="nav-item" role="presentation">
-                      <button
-                        className={`nav-link ${activeTab === 'productDetails' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('productDetails')}
-                        type="button"
-                        role="tab"
-                      >
-                        Product Details
-                      </button>
-                    </li>
-                    <li className="nav-item" role="presentation">
-                      <button
-                        className={`nav-link ${activeTab === 'companyDetails' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('companyDetails')}
-                        type="button"
-                        role="tab"
-                      >
-                        Company Details
-                      </button>
-                    </li>
-                    <li className="nav-item" role="presentation">
-                      <button
-                        className={`nav-link ${activeTab === 'reviews' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('reviews')}
-                        type="button"
-                        role="tab"
-                      >
-                        Reviews
-                      </button>
-                    </li>
-                  </ul>
+        </div>
+      </section>
 
-                  {/* Tab Content */}
-                  <div className="tab-content mt-3">
-                    {/* Product Details Tab */}
-                    {activeTab === 'productDetails' && (
-                      <div className="tab-pane fade show active" role="tabpanel">
-                        <div className="product-details">
-                          <div className="detailhead">
-                            <h5 className="">Product Specification:
-                            </h5>
-                          </div>
-                          <div>
-                            <div
-                              dangerouslySetInnerHTML={{ __html: product.description || 'N/A' }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Company Details Tab */}
-                    {activeTab === 'companyDetails' && (
-                      <div className="tab-pane fade show active" role="tabpanel">
-                        <div className="company-details">
-                          <div className="card p-3">
-                            <div className="about-grid-wrap mt-3">
-                              <div className="row">
-                                <div className="col-md-3 col-sm-12 d-flex justify-content-center">
-                                  {/* left fixed column: logo + short info (keeps same markup) */}
-                                  <div className="company-left-col text-center">
-                                    <div className="companydetailimg mb-2">
-                                      <ImageFront
-                                        src={`${ROOT_URL}/${product.company_logo}`}
-                                        alt={product.company_name}
-                                        showFallback={true}
-                                        defaultimg="/company.png"
-                                      />
-                                    </div>
-                                    <div className="small-meta">
-                                      <div className="rating-line">{product.averageRating ? `${product.averageRating}/5` : ''} <span className="stars">{product.averageRating ? '★★★★★'.slice(0, Math.round(product.averageRating)) : ''}</span></div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="col-md-9 col-sm-12">
-                                  <div className="company-header mb-2">
-                                    <h5 className="mb-1">{product.company_name}</h5>
-                                    <div className="text-muted small"><i className="bx bx-map me-1" />{product.company_location || 'N/A'}</div>
-                                  </div>
-
-                                  <div className="about-grid">
-                                    <div className="about-item">
-                                      <div className="about-icon"><i className="bx bx-globe" aria-hidden="true" /></div>
-                                      <div className="about-content">
-                                        <div className="about-label">Website</div>
-                                        <div className="about-value"><a href={product.company_website?.startsWith('http') ? product.company_website : `https://${product.company_website}`} target="_blank" rel="noreferrer">{product.company_website || "N/A"}</a></div>
-                                      </div>
-                                    </div>
-
-                                    <div className="about-item">
-                                      <div className="about-icon"><i className="bx bx-briefcase" aria-hidden="true" /></div>
-                                      <div className="about-content">
-                                        <div className="about-label">Core Activity</div>
-                                        <div className="about-value">{product.core_activity_name || "N/A"}</div>
-                                      </div>
-                                    </div>
-
-                                    <div className="about-item">
-                                      <div className="about-icon"><i className="bx bx-cog" aria-hidden="true" /></div>
-                                      <div className="about-content">
-                                        <div className="about-label">Activity</div>
-                                        <div className="about-value">{product.activity_name || "N/A"}</div>
-                                      </div>
-                                    </div>
-
-                                    <div className="about-item">
-                                      <div className="about-icon"><i className="bx bx-category" aria-hidden="true" /></div>
-                                      <div className="about-content">
-                                        <div className="about-label">Category</div>
-                                        <div className="about-value">{product.category_name || "N/A"}</div>
-                                      </div>
-                                    </div>
-
-                                    <div className="about-item">
-                                      <div className="about-icon"><i className="bx bx-list-ul" aria-hidden="true" /></div>
-                                      <div className="about-content">
-                                        <div className="about-label">Sub Category</div>
-                                        <div className="about-value">{product.sub_category_name || "N/A"}</div>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="about-description mt-3">
-                                    <p className="mb-2">{product.brief_company || ""}</p>
-                                    <p className="text-muted" dangerouslySetInnerHTML={{ __html: product.organizations_product_description || "" }} />
-                                  </div>
-
-                                  {/* Removed Member Since, Nature of Business, GST No., Enquiry button and company CTAs per request */}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Reviews Tab */}
-                    {activeTab === 'reviews' && (
-                      <div className="tab-pane fade show active" role="tabpanel">
-                        <div className="reviews">
-                          <h5 className="">Reviews</h5>
-                          <div className="reviewSection text-start">
-                            <form onSubmit={handleSubmit}>
-                              <label className="form-label mt-2 mb-0">Rating</label>
-                              <div className="d-flex">
-                                {renderReviewStars()}
-                              </div>
-
-                              <div className="col-md-12 mt-2 mb-3">
-                                <label className="form-label">
-                                  Review <sup className="text-danger">*</sup>
-                                </label>
-                                <textarea
-                                  className="form-control"
-                                  name="review"
-                                  rows="3"
-                                  value={review}
-                                  onChange={(e) => setReview(e.target.value)}
-                                  required
-                                ></textarea>
-                              </div>
-
-                              <button type="submit" className="btn btn-primary" disabled={loading}>
-                                {loading ? "Submitting..." : "Submit"}
-                              </button>
-                            </form>
-
-                          </div>
-                        </div>
-                      </div>
-                    )}
+      {/* Share Requirements — full width between 3-col and carousels */}
+      <div className="container-fluid px-4 py-0">
+        <div className="row g-3">
+          <div className="col-9">
+            <div className="pd-share-form">
+              <div className="pd-sf-header">
+                <span>Share your requirements for a quick response!</span>
+                <span className="pd-sf-badge">Save Your Time ▼</span>
+              </div>
+              <div className="pd-sf-body">
+                <div className="mb-3">
+                  <label className="form-label small">Looking for</label>
+                  <input type="text" className="form-control" defaultValue={product.title} readOnly />
+                </div>
+                <div className="row g-3 mb-3">
+                  <div className="col-md-6">
+                    <label className="form-label small">Quantity</label>
+                    <div className="input-group">
+                      <input type="number" className="form-control" placeholder="" value={shareQty} onChange={e => setShareQty(e.target.value)} min="1" />
+                      <span className="input-group-text">Unit of Measurement</span>
+                    </div>
                   </div>
+                  <div className="col-md-6">
+                    <label className="form-label small">Your Mobile No.</label>
+                    <div className="input-group">
+                      <span className="input-group-text">🇮🇳 +91</span>
+                      <input type="tel" className="form-control" placeholder="Mobile No." value={sharePhone} onChange={e => setSharePhone(e.target.value)} maxLength={10} />
+                    </div>
+                  </div>
+                </div>
+                <div className="text-start">
+                  <button className="btn btn-primary px-5 py-2" onClick={() => setShowModal(true)}>Get Quotes Now</button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </section >
+      </div>
+
       <div className="product-detail-container companyProducts">
-        <div className="container-xl">
+        <div className="container-fluid px-4">
+
+          {/* More Products From This Seller */}
+          {sellerProducts.length > 0 && (
+            <div className="pd-seller-products">
+              <h2>More Products From This Seller</h2>
+              <Swiper
+                modules={[Navigation, Pagination]}
+                spaceBetween={20}
+                navigation
+                watchOverflow={true}
+                loop={sellerProducts.length > 4}
+                className="similar-products-carousel"
+                style={{ padding: '20px 0' }}
+                breakpoints={{
+                  0: { slidesPerView: 1 },
+                  576: { slidesPerView: 2 },
+                  768: { slidesPerView: 3 },
+                  1200: { slidesPerView: 4 },
+                }}
+              >
+                {sellerProducts.map((sp, index) => (
+                  <SwiperSlide key={sp.id}>
+                    <div className="productBox productBoxswiper p-3 bg-white">
+                      <div className="middlepro">
+                        <div className="ProImg ProImgDetail">
+                          <ImageFront src={`${ROOT_URL}/${sp.file_name}`} width={180} height={180} loading={index < 2 ? 'eager' : 'lazy'} showFallback />
+                        </div>
+                        <div className="productlink">
+                          <p className="mb-0 title-clamp">{sp.title}</p>
+                          <Link to={`/products/${sp.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2">
+                            <span className="pe-2">View</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" aria-hidden="true"><path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z" /></svg>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
+          )}
+
           {similarProducts.length > 0 && (
             <div className="companyProducts">
-              <h2 className="color-primary">Similar Products</h2>
+              <h2 className="color-primary">Find Similar Products</h2>
               <Swiper
                 modules={[Navigation, Pagination]}
                 spaceBetween={20}
@@ -751,7 +747,7 @@ const ProductDetail = () => {
 
         {/* Recommended Companies */}
         {recommendedCompanies.length > 0 && (
-          <div className='container'>
+          <div className='container-fluid px-4'>
             <div className="similerCompany mt-lg-5 mt-3">
               <h2 className="color-primary">Recommended Companies</h2>
               <Swiper
@@ -825,6 +821,124 @@ const ProductDetail = () => {
         )}
 
       </div>
+
+      {/* Browse Related Categories */}
+      {relatedCategories.length > 0 && (
+        <div className="container-fluid px-4 py-4">
+          <h5 className="pd-section-title mb-4">Browse Related Categories</h5>
+          <div className="pd-related-grid">
+            {relatedCategories.map((cat) => (
+              <Link key={cat.id} to={`/items/${cat.slug}`} className="pd-rel-cat-card text-decoration-none">
+                <div className="pd-rel-cat-img">
+                  <ImageFront src={`${ROOT_URL}/${cat.file_name || cat.image}`} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} showFallback />
+                </div>
+                <span className="pd-rel-cat-name">{cat.name}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Popular Categories */}
+      {popularCategories.length > 0 && (
+        <div className="container-fluid px-4 pb-5">
+          <h5 className="pd-pop-cats-title">Popular Categories</h5>
+          <div className="pd-pop-cats">
+            {popularCategories.map((cat) => (
+              <Link key={cat.id} to={`/categories/${cat.slug}`} className="pd-pop-cat-tag text-decoration-none">{cat.name}</Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Write a Review Modal ── */}
+      {showReviewModal && (
+        <div className="pd-rm-backdrop" onClick={e => { if (e.target === e.currentTarget) setShowReviewModal(false); }}>
+          <div className="pd-rm-dialog">
+            <div className="pd-rm-modal">
+
+              {/* Navy header */}
+              <div className="pd-rm-head">
+                <div className="pd-rm-head-icon"><i className="bx bxs-star" /></div>
+                <div className="pd-rm-head-text">
+                  <p className="pd-rm-head-label">Rate your Experience with</p>
+                  <h5 className="pd-rm-head-company">{product.company_name}</h5>
+                </div>
+                <button className="pd-rm-x" onClick={() => setShowReviewModal(false)} aria-label="Close">&#10005;</button>
+              </div>
+
+              <div className="pd-rm-subheader">
+                <i className="bx bx-info-circle me-1" />
+                To submit your ratings, please provide the following information
+              </div>
+
+              {/* Body */}
+              <div className="pd-rm-body">
+                <form onSubmit={e => { handleSubmit(e); setShowReviewModal(false); }}>
+
+                  <div className="pd-rm-field">
+                    <label className="pd-rm-label">Select product / service</label>
+                    <select className="pd-rm-select">
+                      <option value={product.id}>{product.title}</option>
+                    </select>
+                  </div>
+
+                  <div className="pd-rm-field">
+                    <label className="pd-rm-label">Your Rating</label>
+                    <div className="pd-rm-stars">
+                      {[...Array(5)].map((_, index) => {
+                        const val = index + 1;
+                        return (
+                          <span key={val}
+                            className={`pd-rm-star${val <= (hover || rating) ? ' active' : ''}`}
+                            onClick={() => setRating(val)}
+                            onMouseEnter={() => setHover(val)}
+                            onMouseLeave={() => setHover(0)}>
+                            &#9733;
+                          </span>
+                        );
+                      })}
+                      {rating > 0 && <span className="pd-rm-rating-text">{['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][rating]}</span>}
+                    </div>
+                  </div>
+
+                  <div className="pd-rm-field">
+                    <label className="pd-rm-label">What did you Like?</label>
+                    <div className="pd-rm-like-row">
+                      {['Response', 'Quality', 'Delivery'].map(label => (
+                        <div key={label} className="pd-rm-like-group">
+                          <span className="pd-rm-like-label">{label}</span>
+                          <div className="pd-rm-like-btns">
+                            <button type="button" className="pd-rm-like-btn like"><i className="bx bx-like" /> Yes</button>
+                            <button type="button" className="pd-rm-like-btn dislike"><i className="bx bx-dislike" /> No</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pd-rm-field">
+                    <label className="pd-rm-label">Write your Review</label>
+                    <textarea className="pd-rm-textarea" rows="4"
+                      placeholder="Share your experience in detail... (minimum 20 characters)"
+                      value={review} onChange={e => setReview(e.target.value)}
+                      required minLength={20} />
+                    <span className="pd-rm-char-count">{review.length} / 20 min</span>
+                  </div>
+
+                  <button type="submit" className="pd-rm-submit" disabled={loading}>
+                    {loading
+                      ? <><i className="bx bx-loader-alt bx-spin me-2" />Submitting...</>
+                      : <><i className="bx bxs-send me-2" />Submit Review</>
+                    }
+                  </button>
+
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   );
