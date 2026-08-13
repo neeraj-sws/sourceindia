@@ -444,11 +444,11 @@ body {
 }
 
 .carousel-control-next {
-    right: 65%;
+    right: -5%;
 }
 
 .carousel-control-prev {
-    left: 25px;
+    left: -5%;
 }
 
 .banner-overlay {

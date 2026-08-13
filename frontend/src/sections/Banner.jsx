@@ -165,42 +165,47 @@ const Banner = () => {
     navigate(`/products?search=${encodeURIComponent(normalizedValue)}`);
   };
 
+  // Right-side search card stays static (not part of the slider) — driven by the first banner only.
+  const primaryBanner = homeBanner[0] || {};
+  const staticTitle = primaryBanner.title || "Search Electronics Products";
+  const staticSubtitle = primaryBanner.sub_title || "Find high quality products, manufacturers, suppliers and service providers";
+  const staticPopularSearches = primaryBanner.popular_searches
+    ? primaryBanner.popular_searches.split(/,|;/).map((item) => item.trim()).filter(Boolean)
+    : ["PCB", "Capacitor", "Connectors", "IC", "Power Supply", "Resistors", "LED", "Sensors"];
+
   return (
     <>
       <div className="mainBanner">
         <div className="bgCarouselImg">
-          <div id="carouselExampleCaptions" className="carousel slide" data-bs-ride="carousel">
-            <div className="carousel-inner">
-              {homeBanner.map((slider, index) => {
-                const title = slider.title || "Search Electronics Products";
-                const subtitle = slider.sub_title || "Find high quality products, manufacturers, suppliers and service providers";
-                const popularSearches = slider.popular_searches
-                  ? slider.popular_searches.split(/,|;/).map((item) => item.trim()).filter(Boolean)
-                  : ["PCB", "Capacitor", "Connectors", "IC", "Power Supply", "Resistors", "LED", "Sensors"];
-                const leftFeatures = slider.description
-                  ? slider.description
-                    .split(/<br\s*\/?>|\n|\r/)
-                    .map((item) => item.replace(/<[^>]+>/g, "").trim())
-                    .filter(Boolean)
-                  : ["Create Your Business Profile", "Add Products in Few Clicks", "Receive Enquiries & Grow Business"];
+          <div
+            className="banner-slide"
+            style={{
+              backgroundImage: primaryBanner.file_name
+                ? `url(${ROOT_URL}/${primaryBanner.file_name})`
+                : `url('/default1.png')`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              backgroundSize: 'cover',
+            }}
+          >
+            <div className="banner-overlay" />
+            <div className="container-fluid  h-100 px-5">
+              <div className="row h-100 align-items-center gy-4 gx-3">
 
-                return (
-                  <div className={`carousel-item ${index === 0 ? 'active' : ''}`} key={slider.id || index}>
-                    <div
-                      className="banner-slide"
-                      style={{
-                        backgroundImage: slider.file_name
-                          ? `url(${ROOT_URL}/${slider.file_name})`
-                          : `url('/default1.png')`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'center',
-                        backgroundSize: 'cover',
-                      }}
-                    >
-                      <div className="banner-overlay" />
-                      <div className="container-fluid  h-100 px-5">
-                        <div className="row h-100 align-items-center gy-4 gx-3">
-                          <div className="col-lg-4 col-xxl-4 h-100">
+                {/* LEFT: only this box slides */}
+                <div className="col-lg-4 col-xxl-4 h-100">
+                  <div id="carouselExampleCaptions" className="carousel slide h-100" data-bs-ride="carousel">
+                    <div className="carousel-inner h-100">
+                      {homeBanner.map((slider, index) => {
+                        const leftFeatures = slider.description
+                          ? slider.description
+                            .split(/<br\s*\/?>|\n|\r/)
+                            .map((item) => item.replace(/<[^>]+>/g, "").trim())
+                            .filter(Boolean)
+                          : ["Create Your Business Profile", "Add Products in Few Clicks", "Receive Enquiries & Grow Business"];
+
+                        return (
+                          <div className={`carousel-item h-100 ${index === 0 ? 'active' : ''}`} key={slider.id || index}>
                             <div className="hero-left-card h-100">
                               <div className="hero-card-header mb-3">
                                 <span className="hero-slide-counter">{String(activeSlideIndex + 1).padStart(2, '0')}/{String(homeBanner.length || 1).padStart(2, '0')}</span>
@@ -239,114 +244,136 @@ const Banner = () => {
                               )}
                             </div>
                           </div>
-                          <div className="col-lg-8">
-                            <div className="hero-search-card">
-                              <div className="hero-search-header">
-                                <h1>{title}</h1>
-                                <p className="hero-subtitle">{subtitle}</p>
+                        );
+                      })}
+                    </div>
 
-                              </div>
-                              <form className="hero-search-form" onSubmit={handleSearchSubmit}>
-                                <div className="popularPartbox gap-2">
-                                  <select
-                                    className="form-select form-select-lg"
-                                    value={searchType}
-                                    onChange={(e) => setSearchType(e.target.value)}
-                                  >
-                                    <option value="product">Products</option>
-                                    <option value="seller">Seller</option>
-                                    <option value="buyer">Buyer</option>
-                                  </select>
-                                  <div className="position-relative flex-grow-1">
-                                    <input
-                                      type="text"
-                                      className="form-control form-control-lg"
-                                      placeholder="Enter product / service name to search"
-                                      value={searchQuery}
-                                      onChange={(e) => setSearchQuery(e.target.value)}
-                                      onFocus={() => {
-                                        setSearchFocused(true);
-                                        if (searchQuery.length >= 3) setShowDropdown(true);
-                                      }}
-                                      onBlur={() => {
-                                        setSearchFocused(false);
-                                        setTimeout(() => setShowDropdown(false), 150);
-                                      }}
-                                    />
-                                    {showDropdown && suggestions.length > 0 && (
-                                      <ul className="search-suggestion-box list-unstyled shadow-sm">
-                                        {suggestions.map((item) => (
-                                          <li
-                                            key={item.id || item.name}
-                                            onMouseDown={(e) => {
-                                              e.preventDefault();
-                                              handleSuggestionClick(item);
-                                            }}
-                                            className="search-suggestion-item"
-                                          >
-                                            <div className="d-flex align-items-center gap-2">
-                                              <i className="bx bx-history" />
-                                              {item.name}
-                                            </div>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
+                    {homeBanner.length > 1 && (
+                      <>
+                        <button
+                          className="carousel-control-prev"
+                          type="button"
+                          data-bs-target="#carouselExampleCaptions"
+                          data-bs-slide="prev"
+                        >
+                          <span className="carousel-control-prev-icon" aria-hidden="true" />
+                          <span className="visually-hidden">Previous</span>
+                        </button>
+
+                        <button
+                          className="carousel-control-next"
+                          type="button"
+                          data-bs-target="#carouselExampleCaptions"
+                          data-bs-slide="next"
+                        >
+                          <span className="carousel-control-next-icon" aria-hidden="true" />
+                          <span className="visually-hidden">Next</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* RIGHT: static, does not slide */}
+                <div className="col-lg-8">
+                  <div className="hero-search-card">
+                    <div className="hero-search-header">
+                      <h1>{staticTitle}</h1>
+                      <p className="hero-subtitle">{staticSubtitle}</p>
+                    </div>
+                    <form className="hero-search-form" onSubmit={handleSearchSubmit}>
+                      <div className="popularPartbox gap-2">
+                        <select
+                          className="form-select form-select-lg"
+                          value={searchType}
+                          onChange={(e) => setSearchType(e.target.value)}
+                        >
+                          <option value="product">Products</option>
+                          <option value="seller">Seller</option>
+                          <option value="buyer">Buyer</option>
+                        </select>
+                        <div className="position-relative flex-grow-1">
+                          <input
+                            type="text"
+                            className="form-control form-control-lg"
+                            placeholder="Enter product / service name to search"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onFocus={() => {
+                              setSearchFocused(true);
+                              if (searchQuery.length >= 3) setShowDropdown(true);
+                            }}
+                            onBlur={() => {
+                              setSearchFocused(false);
+                              setTimeout(() => setShowDropdown(false), 150);
+                            }}
+                          />
+                          {showDropdown && suggestions.length > 0 && (
+                            <ul className="search-suggestion-box list-unstyled shadow-sm">
+                              {suggestions.map((item) => (
+                                <li
+                                  key={item.id || item.name}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleSuggestionClick(item);
+                                  }}
+                                  className="search-suggestion-item"
+                                >
+                                  <div className="d-flex align-items-center gap-2">
+                                    <i className="bx bx-history" />
+                                    {item.name}
                                   </div>
-                                  <button className="btn btn-primary btn-lg search-btn" type="submit">
-                                    <i className="bx bx-search pe-2" aria-hidden="true" />  Search
-                                  </button>
-                                </div>
-                              </form>
-                              <div className="popular-searches mt-4">
-                                <span>Popular Searches:</span>
-                                <div className="popular-search-list mt-2">
-                                  {popularSearches.map((search, idx) => (
-                                    <button
-                                      key={`${search}-${idx}`}
-                                      type="button"
-                                      className="btn btn-sm btn-search-chip"
-                                      onClick={() => handlePopularSearch(search)}
-                                    >
-                                      <i className={`bx ${searchChipIcon(search)}`} aria-hidden="true" />
-                                      {search}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {searchFocused && normalizeSearchValue(searchQuery).length < 3 && staticPopularSearches.length > 0 && (
+                            <ul className="search-suggestion-box list-unstyled shadow-sm">
+                              <li className="search-suggestion-heading px-3 pt-2 pb-1 text-muted small">Popular Searches</li>
+                              {staticPopularSearches.map((item, idx) => (
+                                <li
+                                  key={`${item}-${idx}`}
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handlePopularSearch(item);
+                                  }}
+                                  className="search-suggestion-item"
+                                >
+                                  <div className="d-flex align-items-center gap-2">
+                                    <i className={`bx ${searchChipIcon(item)}`} />
+                                    {item}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </div>
+                        <button className="btn btn-primary btn-lg search-btn" type="submit">
+                          <i className="bx bx-search pe-2" aria-hidden="true" />  Search
+                        </button>
+                      </div>
+                    </form>
+                    <div className="popular-searches mt-4">
+                      <span>Popular Searches:</span>
+                      <div className="popular-search-list mt-2">
+                        {staticPopularSearches.map((search, idx) => (
+                          <button
+                            key={`${search}-${idx}`}
+                            type="button"
+                            className="btn btn-sm btn-search-chip"
+                            onClick={() => handlePopularSearch(search)}
+                          >
+                            <i className={`bx ${searchChipIcon(search)}`} aria-hidden="true" />
+                            {search}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+
+              </div>
             </div>
-
-            {homeBanner.length > 1 && (
-              <>
-                <button
-                  className="carousel-control-prev"
-                  type="button"
-                  data-bs-target="#carouselExampleCaptions"
-                  data-bs-slide="prev"
-                >
-                  <span className="carousel-control-prev-icon" aria-hidden="true" />
-                  <span className="visually-hidden">Previous</span>
-                </button>
-
-                <button
-                  className="carousel-control-next"
-                  type="button"
-                  data-bs-target="#carouselExampleCaptions"
-                  data-bs-slide="next"
-                >
-                  <span className="carousel-control-next-icon" aria-hidden="true" />
-                  <span className="visually-hidden">Next</span>
-                </button>
-              </>
-            )}
           </div>
         </div>
 

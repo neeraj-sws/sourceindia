@@ -38,6 +38,11 @@ const ProductDetail = () => {
   const [shareQty, setShareQty] = useState("");
   const [relatedCategories, setRelatedCategories] = useState([]);
   const [popularCategories, setPopularCategories] = useState([]);
+  const [currentItemTypes, setCurrentItemTypes] = useState([]);
+  const [siblingItemSubcategories, setSiblingItemSubcategories] = useState([]);
+  const [loadingItemCategories, setLoadingItemCategories] = useState(false);
+  const [allowedItemCategoryIds, setAllowedItemCategoryIds] = useState([]);
+  const [filteredRecommendedCompanies, setFilteredRecommendedCompanies] = useState([]);
   const { user } = UseAuth();
 
   useEffect(() => {
@@ -68,13 +73,184 @@ const ProductDetail = () => {
   }, [product?.company_slug, slug]);
 
   useEffect(() => {
-    axios.get(`${API_BASE_URL}/categories/category-item?is_delete=0&status=1&limit=8`)
-      .then(res => setRelatedCategories(res.data || []))
-      .catch(() => { });
     axios.get(`${API_BASE_URL}/categories?is_delete=0&status=1&limit=40`)
       .then(res => setPopularCategories(res.data || []))
       .catch(() => { });
   }, []);
+
+  useEffect(() => {
+    const loadCurrentItemTypes = async () => {
+      const categoryId = product?.category_id || product?.category || product?.categoryId;
+      const subCategoryId = product?.sub_category_id || product?.subcategory_id || product?.subCategoryId;
+      const itemCategoryId = product?.item_category_id || product?.itemCategoryId;
+
+      if (!categoryId || !subCategoryId || !itemCategoryId) {
+        setCurrentItemTypes([]);
+        return;
+      }
+
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory-all/${categoryId}/${subCategoryId}/${itemCategoryId}`
+        );
+
+        const itemSubCategories = Array.isArray(res.data)
+          ? res.data
+          : (
+            res.data?.item_sub_categories ||
+            res.data?.itemSubCategories ||
+            res.data?.item_categories ||
+            res.data?.itemCategories ||
+            res.data?.data ||
+            []
+          );
+
+        console.log("Fetched current item types:", itemSubCategories);
+
+        setCurrentItemTypes(itemSubCategories);
+      } catch (error) {
+        console.error("Error fetching current item types:", error);
+        setCurrentItemTypes([]);
+      }
+    };
+
+    if (product) loadCurrentItemTypes();
+  }, [product]);
+
+  useEffect(() => {
+    const loadItemCategories = async () => {
+      const categoryId = product?.category_id || product?.category || product?.categoryId;
+      const subCategoryId = product?.sub_category_id || product?.subcategory_id || product?.subCategoryId;
+      const itemCategoryId = product?.item_category_id || product?.itemCategoryId;
+      const currentItemSubCategoryId = product?.item_subcategory_id || product?.itemSubcategoryId;
+
+      if (!categoryId || !subCategoryId || !itemCategoryId) {
+        setSiblingItemSubcategories([]);
+        return;
+      }
+
+      setLoadingItemCategories(true);
+      try {
+        const subCategoryRes = await axios.get(
+          `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory-all/${categoryId}/${subCategoryId}/${itemCategoryId}`
+        );
+
+        const itemSubCategories = Array.isArray(subCategoryRes.data)
+          ? subCategoryRes.data
+          : (subCategoryRes.data?.item_sub_categories || subCategoryRes.data?.item_categories || []);
+
+        const siblingSubCategories = itemSubCategories
+          .filter((item) => String(item.id) !== String(currentItemSubCategoryId))
+          .filter((item) => Number(item.product_count || 0) > 0);
+
+        setSiblingItemSubcategories(siblingSubCategories);
+      } catch (error) {
+        console.error("Error fetching item subcategory groups:", error);
+        setSiblingItemSubcategories([]);
+      } finally {
+        setLoadingItemCategories(false);
+      }
+    };
+
+    if (product) loadItemCategories();
+  }, [product]);
+
+  useEffect(() => {
+    const loadPriorityItemCategory = async () => {
+      const categoryId = product?.category_id || product?.category || product?.categoryId;
+      const subCategoryId = product?.sub_category_id || product?.subcategory_id || product?.subCategoryId;
+      const itemSubCategoryId = product?.item_subcategory_id || product?.itemSubcategoryId;
+
+      if (!categoryId || !subCategoryId || !itemSubCategoryId) {
+        setAllowedItemCategoryIds([]);
+        return;
+      }
+
+      try {
+        const [itemSubCategoryRes, itemCategoryRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/item_sub_category/${itemSubCategoryId}`),
+          axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${categoryId}/${subCategoryId}`),
+        ]);
+
+        const itemSubCategory = itemSubCategoryRes.data || {};
+        const itemCategories = Array.isArray(itemCategoryRes.data)
+          ? itemCategoryRes.data
+          : (itemCategoryRes.data?.item_categories || []);
+
+        const priorityItemCategoryId =
+          itemSubCategory.priority_item_category_id ||
+          itemSubCategory.priorityItemCategoryId ||
+          product?.priority_item_category_id ||
+          product?.priorityItemCategoryId ||
+          product?.item_category_id ||
+          product?.itemCategoryId;
+
+        const priorityIndex = itemCategories.findIndex(
+          (item) => String(item.id) === String(priorityItemCategoryId)
+        );
+
+        const allowedIds = priorityIndex >= 0
+          ? itemCategories.slice(0, priorityIndex + 1).map((item) => item.id)
+          : (priorityItemCategoryId ? [priorityItemCategoryId] : itemCategories.map((item) => item.id));
+
+        setAllowedItemCategoryIds(allowedIds);
+      } catch (error) {
+        console.error("Error loading priority item category:", error);
+        setAllowedItemCategoryIds([]);
+      }
+    };
+
+    if (product) loadPriorityItemCategory();
+  }, [product]);
+
+  useEffect(() => {
+    const loadRecommendedCompanies = async () => {
+      const sourceCompanies = Array.isArray(product?.recommended_companies) ? product.recommended_companies : [];
+      const currentItemSubcategoryId = product?.item_subcategory_id || product?.itemSubcategoryId;
+
+      if (!sourceCompanies.length || !currentItemSubcategoryId) {
+        setFilteredRecommendedCompanies([]);
+        return;
+      }
+
+      try {
+        const companyChecks = await Promise.all(
+          sourceCompanies.map(async (company) => {
+            if (!company?.organization_slug) return null;
+
+            try {
+              const res = await axios.get(`${API_BASE_URL}/products/companies/${company.organization_slug}`);
+              const products = Array.isArray(res.data?.products) ? res.data.products : [];
+
+              const hasMatchingProduct = products.some((item) => {
+                const itemSubcategoryId = item?.item_subcategory_id || item?.itemSubcategoryId;
+                const itemCategoryId = item?.item_category_id || item?.itemCategoryId;
+
+                if (String(itemSubcategoryId) !== String(currentItemSubcategoryId)) return false;
+
+                if (allowedItemCategoryIds.length > 0) {
+                  return allowedItemCategoryIds.some((allowedId) => String(allowedId) === String(itemCategoryId));
+                }
+
+                return true;
+              });
+
+              return hasMatchingProduct ? company : null;
+            } catch (error) {
+              return null;
+            }
+          })
+        );
+
+        setFilteredRecommendedCompanies(companyChecks.filter(Boolean));
+      } catch (error) {
+        console.error("Error filtering recommended companies:", error);
+        setFilteredRecommendedCompanies([]);
+      }
+    };
+
+    if (product) loadRecommendedCompanies();
+  }, [product, allowedItemCategoryIds]);
 
   const timeAgo = (date) => {
     if (!date) return '—';
@@ -202,11 +378,39 @@ const ProductDetail = () => {
     return imgs;
   })();
 
-  const similarProducts = Array.isArray(product?.similar_products) ? product.similar_products : [];
+  const currentItemSubcategoryId = product?.item_subcategory_id || product?.itemSubcategoryId;
+  const currentItemCategoryId = product?.item_category_id || product?.itemCategoryId;
+  const currentCategoryId = product?.category_id || product?.category || product?.categoryId;
+  const currentSubCategoryId = product?.sub_category_id || product?.subcategory_id || product?.subCategoryId;
+  const priorityItemCategoryId =
+    product?.priority_item_category_id ||
+    product?.priorityItemCategoryId ||
+    product?.priority_item_category ||
+    product?.priorityItemCategory;
 
-  const recommendedCompanies = (Array.isArray(product?.recommended_companies)
-    ? product.recommended_companies
-    : []
+  const similarProducts = (Array.isArray(product?.similar_products) ? product.similar_products : [])
+    .filter((item) => {
+      if (!currentItemSubcategoryId) return true;
+      const itemSubcategoryId = item?.item_subcategory_id || item?.itemSubcategoryId;
+      return String(itemSubcategoryId) === String(currentItemSubcategoryId);
+    })
+    .filter((item) => {
+      const itemCategoryId = item?.item_category_id || item?.itemCategoryId;
+
+      if (allowedItemCategoryIds.length > 0) {
+        return allowedItemCategoryIds.some((allowedId) => String(allowedId) === String(itemCategoryId));
+      }
+
+      if (currentItemCategoryId) {
+        return String(itemCategoryId) === String(currentItemCategoryId);
+      }
+
+      return true;
+    });
+
+  const recommendedCompanies = (filteredRecommendedCompanies.length > 0
+    ? filteredRecommendedCompanies
+    : (Array.isArray(product?.recommended_companies) ? product.recommended_companies : [])
   ).filter((item) => item?.company_logo_file);
 
   const handleSubmit = async (e) => {
@@ -432,6 +636,44 @@ const ProductDetail = () => {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {(loadingItemCategories || siblingItemSubcategories.length > 0) && (
+                  <div className="mb-4 pd-sibling-panel">
+                    <div className="pd-sibling-head">
+                      <h6 className="mb-0">Browse Related Categories</h6>
+                    </div>
+                    {loadingItemCategories ? (
+                      <p className="text-secondary mb-0 px-3 pb-3">Loading item subcategories...</p>
+                    ) : (
+                      <div className="pd-sibling-grid">
+                        {siblingItemSubcategories.map((item) => (
+                          <a
+                            key={item.id}
+                            href={`/products?category_id=${product.category_id || product.category}&subcategory_id=${product.sub_category_id || product.subcategory_id}&item_category_id=${product.item_category_id || product.itemCategoryId}&item_subcategory_id=${item.id}`}
+                            className="pd-sibling-card text-decoration-none"
+                          >
+                            <div className="pd-sibling-thumb">
+                              <img
+                                src={item.file_name ? `${ROOT_URL}/${item.file_name}` : "/default.png"}
+                                alt={item.name}
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = "/default.png";
+                                }}
+                              />
+                            </div>
+                            <div className="pd-sibling-name">
+                              <span title={item.name}>{item.name}</span>
+                              {Number(item.product_count || 0) > 0 && (
+                                <small>({item.product_count})</small>
+                              )}
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -823,18 +1065,26 @@ const ProductDetail = () => {
       </div>
 
       {/* Browse Related Categories */}
-      {relatedCategories.length > 0 && (
+      {true && (
         <div className="container-fluid px-4 py-4">
-          <h5 className="pd-section-title mb-4">Browse Related Categories</h5>
-          <div className="pd-related-grid">
-            {relatedCategories.map((cat) => (
-              <Link key={cat.id} to={`/items/${cat.slug}`} className="pd-rel-cat-card text-decoration-none">
-                <div className="pd-rel-cat-img">
-                  <ImageFront src={`${ROOT_URL}/${cat.file_name || cat.image}`} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} showFallback />
-                </div>
-                <span className="pd-rel-cat-name">{cat.name}</span>
-              </Link>
-            ))}
+          <h5 className="pd-section-title mb-4">Item Subcategories</h5>
+          {currentItemTypes.length > 0 ? (
+            <div className="pd-related-grid">
+              {currentItemTypes.map((cat) => (
+                <Link key={cat.id} to={`/products?category_id=${product.category_id || product.category}&subcategory_id=${product.sub_category_id || product.subcategory_id}&item_category_id=${product.item_category_id || product.itemCategoryId}&item_subcategory_id=${cat.id}`} className="pd-rel-cat-card text-decoration-none">
+                  <div className="pd-rel-cat-img">
+                    <ImageFront src={`${ROOT_URL}/${cat.file_name || cat.image}`} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} showFallback />
+                  </div>
+                  <span className="pd-rel-cat-name">{cat.name}</span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-muted px-1">No item subcategories found for this item category.</div>
+          )}
+          <div className="mt-3 p-3 border rounded bg-light small text-muted">
+            <div><strong>Debug:</strong> category_id = {String(currentCategoryId || "-")}, sub_category_id = {String(currentSubCategoryId || "-")}, item_category_id = {String(currentItemCategoryId || "-")}, item_subcategory_id = {String(currentItemSubcategoryId || "-")}</div>
+            <div className="mt-1">Fetched item subcategories: {currentItemTypes.length}</div>
           </div>
         </div>
       )}
