@@ -628,43 +628,6 @@ const ProductDetail = () => {
                   </div>
                 )}
 
-                {(loadingItemCategories || siblingItemSubcategories.length > 0) && (
-                  <div className="mb-4 pd-sibling-panel">
-                    <div className="pd-sibling-head">
-                      <h6 className="mb-0">Browse Related Categories</h6>
-                    </div>
-                    {loadingItemCategories ? (
-                      <p className="text-secondary mb-0 px-3 pb-3">Loading item subcategories...</p>
-                    ) : (
-                      <div className="pd-sibling-grid">
-                        {siblingItemSubcategories.map((item) => (
-                          <a
-                            key={item.id}
-                            href={`/products?category_id=${product.category_id || product.category}&subcategory_id=${product.sub_category_id || product.subcategory_id}&item_category_id=${product.item_category_id || product.itemCategoryId}&item_subcategory_id=${item.id}`}
-                            className="pd-sibling-card text-decoration-none"
-                          >
-                            <div className="pd-sibling-thumb">
-                              <img
-                                src={item.file_name ? `${ROOT_URL}/${item.file_name}` : "/default.png"}
-                                alt={item.name}
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = "/default.png";
-                                }}
-                              />
-                            </div>
-                            <div className="pd-sibling-name">
-                              <span title={item.name}>{item.name}</span>
-                              {Number(item.product_count || 0) > 0 && (
-                                <small>({item.product_count})</small>
-                              )}
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 {/* Company Overview */}
                 {(product.brief_company || product.organizations_product_description) && (
