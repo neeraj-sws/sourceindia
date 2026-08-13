@@ -185,8 +185,8 @@ const HomeCategoryShowcase = () => {
 
   if (loading) {
     return (
-      <section className="homeCategoryShowcase py-md-4 py-3">
-        <div className="container-xl browseCategoriesContainer">
+      <section className="homeCategoryShowcase py-md-4 py-5">
+        <div className="container-fluid px-4 browseCategoriesContainer">
           <div className="browseCategories">
             <SidebarSkeleton />
             <div className="trendingCategories">
@@ -204,8 +204,8 @@ const HomeCategoryShowcase = () => {
   if (!hasCategories && !hasTrending) return null;
 
   return (
-    <section className="homeCategoryShowcase py-md-4 py-3">
-      <div className="container-xl browseCategoriesContainer">
+    <section className="homeCategoryShowcase py-md-4 py-5 my-3">
+      <div className="container-fluid px-5 browseCategoriesContainer">
         <div className="browseCategories">
           {/* ===== LEFT - TOP CATEGORIES (hover mega menu) ===== */}
           {hasCategories && (
@@ -218,64 +218,64 @@ const HomeCategoryShowcase = () => {
                 {categories.slice(0, 10).map((cat, index) => {
                   const isOpen = openCat === index;
                   return (
-                  <li
-                    className={`mcl-iteam${isOpen ? " open" : ""}`}
-                    key={cat.id}
-                  >
-                    <Link to={`/categories/${cat.slug}`} className="mcl-iteam-link">
-                      {cat.file_name && (
-                        <img
-                          className="svg_icon"
-                          src={`${ROOT_URL}/${cat.file_name}`}
-                          alt=""
-                          width={24}
-                          height={24}
-                          loading="lazy"
-                          decoding="async"
-                        />
+                    <li
+                      className={`mcl-iteam${isOpen ? " open" : ""}`}
+                      key={cat.id}
+                    >
+                      <Link to={`/categories/${cat.slug}`} className="mcl-iteam-link">
+                        {cat.file_name && (
+                          <img
+                            className="svg_icon"
+                            src={`${ROOT_URL}/${cat.file_name}`}
+                            alt=""
+                            width={24}
+                            height={24}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        )}
+                        <span className="mcl-iteam-name">{cat.name}</span>
+                        <i className="bx bx-chevron-right mcl-iteam-arrow"></i>
+                      </Link>
+                      {cat.subcategories && cat.subcategories.length > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            className="mcl-iteam-toggle"
+                            aria-expanded={isOpen}
+                            aria-label={`Toggle ${cat.name} subcategories`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setOpenCat(isOpen ? null : index);
+                            }}
+                          >
+                            <i className={`bx ${isOpen ? "bx-chevron-up" : "bx-chevron-down"}`}></i>
+                          </button>
+                          <ul className="mcsc">
+                            {cat.subcategories.map((sub) => (
+                              <li className="mcsc-iteam" key={sub.id}>
+                                <p className="mcsc-heading">
+                                  <Link to={`/categories/${cat.slug}/${sub.slug}`}>{sub.name}</Link>
+                                </p>
+                                <ul className="mcsc-list">
+                                  {(sub.item_categories || []).slice(0, 5).map((ic) => (
+                                    <li key={ic.id}>
+                                      <Link to={itemCategoryPath(cat, sub, ic)}>{ic.name}</Link>
+                                    </li>
+                                  ))}
+                                  {(sub.item_categories || []).length > 5 && (
+                                    <li className="mcsc-view-all">
+                                      <Link to={`/categories/${cat.slug}/${sub.slug}`}>View More</Link>
+                                    </li>
+                                  )}
+                                </ul>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
                       )}
-                      <span className="mcl-iteam-name">{cat.name}</span>
-                      <i className="bx bx-chevron-right mcl-iteam-arrow"></i>
-                    </Link>
-                    {cat.subcategories && cat.subcategories.length > 0 && (
-                      <>
-                      <button
-                        type="button"
-                        className="mcl-iteam-toggle"
-                        aria-expanded={isOpen}
-                        aria-label={`Toggle ${cat.name} subcategories`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setOpenCat(isOpen ? null : index);
-                        }}
-                      >
-                        <i className={`bx ${isOpen ? "bx-chevron-up" : "bx-chevron-down"}`}></i>
-                      </button>
-                      <ul className="mcsc">
-                        {cat.subcategories.map((sub) => (
-                          <li className="mcsc-iteam" key={sub.id}>
-                            <p className="mcsc-heading">
-                              <Link to={`/categories/${cat.slug}/${sub.slug}`}>{sub.name}</Link>
-                            </p>
-                            <ul className="mcsc-list">
-                              {(sub.item_categories || []).slice(0, 5).map((ic) => (
-                                <li key={ic.id}>
-                                  <Link to={itemCategoryPath(cat, sub, ic)}>{ic.name}</Link>
-                                </li>
-                              ))}
-                              {(sub.item_categories || []).length > 5 && (
-                                <li className="mcsc-view-all">
-                                  <Link to={`/categories/${cat.slug}/${sub.slug}`}>View More</Link>
-                                </li>
-                              )}
-                            </ul>
-                          </li>
-                        ))}
-                      </ul>
-                      </>
-                    )}
-                  </li>
+                    </li>
                   );
                 })}
               </ul>
@@ -340,17 +340,17 @@ const HomeCategoryShowcase = () => {
                           ></i>
                         )} */}
                         <img
-  src={ic.file_name ? `${ROOT_URL}/${ic.file_name}` : "/default.png"}
-  alt={ic.name}
-  loading="lazy"
-  decoding="async"
-  width={200}
-  height={200}
-  onError={(e) => {
-    e.currentTarget.onerror = null;
-    e.currentTarget.src = "/default.png";
-  }}
-/>
+                          src={ic.file_name ? `${ROOT_URL}/${ic.file_name}` : "/default.png"}
+                          alt={ic.name}
+                          loading="lazy"
+                          decoding="async"
+                          width={200}
+                          height={200}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = "/default.png";
+                          }}
+                        />
                       </div>
                       <div className="tren_title">{ic.name}</div>
                     </Link>

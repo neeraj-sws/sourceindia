@@ -4,6 +4,7 @@ import axios from "axios";
 import { Link, useNavigate } from 'react-router-dom';
 import ImageWithFallback from '../admin/common/ImageWithFallback';
 import Carousel from 'bootstrap/js/dist/carousel';
+import HomeCategoryShowcase from '../sections/HomeCategoryShowcase';
 
 const Banner = () => {
 
@@ -376,7 +377,7 @@ const Banner = () => {
             </div>
           </div>
         </div>
-
+        <HomeCategoryShowcase />
         <section className="popular-categories-section py-5">
           <div className="container-xl">
             <div className="section-title text-center mx-auto mb-4">
