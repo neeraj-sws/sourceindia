@@ -13,10 +13,8 @@ const Home = () => {
   return (
     <>
       <Suspense fallback={<div></div>}>
-        <HomePopupBanner />
-        <Banner />
-        <HomeCategoryShowcase />
-
+        <HomePopupBanner />        
+        <Banner />  
         <CommonSection />
         <Product />
         <CategoryMain limit={6} isHome={true} />

@@ -80,19 +80,16 @@ const ProductDetail = () => {
 
   useEffect(() => {
     const loadCurrentItemTypes = async () => {
-      const categoryId = product?.category_id || product?.category || product?.categoryId;
-      const subCategoryId = product?.sub_category_id || product?.subcategory_id || product?.subCategoryId;
-      const itemCategoryId = product?.item_category_id || product?.itemCategoryId;
+      const itemCategoryName = String(product?.item_category_name || "").trim().toLowerCase();
+      const currentItemSubCategoryName = String(product?.item_subcategory_name || "").trim().toLowerCase();
 
-      if (!categoryId || !subCategoryId || !itemCategoryId) {
+      if (!itemCategoryName) {
         setCurrentItemTypes([]);
         return;
       }
 
       try {
-        const res = await axios.get(
-          `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory-all/${categoryId}/${subCategoryId}/${itemCategoryId}`
-        );
+        const res = await axios.get(`${API_BASE_URL}/item_sub_category`);
 
         const itemSubCategories = Array.isArray(res.data)
           ? res.data
@@ -105,9 +102,15 @@ const ProductDetail = () => {
             []
           );
 
-        console.log("Fetched current item types:", itemSubCategories);
+        const matched = itemSubCategories.filter((item) => {
+          const itemCategoryLabel = String(item.itemcategory_name || item.item_category_name || item?.ItemCategory?.name || "").trim().toLowerCase();
+          return itemCategoryLabel === itemCategoryName;
+        });
 
-        setCurrentItemTypes(itemSubCategories);
+        setCurrentItemTypes(matched.length > 0 ? matched : itemSubCategories.filter((item) => {
+          const itemName = String(item.name || "").trim().toLowerCase();
+          return itemName === currentItemSubCategoryName;
+        }));
       } catch (error) {
         console.error("Error fetching current item types:", error);
         setCurrentItemTypes([]);
@@ -119,29 +122,27 @@ const ProductDetail = () => {
 
   useEffect(() => {
     const loadItemCategories = async () => {
-      const categoryId = product?.category_id || product?.category || product?.categoryId;
-      const subCategoryId = product?.sub_category_id || product?.subcategory_id || product?.subCategoryId;
-      const itemCategoryId = product?.item_category_id || product?.itemCategoryId;
-      const currentItemSubCategoryId = product?.item_subcategory_id || product?.itemSubcategoryId;
+      const itemCategoryName = String(product?.item_category_name || "").trim().toLowerCase();
+      const currentItemSubCategoryName = String(product?.item_subcategory_name || "").trim().toLowerCase();
 
-      if (!categoryId || !subCategoryId || !itemCategoryId) {
+      if (!itemCategoryName) {
         setSiblingItemSubcategories([]);
         return;
       }
 
       setLoadingItemCategories(true);
       try {
-        const subCategoryRes = await axios.get(
-          `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory-all/${categoryId}/${subCategoryId}/${itemCategoryId}`
-        );
+        const subCategoryRes = await axios.get(`${API_BASE_URL}/item_sub_category`);
 
         const itemSubCategories = Array.isArray(subCategoryRes.data)
           ? subCategoryRes.data
-          : (subCategoryRes.data?.item_sub_categories || subCategoryRes.data?.item_categories || []);
+          : (subCategoryRes.data?.item_sub_categories || subCategoryRes.data?.item_categories || subCategoryRes.data?.data || []);
 
-        const siblingSubCategories = itemSubCategories
-          .filter((item) => String(item.id) !== String(currentItemSubCategoryId))
-          .filter((item) => Number(item.product_count || 0) > 0);
+        const siblingSubCategories = itemSubCategories.filter((item) => {
+          const itemCategoryLabel = String(item.itemcategory_name || item.item_category_name || item?.ItemCategory?.name || "").trim().toLowerCase();
+          const itemName = String(item.name || "").trim().toLowerCase();
+          return itemCategoryLabel === itemCategoryName && itemName !== currentItemSubCategoryName;
+        });
 
         setSiblingItemSubcategories(siblingSubCategories);
       } catch (error) {
@@ -382,11 +383,7 @@ const ProductDetail = () => {
   const currentItemCategoryId = product?.item_category_id || product?.itemCategoryId;
   const currentCategoryId = product?.category_id || product?.category || product?.categoryId;
   const currentSubCategoryId = product?.sub_category_id || product?.subcategory_id || product?.subCategoryId;
-  const priorityItemCategoryId =
-    product?.priority_item_category_id ||
-    product?.priorityItemCategoryId ||
-    product?.priority_item_category ||
-    product?.priorityItemCategory;
+  const currentItemCategoryName = String(product?.item_category_name || "").trim().toLowerCase();
 
   const similarProducts = (Array.isArray(product?.similar_products) ? product.similar_products : [])
     .filter((item) => {
@@ -395,16 +392,8 @@ const ProductDetail = () => {
       return String(itemSubcategoryId) === String(currentItemSubcategoryId);
     })
     .filter((item) => {
-      const itemCategoryId = item?.item_category_id || item?.itemCategoryId;
-
-      if (allowedItemCategoryIds.length > 0) {
-        return allowedItemCategoryIds.some((allowedId) => String(allowedId) === String(itemCategoryId));
-      }
-
-      if (currentItemCategoryId) {
-        return String(itemCategoryId) === String(currentItemCategoryId);
-      }
-
+      const itemCategoryName = String(item?.item_category_name || item?.itemCategoryName || "").trim().toLowerCase();
+      if (currentItemCategoryName) return itemCategoryName === currentItemCategoryName;
       return true;
     });
 
@@ -1067,7 +1056,8 @@ const ProductDetail = () => {
       {/* Browse Related Categories */}
       {true && (
         <div className="container-fluid px-4 py-4">
-          <h5 className="pd-section-title mb-4">Item Subcategories</h5>
+          <h5 className="pd-section-title mb-4">Browse Related Categories
+</h5>
           {currentItemTypes.length > 0 ? (
             <div className="pd-related-grid">
               {currentItemTypes.map((cat) => (
@@ -1082,10 +1072,7 @@ const ProductDetail = () => {
           ) : (
             <div className="text-muted px-1">No item subcategories found for this item category.</div>
           )}
-          <div className="mt-3 p-3 border rounded bg-light small text-muted">
-            <div><strong>Debug:</strong> category_id = {String(currentCategoryId || "-")}, sub_category_id = {String(currentSubCategoryId || "-")}, item_category_id = {String(currentItemCategoryId || "-")}, item_subcategory_id = {String(currentItemSubcategoryId || "-")}</div>
-            <div className="mt-1">Fetched item subcategories: {currentItemTypes.length}</div>
-          </div>
+         
         </div>
       )}
 
