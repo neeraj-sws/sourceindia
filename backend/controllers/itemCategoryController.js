@@ -800,11 +800,14 @@ exports.getItemCategoriesBySelectedCategoryAndSubCategory = async (req, res) => 
       where: {
         category_id: { [Op.in]: categories },
         subcategory_id: { [Op.in]: subcategories },
-        status: 1
+        status: 1,
+        is_delete: 0
       },
       include: [
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+                { model: UploadImage, attributes: ['file'] },
+
       ],
       order: [['id', 'ASC']],
     });
@@ -836,7 +839,11 @@ exports.getItemCategoriesBySelectedCategoryAndSubCategory = async (req, res) => 
         getStatus: catData.status === 1 ? 'Active' : 'Inactive',
         category_name: catData.Categories?.name || null,
         subcategory_name: catData.SubCategories?.name || null,
-        product_count: productCountMap[catData.id] || 0
+        file_name: catData.UploadImage?.file || null,
+        product_count: productCountMap[catData.id] || 0,
+        Categories: undefined,
+        SubCategories: undefined,
+        UploadImage: undefined,
       };
     });
 
