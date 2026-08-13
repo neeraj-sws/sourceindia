@@ -29,6 +29,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
   const isValidEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
+  const isValidPhone = (value) => /^[6-9]\d{9}$/.test(String(value || "").trim());
   const [selectedProductId, setSelectedProductId] = useState(productId || '');
   const { user, login } = useAuth();
 
@@ -159,6 +160,11 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
       showNotification('Please select a product', 'error');
       return;
     }
+    if (!isValidPhone(phone)) {
+      setError('Please enter a valid 10-digit mobile number');
+      showNotification('Please enter a valid 10-digit mobile number', 'error');
+      return;
+    }
     setLoading(true);
     try {
       await axios.post(`${API_BASE_URL}/enquiries/store`, {
@@ -191,6 +197,11 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
     if (!selectedProductId && !productId) {
       setError('Please select a product');
       showNotification('Please select a product', 'error');
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      setError('Please enter a valid 10-digit mobile number');
+      showNotification('Please enter a valid 10-digit mobile number', 'error');
       return;
     }
     setLoading(true);
@@ -438,12 +449,15 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
 
                             <div className="form-group mb-3">
                               <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[6-9][0-9]{9}"
+                                maxLength={10}
                                 className="form-control"
                                 placeholder="Phone *"
                                 value={phone}
                                 onChange={(e) => {
-                                  const value = e.target.value;
+                                  const value = e.target.value.replace(/\D/g, '');
                                   if (value.length <= 10) {
                                     setPhone(value);
                                   }
@@ -451,6 +465,11 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                                 required
                               />
                             </div>
+                            {!isValidPhone(phone) && phone.length > 0 && (
+                              <div className="text-danger small mb-3">
+                                Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.
+                              </div>
+                            )}
                             <div className="form-group mb-3">
                               <textarea
                                 className="form-control"
@@ -567,10 +586,10 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                             </select>
                           </div>
                         )}
-                        <div className="form-group mb-3 mt-4">
-                          <label>
-                            Quantity <sup className="text-danger">*</sup>
-                          </label>
+                            <div className="form-group mb-3 mt-4">
+                              <label>
+                                Quantity <sup className="text-danger">*</sup>
+                              </label>
 
                           <div className="input-group">
                             <input
@@ -585,19 +604,43 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                             <span className="input-group-text">Qty</span>
                           </div>
                         </div>
-                        <div className="form-group my-2">
-                          <label>Message<sup className="text-danger">*</sup></label>
-                          <textarea
-                            className="form-control"
+                            <div className="form-group my-2">
+                              <label>Message<sup className="text-danger">*</sup></label>
+                              <textarea
+                                className="form-control"
                             rows="4"
                             placeholder="Message"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            required
-                            style={{ height: "100px" }}
-                          />
-                        </div>
-                      </form>
+                                required
+                                style={{ height: "100px" }}
+                              />
+                            </div>
+                            <div className="form-group mb-3">
+                              <label>Phone <sup className="text-danger">*</sup></label>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[6-9][0-9]{9}"
+                                maxLength={10}
+                                className="form-control"
+                                placeholder="Phone"
+                                value={phone}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '');
+                                  if (value.length <= 10) {
+                                    setPhone(value);
+                                  }
+                                }}
+                                required
+                              />
+                            </div>
+                            {!isValidPhone(phone) && phone.length > 0 && (
+                              <div className="text-danger small mb-3">
+                                Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.
+                              </div>
+                            )}
+                          </form>
                       <div className="modal-footer border-0 mt-3 p-0 pt-5">
                         <button
                           type="submit"
