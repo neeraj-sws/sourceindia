@@ -223,6 +223,12 @@ const menuData = [
     link: '/admin/user_activity',
   },
   {
+    key: 'category_conflict_logs',
+    title: 'Conflict Logs',
+    icon: 'bx bx-error',
+    link: '/admin/category_conflict_logs',
+  },
+  {
     title: 'Pages',
     icon: 'bx bx-file-blank',
     subMenu: [

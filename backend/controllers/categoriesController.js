@@ -14,6 +14,7 @@ const Products = require('../models/Products');
 const CompanyInfo = require('../models/CompanyInfo');
 const SellerCategory = require('../models/SellerCategory');
 const getMulterUpload = require('../utils/upload');
+const { findCategoryNameConflict, logCategoryConflict } = require('../utils/categoryNameConflictHelper');
 
 exports.createCategories = async (req, res) => {
   const upload = getMulterUpload('category');
@@ -27,6 +28,24 @@ exports.createCategories = async (req, res) => {
       const uploadImage = await UploadImage.create({
         file: `upload/category/${req.file.filename}`,
       });
+      const nameConflict = await findCategoryNameConflict(name, [
+        { model: Categories, module: 'Category' },
+        { model: SubCategories, module: 'Sub Category' },
+        { model: ItemCategory, module: 'Item Category' },
+        { model: ItemSubCategory, module: 'Item Sub Category' },
+      ]);
+      if (nameConflict) {
+        await logCategoryConflict({
+          sourceModule: 'Category',
+          conflictModule: nameConflict.conflictModule,
+          conflictFlow: nameConflict.conflictFlow,
+          conflictName: name,
+        });
+        await uploadImage.destroy();
+        return res.status(400).json({
+          error: 'Category name already exists. Please check logs.'
+        });
+      }
       const categories = await Categories.create({
         name,
         top_category,
@@ -38,7 +57,7 @@ exports.createCategories = async (req, res) => {
       // ✅ Handle unique constraint violation
       if (err.name === 'SequelizeUniqueConstraintError' || err.errors?.[0]?.validatorKey === 'not_unique') {
         return res.status(400).json({
-          error: 'Category name already exists. Please use a different name.'
+          error: 'Category name already exists. Please check logs.'
         });
       }
       res.status(500).json({ error: err.message });
@@ -246,6 +265,24 @@ exports.updateCategories = async (req, res) => {
       if (name !== undefined) categories.name = name;
       if (top_category !== undefined) categories.top_category = top_category;
       if (status !== undefined) categories.status = status;
+
+      const nameConflict = await findCategoryNameConflict(categories.name, [
+        { model: Categories, module: 'Category' },
+        { model: SubCategories, module: 'Sub Category' },
+        { model: ItemCategory, module: 'Item Category' },
+        { model: ItemSubCategory, module: 'Item Sub Category' },
+      ], categories.id);
+      if (nameConflict) {
+        await logCategoryConflict({
+          sourceModule: 'Category',
+          conflictModule: nameConflict.conflictModule,
+          conflictFlow: nameConflict.conflictFlow,
+          conflictName: categories.name,
+        });
+        return res.status(400).json({
+          error: 'Category name already exists. Please check logs.'
+        });
+      }
 
       categories.updated_at = new Date();
       await categories.save();

@@ -6,6 +6,7 @@ const Product = lazy(() => import('../sections/Product'));
 const Company = lazy(() => import('../sections/Company'));
 const CategoryMain = lazy(() => import('../sections/CategoryMain'));
 const HomePopupBanner = lazy(() => import('../components/HomePopupBanner'));
+const HomeCategoryShowcase = lazy(() => import('../sections/HomeCategoryShowcase'));
 
 const Home = () => {
 
@@ -14,6 +15,8 @@ const Home = () => {
       <Suspense fallback={<div></div>}>
         <HomePopupBanner />
         <Banner />
+        <HomeCategoryShowcase />
+
         <CommonSection />
         <Product />
         <CategoryMain limit={6} isHome={true} />
