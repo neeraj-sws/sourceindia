@@ -437,7 +437,7 @@ const Banner = () => {
 
 
 
-        <section className="banner-stats-section py-4">
+        <section className="banner-stats-section py-4 d-none">
           <div className="container-xl">
             <div className="gridBox text-center justify-content-center rounded-4 shadow-sm bg-white px-5">
               {[
