@@ -806,37 +806,106 @@ const ProductDetail = () => {
       <div className="container-fluid px-4 py-0">
         <div className="row g-3">
           <div className="col-9">
+
             <div className="pd-share-form">
+
+              {/* Header */}
               <div className="pd-sf-header">
-                <span>Share your requirements for a quick response!</span>
-                <span className="pd-sf-badge">Save Your Time ▼</span>
+                <div className="pd-sf-title">
+                  <span className="pd-sf-icon">💬</span>
+                  <div>
+                    <h5>Share your requirements for a quick response!</h5>
+                    <p>Tell us what you need and get the best quotes quickly.</p>
+                  </div>
+                </div>
+
+                <span className="pd-sf-badge">
+                  Save Your Time ▼
+                </span>
               </div>
+
+              {/* Body */}
               <div className="pd-sf-body">
+
+                {/* Looking For */}
                 <div className="mb-3">
-                  <label className="form-label small">Looking for</label>
-                  <input type="text" className="form-control" defaultValue={product.title} readOnly />
+                  <label className="form-label">
+                    Looking for
+                  </label>
+
+                  <input
+                    type="text"
+                    className="form-control"
+                    defaultValue={product.title}
+                    readOnly
+                  />
                 </div>
+
+                {/* Quantity + Mobile */}
                 <div className="row g-3 mb-3">
+
+                  {/* Quantity */}
                   <div className="col-md-6">
-                    <label className="form-label small">Quantity</label>
+                    <label className="form-label">
+                      Quantity
+                    </label>
+
                     <div className="input-group">
-                      <input type="number" className="form-control" placeholder="" value={shareQty} onChange={e => setShareQty(e.target.value)} min="1" />
-                      <span className="input-group-text">Unit of Measurement</span>
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="Enter quantity"
+                        value={shareQty}
+                        onChange={e => setShareQty(e.target.value)}
+                        min="1"
+                      />
+
+                      <span className="input-group-text">
+                        Unit of Measurement
+                      </span>
                     </div>
                   </div>
+
+                  {/* Mobile */}
                   <div className="col-md-6">
-                    <label className="form-label small">Your Mobile No.</label>
+                    <label className="form-label">
+                      Your Mobile No.
+                    </label>
+
                     <div className="input-group">
-                      <span className="input-group-text">🇮🇳 +91</span>
-                      <input type="tel" className="form-control" placeholder="Mobile No." value={sharePhone} onChange={e => setSharePhone(e.target.value)} maxLength={10} />
+
+                      <span className="input-group-text pd-country-code">
+                        🇮🇳 +91
+                      </span>
+
+                      <input
+                        type="tel"
+                        className="form-control"
+                        placeholder="Mobile No."
+                        value={sharePhone}
+                        onChange={e => setSharePhone(e.target.value)}
+                        maxLength={10}
+                      />
+
                     </div>
                   </div>
+
                 </div>
-                <div className="text-start">
-                  <button className="btn btn-primary px-5 py-2" onClick={() => setShowModal(true)}>Get Quotes Now</button>
+
+                {/* Button */}
+                <div className="text-start mt-4">
+                  <button
+                    className="btn btn-primary pd-quote-btn"
+                    onClick={() => setShowModal(true)}
+                  >
+                    Get Quotes Now
+                    <span className="ms-2">→</span>
+                  </button>
                 </div>
+
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -1020,7 +1089,7 @@ const ProductDetail = () => {
       {true && (
         <div className="container-fluid px-4 py-4">
           <h5 className="pd-section-title mb-4">Browse Related Categories
-</h5>
+          </h5>
           {currentItemTypes.length > 0 ? (
             <div className="pd-related-grid">
               {currentItemTypes.map((cat) => (
@@ -1035,7 +1104,7 @@ const ProductDetail = () => {
           ) : (
             <div className="text-muted px-1">No item subcategories found for this item category.</div>
           )}
-         
+
         </div>
       )}
 

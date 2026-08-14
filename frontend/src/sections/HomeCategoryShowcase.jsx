@@ -362,10 +362,10 @@ const HomeCategoryShowcase = () => {
 
           {/* ===== RIGHT - promotional banners ===== */}
           <div className="promotional-banners">
-            <Link to="/categories" className="pbr-banner-link" aria-label="Promotional banner 1">
+            <Link to="/registration" className="pbr-banner-link" aria-label="Promotional banner 1">
               <img src="/img1.png" alt="Promotional banner 1" loading="lazy" decoding="async" />
             </Link>
-            <Link to="/categories" className="pbr-banner-link" aria-label="Promotional banner 2">
+            <Link to="/products" className="pbr-banner-link" aria-label="Promotional banner 2">
               <img src="/img2.png" alt="Promotional banner 2" loading="lazy" decoding="async" />
             </Link>
           </div>
