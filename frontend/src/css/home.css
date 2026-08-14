@@ -2309,8 +2309,15 @@ button.nav-link:hover {
         border-radius: 10px;
     }
 
-    .browseCategories .promotional-banners {
-        display: none;
+     .browseCategories .promotional-banners {
+        display: flex;
+        width: 100%;
+        padding-top: 0;
+        flex-direction: row;
+        gap: 16px;
+    }
+     .browseCategories .promotional-banners .pbr-banner-link {
+        width: 50%;
     }
 
     /* make each category a link + chevron toggle row */
@@ -2427,6 +2434,31 @@ button.nav-link:hover {
 }
 
 @media (max-width: 575.98px) {
+    .browseCategories .tren_list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .browseCategories .mcsc-iteam {
+        width: 100%;
+        padding: 10px 10px;
+    }
+    .browseCategories .promotional-banners {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+        padding-top: 0;
+    }
+
+    .browseCategories .promotional-banners .pbr-banner-link {
+        width: 100%;
+    }
+
+    .browseCategories .promotional-banners .pbr-banner-link img {
+        width: 100%;
+        height: auto;
+    }
+
     .browseCategories .tren_list {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
