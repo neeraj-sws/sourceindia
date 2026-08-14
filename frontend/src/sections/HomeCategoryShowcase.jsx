@@ -5,8 +5,8 @@ import API_BASE_URL, { ROOT_URL } from "./../config";
 
 const TRENDING_LIMIT = 12;
 
-const itemCategoryPath = (cat, sub, ic) =>
-  `/categories/${cat.slug}/${sub.slug}/${ic.slug}`;
+const itemSubCategoryProductPath = (isc) =>
+  `/products?category_id=${isc.category_id}&subcategory_id=${isc.subcategory_id}&item_category_id=${isc.item_category_id}&item_subcategory_id=${isc.id}`;
 
 const dedupeByName = (list) => {
   const seen = new Set();
@@ -83,8 +83,12 @@ const HomeCategoryShowcase = () => {
           console.error("Error fetching sub categories by categories:", err);
         }
 
-        // 3. Item categories by selected category/subcategory (Product Listing page API)
-        let items = [];
+        // 3. Item categories are fetched only as an intermediate step to obtain
+        // the required Item Category IDs for the Item Subcategory API below.
+        // Item Categories are NOT displayed in the sidebar, but they still
+        // power the Trending B2B Product Categories section.
+        let itemCategoryIds = [];
+        let keptItemCats = [];
         if (subsWithProducts.length > 0) {
           const subcategoryIds = subsWithProducts.map((sub) => sub.id);
           try {
@@ -93,31 +97,69 @@ const HomeCategoryShowcase = () => {
               { categories: categoryIds, subcategories: subcategoryIds }
             );
             if (cancelled) return;
-            const allItems = Array.isArray(icRes.data) ? icRes.data : [];
-            items = dedupeByName(
-              allItems.filter(
+            const allItemCats = Array.isArray(icRes.data) ? icRes.data : [];
+            keptItemCats = dedupeByName(
+              allItemCats.filter(
                 (ic) =>
                   Number(ic.product_count) > 0 &&
                   !/deleted/i.test(String(ic.name || ''))
               )
             );
+            itemCategoryIds = keptItemCats.map((ic) => ic.id);
           } catch (err) {
             console.error("Error fetching item categories:", err);
           }
         }
 
-        // Assemble the nested sidebar hierarchy: category -> subcategory -> item categories
+        // 4. Item subcategories by selected category/subcategory/item category.
+        // The backend expects the request body property "itemCategories".
+        let itemSubs = [];
+        if (subsWithProducts.length > 0 && itemCategoryIds.length > 0) {
+          const subcategoryIds = subsWithProducts.map((sub) => sub.id);
+          try {
+            const iscRes = await axios.post(
+              `${API_BASE_URL}/item_sub_category/by-selected-category-subcategory-itemcategory`,
+              {
+                categories: categoryIds,
+                subcategories: subcategoryIds,
+                itemCategories: itemCategoryIds,
+              }
+            );
+            if (cancelled) return;
+            const allItemSubs = Array.isArray(iscRes.data) ? iscRes.data : [];
+            itemSubs = dedupeByName(
+              allItemSubs.filter(
+                (isc) =>
+                  Number(isc.product_count) > 0 &&
+                  !/deleted/i.test(String(isc.name || ''))
+              )
+            );
+          } catch (err) {
+            console.error("Error fetching item subcategories:", err);
+          }
+        }
+
+        // Assemble the nested sidebar hierarchy: category -> subcategory -> item subcategories
         const catById = new Map(catsWithProducts.map((cat) => [cat.id, cat]));
         const subById = new Map(subsWithProducts.map((sub) => [sub.id, sub]));
 
-        const itemsBySub = new Map();
-        items.forEach((ic) => {
-          const subId = Number(ic.subcategory_id);
-          const cat = catById.get(Number(ic.category_id));
+        const itemSubsBySub = new Map();
+        itemSubs.forEach((isc) => {
+          const subId = Number(isc.subcategory_id);
+          const cat = catById.get(Number(isc.category_id));
           const sub = subById.get(subId);
-          if (!cat || !sub || !ic.slug || !sub.slug || !cat.slug) return;
-          if (!itemsBySub.has(subId)) itemsBySub.set(subId, []);
-          itemsBySub.get(subId).push(ic);
+          if (!cat || !sub || !isc.slug || !sub.slug || !cat.slug) return;
+          if (!itemSubsBySub.has(subId)) itemSubsBySub.set(subId, []);
+          itemSubsBySub.get(subId).push(isc);
+        });
+
+        // Sort each Subcategory's Item Subcategories by product_count DESC
+        // (independently per Subcategory, not globally) so the top 5 shown in
+        // the sidebar are the highest-product ones.
+        itemSubsBySub.forEach((list) => {
+          list.sort(
+            (a, b) => Number(b.product_count) - Number(a.product_count)
+          );
         });
 
         const nested = catsWithProducts.map((cat) => {
@@ -125,12 +167,12 @@ const HomeCategoryShowcase = () => {
             .filter((sub) => Number(sub.category) === Number(cat.id))
             .map((sub) => ({
               ...sub,
-              item_categories: itemsBySub.get(Number(sub.id)) || [],
+              item_subcategories: itemSubsBySub.get(Number(sub.id)) || [],
             }));
           return { ...cat, subcategories: subs };
         });
 
-        const tiles = buildTrendingTiles(items, catById, subById);
+        const tiles = buildTrendingTiles(keptItemCats, catById, subById);
 
         if (cancelled) return;
         setCategories(nested);
@@ -259,12 +301,12 @@ const HomeCategoryShowcase = () => {
                                   <Link to={`/categories/${cat.slug}/${sub.slug}`}>{sub.name}</Link>
                                 </p>
                                 <ul className="mcsc-list">
-                                  {(sub.item_categories || []).slice(0, 5).map((ic) => (
-                                    <li key={ic.id}>
-                                      <Link to={itemCategoryPath(cat, sub, ic)}>{ic.name}</Link>
+                                  {(sub.item_subcategories || []).slice(0, 5).map((isc) => (
+                                    <li key={isc.id}>
+                                      <Link to={itemSubCategoryProductPath(isc)}>{isc.name}</Link>
                                     </li>
                                   ))}
-                                  {(sub.item_categories || []).length > 5 && (
+                                  {(sub.item_subcategories || []).length > 5 && (
                                     <li className="mcsc-view-all">
                                       <Link to={`/categories/${cat.slug}/${sub.slug}`}>View More</Link>
                                     </li>
