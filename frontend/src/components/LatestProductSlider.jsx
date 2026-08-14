@@ -70,10 +70,11 @@ const LatestProductSlider = ({
       style={{
         position: "relative",
         width: "100%",
-        background: "#f7f7f7",
-        border: "1px solid #d5d5d5",
-        padding: "8px 10px 10px",
-        marginTop: "10px",
+        background: "#fff",
+        border: "1px solid #eeeeee",
+        borderRadius: "6px",
+        padding: "14px 20px 16px",
+        marginTop: "30px",
         boxSizing: "border-box",
       }}
     >
@@ -81,118 +82,342 @@ const LatestProductSlider = ({
           SLIDER CSS
       ===================================================== */}
 
+      
       <style>
-        {`
-          /* =========================
-             SLIDER
-          ========================= */
+  {`
+    /* =====================================================
+       MAIN SLIDER CONTAINER
+    ===================================================== */
 
-          .latest-product-slider {
-            display: flex;
-            gap: 16px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scroll-behavior: smooth;
-            width: 100%;
-            box-sizing: border-box;
+    .latest-product-slider {
+      display: flex !important;
+      gap: 20px !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      scroll-behavior: smooth !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      padding: 0 2px 4px !important;
 
-            /* Touch swipe */
-            touch-action: pan-x;
-            -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
+      -webkit-overflow-scrolling: touch;
 
-            /* Desktop scrollbar hidden */
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-          }
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
 
-          /* Chrome / Edge / Safari */
-          .latest-product-slider::-webkit-scrollbar {
-            display: none;
-          }
+    .latest-product-slider::-webkit-scrollbar {
+      display: none;
+    }
 
 
-          /* =========================
-             CARD HOVER
-          ========================= */
+    /* =====================================================
+       PRODUCT CARD
+       Screenshot: vertical card
+    ===================================================== */
 
-          .latest-product-card:hover {
-            box-shadow: 0 2px 7px rgba(0, 0, 0, 0.12);
-          }
+    .latest-product-card {
+      flex: 0 0 156px !important;
+      width: 156px !important;
+      height: 145px !important;
 
+      background: #ffffff !important;
+      border: 1px solid #e4e7eb !important;
+      border-radius: 7px !important;
 
-          /* =========================
-             DESKTOP
-          ========================= */
+      padding: 7px 8px 8px !important;
 
-          .slider-arrow {
-            display: flex;
-          }
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      justify-content: flex-start !important;
 
+      box-sizing: border-box !important;
+      overflow: hidden !important;
 
-          /* =========================
-             MOBILE / TABLET
-          ========================= */
-
-          @media (max-width: 768px) {
-
-            .slider-arrow {
-              display: none !important;
-            }
-
-            .latest-product-slider {
-              cursor: grab;
-
-              /* Firefox */
-              scrollbar-width: thin;
-              scrollbar-color: #315374 #e5e5e5;
-            }
-
-            .latest-product-slider:active {
-              cursor: grabbing;
-            }
-
-            /* Chrome / Edge / Safari */
-            .latest-product-slider::-webkit-scrollbar {
-              display: block;
-              height: 4px;
-            }
-
-            .latest-product-slider::-webkit-scrollbar-track {
-              background: #e5e5e5;
-              border-radius: 10px;
-            }
-
-            .latest-product-slider::-webkit-scrollbar-thumb {
-              background: #315374;
-              border-radius: 10px;
-            }
-
-            .latest-product-slider::-webkit-scrollbar-thumb:hover {
-              background: #315374;
-            }
-
-            .latest-product-card {
-              flex: 0 0 220px !important;
-            }
-          }
+      transition:
+        box-shadow 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease !important;
+    }
 
 
-          /* =========================
-             SMALL MOBILE
-          ========================= */
+    /* =====================================================
+       CARD HOVER
+    ===================================================== */
 
-          @media (max-width: 576px) {
+    .latest-product-card:hover {
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.09) !important;
+      border-color: #d9dde2 !important;
+    }
 
-            .latest-product-card {
-              flex: 0 0 200px !important;
-            }
 
-            .latest-product-slider::-webkit-scrollbar {
-              height: 4px;
-            }
-          }
-        `}
-      </style>
+    /* =====================================================
+       PRODUCT LINK
+       Existing <a> ko vertical banana
+    ===================================================== */
+
+    .latest-product-card > a {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      justify-content: flex-start !important;
+
+      width: 100% !important;
+      height: 100% !important;
+
+      min-width: 0 !important;
+      text-decoration: none !important;
+      color: #222 !important;
+    }
+
+
+    /* =====================================================
+       PRODUCT IMAGE
+       Screenshot mein image card ke upper portion mein
+    ===================================================== */
+
+    .latest-product-card > a > div:first-child {
+      flex: 0 0 76px !important;
+
+      width: 100% !important;
+      height: 76px !important;
+
+      margin: 0 0 5px 0 !important;
+
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+
+      overflow: hidden !important;
+      border-radius: 5px !important;
+      background: #ffffff !important;
+    }
+
+
+    .latest-product-card > a > div:first-child img {
+      width: 100% !important;
+      height: 100% !important;
+
+      object-fit: contain !important;
+      display: block !important;
+    }
+
+
+    /* =====================================================
+       PRODUCT DETAILS
+    ===================================================== */
+
+    .latest-product-card > a > div:last-child {
+      min-width: 0 !important;
+      width: 100% !important;
+
+      flex: 1 !important;
+
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: flex-start !important;
+
+      overflow: hidden !important;
+    }
+
+
+    /* =====================================================
+       PRODUCT NAME
+    ===================================================== */
+
+    .latest-product-card .product-name {
+      font-size: 11.5px !important;
+      font-weight: 600 !important;
+
+      line-height: 14px !important;
+
+      color: #182235 !important;
+
+      margin: 2px 0 5px 0 !important;
+
+      display: -webkit-box !important;
+      -webkit-line-clamp: 2 !important;
+      -webkit-box-orient: vertical !important;
+
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+
+      min-height: 28px !important;
+    }
+
+
+    /* =====================================================
+       PRICE
+       Screenshot mein red price
+    ===================================================== */
+
+    .latest-product-card > a > div:last-child > div:not(.product-name) {
+      font-size: 11px !important;
+      line-height: 14px !important;
+
+      color: #e51c23 !important;
+
+      margin: 0 !important;
+
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+
+    /* Price label "Price:" ko bhi red karna */
+    .latest-product-card > a > div:last-child > div:not(.product-name) span {
+      color: #e51c23 !important;
+    }
+
+
+    /* =====================================================
+       HEADING
+    ===================================================== */
+
+    .latest-product-slider-${categoryId} {
+      margin-top: 0 !important;
+    }
+
+
+    /* Parent heading */
+    .latest-product-slider-${categoryId}
+      .latest-product-card {
+      box-sizing: border-box !important;
+    }
+
+
+    /* =====================================================
+       MAIN OUTER BOX
+    ===================================================== */
+
+    .latest-product-slider-${categoryId} {
+      scrollbar-width: none !important;
+    }
+
+
+    /* =====================================================
+       ARROWS
+    ===================================================== */
+
+    .slider-arrow {
+      display: flex !important;
+
+      width: 36px !important;
+      height: 36px !important;
+
+      border-radius: 50% !important;
+
+      border: 1px solid #e1e4e8 !important;
+
+      background: #ffffff !important;
+      color: #667085 !important;
+
+      font-size: 26px !important;
+      font-weight: 300 !important;
+
+      line-height: 30px !important;
+
+      align-items: center !important;
+      justify-content: center !important;
+
+      padding: 0 0 3px 0 !important;
+
+      box-shadow: 0 2px 7px rgba(0, 0, 0, 0.10) !important;
+
+      transition: all 0.2s ease !important;
+    }
+
+
+    .slider-arrow:hover {
+      background: #315374fc !important;
+      color: #fff !important;
+      border-color: #315374fc !important;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16) !important;
+    }
+
+
+    /* Left arrow */
+    .slider-arrow[aria-label="Previous products"] {
+      left: -13px !important;
+    }
+
+
+    /* Right arrow */
+    .slider-arrow[aria-label="Next products"] {
+      right: -13px !important;
+    }
+
+
+    /* =====================================================
+       MOBILE / TABLET
+    ===================================================== */
+
+    @media (max-width: 768px) {
+
+      .slider-arrow {
+        display: none !important;
+      }
+
+      .latest-product-slider {
+        cursor: grab !important;
+
+        scrollbar-width: thin !important;
+        scrollbar-color: #315374 #eeeeee !important;
+
+        padding-bottom: 6px !important;
+      }
+
+      .latest-product-slider:active {
+        cursor: grabbing !important;
+      }
+
+      .latest-product-slider::-webkit-scrollbar {
+        display: block !important;
+        height: 4px !important;
+      }
+
+      .latest-product-slider::-webkit-scrollbar-track {
+        background: #eeeeee !important;
+        border-radius: 10px !important;
+      }
+
+      .latest-product-slider::-webkit-scrollbar-thumb {
+        background: #315374 !important;
+        border-radius: 10px !important;
+      }
+
+      .latest-product-card {
+        flex: 0 0 156px !important;
+        width: 156px !important;
+        height: 145px !important;
+      }
+    }
+
+
+    /* =====================================================
+       SMALL MOBILE
+    ===================================================== */
+
+    @media (max-width: 576px) {
+
+      .latest-product-card {
+        flex: 0 0 150px !important;
+        width: 150px !important;
+        height: 142px !important;
+      }
+
+      .latest-product-slider {
+        gap: 10px !important;
+      }
+
+      .latest-product-slider::-webkit-scrollbar {
+        height: 4px !important;
+      }
+    }
+  `}
+</style>
 
       {/* =====================================================
           HEADING

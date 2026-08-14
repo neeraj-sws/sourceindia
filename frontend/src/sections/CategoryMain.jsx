@@ -93,6 +93,15 @@ const CategoryMain = ({ isHome, limit }) => {
   }, [categories]);
 
   // =========================================================
+  // VALID SUBCATEGORIES (max 6 for the 3 x 2 grid)
+  // =========================================================
+  const getValidSubcategories = (cat) => {
+    return (cat.subcategories || [])
+      .filter((sub) => Number(sub.product_count || 0) > 0)
+      .slice(0, 6);
+  };
+
+  // =========================================================
   // SKELETON
   // =========================================================
   const CategorySkeletonLoader = ({ count = 2 }) => {
@@ -106,84 +115,111 @@ const CategoryMain = ({ isHome, limit }) => {
             className="categorySection py-md-4 pt-2 my-4"
           >
             <div className="container-xl">
-              <div className="categoryMain">
+              <div className="categoryMainBox">
 
-                {/* Category Title Skeleton */}
-                <h5 className="fw-semibold mb-3">
+                {/* Category Header Skeleton */}
+                <div className="categoryMainHeader">
                   <span
                     className="content-placeholder"
                     style={{
                       width: "30%",
-                      height: 20,
+                      height: 24,
+                      display: "block",
+                      marginBottom: 12,
+                    }}
+                  />
+                  <span
+                    className="content-placeholder"
+                    style={{
+                      width: 24,
+                      height: 2,
+                      display: "block",
+                      marginBottom: 12,
+                    }}
+                  />
+                  <span
+                    className="content-placeholder"
+                    style={{
+                      width: "45%",
+                      height: 12,
                       display: "block",
                     }}
                   />
-                </h5>
+                </div>
 
-                <div className="card">
-                  <div className="card-body">
+                <div className="categoryMainBody">
 
-                    <div className="row g-4 align-items-center">
+                  {/* LEFT PROMO SKELETON */}
+                  <div className="categoryPromoCard categoryPromoSkeleton" />
 
-                      {/* LEFT IMAGE BLOCK */}
-                      <div className="col-xxl-4 col-md-5">
-                        <div
-                          className="position-relative rounded overflow-hidden shadow-sm h-100 categorytopimg"
+                  {/* RIGHT GRID SKELETON */}
+                  <div className="subcategoryGrid">
+
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <div
+                        key={j}
+                        className="subcategoryCard subcategoryCardSkeleton"
+                      >
+                        <div className="subcategoryCardHeader">
+                          <span
+                            className="content-placeholder"
+                            style={{
+                              width: "70%",
+                              height: 16,
+                              display: "block",
+                            }}
+                          />
+                          <span
+                            className="content-placeholder"
+                            style={{
+                              width: 28,
+                              height: 28,
+                              display: "block",
+                              borderRadius: "50%",
+                              flexShrink: 0,
+                            }}
+                          />
+                        </div>
+
+                        <div className="subcategoryCardContent">
+                          <ul className="categoryItemList">
+                            {[90, 75, 60, 80].map((w, k) => (
+                              <li key={k}>
+                                <span
+                                  className="content-placeholder"
+                                  style={{
+                                    width: `${w}%`,
+                                    height: 11,
+                                    display: "block",
+                                  }}
+                                />
+                              </li>
+                            ))}
+                          </ul>
+
+                          <div className="subcategoryThumb">
+                            <span
+                              className="content-placeholder"
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                display: "block",
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <span
+                          className="content-placeholder"
                           style={{
-                            backgroundColor: "#eee",
-                            minHeight: 200,
+                            width: 60,
+                            height: 11,
+                            display: "block",
+                            marginTop: 10,
                           }}
                         />
                       </div>
-
-                      {/* RIGHT SIDE GRID */}
-                      <div className="col-xxl-8 col-md-7">
-                        <div className="row g-3">
-
-                          {Array.from({ length: 6 }).map((_, j) => (
-                            <div
-                              key={j}
-                              className="col-sm-6 col-xxl-4"
-                            >
-                              <div className="card card-hover h-100 shadow-sm border-0 p-3">
-
-                                <span
-                                  className="content-placeholder"
-                                  style={{
-                                    width: "70%",
-                                    height: 18,
-                                    display: "block",
-                                    marginBottom: 6,
-                                  }}
-                                />
-
-                                <span
-                                  className="content-placeholder"
-                                  style={{
-                                    width: "50%",
-                                    height: 14,
-                                    display: "block",
-                                  }}
-                                />
-
-                                <div
-                                  className="mt-2"
-                                  style={{
-                                    width: "100%",
-                                    height: 60,
-                                    backgroundColor: "#eee",
-                                    borderRadius: 4,
-                                  }}
-                                />
-
-                              </div>
-                            </div>
-                          ))}
-
-                        </div>
-                      </div>
-
-                    </div>
+                    ))}
 
                   </div>
                 </div>
@@ -219,208 +255,192 @@ const CategoryMain = ({ isHome, limit }) => {
   // =========================================================
   return (
     <>
-      {categories.map((cat) => (
+      {categories.map((cat) => {
+        const validSubs = getValidSubcategories(cat);
 
-        <section
-          key={cat.id}
-          className="categorySection py-md-4 pt-2 my-4"
-        >
-          <div className="container-xl">
+        return (
+          <section
+            key={cat.id}
+            className="categorySection py-md-4 pt-2 my-4"
+          >
+            <div className="container-xxl">
 
-            <div className="categoryMain">
+              <div className="categoryMainBox">
 
-              {/* =================================================
-                  CATEGORY NAME
-              ================================================= */}
-              <h4 className="fw-semibold mb-4">
-                {cat.name}
-              </h4>
+                {/* =================================================
+                    CATEGORY HEADER
+                ================================================= */}
+                <div className="categoryMainHeader">
+                  <h4 className="categoryMainTitle">
+                    {cat.name}
+                  </h4>
+                  <span className="categoryMainAccent" />
+                  <p className="categoryMainSubtitle">
+                    Explore high-quality components across all categories.
+                  </p>
+                </div>
 
-              <div className="card">
-                <div className="card-body">
+                {/* =================================================
+                    MAIN LAYOUT (PROMO + SUBCATEGORY GRID)
+                ================================================= */}
+                <div className="categoryMainBody">
 
-                  <div className="row g-4 align-items-center">
+                  {/* ===============================================
+                      LEFT PROMOTIONAL CARD
+                  =============================================== */}
+                  <div className="categoryPromoCard">
 
-                    {/* =================================================
-                        LEFT CATEGORY IMAGE
-                    ================================================= */}
-                    <div className="col-lg-3">
+                    {cat.file_name && (
+                      <img
+                        src={`${ROOT_URL}/${cat.file_name}`}
+                        className="categoryPromoImage"
+                        alt={cat.name || "Category"}
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "/default.png";
+                        }}
+                      />
+                    )}
 
-                      <div className="position-relative overflow-hidden h-100 categorytopimg">
+                    <div className="categoryPromoOverlay" />
 
-                        {cat.file_name && (
-                          <img
-                            src={`${ROOT_URL}/${cat.file_name}`}
-                            className="img-fluid w-100 rounded shadow-sm h-100"
-                            alt={cat.name || "Category"}
-                            loading="lazy"
-                            decoding="async"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = "/default.png";
-                            }}
-                          />
-                        )}
+                    <div className="categoryPromoContent">
+                      <h5 className="categoryPromoTitle">
+                        Discover 1000+
+                        <br />
+                        High Quality Components
+                      </h5>
 
-                        <div className="overlay d-flex justify-content-center align-items-end">
+                      <p className="categoryPromoDesc">
+                        Reliable. Durable. Performance focused.
+                      </p>
 
-                          <a
-                            href={`/categories/${cat.slug}`}
-                            className="btn btn-danger btn-sm px-4"
-                          >
-                            View All
-                          </a>
-
-                        </div>
-
-                      </div>
-
-                    </div>
-
-                    {/* =================================================
-                        RIGHT SIDE SUBCATEGORIES
-                    ================================================= */}
-                    <div className="col-lg-9">
-
-                      <div className="row g-3">
-
-                        {cat.subcategories?.length > 0 ? (
-
-                          cat.subcategories
-                            .filter(
-                              (sub) =>
-                                Number(sub.product_count || 0) > 0
-                            )
-                            .map((sub) => (
-
-                              <div
-                                key={sub.id}
-                                className="col-sm-6 col-xxl-4"
-                              >
-
-                                <div className="card card-hover h-100 shadow-sm border-0">
-
-                                  <div className="card-body">
-
-                                    {/* SUBCATEGORY TITLE */}
-                                    <a
-                                      href={`/categories/${cat.slug}/${sub.slug}`}
-                                      className="d-block"
-                                    >
-
-                                      <div className="d-flex justify-content-between align-items-start">
-
-                                        <h6 className="fw-semibold mb-3 text-truncate">
-                                          {sub.name}
-                                        </h6>
-
-                                        <span>→</span>
-
-                                      </div>
-
-                                    </a>
-
-                                    {/* ITEM CATEGORIES + IMAGE */}
-                                    <div className="d-flex justify-content-between align-items-center gap-2 gridulimgcontainer">
-
-                                      <ul className="list-unstyled ps-0 mb-0 categorylistul">
-
-                                        {(sub.item_categories || [])
-                                          .filter(
-                                            (item) =>
-                                              Number(
-                                                item.product_count || 0
-                                              ) > 0
-                                          )
-                                          .slice(0, 4)
-                                          .map((item) => (
-
-                                            <li
-                                              key={item.id}
-                                              className="text-start"
-                                            >
-
-                                              <a
-                                                href={`/products?category_id=${cat.id}&subcategory_id=${sub.id}&item_category_id=${item.id}`}
-                                                className="text-decoration-none text-primary small text-truncate"
-                                              >
-                                                {item.name?.length > 20
-                                                  ? `${item.name.slice(
-                                                      0,
-                                                      20
-                                                    )}...`
-                                                  : item.name}
-                                              </a>
-
-                                            </li>
-
-                                          ))}
-
-                                      </ul>
-
-                                      {/* SUBCATEGORY IMAGE */}
-                                      {sub.file_name && (
-                                        <img
-                                          src={`${ROOT_URL}/${sub.file_name}`}
-                                          className="img-fluid categoryimagebox"
-                                          alt={
-                                            sub.name ||
-                                            "SubCategory"
-                                          }
-                                          width="100"
-                                          loading="lazy"
-                                          decoding="async"
-                                          onError={(e) => {
-                                            e.target.onerror = null;
-                                            e.target.src =
-                                              "/default.png";
-                                          }}
-                                        />
-                                      )}
-
-                                    </div>
-
-                                  </div>
-
-                                </div>
-
-                              </div>
-
-                            ))
-
-                        ) : (
-
-                          <p className="text-muted small">
-                            No subcategories found.
-                          </p>
-
-                        )}
-
-                      </div>
-
+                      <a
+                        href={`/categories/${cat.slug}`}
+                        className="categoryPromoBtn"
+                      >
+                        <span>Explore Components</span>
+                        <span className="categoryPromoBtnArrow">→</span>
+                      </a>
                     </div>
 
                   </div>
 
-                  {/* =================================================
-                      CATEGORY LATEST PRODUCTS SLIDER
-                  ================================================= */}
+                  {/* ===============================================
+                      RIGHT SUBCATEGORY GRID
+                  =============================================== */}
+                  <div className="subcategoryGrid">
 
-                  <LatestProductSlider
-                    products={catProducts[cat.id] || []}
-                    categoryName={cat.name}
-                    categoryId={cat.id}
-                  />
+                    {validSubs.length > 0 ? (
+
+                      validSubs.map((sub) => (
+                        <div
+                          key={sub.id}
+                          className="subcategoryCard"
+                        >
+
+                          {/* SUBCATEGORY HEADER */}
+                          <div className="subcategoryCardHeader">
+                            <a
+                              href={`/categories/${cat.slug}/${sub.slug}`}
+                              className="subcategoryCardTitleLink"
+                            >
+                              <h6 className="subcategoryCardTitle">
+                                {sub.name}
+                              </h6>
+                            </a>
+
+                            <a
+                              href={`/categories/${cat.slug}/${sub.slug}`}
+                              className="subcategoryArrow"
+                              aria-label={`Explore ${sub.name}`}
+                            >
+                              <span>→</span>
+                            </a>
+                          </div>
+
+                          {/* SUBCATEGORY CONTENT */}
+                          <div className="subcategoryCardContent">
+
+                            <ul className="categoryItemList">
+                              {(sub.item_categories || [])
+                                .filter(
+                                  (item) =>
+                                    Number(item.product_count || 0) > 0
+                                )
+                                .slice(0, 4)
+                                .map((item) => (
+                                  <li key={item.id}>
+                                    <a
+                                      href={`/products?category_id=${cat.id}&subcategory_id=${sub.id}&item_category_id=${item.id}`}
+                                    >
+                                      {item.name?.length > 20
+                                        ? `${item.name.slice(0, 20)}...`
+                                        : item.name}
+                                    </a>
+                                  </li>
+                                ))}
+                            </ul>
+
+                            {/* SUBCATEGORY IMAGE */}
+                            {sub.file_name && (
+                              <div className="subcategoryThumb">
+                                <img
+                                  src={`${ROOT_URL}/${sub.file_name}`}
+                                  alt={sub.name || "SubCategory"}
+                                  loading="lazy"
+                                  decoding="async"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "/default.png";
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                          </div>
+
+                          {/* VIEW ALL */}
+                          <a
+                            href={`/categories/${cat.slug}/${sub.slug}`}
+                            className="subcategoryViewAll"
+                          >
+                            <span>View all</span>
+                            <span className="subcategoryViewAllArrow">→</span>
+                          </a>
+
+                        </div>
+                      ))
+
+                    ) : (
+
+                      <p className="subcategoryEmpty">
+                        No subcategories found.
+                      </p>
+
+                    )}
+
+                  </div>
 
                 </div>
+
+                {/* =================================================
+                    CATEGORY LATEST PRODUCTS SLIDER
+                ================================================= */}
+                <LatestProductSlider
+                  products={catProducts[cat.id] || []}
+                  categoryName={cat.name}
+                  categoryId={cat.id}
+                />
+
               </div>
 
             </div>
-
-          </div>
-        </section>
-
-      ))}
+          </section>
+        );
+      })}
     </>
   );
 };

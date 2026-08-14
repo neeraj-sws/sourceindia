@@ -422,6 +422,7 @@ exports.getItemSubCategoriesBySelectedCategorySubCategoryItemCategory = async (r
         { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
         { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
         { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+        { model: UploadImage, attributes: ['file'] },
       ],
       order: [['id', 'ASC']],
     });
@@ -455,7 +456,9 @@ exports.getItemSubCategoriesBySelectedCategorySubCategoryItemCategory = async (r
         category_name: data.Categories?.name || null,
         subcategory_name: data.SubCategories?.name || null,
         item_category_name: data.ItemCategory?.name || null,
-        product_count: productCountMap[data.id] || 0
+        file_name: data.UploadImage?.file || null,
+        product_count: productCountMap[data.id] || 0,
+        UploadImage: undefined,
       };
     });
 
