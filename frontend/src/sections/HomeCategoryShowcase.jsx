@@ -18,7 +18,22 @@ const dedupeByName = (list) => {
   });
 };
 
-const buildTrendingTiles = (items, catById, subById) => {
+// Item Categories usually have no image of their own, so use the first
+// available Item Subcategory image (lowest id that actually has a file).
+const buildItemSubImageMap = (itemSubs) => {
+  const map = new Map();
+  (itemSubs || [])
+    .slice()
+    .sort((a, b) => Number(a.id) - Number(b.id))
+    .forEach((isc) => {
+      const catId = Number(isc.item_category_id);
+      if (!isc.file_name || map.has(catId)) return;
+      map.set(catId, isc.file_name);
+    });
+  return map;
+};
+
+const buildTrendingTiles = (items, catById, subById, itemSubImageMap) => {
   const withSlugs = items
     .map((ic) => {
       const cat = catById.get(Number(ic.category_id));
@@ -28,9 +43,11 @@ const buildTrendingTiles = (items, catById, subById) => {
         id: ic.id,
         name: ic.name,
         slug: ic.slug,
+        category_id: ic.category_id,
+        subcategory_id: ic.subcategory_id,
         category_slug: cat.slug,
         subcategory_slug: sub.slug,
-        file_name: ic.file_name || null,
+        file_name: ic.file_name || itemSubImageMap.get(Number(ic.id)) || null,
         product_count: Number(ic.product_count) || 0,
       };
     })
@@ -172,7 +189,8 @@ const HomeCategoryShowcase = () => {
           return { ...cat, subcategories: subs };
         });
 
-        const tiles = buildTrendingTiles(keptItemCats, catById, subById);
+        const itemSubImageMap = buildItemSubImageMap(itemSubs);
+        const tiles = buildTrendingTiles(keptItemCats, catById, subById, itemSubImageMap);
 
         if (cancelled) return;
         setCategories(nested);
@@ -362,7 +380,7 @@ const HomeCategoryShowcase = () => {
                 {trending.map((ic) => (
                   <div className="tren_iteam" key={ic.id}>
                     <Link
-                      to={`/categories/${ic.category_slug}/${ic.subcategory_slug}/${ic.slug}`}
+                      to={`/products?category_id=${ic.category_id}&subcategory_id=${ic.subcategory_id}&item_category_id=${ic.id}`}
                       title={ic.name}
                     >
                       <div className="tren_img">
