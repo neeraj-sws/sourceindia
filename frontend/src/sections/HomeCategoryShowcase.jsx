@@ -18,30 +18,52 @@ const dedupeByName = (list) => {
   });
 };
 
-const buildTrendingTiles = (items, catById, subById) => {
-  const withSlugs = items
+const buildTrendingTiles = (itemCategories, catById, subById, itemSubs) => {
+  return itemCategories
     .map((ic) => {
       const cat = catById.get(Number(ic.category_id));
       const sub = subById.get(Number(ic.subcategory_id));
       if (!cat || !sub || !ic.slug || !cat.slug || !sub.slug) return null;
+
+      const relatedItemSubs = itemSubs.filter(
+        (isc) => Number(isc.item_category_id) === Number(ic.id)
+      );
+
+      const withImage = relatedItemSubs.filter(
+        (isc) => isc.file_name && String(isc.file_name).trim() !== ""
+      );
+
+      const sortedByProduct = [...withImage].sort(
+        (a, b) => Number(b.product_count) - Number(a.product_count)
+      );
+
+      const highestProductSub = sortedByProduct[0] || null;
+
+      console.table([
+        {
+          itemCategoryId: ic.id,
+          itemCategoryName: ic.name,
+          highestISCId: highestProductSub?.id ?? "N/A",
+          highestISCName: highestProductSub?.name ?? "N/A",
+          highestISCItemCategoryId: highestProductSub?.item_category_id ?? "N/A",
+          highestISCProductCount: highestProductSub?.product_count ?? "N/A",
+          highestISCFileName: highestProductSub?.file_name ?? "N/A",
+        },
+      ]);
+
       return {
         id: ic.id,
         name: ic.name,
         slug: ic.slug,
         category_slug: cat.slug,
         subcategory_slug: sub.slug,
-        file_name: ic.file_name || null,
+        file_name: highestProductSub?.file_name || null,
         product_count: Number(ic.product_count) || 0,
       };
     })
     .filter(Boolean)
-    .sort((a, b) => b.product_count - a.product_count || a.id - b.id);
-
-  // Prefer tiles that carry an image; top-up the remainder so we still
-  // render up to 12 real hierarchy items (never duplicated images).
-  const withImage = withSlugs.filter((t) => t.file_name);
-  const withoutImage = withSlugs.filter((t) => !t.file_name);
-  return [...withImage, ...withoutImage].slice(0, TRENDING_LIMIT);
+    .sort((a, b) => b.product_count - a.product_count || a.id - b.id)
+    .slice(0, TRENDING_LIMIT);
 };
 
 const HomeCategoryShowcase = () => {
@@ -79,8 +101,8 @@ const HomeCategoryShowcase = () => {
           subsWithProducts = dedupeByName(
             allSubs.filter((sub) => Number(sub.product_count) > 0)
           );
-        } catch (err) {
-          console.error("Error fetching sub categories by categories:", err);
+        } catch {
+          // Sub categories fetch failed — continue with empty list
         }
 
         // 3. Item categories are fetched only as an intermediate step to obtain
@@ -106,8 +128,8 @@ const HomeCategoryShowcase = () => {
               )
             );
             itemCategoryIds = keptItemCats.map((ic) => ic.id);
-          } catch (err) {
-            console.error("Error fetching item categories:", err);
+          } catch {
+            // Item categories fetch failed
           }
         }
 
@@ -144,13 +166,19 @@ const HomeCategoryShowcase = () => {
         const subById = new Map(subsWithProducts.map((sub) => [sub.id, sub]));
 
         const itemSubsBySub = new Map();
+        const itemSubsByItemCatId = new Map();
         itemSubs.forEach((isc) => {
           const subId = Number(isc.subcategory_id);
+          const itemCatId = Number(isc.item_category_id);
           const cat = catById.get(Number(isc.category_id));
           const sub = subById.get(subId);
           if (!cat || !sub || !isc.slug || !sub.slug || !cat.slug) return;
           if (!itemSubsBySub.has(subId)) itemSubsBySub.set(subId, []);
           itemSubsBySub.get(subId).push(isc);
+          if (itemCatId) {
+            if (!itemSubsByItemCatId.has(itemCatId)) itemSubsByItemCatId.set(itemCatId, []);
+            itemSubsByItemCatId.get(itemCatId).push(isc);
+          }
         });
 
         // Sort each Subcategory's Item Subcategories by product_count DESC
@@ -172,7 +200,7 @@ const HomeCategoryShowcase = () => {
           return { ...cat, subcategories: subs };
         });
 
-        const tiles = buildTrendingTiles(keptItemCats, catById, subById);
+        const tiles = buildTrendingTiles(keptItemCats, catById, subById, itemSubs);
 
         if (cancelled) return;
         setCategories(nested);
