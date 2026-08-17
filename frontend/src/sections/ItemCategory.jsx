@@ -260,7 +260,7 @@ const ItemCategory = () => {
                     >
                       <div className="d-flex justify-content-between align-items-start">
 
-                        <h6 className="fw-semibold mb-3">
+                        <h6 className="fw-semibold mb-3" style={{ color: "#ff6600" }}>
                           {cat.name} ({cat.product_count})
                         </h6>
 
