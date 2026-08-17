@@ -17,6 +17,8 @@ const Banner = () => {
   const [popularCategories, setPopularCategories] = useState([]);
   const [categoryLoading, setCategoryLoading] = useState(true);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [bannerLoading, setBannerLoading] = useState(true);
+  const [bgImageLoaded, setBgImageLoaded] = useState(false);
   const navigate = useNavigate();
 
   const normalizeSearchValue = (value = "") =>
@@ -30,10 +32,27 @@ const Banner = () => {
         setHomeBanner(filtered);
       } catch (err) {
         console.error("Error fetching home banners:", err);
+      } finally {
+        setBannerLoading(false);
       }
     };
     fetchHomeBanner();
   }, []);
+
+  useEffect(() => {
+    const imageUrl = homeBanner[0]?.file_name
+      ? `${ROOT_URL}/${homeBanner[0].file_name}`
+      : null;
+    if (!imageUrl) {
+      setBgImageLoaded(true);
+      return;
+    }
+    setBgImageLoaded(false);
+    const img = new Image();
+    img.onload = () => setBgImageLoaded(true);
+    img.onerror = () => setBgImageLoaded(true);
+    img.src = imageUrl;
+  }, [homeBanner.length]);
 
   useEffect(() => {
     if (!searchFocused || normalizeSearchValue(searchQuery).length < 3) {
@@ -174,6 +193,19 @@ const Banner = () => {
     ? primaryBanner.popular_searches.split(/,|;/).map((item) => item.trim()).filter(Boolean)
     : ["PCB", "Capacitor", "Connectors", "IC", "Power Supply", "Resistors", "LED", "Sensors"];
 
+  const carouselItems = homeBanner.length > 0
+    ? homeBanner
+    : [{
+        id: 'banner-placeholder',
+        description: 'Create Your Business Profile<br>Add Products in Few Clicks<br>Receive Enquiries & Grow Business',
+        button_url: '/registration',
+        button_text: 'Join as Seller',
+      }];
+
+  const bgImageUrl = primaryBanner.file_name
+    ? `${ROOT_URL}/${primaryBanner.file_name}`
+    : null;
+
   return (
     <>
       <div className="mainBanner">
@@ -181,9 +213,9 @@ const Banner = () => {
           <div
             className="banner-slide"
             style={{
-              backgroundImage: primaryBanner.file_name
-                ? `url(${ROOT_URL}/${primaryBanner.file_name})`
-                : `url('/default1.png')`,
+              backgroundImage: bgImageLoaded && bgImageUrl
+                ? `url(${bgImageUrl})`
+                : 'none',
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
               backgroundSize: 'cover',
@@ -197,7 +229,7 @@ const Banner = () => {
                 <div className="col-lg-4 col-xxl-4 h-100">
                   <div id="carouselExampleCaptions" className="carousel slide h-100" data-bs-ride="carousel">
                     <div className="carousel-inner h-100">
-                      {homeBanner.map((slider, index) => {
+                      {carouselItems.map((slider, index) => {
                         const leftFeatures = slider.description
                           ? slider.description
                             .split(/<br\s*\/?>|\n|\r/)
@@ -206,14 +238,23 @@ const Banner = () => {
                           : ["Create Your Business Profile", "Add Products in Few Clicks", "Receive Enquiries & Grow Business"];
 
                         return (
-                          <div className={`carousel-item h-100 ${index === 0 ? 'active' : ''}`} key={slider.id || index}>
+                          <div className={`carousel-item h-100 ${index === 0 ? 'active' : ''}`} key={slider.id || `placeholder-${index}`}>
                             <div className="hero-left-card h-100">
                               <div className="hero-card-header mb-3">
-                                <span className="hero-slide-counter">{String(activeSlideIndex + 1).padStart(2, '0')}/{String(homeBanner.length || 1).padStart(2, '0')}</span>
+                                <span className="hero-slide-counter">{String(activeSlideIndex + 1).padStart(2, '0')}/{String(carouselItems.length || 1).padStart(2, '0')}</span>
                               </div>
 
-                              <h2 className="hero-left-main"><span className="hero-left-accent">SELL</span> <span className="hero-left-normal">PRODUCTS</span></h2>
-                              <p className="hero-left-desc  mb-3 w-50">List your products and connect with verified buyers across India.</p>
+                              <h2 className="hero-left-main">
+                                <span className="hero-left-normal">
+                                  {index === 0 ? "BUY & SOURCE PRODUCTS" : "LIST & SELL PRODUCTS"}
+                                </span>
+                              </h2>
+                              {/* <span className="hero-left-accent">SELL</span>  */}
+                              <p className="hero-left-desc  mb-3 w-50">
+                                {index === 0
+                                ? "Share your requirements and connect with the right sellers."
+                                : "List your products and connect with verified buyers across India."}
+                              </p>
                               <ul className="hero-feature-list">
                                 {leftFeatures.map((feature, idx) => (
                                   <li key={idx}>{feature}</li>
@@ -229,9 +270,9 @@ const Banner = () => {
                                   {slider.button_text || "Join as Seller"}
                                 </a>
                               </div>
-                              {homeBanner.length > 1 && (
+                              {carouselItems.length > 1 && (
                                 <div className="hero-slider-dots mt-4">
-                                  {homeBanner.map((_, dotIndex) => (
+                                  {carouselItems.map((_, dotIndex) => (
                                     <button
                                       key={`dot-${dotIndex}`}
                                       type="button"
@@ -249,7 +290,7 @@ const Banner = () => {
                       })}
                     </div>
 
-                    {homeBanner.length > 1 && (
+                    {carouselItems.length > 1 && (
                       <>
                         <button
                           className="carousel-control-prev"
@@ -378,7 +419,7 @@ const Banner = () => {
           </div>
         </div>
         <HomeCategoryShowcase />
-        <section className="popular-categories-section py-5">
+        {/* <section className="popular-categories-section py-5">
           <div className="container-xl">
             <div className="section-title text-center mx-auto mb-4">
               <h2>Popular Product Categories</h2>
@@ -431,11 +472,7 @@ const Banner = () => {
               })}
             </div>
           </div>
-        </section>
-
-
-
-
+        </section> */}
 
         <section className="banner-stats-section py-4 d-none">
           <div className="container-xl">

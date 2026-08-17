@@ -248,7 +248,7 @@ body {
     color: rgba(255, 255, 255, 0.95);
     font-size: 15px;
     line-height: 1.9;
-    margin-bottom: 12px;
+    margin-bottom: 0 !important;
 }
 
 .hero-feature-list li:before {
@@ -397,6 +397,7 @@ body {
 
 .banner-slide {
     /* min-height: 600px; */
+    /* background-color: #0b1e3d; */
     background-size: cover;
     background-position: center;
     position: relative;
@@ -566,7 +567,7 @@ body {
 }
 
 .hero-cta:hover {
-    background: #f3f7fe;
+    background: #2260bd;
 }
 
 .stat-card {
