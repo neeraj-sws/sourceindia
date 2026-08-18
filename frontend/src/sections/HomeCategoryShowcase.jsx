@@ -55,6 +55,9 @@ const buildTrendingTiles = (itemCategories, catById, subById, itemSubs) => {
         id: ic.id,
         name: ic.name,
         slug: ic.slug,
+        category_id: ic.category_id,
+        subcategory_id: ic.subcategory_id,
+        item_category_id: ic.id,
         category_slug: cat.slug,
         subcategory_slug: sub.slug,
         file_name: highestProductSub?.file_name || null,
@@ -390,7 +393,7 @@ const HomeCategoryShowcase = () => {
                 {trending.map((ic) => (
                   <div className="tren_iteam" key={ic.id}>
                     <Link
-                      to={`/categories/${ic.category_slug}/${ic.subcategory_slug}/${ic.slug}`}
+                      to={`/products?category_id=${ic.category_id}&subcategory_id=${ic.subcategory_id}&item_category_id=${ic.item_category_id}`}
                       title={ic.name}
                     >
                       <div className="tren_img">
