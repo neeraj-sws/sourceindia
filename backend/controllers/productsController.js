@@ -1366,8 +1366,7 @@ exports.getProductsDetail = async (req, res) => {
       activity_name: productData.company_info?.Activity?.name || null,
       brief_company: productData.company_info?.brief_company || null,
       organizations_product_description: productData.description || null,
-      similar_products: formattedSimilarProducts,
-      recommended_companies: recommendedCompanies
+      similar_products: formattedSimilarProducts
     };
 
     res.json(response);

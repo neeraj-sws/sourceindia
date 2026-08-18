@@ -10,13 +10,12 @@ import 'swiper/css'; // Core Swiper styles
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/thumbs';
-import { Suspense, lazy } from 'react';
+import { lazy } from 'react';
 const ImageFront = lazy(() => import('../admin/common/ImageFront'));
 
 import EnquiryForm from "./EnquiryForm";
 import { useAlert } from "../context/AlertContext";
 import UseAuth from '../sections/UseAuth';
-import GlobalSeo from '../utils/GlobalSeo';
 
 const ProductDetail = () => {
   const navigate = useNavigate();
@@ -36,13 +35,8 @@ const ProductDetail = () => {
   const [sellerProducts, setSellerProducts] = useState([]);
   const [sharePhone, setSharePhone] = useState("");
   const [shareQty, setShareQty] = useState("");
-  const [relatedCategories, setRelatedCategories] = useState([]);
   const [popularCategories, setPopularCategories] = useState([]);
   const [currentItemTypes, setCurrentItemTypes] = useState([]);
-  const [siblingItemSubcategories, setSiblingItemSubcategories] = useState([]);
-  const [loadingItemCategories, setLoadingItemCategories] = useState(false);
-  const [allowedItemCategoryIds, setAllowedItemCategoryIds] = useState([]);
-  const [filteredRecommendedCompanies, setFilteredRecommendedCompanies] = useState([]);
   const { user } = UseAuth();
 
   useEffect(() => {
@@ -102,15 +96,19 @@ const ProductDetail = () => {
             []
           );
 
-        const matched = itemSubCategories.filter((item) => {
-          const itemCategoryLabel = String(item.itemcategory_name || item.item_category_name || item?.ItemCategory?.name || "").trim().toLowerCase();
-          return itemCategoryLabel === itemCategoryName;
-        });
+        const matched = itemSubCategories
+          .filter((item) => {
+            const itemCategoryLabel = String(item.itemcategory_name || item.item_category_name || item?.ItemCategory?.name || "").trim().toLowerCase();
+            return itemCategoryLabel === itemCategoryName;
+          })
+          .filter((item) => {
+            const itemName = String(item.name || "").trim().toLowerCase();
+            return itemName !== currentItemSubCategoryName;
+          })
+          .filter((item) => item.product_count !== undefined ? Number(item.product_count) > 0 : true)
+          .slice(0, 8);
 
-        setCurrentItemTypes(matched.length > 0 ? matched : itemSubCategories.filter((item) => {
-          const itemName = String(item.name || "").trim().toLowerCase();
-          return itemName === currentItemSubCategoryName;
-        }));
+        setCurrentItemTypes(matched);
       } catch (error) {
         console.error("Error fetching current item types:", error);
         setCurrentItemTypes([]);
@@ -119,139 +117,6 @@ const ProductDetail = () => {
 
     if (product) loadCurrentItemTypes();
   }, [product]);
-
-  useEffect(() => {
-    const loadItemCategories = async () => {
-      const itemCategoryName = String(product?.item_category_name || "").trim().toLowerCase();
-      const currentItemSubCategoryName = String(product?.item_subcategory_name || "").trim().toLowerCase();
-
-      if (!itemCategoryName) {
-        setSiblingItemSubcategories([]);
-        return;
-      }
-
-      setLoadingItemCategories(true);
-      try {
-        const subCategoryRes = await axios.get(`${API_BASE_URL}/item_sub_category`);
-
-        const itemSubCategories = Array.isArray(subCategoryRes.data)
-          ? subCategoryRes.data
-          : (subCategoryRes.data?.item_sub_categories || subCategoryRes.data?.item_categories || subCategoryRes.data?.data || []);
-
-        const siblingSubCategories = itemSubCategories.filter((item) => {
-          const itemCategoryLabel = String(item.itemcategory_name || item.item_category_name || item?.ItemCategory?.name || "").trim().toLowerCase();
-          const itemName = String(item.name || "").trim().toLowerCase();
-          return itemCategoryLabel === itemCategoryName && itemName !== currentItemSubCategoryName;
-        });
-
-        setSiblingItemSubcategories(siblingSubCategories);
-      } catch (error) {
-        console.error("Error fetching item subcategory groups:", error);
-        setSiblingItemSubcategories([]);
-      } finally {
-        setLoadingItemCategories(false);
-      }
-    };
-
-    if (product) loadItemCategories();
-  }, [product]);
-
-  useEffect(() => {
-    const loadPriorityItemCategory = async () => {
-      const categoryId = product?.category_id || product?.category || product?.categoryId;
-      const subCategoryId = product?.sub_category_id || product?.subcategory_id || product?.subCategoryId;
-      const itemSubCategoryId = product?.item_subcategory_id || product?.itemSubcategoryId;
-
-      if (!categoryId || !subCategoryId || !itemSubCategoryId) {
-        setAllowedItemCategoryIds([]);
-        return;
-      }
-
-      try {
-        const [itemSubCategoryRes, itemCategoryRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/item_sub_category/${itemSubCategoryId}`),
-          axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${categoryId}/${subCategoryId}`),
-        ]);
-
-        const itemSubCategory = itemSubCategoryRes.data || {};
-        const itemCategories = Array.isArray(itemCategoryRes.data)
-          ? itemCategoryRes.data
-          : (itemCategoryRes.data?.item_categories || []);
-
-        const priorityItemCategoryId =
-          itemSubCategory.priority_item_category_id ||
-          itemSubCategory.priorityItemCategoryId ||
-          product?.priority_item_category_id ||
-          product?.priorityItemCategoryId ||
-          product?.item_category_id ||
-          product?.itemCategoryId;
-
-        const priorityIndex = itemCategories.findIndex(
-          (item) => String(item.id) === String(priorityItemCategoryId)
-        );
-
-        const allowedIds = priorityIndex >= 0
-          ? itemCategories.slice(0, priorityIndex + 1).map((item) => item.id)
-          : (priorityItemCategoryId ? [priorityItemCategoryId] : itemCategories.map((item) => item.id));
-
-        setAllowedItemCategoryIds(allowedIds);
-      } catch (error) {
-        console.error("Error loading priority item category:", error);
-        setAllowedItemCategoryIds([]);
-      }
-    };
-
-    if (product) loadPriorityItemCategory();
-  }, [product]);
-
-  useEffect(() => {
-    const loadRecommendedCompanies = async () => {
-      const sourceCompanies = Array.isArray(product?.recommended_companies) ? product.recommended_companies : [];
-      const currentItemSubcategoryId = product?.item_subcategory_id || product?.itemSubcategoryId;
-
-      if (!sourceCompanies.length || !currentItemSubcategoryId) {
-        setFilteredRecommendedCompanies([]);
-        return;
-      }
-
-      try {
-        const companyChecks = await Promise.all(
-          sourceCompanies.map(async (company) => {
-            if (!company?.organization_slug) return null;
-
-            try {
-              const res = await axios.get(`${API_BASE_URL}/products/companies/${company.organization_slug}`);
-              const products = Array.isArray(res.data?.products) ? res.data.products : [];
-
-              const hasMatchingProduct = products.some((item) => {
-                const itemSubcategoryId = item?.item_subcategory_id || item?.itemSubcategoryId;
-                const itemCategoryId = item?.item_category_id || item?.itemCategoryId;
-
-                if (String(itemSubcategoryId) !== String(currentItemSubcategoryId)) return false;
-
-                if (allowedItemCategoryIds.length > 0) {
-                  return allowedItemCategoryIds.some((allowedId) => String(allowedId) === String(itemCategoryId));
-                }
-
-                return true;
-              });
-
-              return hasMatchingProduct ? company : null;
-            } catch (error) {
-              return null;
-            }
-          })
-        );
-
-        setFilteredRecommendedCompanies(companyChecks.filter(Boolean));
-      } catch (error) {
-        console.error("Error filtering recommended companies:", error);
-        setFilteredRecommendedCompanies([]);
-      }
-    };
-
-    if (product) loadRecommendedCompanies();
-  }, [product, allowedItemCategoryIds]);
 
   const timeAgo = (date) => {
     if (!date) return '—';
@@ -379,28 +244,7 @@ const ProductDetail = () => {
     return imgs;
   })();
 
-  const currentItemSubcategoryId = product?.item_subcategory_id || product?.itemSubcategoryId;
-  const currentItemCategoryId = product?.item_category_id || product?.itemCategoryId;
-  const currentCategoryId = product?.category_id || product?.category || product?.categoryId;
-  const currentSubCategoryId = product?.sub_category_id || product?.subcategory_id || product?.subCategoryId;
-  const currentItemCategoryName = String(product?.item_category_name || "").trim().toLowerCase();
-
-  const similarProducts = (Array.isArray(product?.similar_products) ? product.similar_products : [])
-    .filter((item) => {
-      if (!currentItemSubcategoryId) return true;
-      const itemSubcategoryId = item?.item_subcategory_id || item?.itemSubcategoryId;
-      return String(itemSubcategoryId) === String(currentItemSubcategoryId);
-    })
-    .filter((item) => {
-      const itemCategoryName = String(item?.item_category_name || item?.itemCategoryName || "").trim().toLowerCase();
-      if (currentItemCategoryName) return itemCategoryName === currentItemCategoryName;
-      return true;
-    });
-
-  const recommendedCompanies = (filteredRecommendedCompanies.length > 0
-    ? filteredRecommendedCompanies
-    : (Array.isArray(product?.recommended_companies) ? product.recommended_companies : [])
-  ).filter((item) => item?.company_logo_file);
+  const similarProducts = Array.isArray(product?.similar_products) ? product.similar_products : [];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1007,104 +851,22 @@ const ProductDetail = () => {
 
         </div>
 
-
-        {/* Recommended Companies */}
-        {recommendedCompanies.length > 0 && (
-          <div className='container-fluid px-4'>
-            <div className="similerCompany mt-lg-5 mt-3">
-              <h2 className="color-primary">Recommended Companies</h2>
-              <Swiper
-                modules={[Navigation, Pagination]}
-                spaceBetween={20}
-                navigation
-                watchOverflow={true}
-                loop={recommendedCompanies.length > 5}
-                className="recommended-companies-carousel"
-                style={{ padding: "20px 0" }}
-                breakpoints={{
-                  0: {
-                    slidesPerView: 1,
-                  },
-                  576: {
-                    slidesPerView: 2,
-                  },
-                  768: {
-                    slidesPerView: 3,
-                  },
-                  992: {
-                    slidesPerView: 4,
-                  },
-                  1200: {
-                    slidesPerView: 5,
-                  },
-                }}
-              >
-                {recommendedCompanies.map((item, index) => (
-                  <SwiperSlide key={item.id} className="bg-white border rounded p-2 text-center">
-                    <div className='productContainer'>
-                      <Link to={`/companies/${item.organization_slug}`}>
-                        <div className="recLogoWrap">
-                          <ImageFront
-                            src={`${ROOT_URL}/${item.company_logo_file}`}
-                            width={180}
-                            height={180}
-                            loading={index < 2 ? 'eager' : 'lazy'}
-                            fetchPriority={index < 2 ? 'high' : 'auto'}
-                            showFallback
-                          />
-                        </div>
-                        <div className="recText">
-                          <h6 className="recName" title={item.organization_name}>{item.organization_name}</h6>
-                          <div className="recLocation">
-                            {(item.city_name || item.state_name) && <i className="bx bx-map recLocIcon" />}
-                            {item.city_name}
-                            {item.city_name && item.state_name ? ', ' : ''}
-                            {item.state_name}
-                          </div>
-                        </div>
-                      </Link>
-
-                      <div className="recFooter">
-                        <Link
-                          to={`/companies/${item.organization_slug}`}
-                          className="btn btn-outline-primary btn-sm rec-view-bottom"
-                          aria-label={`View ${item.organization_name}`}
-                          title={`View ${item.organization_name}`}
-                        >
-                          View &nbsp;&nbsp;
-                          <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" className="filtersvg" aria-hidden="true"><path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z"></path></svg>
-                        </Link>
-                      </div>
-                    </div>
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            </div>
-          </div>
-        )}
-
       </div>
 
       {/* Browse Related Categories */}
-      {true && (
+      {currentItemTypes.length > 0 && (
         <div className="container-fluid px-4 py-4">
-          <h5 className="pd-section-title mb-4">Browse Related Categories
-          </h5>
-          {currentItemTypes.length > 0 ? (
-            <div className="pd-related-grid">
-              {currentItemTypes.map((cat) => (
-                <Link key={cat.id} to={`/products?category_id=${product.category_id || product.category}&subcategory_id=${product.sub_category_id || product.subcategory_id}&item_category_id=${product.item_category_id || product.itemCategoryId}&item_subcategory_id=${cat.id}`} className="pd-rel-cat-card text-decoration-none">
-                  <div className="pd-rel-cat-img">
-                    <ImageFront src={`${ROOT_URL}/${cat.file_name || cat.image}`} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} showFallback />
-                  </div>
-                  <span className="pd-rel-cat-name">{cat.name}</span>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="text-muted px-1">No item subcategories found for this item category.</div>
-          )}
-
+          <h5 className="pd-section-title mb-4">Browse Related Categories</h5>
+          <div className="pd-related-grid">
+            {currentItemTypes.map((cat) => (
+              <Link key={cat.id} to={`/products?category_id=${product.category_id || product.category}&subcategory_id=${product.sub_category_id || product.subcategory_id}&item_category_id=${product.item_category_id || product.itemCategoryId}&item_subcategory_id=${cat.id}`} className="pd-rel-cat-card text-decoration-none">
+                <div className="pd-rel-cat-img">
+                  <ImageFront src={`${ROOT_URL}/${cat.file_name || cat.image}`} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} showFallback />
+                </div>
+                <span className="pd-rel-cat-name">{cat.name}</span>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 

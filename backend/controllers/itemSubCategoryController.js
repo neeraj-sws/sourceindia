@@ -135,6 +135,22 @@ exports.getAllItemSubCategory = async (req, res) => {
       };
     });
 
+    // Bulk-fetch product counts for all item subcategories
+    const iscIds = modifiedItemSubCategories.map(s => s.id).filter(Boolean);
+    if (iscIds.length > 0) {
+      const counts = await Products.findAll({
+        attributes: ['item_subcategory_id', [fn('COUNT', col('product_id')), 'count']],
+        where: { item_subcategory_id: { [Op.in]: iscIds }, is_delete: 0, status: 1 },
+        group: ['item_subcategory_id'],
+        raw: true,
+      });
+      const countMap = {};
+      counts.forEach(c => { countMap[c.item_subcategory_id] = parseInt(c.count); });
+      modifiedItemSubCategories.forEach(s => { s.product_count = countMap[s.id] || 0; });
+    } else {
+      modifiedItemSubCategories.forEach(s => { s.product_count = 0; });
+    }
+
     res.json(modifiedItemSubCategories);
 
   } catch (err) {
