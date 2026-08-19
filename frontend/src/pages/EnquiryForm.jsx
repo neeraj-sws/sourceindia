@@ -480,7 +480,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                                 required
                               />
                             </div>
-                            {error && <div className="text-danger mb-3">{error}</div>}
+                            {/* {error && <div className="text-danger mb-3">{error}</div>} */}
                             {/* {message && <div className="text-success mb-3">{message}</div>} */}
                           </>
                         )}

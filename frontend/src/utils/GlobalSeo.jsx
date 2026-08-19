@@ -69,9 +69,7 @@ const GlobalSeo = () => {
 
         const product = res?.data || {};
 
-        const keywords = product.recommended_companies
-          ?.map((c) => c.organization_name)
-          .join(',');
+        const keywords = product.title || '';
 
         applySeo({
           title: product.title || DEFAULT_SEO.title,

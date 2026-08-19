@@ -56,6 +56,18 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                     isAuthenticated: false,
                 };
 
+            if (!payload.isAuthenticated) {
+                const phoneDigits = cleanPhone(formData.phone);
+                if (!/^[6-9]\d{9}$/.test(phoneDigits)) {
+                    setErrors((prev) => ({
+                        ...prev,
+                        phone: 'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.'
+                    }));
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+
             
 
             const response = await axios.post(
@@ -251,13 +263,14 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                                                     (formData.country_code || "").replace("+", "") +
                                                     (formData.phone || "")
                                                 }
-                                                onChange={(value, country) =>
+                                                onChange={(value, country) => {
                                                     setFormData((prev) => ({
                                                         ...prev,
                                                         country_code: `+${country.dialCode}`,
                                                         phone: value.slice(country.dialCode.length),
-                                                    }))
-                                                }
+                                                    }));
+                                                    setErrors((prev) => ({ ...prev, phone: '' }));
+                                                }}
                                                 containerClass="w-100"
                                                 inputClass={`form-control open_enq ${errors.phone ? "is-invalid" : ""}`}
                                                 inputProps={{
@@ -267,8 +280,10 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                                                 placeholder="Phone"
                                             />
 
-                                            {errors.phone && (
-                                                <div className="text-danger mt-1">{errors.phone}</div>
+                                            {formData.phone && !/^[6-9]\d{9}$/.test(formData.phone) && (
+                                                <div className="text-danger mt-1">
+                                                    Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.
+                                                </div>
                                             )}
                                         </div>
                                     </div>
