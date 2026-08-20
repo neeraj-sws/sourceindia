@@ -2497,3 +2497,51 @@ button.nav-link:hover {
         padding: 10px 10px;
     }
 }
+
+
+.categoryItemList {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.categoryItemList li {
+    position: relative;
+    padding-left: 12px;
+    margin-bottom: 4px;
+    font-size: 11.5px;
+    color: #374151;
+    line-height: 1.4;
+}
+
+.categoryItemList li:last-child {
+    margin-bottom: 0;
+}
+
+.categoryItemList li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ff6600;
+}
+
+.categoryItemList a {
+    color: #374151;
+    text-decoration: none;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s ease;
+}
+
+.categoryItemList a:hover {
+    color: #ff6600;
+}
