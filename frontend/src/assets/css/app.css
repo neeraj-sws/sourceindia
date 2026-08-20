@@ -3168,7 +3168,7 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 }
 
 .banner-slide {
-	height: 500px;
+	height: 465px;
 	background-size: cover;
 	/* background-position: right center; */
 	position: relative;
@@ -3361,7 +3361,7 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 }
 
 .banner-slide {
-	min-height: 72vh;
+	min-height: 65vh;
 	background-size: cover;
 	background-position: center;
 	position: relative;

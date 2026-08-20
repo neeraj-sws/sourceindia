@@ -150,7 +150,7 @@ body {
 .hero-left-card {
     background: #002341;
     color: #ffffff;
-    padding: 45px 38px;
+    padding: 25px 38px;
     min-height: 420px;
     display: flex;
     flex-direction: column;
@@ -160,10 +160,10 @@ body {
 }
 
 .hero-left-main {
-    font-size: 34px;
+    font-size: 25px;
     font-weight: 600;
     line-height: 1.05;
-    margin: 8px 0 10px;
+    margin: 8px 0 0px;
     color: #fff;
 }
 
@@ -277,7 +277,7 @@ body {
 }
 
 .hero-search-card {
-    min-height: 440px;
+    min-height: 360px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -559,11 +559,11 @@ body {
     min-width: 150px;
     background: #ffffff;
     color: var(--primary-color);
-    border-radius: 12px;
+    border-radius: 8px;
     box-shadow: 0 10px 26px rgba(1, 45, 110, 0.12);
     border: none;
     font-weight: 700;
-    padding: 14px 8px;
+    padding: 8px 8px;
 }
 
 .hero-cta:hover {
@@ -1854,10 +1854,10 @@ button.nav-link:hover {
     color: orange;
     font-weight: 600;
 }
-  
 
 
-  
+
+
 /* ============ HOME CATEGORY SHOWCASE (browse categories) ============ */
 .homeCategoryShowcase {
     background-color: #f7f7f7;
@@ -1933,7 +1933,7 @@ button.nav-link:hover {
     z-index: 2;
 }
 
-.browseCategories .mcl-iteam > a {
+.browseCategories .mcl-iteam>a {
     display: flex;
     align-items: center;
     padding: 10px 7px 10px 10px;
@@ -1947,7 +1947,7 @@ button.nav-link:hover {
     transition: all 0.3s ease;
 }
 
-.browseCategories .mcl-iteam > a .svg_icon {
+.browseCategories .mcl-iteam>a .svg_icon {
     margin-right: 12px;
     width: 22px;
     height: 22px;
@@ -1994,15 +1994,41 @@ button.nav-link:hover {
     box-shadow: 0px 0px 10px #ccc;
 }
 
-.browseCategories .mcl-iteam:nth-child(2) .mcsc { top: -83px; }
-.browseCategories .mcl-iteam:nth-child(3) .mcsc { top: -126px; }
-.browseCategories .mcl-iteam:nth-child(4) .mcsc { top: -169px; }
-.browseCategories .mcl-iteam:nth-child(5) .mcsc { top: -212px; }
-.browseCategories .mcl-iteam:nth-child(6) .mcsc { top: -255px; }
-.browseCategories .mcl-iteam:nth-child(7) .mcsc { top: -298px; }
-.browseCategories .mcl-iteam:nth-child(8) .mcsc { top: -341px; }
-.browseCategories .mcl-iteam:nth-child(9) .mcsc { top: -384px; }
-.browseCategories .mcl-iteam:nth-child(10) .mcsc { top: -427px; }
+.browseCategories .mcl-iteam:nth-child(2) .mcsc {
+    top: -83px;
+}
+
+.browseCategories .mcl-iteam:nth-child(3) .mcsc {
+    top: -126px;
+}
+
+.browseCategories .mcl-iteam:nth-child(4) .mcsc {
+    top: -169px;
+}
+
+.browseCategories .mcl-iteam:nth-child(5) .mcsc {
+    top: -212px;
+}
+
+.browseCategories .mcl-iteam:nth-child(6) .mcsc {
+    top: -255px;
+}
+
+.browseCategories .mcl-iteam:nth-child(7) .mcsc {
+    top: -298px;
+}
+
+.browseCategories .mcl-iteam:nth-child(8) .mcsc {
+    top: -341px;
+}
+
+.browseCategories .mcl-iteam:nth-child(9) .mcsc {
+    top: -384px;
+}
+
+.browseCategories .mcl-iteam:nth-child(10) .mcsc {
+    top: -427px;
+}
 
 .browseCategories .mcl-iteam:hover .mcsc {
     display: flex;
@@ -2192,7 +2218,7 @@ button.nav-link:hover {
     height: 100%;
 }
 
-.browseCategories .tren_iteam > a {
+.browseCategories .tren_iteam>a {
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -2206,7 +2232,7 @@ button.nav-link:hover {
     transition: all 0.3s ease;
 }
 
-.browseCategories .tren_iteam > a:hover {
+.browseCategories .tren_iteam>a:hover {
     box-shadow: 0px 0px 10px #ccc;
 }
 
@@ -2239,7 +2265,7 @@ button.nav-link:hover {
     background: rgba(0, 0, 0, 0.03);
 }
 
-.browseCategories .tren_iteam > a:hover .tren_img img {
+.browseCategories .tren_iteam>a:hover .tren_img img {
     transform: scale(1.1);
 }
 
@@ -2259,7 +2285,7 @@ button.nav-link:hover {
     -webkit-box-orient: vertical;
 }
 
-.browseCategories .tren_iteam > a:hover .tren_title {
+.browseCategories .tren_iteam>a:hover .tren_title {
     text-decoration: underline;
 }
 
@@ -2310,14 +2336,15 @@ button.nav-link:hover {
         border-radius: 10px;
     }
 
-     .browseCategories .promotional-banners {
+    .browseCategories .promotional-banners {
         display: flex;
         width: 100%;
         padding-top: 0;
         flex-direction: row;
         gap: 16px;
     }
-     .browseCategories .promotional-banners .pbr-banner-link {
+
+    .browseCategories .promotional-banners .pbr-banner-link {
         width: 50%;
     }
 
@@ -2337,7 +2364,7 @@ button.nav-link:hover {
         display: none;
     }
 
-    .browseCategories .mcl-iteam > a {
+    .browseCategories .mcl-iteam>a {
         flex: 1 1 auto;
         min-width: 0;
     }
@@ -2365,8 +2392,8 @@ button.nav-link:hover {
         border-top: 1px solid #f0f0f0;
     }
 
-    .browseCategories .mcl-iteam.open > .mcsc,
-    .browseCategories .mcl-iteam:hover > .mcsc {
+    .browseCategories .mcl-iteam.open>.mcsc,
+    .browseCategories .mcl-iteam:hover>.mcsc {
         display: flex;
         flex-wrap: wrap;
         align-content: flex-start;
@@ -2443,6 +2470,7 @@ button.nav-link:hover {
         width: 100%;
         padding: 10px 10px;
     }
+
     .browseCategories .promotional-banners {
         display: flex;
         flex-direction: column;

@@ -398,6 +398,7 @@ const ProductDetail = () => {
                   companyId={`${product.company_id}`}
                   productTitle={`${product.title}`}
                   companyName={`${product.company_name}`}
+                  initialQuantity={quoteQty || shareQty}
                 />
 
                 {/* Specs Table */}
@@ -447,8 +448,8 @@ const ProductDetail = () => {
                 {/* Interested in this product? banner */}
                 <div className="pd-interested-banner mb-4">
                   <div className="pd-ib-text">
-                    <h6>Interested in this product?</h6>
-                    <p>Ask for more details &amp; Latest Price from seller</p>
+                    <h6>Need this product?</h6>
+                    <p>Get product details, pricing & availability directly from the seller. </p>
                   </div>
                   <button className="btn btn-primary" onClick={() => setShowModal(true)}>Send Inquiry</button>
                 </div>
@@ -626,17 +627,15 @@ const ProductDetail = () => {
                   <button className="btn-get-quote" onClick={() => setShowModal(true)}>Get Quote Now</button>
                 </div>
 
-                <div className="card mt-3 shadow-sm pd-boost-card">
-                  <div className="card-body p-3">
+                <div className="card mt-3 shadow-sm pdboost-card">
+                  <div className="card-body p-1">
                     <div className="d-flex align-items-start justify-content-between">
-                      <div>
-                        <p className="mb-1" style={{ fontSize: 13, color: '#444' }}>Boost Business <span style={{ fontSize: 16 }}>⚡</span></p>
-                        <h5 className="fw-bold mb-1" style={{ color: '#1a2233', lineHeight: 1.2 }}>Growth 10X<br />Faster</h5>
-                        <p className="mb-3" style={{ fontSize: 12, color: '#6c7a94' }}>🚀 More Leads, More Buyers. More Growth.</p>
-                      </div>
-                      <span style={{ fontSize: 32 }}>🏪</span>
+                      <Link to="/registration" className="pbr-banner-link" aria-label="Promotional banner 1">
+                        <img src="/img1.png" class="w-100" alt="Promotional banner 1" loading="lazy" decoding="async" />
+                      </Link>
+                      
                     </div>
-                    <Link to="/registration" className="btn btn-sm w-100 pd-boost-btn">Sell on Source India →</Link>
+                   
                   </div>
                 </div>
               </div>
@@ -647,7 +646,7 @@ const ProductDetail = () => {
       </section>
 
       {/* Share Requirements — full width between 3-col and carousels */}
-      <div className="container-fluid px-4 py-0">
+      <div className="container-fluid px-4 py-0 d-none">
         <div className="row g-3">
           <div className="col-9">
 
