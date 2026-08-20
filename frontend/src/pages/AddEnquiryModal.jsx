@@ -44,6 +44,10 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                     user_id: user.id,
                     title: formData.title.trim(),
                     description: formData.description.trim(),
+                    name: formData.name.trim() || `${user.fname || ''} ${user.lname || ''}`.trim() || user.email || '',
+                    email: formData.email.trim() || user.email || '',
+                    phone: cleanPhone(formData.phone || user.mobile || ''),
+                    company: formData.company.trim() || user.company_info?.organization_name || '',
                     isAuthenticated: true,
                 }
                 : {
@@ -91,9 +95,12 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
 
             }
         } catch (error) {
-            const errMsg = error.response?.data?.errors
-                ? Object.values(error.response.data.errors).join(', ')
-                : 'An error occurred. Please try again.';
+            const errMsg =
+                error.response?.data?.message ||
+                error.response?.data?.error ||
+                (error.response?.data?.errors
+                    ? Object.values(error.response.data.errors).join(', ')
+                    : 'An error occurred. Please try again.');
             showNotification(errMsg, 'error');
         } finally {
             setIsSubmitting(false);

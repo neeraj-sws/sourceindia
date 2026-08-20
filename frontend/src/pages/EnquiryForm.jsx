@@ -191,8 +191,14 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
         window.location.reload(true);
       }, 2000);
     } catch (err) {
-      setError('Error submitting enquiry');
-      showNotification('Error submitting enquiry', 'error');
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.response?.data?.errors &&
+        Object.values(err.response.data.errors).join(', ') ||
+        'Error submitting enquiry';
+      setError(errMsg);
+      showNotification(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -226,11 +232,24 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
       // Refresh the page after successful submit
       window.location.reload();
     } catch (err) {
-      setError('Error submitting enquiry');
-      showNotification('Error submitting enquiry', 'error');
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.response?.data?.errors &&
+        Object.values(err.response.data.errors).join(', ') ||
+        'Error submitting enquiry';
+      setError(errMsg);
+      showNotification(errMsg, 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleFinalSubmit = (e) => {
+    if (user && user.walkin_buyer !== 1) {
+      return handleUserSubmit(e);
+    }
+    return handleSubmit(e);
   };
 
 
@@ -312,7 +331,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                   ) : (
                     <>
                       <h5>Enquiry Form</h5>
-                      <form className="pe-1 pt-2" onSubmit={step === 1 ? handleVerify : step === 2 ? handleSubmitOtp : handleSubmit}>
+                      <form className="pe-1 pt-2" onSubmit={step === 1 ? handleVerify : step === 2 ? handleSubmitOtp : handleFinalSubmit}>
                         {step >= 1 && (
                           <>
                             <div className="form-group mb-3">
@@ -503,7 +522,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  onClick={handleSubmit}
+                  onClick={handleFinalSubmit}
                   disabled={loading || (!productId && !selectedProductId)}
                 >
                   {loading ? <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" /> : 'Submit'}

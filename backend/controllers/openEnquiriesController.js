@@ -725,18 +725,27 @@ exports.getOpenenquiryEntry = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        user = await Users.create({
-          fname: name.trim(),
-          lname: '',
-          step: 0,
-          mode: 0,
-          company_id: companyRecord.id,
-          email: cleanEmail,
-          phone: phone?.trim() || null,
-          user_company: company.trim(),
-          password: hashedPassword,
-          real_password: password
-        });
+        try {
+          user = await Users.create({
+            fname: name.trim(),
+            lname: '',
+            step: 0,
+            mode: 0,
+            company_id: companyRecord.id,
+            email: cleanEmail,
+            phone: phone?.trim() || null,
+            user_company: company.trim(),
+            password: hashedPassword,
+            real_password: password
+          });
+        } catch (err) {
+          if (err?.name === 'SequelizeUniqueConstraintError' || err?.parent?.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({
+              error: 'This email already exists. Please use another email or log in with the existing account.'
+            });
+          }
+          throw err;
+        }
       }
 
       enquiry.user_id = user.id;

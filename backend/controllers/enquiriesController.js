@@ -1540,27 +1540,53 @@ exports.submitEnquiry = async (req, res) => {
     const user = await Users.findByPk(formData.user_id);
 
 
+    let suser = null;
+
     if (isAuthenticated) {
-      let suser = await Users.findByPk(formData.user_id);
-      enquiryPayload = { ...commonEnquiryFields, user_id: parseInt(formData.user_id, 10) };
+      suser = await Users.findByPk(formData.user_id);
+      enquiryPayload = {
+        ...commonEnquiryFields,
+        user_id: parseInt(formData.user_id, 10),
+        name: formData.name?.trim() || suser?.fname || '',
+        email: formData.email?.trim() || suser?.email || '',
+        phone: formData.phone?.trim() || suser?.mobile || '',
+        company: formData.company?.trim() || suser?.company_info?.organization_name || '',
+      };
     } else {
       const { password, hashedPassword } = await generatePassword();
       const company = await CompanyInfo.create({
         organization_name: formData.company.trim()
       });
-      let suser = await Users.create({
-        fname: formData.name.trim(),
-        lname: "",
-        company_id: company.id,
-        email: formData.email.trim(),
-        phone: formData.phone?.trim() || null,
-        user_company: formData.company.trim(),
-        password: hashedPassword,
-        real_password: password,
-      });
-      console.log(suser.id);
+      try {
+        suser = await Users.create({
+          fname: formData.name.trim(),
+          lname: "",
+          company_id: company.id,
+          email: formData.email.trim(),
+          phone: formData.phone?.trim() || null,
+          user_company: formData.company.trim(),
+          password: hashedPassword,
+          real_password: password,
+        });
+        console.log(suser.id);
+      } catch (err) {
+        if (err?.name === 'SequelizeUniqueConstraintError' || err?.parent?.code === 'ER_DUP_ENTRY') {
+          return res.status(409).json({
+            success: false,
+            message: 'This email already exists. Please use another email or log in with the existing account.'
+          });
+        }
+        throw err;
+      }
 
-      enquiryPayload = { ...commonEnquiryFields, user_id: parseInt(suser.id, 10) };
+      enquiryPayload = {
+        ...commonEnquiryFields,
+        user_id: parseInt(suser.id, 10),
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        company: formData.company.trim(),
+      };
     }
 
 
