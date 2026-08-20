@@ -1853,10 +1853,10 @@ button.nav-link:hover {
     color: orange;
     font-weight: 600;
 }
-  
 
 
-  
+
+
 /* ============ HOME CATEGORY SHOWCASE (browse categories) ============ */
 .homeCategoryShowcase {
     background-color: #f7f7f7;
@@ -1932,7 +1932,7 @@ button.nav-link:hover {
     z-index: 2;
 }
 
-.browseCategories .mcl-iteam > a {
+.browseCategories .mcl-iteam>a {
     display: flex;
     align-items: center;
     padding: 10px 7px 10px 10px;
@@ -1946,7 +1946,7 @@ button.nav-link:hover {
     transition: all 0.3s ease;
 }
 
-.browseCategories .mcl-iteam > a .svg_icon {
+.browseCategories .mcl-iteam>a .svg_icon {
     margin-right: 12px;
     width: 22px;
     height: 22px;
@@ -1993,15 +1993,41 @@ button.nav-link:hover {
     box-shadow: 0px 0px 10px #ccc;
 }
 
-.browseCategories .mcl-iteam:nth-child(2) .mcsc { top: -83px; }
-.browseCategories .mcl-iteam:nth-child(3) .mcsc { top: -126px; }
-.browseCategories .mcl-iteam:nth-child(4) .mcsc { top: -169px; }
-.browseCategories .mcl-iteam:nth-child(5) .mcsc { top: -212px; }
-.browseCategories .mcl-iteam:nth-child(6) .mcsc { top: -255px; }
-.browseCategories .mcl-iteam:nth-child(7) .mcsc { top: -298px; }
-.browseCategories .mcl-iteam:nth-child(8) .mcsc { top: -341px; }
-.browseCategories .mcl-iteam:nth-child(9) .mcsc { top: -384px; }
-.browseCategories .mcl-iteam:nth-child(10) .mcsc { top: -427px; }
+.browseCategories .mcl-iteam:nth-child(2) .mcsc {
+    top: -83px;
+}
+
+.browseCategories .mcl-iteam:nth-child(3) .mcsc {
+    top: -126px;
+}
+
+.browseCategories .mcl-iteam:nth-child(4) .mcsc {
+    top: -169px;
+}
+
+.browseCategories .mcl-iteam:nth-child(5) .mcsc {
+    top: -212px;
+}
+
+.browseCategories .mcl-iteam:nth-child(6) .mcsc {
+    top: -255px;
+}
+
+.browseCategories .mcl-iteam:nth-child(7) .mcsc {
+    top: -298px;
+}
+
+.browseCategories .mcl-iteam:nth-child(8) .mcsc {
+    top: -341px;
+}
+
+.browseCategories .mcl-iteam:nth-child(9) .mcsc {
+    top: -384px;
+}
+
+.browseCategories .mcl-iteam:nth-child(10) .mcsc {
+    top: -427px;
+}
 
 .browseCategories .mcl-iteam:hover .mcsc {
     display: flex;
@@ -2191,7 +2217,7 @@ button.nav-link:hover {
     height: 100%;
 }
 
-.browseCategories .tren_iteam > a {
+.browseCategories .tren_iteam>a {
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -2205,7 +2231,7 @@ button.nav-link:hover {
     transition: all 0.3s ease;
 }
 
-.browseCategories .tren_iteam > a:hover {
+.browseCategories .tren_iteam>a:hover {
     box-shadow: 0px 0px 10px #ccc;
 }
 
@@ -2238,7 +2264,7 @@ button.nav-link:hover {
     background: rgba(0, 0, 0, 0.03);
 }
 
-.browseCategories .tren_iteam > a:hover .tren_img img {
+.browseCategories .tren_iteam>a:hover .tren_img img {
     transform: scale(1.1);
 }
 
@@ -2258,7 +2284,7 @@ button.nav-link:hover {
     -webkit-box-orient: vertical;
 }
 
-.browseCategories .tren_iteam > a:hover .tren_title {
+.browseCategories .tren_iteam>a:hover .tren_title {
     text-decoration: underline;
 }
 
@@ -2309,14 +2335,15 @@ button.nav-link:hover {
         border-radius: 10px;
     }
 
-     .browseCategories .promotional-banners {
+    .browseCategories .promotional-banners {
         display: flex;
         width: 100%;
         padding-top: 0;
         flex-direction: row;
         gap: 16px;
     }
-     .browseCategories .promotional-banners .pbr-banner-link {
+
+    .browseCategories .promotional-banners .pbr-banner-link {
         width: 50%;
     }
 
@@ -2336,7 +2363,7 @@ button.nav-link:hover {
         display: none;
     }
 
-    .browseCategories .mcl-iteam > a {
+    .browseCategories .mcl-iteam>a {
         flex: 1 1 auto;
         min-width: 0;
     }
@@ -2364,8 +2391,8 @@ button.nav-link:hover {
         border-top: 1px solid #f0f0f0;
     }
 
-    .browseCategories .mcl-iteam.open > .mcsc,
-    .browseCategories .mcl-iteam:hover > .mcsc {
+    .browseCategories .mcl-iteam.open>.mcsc,
+    .browseCategories .mcl-iteam:hover>.mcsc {
         display: flex;
         flex-wrap: wrap;
         align-content: flex-start;
@@ -2442,6 +2469,7 @@ button.nav-link:hover {
         width: 100%;
         padding: 10px 10px;
     }
+
     .browseCategories .promotional-banners {
         display: flex;
         flex-direction: column;
@@ -2539,12 +2567,10 @@ button.nav-link:hover {
     position: absolute;
     inset: 0;
     z-index: 2;
-    background: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.05) 0%,
-        rgba(0, 0, 0, 0.2) 45%,
-        rgba(0, 0, 0, 0.85) 100%
-    );
+    background: linear-gradient(to bottom,
+            rgba(0, 0, 0, 0.05) 0%,
+            rgba(0, 0, 0, 0.2) 45%,
+            rgba(0, 0, 0, 0.85) 100%);
 }
 
 .categoryPromoContent {
@@ -2712,6 +2738,75 @@ button.nav-link:hover {
     margin: 0;
     padding: 0;
     list-style: none;
+}
+
+.subcategoryCardContent {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding-top: 10px;
+}
+
+.categoryItemList {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.categoryItemList li {
+    position: relative;
+    padding-left: 12px;
+    margin-bottom: 4px;
+    font-size: 11.5px;
+    color: #374151;
+    line-height: 1.4;
+}
+
+.categoryItemList li:last-child {
+    margin-bottom: 0;
+}
+
+.categoryItemList li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ff6600;
+}
+
+.categoryItemList a {
+    color: #374151;
+    text-decoration: none;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s ease;
+}
+
+.categoryItemList a:hover {
+    color: #ff6600;
+}
+
+.latest-product-card>a {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    text-decoration: none !important;
+    color: #222 !important;
+    box-sizing: border-box !important;
 }
 
 .categoryItemList li {
