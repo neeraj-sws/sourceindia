@@ -6,7 +6,7 @@ import axios from 'axios';
 import { useAuth } from "../context/AuthContext";
 import { Suspense, lazy } from 'react';
 
-const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, companyName }) => {
+const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, companyName, initialQuantity = '' }) => {
   const { showNotification } = useAlert();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
@@ -64,6 +64,12 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
       console.log('Condition not met - productId:', productId, 'companyId:', companyId);
     }
   }, [show, productId, companyId]);
+
+  useEffect(() => {
+    if (show) {
+      setQuantity(initialQuantity ? String(initialQuantity) : '');
+    }
+  }, [show, initialQuantity]);
 
 
   useEffect(() => {
@@ -242,6 +248,7 @@ const EnquiryForm = ({ show, onHide, productId, companyId, productTitle, company
     setError('');
     setExists(false);
     setSelectedProductId(productId || '');
+    setQuantity('');
     if (onHide) onHide();
   };
   return (

@@ -196,11 +196,11 @@ const Banner = () => {
   const carouselItems = homeBanner.length > 0
     ? homeBanner
     : [{
-        id: 'banner-placeholder',
-        description: 'Create Your Business Profile<br>Add Products in Few Clicks<br>Receive Enquiries & Grow Business',
-        button_url: '/registration',
-        button_text: 'Join as Seller',
-      }];
+      id: 'banner-placeholder',
+      description: 'Create Your Business Profile<br>Add Products in Few Clicks<br>Receive Enquiries & Grow Business',
+      button_url: '/registration',
+      button_text: 'Join as Seller',
+    }];
 
   const bgImageUrl = primaryBanner.file_name
     ? `${ROOT_URL}/${primaryBanner.file_name}`
@@ -222,13 +222,13 @@ const Banner = () => {
             }}
           >
             <div className="banner-overlay" />
-            <div className="container-fluid  h-100 px-5">
-              <div className="row h-100 align-items-center gy-4 gx-3">
+            <div className="container-fluid  px-5 mt-4">
+              <div className="row align-items-center gy-4 gx-3">
 
                 {/* LEFT: only this box slides */}
-                <div className="col-lg-4 col-xxl-4 h-100">
-                  <div id="carouselExampleCaptions" className="carousel slide h-100" data-bs-ride="carousel">
-                    <div className="carousel-inner h-100">
+                <div className="col-lg-4 col-xxl-4">
+                  <div id="carouselExampleCaptions" className="carousel slide me-5 pe-3" data-bs-ride="carousel">
+                    <div className="carousel-inner">
                       {carouselItems.map((slider, index) => {
                         const leftFeatures = slider.description
                           ? slider.description
@@ -238,8 +238,8 @@ const Banner = () => {
                           : ["Create Your Business Profile", "Add Products in Few Clicks", "Receive Enquiries & Grow Business"];
 
                         return (
-                          <div className={`carousel-item h-100 ${index === 0 ? 'active' : ''}`} key={slider.id || `placeholder-${index}`}>
-                            <div className="hero-left-card h-100">
+                          <div className={`carousel-item  ${index === 0 ? 'active' : ''}`} key={slider.id || `placeholder-${index}`}>
+                            <div className="hero-left-card">
                               <div className="hero-card-header mb-3">
                                 <span className="hero-slide-counter">{String(activeSlideIndex + 1).padStart(2, '0')}/{String(carouselItems.length || 1).padStart(2, '0')}</span>
                               </div>
@@ -252,8 +252,8 @@ const Banner = () => {
                               {/* <span className="hero-left-accent">SELL</span>  */}
                               <p className="hero-left-desc  mb-3 w-50">
                                 {index === 0
-                                ? "Share your requirements and connect with the right sellers."
-                                : "List your products and connect with verified buyers across India."}
+                                  ? "Share your requirements and connect with the right sellers."
+                                  : "List your products and connect with verified buyers across India."}
                               </p>
                               <ul className="hero-feature-list">
                                 {leftFeatures.map((feature, idx) => (
