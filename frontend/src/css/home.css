@@ -150,7 +150,7 @@ body {
 .hero-left-card {
     background: #002341;
     color: #ffffff;
-    padding: 45px 38px;
+    padding: 20px 26px;
     min-height: 420px;
     display: flex;
     flex-direction: column;
@@ -160,7 +160,7 @@ body {
 }
 
 .hero-left-main {
-    font-size: 34px;
+    font-size: 20px;
     font-weight: 600;
     line-height: 1.05;
     margin: 8px 0 10px;
@@ -179,7 +179,7 @@ body {
 .hero-left-desc {
     color: rgba(255, 255, 255, 0.9);
     margin: 10px 0 0;
-    font-size: 15px;
+    font-size: 12px;
     line-height: 1.8;
 }
 
@@ -246,9 +246,9 @@ body {
     position: relative;
     padding-left: 36px;
     color: rgba(255, 255, 255, 0.95);
-    font-size: 15px;
+    font-size: 12px;
     line-height: 1.9;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
 }
 
 .hero-feature-list li:before {
@@ -277,7 +277,7 @@ body {
 }
 
 .hero-search-card {
-    min-height: 440px;
+    min-height: 350px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -558,11 +558,11 @@ body {
     min-width: 150px;
     background: #ffffff;
     color: var(--primary-color);
-    border-radius: 12px;
+    border-radius: 8px;
     box-shadow: 0 10px 26px rgba(1, 45, 110, 0.12);
     border: none;
     font-weight: 700;
-    padding: 14px 8px;
+    padding: 10px 7px;
 }
 
 .hero-cta:hover {

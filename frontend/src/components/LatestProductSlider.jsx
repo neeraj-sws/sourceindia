@@ -70,7 +70,7 @@ const LatestProductSlider = ({
       style={{
         position: "relative",
         width: "100%",
-        background: "#fff",
+        background: "#f7f7f7",
         border: "1px solid #eeeeee",
         borderRadius: "6px",
         padding: "14px 20px 16px",
@@ -82,9 +82,9 @@ const LatestProductSlider = ({
           SLIDER CSS
       ===================================================== */}
 
-      
+
       <style>
-  {`
+        {`
     /* =====================================================
        MAIN SLIDER CONTAINER
        ===================================================== */
@@ -678,7 +678,7 @@ const LatestProductSlider = ({
       }
     }
   `}
-</style>
+      </style>
 
 
       {/* =====================================================
