@@ -643,6 +643,7 @@ body {
     .hero-left-card,
     .hero-search-card {
         padding: 22px;
+        max-width: 100%;
     }
 
     .hero-left-title,
@@ -656,7 +657,6 @@ body {
 
     /* stack search bar vertically on tablet */
     .popularPartbox {
-        grid-template-columns: 1fr;
         border-radius: 14px;
     }
 
@@ -691,9 +691,16 @@ body {
     .top-bar .topbar-actions {
         width: 100%;
     }
+
+    .rowleftBox {
+        grid-template-columns: 35% 60% !important;
+    }
 }
 
 @media (max-width: 768px) {
+    .rowleftBox {
+        grid-template-columns: 1fr !important;
+    }
 
     .banner-slide {
         min-height: auto;
