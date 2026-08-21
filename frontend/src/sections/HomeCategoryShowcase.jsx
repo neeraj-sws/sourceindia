@@ -278,7 +278,7 @@ const HomeCategoryShowcase = () => {
 
   return (
     <section className="homeCategoryShowcase py-md-4 py-5 my-3">
-      <div className=" browseCategoriesContainer">
+      <div className="">
         <div className="browseCategories">
           {/* ===== LEFT - TOP CATEGORIES (hover mega menu) ===== */}
           {hasCategories && (

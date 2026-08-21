@@ -165,7 +165,7 @@ const ProductDetail = () => {
       </style>
 
       <section className="productDetail py-5">
-        <div className="container">
+        <div className="container-xxl">
           <div className="row">
 
             {/* Left Image */}
@@ -293,7 +293,7 @@ const ProductDetail = () => {
     <>
 
       <section className="productDetail pt-2 pb-4">
-        <div className="container-fluid px-4">
+        <div className="container-xxl">
 
           {/* Breadcrumb */}
           <nav aria-label="breadcrumb" className="mb-3">
@@ -646,7 +646,7 @@ const ProductDetail = () => {
       </section>
 
       {/* Share Requirements — full width between 3-col and carousels */}
-      <div className="container-fluid px-4 py-0 d-none">
+      <div className="container-xxl py-0 d-none">
         <div className="row g-3">
           <div className="col-9">
 
@@ -754,7 +754,7 @@ const ProductDetail = () => {
       </div>
 
       <div className="product-detail-container companyProducts">
-        <div className="container-fluid px-4">
+        <div className="container-xxl">
 
           {/* More Products From This Seller */}
           {sellerProducts.length > 0 && (
@@ -854,7 +854,7 @@ const ProductDetail = () => {
 
       {/* Browse Related Categories */}
       {currentItemTypes.length > 0 && (
-        <div className="container-fluid px-4 py-4">
+        <div className="container-xxl py-4">
           <h5 className="pd-section-title mb-4">Browse Related Categories</h5>
           <div className="pd-related-grid">
             {currentItemTypes.map((cat) => (
@@ -871,7 +871,7 @@ const ProductDetail = () => {
 
       {/* Popular Categories */}
       {popularCategories.length > 0 && (
-        <div className="container-fluid px-4 pb-5">
+        <div className="container-xxl pb-5">
           <h5 className="pd-pop-cats-title">Popular Categories</h5>
           <div className="pd-pop-cats">
             {popularCategories.map((cat) => (
