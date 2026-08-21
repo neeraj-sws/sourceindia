@@ -695,9 +695,18 @@ body {
     .rowleftBox {
         grid-template-columns: 35% 60% !important;
     }
+
+    .top-bar .middleBox,
+    .top-bar .lastbox,
+    .top-bar .welcomeBox {
+        width: auto !important;
+    }
 }
 
 @media (max-width: 768px) {
+
+
+
     .rowleftBox {
         grid-template-columns: 1fr !important;
     }
@@ -742,6 +751,14 @@ body {
 }
 
 @media (max-width: 576px) {
+    .hero-search-form .form-control {
+        min-width: auto;
+        width: 100%;
+    }
+
+    .popularPartbox {
+        grid-template-columns: 1fr;
+    }
 
     .hero-search-card {
         padding: 16px 12px;
@@ -1890,8 +1907,8 @@ button.nav-link:hover {
 }
 
 .browseCategoriesContainer {
-  padding-left: 2.2rem !important;
-  padding-right: 2.2rem !important;
+    padding-left: 2.2rem !important;
+    padding-right: 2.2rem !important;
 }
 
 .browseCategories {
@@ -2313,15 +2330,7 @@ button.nav-link:hover {
 }
 
 /* ----- Responsive ----- */
-/* The center grid uses `repeat(auto-fill, minmax(170px, 1fr))` so tiles wrap
-   into additional rows on smaller screens. All 12 tiles remain visible. */
 
-/* Desktop (>=992px): exactly 3 trending tiles per row */
-@media (min-width: 992px) {
-    .browseCategories .tren_list {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
 
 /* Below 992px: full-width stacked sections + accordion sidebar */
 @media (max-width: 991.98px) {
@@ -2983,6 +2992,10 @@ button.nav-link:hover {
 @media (max-width: 575px) {
     .subcategoryGrid {
         grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .top-bar .middleBox {
+        flex: auto;
     }
 }
 
