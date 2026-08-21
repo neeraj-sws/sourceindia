@@ -695,9 +695,18 @@ body {
     .rowleftBox {
         grid-template-columns: 35% 60% !important;
     }
+
+    .top-bar .middleBox,
+    .top-bar .lastbox,
+    .top-bar .welcomeBox {
+        width: auto !important;
+    }
 }
 
 @media (max-width: 768px) {
+
+
+
     .rowleftBox {
         grid-template-columns: 1fr !important;
     }
@@ -742,6 +751,14 @@ body {
 }
 
 @media (max-width: 576px) {
+    .hero-search-form .form-control {
+        min-width: auto;
+        width: 100%;
+    }
+
+    .popularPartbox {
+        grid-template-columns: 1fr;
+    }
 
     .hero-search-card {
         padding: 16px 12px;
@@ -2990,7 +3007,11 @@ button.nav-link:hover {
 
 @media (max-width: 575px) {
     .subcategoryGrid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .top-bar .middleBox {
+        flex: auto;
     }
 }
 
