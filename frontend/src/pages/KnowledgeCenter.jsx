@@ -23,7 +23,7 @@ const KnowledgeCenter = () => {
   return (
     <Suspense fallback={<div></div>}>
       <section className="my-5">
-        <div className="container-xl">
+        <div className="container-xxl">
           <div className="card mb-lg-5 mb-3 commonHead border shodow-none">
             <div className="card-body py-5 d-flex align-items-center justify-content-center">
               <div className="firstHead text-center">

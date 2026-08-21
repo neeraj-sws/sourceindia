@@ -186,7 +186,7 @@ const ItemCategory = () => {
 
   return (
     <section className="categorySection py-md-4 pt-2 my-4">
-      <div className="container-xl">
+      <div className="container-xxl">
 
         {/* =====================================================
             BREADCRUMB
@@ -319,7 +319,7 @@ const ItemCategory = () => {
                                     <h6 className="small fw-semibold mb-1">
                                       {item.name.length > 45
                                         ? item.name.slice(0, 45) +
-                                          "..."
+                                        "..."
                                         : item.name}
                                     </h6>
 
@@ -352,10 +352,10 @@ const ItemCategory = () => {
                       ================================================= */}
 
                       <LatestProductSlider
-  products={catProducts[cat.id] || []}
-  categoryName={cat.name}
-  categoryId={cat.id}
-/>
+                        products={catProducts[cat.id] || []}
+                        categoryName={cat.name}
+                        categoryId={cat.id}
+                      />
                     </div>
 
                   </div>

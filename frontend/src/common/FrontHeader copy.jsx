@@ -136,7 +136,7 @@ const FrontHeader = () => {
               {isLoggedIn && user ? (
                 <span>Welcome <b className="text-orange">{user.is_seller ? 'Seller' : 'Buyer'}</b>!</span>
               ) : (
-                <span>Welcome User!</span>
+                <span>Welcome to Source India Portal</span>
               )}
               <div className="text-center text-md-start d-none d-md-block">
                 <span className="ms-3">Support: {mobile}</span>

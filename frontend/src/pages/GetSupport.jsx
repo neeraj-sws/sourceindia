@@ -85,7 +85,7 @@ const GetSupport = () => {
       </style>
 
       <section className="my-5">
-        <div className="container-xl">
+        <div className="container-xxl">
 
           {/* Header */}
           <div className="card mb-5">
@@ -141,7 +141,7 @@ const GetSupport = () => {
 
   return (
     <section className="my-5">
-      <div className="container-xl">
+      <div className="container-xxl">
         <div className="card mb-5 commonHead border shodow-none">
           <div className="card-body py-5 d-flex align-items-center justify-content-center">
             <div className="firstHead text-center">

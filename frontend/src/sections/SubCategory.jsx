@@ -13,50 +13,50 @@ const SubCategory = () => {
   const [subCatProducts, setSubCatProducts] = useState({});
 
   // =========================================================
-// 🟢 FETCH PRODUCTS FOR EACH SUBCATEGORY
-// =========================================================
-useEffect(() => {
-  const subs = (category?.subcategories || []).filter(
-    (sub) => sub.product_count > 0
-  );
+  // 🟢 FETCH PRODUCTS FOR EACH SUBCATEGORY
+  // =========================================================
+  useEffect(() => {
+    const subs = (category?.subcategories || []).filter(
+      (sub) => sub.product_count > 0
+    );
 
-  if (!subs.length || !category?.id) return;
+    if (!subs.length || !category?.id) return;
 
-  let cancelled = false;
+    let cancelled = false;
 
-  subs.forEach(async (sub) => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/products`, {
-        params: {
-          category: category.id,
-          sub_category: sub.id,
-          is_delete: 0,
-          status: 1,
-          is_approve: 1,
-          is_front: 1,
-          limit: 10,
-          sort_by: "newest",
-        },
-      });
+    subs.forEach(async (sub) => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/products`, {
+          params: {
+            category: category.id,
+            sub_category: sub.id,
+            is_delete: 0,
+            status: 1,
+            is_approve: 1,
+            is_front: 1,
+            limit: 10,
+            sort_by: "newest",
+          },
+        });
 
-      if (!cancelled) {
-        setSubCatProducts((prev) => ({
-          ...prev,
-          [sub.id]: res.data.products || [],
-        }));
+        if (!cancelled) {
+          setSubCatProducts((prev) => ({
+            ...prev,
+            [sub.id]: res.data.products || [],
+          }));
+        }
+      } catch (err) {
+        console.error(
+          `Error fetching products for subcategory ${sub.id}:`,
+          err
+        );
       }
-    } catch (err) {
-      console.error(
-        `Error fetching products for subcategory ${sub.id}:`,
-        err
-      );
-    }
-  });
+    });
 
-  return () => {
-    cancelled = true;
-  };
-}, [category]);
+    return () => {
+      cancelled = true;
+    };
+  }, [category]);
 
 
   useEffect(() => {
@@ -70,23 +70,23 @@ useEffect(() => {
 
         setTimeout(() => {
           if (data && data.category) {
-  const visibleSubcategories = (data.category.subcategories || []).filter(
-    (sub) => sub.product_count > 0
-  );
+            const visibleSubcategories = (data.category.subcategories || []).filter(
+              (sub) => sub.product_count > 0
+            );
 
-  setCategory((prev) => ({
-  // Copy all other fields from API category
-  ...data.category,
-  // Replace subcategories with filtered ones
-  subcategories:
-    page === 1
-      ? visibleSubcategories
-      : [...(prev?.subcategories || []), ...visibleSubcategories],
-}));
+            setCategory((prev) => ({
+              // Copy all other fields from API category
+              ...data.category,
+              // Replace subcategories with filtered ones
+              subcategories:
+                page === 1
+                  ? visibleSubcategories
+                  : [...(prev?.subcategories || []), ...visibleSubcategories],
+            }));
 
-// Update hasMore based on visible subcategories
-setHasMore(visibleSubcategories.length === 9); // 9 is your limit
-}
+            // Update hasMore based on visible subcategories
+            setHasMore(visibleSubcategories.length === 9); // 9 is your limit
+          }
 
           setShowSkeleton(false);
         }, 1000); // ⏱️ 1 second skeleton
@@ -169,7 +169,7 @@ setHasMore(visibleSubcategories.length === 9); // 9 is your limit
 
   return (
     <section className="categorySection py-md-4 pt-2 my-4">
-      <div className="container-xl">
+      <div className="container-xxl">
         <div className="categoryMain">
           <nav aria-label="breadcrumb" className="mb-3">
             <ol className="breadcrumb mb-0">
@@ -193,191 +193,191 @@ setHasMore(visibleSubcategories.length === 9); // 9 is your limit
           <h4 className="fw-semibold mb-4">{category.name}</h4>
           <div className="row g-3">
 
-  {category.subcategories?.length > 0 ? (
+            {category.subcategories?.length > 0 ? (
 
-    category.subcategories
-      .filter((sub) => sub.product_count > 0)
-      .map((sub) => (
+              category.subcategories
+                .filter((sub) => sub.product_count > 0)
+                .map((sub) => (
 
-        <div
-          key={sub.id}
-          className="col-12"
-        >
+                  <div
+                    key={sub.id}
+                    className="col-12"
+                  >
 
-          <div className="card card-hover h-100 shadow-sm border-0">
+                    <div className="card card-hover h-100 shadow-sm border-0">
 
-            <div className="card-body">
+                      <div className="card-body">
 
-              {/* =========================================
+                        {/* =========================================
                   SUBCATEGORY HEADER
               ========================================= */}
 
-              <a
-                href={`/categories/${category.slug}/${sub.slug}`}
-                className="d-block text-decoration-none"
-              >
+                        <a
+                          href={`/categories/${category.slug}/${sub.slug}`}
+                          className="d-block text-decoration-none"
+                        >
 
-                <div className="d-flex justify-content-between align-items-center">
+                          <div className="d-flex justify-content-between align-items-center">
 
-                  <h5 className="fw-semibold mb-3">
-                    {sub.name} ({sub.product_count})
-                  </h5>
+                            <h5 className="fw-semibold mb-3">
+                              {sub.name} ({sub.product_count})
+                            </h5>
 
-                  <span>→</span>
+                            <span>→</span>
 
-                </div>
+                          </div>
 
-              </a>
+                        </a>
 
 
-              {/* =========================================
+                        {/* =========================================
                   ITEM CATEGORY CARDS
               ========================================= */}
 
-              <div
-                className="subcategory-items-slider"
-                style={{
-                  display: "flex",
-                  gap: "24px",
-                  overflowX: "auto",
-                  overflowY: "hidden",
-                  paddingBottom: "8px",
-                  scrollbarWidth: "thin",
-                }}
-              >
-
-                {(sub.item_categories || [])
-                  .filter((item) => item.product_count > 0)
-                  .map((item) => (
-
-                    <a
-                      key={item.id}
-                      href={`/products?category_id=${category.id}&subcategory_id=${sub.id}&item_category_id=${item.id}`}
-                      className="text-decoration-none"
-                      style={{
-                        flex: "0 0 160px",
-                      }}
-                    >
-
-                      <div
-                        className="border rounded text-center"
-                        style={{
-                          height: "205px",
-                          padding: "16px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: "#fff",
-                        }}
-                      >
-
-                        {/* Item Category Image */}
-
                         <div
+                          className="subcategory-items-slider"
                           style={{
-                            width: "125px",
-                            height: "125px",
-                            marginBottom: "10px",
                             display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            overflow: "hidden",
-                            borderRadius: "6px",
+                            gap: "24px",
+                            overflowX: "auto",
+                            overflowY: "hidden",
+                            paddingBottom: "8px",
+                            scrollbarWidth: "thin",
                           }}
                         >
 
-                          <img
-                            src={
-                              item.file_name
-                                ? `${ROOT_URL}/${item.file_name}`
-                                : "/default.png"
-                            }
-                            alt={item.name}
-                            loading="lazy"
-                            decoding="async"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = "/default.png";
-                            }}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "contain",
-                            }}
+                          {(sub.item_categories || [])
+                            .filter((item) => item.product_count > 0)
+                            .map((item) => (
+
+                              <a
+                                key={item.id}
+                                href={`/products?category_id=${category.id}&subcategory_id=${sub.id}&item_category_id=${item.id}`}
+                                className="text-decoration-none"
+                                style={{
+                                  flex: "0 0 160px",
+                                }}
+                              >
+
+                                <div
+                                  className="border rounded text-center"
+                                  style={{
+                                    height: "205px",
+                                    padding: "16px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    background: "#fff",
+                                  }}
+                                >
+
+                                  {/* Item Category Image */}
+
+                                  <div
+                                    style={{
+                                      width: "125px",
+                                      height: "125px",
+                                      marginBottom: "10px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      overflow: "hidden",
+                                      borderRadius: "6px",
+                                    }}
+                                  >
+
+                                    <img
+                                      src={
+                                        item.file_name
+                                          ? `${ROOT_URL}/${item.file_name}`
+                                          : "/default.png"
+                                      }
+                                      alt={item.name}
+                                      loading="lazy"
+                                      decoding="async"
+                                      onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = "/default.png";
+                                      }}
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "contain",
+                                      }}
+                                    />
+
+                                  </div>
+
+
+                                  {/* Item Category Name */}
+
+                                  <div
+                                    style={{
+                                      fontSize: "13px",
+                                      fontWeight: "600",
+                                      lineHeight: "17px",
+                                      color: "#004f9e",
+                                    }}
+                                  >
+                                    {item.name}
+                                  </div>
+
+
+                                  {/* Product Count */}
+
+                                  {item.product_count > 0 && (
+                                    <div
+                                      className="text-success"
+                                      style={{
+                                        fontSize: "12px",
+                                        marginTop: "4px",
+                                      }}
+                                    >
+                                      ({item.product_count})
+                                    </div>
+                                  )}
+
+                                </div>
+
+                              </a>
+
+                            ))}
+
+                        </div>
+
+
+                        {/* =========================================
+                  LATEST PRODUCTS SLIDER
+              ========================================= */}
+
+                        {(subCatProducts[sub.id] || []).length > 0 && (
+
+                          <LatestProductSlider
+                            products={subCatProducts[sub.id] || []}
+                            categoryName={sub.name}
+                            categoryId={sub.id}
                           />
 
-                        </div>
-
-
-                        {/* Item Category Name */}
-
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            lineHeight: "17px",
-                            color: "#004f9e",
-                          }}
-                        >
-                          {item.name}
-                        </div>
-
-
-                        {/* Product Count */}
-
-                        {item.product_count > 0 && (
-                          <div
-                            className="text-success"
-                            style={{
-                              fontSize: "12px",
-                              marginTop: "4px",
-                            }}
-                          >
-                            ({item.product_count})
-                          </div>
                         )}
 
                       </div>
 
-                    </a>
+                    </div>
 
-                  ))}
+                  </div>
 
-              </div>
+                ))
 
+            ) : (
 
-              {/* =========================================
-                  LATEST PRODUCTS SLIDER
-              ========================================= */}
+              <p className="text-muted small">
+                No subcategories found.
+              </p>
 
-              {(subCatProducts[sub.id] || []).length > 0 && (
-
-                <LatestProductSlider
-                  products={subCatProducts[sub.id] || []}
-                  categoryName={sub.name}
-                  categoryId={sub.id}
-                />
-
-              )}
-
-            </div>
+            )}
 
           </div>
-
-        </div>
-
-      ))
-
-  ) : (
-
-    <p className="text-muted small">
-      No subcategories found.
-    </p>
-
-  )}
-
-</div>
           {/* 🟢 Load More Button */}
           {hasMore && (
             <div className="text-center mt-4">

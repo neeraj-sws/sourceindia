@@ -3168,7 +3168,7 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 }
 
 .banner-slide {
-	height: 465px;
+	height: auto;
 	background-size: cover;
 	/* background-position: right center; */
 	position: relative;
@@ -3276,7 +3276,7 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 }
 
 .hero-search-card {
-	background: rgba(255, 255, 255, 0.95);
+	background: #edf7fc;
 	border-radius: 28px;
 	padding: 34px 30px;
 	box-shadow: 0 30px 80px rgba(0, 0, 0, 0.10);
@@ -3361,7 +3361,7 @@ table.dataTable thead>tr>td.dt-orderable-desc:hover {
 }
 
 .banner-slide {
-	min-height: 65vh;
+	min-height: auto;
 	background-size: cover;
 	background-position: center;
 	position: relative;

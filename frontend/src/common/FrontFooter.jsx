@@ -23,7 +23,7 @@ const FrontFooter = () => {
   return (
     <footer>
       <div className="mainFooter">
-        <div className="container-xl">
+        <div className="container-xxl">
           <div className="row gy-4">
             <div className="col-md-3 col-sm-4 order-1">
               <p className="fw-semibold mb-1">Developed and Managed by</p>

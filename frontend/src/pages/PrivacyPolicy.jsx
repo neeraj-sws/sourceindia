@@ -28,7 +28,7 @@ const PrivacyPolicy = () => {
   if (error) return <div className="container my-5 text-center text-danger">{error}</div>;
 
   return (
-    <div className="container-xl my-5">
+    <div className="container-xxl my-5">
       <div className="card mb-lg-5 mb-3 commonHead border shadow-none">
         <div className="card-body py-5 text-center">
           <h1 className="text-white">{pageData.title}</h1>

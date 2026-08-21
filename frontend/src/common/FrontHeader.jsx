@@ -37,6 +37,7 @@ const FrontHeader = () => {
   const [menuItems, setMenuItems] = useState([]);
   const [searchFocused, setSearchFocused] = useState(false);
   const location = useLocation();
+  const isHomePage = location.pathname === "/";
   const normalizeSearchValue = (value = "") =>
     value.toString().replace(/\s+/g, " ").trim();
   // Keep searchQuery in sync with URL ?search= param
@@ -197,7 +198,7 @@ const FrontHeader = () => {
   return (
     <>
       <header className="mainHeader">
-        <div className="container-xl">
+        <div className="container-xxl">
           <div className="top-bar px-xl-3 d-flex justify-content-between align-items-center">
             <div className="welcomeBox d-lg-flex d-block">
               {isLoggedIn && user ? (
@@ -209,12 +210,13 @@ const FrontHeader = () => {
                   !
                 </span>
               ) : (
-                <span className="text-nowrap">Welcome User!</span>
+                <span className="text-nowrap">Welcome to Source India Portal</span>
               )}
               <div className="text-center text-md-start d-none d-md-block">
                 <span className="ms-xl-3 text-nowrap">Support: {mobile}</span>
               </div>
             </div>
+            {!isHomePage && (
             <div className="middleBox">
               <form onSubmit={handleSubmit} className="d-flex align-items-center flex-grow-1 position-relative w-100">
                 <div className="search-bar-front d-flex w-100">
@@ -273,6 +275,7 @@ const FrontHeader = () => {
                 </div>
               </form>
             </div>
+            )}
             <div className="lastbox">
               <div className="d-flex align-items-center gap-2">
                 <Link
@@ -356,9 +359,9 @@ const FrontHeader = () => {
           </div>
         </div>
         <div className="bg-white py-0">
-          <div className="container-xl">
+          <div className="container-xxl">
             <nav className="navbar navbar-expand-lg py-0">
-              <div className="container-fluid px-0">
+              <div className="container-xxl">
                 {/* LOGO */}
                 <Link to="/" className="navbar-brand">
                   <img
@@ -468,7 +471,7 @@ const FrontHeader = () => {
           </div>
         </div>
       </header >
-      {searchFocused && <div className="search-overlay"></div>}
+      {!isHomePage && searchFocused && <div className="search-overlay"></div>}
     </>
   );
 };

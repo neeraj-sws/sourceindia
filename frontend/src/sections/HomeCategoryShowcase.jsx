@@ -259,7 +259,7 @@ const HomeCategoryShowcase = () => {
   if (loading) {
     return (
       <section className="homeCategoryShowcase py-md-4 py-5">
-        <div className="container-fluid px-4 browseCategoriesContainer">
+        <div className="container-xxl browseCategoriesContainer">
           <div className="browseCategories">
             <SidebarSkeleton />
             <div className="trendingCategories">
@@ -278,7 +278,7 @@ const HomeCategoryShowcase = () => {
 
   return (
     <section className="homeCategoryShowcase py-md-4 py-5 my-3">
-      <div className="container-fluid px-5 browseCategoriesContainer">
+      <div className=" browseCategoriesContainer">
         <div className="browseCategories">
           {/* ===== LEFT - TOP CATEGORIES (hover mega menu) ===== */}
           {hasCategories && (
