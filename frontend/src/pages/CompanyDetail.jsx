@@ -121,7 +121,7 @@ const CompanyDetail = () => {
       </style>
 
       <section className="productDetail py-lg-5 pt-5 pb-0">
-        <div className="container-xl">
+        <div className="container-xxl">
           <div className="row">
 
             {/* Left Card */}
@@ -184,7 +184,7 @@ const CompanyDetail = () => {
   return (
     <>
       <section className="productDetail py-lg-5 pt-5 pb-0">
-        <div className="container-xl">
+        <div className="container-xxl">
           <div className="row">
             <nav aria-label="breadcrumb" className="mb-3">
               <ol className="breadcrumb mb-0">
@@ -479,7 +479,7 @@ const CompanyDetail = () => {
         companyName={company?.organization_name}
       />
       {/* Products Carousel */}
-      <div className="container-xl mt-5">
+      <div className="container-xxl mt-5">
         {company?.products?.length > 0 && (
           <div className="companyProducts">
             <h2 className="color-primary">Products</h2>

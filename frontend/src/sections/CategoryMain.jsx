@@ -114,7 +114,7 @@ const CategoryMain = ({ isHome, limit }) => {
             key={i}
             className="categorySection py-md-4 pt-2 my-4"
           >
-            <div className="container-xl">
+            <div className="container-xxl">
               <div className="categoryMainBox">
 
                 {/* Category Header Skeleton */}
@@ -275,9 +275,7 @@ const CategoryMain = ({ isHome, limit }) => {
                     {cat.name}
                   </h4>
                   <span className="categoryMainAccent" />
-                  <p className="categoryMainSubtitle">
-                    Explore high-quality components across all categories.
-                  </p>
+
                 </div>
 
                 {/* =================================================
@@ -307,15 +305,6 @@ const CategoryMain = ({ isHome, limit }) => {
                     <div className="categoryPromoOverlay" />
 
                     <div className="categoryPromoContent">
-                      <h5 className="categoryPromoTitle">
-                        Discover 1000+
-                        <br />
-                        High Quality Components
-                      </h5>
-
-                      <p className="categoryPromoDesc">
-                        Reliable. Durable. Performance focused.
-                      </p>
 
                       <a
                         href={`/categories/${cat.slug}`}

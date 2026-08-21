@@ -24,7 +24,7 @@ const Product = () => {
     <>
       <Suspense fallback={<div></div>}>
         <section className="productSection py-md-5 py-3 mb-4">
-          <div className="container">
+          <div className="container-xxl">
             <div className="firstHead text-center pb-md-5 pb-4">
               <h1 className="mb-0">Latest Product</h1>
             </div>

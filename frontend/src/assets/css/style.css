@@ -110,3 +110,9 @@
   grid-template-columns: 33% 33% 33%;
   gap: 2px;
 }
+
+@media (min-width: 1600px) {
+  .container-xxl {
+    max-width: 1500px;
+  }
+}

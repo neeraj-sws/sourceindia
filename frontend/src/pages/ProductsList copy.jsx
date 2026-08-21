@@ -683,7 +683,7 @@ const ProductsList = () => {
 
   return (
     <Suspense fallback={<div></div>}>
-      <div className="container-xl my-4">
+      <div className="container-xxl my-4">
         <div className="row">
           {/* Filters */}
           <div className="col-12 col-lg-3">

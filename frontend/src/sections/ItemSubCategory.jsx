@@ -124,7 +124,7 @@ const ItemSubCategory = () => {
 
   return (
     <section className="categorySection py-md-4 pt-2 my-4">
-      <div className="container-xl">
+      <div className="container-xxl">
         <nav aria-label="breadcrumb" className="mb-3">
           <ol className="breadcrumb mb-0">
             <li className="breadcrumb-item">

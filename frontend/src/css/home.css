@@ -179,14 +179,14 @@ body {
 .hero-left-desc {
     color: rgba(255, 255, 255, 0.9);
     margin: 10px 0 0;
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.8;
 }
 
 .hero-search-card {
-    background: #ffffff;
+    background: #edf7fc;
     border-radius: 22px;
-    padding: 18px 28px;
+    padding: 25px 28px;
     box-shadow: 0 24px 58px rgba(8, 43, 95, 0.06);
     min-height: 420px;
     display: flex;
@@ -246,7 +246,7 @@ body {
     position: relative;
     padding-left: 36px;
     color: rgba(255, 255, 255, 0.95);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.9;
     margin-bottom: 6px;
 }
@@ -266,7 +266,7 @@ body {
 .hero-search-header .hero-subtitle {
     font-size: 15px;
     color: #5a6b8e;
-    margin-bottom: 35px;
+    margin-bottom: 25px;
 }
 
 .hero-search-header h1 {
@@ -277,7 +277,7 @@ body {
 }
 
 .hero-search-card {
-    min-height: 350px;
+    min-height: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -293,7 +293,7 @@ body {
 }
 
 .popularPartbox {
-    grid-template-columns: 19% 60% 18%;
+    grid-template-columns: 19% 62% 19%;
     display: grid;
     gap: 0;
     border: 1px solid #e1e9f4;
@@ -1616,6 +1616,22 @@ button.nav-link:hover {
     .categorytopimg {
         height: 370px !important;
     }
+
+    .hero-left-main {
+        font-size: 18px;
+    }
+
+    .hero-left-desc {
+        font-size: 12px;
+    }
+
+    .hero-feature-list li {
+        font-size: 11px;
+    }
+
+    .browseCategories .promotional-banners .pbr-banner-link img {
+        height: 100% !important;
+    }
 }
 
 @media (max-width: 991px) {
@@ -1862,7 +1878,7 @@ button.nav-link:hover {
     background-color: #f7f7f7;
 }
 
-.container-xl.browseCategoriesContainer {
+.container-xxl.browseCategoriesContainer {
     max-width: 1283px;
 }
 
@@ -2961,7 +2977,13 @@ button.nav-link:hover {
     }
 
     .subcategoryGrid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575px) {
+    .subcategoryGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -2970,4 +2992,12 @@ button.nav-link:hover {
         flex-direction: column-reverse;
         align-items: flex-start;
     }
+}
+
+
+
+.rowleftBox {
+    display: grid;
+    grid-template-columns: 25% 60%;
+    gap: 12px;
 }

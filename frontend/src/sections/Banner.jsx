@@ -208,7 +208,7 @@ const Banner = () => {
 
   return (
     <>
-      <div className="mainBanner">
+      <div className="mainBanner container-xxl">
         <div className="bgCarouselImg">
           <div
             className="banner-slide"
@@ -219,15 +219,17 @@ const Banner = () => {
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
               backgroundSize: 'cover',
+              borderBottomLeftRadius: '15px',
+              borderTopLeftRadius: '15px',
             }}
           >
             <div className="banner-overlay" />
-            <div className="container-fluid  px-5 mt-4">
-              <div className="row align-items-center gy-4 gx-3">
+            <div className="">
+              <div className="rowleftBox align-items-center">
 
                 {/* LEFT: only this box slides */}
-                <div className="col-lg-4 col-xxl-4">
-                  <div id="carouselExampleCaptions" className="carousel slide me-5 pe-3" data-bs-ride="carousel">
+                <div className="innerrowleftBox">
+                  <div id="carouselExampleCaptions" className="carousel slide" data-bs-ride="carousel">
                     <div className="carousel-inner">
                       {carouselItems.map((slider, index) => {
                         const leftFeatures = slider.description
@@ -250,7 +252,7 @@ const Banner = () => {
                                 </span>
                               </h2>
                               {/* <span className="hero-left-accent">SELL</span>  */}
-                              <p className="hero-left-desc  mb-3 w-50">
+                              <p className="hero-left-desc  mb-3 w-75">
                                 {index === 0
                                   ? "Share your requirements and connect with the right sellers."
                                   : "List your products and connect with verified buyers across India."}
@@ -317,14 +319,14 @@ const Banner = () => {
                 </div>
 
                 {/* RIGHT: static, does not slide */}
-                <div className="col-lg-8">
+                <div className="innerrowleftBoxlong">
                   <div className="hero-search-card">
                     <div className="hero-search-header">
                       <h1>{staticTitle}</h1>
                       <p className="hero-subtitle">{staticSubtitle}</p>
                     </div>
                     <form className="hero-search-form" onSubmit={handleSearchSubmit}>
-                      <div className="popularPartbox gap-2">
+                      <div className="popularPartbox">
                         <select
                           className="form-select form-select-lg"
                           value={searchType}
@@ -420,7 +422,7 @@ const Banner = () => {
         </div>
         <HomeCategoryShowcase />
         {/* <section className="popular-categories-section py-5">
-          <div className="container-xl">
+          <div className="container-xxl">
             <div className="section-title text-center mx-auto mb-4">
               <h2>Popular Product Categories</h2>
               <p>Explore top categories in electronics industry</p>
@@ -475,7 +477,7 @@ const Banner = () => {
         </section> */}
 
         <section className="banner-stats-section py-4 d-none">
-          <div className="container-xl">
+          <div className="container-xxl">
             <div className="gridBox text-center justify-content-center rounded-4 shadow-sm bg-white px-5">
               {[
                 { label: "Products", value: "50,000+", icon: "bx bx-package", iconClass: "product-icon" },

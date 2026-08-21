@@ -34,7 +34,7 @@ const Company = ({ limit }) => {
     <>
       <Suspense fallback={<div></div>}>
         <section className="companySection py-md-5 pt-2 pb-3 mb-4">
-          <div className="container-xl">
+          <div className="container-xxl">
             <div className="firstHead text-center pb-md-5">
               <h1 className="mb-0">FEATURED COMPANIES</h1>
             </div>
