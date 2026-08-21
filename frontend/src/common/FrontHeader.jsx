@@ -338,7 +338,7 @@ const FrontHeader = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="lastboxbtns d-flex flex-md-row flex-column gap-1">
+                    <div className="lastboxbtns d-flex flex-sm-row flex-column gap-1">
                       <Link
                         to="/login"
                         className="btn btn-sm btnType1 text-nowrap"
