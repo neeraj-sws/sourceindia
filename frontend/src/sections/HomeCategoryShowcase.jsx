@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
 
-const TRENDING_LIMIT = 12;
+const TRENDING_LIMIT = 9;
 
 const itemSubCategoryProductPath = (isc) =>
   `/products?category_id=${isc.category_id}&subcategory_id=${isc.subcategory_id}&item_category_id=${isc.item_category_id}&item_subcategory_id=${isc.id}`;
@@ -276,12 +276,12 @@ const HomeCategoryShowcase = () => {
   const hasTrending = trending.length > 0;
   if (!hasCategories && !hasTrending) return null;
 
-  return (
-    <section className="homeCategoryShowcase py-md-4 py-5 my-3">
-      <div className=" browseCategoriesContainer">
-        <div className="browseCategories">
-          {/* ===== LEFT - TOP CATEGORIES (hover mega menu) ===== */}
-          {hasCategories && (
+  return ( 
+    <section className="homeCategoryShowcase py-md-4 py-5 my-3"> 
+      <div className="container-fluid browseCategoriesContainer"> 
+        <div className="browseCategories"> 
+          {/* ===== LEFT - TOP CATEGORIES (hover mega menu) ===== */} 
+          {hasCategories && ( 
             <div className="sidebar">
               <div className="bcs-header">
                 <i className="bx bx-menu-alt-left bcs-header-icon"></i>
@@ -352,7 +352,7 @@ const HomeCategoryShowcase = () => {
                   );
                 })}
               </ul>
-              <div className={`all-cl${openAll ? " open" : ""}`}>
+              <div className={`all-cl${openAll ? " open" : ""}` }>
                 <div className="all-cl-row">
                   <Link to="/categories" className="all-cl-iteam">
                     <i className="bx bx-grid-alt all-cl-img"></i>
