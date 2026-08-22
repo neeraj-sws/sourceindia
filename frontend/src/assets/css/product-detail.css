@@ -974,6 +974,43 @@ strong {
     line-height: 1.3;
 }
 
+/* --- Browse Related Categories : Responsive --------------- */
+@media (max-width: 1199px) {
+    .pd-related-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 991px) {
+    .pd-related-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+}
+
+@media (max-width: 575px) {
+    .pd-related-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .pd-rel-cat-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .pd-rel-cat-img {
+        width: 100%;
+        height: 70px;
+    }
+
+    .pd-rel-cat-name {
+        font-size: 12.5px;
+    }
+}
+
 /* --- Popular Categories ----------------------------------- */
 .pd-pop-cats-title {
     font-size: 18px;
