@@ -387,7 +387,7 @@ const ProductDetail = () => {
                 )}
 
                 {/* Send Inquiry — top CTA */}
-                <button className="btn btn-orange px-5 py-2 mb-4" style={{ borderRadius: 50 }} onClick={() => setShowModal(true)}>
+                <button className="btn btn-orange px-4 py-2 mb-4" style={{ borderRadius: 50 }} onClick={() => setShowModal(true)}>
                   <i className="bx bx-phone pe-2" /> Send Inquiry
                 </button>
 

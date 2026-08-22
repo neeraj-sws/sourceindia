@@ -209,7 +209,7 @@ const Banner = () => {
   return (
     <>
       <div className="mainBanner container-xxl">
-        <div className="bgCarouselImg">
+        <div className="bgCarouselImg mt-2">
           <div
             className="banner-slide"
             style={{
@@ -219,7 +219,7 @@ const Banner = () => {
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
               backgroundSize: 'cover',
-              borderBottomLeftRadius: '15px',
+              borderRadius: '15px',
               borderTopLeftRadius: '15px',
             }}
           >

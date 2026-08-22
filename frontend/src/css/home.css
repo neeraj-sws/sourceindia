@@ -1,5 +1,5 @@
 body {
-    background-color: #f7f7f7;
+    background-color: #f8f9fb;
 }
 
 :root {
@@ -151,7 +151,7 @@ body {
     background: #002341;
     color: #ffffff;
     padding: 20px 26px;
-    min-height: 420px;
+    min-height: 440px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -186,7 +186,7 @@ body {
 .hero-search-card {
     background: #edf7fc;
     border-radius: 22px;
-    padding: 25px 28px;
+    padding: 35px 28px 39px 36px;
     box-shadow: 0 24px 58px rgba(8, 43, 95, 0.06);
     min-height: 420px;
     display: flex;
@@ -293,7 +293,7 @@ body {
 }
 
 .popularPartbox {
-    grid-template-columns: 19% 62% 19%;
+    grid-template-columns: 18% 60% 22%;
     display: grid;
     gap: 0;
     border: 1px solid #e1e9f4;
@@ -400,7 +400,7 @@ body {
     background-size: cover;
     background-position: center;
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; */
     border-radius: 0px;
 }
 

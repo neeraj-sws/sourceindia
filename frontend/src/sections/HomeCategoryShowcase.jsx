@@ -259,7 +259,7 @@ const HomeCategoryShowcase = () => {
   if (loading) {
     return (
       <section className="homeCategoryShowcase py-md-4 py-5">
-        <div className="container-xxl browseCategoriesContainer">
+        <div className="container-xxl">
           <div className="browseCategories">
             <SidebarSkeleton />
             <div className="trendingCategories">

@@ -677,7 +677,7 @@
 .sidebar-company-card .sidebar-company-name {
   font-size: 1.18rem;
   line-height: 1.18;
-  font-weight: 700;
+  font-weight: 500;
   word-break: break-word;
   overflow-wrap: anywhere;
   display: -webkit-box;
@@ -721,7 +721,7 @@
 
 .sidebar-company-card .meta-value {
   color: #212529;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .sidebar-company-card .meta-list i {
