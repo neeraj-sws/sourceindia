@@ -633,9 +633,9 @@ const ProductDetail = () => {
                       <Link to="/registration" className="pbr-banner-link" aria-label="Promotional banner 1">
                         <img src="/img1.png" class="w-100" alt="Promotional banner 1" loading="lazy" decoding="async" />
                       </Link>
-                      
+
                     </div>
-                   
+
                   </div>
                 </div>
               </div>
@@ -759,7 +759,7 @@ const ProductDetail = () => {
           {/* More Products From This Seller */}
           {sellerProducts.length > 0 && (
             <div className="pd-seller-products">
-              <h2>More Products From This Seller</h2>
+              <h2 className='pd-pop-cats-title'>More Products From This Seller</h2>
               <Swiper
                 modules={[Navigation, Pagination]}
                 spaceBetween={20}
@@ -799,7 +799,7 @@ const ProductDetail = () => {
 
           {similarProducts.length > 0 && (
             <div className="companyProducts">
-              <h2 className="color-primary">Find Similar Products</h2>
+              <h2 className="color-primary pd-pop-cats-title">Find Similar Products</h2>
               <Swiper
                 modules={[Navigation, Pagination]}
                 spaceBetween={20}
@@ -854,8 +854,8 @@ const ProductDetail = () => {
 
       {/* Browse Related Categories */}
       {currentItemTypes.length > 0 && (
-        <div className="container-xxl py-4">
-          <h5 className="pd-section-title mb-4">Browse Related Categories</h5>
+        <div className="container-xxl py-5">
+          <h5 className="pd-pop-cats-title mb-4">Browse Related Categories</h5>
           <div className="pd-related-grid">
             {currentItemTypes.map((cat) => (
               <Link key={cat.id} to={`/products?category_id=${product.category_id || product.category}&subcategory_id=${product.sub_category_id || product.subcategory_id}&item_category_id=${product.item_category_id || product.itemCategoryId}&item_subcategory_id=${cat.id}`} className="pd-rel-cat-card text-decoration-none">

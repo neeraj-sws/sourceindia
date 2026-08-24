@@ -78,7 +78,7 @@ const ItemSubCategory = () => {
       </style>
 
       <section className="categorySection py-md-4 pt-2 my-4">
-        <div className="container">
+        <div className="container-xxl">
           {/* Heading */}
           <Skeleton height="26px" width="280px" style={{ marginBottom: 24 }} />
 

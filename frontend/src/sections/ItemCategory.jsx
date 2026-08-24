@@ -132,7 +132,7 @@ const ItemCategory = () => {
       </style>
 
       <section className="categorySection py-md-4 pt-2 my-4">
-        <div className="container">
+        <div className="container-xxl">
           <Skeleton
             height="26px"
             width="250px"
