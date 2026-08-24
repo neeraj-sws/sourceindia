@@ -130,7 +130,7 @@ const SubCategory = () => {
       </style>
 
       <section className="categorySection py-md-4 pt-2 my-4">
-        <div className="container">
+        <div className="container-xxl">
           {/* Heading */}
           <Skeleton height="22px" width="220px" style={{ marginBottom: 24 }} />
 

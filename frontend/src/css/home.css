@@ -68,6 +68,12 @@
     border: 1px solid var(--primary-color);
     transition: all 0.3s ease;
     font-weight: 600;
+    font-size: 11px;
+}
+
+.lastboxbtns a {
+    font-size: 11px;
+    padding: 5px 15px;
 }
 
 .mainHeader {
@@ -90,6 +96,7 @@
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+    font-size: 13px;
 }
 
 .top-bar .middleBox {
@@ -815,6 +822,7 @@
 .centerMenu .navbar-nav .nav-link {
     color: var(--dark-color);
     margin-right: 15px;
+    font-size: 16px;
 }
 
 .centerMenu .navbar-nav .nav-link:hover {

@@ -396,7 +396,7 @@ strong {
 /* --- More Products from Seller ---------------------------- */
 .pd-seller-products {
     margin-top: 40px;
-    padding-bottom: 20px;
+    padding-bottom: 0px;
 }
 
 .pd-seller-products h2 {
@@ -1013,9 +1013,9 @@ strong {
 
 /* --- Popular Categories ----------------------------------- */
 .pd-pop-cats-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: #1a2233;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: #1a2233 !important;
     border-bottom: 3px solid #0044a0;
     display: inline-block;
     padding-bottom: 6px;

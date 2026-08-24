@@ -54,7 +54,7 @@ const Item = () => {
 
   return (
     <section className="categorySection py-md-4 pt-2 my-4">
-      <div className="container">
+      <div className="container-xxl">
         {/* 🟢 Subcategory Heading */}
         <h4 className="fw-semibold mb-4  pb-2 text-blue">
           {subcategory.name}

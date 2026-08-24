@@ -199,7 +199,7 @@ const FrontHeader = () => {
     <>
       <header className="mainHeader">
         <div className="container-xxl">
-          <div className="top-bar px-xl-3 d-flex justify-content-between align-items-center">
+          <div className="top-bar px-xl-3 py-1 d-flex justify-content-between align-items-center">
             <div className="welcomeBox d-lg-flex d-block">
               {isLoggedIn && user ? (
                 <span>
@@ -367,7 +367,7 @@ const FrontHeader = () => {
                 <img
                   src={logoUrl}
                   alt="Site Logo"
-                  height="50"
+                  height="80"
                   className="me-2"
                   style={{ width: "auto" }}
                   loading="lazy"
