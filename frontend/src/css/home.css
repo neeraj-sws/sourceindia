@@ -1,23 +1,3 @@
-body {
-    background-color: #f8f9fb;
-}
-
-:root {
-    --primary-color: #00449C;
-    --secondary-color: #707070;
-    --dark-color: #1F2020;
-    --color-orange: #ff6600;
-    --orange-hover: #ff8534;
-    --crms-topbar-item-border: #E8E8E8;
-    --crms-topbar-item-shadow: 0px 4px 4px 0px #DBDBDB40;
-    --crms-primary-rgb: 228, 31, 7;
-    --crms-success-rgb: 26, 190, 23;
-    --border-color: #E8E8E8;
-    --box-shadow: 0px 4px 4px 0px rgba(219, 219, 219, 0.25);
-    --light-text: #4a4a4a;
-    --color-white: #fff;
-}
-
 .img {
     font-size: 10px;
 }
@@ -87,6 +67,7 @@ body {
     color: var(--primary-color);
     border: 1px solid var(--primary-color);
     transition: all 0.3s ease;
+    font-weight: 600;
 }
 
 .mainHeader {
@@ -409,14 +390,6 @@ body {
     z-index: 2;
 }
 
-.bgCarouselImg::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.06) 100%);
-    pointer-events: none;
-    z-index: 1;
-}
 
 .carousel-control-prev,
 .carousel-control-next {
@@ -855,9 +828,9 @@ body {
 }
 
 .firstHead h1 {
-    font-size: 30px;
-    color: var(--primary-color);
-    font-weight: 600;
+    font-size: 26px;
+    color: #111827;
+    font-weight: 700;
     text-transform: uppercase;
 }
 
@@ -904,9 +877,7 @@ body {
     position: relative;
 }
 
-.productSection {
-    background-color: #f3f3f3;
-}
+
 
 .middlepro {
     gap: 12px;
@@ -1898,9 +1869,6 @@ button.nav-link:hover {
 
 
 /* ============ HOME CATEGORY SHOWCASE (browse categories) ============ */
-.homeCategoryShowcase {
-    background-color: #f7f7f7;
-}
 
 .container-xxl.browseCategoriesContainer {
     max-width: 1283px;
@@ -2208,23 +2176,24 @@ button.nav-link:hover {
 .browseCategories .trendingCategories ._title h2 {
     margin: 0;
     padding: 0;
-    font-size: 24px;
-    color: #000;
-    font-weight: 500;
+    font-size: 26px;
+    color: #111827;
+    font-weight: 700;
     line-height: 30px;
 }
 
 .browseCategories .tren_list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     grid-auto-rows: 1fr;
-    gap: 14px 7px;
+    gap: 12px;
     flex: 1 1 auto;
     min-height: 0;
 }
 
 .browseCategories .tren_iteam {
     height: 100%;
+    border: 1px solid #dddddd91;
 }
 
 .browseCategories .tren_iteam>a {
@@ -3010,6 +2979,6 @@ button.nav-link:hover {
 
 .rowleftBox {
     display: grid;
-    grid-template-columns: 25% 60%;
+    grid-template-columns: 25% 65%;
     gap: 12px;
 }

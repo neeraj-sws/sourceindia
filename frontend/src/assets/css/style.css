@@ -1,3 +1,23 @@
+body {
+  background-color: #f8f9fb !important;
+}
+
+:root {
+  --primary-color: #00449C;
+  --secondary-color: #707070;
+  --dark-color: #1F2020;
+  --color-orange: #ff6600;
+  --orange-hover: #ff8534;
+  --crms-topbar-item-border: #E8E8E8;
+  --crms-topbar-item-shadow: 0px 4px 4px 0px #DBDBDB40;
+  --crms-primary-rgb: 228, 31, 7;
+  --crms-success-rgb: 26, 190, 23;
+  --border-color: #E8E8E8;
+  --box-shadow: 0px 4px 4px 0px rgba(219, 219, 219, 0.25);
+  --light-text: #4a4a4a;
+  --color-white: #fff;
+}
+
 .form-container {
   max-width: 500px;
   margin: auto;
@@ -19,6 +39,10 @@
 
 .hero .carousel-caption {
   z-index: 2;
+}
+
+.thLink {
+  font-weight: 500;
 }
 
 .multi-carousel-container {

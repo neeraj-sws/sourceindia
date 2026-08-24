@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
+import { useSiteSettings } from "../context/SiteSettingsContext";
 
-const TRENDING_LIMIT = 12;
+const DEFAULT_TRENDING_LIMIT = 12;
 
 const itemSubCategoryProductPath = (isc) =>
   `/products?category_id=${isc.category_id}&subcategory_id=${isc.subcategory_id}&item_category_id=${isc.item_category_id}&item_subcategory_id=${isc.id}`;
@@ -18,63 +19,32 @@ const dedupeByName = (list) => {
   });
 };
 
-const buildTrendingTiles = (itemCategories, catById, subById, itemSubs) => {
-  return itemCategories
-    .map((ic) => {
-      const cat = catById.get(Number(ic.category_id));
-      const sub = subById.get(Number(ic.subcategory_id));
-      if (!cat || !sub || !ic.slug || !cat.slug || !sub.slug) return null;
-
-      const relatedItemSubs = itemSubs.filter(
-        (isc) => Number(isc.item_category_id) === Number(ic.id)
-      );
-
-      const withImage = relatedItemSubs.filter(
-        (isc) => isc.file_name && String(isc.file_name).trim() !== ""
-      );
-
-      const sortedByProduct = [...withImage].sort(
-        (a, b) => Number(b.product_count) - Number(a.product_count)
-      );
-
-      const highestProductSub = sortedByProduct[0] || null;
-
-      console.table([
-        {
-          itemCategoryId: ic.id,
-          itemCategoryName: ic.name,
-          highestISCId: highestProductSub?.id ?? "N/A",
-          highestISCName: highestProductSub?.name ?? "N/A",
-          highestISCItemCategoryId: highestProductSub?.item_category_id ?? "N/A",
-          highestISCProductCount: highestProductSub?.product_count ?? "N/A",
-          highestISCFileName: highestProductSub?.file_name ?? "N/A",
-        },
-      ]);
-
-      return {
-        id: ic.id,
-        name: ic.name,
-        slug: ic.slug,
-        category_id: ic.category_id,
-        subcategory_id: ic.subcategory_id,
-        item_category_id: ic.id,
-        category_slug: cat.slug,
-        subcategory_slug: sub.slug,
-        file_name: highestProductSub?.file_name || null,
-        product_count: Number(ic.product_count) || 0,
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.product_count - a.product_count || a.id - b.id)
-    .slice(0, TRENDING_LIMIT);
+const seededShuffle = (list, seedText) => {
+  const arr = [...list];
+  let seed = 0;
+  for (let i = 0; i < seedText.length; i += 1) {
+    seed = (seed * 31 + seedText.charCodeAt(i)) >>> 0;
+  }
+  const random = () => {
+    seed = (seed + 0x6D2B79F5) >>> 0;
+    let t = seed;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 };
 
 const HomeCategoryShowcase = () => {
   const [categories, setCategories] = useState([]);
-  const [trending, setTrending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openCat, setOpenCat] = useState(null);
   const [openAll, setOpenAll] = useState(false);
+  const { siteSettings, loading: siteSettingsLoading } = useSiteSettings();
 
   useEffect(() => {
     let cancelled = false;
@@ -108,89 +78,36 @@ const HomeCategoryShowcase = () => {
           // Sub categories fetch failed — continue with empty list
         }
 
-        // 3. Item categories are fetched only as an intermediate step to obtain
-        // the required Item Category IDs for the Item Subcategory API below.
-        // Item Categories are NOT displayed in the sidebar, but they still
-        // power the Trending B2B Product Categories section.
-        let itemCategoryIds = [];
-        let keptItemCats = [];
-        if (subsWithProducts.length > 0) {
-          const subcategoryIds = subsWithProducts.map((sub) => sub.id);
-          try {
-            const icRes = await axios.post(
-              `${API_BASE_URL}/item_category/by-selected-category-subcategory`,
-              { categories: categoryIds, subcategories: subcategoryIds }
-            );
-            if (cancelled) return;
-            const allItemCats = Array.isArray(icRes.data) ? icRes.data : [];
-            keptItemCats = dedupeByName(
-              allItemCats.filter(
-                (ic) =>
-                  Number(ic.product_count) > 0 &&
-                  !/deleted/i.test(String(ic.name || ''))
-              )
-            );
-            itemCategoryIds = keptItemCats.map((ic) => ic.id);
-          } catch {
-            // Item categories fetch failed
-          }
-        }
-
-        // 4. Item subcategories by selected category/subcategory/item category.
-        // The backend expects the request body property "itemCategories".
-        let itemSubs = [];
-        if (subsWithProducts.length > 0 && itemCategoryIds.length > 0) {
-          const subcategoryIds = subsWithProducts.map((sub) => sub.id);
-          try {
-            const iscRes = await axios.post(
-              `${API_BASE_URL}/item_sub_category/by-selected-category-subcategory-itemcategory`,
-              {
-                categories: categoryIds,
-                subcategories: subcategoryIds,
-                itemCategories: itemCategoryIds,
-              }
-            );
-            if (cancelled) return;
-            const allItemSubs = Array.isArray(iscRes.data) ? iscRes.data : [];
-            itemSubs = dedupeByName(
-              allItemSubs.filter(
-                (isc) =>
-                  Number(isc.product_count) > 0 &&
-                  !/deleted/i.test(String(isc.name || ''))
-              )
-            );
-          } catch (err) {
-            console.error("Error fetching item subcategories:", err);
-          }
-        }
-
-        // Assemble the nested sidebar hierarchy: category -> subcategory -> item subcategories
+        // 3. Assemble the nested sidebar hierarchy: category -> subcategory -> item subcategories
         const catById = new Map(catsWithProducts.map((cat) => [cat.id, cat]));
         const subById = new Map(subsWithProducts.map((sub) => [sub.id, sub]));
 
         const itemSubsBySub = new Map();
-        const itemSubsByItemCatId = new Map();
-        itemSubs.forEach((isc) => {
+
+        const itemSubRes = await axios.get(`${API_BASE_URL}/item_sub_category`);
+        if (cancelled) return;
+        const allItemSubs = Array.isArray(itemSubRes.data) ? itemSubRes.data : [];
+        const activeItemSubs = dedupeByName(
+          allItemSubs.filter(
+            (isc) =>
+              Number(isc.product_count) > 0 &&
+              Number(isc.status) === 1 &&
+              Number(isc.is_delete || 0) === 0 &&
+              !/deleted/i.test(String(isc.name || ""))
+          )
+        );
+
+        activeItemSubs.forEach((isc) => {
           const subId = Number(isc.subcategory_id);
-          const itemCatId = Number(isc.item_category_id);
           const cat = catById.get(Number(isc.category_id));
           const sub = subById.get(subId);
           if (!cat || !sub || !isc.slug || !sub.slug || !cat.slug) return;
           if (!itemSubsBySub.has(subId)) itemSubsBySub.set(subId, []);
           itemSubsBySub.get(subId).push(isc);
-          if (itemCatId) {
-            if (!itemSubsByItemCatId.has(itemCatId)) itemSubsByItemCatId.set(itemCatId, []);
-            itemSubsByItemCatId.get(itemCatId).push(isc);
-          }
         });
 
-        // Sort each Subcategory's Item Subcategories by product_count DESC
-        // (independently per Subcategory, not globally) so the top 5 shown in
-        // the sidebar are the highest-product ones.
         itemSubsBySub.forEach((list) => {
-          list.sort(
-            (a, b) => Number(b.product_count) - Number(a.product_count)
-          );
+          list.sort((a, b) => Number(b.product_count) - Number(a.product_count));
         });
 
         const nested = catsWithProducts.map((cat) => {
@@ -203,11 +120,8 @@ const HomeCategoryShowcase = () => {
           return { ...cat, subcategories: subs };
         });
 
-        const tiles = buildTrendingTiles(keptItemCats, catById, subById, itemSubs);
-
         if (cancelled) return;
         setCategories(nested);
-        setTrending(tiles);
       } catch (err) {
         console.error("Error fetching home category showcase:", err);
       } finally {
@@ -256,7 +170,43 @@ const HomeCategoryShowcase = () => {
     </div>
   );
 
-  if (loading) {
+  const trendingEnabled = String(siteSettings?.trending_b2b_enabled ?? '1') !== '0';
+  const monthlyRandom = String(siteSettings?.trending_b2b_random_monthly ?? '1') !== '0';
+  const trendingLimit = Math.max(1, Number(siteSettings?.trending_b2b_limit || DEFAULT_TRENDING_LIMIT) || DEFAULT_TRENDING_LIMIT);
+  const trendingAllowedIds = String(siteSettings?.trending_b2b_item_subcategory_ids || '')
+    .split(',')
+    .map((id) => Number(String(id).trim()))
+    .filter((id) => Number.isInteger(id) && id > 0);
+
+  const computedTrending = (() => {
+    const all = [];
+    categories.forEach((cat) => {
+      cat.subcategories?.forEach((sub) => {
+        sub.item_subcategories?.forEach((isc) => {
+          if (trendingAllowedIds.length > 0 && !trendingAllowedIds.includes(Number(isc.id))) return;
+          if (!all.some((item) => item.id === isc.id)) {
+            all.push({
+              ...isc,
+              category_id: cat.id,
+              category_slug: cat.slug,
+              subcategory_slug: sub.slug,
+              item_category_id: isc.item_category_id || isc.id,
+            });
+          }
+        });
+      });
+    });
+
+    const filtered = all.filter((isc) => isc.file_name || isc.file_id || isc.product_count > 0);
+    const sorted = monthlyRandom
+      ? seededShuffle(filtered, new Date().toISOString().slice(0, 7))
+      : [...filtered].sort((a, b) => Number(b.product_count) - Number(a.product_count) || Number(a.id) - Number(b.id));
+    return sorted.slice(0, trendingLimit);
+  })();
+
+  const showTrending = trendingEnabled && computedTrending.length > 0;
+
+  if (loading || siteSettingsLoading) {
     return (
       <section className="homeCategoryShowcase py-md-4 py-5">
         <div className="container-xxl">
@@ -273,8 +223,7 @@ const HomeCategoryShowcase = () => {
   }
 
   const hasCategories = categories.length > 0;
-  const hasTrending = trending.length > 0;
-  if (!hasCategories && !hasTrending) return null;
+  if (!hasCategories && !showTrending) return null;
 
   return (
     <section className="homeCategoryShowcase py-md-4 py-5 my-3">
@@ -384,16 +333,16 @@ const HomeCategoryShowcase = () => {
           )}
 
           {/* ===== CENTER - TRENDING B2B PRODUCT CATEGORIES ===== */}
-          {hasTrending && (
+          {showTrending && (
             <div className="trendingCategories">
               <div className="_title">
                 <h2>Trending B2B Product Categories</h2>
               </div>
               <div className="tren_list">
-                {trending.map((ic) => (
+                {computedTrending.map((ic) => (
                   <div className="tren_iteam" key={ic.id}>
                     <Link
-                      to={`/products?category_id=${ic.category_id}&subcategory_id=${ic.subcategory_id}&item_category_id=${ic.item_category_id}`}
+                      to={`/products?category_id=${ic.category_id}&subcategory_id=${ic.subcategory_id}&item_category_id=${ic.item_category_id}&item_subcategory_id=${ic.id}`}
                       title={ic.name}
                     >
                       <div className="tren_img">

@@ -9,7 +9,22 @@ const SystemSettingsForm = () => {
   const [logoFile, setLogoFile] = useState(null);
   const [faviconFile, setFaviconFile] = useState(null);
   const [errors, setErrors] = useState({});
-  const [formData, setFormData] = useState({ title: '', website_email: '', site_email: '', site_email_cc: '', site_email_bcc: '', mobile: '', address: '', logo_file: '', favicon_file: '', seller_category_limit: '' });
+  const [formData, setFormData] = useState({
+    title: '',
+    website_email: '',
+    site_email: '',
+    site_email_cc: '',
+    site_email_bcc: '',
+    mobile: '',
+    address: '',
+    logo_file: '',
+    favicon_file: '',
+    seller_category_limit: '',
+    trending_b2b_enabled: '1',
+    trending_b2b_random_monthly: '1',
+    trending_b2b_limit: '12',
+    trending_b2b_item_subcategory_ids: '',
+  });
   const [submitting, setSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
@@ -20,7 +35,7 @@ const SystemSettingsForm = () => {
   useEffect(() => {
     const fetchData = async () => {
       const res = await axios.get(`${API_BASE_URL}/settings/site`);
-      setFormData(res.data);
+      setFormData((prev) => ({ ...prev, ...res.data }));
     }
     fetchData();
   }, []);
@@ -49,6 +64,10 @@ const SystemSettingsForm = () => {
     else if (!/^[6-9]\d{9}$/.test(formData.mobile)) errs.mobile = "Mobile Number is invalid";
     if (!formData.address) errs.address = 'Address is required';
     if (!formData.seller_category_limit) errs.seller_category_limit = 'Seller category limit is required';
+    if (!formData.trending_b2b_limit) errs.trending_b2b_limit = 'Trending limit is required';
+    if (!/^\d+$/.test(String(formData.trending_b2b_limit))) {
+      errs.trending_b2b_limit = 'Trending limit must be a number';
+    }
 
     const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
     const maxSize = 2 * 1024 * 1024;
@@ -208,6 +227,60 @@ const SystemSettingsForm = () => {
           <input type="email" className={`form-control ${errors.site_email_bcc ? 'is-invalid' : ''}`} id="site_email_bcc" placeholder="Site Email BCC"
             value={formData.site_email_bcc} onChange={handleInputChange} />
           {errors.site_email_bcc && <div className="invalid-feedback">{errors.site_email_bcc}</div>}
+        </div>
+        <div className="col-md-4">
+          <label htmlFor="trending_b2b_enabled" className="form-label">Trending Section</label>
+          <select
+            id="trending_b2b_enabled"
+            className="form-select"
+            value={formData.trending_b2b_enabled}
+            onChange={handleInputChange}
+          >
+            <option value="1">Enabled</option>
+            <option value="0">Disabled</option>
+          </select>
+        </div>
+        <div className="col-md-4">
+          <label htmlFor="trending_b2b_random_monthly" className="form-label">Monthly Random Rotation</label>
+          <select
+            id="trending_b2b_random_monthly"
+            className="form-select"
+            value={formData.trending_b2b_random_monthly}
+            onChange={handleInputChange}
+          >
+            <option value="1">Enabled</option>
+            <option value="0">Disabled</option>
+          </select>
+        </div>
+        <div className="col-md-4">
+          <label htmlFor="trending_b2b_limit" className="form-label required">Trending Items Limit</label>
+          <input
+            type="number"
+            min="1"
+            max="50"
+            className={`form-control ${errors.trending_b2b_limit ? 'is-invalid' : ''}`}
+            id="trending_b2b_limit"
+            placeholder="12"
+            value={formData.trending_b2b_limit}
+            onChange={handleInputChange}
+          />
+          {errors.trending_b2b_limit && <div className="invalid-feedback">{errors.trending_b2b_limit}</div>}
+        </div>
+        <div className="col-md-12">
+          <label htmlFor="trending_b2b_item_subcategory_ids" className="form-label">
+            Trending Item Subcategory IDs
+          </label>
+          <textarea
+            className="form-control"
+            id="trending_b2b_item_subcategory_ids"
+            rows={3}
+            placeholder="Comma separated IDs, e.g. 12,15,21"
+            value={formData.trending_b2b_item_subcategory_ids}
+            onChange={handleInputChange}
+          />
+          <small className="text-muted">
+            Leave empty to use all active item subcategories with products. When enabled, the list will rotate randomly every month.
+          </small>
         </div>
         <div className="col-12 text-end mt-4">
           <button type="submit" className="btn btn-primary btn-sm px-4" disabled={submitting}>

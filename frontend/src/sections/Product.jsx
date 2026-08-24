@@ -11,7 +11,7 @@ const Product = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=6&page=1`);
+        const res = await axios.get(`${API_BASE_URL}/products?is_delete=0&status=1&is_approve=1&limit=6&page=1&sort_by=z_to_a`);
         setProducts(res.data.products);
       } catch (err) {
         console.error("Error fetching categories:", err);
@@ -23,7 +23,7 @@ const Product = () => {
   return (
     <>
       <Suspense fallback={<div></div>}>
-        <section className="productSection py-md-5 py-3 mb-4">
+        <section className="productSection py-md-4 py-3 mb-4">
           <div className="container-xxl">
             <div className="firstHead text-center pb-md-5 pb-4">
               <h1 className="mb-0">Latest Product</h1>

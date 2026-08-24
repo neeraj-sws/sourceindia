@@ -309,14 +309,15 @@ exports.updateSiteSettings = async (req, res) => {
         });
         const foundKeys = settings.map(setting => setting.meta_key);
         const missingKeys = keys.filter(key => !foundKeys.includes(key));
-        if (missingKeys.length) {
-          return res.status(404).json({
-            message: `Settings not found for keys: ${missingKeys.join(', ')}`
-          });
-        }
         for (const setting of settings) {
           setting.meta_value = textSettingsToUpdate[setting.meta_key];
           await setting.save();
+        }
+        for (const key of missingKeys) {
+          await SiteSettings.create({
+            meta_key: key,
+            meta_value: textSettingsToUpdate[key]
+          });
         }
       }
       if (req.files?.logo_file) {

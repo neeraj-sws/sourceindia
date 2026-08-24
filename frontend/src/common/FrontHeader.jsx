@@ -217,70 +217,70 @@ const FrontHeader = () => {
               </div>
             </div>
             {!isHomePage && (
-            <div className="middleBox">
-              <form onSubmit={handleSubmit} className="d-flex align-items-center flex-grow-1 position-relative w-100">
-                <div className="search-bar-front d-flex w-100">
-                  <select
-                    className="form-select w-auto  px-3"
-                    value={searchType}
-                    onChange={(e) => setSearchType(e.target.value)}
-                  >
-                    <option value="product">Products</option>
-                    <option value="seller">Seller</option>
-                    <option value="buyer">Buyer</option>
-                  </select>
+              <div className="middleBox">
+                <form onSubmit={handleSubmit} className="d-flex align-items-center flex-grow-1 position-relative w-100">
+                  <div className="search-bar-front d-flex w-100">
+                    <select
+                      className="form-select w-auto  px-3"
+                      value={searchType}
+                      onChange={(e) => setSearchType(e.target.value)}
+                    >
+                      <option value="product">Products</option>
+                      <option value="seller">Seller</option>
+                      <option value="buyer">Buyer</option>
+                    </select>
 
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Enter product / service to search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Enter product / service to search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
 
-                    onFocus={() => {
-                      setSearchFocused(true);                  // ⭐ body dark
-                      if (searchQuery.length >= 3) {
-                        setShowDropdown(true);
-                      }
-                    }}
+                      onFocus={() => {
+                        setSearchFocused(true);                  // ⭐ body dark
+                        if (searchQuery.length >= 3) {
+                          setShowDropdown(true);
+                        }
+                      }}
 
-                    onBlur={() => {
-                      setSearchFocused(false);
-                      setShowDropdown(false);
-                    }}
-                  />
+                      onBlur={() => {
+                        setSearchFocused(false);
+                        setShowDropdown(false);
+                      }}
+                    />
 
-                  <button className="btn search-btn" type="submit">
-                    Search
-                  </button>
+                    <button className="btn search-btn" type="submit">
+                      Search
+                    </button>
 
-                  {showDropdown && suggestions.length > 0 && (
-                    <ul className="search-suggestion-box list-unstyled">
-                      {suggestions.map((item) => (
-                        <li
-                          key={item.id}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            navigateToSuggestion(item);
-                          }}
-                          style={{ cursor: "pointer" }}
-                        >
-                          <div className="d-flex align-items-center gap-2">
-                            <i className="bx bx-history"></i> {item.name}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </form>
-            </div>
+                    {showDropdown && suggestions.length > 0 && (
+                      <ul className="search-suggestion-box list-unstyled">
+                        {suggestions.map((item) => (
+                          <li
+                            key={item.id}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              navigateToSuggestion(item);
+                            }}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <div className="d-flex align-items-center gap-2">
+                              <i className="bx bx-history"></i> {item.name}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </form>
+              </div>
             )}
             <div className="lastbox">
               <div className="d-flex align-items-center gap-2">
                 <Link
                   to="/get-support"
-                  className="thLink text-center me-2 lh-1 d-flex flex-column"
+                  className="thLink text-center me-2 lh-1 d-flex gap-2"
                 >
                   <i className="lni lni-question-circle d-block"></i>Support
                 </Link>
@@ -361,112 +361,112 @@ const FrontHeader = () => {
         <div className="bg-white py-0">
           <div className="container-xxl">
             <nav className="navbar navbar-expand-lg py-0">
-              <div className="container-xxl">
-                {/* LOGO */}
-                <Link to="/" className="navbar-brand">
-                  <img
-                    src={logoUrl}
-                    alt="Site Logo"
-                    height="50"
-                    className="me-2"
-                    style={{ width: "auto" }}
-                    loading="lazy"
-                    decoding="async"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "/logo.png";
-                      try {
-                        localStorage.setItem(LOGO_CACHE_KEY, "/logo.png");
-                      } catch (err) {
-                        console.error("Unable to reset logo cache:", err);
-                      }
-                    }}
-                  />
-                </Link>
 
-                {/* DESKTOP BUTTON */}
-
-                <a
-                  href="https://elcina.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="post-btn d-inline-block ms-auto me-2 order-lg-3"
-                >
-                  ELCINA Website
-                </a>
-
-                {/* HAMBURGER */}
-                <button
-                  className="navbar-toggler border-0 p-0 position-relative"
-                  type="button"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#mainNavbar"
-                  aria-controls="mainNavbar"
-                  aria-expanded="false"
-                  aria-label="Toggle navigation"
-                  style={{
-                    boxShadow: "unset",
+              {/* LOGO */}
+              <Link to="/" className="navbar-brand">
+                <img
+                  src={logoUrl}
+                  alt="Site Logo"
+                  height="50"
+                  className="me-2"
+                  style={{ width: "auto" }}
+                  loading="lazy"
+                  decoding="async"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "/logo.png";
+                    try {
+                      localStorage.setItem(LOGO_CACHE_KEY, "/logo.png");
+                    } catch (err) {
+                      console.error("Unable to reset logo cache:", err);
+                    }
                   }}
-                >
-                  <span className="bx bx-menu fs-1"></span>
-                </button>
-                {/* MENU */}
-                <div
-                  className="collapse navbar-collapse px-3 py-2 rounded-2 centerMenu"
-                  id="mainNavbar"
-                >
-                  <ul className="navbar-nav mx-auto mt-0">
-                    {menuItems
-                      .filter(
-                        (menuItem) =>
-                          menuItem.is_show === 1 &&
-                          menuItem.status === 1 &&
-                          menuItem.type === 1
-                      )
-                      .map((menuItem) => {
-                        const hasDropdown = menuItem.sub_menu && menuItem.sub_menu.length > 0;
-                        return (
-                          <li className={`nav-item ${hasDropdown ? "dropdown" : ""}`} key={menuItem.id}>
-                            {hasDropdown ? (
-                              <>
-                                <a
-                                  className="nav-link dropdown-toggle"
-                                  href="#"
-                                  id={`dropdown-${menuItem.id}`}
-                                  role="button"
-                                  data-bs-toggle="dropdown"
-                                  aria-expanded="false"
-                                >
-                                  {menuItem.name}
-                                </a>
-                                <ul
-                                  className="dropdown-menu"
-                                  aria-labelledby={`dropdown-${menuItem.id}`}
-                                >
-                                  {menuItem.sub_menu.map((subItem) => (
-                                    <li key={subItem.id}>
-                                      <Link className="dropdown-item" to={subItem.link}>
-                                        {subItem.name}
-                                      </Link>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </>
-                            ) : (
-                              <Link className="nav-link" to={menuItem.link}>
-                                {menuItem.name}
-                              </Link>
-                            )}
-                          </li>
-                        );
-                      })}
-                  </ul>
-                  <a className="nav-link" href="https://www.meity.gov.in/" target="_blank" rel="noreferrer">
-                    <img src="/icon1.svg" className="img-fluid sourcesatya" alt="Source India" style={{ width: "150px" }} />
-                  </a>
-                </div>
+                />
+              </Link>
 
+              {/* DESKTOP BUTTON */}
+
+              <a
+                href="https://elcina.com"
+                target="_blank"
+                rel="noreferrer"
+                className="post-btn d-inline-block ms-auto me-2 order-lg-3"
+              >
+                ELCINA Website
+              </a>
+
+              {/* HAMBURGER */}
+              <button
+                className="navbar-toggler border-0 p-0 position-relative"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+                style={{
+                  boxShadow: "unset",
+                }}
+              >
+                <span className="bx bx-menu fs-1"></span>
+              </button>
+              {/* MENU */}
+              <div
+                className="collapse navbar-collapse px-3 py-2 rounded-2 centerMenu"
+                id="mainNavbar"
+              >
+                <ul className="navbar-nav mx-auto mt-0">
+                  {menuItems
+                    .filter(
+                      (menuItem) =>
+                        menuItem.is_show === 1 &&
+                        menuItem.status === 1 &&
+                        menuItem.type === 1
+                    )
+                    .map((menuItem) => {
+                      const hasDropdown = menuItem.sub_menu && menuItem.sub_menu.length > 0;
+                      return (
+                        <li className={`nav-item ${hasDropdown ? "dropdown" : ""}`} key={menuItem.id}>
+                          {hasDropdown ? (
+                            <>
+                              <a
+                                className="nav-link dropdown-toggle"
+                                href="#"
+                                id={`dropdown-${menuItem.id}`}
+                                role="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                              >
+                                {menuItem.name}
+                              </a>
+                              <ul
+                                className="dropdown-menu"
+                                aria-labelledby={`dropdown-${menuItem.id}`}
+                              >
+                                {menuItem.sub_menu.map((subItem) => (
+                                  <li key={subItem.id}>
+                                    <Link className="dropdown-item" to={subItem.link}>
+                                      {subItem.name}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
+                          ) : (
+                            <Link className="nav-link" to={menuItem.link}>
+                              {menuItem.name}
+                            </Link>
+                          )}
+                        </li>
+                      );
+                    })}
+                </ul>
+                <a className="nav-link" href="https://www.meity.gov.in/" target="_blank" rel="noreferrer">
+                  <img src="/icon1.svg" className="img-fluid sourcesatya" alt="Source India" style={{ width: "150px" }} />
+                </a>
               </div>
+
+
             </nav>
           </div>
         </div>
