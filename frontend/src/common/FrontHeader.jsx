@@ -238,7 +238,7 @@ const FrontHeader = () => {
                       onChange={(e) => setSearchQuery(e.target.value)}
 
                       onFocus={() => {
-                        setSearchFocused(true);                  // ⭐ body dark
+                        setSearchFocused(true);                  // â­ body dark
                         if (searchQuery.length >= 3) {
                           setShowDropdown(true);
                         }
@@ -255,7 +255,7 @@ const FrontHeader = () => {
                     </button>
 
                     {showDropdown && suggestions.length > 0 && (
-                      <ul className="search-suggestion-box list-unstyled">
+                      <ul className="search-suggestion-box list-unstyled search-suggestion-box-header">
                         {suggestions.map((item) => (
                           <li
                             key={item.id}
@@ -264,9 +264,16 @@ const FrontHeader = () => {
                               navigateToSuggestion(item);
                             }}
                             style={{ cursor: "pointer" }}
+                            className="search-suggestion-item"
                           >
-                            <div className="d-flex align-items-center gap-2">
-                              <i className="bx bx-history"></i> {item.name}
+                            <div className="suggestion-row">
+                              <span className="search-suggestion-icon">
+                                <i className="bx bx-history" />
+                              </span>
+                              <div className="search-suggestion-content">
+                                <div className="search-suggestion-title">{item.name}</div>
+
+                              </div>
                             </div>
                           </li>
                         ))}
@@ -471,7 +478,6 @@ const FrontHeader = () => {
           </div>
         </div>
       </header >
-      {!isHomePage && searchFocused && <div className="search-overlay"></div>}
     </>
   );
 };

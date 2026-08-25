@@ -158,6 +158,26 @@ const Banner = () => {
     navigate(`${item.url.includes("?") ? `${item.url}&search=${encodeURIComponent(searchValue)}` : `${item.url}?search=${encodeURIComponent(searchValue)}`}`);
   };
 
+  const getSuggestionMeta = (item = {}) => {
+    const title = normalizeSearchValue(item.name || item.title || item.label || "");
+    const subtitle = normalizeSearchValue(
+      item.category_name ||
+      item.category ||
+      item.sub_title ||
+      item.subtitle ||
+      item.description ||
+      item.type_name ||
+      ""
+    );
+    const icon = item.icon || item.icon_class || "bx-chip";
+
+    return {
+      title: title || "Suggestion",
+      subtitle,
+      icon: icon.startsWith("bx") ? icon : `bx ${icon}`,
+    };
+  };
+
   const searchChipIcon = (keyword = "") => {
     const k = keyword.toLowerCase();
     if (k.includes("pcb") || k.includes("board")) return "bx-chip";
@@ -319,7 +339,7 @@ const Banner = () => {
                 </div>
 
                 {/* RIGHT: static, does not slide */}
-                <div className="innerrowleftBoxlong">
+                <div className="innerrowleftBoxlong position-relative">
                   <div className="hero-search-card">
                     <div className="hero-search-header">
                       <h1>{staticTitle}</h1>
@@ -336,7 +356,7 @@ const Banner = () => {
                           <option value="seller">Seller</option>
                           <option value="buyer">Buyer</option>
                         </select>
-                        <div className="position-relative flex-grow-1">
+                        <div className="flex-grow-1 search-input-wrap">
                           <input
                             type="text"
                             className="form-control form-control-lg"
@@ -352,6 +372,7 @@ const Banner = () => {
                               setTimeout(() => setShowDropdown(false), 150);
                             }}
                           />
+
                           {showDropdown && suggestions.length > 0 && (
                             <ul className="search-suggestion-box list-unstyled shadow-sm">
                               {suggestions.map((item) => (
@@ -363,32 +384,36 @@ const Banner = () => {
                                   }}
                                   className="search-suggestion-item"
                                 >
-                                  <div className="d-flex align-items-center gap-2">
-                                    <i className="bx bx-history" />
-                                    {item.name}
-                                  </div>
+                                  {(() => {
+                                    const meta = getSuggestionMeta(item);
+                                    return (
+                                      <div className="suggestion-row">
+                                        <span className="search-suggestion-icon">
+                                          <i className="bx bx-history" />
+                                        </span>
+                                        <div className="search-suggestion-content">
+                                          <div className="search-suggestion-title">{meta.title}</div>
+                                          
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </li>
                               ))}
-                            </ul>
-                          )}
-                          {searchFocused && normalizeSearchValue(searchQuery).length < 3 && staticPopularSearches.length > 0 && (
-                            <ul className="search-suggestion-box list-unstyled shadow-sm">
-                              <li className="search-suggestion-heading px-3 pt-2 pb-1 text-muted small">Popular Searches</li>
-                              {staticPopularSearches.map((item, idx) => (
-                                <li
-                                  key={`${item}-${idx}`}
+                              <li className="search-suggestion-footer">
+                                <button
+                                  type="button"
+                                  className="search-suggestion-viewall"
                                   onMouseDown={(e) => {
                                     e.preventDefault();
-                                    handlePopularSearch(item);
+                                    handleSearchSubmit(e);
                                   }}
-                                  className="search-suggestion-item"
                                 >
-                                  <div className="d-flex align-items-center gap-2">
-                                    <i className={`bx ${searchChipIcon(item)}`} />
-                                    {item}
-                                  </div>
-                                </li>
-                              ))}
+                                  <i className="bx bx-search" />
+                                  <span>View all results for &quot;{normalizeSearchValue(searchQuery)}&quot;</span>
+                                  <i className="bx bx-chevron-right search-suggestion-arrow" />
+                                </button>
+                              </li>
                             </ul>
                           )}
                         </div>
