@@ -21,3 +21,10 @@ Implement the following improvements related to Product Search and Product Manag
 Check Google analytics code available or not
 Short Description   - > Short Specifications
 Long Description - > Long Specifications
+
+
+26-08-2026
+
+Ui change 
+enquiery functionality
+s
