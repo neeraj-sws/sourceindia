@@ -1568,15 +1568,12 @@ exports.submitEnquiry = async (req, res) => {
           password: hashedPassword,
           real_password: password,
         });
-        console.log(suser.id);
+
       } catch (err) {
-        if (err?.name === 'SequelizeUniqueConstraintError' || err?.parent?.code === 'ER_DUP_ENTRY') {
-          return res.status(409).json({
-            success: false,
-            message: 'This email already exists. Please use another email or log in with the existing account.'
-          });
-        }
-        throw err;
+        console.log('yes');
+        suser = await Users.findOne({
+          where: { email: formData.email.trim() }
+        });
       }
 
       enquiryPayload = {
