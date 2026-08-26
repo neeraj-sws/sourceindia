@@ -1,16 +1,13 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import axios from 'axios';
-import API_BASE_URL, { ROOT_URL } from "../config";
+import { ROOT_URL } from "../config";
 import ImageWithFallback from "../admin/common/ImageWithFallback";
 import "../css/home.css";
 
 const UserHeader = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, logout, user, setUser } = useAuth();
-  // const [user, setUser] = useState(null);
-  const token = localStorage.getItem('user_token');
+  const { isLoggedIn, logout, user } = useAuth();
 
   // useEffect(() => {
   //   const checkToken = () => {
@@ -29,28 +26,6 @@ const UserHeader = () => {
     logout();
     navigate('/login');
   };
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!token) return;
-      try {
-        const response = await axios.get(`${API_BASE_URL}/signup/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setUser(response.data.user);
-      } catch (err) {
-        if (err.response?.status === 401) {
-          logout();
-          navigate('/login');
-        } else {
-          console.error(err);
-        }
-      }
-    };
-    fetchProfile();
-  }, [token]);
 
   return (
     <header>

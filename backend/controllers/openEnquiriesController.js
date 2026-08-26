@@ -85,9 +85,9 @@ exports.getFrontOpenEnquiries = async (req, res) => {
     if (is_delete !== undefined) {
       whereConditions.is_delete = is_delete;
     }
-    // if (is_home !== undefined) {
-    //   whereConditions.is_home = is_home;
-    // }
+    if (is_home !== undefined) {
+      whereConditions.is_home = is_home;
+    }
     if (user_id !== undefined) {
       whereConditions.user_id = user_id;
     }

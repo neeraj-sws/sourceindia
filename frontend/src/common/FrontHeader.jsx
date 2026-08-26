@@ -22,9 +22,7 @@ const getInitialLogoUrl = () => {
 };
 
 const FrontHeader = () => {
-  const { isLoggedIn, logout,
-    user, setUser } = useAuth();
-  const token = localStorage.getItem("user_token");
+  const { isLoggedIn, logout, user } = useAuth();
   const navigate = useNavigate();
 
   const [searchType, setSearchType] = useState("product");
@@ -66,28 +64,6 @@ const FrontHeader = () => {
       if (Array.isArray(siteSettings.front_menu)) setMenuItems(siteSettings.front_menu);
     }
   }, [siteSettings, loading]);
-
-  /* ================= PROFILE ================= */
-  useEffect(() => {
-    if (!isLoggedIn || !token) return;
-
-    const fetchProfile = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/signup/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUser(res.data.user);
-      } catch (err) {
-        console.error(err);
-        if (err.response?.status === 401) {
-          logout();           // 🔥 force logout
-          navigate("/login"); // optional redirect
-        }
-      }
-    };
-
-    fetchProfile();
-  }, [isLoggedIn, token, logout, navigate, setUser]);
 
   /* ================= AUTOCOMPLETE ================= */
   useEffect(() => {
