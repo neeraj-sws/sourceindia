@@ -739,12 +739,10 @@ exports.getOpenenquiryEntry = async (req, res) => {
             real_password: password
           });
         } catch (err) {
-          if (err?.name === 'SequelizeUniqueConstraintError' || err?.parent?.code === 'ER_DUP_ENTRY') {
-            return res.status(409).json({
-              error: 'This email already exists. Please use another email or log in with the existing account.'
-            });
-          }
-          throw err;
+          user = await Users.findOne({
+            where: { email: cleanEmail }
+          });
+
         }
       }
 
