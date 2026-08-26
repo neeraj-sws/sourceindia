@@ -724,6 +724,9 @@
 }
 
 @media (max-width: 991px) {
+    .mainHeader img {
+        height: 50px !important;
+    }
 
     .hero-left-card,
     .hero-search-card {
