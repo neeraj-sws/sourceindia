@@ -39,7 +39,7 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                 return digits.length >= 10 ? digits.slice(-10) : digits;
             };
 
-            const payload = user && user.is_approve === 1 && user.status === 1
+            const payload = user
                 ? {
                     user_id: user.id,
                     title: formData.title.trim(),
@@ -72,7 +72,7 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
                 }
             }
 
-            
+
 
             const response = await axios.post(
                 `${API_BASE_URL}/enquiries/submit-enquiry`,
@@ -107,7 +107,7 @@ const AddEnquiryModal = ({ show, handleClose, onEnquiryAdded }) => {
         }
     };
 
-    const isAuthenticated = user && user.is_approve === 1 && user.status === 1;
+    const isAuthenticated = user;
 
     return (
         <div

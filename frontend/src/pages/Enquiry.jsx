@@ -37,7 +37,7 @@ const Enquiry = () => {
 
     try {
       const params = new URLSearchParams({
-        is_home: "1",
+        is_home: activeTab === "my" ? "0" : "1",
         is_delete: "0",
       });
 
