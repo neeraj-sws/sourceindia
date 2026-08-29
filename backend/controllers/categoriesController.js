@@ -15,6 +15,8 @@ const CompanyInfo = require('../models/CompanyInfo');
 const SellerCategory = require('../models/SellerCategory');
 const getMulterUpload = require('../utils/upload');
 const { findCategoryNameConflict, logCategoryConflict } = require('../utils/categoryNameConflictHelper');
+const Users = require('../models/Users');
+
 
 exports.createCategories = async (req, res) => {
   const upload = getMulterUpload('category');
@@ -118,6 +120,13 @@ exports.getAllCategories = async (req, res) => {
     const productCounts = await Products.findAll({
       attributes: ['category', [fn('COUNT', col('product_id')), 'count']],
       where: { is_delete: 0, is_approve: 1, status: 1 },
+      include: [{
+        model: Users,
+        as: 'Users',
+        attributes: [],
+        required: true,
+        where: { status: 1, is_approve: 1, is_delete: 0 },
+      }],
       group: ['category'],
       raw: true,
     });
@@ -802,8 +811,16 @@ exports.getItemSubCategories = async (req, res) => {
       where: {
         status: 1,
         is_delete: 0,
+        is_approve: 1,
         sub_category: subIds
       },
+      include: [{
+        model: Users,
+        as: 'Users',
+        attributes: [],
+        required: true,
+        where: { status: 1, is_approve: 1, is_delete: 0 },
+      }],
       group: ['sub_category'],
       raw: true
     });
@@ -823,8 +840,16 @@ exports.getItemSubCategories = async (req, res) => {
       where: {
         status: 1,
         is_delete: 0,
+        is_approve: 1,
         sub_category: subIds
       },
+      include: [{
+        model: Users,
+        as: 'Users',
+        attributes: [],
+        required: true,
+        where: { status: 1, is_approve: 1, is_delete: 0 },
+      }],
       group: ['category', 'sub_category', 'item_category_id'],
       raw: true
     });
