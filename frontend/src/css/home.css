@@ -2591,6 +2591,13 @@ button.nav-link:hover {
     margin-bottom: 18px;
 }
 
+.categoryMainTitleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
 .categoryMainTitle {
     font-size: 26px;
     font-weight: 700;
@@ -2651,14 +2658,6 @@ button.nav-link:hover {
             rgba(0, 0, 0, 0.85) 100%);
 }
 
-.categoryPromoContent {
-    position: absolute;
-    left: 18px;
-    right: 18px;
-    bottom: 18px;
-    z-index: 3;
-}
-
 .categoryPromoTitle {
     font-size: 24px;
     font-weight: 700;
@@ -2672,37 +2671,6 @@ button.nav-link:hover {
     color: rgba(255, 255, 255, 0.85);
     line-height: 1.4;
     margin: 0 0 14px;
-}
-
-.categoryPromoBtn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: #ff6600;
-    color: #ffffff;
-    padding: 9px 15px;
-    border-radius: 6px;
-    font-size: 12.5px;
-    font-weight: 600;
-    text-decoration: none;
-    line-height: 1.2;
-    transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-}
-
-.categoryPromoBtn:hover {
-    background: #c8121e;
-    color: #ffffff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-
-.categoryPromoBtnArrow {
-    display: inline-block;
-    transition: transform 0.25s ease;
-}
-
-.categoryPromoBtn:hover .categoryPromoBtnArrow {
-    transform: translateX(3px);
 }
 
 /* ---------------- SUBCATEGORY GRID ---------------- */
@@ -3026,12 +2994,6 @@ button.nav-link:hover {
 
     .categoryPromoCard {
         min-height: 280px;
-    }
-
-    .categoryPromoContent {
-        left: 16px;
-        right: 16px;
-        bottom: 16px;
     }
 
     .categoryPromoTitle {

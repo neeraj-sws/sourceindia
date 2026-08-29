@@ -271,9 +271,18 @@ const CategoryMain = ({ isHome, limit }) => {
                     CATEGORY HEADER
                 ================================================= */}
                 <div className="categoryMainHeader">
-                  <h4 className="categoryMainTitle">
-                    {cat.name}
-                  </h4>
+                  <div className="categoryMainTitleRow">
+                    <h4 className="categoryMainTitle">
+                      {cat.name}
+                    </h4>
+                    <a
+                      href={`/categories/${cat.slug}`}
+                      className="subcategoryArrow"
+                      aria-label={`Explore ${cat.name}`}
+                    >
+                      <span>→</span>
+                    </a>
+                  </div>
                   <span className="categoryMainAccent" />
 
                 </div>
@@ -303,17 +312,6 @@ const CategoryMain = ({ isHome, limit }) => {
                     )}
 
                     <div className="categoryPromoOverlay" />
-
-                    <div className="categoryPromoContent">
-
-                      <a
-                        href={`/categories/${cat.slug}`}
-                        className="categoryPromoBtn"
-                      >
-                        <span>Explore Components</span>
-                        <span className="categoryPromoBtnArrow">→</span>
-                      </a>
-                    </div>
 
                   </div>
 
