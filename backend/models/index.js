@@ -12,8 +12,26 @@ const ItemSubCategory = require('./ItemSubCategory');
 const Products = require('./Products');
 const Items = require('./Items');
 const ProductKeyword = require('./ProductKeyword');
+const BuyerRequirements = require('./BuyerRequirements');
+const RequirementAssignments = require('./RequirementAssignments');
+const RequirementActivityLog = require('./RequirementActivityLog');
+const SellerPerformance = require('./SellerPerformance');
 
 // ===== DEFINE ASSOCIATIONS HERE =====
+
+// BuyerRequirements -> RequirementAssignments
+BuyerRequirements.hasMany(RequirementAssignments, {
+  foreignKey: 'requirement_id',
+  as: 'assignments',
+  constraints: false,
+});
+
+// BuyerRequirements -> RequirementActivityLog
+BuyerRequirements.hasMany(RequirementActivityLog, {
+  foreignKey: 'requirement_id',
+  as: 'activity_logs',
+  constraints: false,
+});
 
 // ItemCategory -> Products
 ItemCategory.hasMany(Products, {
@@ -49,4 +67,8 @@ module.exports = {
   Products,
   Items,
   ProductKeyword,
+  BuyerRequirements,
+  RequirementAssignments,
+  RequirementActivityLog,
+  SellerPerformance,
 };

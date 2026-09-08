@@ -54,6 +54,9 @@ const pagesRoutes = require('./routes/pagesRoutes');
 const frontMenuRoutes = require('./routes/frontMenuRoutes');
 const membershipPlansRoutes = require('./routes/membershipPlansRoutes');
 const buyerEnquiryRoutes = require('./routes/buyerEnquiryRoutes');
+const buyerRequirementsRoutes = require('./routes/buyerRequirementsRoutes');
+const adminBuyerRequirementsRoutes = require('./routes/adminBuyerRequirementsRoutes');
+const { processExpiredAssignments } = require('./helpers/assignmentHelper');
 
 
 const app = express();
@@ -136,6 +139,8 @@ app.use(basePath + '/api/pages', pagesRoutes);
 app.use(basePath + '/api/front_menu', frontMenuRoutes);
 app.use(basePath + '/api/membership_plans', membershipPlansRoutes);
 app.use(basePath + '/api/buyerenquiry', buyerEnquiryRoutes);
+app.use(basePath + '/api/buyer-requirements', buyerRequirementsRoutes);
+app.use(basePath + '/api/admin/buyer-requirements', adminBuyerRequirementsRoutes);
 app.use(basePath + '/api/companies', companiesRoutes);
 
 sequelize
@@ -147,5 +152,18 @@ sequelize
     app.listen(5000, () =>
       console.log('Server running on http://localhost:5000' + basePath)
     );
+
+    // SLA Processor: check for expired assignments every 2 minutes
+    setInterval(async () => {
+      try {
+        const processed = await processExpiredAssignments();
+        if (processed > 0) {
+          console.log(`[SLA Processor] Processed ${processed} expired assignments`);
+        }
+      } catch (err) {
+        console.error('[SLA Processor] Error:', err.message);
+      }
+    }, 2 * 60 * 1000);
+    console.log('[SLA Processor] Started (interval: 2 minutes)');
   })
   .catch((err) => console.error('DB connection error:', err));

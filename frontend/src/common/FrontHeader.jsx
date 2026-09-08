@@ -367,16 +367,24 @@ const FrontHeader = () => {
                 />
               </Link>
 
-              {/* DESKTOP BUTTON */}
+              {/* DESKTOP BUTTONS */}
+              <div className="d-flex align-items-center gap-2 ms-auto me-2 order-lg-3">
+                <Link
+                  to="/post-buy-requirement"
+                  className="post-btn d-inline-block text-nowrap"
+                >
+                  Post Buy Requirement
+                </Link>
 
-              <a
-                href="https://elcina.com"
-                target="_blank"
-                rel="noreferrer"
-                className="post-btn d-inline-block ms-auto me-2 order-lg-3"
-              >
-                ELCINA Website
-              </a>
+                <a
+                  href="https://elcina.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="post-btn d-inline-block text-nowrap"
+                >
+                  ELCINA Website
+                </a>
+              </div>
 
               {/* HAMBURGER */}
               <button

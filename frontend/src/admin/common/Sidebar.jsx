@@ -247,6 +247,15 @@ const menuData = [
       { title: 'Sourcing Interest Graph', link: '/admin/sourcing_interest_graph' },
     ],
   },
+  {
+    title: 'Buy Requirement Workflow',
+    icon: 'bx bx-cart-alt',
+    subMenu: [
+      { title: 'Buy Requirements', link: '/admin/buy-requirements' },
+      { title: 'Seller Performance', link: '/admin/seller-performance' },
+      { title: 'Workflow Config', link: '/admin/buy-requirement-config' },
+    ],
+  },
 ];
 
 const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {

@@ -50,6 +50,10 @@ const Impersonate = lazy(() => import('../pages/Impersonate'));
 const SubscriptionPlans = lazy(() => import('../pages/SubscriptionPlans'));
 const MyBuyerEnquiries = lazy(() => import('../pages/MyBuyerEnquiries'));
 const FAQPage = lazy(() => import('../pages/FAQPage'));
+const PostBuyRequirement = lazy(() => import('../pages/PostBuyRequirement'));
+const MyBuyRequirements = lazy(() => import('../pages/MyBuyRequirements'));
+const SellerBuyLeads = lazy(() => import('../pages/SellerBuyLeads'));
+const BuyLeadDetail = lazy(() => import('../pages/BuyLeadDetail'));
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { AlertProvider } from '../context/AlertContext';
@@ -64,7 +68,8 @@ function FrontLayout() {
   const location = useLocation();
   const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit', '/my-product',
     '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/open-enquiry',
-    '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', '/all-leads-chats', 'open-enquiry-dashboard', '/my-buyer-enquiries'];
+    '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', '/all-leads-chats', 'open-enquiry-dashboard', '/my-buyer-enquiries',
+    '/buy-leads', '/buy-lead-detail', '/my-buy-requirements'];
   const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -124,6 +129,10 @@ function FrontLayout() {
                 <Route path="/impersonate" element={<Impersonate />} />
                 <Route path="/plans" element={<SubscriptionPlans />} />
                 <Route path="/my-buyer-enquiries" element={<PrivateRoute><MyBuyerEnquiries /></PrivateRoute>} />
+                <Route path="/post-buy-requirement" element={<PostBuyRequirement />} />
+                <Route path="/my-buy-requirements" element={<PrivateRoute><MyBuyRequirements /></PrivateRoute>} />
+                <Route path="/buy-leads" element={<PrivateRoute><SellerBuyLeads /></PrivateRoute>} />
+                <Route path="/buy-lead-detail/:id" element={<PrivateRoute><BuyLeadDetail /></PrivateRoute>} />
                 <Route path="/faq" element={<FAQPage />} />
               </Routes>
             </Suspense>

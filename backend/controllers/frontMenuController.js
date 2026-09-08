@@ -1,9 +1,10 @@
 const Sequelize = require('sequelize');
-const { Op, fn, col } = Sequelize;
+const { Op, fn, col, literal } = Sequelize;
 const FrontMenu = require('../models/FrontMenu');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
 const { ItemCategory, ItemSubCategory } = require('../models');
+const ProductKeyword = require('../models/ProductKeyword');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const SellerCategory = require('../models/SellerCategory');
@@ -18,6 +19,33 @@ exports.createFrontMenu = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+};
+
+const searchAllProducts = async (q, type) => {
+  const esc = (q || '').trim().replace(/[%_\\]/g, (m) => `\\${m}`);
+  const keywords = await ProductKeyword.findAll({
+    where: {
+      status: 1,
+      name: { [Op.like]: `%${esc}%` },
+    },
+    include: [{ model: ItemSubCategory, as: 'ItemSubCategory' }],
+    order: [
+      [literal(`CASE WHEN ProductKeyword.name LIKE '${esc}%' THEN 0 ELSE 1 END`), 'ASC'],
+      [col('ProductKeyword.name'), 'ASC'],
+    ],
+    limit: 5,
+  });
+  return keywords.map((k) => ({
+    id: k.id,
+    keyword_id: k.id,
+    category_id: k.ItemSubCategory?.category_id || 0,
+    subcategory_id: k.ItemSubCategory?.subcategory_id || 0,
+    item_category_id: k.ItemSubCategory?.item_category_id || 0,
+    item_subcategory_id: k.item_subcategory_id || 0,
+    name: k.name,
+    type: 'keyword',
+    search_type: type,
+  }));
 };
 
 const searchProducts = async (q, type) => {
@@ -255,6 +283,7 @@ const buildUrlParams = (item) => {
 exports.searchMulti = async (req, res) => {
   try {
     const { q, type } = req.query;
+    const allMode = req.query.all === '1';
 
     if (!q || q.length < 2) return res.json([]);
 
@@ -262,7 +291,9 @@ exports.searchMulti = async (req, res) => {
 
     switch (type) {
       case "product":
-        results = await searchProducts(q, type);
+        results = allMode
+          ? await searchAllProducts(q, type)
+          : await searchProducts(q, type);
         break;
 
       case "seller":

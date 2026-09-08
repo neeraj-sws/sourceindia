@@ -197,6 +197,25 @@ const UserSidebar = () => {
     // ✅ Always visible (common)
     { title: "Add Open Enquiries", icon: "bx bx-plus", link: "/enquiry" },
     // { title: "My All Enquiries Chats", icon: "bx bx-message", link: "/my-all-enquiries-chats" },
+
+    // My Buy Requirements (for buyers - not sellers)
+    {
+      title: "My Buy Requirements",
+      icon: "bx bx-list-ul",
+      link: "/my-buy-requirements",
+      show: user?.is_seller === 0,
+    },
+
+    // Buy Leads (for sellers with complete+approve)
+    {
+      title: "Buy Leads",
+      icon: "bx bx-package",
+      link: "/buy-leads",
+      show:
+        user?.is_seller === 1 &&
+        user?.is_complete === 1 &&
+        user?.is_approve === 1,
+    },
   ];
 
   // ✅ Filtering logic

@@ -76,6 +76,18 @@ const ProductUnusedCategories = lazy(() => import('../admin/pages/ProductUnusedC
 const ProductCategoriesGraph = lazy(() => import('../admin/pages/ProductCategoriesGraph'));
 const SellerCategoriesGraph = lazy(() => import('../admin/pages/SellerCategoriesGraph'));
 const SourcingInterestsGraph = lazy(() => import('../admin/pages/SourcingInterestsGraph'));
+import { AdminSellerPerformance, AdminBuyRequirementConfig } from '../admin/pages/AdminSellerPerformance';
+const AdminBuyRequirements = lazy(() =>
+  import('../admin/pages/AdminBuyRequirements').then(m => ({
+    default: m.AdminBuyRequirements,
+  }))
+);
+
+const AdminBuyRequirementDetail = lazy(() => 
+  import('../admin/pages/AdminBuyRequirements').then(m => ({
+    default: m.AdminBuyRequirementDetail,
+  }))
+);
 
 function AdminLayout() {
   const location = useLocation();
@@ -195,7 +207,10 @@ function AdminLayout() {
               <Route path="/product_category_graph" element={<ProtectedRoute><ProductCategoriesGraph /></ProtectedRoute>} />
               <Route path="/seller_category_graph" element={<ProtectedRoute><SellerCategoriesGraph /></ProtectedRoute>} />
               <Route path="/sourcing_interest_graph" element={<ProtectedRoute><SourcingInterestsGraph /></ProtectedRoute>} />
-
+              <Route path="/buy-requirements" element={<ProtectedRoute><AdminBuyRequirements /></ProtectedRoute>} />
+              <Route path="/buy-requirements/:id" element={<ProtectedRoute><AdminBuyRequirementDetail /></ProtectedRoute>} />
+              <Route path="/seller-performance" element={<ProtectedRoute><AdminSellerPerformance /></ProtectedRoute>} />
+              <Route path="/buy-requirement-config" element={<ProtectedRoute><AdminBuyRequirementConfig /></ProtectedRoute>} />
 
 
               <Route path="/buyer-enquiries" element={<ProtectedRoute><Suspense fallback={<div></div>}><AdminBuyerEnquiries /></Suspense></ProtectedRoute>} />
