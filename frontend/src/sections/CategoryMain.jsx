@@ -310,7 +310,8 @@ const CategoryMain = ({ isHome, limit }) => {
                         href={`/categories/${cat.slug}`}
                         className="categoryPromoBtn"
                       >
-                        <span>Explore Components</span>
+                        
+                        <span>Explore {cat.name}</span>
                         <span className="categoryPromoBtnArrow">→</span>
                       </a>
                     </div>
