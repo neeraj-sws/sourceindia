@@ -780,7 +780,7 @@ const ProductDetail = () => {
                     <div className="productBox productBoxswiper p-3 bg-white">
                       <div className="middlepro">
                         <div className="ProImg ProImgDetail">
-                          <ImageFront src={`${ROOT_URL}/${sp.file_name}`} width={180} height={180} loading={index < 2 ? 'eager' : 'lazy'} showFallback />
+                          <ImageFront src={`${ROOT_URL}/${sp.image}`} width={180} height={180} loading={index < 2 ? 'eager' : 'lazy'} showFallback />
                         </div>
                         <div className="productlink">
                           <p className="mb-0 title-clamp">{sp.title}</p>
