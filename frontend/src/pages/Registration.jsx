@@ -383,34 +383,34 @@ const Registration = () => {
             if (res.data.success) {
                 showNotification("Registration successful!", "success");
 
-                setForm({
-                    fname: "",
-                    lname: "",
-                    cname: "",
-                    website: "",
-                    mobile: "",
-                    alternate_number: "",
-                    country_code: "+91",
-                    email: "",
-                    category: "",
-                    elcina_member: "",
-                    is_trading: "",
-                    products: "",
-                    user_category: "",
-                    address: "",
-                    // city: "",
-                    // state: "",
-                    // country: "",
-                    pinCode: "",
-                });
-                setSelectedCountry('');
-                setSelectedState('');
-                setSelectedCity('');
-                setEmailVerified(false);
-                setOtp("");
-                setOtpSent(false);
-                setUserId(null);
-                // navigate('/login');
+                // setForm({
+                //     fname: "",
+                //     lname: "",
+                //     cname: "",
+                //     website: "",
+                //     mobile: "",
+                //     alternate_number: "",
+                //     country_code: "+91",
+                //     email: "",
+                //     category: "",
+                //     elcina_member: "",
+                //     is_trading: "",
+                //     products: "",
+                //     user_category: "",
+                //     address: "",
+                //     // city: "",
+                //     // state: "",
+                //     // country: "",
+                //     pinCode: "",
+                // });
+                // setSelectedCountry('');
+                // setSelectedState('');
+                // setSelectedCity('');
+                // setEmailVerified(false);
+                // setOtp("");
+                // setOtpSent(false);
+                // setUserId(null);
+                // // navigate('/login');
                 const generatedPassword = res.data.password;   // auto-generated password
                 const email = form.email;
 
