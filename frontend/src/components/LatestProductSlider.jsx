@@ -844,7 +844,7 @@ const LatestProductSlider = ({
                         marginBottom: "4px",
                       }}
                     >
-                      {product.company_name}
+                      <b>Sold by :</b> {product.company_name}
                     </div>
                   )}
 
