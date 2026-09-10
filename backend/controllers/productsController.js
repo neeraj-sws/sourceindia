@@ -659,6 +659,7 @@ const sequelize = require('../config/database');
 const { sendMail, getSiteConfig } = require('../helpers/mailHelper');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const Cities = require('../models/Cities');
+const HomeSettings = require('../models/HomeSettings');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
 const parseCsv2 = (value) => value.split(',').map(item => item.trim());
 
@@ -2957,5 +2958,145 @@ exports.productKeywordUpdate = async (req, res) => {
   } catch (err) {
     console.error('Error in productKeywordUpdate:', err);
     return res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+};
+
+const DEFAULT_INTERVAL_MS = 2 * 24 * 60 * 60 * 1000;
+
+async function getHomeSettingValue(metaKey, defaultValue = '') {
+  const setting = await HomeSettings.findOne({ where: { meta_key: metaKey } });
+  return setting ? setting.meta_value : defaultValue;
+}
+
+async function setHomeSettingValue(metaKey, value, section = 'home') {
+  const [setting] = await HomeSettings.findOrCreate({
+    where: { meta_key: metaKey },
+    defaults: { page: 'home', section, meta_value: String(value) }
+  });
+  setting.meta_value = String(value);
+  await setting.save();
+}
+
+function buildProductWhereClause() {
+  return { is_delete: 0, status: 1, is_approve: 1 };
+}
+
+function formatProductRow(row) {
+  const data = row.toJSON();
+  data.category_name = data.Categories?.name || null;
+  data.file_name = data.file?.file || null;
+  data.company_name = data.company_info?.organization_name || null;
+  data.state_name = data.Users?.state_data?.name || null;
+  data.user_full_name = data.Users ? `${data.Users.fname} ${data.Users.lname}` : null;
+  delete data.Categories;
+  delete data.SubCategories;
+  delete data.ItemCategory;
+  delete data.ItemSubCategory;
+  delete data.Items;
+  delete data.Color;
+  delete data.company_info;
+  delete data.file;
+  delete data.Users;
+  return data;
+}
+
+async function fetchApprovedProducts(where, order, limit, offset) {
+  const query = {
+    where,
+    order,
+    include: [
+      { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+      { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+      { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+      { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
+      { model: Items, as: 'Items', attributes: ['id', 'name'] },
+      { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+      { model: UploadImage, as: 'file', attributes: ['file'] },
+      {
+        model: Users, as: 'Users',
+        attributes: ['id', 'fname', 'lname', 'state'],
+        where: { is_approve: 1, is_delete: 0, status: 1 },
+        include: [{ model: States, as: 'state_data', attributes: ['id', 'name'] }]
+      }
+    ]
+  };
+  if (limit) query.limit = limit;
+  if (offset !== undefined && offset !== null) query.offset = offset;
+  const { rows } = await Products.findAndCountAll(query);
+  return rows.map(formatProductRow);
+}
+
+exports.getLatestHomeProducts = async (req, res) => {
+  try {
+    const PRODUCT_LIMIT = 6;
+
+    const lastCheckStr = await getHomeSettingValue('latest_products_last_check', '');
+    const offsetStr = await getHomeSettingValue('latest_products_offset', '0');
+    const intervalStr = await getHomeSettingValue('latest_products_interval_ms', String(DEFAULT_INTERVAL_MS));
+
+    const lastCheck = lastCheckStr ? new Date(lastCheckStr) : null;
+    const currentOffset = parseInt(offsetStr, 10) || 0;
+    const intervalMs = parseInt(intervalStr, 10) || DEFAULT_INTERVAL_MS;
+    const now = new Date();
+    const shouldRefresh = !lastCheck || (now.getTime() - lastCheck.getTime() >= intervalMs);
+
+    const baseWhere = buildProductWhereClause();
+
+    if (shouldRefresh) {
+      const newProductsWhere = lastCheck
+        ? { ...baseWhere, updated_at: { [Op.gt]: lastCheck } }
+        : baseWhere;
+
+      const newProducts = await fetchApprovedProducts(
+        newProductsWhere,
+        [['updated_at', 'DESC']],
+        lastCheck ? 6 : null,
+        undefined
+      );
+
+      if (newProducts.length >= PRODUCT_LIMIT) {
+        const display = newProducts.slice(0, PRODUCT_LIMIT);
+        await setHomeSettingValue('latest_products_last_check', now.toISOString());
+        await setHomeSettingValue('latest_products_offset', '0');
+        return res.json({ products: display, refreshed: true, has_more: true });
+      }
+
+      if (newProducts.length > 0) {
+        const remaining = PRODUCT_LIMIT - newProducts.length;
+        const oldProducts = await fetchApprovedProducts(
+          baseWhere,
+          [['updated_at', 'DESC']],
+          remaining,
+          currentOffset
+        );
+        const display = [...newProducts, ...oldProducts];
+        const newOffset = currentOffset + oldProducts.length;
+        await setHomeSettingValue('latest_products_last_check', now.toISOString());
+        await setHomeSettingValue('latest_products_offset', String(newOffset));
+        return res.json({ products: display, refreshed: true, has_more: oldProducts.length >= remaining });
+      }
+
+      const oldProducts = await fetchApprovedProducts(
+        baseWhere,
+        [['updated_at', 'DESC']],
+        PRODUCT_LIMIT,
+        currentOffset
+      );
+      const newOffset = currentOffset + oldProducts.length;
+      await setHomeSettingValue('latest_products_last_check', now.toISOString());
+      await setHomeSettingValue('latest_products_offset', String(newOffset));
+      return res.json({ products: oldProducts, refreshed: true, has_more: oldProducts.length >= PRODUCT_LIMIT });
+    }
+
+    const cachedProducts = await fetchApprovedProducts(
+      baseWhere,
+      [['updated_at', 'DESC']],
+      PRODUCT_LIMIT,
+      currentOffset
+    );
+    return res.json({ products: cachedProducts, refreshed: false, has_more: true });
+  } catch (err) {
+    console.error('Error in getLatestHomeProducts:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
