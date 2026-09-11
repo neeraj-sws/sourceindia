@@ -2857,6 +2857,11 @@ exports.updateAccountStatus = async (req, res) => {
     const products = await Products.findByPk(req.params.id);
     if (!products) return res.status(404).json({ message: 'Product not found' });
     products.is_approve = is_approve;
+    if (is_approve === 1) {
+      products.approved_at = new Date();
+    } else {
+      products.approved_at = null;
+    }
     await products.save();
 
     // Send product approval email (template 103) when product is approved (is_approve === 1)
@@ -3004,6 +3009,7 @@ async function fetchApprovedProducts(where, order, limit, offset) {
   const query = {
     where,
     order,
+    distinct: true,
     include: [
       { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
       { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
@@ -3013,90 +3019,277 @@ async function fetchApprovedProducts(where, order, limit, offset) {
       { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
       { model: UploadImage, as: 'file', attributes: ['file'] },
       {
-        model: Users, as: 'Users',
+        model: Users,
+        as: 'Users',
         attributes: ['id', 'fname', 'lname', 'state'],
-        where: { is_approve: 1, is_delete: 0, status: 1 },
-        include: [{ model: States, as: 'state_data', attributes: ['id', 'name'] }]
+        where: {
+          is_approve: 1,
+          is_delete: 0,
+          status: 1
+        },
+        include: [
+          {
+            model: States,
+            as: 'state_data',
+            attributes: ['id', 'name']
+          }
+        ]
       }
     ]
   };
+
   if (limit) query.limit = limit;
-  if (offset !== undefined && offset !== null) query.offset = offset;
-  const { rows } = await Products.findAndCountAll(query);
-  return rows.map(formatProductRow);
+  if (offset !== undefined && offset !== null) {
+    query.offset = offset;
+  }
+
+  const { rows, count } = await Products.findAndCountAll(query);
+
+  return {
+    products: rows.map(formatProductRow),
+    count: typeof count === 'number' ? count : count.length
+  };
 }
 
 exports.getLatestHomeProducts = async (req, res) => {
   try {
     const PRODUCT_LIMIT = 6;
 
-    const lastCheckStr = await getHomeSettingValue('latest_products_last_check', '');
-    const offsetStr = await getHomeSettingValue('latest_products_offset', '0');
-    const intervalStr = await getHomeSettingValue('latest_products_interval_ms', String(DEFAULT_INTERVAL_MS));
+    const lastCheckStr = await getHomeSettingValue(
+      'latest_products_last_check',
+      ''
+    );
 
-    const lastCheck = lastCheckStr ? new Date(lastCheckStr) : null;
+    const offsetStr = await getHomeSettingValue(
+      'latest_products_offset',
+      '0'
+    );
+
+    const intervalStr = await getHomeSettingValue(
+      'latest_products_interval_ms',
+      String(DEFAULT_INTERVAL_MS)
+    );
+
+    const lastCheck = lastCheckStr
+      ? new Date(lastCheckStr)
+      : null;
+
     const currentOffset = parseInt(offsetStr, 10) || 0;
-    const intervalMs = parseInt(intervalStr, 10) || DEFAULT_INTERVAL_MS;
+
+    const intervalMs =
+      parseInt(intervalStr, 10) || DEFAULT_INTERVAL_MS;
+
     const now = new Date();
-    const shouldRefresh = !lastCheck || (now.getTime() - lastCheck.getTime() >= intervalMs);
+
+    const shouldRefresh =
+      !lastCheck ||
+      (now.getTime() - lastCheck.getTime() >= intervalMs);
 
     const baseWhere = buildProductWhereClause();
 
     if (shouldRefresh) {
+
+      // =========================
+      // STEP 1: NEW PRODUCTS
+      // =========================
+
       const newProductsWhere = lastCheck
-        ? { ...baseWhere, updated_at: { [Op.gt]: lastCheck } }
+        ? {
+            ...baseWhere,
+            approved_at: {
+              [Op.gt]: lastCheck
+            }
+          }
         : baseWhere;
 
-      const newProducts = await fetchApprovedProducts(
-        newProductsWhere,
-        [['updated_at', 'DESC']],
-        lastCheck ? 6 : null,
-        undefined
-      );
+      const { products: newProducts } =
+        await fetchApprovedProducts(
+          newProductsWhere,
+          [['approved_at', 'DESC']],
+          lastCheck ? PRODUCT_LIMIT : null,
+          undefined
+        );
+
+      // =========================
+      // STEP 2: 6 OR MORE NEW
+      // =========================
 
       if (newProducts.length >= PRODUCT_LIMIT) {
         const display = newProducts.slice(0, PRODUCT_LIMIT);
-        await setHomeSettingValue('latest_products_last_check', now.toISOString());
-        await setHomeSettingValue('latest_products_offset', '0');
-        return res.json({ products: display, refreshed: true, has_more: true });
+
+        await setHomeSettingValue(
+          'latest_products_last_check',
+          now.toISOString()
+        );
+
+        await setHomeSettingValue(
+          'latest_products_offset',
+          '0'
+        );
+
+        return res.json({
+          products: display,
+          refreshed: true,
+          has_more: true
+        });
       }
+
+      // =========================
+      // STEP 3: 1-5 NEW PRODUCTS
+      // =========================
 
       if (newProducts.length > 0) {
-        const remaining = PRODUCT_LIMIT - newProducts.length;
-        const oldProducts = await fetchApprovedProducts(
-          baseWhere,
-          [['updated_at', 'DESC']],
-          remaining,
-          currentOffset
-        );
-        const display = [...newProducts, ...oldProducts];
-        const newOffset = currentOffset + oldProducts.length;
-        await setHomeSettingValue('latest_products_last_check', now.toISOString());
-        await setHomeSettingValue('latest_products_offset', String(newOffset));
-        return res.json({ products: display, refreshed: true, has_more: oldProducts.length >= remaining });
-      }
+  const remaining = PRODUCT_LIMIT - newProducts.length;
 
-      const oldProducts = await fetchApprovedProducts(
+  const {
+    count: totalProducts
+  } = await fetchApprovedProducts(
+    baseWhere,
+    [['approved_at', 'DESC']],
+    1,
+    0
+  );
+
+  const safeOffset = totalProducts
+    ? currentOffset % totalProducts
+    : 0;
+
+  const {
+    products: oldProducts
+  } = await fetchApprovedProducts(
+    baseWhere,
+    [['approved_at', 'DESC']],
+    remaining,
+    safeOffset
+  );
+
+  const display = [
+    ...newProducts,
+    ...oldProducts
+  ];
+
+  const newOffset = totalProducts
+    ? (safeOffset + oldProducts.length) % totalProducts
+    : 0;
+
+  await setHomeSettingValue(
+    'latest_products_last_check',
+    now.toISOString()
+  );
+
+  await setHomeSettingValue(
+    'latest_products_offset',
+    String(newOffset)
+  );
+
+  return res.json({
+    products: display,
+    refreshed: true,
+    has_more: oldProducts.length >= remaining
+  });
+}
+
+
+      // =========================
+      // STEP 4: NO NEW PRODUCTS
+      // =========================
+
+      const {
+        products: oldProducts,
+        count: totalProducts
+      } = await fetchApprovedProducts(
         baseWhere,
-        [['updated_at', 'DESC']],
+        [['approved_at', 'DESC']],
         PRODUCT_LIMIT,
         currentOffset
       );
-      const newOffset = currentOffset + oldProducts.length;
-      await setHomeSettingValue('latest_products_last_check', now.toISOString());
-      await setHomeSettingValue('latest_products_offset', String(newOffset));
-      return res.json({ products: oldProducts, refreshed: true, has_more: oldProducts.length >= PRODUCT_LIMIT });
+
+      // Wrap-around
+      const safeOffset = totalProducts
+        ? currentOffset % totalProducts
+        : 0;
+
+      let finalOldProducts = oldProducts;
+
+      // Offset total count se bahar chala gaya
+      if (currentOffset !== safeOffset) {
+        const result = await fetchApprovedProducts(
+          baseWhere,
+          [['approved_at', 'DESC']],
+          PRODUCT_LIMIT,
+          safeOffset
+        );
+
+        finalOldProducts = result.products;
+      }
+
+      const newOffset = totalProducts
+        ? (safeOffset + finalOldProducts.length) % totalProducts
+        : 0;
+
+      await setHomeSettingValue(
+        'latest_products_last_check',
+        now.toISOString()
+      );
+
+      await setHomeSettingValue(
+        'latest_products_offset',
+        String(newOffset)
+      );
+
+      return res.json({
+        products: finalOldProducts,
+        refreshed: true,
+        has_more: finalOldProducts.length >= PRODUCT_LIMIT
+      });
     }
 
-    const cachedProducts = await fetchApprovedProducts(
-      baseWhere,
-      [['updated_at', 'DESC']],
-      PRODUCT_LIMIT,
-      currentOffset
-    );
-    return res.json({ products: cachedProducts, refreshed: false, has_more: true });
+    // =========================
+    // STEP 5: CACHE
+    // =========================
+
+    const {
+  products: cachedProducts,
+  count: totalProducts
+} = await fetchApprovedProducts(
+  baseWhere,
+  [['approved_at', 'DESC']],
+  PRODUCT_LIMIT,
+  currentOffset
+);
+
+const safeOffset = totalProducts
+  ? currentOffset % totalProducts
+  : 0;
+
+let finalProducts = cachedProducts;
+
+if (currentOffset !== safeOffset) {
+  const result = await fetchApprovedProducts(
+    baseWhere,
+    [['approved_at', 'DESC']],
+    PRODUCT_LIMIT,
+    safeOffset
+  );
+
+  finalProducts = result.products;
+}
+
+return res.json({
+  products: finalProducts,
+  refreshed: false,
+  has_more: true
+});
+
+
   } catch (err) {
-    console.error('Error in getLatestHomeProducts:', err);
-    return res.status(500).json({ error: err.message });
+    console.error(
+      'Error in getLatestHomeProducts:',
+      err
+    );
+
+    return res.status(500).json({
+      error: err.message
+    });
   }
 };

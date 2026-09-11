@@ -52,6 +52,7 @@ const Products = sequelize.define('Products', {
   item_subcategory_id: { type: DataTypes.INTEGER, allowNull: true },
   item_id: { type: DataTypes.INTEGER, allowNull: true },
   keyword_id: { type: DataTypes.INTEGER, allowNull: true },
+  approved_at: { type: DataTypes.DATE, allowNull: true },
 }, {
   tableName: 'products',
   timestamps: true,
