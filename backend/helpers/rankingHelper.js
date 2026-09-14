@@ -2,7 +2,7 @@ const { Op } = require('sequelize');
 const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
 const SellerPerformance = require('../models/SellerPerformance');
-const { ensureSellerPerformance, getSystemConfig } = require('./requirementHelper');
+const { getSystemConfig } = require('./requirementHelper');
 
 const LOCATION_WEIGHT = 0.20;
 const PRODUCT_MATCH_WEIGHT = 0.40;
@@ -70,7 +70,8 @@ async function rankCandidates(candidates, requirement) {
 
     if (!seller) continue;
 
-    const perf = await ensureSellerPerformance(candidate.seller_id);
+    const perf = await SellerPerformance.findOne({ where: { seller_id: candidate.seller_id } })
+      || { overall_performance_score: 0, average_response_time_seconds: 0 };
 
     let sellerLat = null, sellerLon = null;
     if (seller.company_info && seller.company_info.company_location) {

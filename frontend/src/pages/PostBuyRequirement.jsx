@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
+import { useAuth } from "../context/AuthContext";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/bootstrap.css";
 
@@ -18,6 +19,7 @@ const UNIT_OPTIONS = [
 
 const PostBuyRequirement = () => {
   const { showNotification } = useAlert();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     product_name_snapshot: "",
     quantity: "",
@@ -31,6 +33,20 @@ const PostBuyRequirement = () => {
     country_code: "+91",
     country_iso: "in",
   });
+
+  useEffect(() => {
+    if (!user) return;
+    const fullName = `${user.fname || ""} ${user.lname || ""}`.trim();
+    const companyName = user.user_company || user.company_info?.organization_name || "";
+    setForm((prev) => ({
+      ...prev,
+      buyer_name: prev.buyer_name || fullName,
+      buyer_email: prev.buyer_email || user.email || "",
+      buyer_phone: prev.buyer_phone || user.mobile || "",
+      buyer_company: prev.buyer_company || companyName,
+    }));
+  }, [user]);
+
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [productKeyword, setProductKeyword] = useState({
@@ -61,7 +77,10 @@ const PostBuyRequirement = () => {
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setErrors((prev) => (prev[e.target.name] ? { ...prev, [e.target.name]: "" } : prev));
+    const errKey = e.target.name === "buyer_name" ? "name"
+      : e.target.name === "buyer_email" ? "email"
+      : e.target.name;
+    setErrors((prev) => (prev[errKey] ? { ...prev, [errKey]: "" } : prev));
   };
 
   const handleUnitChange = (e) => {
@@ -263,6 +282,8 @@ const PostBuyRequirement = () => {
     product: "pbr-product",
     quantity: "pbr-quantity",
     quantity_unit: "pbr-unit",
+    name: "pbr-name",
+    email: "pbr-email",
     phone: "pbr-phone",
     city: "pbr-city",
   };
@@ -277,6 +298,15 @@ const PostBuyRequirement = () => {
     }
     if (!form.quantity_unit || form.quantity_unit.trim() === "") {
       e.quantity_unit = "Please Enter Quantity Unit.";
+    }
+    if (!form.buyer_name || form.buyer_name.trim() === "") {
+      e.name = "Please Enter Your Name.";
+    }
+    const email = String(form.buyer_email || "").trim();
+    if (!email) {
+      e.email = "Please Enter Your Email.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      e.email = "Please Enter a Valid Email.";
     }
     const phone = String(form.buyer_phone || "").replace(/\D/g, "");
     if (!phone) {
@@ -323,7 +353,10 @@ const PostBuyRequirement = () => {
       buyer_state: selectedCity.state,
     };
     try {
-      const res = await axios.post(`${API_BASE_URL}/buyer-requirements/create`, payload);
+      const token = localStorage.getItem("user_token");
+      const res = await axios.post(`${API_BASE_URL}/buyer-requirements/create`, payload, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       showNotification(res.data.message || "Requirement submitted", "success");
       setForm({
         product_name_snapshot: "", quantity: "", quantity_unit: "", description: "",
@@ -488,23 +521,43 @@ const PostBuyRequirement = () => {
                 </div>
               </div>
 
-              {/* <div className="pbr-grid2"> */}
-                {/* <div className="pbr-field">
-                  <label className="pbr-label">Your Name</label>
-                  <input type="text" className="pbr-input" name="buyer_name" value={form.buyer_name} onChange={handleChange} />
+              <div className="pbr-grid2">
+                <div className="pbr-field">
+                  <label className="pbr-label" htmlFor="pbr-name">Name</label>
+                  <input
+                    id="pbr-name"
+                    type="text"
+                    className={`pbr-input ${errors.name ? "pbr-input-error" : ""}`}
+                    style={errors.name ? { borderColor: "#e74c3c" } : undefined}
+                    name="buyer_name"
+                    value={form.buyer_name}
+                    onChange={handleChange}
+                    placeholder="Enter Your Name"
+                    maxLength={100}
+                    autoComplete="name"
+                  />
+                  {errors.name && <div className="pbr-error">{errors.name}</div>}
                 </div>
 
                 <div className="pbr-field">
-                  <label className="pbr-label">Company (optional)</label>
-                  <input type="text" className="pbr-input" name="buyer_company" value={form.buyer_company} onChange={handleChange} />
+                  <label className="pbr-label" htmlFor="pbr-email">Email</label>
+                  <input
+                    id="pbr-email"
+                    type="email"
+                    className={`pbr-input ${errors.email ? "pbr-input-error" : ""}`}
+                    style={errors.email ? { borderColor: "#e74c3c" } : undefined}
+                    name="buyer_email"
+                    value={form.buyer_email}
+                    onChange={handleChange}
+                    placeholder="Enter Your Email"
+                    maxLength={150}
+                    autoComplete="email"
+                  />
+                  {errors.email && <div className="pbr-error">{errors.email}</div>}
                 </div>
+              </div>
 
-                <div className="pbr-field">
-                  <label className="pbr-label">Email</label>
-                  <input type="email" className="pbr-input" name="buyer_email" value={form.buyer_email} onChange={handleChange} />
-                </div> */}
-
-                <div className="pbr-grid2">
+              <div className="pbr-grid2">
                   <div className="pbr-field">
                     <label className="pbr-label">Mobile Number</label>
                     <div className={`pbr-phone-outer ${errors.phone ? "pbr-phone-outer--error" : ""}`} ref={phoneWrapRef} id="pbr-phone" style={errors.phone ? { borderColor: "#e74c3c" } : undefined}>
@@ -563,7 +616,6 @@ const PostBuyRequirement = () => {
                     {errors.city && <div className="pbr-error">{errors.city}</div>}
                   </div>
                 </div>
-              {/* </div> */}
 
               <div className="pbr-submit-row">
                 <button type="submit" className="pbr-submit" disabled={submitting}>

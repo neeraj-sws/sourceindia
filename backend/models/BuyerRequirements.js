@@ -131,7 +131,7 @@ const BuyerRequirements = sequelize.define('BuyerRequirements', {
     type: DataTypes.INTEGER,
     allowNull: false,
     defaultValue: 0,
-    comment: '0=pending, 1=assigned, 2=in_progress, 3=responded, 4=accepted, 5=completed, 6=closed, 7=cancelled, 8=no_seller_found',
+    comment: '1=assigned, 2=accepted, 3=completed, 4=closed, 5=no_seller_found, 6=product_not_available (0 internal pending)',
   },
   current_assignment_id: {
     type: DataTypes.INTEGER,

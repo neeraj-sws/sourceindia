@@ -76,11 +76,13 @@ async function recalculateSellerPerformance(sellerId) {
   const acceptancePct = perf.total_leads > 0
     ? (perf.accepted_leads / perf.total_leads * 100)
     : 0;
-  const performanceScore = perf.total_leads > 0
+  const rejectionRate = perf.total_leads > 0 ? (perf.rejected_leads / perf.total_leads) : 0;
+  const baseScore = perf.total_leads > 0
     ? ((perf.completed_leads / perf.total_leads) * 40 +
        (onTimePct / 100) * 30 +
        (acceptancePct / 100) * 30)
     : 0;
+  const performanceScore = baseScore > 0 ? baseScore * (1 - rejectionRate) : 0;
   await perf.update({
     average_response_time_seconds: avgResponseTime,
     on_time_response_percentage: Math.round(onTimePct * 100) / 100,

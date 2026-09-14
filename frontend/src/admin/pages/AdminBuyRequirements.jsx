@@ -8,12 +8,12 @@ import { useAlert } from "../../context/AlertContext";
 import { formatDateTime } from "../../utils/formatDate";
 
 const reqStatusMap = {
-  0: { label: "Pending", class: "secondary" },
   1: { label: "Assigned", class: "warning" },
-  4: { label: "Accepted", class: "success" },
-  5: { label: "Completed", class: "success" },
-  6: { label: "Closed", class: "dark" },
-  8: { label: "No Seller Found", class: "danger" },
+  2: { label: "Accepted", class: "success" },
+  3: { label: "Completed", class: "success" },
+  4: { label: "Closed", class: "dark" },
+  5: { label: "No Seller Found", class: "danger" },
+  6: { label: "Product Not Available", class: "danger" },
 };
 
 const assignStatusMap = {
@@ -69,12 +69,12 @@ export function AdminBuyRequirements() {
 
   const statCards = counts ? [
     { label: "Total", value: counts.total, icon: "bx bx-list-ul" },
-    { label: "Pending", value: counts.pending, icon: "bx bx-time-five" },
     { label: "Assigned", value: counts.assigned, icon: "bx bxs-group" },
     { label: "Accepted", value: counts.accepted, icon: "bx bx-check-double" },
     { label: "Completed", value: counts.completed, icon: "bx bx-check-circle" },
     { label: "Closed", value: counts.closed, icon: "bx bx-lock" },
     { label: "No Seller Found", value: counts.no_seller_found, icon: "bx bx-x-circle" },
+    { label: "Product Not Available", value: counts.product_not_available, icon: "bx bxs-package" },
   ] : [];
 
   const colorMap = {
@@ -197,6 +197,8 @@ export function AdminBuyRequirementDetail() {
   const [sellerSearch, setSellerSearch] = useState("");
   const [sellers, setSellers] = useState([]);
   const [sellerLoading, setSellerLoading] = useState(false);
+  const [assignMessage, setAssignMessage] = useState("");
+  const [productUnavailable, setProductUnavailable] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState(null);
   const [assigning, setAssigning] = useState(false);
   const [changeStatus, setChangeStatus] = useState("");
@@ -222,14 +224,41 @@ export function AdminBuyRequirementDetail() {
         params: { search: q, requirementId: id },
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      setSellers(Array.isArray(res.data) ? res.data : []);
-    } catch (err) { console.error(err); setSellers([]); } finally { setSellerLoading(false); }
+      const payload = res.data || {};
+      setSellers(Array.isArray(payload.sellers) ? payload.sellers : []);
+      setAssignMessage(payload.message || "");
+      setProductUnavailable(payload.productAvailable === false);
+      const noSellersFound =
+        payload.productAvailable === false ||
+        (Array.isArray(payload.sellers) && payload.sellers.length === 0 && !!payload.message);
+      const hasAnySellerHistory = (req.assignments || []).length > 0;
+      if (!q && noSellersFound && !hasAnySellerHistory && req && Number(req.status) !== 5 && Number(req.status) !== 6) {
+        await autoSetRequirementStatus(payload.productAvailable === false ? 6 : 5);
+      }
+    } catch (err) { console.error(err); setSellers([]); setAssignMessage(""); setProductUnavailable(false); } finally { setSellerLoading(false); }
+  };
+
+  const autoSetRequirementStatus = async (status) => {
+    const labels = { 5: "No Seller Found", 6: "Product Not Available" };
+    try {
+      await axios.put(
+        `${API_BASE_URL}/admin/buyer-requirements/requirements/${id}/status`,
+        { status },
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+      showNotification(`Requirement marked as ${labels[status] || status}`, "success");
+      fetchDetail();
+    } catch (err) {
+      console.error("Failed to auto-set requirement status:", err);
+    }
   };
 
   const openAssign = () => {
     setSellerSearch("");
     setSelectedSeller(null);
     setShowAssign(true);
+    setAssignMessage("");
+    setProductUnavailable(false);
     fetchSellers("");
   };
 
@@ -404,7 +433,7 @@ export function AdminBuyRequirementDetail() {
                     onChange={(e) => { setSellerSearch(e.target.value); fetchSellers(e.target.value); }}
                   />
                   {sellerLoading && <p className="text-muted small">Loading sellers...</p>}
-                  {!sellerLoading && sellers.length === 0 && <p className="text-muted small">No sellers found</p>}
+                  {!sellerLoading && sellers.length === 0 && <p className="text-muted small">{assignMessage || "No sellers found"}</p>}
                   {!sellerLoading && sellers.length > 0 && (
                     <ul className="list-group" style={{ maxHeight: "280px", overflowY: "auto" }}>
                       {sellers.map((s) => (
@@ -427,7 +456,7 @@ export function AdminBuyRequirementDetail() {
                 </div>
                 <div className="modal-footer">
                   <button type="button" className="btn btn-light" onClick={() => setShowAssign(false)}>Close</button>
-                  <button type="button" className="btn btn-primary" onClick={handleAssign} disabled={assigning || !selectedSeller}>
+                  <button type="button" className="btn btn-primary" onClick={handleAssign} disabled={assigning || !selectedSeller || productUnavailable}>
                     {assigning ? "Assigning..." : "Assign"}
                   </button>
                 </div>

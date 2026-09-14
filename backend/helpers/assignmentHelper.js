@@ -6,7 +6,7 @@ const BuyerRequirements = require('../models/BuyerRequirements');
 const RequirementAssignments = require('../models/RequirementAssignments');
 const SellerPerformance = require('../models/SellerPerformance');
 const { logActivity, ensureSellerPerformance, getSystemConfig, recalculateSellerPerformance } = require('./requirementHelper');
-const { findEligibleSellers } = require('./matchingHelper');
+const { findEligibleSellers, hasSellerProductMatch, isProductAvailableForKeyword } = require('./matchingHelper');
 const { rankCandidates } = require('./rankingHelper');
 const { selectFinalSeller, isSameDayCityProductAssigned } = require('./sellerEligibilityHelper');
 const { sendMail } = require('./mailHelper');
@@ -16,8 +16,20 @@ async function assignSellerToRequirement(requirementId, ipAddress = null) {
   const requirement = await BuyerRequirements.findByPk(requirementId);
   if (!requirement || requirement.is_delete) return { success: false, message: 'Requirement not found' };
 
-  if (requirement.status >= 5 && requirement.status !== 7) {
+  if (requirement.status >= 3) {
     return { success: false, message: 'Requirement already completed or closed' };
+  }
+
+  // Product itself does not exist in the system -> Product Not Available (6), not No Seller Found (5).
+// Only for requirements that NEVER had any seller assigned; once a seller was ever assigned,
+// never flip to 6 (keep the no-seller flow -> 5).
+  if (requirement.product_keyword_id && !(await isProductAvailableForKeyword(requirement.product_keyword_id))) {
+    const hadSeller = (await RequirementAssignments.count({ where: { requirement_id: requirementId } })) > 0;
+    if (!hadSeller) {
+      await requirement.update({ status: 6 });
+      await logActivity(requirementId, 'no_product_found', 'Product is not available in the system');
+      return { success: false, message: 'Product is not available in the system.' };
+    }
   }
 
   const activeAssignment = await RequirementAssignments.findOne({
@@ -33,7 +45,7 @@ async function assignSellerToRequirement(requirementId, ipAddress = null) {
   // Final, revalidated seller selection (same-city priority + same-day/city/product exclusion + nearest-city fallback)
   const selection = await selectFinalSeller(requirement);
   if (!selection.success || !selection.seller) {
-    await requirement.update({ status: 8 });
+    await requirement.update({ status: 5 });
     await logActivity(requirementId, 'no_seller_found', selection.message || 'No eligible sellers found');
     return { success: false, message: selection.message || 'No eligible sellers found' };
   }
@@ -41,17 +53,17 @@ async function assignSellerToRequirement(requirementId, ipAddress = null) {
   const candidate = selection.seller;
   const perf = await ensureSellerPerformance(candidate.seller_id);
   if (!perf.lead_receiving_enabled) {
-    await requirement.update({ status: 8 });
+    await requirement.update({ status: 5 });
     await logActivity(requirementId, 'no_seller_found', 'Selected seller not receiving leads');
     return { success: false, message: 'Selected seller not receiving leads' };
   }
   if (perf.monthly_leads_used >= config.monthly_limit) {
-    await requirement.update({ status: 8 });
+    await requirement.update({ status: 5 });
     await logActivity(requirementId, 'no_seller_found', 'Selected seller monthly limit reached');
     return { success: false, message: 'Selected seller monthly limit reached' };
   }
   if (await isSameDayCityProductAssigned(candidate.seller_id, requirement)) {
-    await requirement.update({ status: 8 });
+    await requirement.update({ status: 5 });
     await logActivity(requirementId, 'no_seller_found', 'Selected seller already assigned for same date/city/product');
     return { success: false, message: 'Selected seller already assigned for same date/city/product' };
   }
@@ -97,6 +109,13 @@ async function manualAssignSellerToRequirement(requirementId, sellerId, ipAddres
   if (!seller || seller.is_delete) return { success: false, message: 'Seller not found' };
   if (seller.is_seller !== 1) return { success: false, message: 'Selected user is not a seller' };
 
+  if (requirement.product_keyword_id) {
+    const hasProduct = await hasSellerProductMatch(parseInt(sellerId), requirement.product_keyword_id);
+    if (!hasProduct) {
+      return { success: false, message: 'This product is not available with this seller.' };
+    }
+  }
+
   if (await isSameDayCityProductAssigned(parseInt(sellerId), requirement)) {
     return { success: false, message: 'Seller already assigned for same date + same city + same product on this day' };
   }
@@ -112,7 +131,7 @@ async function manualAssignSellerToRequirement(requirementId, sellerId, ipAddres
       return { success: false, message: 'This seller already has the active assignment for this requirement' };
     }
     const oldPerf = await ensureSellerPerformance(activeAssignment.seller_id);
-    await oldPerf.update({ monthly_leads_used: Math.max(0, oldPerf.monthly_leads_used - 1) });
+    await oldPerf.update({ auto_cancelled_leads: oldPerf.auto_cancelled_leads + 1 });
     await activeAssignment.update({
       status: 5,
       auto_cancelled_at: new Date(),
@@ -170,7 +189,7 @@ async function adminChangeRequirementStatus(requirementId, newStatus, ipAddress 
   const requirement = await BuyerRequirements.findByPk(requirementId);
   if (!requirement || requirement.is_delete) return { success: false, message: 'Requirement not found' };
 
-  const validStatus = [0, 1, 2, 3, 4, 5, 6, 8];
+  const validStatus = [1, 2, 3, 4, 5, 6];
   if (!validStatus.includes(parseInt(newStatus))) {
     return { success: false, message: 'Invalid status' };
   }
@@ -178,8 +197,8 @@ async function adminChangeRequirementStatus(requirementId, newStatus, ipAddress 
   await requirement.update({ status: parseInt(newStatus) });
 
   const statusLabels = {
-    0: 'Pending', 1: 'Assigned', 2: 'In Progress', 3: 'Responded',
-    4: 'Accepted', 5: 'Completed', 6: 'Closed', 8: 'No Seller Found',
+    1: 'Assigned', 2: 'Accepted', 3: 'Completed', 4: 'Closed',
+    5: 'No Seller Found', 6: 'Product Not Available',
   };
   await logActivity(
     requirementId,
@@ -196,9 +215,9 @@ async function adminChangeRequirementStatus(requirementId, newStatus, ipAddress 
 async function adminCloseRequirement(requirementId, ipAddress = null) {
   const requirement = await BuyerRequirements.findByPk(requirementId);
   if (!requirement || requirement.is_delete) return { success: false, message: 'Requirement not found' };
-  if (requirement.status === 6) return { success: false, message: 'Requirement is already closed' };
+  if (requirement.status === 4) return { success: false, message: 'Requirement is already closed' };
 
-  await requirement.update({ status: 6, current_assignment_id: null });
+  await requirement.update({ status: 4, current_assignment_id: null });
   await logActivity(requirementId, 'closed', 'Requirement closed by admin', null, null, ipAddress);
   return { success: true };
 }
@@ -240,7 +259,7 @@ async function notifySeller(sellerId, requirement, assignment) {
   }
 }
 
-async function handleSellerResponse(assignmentId, sellerId, action, rejectionReason = null) {
+async function handleSellerResponse(assignmentId, sellerId, action, rejectionReason = null, ipAddress = null) {
   const assignment = await RequirementAssignments.findByPk(assignmentId, {
     include: [{ model: BuyerRequirements, as: 'requirement' }],
   });
@@ -272,10 +291,10 @@ async function handleSellerResponse(assignmentId, sellerId, action, rejectionRea
     );
 
     if (isAccept) {
-      await assignment.requirement.update({ status: 4 }); // requirement -> Accepted (4)
+      await assignment.requirement.update({ status: 2 }); // requirement -> Accepted (2)
       await logActivity(assignment.requirement_id, 'lead_accepted', `Requirement accepted by seller #${sellerId}`, sellerId, assignment.id);
     } else {
-      await assignment.requirement.update({ status: 3 });
+      await assignment.requirement.update({ status: 1 }); // responded but not accepted -> stays Assigned (1)
     }
 
     const perf = await SellerPerformance.findOne({ where: { seller_id: sellerId } });
@@ -312,16 +331,45 @@ async function handleSellerResponse(assignmentId, sellerId, action, rejectionRea
 
     const perf = await SellerPerformance.findOne({ where: { seller_id: sellerId } });
     if (perf) {
-      await perf.update({ rejected_leads: perf.rejected_leads + 1 });
+      await perf.update({
+        rejected_leads: perf.rejected_leads + 1,
+      });
       await recalculateSellerPerformance(sellerId);
     }
 
-    await assignment.requirement.update({ status: 8, current_assignment_id: null });
+    await assignment.requirement.update({ current_assignment_id: null });
+
+    const requirement = assignment.requirement;
+
+    if (requirement.assignment_count >= requirement.max_reassignment_attempts) {
+      await requirement.update({ status: 5 });
+      await logActivity(
+        requirement.id,
+        'no_seller_found',
+        `No seller found after rejection (reassignment limit ${requirement.max_reassignment_attempts} reached)`
+      );
+      return { success: true };
+    }
+
     await logActivity(
-      assignment.requirement_id,
-      'no_seller_found',
-      'Seller rejected the requirement; lead closed (no auto-reassignment)'
+      requirement.id,
+      'lead_reassigned',
+      `Seller #${sellerId} rejected the requirement; assigning to next eligible seller`,
+      null,
+      assignment.id
     );
+
+    const reassignmentResult = await assignSellerToRequirement(requirement.id, ipAddress);
+    if (!reassignmentResult.success) {
+      await requirement.update({ status: 5 });
+      await logActivity(
+        requirement.id,
+        'no_seller_found',
+        reassignmentResult.message
+          ? `No seller found after rejection (${reassignmentResult.message})`
+          : 'No seller found after rejection'
+      );
+    }
     return { success: true };
   }
 
@@ -341,7 +389,7 @@ async function handleSellerComplete(assignmentId, sellerId) {
 
   const now = new Date();
   await assignment.update({ status: 6, completed_at: now });
-  await assignment.requirement.update({ status: 5 });
+  await assignment.requirement.update({ status: 3 }); // requirement -> Completed (3)
 
   await logActivity(
     assignment.requirement_id,
@@ -411,14 +459,16 @@ async function processExpiredAssignments() {
 
       const perf = await SellerPerformance.findOne({ where: { seller_id: assignment.seller_id } });
       if (perf) {
-        await perf.update({ auto_cancelled_leads: perf.auto_cancelled_leads + 1 });
+        await perf.update({
+          auto_cancelled_leads: perf.auto_cancelled_leads + 1,
+        });
         await recalculateSellerPerformance(assignment.seller_id);
       }
 
       await requirement.update({ current_assignment_id: null });
 
       if (requirement.assignment_count >= requirement.max_reassignment_attempts) {
-        await requirement.update({ status: 8 });
+        await requirement.update({ status: 5 });
         await logActivity(
           requirement.id,
           'no_seller_found',
@@ -437,7 +487,7 @@ async function processExpiredAssignments() {
 
       const reassignmentResult = await assignSellerToRequirement(requirement.id, requirement.buyer_ip);
       if (!reassignmentResult.success) {
-        await requirement.update({ status: 8 });
+        await requirement.update({ status: 5 });
         await logActivity(
           requirement.id,
           'no_seller_found',

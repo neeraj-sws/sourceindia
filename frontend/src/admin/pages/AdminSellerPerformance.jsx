@@ -61,6 +61,7 @@ export function AdminSellerPerformance() {
                 { key: "score", label: "Overall Score", sortable: false },
                 { key: "leads", label: "Monthly Used", sortable: false },
                 { key: "response", label: "Avg Response (min)", sortable: false },
+                { key: "rejection_penalty", label: "Penalty (Rejection)", sortable: false },
                 { key: "receiving", label: "Receive Leads", sortable: false },
               ]}
               data={data}
@@ -78,12 +79,19 @@ export function AdminSellerPerformance() {
               getRangeText={getRangeText}
               renderRow={(row, index) => (
                 <tr key={row.id}>
-                  <td>{row.id}</td>
+                  <td>{row.sno ?? ((page - 1) * limit + index + 1)}</td>
                   <td>{row.seller?.fname} {row.seller?.lname}<div className="text-muted small">{row.seller?.email}</div></td>
                   <td>{row.seller?.company_info?.organization_name || "-"}</td>
                   <td>{row.overall_performance_score ?? "-"}</td>
                   <td>{row.monthly_leads_used || 0}</td>
                   <td>{row.avg_response_minutes ?? "-"}</td>
+                  <td>
+                    {row.rejection_rate_pct > 0
+                      ? <span title={`${row.rejected_leads || 0} rejected of ${row.total_leads || 0} leads`}>
+                          -{row.rejection_penalty ?? "0.00"} <span className="text-muted small">({row.rejection_rate_pct}%)</span>
+                        </span>
+                      : "0.00"}
+                  </td>
                   <td>
                     <button className={`btn btn-sm ${row.lead_receiving_enabled ? "btn-success" : "btn-secondary"}`}
                       onClick={() => toggleLeadReceiving(row.seller_id, row.lead_receiving_enabled)}>

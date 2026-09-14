@@ -1,23 +1,21 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config";
-import useAuth from "../sections/UseAuth";
 import { formatDateTime } from "../utils/formatDate";
 import { Link } from "react-router-dom";
 
 const DataTable = lazy(() => import("../admin/common/DataTable"));
 
 const reqStatusMap = {
-  0: { label: "Pending", class: "secondary" },
   1: { label: "Assigned", class: "warning" },
-  4: { label: "Accepted", class: "success" },
-  5: { label: "Completed", class: "success" },
-  6: { label: "Closed", class: "dark" },
-  8: { label: "No Seller Found", class: "danger" },
+  2: { label: "Accepted", class: "success" },
+  3: { label: "Completed", class: "success" },
+  4: { label: "Closed", class: "dark" },
+  5: { label: "No Seller Found", class: "danger" },
+  6: { label: "Product Not Available", class: "danger" },
 };
 
 const MyBuyRequirements = () => {
-  const { user, loading } = useAuth();
   const [data, setData] = useState([]);
   const [totalRecords, setTotalRecords] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,12 +31,10 @@ const MyBuyRequirements = () => {
   };
 
   const fetchData = async () => {
-    if (!user) return;
     setIsLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/buyer-requirements/my`, {
         params: { page, limit, search },
-        headers: { Authorization: `Bearer ${localStorage.getItem("user_token")}` },
       });
       setData(res.data.data);
       setTotalRecords(res.data.totalRecords);
@@ -49,9 +45,9 @@ const MyBuyRequirements = () => {
     }
   };
 
-  useEffect(() => { fetchData(); /* eslint-disable-next-line */ }, [page, limit, search, user]);
+  useEffect(() => { fetchData(); }, [page, limit, search]);
 
-  if (loading || !user) return <p>Loading...</p>;
+  if (isLoading) return <p>Loading...</p>;
 
   return (
     <Suspense fallback={<div>Loading...</div>}>

@@ -7,8 +7,8 @@ const States = require('../models/States');
 const BuyerRequirements = require('../models/BuyerRequirements');
 const RequirementAssignments = require('../models/RequirementAssignments');
 const SellerPerformance = require('../models/SellerPerformance');
-const { ensureSellerPerformance, getSystemConfig, geocodeCity } = require('./requirementHelper');
-const { findEligibleSellers, getSellerActiveProductCount } = require('./matchingHelper');
+const { getSystemConfig, geocodeCity } = require('./requirementHelper');
+const { findEligibleSellers, getSellerActiveProductCount, getProductKeywordSellerCount, isProductAvailableForKeyword } = require('./matchingHelper');
 const { rankCandidates, haversineDistance } = require('./rankingHelper');
 
 // Base city name (strip state suffix like "Faridabad, Haryana" -> "faridabad")
@@ -57,7 +57,7 @@ async function isSameDayCityProductAssigned(sellerId, requirement) {
        INNER JOIN buyer_requirements r ON r.requirement_id = a.requirement_id
       WHERE a.seller_id = :sellerId
         AND DATE(r.created_at) = :reqDate
-        AND a.status IN (0,1,2,3,6)`,
+        AND a.status IN (0,1,2,3,4,5,6)`,
     { type: 'SELECT', replacements: { sellerId, reqDate } }
   );
 
@@ -105,7 +105,8 @@ async function enrichSellers(candidates, requirement) {
     });
     if (!seller) continue;
 
-    const perf = await ensureSellerPerformance(c.seller_id);
+    const perf = await SellerPerformance.findOne({ where: { seller_id: c.seller_id } })
+      || { overall_performance_score: 0, monthly_leads_used: 0, lead_receiving_enabled: 1 };
     const sellerCity = seller.city_data?.name || (seller.city ? String(seller.city) : '');
     const sellerCityId = Number(seller.city) || (seller.city_data?.id ? Number(seller.city_data.id) : null);
     const stateName = (seller.city_data && seller.city_data.States && seller.city_data.States.name)
@@ -278,13 +279,18 @@ async function buildSellerPreview(requirement) {
     };
   }
 
+  let recommendationReason = 'No eligible seller available anywhere';
+  if (requirement.product_keyword_id) {
+    const anySellerCount = await getProductKeywordSellerCount(requirement.product_keyword_id);
+    if (anySellerCount === 0) recommendationReason = 'This product is not available with any seller.';
+  }
   return {
     same_city_eligible_count: 0,
     same_city_sellers: evaluated.filter((s) => s.same_city),
     excluded_sellers: evaluated.filter((s) => !s.is_eligible),
     nearest_city_sellers: [],
     recommended_seller: null,
-    recommendation_reason: 'No eligible seller available anywhere',
+    recommendation_reason: recommendationReason,
     strategy: 'none',
   };
 }
@@ -311,4 +317,5 @@ module.exports = {
   findEligibleSellers,
   haversineDistance,
   matchesSupplierPreference,
+  isProductAvailableForKeyword,
 };

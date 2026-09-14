@@ -74,7 +74,25 @@ async function createRequirement(req, res) {
     const ipAddress = getClientIp(req);
     const buyerLocation = await getBuyerLocation(ipAddress);
 
-    const buyerId = req.user ? req.user.id : null;
+    // If a logged-in buyer/user posted this, resolve their profile so the
+    // requirement keeps real identity (JWT payload only carries id/email/is_seller).
+    let buyerIdentity = {};
+    if (req.user && req.user.id) {
+      const buyerUser = await Users.findByPk(req.user.id, {
+        include: [{ model: CompanyInfo, as: 'company_info', attributes: ['organization_name'] }],
+        attributes: ['id', 'fname', 'lname', 'email', 'mobile', 'user_company', 'company_id'],
+      });
+      if (buyerUser) {
+        const fullName = `${buyerUser.fname || ''} ${buyerUser.lname || ''}`.trim();
+        buyerIdentity = {
+          buyer_id: buyerUser.id,
+          buyer_name: fullName,
+          buyer_email: buyerUser.email || '',
+          buyer_phone: buyerUser.mobile || '',
+          buyer_company: buyerUser.user_company || buyerUser.company_info?.organization_name || '',
+        };
+      }
+    }
 
     const detected = product_keyword_id
       ? {}
@@ -91,11 +109,11 @@ async function createRequirement(req, res) {
     }
 
     const requirement = await BuyerRequirements.create({
-      buyer_id: buyerId,
-      buyer_name: buyer_name || (req.user ? `${req.user.fname} ${req.user.lname}` : ''),
-      buyer_email: buyer_email || (req.user ? req.user.email : ''),
-      buyer_phone: buyer_phone || (req.user ? req.user.mobile : ''),
-      buyer_company: buyer_company || '',
+      buyer_id: buyerIdentity.buyer_id || null,
+      buyer_name: buyer_name || buyerIdentity.buyer_name || '',
+      buyer_email: buyer_email || buyerIdentity.buyer_email || '',
+      buyer_phone: buyer_phone || buyerIdentity.buyer_phone || '',
+      buyer_company: buyer_company || buyerIdentity.buyer_company || '',
       buyer_country_code: buyer_country_code || 'IN^91',
       product_keyword_id: product_keyword_id || detected.product_keyword_id || null,
       item_subcategory_id: item_subcategory_id || detected.item_subcategory_id || null,
@@ -157,10 +175,9 @@ async function getRequirementById(req, res) {
 
 async function getMyRequirements(req, res) {
   try {
-    const buyerId = req.user.id;
     const { page = 1, limit = 25, search = '', sortBy = 'created_at', sort = 'DESC' } = req.query;
 
-    const where = { buyer_id: buyerId, is_delete: 0 };
+    const where = { is_delete: 0 };
     if (search) {
       where[Op.or] = [
         { product_name_snapshot: { [Op.like]: `%${search}%` } },
@@ -294,7 +311,7 @@ async function sellerRespondToLead(req, res) {
       return res.status(400).json({ message: 'Invalid action' });
     }
 
-    const result = await handleSellerResponse(parseInt(id), sellerId, action, rejection_reason);
+    const result = await handleSellerResponse(parseInt(id), sellerId, action, rejection_reason, req.ip);
     if (!result.success) return res.status(400).json({ message: result.message });
     return res.json({ message: 'Action completed successfully', data: result });
   } catch (err) {

@@ -16,7 +16,7 @@ const States = require('../models/States');
 const SiteSettings = require('../models/SiteSettings');
 const { logActivity, getSystemConfig } = require('../helpers/requirementHelper');
 const { manualAssignSellerToRequirement, adminChangeRequirementStatus, adminCloseRequirement } = require('../helpers/assignmentHelper');
-const { isSameDayCityProductAssigned, findEligibleSellers, enrichSellers, normalizeText } = require('../helpers/sellerEligibilityHelper');
+const { findEligibleSellers, enrichSellers, normalizeText, isProductAvailableForKeyword } = require('../helpers/sellerEligibilityHelper');
 
 const getClientIp = (req) => {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
@@ -120,8 +120,8 @@ async function getRequirementCounts(req, res) {
     });
 
     const total = await BuyerRequirements.count({ where: { is_delete: 0 } });
-    const result = { total, pending: 0, assigned: 0, in_progress: 0, responded: 0, accepted: 0, completed: 0, closed: 0, no_seller_found: 0 };
-    const statusMap = { 0: 'pending', 1: 'assigned', 2: 'in_progress', 3: 'responded', 4: 'accepted', 5: 'completed', 6: 'closed', 8: 'no_seller_found' };
+    const result = { total, assigned: 0, accepted: 0, completed: 0, closed: 0, no_seller_found: 0, product_not_available: 0 };
+    const statusMap = { 1: 'assigned', 2: 'accepted', 3: 'completed', 4: 'closed', 5: 'no_seller_found', 6: 'product_not_available' };
     counts.forEach(c => {
       if (statusMap[c.status]) result[statusMap[c.status]] = parseInt(c.count);
     });
@@ -136,6 +136,7 @@ async function getSellerPerformanceAdmin(req, res) {
   try {
     const { page = 1, limit = 25, search = '' } = req.query;
     const where = {};
+    const perfFilters = [];
     if (search) {
       const matchingUsers = await Users.findAll({
         where: {
@@ -148,8 +149,11 @@ async function getSellerPerformanceAdmin(req, res) {
         attributes: ['id'],
         raw: true,
       });
-      where.seller_id = { [Op.in]: matchingUsers.map(u => u.id) };
+      perfFilters.push({ seller_id: { [Op.in]: matchingUsers.map(u => u.id) } });
     }
+    const assignedSellerIds = sequelize.literal('(SELECT seller_id FROM requirement_assignments WHERE seller_id IS NOT NULL)');
+    perfFilters.push({ seller_id: { [Op.in]: assignedSellerIds } });
+    where[Op.and] = perfFilters;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const { count, rows } = await SellerPerformance.findAndCountAll({
@@ -164,8 +168,32 @@ async function getSellerPerformanceAdmin(req, res) {
       offset,
     });
 
+    const data = rows.map((row, idx) => {
+      const perf = row.toJSON ? row.toJSON() : row;
+      const avgSeconds = Number(perf.average_response_time_seconds) || 0;
+      const totalLeads = Number(perf.total_leads) || 0;
+      const completedLeads = Number(perf.completed_leads) || 0;
+      const respondedLeads = Number(perf.responded_leads) || 0;
+      const acceptedLeads = Number(perf.accepted_leads) || 0;
+      const rejectedLeads = Number(perf.rejected_leads) || 0;
+      const onTimePct = respondedLeads > 0 ? ((Number(perf.on_time_response_count) || 0) / respondedLeads * 100) : 0;
+      const acceptancePct = totalLeads > 0 ? (acceptedLeads / totalLeads * 100) : 0;
+      const rejectionRate = totalLeads > 0 ? (rejectedLeads / totalLeads) : 0;
+      const baseScore = totalLeads > 0
+        ? ((completedLeads / totalLeads) * 40 + (onTimePct / 100) * 30 + (acceptancePct / 100) * 30)
+        : 0;
+      return {
+        ...perf,
+        sno: offset + idx + 1,
+        avg_response_seconds: avgSeconds,
+        avg_response_minutes: avgSeconds > 0 ? Math.round((avgSeconds / 60) * 10) / 10 : 0,
+        rejection_rate_pct: Math.round(rejectionRate * 10000) / 100,
+        rejection_penalty: Math.round(baseScore * rejectionRate * 100) / 100,
+      };
+    });
+
     return res.json({
-      data: rows,
+      data,
       totalRecords: count,
       filteredRecords: count,
       page: parseInt(page),
@@ -267,85 +295,95 @@ async function getRequirementChartData(req, res) {
 async function getSellersForAssign(req, res) {
   try {
     const { search = '', requirementId } = req.query;
-    const where = { is_seller: 1, status: 1, is_delete: 0, is_approve: 1 };
-    if (search && search.trim()) {
-      const like = `%${search.trim()}%`;
-      where[Op.or] = [
-        { fname: { [Op.like]: like } },
-        { lname: { [Op.like]: like } },
-        { email: { [Op.like]: like } },
-        { user_company: { [Op.like]: like } },
-      ];
-    }
-    const sellers = await Users.findAll({
-      where,
-      attributes: ['id', 'fname', 'lname', 'email', 'mobile'],
-      include: [
-        { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
-        {
-          model: Cities, as: 'city_data',
-          attributes: ['id', 'name'],
-          include: [{ model: States, as: 'States', attributes: ['name'] }],
-        },
-        { model: States, as: 'state_data', attributes: ['name'] },
-      ],
-      limit: 50,
-    });
-
     const requirement = requirementId
       ? await BuyerRequirements.findByPk(parseInt(requirementId))
       : null;
     const useRequirement = requirement && !requirement.is_delete;
 
-    let excluded = new Set();
-    const topBlock = []; // sellers holding the required product, same-city -> same-state -> India, nearest first
-    if (useRequirement) {
-      for (const s of sellers) {
-        if (await isSameDayCityProductAssigned(s.id, requirement)) excluded.add(Number(s.id));
-      }
-      if (!search.trim() && requirement.product_keyword_id) {
-        const config = await getSystemConfig();
-        const candidates = await findEligibleSellers(requirement, config.candidate_pool_size);
-        const enriched = await enrichSellers(candidates, requirement);
-        const reqState = normalizeText(requirement.buyer_state);
-        const tiered = enriched
-          .filter((e) => !excluded.has(Number(e.seller_id)))
-          .map((e) => ({
-            e,
-            tier: e.same_city ? 0
-              : (reqState && normalizeText(e.state_name) === reqState ? 1 : 2),
-          }))
-          .sort((a, b) => (
-            a.tier - b.tier
-            || ((a.e.distance_km ?? Infinity) - (b.e.distance_km ?? Infinity))
-          ));
+    const attrs = ['id', 'fname', 'lname', 'email', 'mobile'];
+    const baseInclude = [
+      { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+      {
+        model: Cities, as: 'city_data',
+        attributes: ['id', 'name'],
+        include: [{ model: States, as: 'States', attributes: ['name'] }],
+      },
+      { model: States, as: 'state_data', attributes: ['name'] },
+    ];
 
-        if (tiered.length > 0) {
-          const topUsers = await Users.findAll({
-            where: { id: { [Op.in]: tiered.map((t) => t.e.seller_id) } },
-            attributes: ['id', 'fname', 'lname', 'email', 'mobile'],
-            include: [
-              { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
-              {
-                model: Cities, as: 'city_data',
-                attributes: ['id', 'name'],
-                include: [{ model: States, as: 'States', attributes: ['name'] }],
-              },
-              { model: States, as: 'state_data', attributes: ['name'] },
-            ],
-          });
-          const byId = new Map(topUsers.map((u) => [Number(u.id), u]));
-          for (const t of tiered) {
-            const u = byId.get(Number(t.e.seller_id));
-            if (u) topBlock.push(u);
-          }
-        }
+    if (!useRequirement || !requirement.product_keyword_id) {
+      const where = { is_seller: 1, status: 1, is_delete: 0, is_approve: 1 };
+      if (search && search.trim()) {
+        const like = `%${search.trim()}%`;
+        where[Op.or] = [
+          { fname: { [Op.like]: like } },
+          { lname: { [Op.like]: like } },
+          { email: { [Op.like]: like } },
+          { user_company: { [Op.like]: like } },
+        ];
       }
+      const sellers = await Users.findAll({
+        where,
+        attributes: attrs,
+        include: baseInclude,
+        limit: 50,
+      });
+      return res.json({ sellers, message: '' });
     }
 
-    const topIds = new Set(topBlock.map((u) => Number(u.id)));
-    const bottomBlock = sellers.filter((s) => !excluded.has(Number(s.id)) && !topIds.has(Number(s.id)));
-    return res.json([...topBlock, ...bottomBlock]);
+    // Only sellers who actually have the required product are allowed in the list.
+    const config = await getSystemConfig();
+    // No product with this keyword exists anywhere in the system -> block assignment.
+    if (!(await isProductAvailableForKeyword(requirement.product_keyword_id))) {
+      return res.json({ sellers: [], message: 'Product is not available in the system.', productAvailable: false });
+    }
+    const candidates = await findEligibleSellers(requirement, config.candidate_pool_size);
+    if (candidates.length === 0) {
+      return res.json({ sellers: [], message: 'This product is not available with any seller.', productAvailable: true });
+    }
+
+    const enriched = await enrichSellers(candidates, requirement);
+
+    let matched = enriched;
+
+    if (search && search.trim()) {
+      const q = normalizeText(search);
+      matched = matched.filter((e) => normalizeText(e.name).includes(q) || normalizeText(e.company).includes(q));
+    }
+
+    if (matched.length === 0) {
+      const msg = search && search.trim()
+        ? 'No seller found matching the search for this product.'
+        : 'No eligible seller remains for this requirement.';
+      return res.json({ sellers: [], message: msg, productAvailable: true });
+    }
+
+    const hasSameCity = matched.some((e) => e.same_city);
+    const reqState = normalizeText(requirement.buyer_state);
+    const tiered = matched
+      .map((e) => ({
+        e,
+        tier: e.same_city ? 0 : (reqState && normalizeText(e.state_name) === reqState ? 1 : 2),
+      }))
+      .sort((a, b) => (
+        a.tier - b.tier
+        || ((a.e.distance_km ?? Infinity) - (b.e.distance_km ?? Infinity))
+      ));
+
+    const userRows = await Users.findAll({
+      where: { id: { [Op.in]: tiered.map((t) => t.e.seller_id) } },
+      attributes: attrs,
+      include: baseInclude,
+    });
+    const byId = new Map(userRows.map((u) => [Number(u.id), u]));
+    const sellers = tiered.map((t) => byId.get(Number(t.e.seller_id))).filter(Boolean);
+
+    let message = '';
+    if (!hasSameCity && !search.trim()) {
+      message = 'No seller found for this product in the same city.';
+    }
+
+    return res.json({ sellers, message, productAvailable: true });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
