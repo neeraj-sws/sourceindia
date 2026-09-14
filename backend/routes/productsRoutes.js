@@ -5,6 +5,7 @@ const productsController = require('../controllers/productsController');
 router.get('/all-products', productsController.allProduct);
 router.get('/suggest', productsController.suggestProducts);
 router.get('/suggested-item-subcategories', productsController.getSuggestedItemSubCategories);
+router.get('/latest-home', productsController.getLatestHomeProducts);
 
 router.post('/', productsController.createProducts);
 router.get('/count', productsController.getProductsCount);
