@@ -54,6 +54,25 @@ const Registration = () => {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     };
 
+    const MOBILE_ERROR_MESSAGE = "Please enter a valid 10-digit mobile number.";
+    const isValidMobileNumber = (mobile) => /^\d{10}$/.test(mobile);
+
+    // Update the inline mobile error; showOnEmpty forces the error even for an empty field (used on "Send OTP").
+    const updateMobileError = (mobile, { showOnEmpty = false } = {}) => {
+        setErrors(prev => {
+            const hasError = (mobile.length > 0 || showOnEmpty) && !isValidMobileNumber(mobile);
+            const nextError = hasError ? MOBILE_ERROR_MESSAGE : undefined;
+            if (prev.mobile === nextError) return prev;
+            const next = { ...prev };
+            if (nextError) {
+                next.mobile = nextError;
+            } else {
+                delete next.mobile;
+            }
+            return next;
+        });
+    };
+
     useEffect(() => {
         if (isLoggedIn && user) {
             if (user.is_seller == 1) {
@@ -193,6 +212,7 @@ const Registration = () => {
             // limit to 10 digits
             if (cleanValue.length > 10) cleanValue = cleanValue.slice(0, 10);
             setForm({ ...form, [name]: cleanValue });
+            updateMobileError(cleanValue);
         } else {
             setForm({ ...form, [name]: value });
         }
@@ -243,6 +263,12 @@ const Registration = () => {
             return;
         }
 
+        // Final guard: never send OTP unless the mobile number is exactly 10 digits
+        if (!isValidMobileNumber(form.mobile)) {
+            updateMobileError(form.mobile, { showOnEmpty: true });
+            return;
+        }
+
         setVerifyLoading(true);
         try {
             const res = await axios.post(`${API_BASE_URL}/signup/send-otp`, { email: form.email });
@@ -257,6 +283,10 @@ const Registration = () => {
     };
 
     const handleResend = async () => {
+        if (!isValidMobileNumber(form.mobile)) {
+            updateMobileError(form.mobile, { showOnEmpty: true });
+            return;
+        }
         setVerifyLoading(true);
         try {
             await axios.post(`${API_BASE_URL}/signup/resend-otp`, { email: form.email });
@@ -517,11 +547,13 @@ const Registration = () => {
                                         form.country_code.replace("+", "") + form.mobile
                                     }
                                     onChange={(value, country) => {
+                                        const mobileDigits = value.slice(country.dialCode.length).replace(/\D/g, '').slice(0, 10);
                                         setForm(prev => ({
                                             ...prev,
                                             country_code: `+${country.dialCode}`,
-                                            mobile: value.slice(country.dialCode.length)
+                                            mobile: mobileDigits
                                         }));
+                                        updateMobileError(mobileDigits);
                                     }}
                                     containerClass="w-100"
                                     inputClass="form-control"
