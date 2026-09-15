@@ -6,6 +6,8 @@ import { Suspense, lazy } from 'react';
 const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../context/AlertContext';
+import { FiCheckCircle, FiRefreshCw, FiUploadCloud, FiUser } from 'react-icons/fi';
+import './CompanyEdit.css';
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
@@ -244,12 +246,14 @@ const ProfileEdit = () => {
 
   return (
     <Suspense fallback={<div></div>}>
-      <div className="page-wrapper">
+      <div className="page-wrapper company-edit-page profile-edit-page">
         <div className="page-content">
-          <h4 className="pb-2">Profile Update</h4>
-          <form onSubmit={handleSubmit}>
-            <div className="card">
-              <div className="card-body">
+          <form onSubmit={handleSubmit} className="company-edit-card">
+            <div className="company-edit-header">
+              <div className="company-header-icon"><FiUser /></div>
+              <div><h1>Profile Information</h1><p>Keep your personal and contact details up to date.</p></div>
+            </div>
+            <div className="company-edit-body">
                 <div className="row">
                   <div className="col-md-12">
                     <div className="row g-3">
@@ -466,8 +470,7 @@ const ProfileEdit = () => {
                         </div>
                         <div className="col-md-12">
                           <label className="form-label">User Image</label>
-                          <input className={`form-control ${errors.file ? 'is-invalid' : ''}`} type="file"
-                            id="file" onChange={handleFileChange} />
+                          <div className="upload-zone upload-zone-blue profile-image-upload"><div className="upload-icon"><FiUploadCloud /></div><div><strong>Upload your profile image</strong><small>JPG, PNG or WEBP. Max size 2MB.</small><label htmlFor="file" className="choose-file">Choose File</label><input className="visually-hidden" type="file" id="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} /><span className="selected-file">{file?.name}</span></div></div>
                           {errors.file && <div className="invalid-feedback">{errors.file}</div>}
                           {file ? (
                             <img
@@ -491,15 +494,10 @@ const ProfileEdit = () => {
                       </div>
                       {/*end row*/}
                     </div>
-                    <div className="text-end">
-                      <button type="submit" className="btn btn-primary mt-3" disabled={submitting}>
-                        {submitting ? "Saving..." : "Save"}
-                      </button>
-                    </div>
                   </div>
                 </div>
-              </div>
             </div>
+            <div className="company-edit-footer"><button type="reset" className="company-reset" onClick={() => window.location.reload()}><FiRefreshCw /> Reset</button><button type="submit" className="company-save" disabled={submitting}><FiCheckCircle /> {submitting ? "Saving..." : "Save Profile"}</button></div>
           </form>
           {/*end row*/}
         </div>

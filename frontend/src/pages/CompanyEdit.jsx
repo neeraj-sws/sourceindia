@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import { Suspense, lazy } from 'react';
 const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../context/AlertContext';
+import { FiBriefcase, FiCheckCircle, FiEdit3, FiFileText, FiGlobe, FiGrid, FiLink, FiMail, FiMapPin, FiRefreshCw, FiUploadCloud } from 'react-icons/fi';
+import './CompanyEdit.css';
 
 const CompanyEdit = () => {
   const navigate = useNavigate();
@@ -35,6 +37,7 @@ const CompanyEdit = () => {
   const [companyFile, setCompanyFile] = useState(null);
   const [companyBrochure, setCompanyBrochure] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const initialProfile = useRef(null);
 
   const countWords = (text) => {
     return text
@@ -118,6 +121,7 @@ const CompanyEdit = () => {
         });
         const userData = response.data.user;
         setUser(userData);
+        initialProfile.current = userData;
 
         // Parse stored category/subcategory ids
         const categoryArray = userData.company_info?.sellerCategoryIds
@@ -308,222 +312,212 @@ const CompanyEdit = () => {
     }
   };
 
+  const handleReset = () => {
+    if (!initialProfile.current) return;
+    const companyInfo = initialProfile.current.company_info || {};
+    setUser(initialProfile.current);
+    setSelectedCoreActivity(companyInfo.core_activity || '');
+    setSelectedActivity(companyInfo.activity || '');
+    setFile(null);
+    setCompanyFile(null);
+    setCompanyBrochure(null);
+    setErrors({});
+  };
+
   if (loading) return <p>Loading...</p>;
 
   return (
     <>
-      <div className="page-wrapper">
+      <div className="page-wrapper company-edit-page">
         <div className="page-content">
-          <h4 className="pb-2">Company Update</h4>
-          <form onSubmit={handleSubmit}>
-            <div className="card">
-              <div className="card-body">
-                <div className="row g-3">
-                  <div className="row mt-3">
-                    <div className="col-lg-12">
-                      <div className="border border-1 p-4 rounded">
-                        <div className="row g-3">
-                          <div className="col-md-6">
-                            <label className="form-label">
-                              Organization Name<sup className="text-danger">*</sup>
-                            </label>
-                            <input
-                              type="text"
-                              name="organization_name"
-                              value={user.company_info?.organization_name || ""}
-                              onChange={handleChange}
-                              className={`form-control ${errors.organization_name ? 'is-invalid' : ''}`}
-                              placeholder="Enter Organization Name"
-                            />
-                            {errors.organization_name && <div className="invalid-feedback">{errors.organization_name}</div>}
-                          </div>
-                          <div className="col-md-6 mt-3">
-                            <label className="form-label">
-                              Company Email<sup className="text-danger">*</sup>
-                            </label>
-                            <input
-                              type="email"
-                              className={`form-control ${errors.company_email ? 'is-invalid' : ''}`}
-                              name="company_email"
-                              placeholder="Enter  Comapny Email"
-                              value={user.company_info?.company_email || ""}
-                              onChange={handleChange}
-                            />
-                            {errors.company_email && <div className="invalid-feedback">{errors.company_email}</div>}
-                          </div>
-                          <div className="col-md-6">
-                            <label className="form-label">
-                              Company Location<sup className="text-danger">*</sup>
-                            </label>
-                            <input
-                              type="text"
-                              className={`form-control ${errors.company_location ? 'is-invalid' : ''}`}
-                              name="company_location"
-                              placeholder="Enter Organization Name"
-                              value={user.company_info?.company_location || ""}
-                              onChange={handleChange}
-                            />
-                            {errors.company_location && <div className="invalid-feedback">{errors.company_location}</div>}
-                          </div>
-                          <div className="col-md-6">
-                            <label className="form-label">
-                              Company Website <sup className="text-danger">*</sup>
-                            </label>
-                            <input
-                              type="text"
-                              className={`form-control ${errors.company_website ? 'is-invalid' : ''}`}
-                              name="company_website"
-                              placeholder="Enter Company Website"
-                              value={user.company_info?.company_website || ""}
-                              onChange={handleChange}
-                            />
-                          </div>
-                          <div className="col-md-6 mb-3">
-                            <label htmlFor="core_activity" className="form-label required">Core Activity</label>
-                            <select
-                              id="core_activity"
-                              className="form-control select2"
-                              value={selectedCoreActivity}
-                              onChange={handleCoreActivityChange}
-                            >
-                              <option value="">Select Core Activity</option>
-                              {coreActivities.map((c) => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                              ))}
-                            </select>
-                            {errors.core_activity && <div className="text-danger small mt-1">{errors.core_activity}</div>}
-                          </div>
-                          <div className="col-md-6 mb-3">
-                            <label htmlFor="activity" className="form-label required">Activity</label>
-                            <select
-                              id="activity"
-                              className="form-control select2"
-                              value={selectedActivity}
-                              onChange={handleActivityChange}
-                            >
-                              <option value="">Select Activity</option>
-                              {activities.map((activity) => (
-                                <option key={activity.id} value={activity.id}>{activity.name}</option>
-                              ))}
-                            </select>
-                            {errors.activity && <div className="text-danger small mt-1">{errors.activity}</div>}
-                          </div>
-                          <div className="col-md-12">
-                            <label className="form-label">Company Logo </label>
-                            <input className="form-control" type="file"
-                              id="file" onChange={handleFileChange} />
-                            {errors.file && <div className="invalid-feedback">{errors.file}</div>}
-                            {file ? (
-                              <img
-                                src={URL.createObjectURL(file)}
-                                className="img-preview mt-3"
-                                width={150}
-                                height={150}
-                                alt="Preview"
-                                loading="lazy"
-                                decoding="async"
-                              />
-                            ) : user.company_info?.companyLogo?.file ? (
-                              <ImageWithFallback
-                                src={`${ROOT_URL}/${user.company_info.companyLogo.file}`}
-                                width={150}
-                                height={150}
-                                showFallback={false}
-                              />
-                            ) : null}
-                          </div>
-                          <div className="col-md-12">
-                            <label className="form-label">
-                              Company Introduction<sup className="text-danger">*</sup>
-                            </label>
-                            <textarea
-                              className="form-control"
-                              id="brief_company"
-                              name="brief_company"
-                              placeholder="Company Introduction"
-                              rows={5}
-                              value={user.company_info?.brief_company || ""}
-                              onChange={handleChange}
-                            />
-                            <p className="pt-3">
-                              Total Words Limit <span className="about">1500</span> |
-                              Used: <strong>{countWords(user.company_info?.brief_company || "")}</strong>
-                            </p>
-
-                            {errors.brief_company && (
-                              <div className="text-danger small mt-1">{errors.brief_company}</div>
-                            )}
-
-                          </div>
-                          <div className="col-md-12 mt-3">
-                            <label className="form-label">Ppt file</label>
-                            <input
-                              type="file"
-                              className={`form-control ${errors.company_sample_ppt_file ? "is-invalid" : ""}`}
-                              id="company_sample_ppt_file"
-                              accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                              onChange={handleCompanyFileChange}
-                            />
-                            {user.company_info?.companySamplePptFile?.file && (
-                              <a
-                                href={`${ROOT_URL}/${user.company_info.companySamplePptFile.file}`}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                View Uploaded PPT
-                              </a>
-                            )}
-                            {errors.company_sample_ppt_file && (<div className="invalid-feedback">{errors.company_sample_ppt_file}</div>)}
-                          </div>
-                          <div className="col-md-12 mt-3 ">
-                            <label className="form-label">Upload Video Url</label>
-                            <div className="input-group row">
-                              <div className="col-md-10">
-                                <div className="custom-file">
-                                  <input
-                                    type="url"
-                                    className="form-control"
-                                    name="company_video_second"
-                                    value={user.company_info?.company_video_second || ""}
-                                    onChange={handleChange}
-                                  />
-                                  <small>(https://www.youtube.com/c/w3schools)</small>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="col-md-12">
-                            <label className="form-label">Company Brochure</label>
-                            <input
-                              type="file" className={`form-control ${errors.sample_file_id ? "is-invalid" : ""}`}
-                              id="sample_file_id"
-                              onChange={handleCompanyBrochureChange}
-                            />
-                            {user.company_info?.companySampleFile?.file && (
-                              <a
-                                href={`${ROOT_URL}/${user.company_info.companySampleFile.file}`}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                View PDF
-                              </a>
-                            )}
-                            {errors.sample_file_id && (<div className="invalid-feedback">{errors.sample_file_id}</div>)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-end">
-                    <button type="submit" className="btn btn-primary mt-3" disabled={submitting}>
-                      {submitting ? "Saving..." : "Save"}
-                    </button>
-                  </div>
+          <form onSubmit={handleSubmit} className="company-edit-card">
+            <div className="company-edit-header">
+              <div className="company-header-icon"><FiBriefcase /></div>
+              <div>
+                <h1>Company Information</h1>
+                <p>Provide your company details to help us showcase your business better.</p>
+              </div>
+              <div className="company-header-art" aria-hidden="true"><FiFileText /><span></span><span></span></div>
+            </div>
+            <div className="company-edit-body">
+              <div className="row g-4">
+                <div className="col-md-6">
+                  <label className="form-label">
+                    Organization Name<sup className="text-danger">*</sup>
+                  </label>
+                  <div className="company-input-wrap"><FiBriefcase /><input
+                    type="text"
+                    name="organization_name"
+                    value={user.company_info?.organization_name || ""}
+                    onChange={handleChange}
+                    className={`form-control ${errors.organization_name ? 'is-invalid' : ''}`}
+                    placeholder="Enter Organization Name"
+                  /></div>
+                  {errors.organization_name && <div className="invalid-feedback">{errors.organization_name}</div>}
                 </div>
+                <div className="col-md-6">
+                  <label className="form-label">
+                    Company Email<sup className="text-danger">*</sup>
+                  </label>
+                  <div className="company-input-wrap"><FiMail /><input
+                    type="email"
+                    className={`form-control ${errors.company_email ? 'is-invalid' : ''}`}
+                    name="company_email"
+                    placeholder="Enter  Comapny Email"
+                    value={user.company_info?.company_email || ""}
+                    onChange={handleChange}
+                  /></div>
+                  {errors.company_email && <div className="invalid-feedback">{errors.company_email}</div>}
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">
+                    Company Location<sup className="text-danger">*</sup>
+                  </label>
+                  <div className="company-input-wrap"><FiMapPin /><input
+                    type="text"
+                    className={`form-control ${errors.company_location ? 'is-invalid' : ''}`}
+                    name="company_location"
+                    placeholder="Enter Organization Name"
+                    value={user.company_info?.company_location || ""}
+                    onChange={handleChange}
+                  /></div>
+                  {errors.company_location && <div className="invalid-feedback">{errors.company_location}</div>}
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">
+                    Company Website <sup className="text-danger">*</sup>
+                  </label>
+                  <div className="company-input-wrap"><FiGlobe /><input
+                    type="text"
+                    className={`form-control ${errors.company_website ? 'is-invalid' : ''}`}
+                    name="company_website"
+                    placeholder="Enter Company Website"
+                    value={user.company_info?.company_website || ""}
+                    onChange={handleChange}
+                  /></div>
+                </div>
+                <div className="col-md-6">
+                  <label htmlFor="core_activity" className="form-label required">Core Activity</label>
+                  <div className="company-input-wrap select-wrap"><FiGrid /><select
+                    id="core_activity"
+                    className="form-control select2"
+                    value={selectedCoreActivity}
+                    onChange={handleCoreActivityChange}
+                  >
+                    <option value="">Select Core Activity</option>
+                    {coreActivities.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select></div>
+                  {errors.core_activity && <div className="text-danger small mt-1">{errors.core_activity}</div>}
+                </div>
+                <div className="col-md-6">
+                  <label htmlFor="activity" className="form-label required">Activity</label>
+                  <div className="company-input-wrap select-wrap"><FiGrid /><select
+                    id="activity"
+                    className="form-control select2"
+                    value={selectedActivity}
+                    onChange={handleActivityChange}
+                  >
+                    <option value="">Select Activity</option>
+                    {activities.map((activity) => (
+                      <option key={activity.id} value={activity.id}>{activity.name}</option>
+                    ))}
+                  </select></div>
+                  {errors.activity && <div className="text-danger small mt-1">{errors.activity}</div>}
+                </div>
+                <div className="col-md-12">
+                  <label className="form-label">Company Logo </label>
+                  <div className="upload-zone upload-zone-blue">
+                    <div className="upload-icon"><FiUploadCloud /></div><div><strong>Upload your company logo</strong><small>JPG, PNG, SVG or WEBP. Max size 2MB.</small><label htmlFor="file" className="choose-file">Choose File</label><input className="visually-hidden" type="file" id="file" accept="image/jpeg,image/png,image/svg+xml,image/webp" onChange={handleFileChange} /><span className="selected-file">{file?.name}</span></div>
+                  </div>
+                  {errors.file && <div className="invalid-feedback">{errors.file}</div>}
+                  {file ? (
+                    <img
+                      src={URL.createObjectURL(file)}
+                      className="img-preview mt-3"
+                      width={150}
+                      height={150}
+                      alt="Preview"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : user.company_info?.companyLogo?.file ? (
+                    <ImageWithFallback
+                      src={`${ROOT_URL}/${user.company_info.companyLogo.file}`}
+                      width={150}
+                      height={150}
+                      showFallback={false}
+                    />
+                  ) : null}
+                </div>
+                <div className="col-md-12">
+                  <label className="form-label">
+                    Company Introduction<sup className="text-danger">*</sup>
+                  </label>
+                  <div className="textarea-wrap"><FiEdit3 /><textarea
+                    className="form-control"
+                    id="brief_company"
+                    name="brief_company"
+                    placeholder="Company Introduction"
+                    rows={5}
+                    value={user.company_info?.brief_company || ""}
+                    onChange={handleChange}
+                  /></div>
+                  <div className="word-count"><span>Total Words Limit: 1500 | Used: <strong>{countWords(user.company_info?.brief_company || "")}</strong></span><span>{countWords(user.company_info?.brief_company || "")} / 1500</span></div>
+
+                  {errors.brief_company && (
+                    <div className="text-danger small mt-1">{errors.brief_company}</div>
+                  )}
+
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Ppt file</label>
+                  <div className="upload-zone upload-zone-green"><div className="upload-icon"><FiFileText /></div><div><strong>Upload your presentation (PPT)</strong><small>PPT or PPTX. Max size 20MB.</small><label htmlFor="company_sample_ppt_file" className="choose-file">Choose File</label><input type="file" className="visually-hidden" id="company_sample_ppt_file" accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" onChange={handleCompanyFileChange} /><span className="selected-file">{companyFile?.name}</span></div></div>
+                  {user.company_info?.companySamplePptFile?.file && (
+                    <a
+                      href={`${ROOT_URL}/${user.company_info.companySamplePptFile.file}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      View Uploaded PPT
+                    </a>
+                  )}
+                  {errors.company_sample_ppt_file && (<div className="invalid-feedback">{errors.company_sample_ppt_file}</div>)}
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Company Brochure</label>
+                  <div className="upload-zone upload-zone-orange"><div className="upload-icon"><FiFileText /></div><div><strong>Upload your company brochure</strong><small>PDF. Max size 20MB.</small><label htmlFor="sample_file_id" className="choose-file">Choose File</label><input type="file" className="visually-hidden" id="sample_file_id" accept="application/pdf" onChange={handleCompanyBrochureChange} /><span className="selected-file">{companyBrochure?.name}</span></div></div>
+                  {user.company_info?.companySampleFile?.file && (
+                    <a
+                      href={`${ROOT_URL}/${user.company_info.companySampleFile.file}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      View PDF
+                    </a>
+                  )}
+                  {errors.sample_file_id && (<div className="invalid-feedback">{errors.sample_file_id}</div>)}
+                </div>
+                <div className="col-md-12">
+                  <label className="form-label">Upload Video Url</label>
+                  <div className="video-field">
+                    <FiLink />
+                    <input
+                      type="url"
+                      className="form-control"
+                      name="company_video_second"
+                      value={user.company_info?.company_video_second || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <small className="video-help">Enter your YouTube channel or video URL</small>
+                </div>
+                
               </div>
             </div>
+            <div className="company-edit-footer"><button type="button" className="company-reset" onClick={handleReset}><FiRefreshCw /> Reset</button><button type="submit" className="company-save" disabled={submitting}><FiCheckCircle /> {submitting ? "Saving..." : "Save Information"}</button></div>
           </form>
-          {/*end row*/}
         </div>
       </div>
     </>
