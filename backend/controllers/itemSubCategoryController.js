@@ -85,7 +85,7 @@ exports.createItemSubCategory = async (req, res) => {
 };
 
 exports.getAllItemSubCategory = async (req, res) => {
-  try {
+    try {
     const where = { is_delete: req.query.getDeleted === 'true' ? 1 : 0 };
 
     // Exclude item subcategories that are linked to products
@@ -118,6 +118,10 @@ exports.getAllItemSubCategory = async (req, res) => {
           as: 'ItemCategory',
           attributes: ['id', 'name'],
         },
+        {
+          model: UploadImage,
+          attributes: ['id', 'file'],  
+        },
       ],
     });
 
@@ -133,6 +137,7 @@ exports.getAllItemSubCategory = async (req, res) => {
         Categories: undefined,
         SubCategories: undefined,
         ItemCategory: undefined,
+        file_name: data.UploadImage?.file || null,
       };
     });
 
