@@ -497,7 +497,7 @@ const ProfileEdit = () => {
                   </div>
                 </div>
             </div>
-            <div className="company-edit-footer"><button type="reset" className="company-reset" onClick={() => window.location.reload()}><FiRefreshCw /> Reset</button><button type="submit" className="company-save" disabled={submitting}><FiCheckCircle /> {submitting ? "Saving..." : "Save Profile"}</button></div>
+            <div className="company-edit-footer"><button type="submit" className="company-save" disabled={submitting}><FiCheckCircle /> {submitting ? "Saving..." : "Save Profile"}</button></div>
           </form>
           {/*end row*/}
         </div>
