@@ -853,8 +853,8 @@ const CompaniesFilter = ({ isSeller, isTrading }) => {
             </div>
 
             <div className="ms-auto d-flex gap-2 align-items-center justify-content-between mobileblock">
-              <p className="mb-0 text-nowrap d-none">{companiesTotal} Companies</p>
-              <p className="mb-0 text-nowrap">410 Companies</p>
+              <p className="mb-0 text-nowrap">{companiesTotal} Companies</p>
+              {/* <p className="mb-0 text-nowrap">410 Companies</p> */}
               <div className="text-end d-lg-none d-sm-block d-none">
                 <button
                   className="filterbutton btn btn-primary"

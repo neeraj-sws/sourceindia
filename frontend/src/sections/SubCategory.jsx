@@ -480,21 +480,7 @@ const SubCategory = () => {
                   >
                     →
                   </a>
-                  <div className="cat-banner-media" aria-hidden="true">
-                    {sub.file_name ? (
-                      <img
-                        src={`${ROOT_URL}/${sub.file_name}`}
-                        alt=""
-                        loading="lazy"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="cat-banner-media-fallback" />
-                    )}
-                  </div>
+                 
                 </div>
 
                 {availableItemCategories.length > 0 ? (
