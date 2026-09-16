@@ -1312,9 +1312,20 @@ exports.getProductsDetail = async (req, res) => {
       attributes: ['id', 'file'],
     });
 
-    // Similar products
+    // Similar products - matched by item subcategory (fallback to category if item_subcategory_id is null)
+    const similarWhere = {
+      is_approve: 1,
+      status: 1,
+      id: { [Op.ne]: productData.id }
+    };
+    if (productData.item_subcategory_id) {
+      similarWhere.item_subcategory_id = productData.item_subcategory_id;
+    } else {
+      similarWhere.category = productData.category;
+    }
+
     const similarProducts = await Products.findAll({
-      where: { is_approve: 1, status: 1, category: productData.category, id: { [Op.ne]: productData.id } },
+      where: similarWhere,
       attributes: ['id', 'title', 'file_ids', 'slug'],
       include: [{ model: UploadImage, as: 'file', attributes: ['file'] }]
     });
