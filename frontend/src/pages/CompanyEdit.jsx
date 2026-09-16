@@ -5,7 +5,7 @@ import { Suspense, lazy } from 'react';
 const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../context/AlertContext';
-import { FiBriefcase, FiCheckCircle, FiEdit3, FiFileText, FiGlobe, FiGrid, FiLink, FiMail, FiMapPin, FiRefreshCw, FiUploadCloud } from 'react-icons/fi';
+import { FiBriefcase, FiCheckCircle, FiClipboard, FiEdit3, FiFileText, FiGlobe, FiGrid, FiLink, FiMail, FiMapPin, FiRefreshCw, FiUploadCloud } from 'react-icons/fi';
 import './CompanyEdit.css';
 
 const CompanyEdit = () => {
@@ -332,7 +332,6 @@ const CompanyEdit = () => {
         <div className="page-content">
           <form onSubmit={handleSubmit} className="company-edit-card">
             <div className="company-edit-header">
-              <div className="company-header-icon"><FiBriefcase /></div>
               <div>
                 <h1>Company Information</h1>
                 <p>Provide your company details to help us showcase your business better.</p>
@@ -345,7 +344,7 @@ const CompanyEdit = () => {
                   <label className="form-label">
                     Organization Name<sup className="text-danger">*</sup>
                   </label>
-                  <div className="company-input-wrap"><FiBriefcase /><input
+                            <div className="company-input-wrap"><FiClipboard /><input
                     type="text"
                     name="organization_name"
                     value={user.company_info?.organization_name || ""}
@@ -455,7 +454,7 @@ const CompanyEdit = () => {
                   <label className="form-label">
                     Company Introduction<sup className="text-danger">*</sup>
                   </label>
-                  <div className="textarea-wrap"><FiEdit3 /><textarea
+                  <div className="textarea-wrap p-2"><textarea
                     className="form-control"
                     id="brief_company"
                     name="brief_company"
@@ -516,7 +515,7 @@ const CompanyEdit = () => {
                 
               </div>
             </div>
-            <div className="company-edit-footer"><button type="button" className="company-reset" onClick={handleReset}><FiRefreshCw /> Reset</button><button type="submit" className="company-save" disabled={submitting}><FiCheckCircle /> {submitting ? "Saving..." : "Save Information"}</button></div>
+            <div className="company-edit-footer"><button type="submit" className="company-save" disabled={submitting}><FiCheckCircle /> {submitting ? "Saving..." : "Save Information"}</button></div>
           </form>
         </div>
       </div>
