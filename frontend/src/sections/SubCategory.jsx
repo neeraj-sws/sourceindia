@@ -3,73 +3,6 @@ import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import { useParams } from "react-router-dom";
 
-/* -------------------------------------------------------------------------
-   Small inline icon set (kept dependency-free — swap for your icon library
-   if you already have one, e.g. lucide-react / react-icons)
-------------------------------------------------------------------------- */
-const ICONS = {
-  // machine: (
-  //   <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-  //     <path d="M4 7h9l3 3h4v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-  //     <circle cx="8.5" cy="15" r="1.4" fill="currentColor" />
-  //     <circle cx="14.5" cy="15" r="1.4" fill="currentColor" />
-  //   </svg>
-  // ),
-  // instrument: (
-  //   <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-  //     <rect x="4" y="4" width="16" height="12" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
-  //     <path d="M7 20h10M12 16v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-  //     <path d="M7 8h6M7 11h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-  //   </svg>
-  // ),
-  // laser: (
-  //   <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-  //     <path d="M3 12h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-  //     <circle cx="10" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
-  //     <path d="M13 12h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeDasharray="1.6 2.2" />
-  //   </svg>
-  // ),
-  // medical: (
-  //   <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-  //     <path d="M3 12h4l2-5 3 10 2-7 1.5 2H21" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-  //   </svg>
-  // ),
-  eye: (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
-      <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="2.6" stroke="currentColor" strokeWidth="1.6" />
-    </svg>
-  ),
-  shield: (
-    <svg viewBox="0 0 24 24" width="40" height="40" fill="none">
-      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M9 12.2l2 2 4-4.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  badge: (
-    <svg viewBox="0 0 24 24" width="40" height="40" fill="none">
-      <circle cx="12" cy="9" r="5" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M8.5 13.5 7 21l5-2.4 5 2.4-1.5-7.5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-    </svg>
-  ),
-  tag: (
-    <svg viewBox="0 0 24 24" width="40" height="40" fill="none">
-      <path d="M12 3h6a2 2 0 0 1 2 2v6l-9.5 9.5a2 2 0 0 1-2.8 0L4 17.8a2 2 0 0 1 0-2.8L13.5 5.5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-      <circle cx="16.2" cy="7.8" r="1.2" fill="currentColor" />
-    </svg>
-  ),
-  headset: (
-    <svg viewBox="0 0 24 24" width="40" height="40" fill="none">
-      <path d="M4 13v-1a8 8 0 0 1 16 0v1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <rect x="3" y="13" width="4" height="6" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
-      <rect x="17" y="13" width="4" height="6" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M19 19v1a2 2 0 0 1-2 2h-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  ),
-};
-
-// Cycle a palette + icon across subcategories so every row reads distinctly,
-// the way "Optical Machine / Instruments / Laser Machine / Medical Laser" do.
 const SUBCAT_THEME = [
   { icon: "machine", bg: "#F1FAF7", fg: "#00A88A", light: "#E8F7F1" },
   { icon: "instrument", bg: "#FFF5ED", fg: "#FF8A3D", light: "#FFEAD8" },
@@ -86,13 +19,6 @@ const TRUST_ITEMS = [
 
 /* -------------------------------------------------------------------------
    ProductSlider
-   Drag-to-scroll / swipeable wrapper around the existing product row.
-   - Mouse + touch dragging (desktop drag, mobile native swipe still works
-     because we only take over on touchmove for horizontal intent).
-   - Arrows are shown/hidden based on actual scrollLeft / scrollWidth,
-     not a fixed product count.
-   - No visible scrollbar (see `.subcat-scroll` CSS — scrolling stays enabled).
-   Card markup/design passed in as `children` is left completely untouched.
 ------------------------------------------------------------------------- */
 const ProductSlider = ({ children }) => {
   const scrollRef = useRef(null);
@@ -125,10 +51,10 @@ const ProductSlider = ({ children }) => {
 
     updateArrows();
 
-    const raf = requestAnimationFrame(updateArrows); // re-check once layout/images settle
+    const raf = requestAnimationFrame(updateArrows); 
 
     el.addEventListener("scroll", updateArrows, { passive: true });
-    el.addEventListener("load", updateArrows, true); // capture phase: catches <img> load events
+    el.addEventListener("load", updateArrows, true); 
     window.addEventListener("resize", updateArrows);
 
     let ro;
@@ -147,7 +73,6 @@ const ProductSlider = ({ children }) => {
     };
   }, [children]);
 
-  // Width of one slide = a single card + the flex gap between cards.
   const getSlideWidth = () => {
     const el = scrollRef.current;
     const first = el?.firstElementChild;
@@ -310,6 +235,7 @@ const SubCategory = () => {
   const [category, setCategory] = useState(null);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [itemCatProducts, setItemCatProducts] = useState({});
+  const [fetchedKeys, setFetchedKeys] = useState(() => new Set());
 
   // Every subcategory of this category (shown in full, not filtered).
   const allSubcategories = useMemo(() => category?.subcategories || [], [category]);
@@ -326,6 +252,28 @@ const SubCategory = () => {
       })),
     [allSubcategories]
   );
+
+  // Keys of every (sub, item-category) product fetch we expect to complete.
+  const expectedFetchKeys = useMemo(
+    () =>
+      subcategoryItems.flatMap(({ sub, itemCategories }) =>
+        itemCategories.map((ic) => `${sub.id}_${ic.id}`)
+      ),
+    [subcategoryItems]
+  );
+  const allFetched =
+    expectedFetchKeys.length > 0 && expectedFetchKeys.every((k) => fetchedKeys.has(k));
+
+  // Subcategories that still have real products once fetches complete.
+  // While any fetch is still in flight we keep everything visible (skeleton stage).
+  const visibleSubcategories = useMemo(() => {
+    if (!allFetched) return subcategoryItems;
+    return subcategoryItems.filter(({ sub, itemCategories }) =>
+      itemCategories.some(
+        (ic) => (itemCatProducts[`${sub.id}_${ic.id}`] || []).length > 0
+      )
+    );
+  }, [subcategoryItems, itemCatProducts, allFetched]);
 
   // =========================================================
   // 🟢 FETCH PRODUCTS FOR EACH ITEM CATEGORY
@@ -372,9 +320,20 @@ const SubCategory = () => {
               ...prev,
               [`${sub.id}_${ic.id}`]: products,
             }));
+
+            setFetchedKeys((prev) => {
+              const next = new Set(prev);
+              next.add(`${sub.id}_${ic.id}`);
+              return next;
+            });
           }
         } catch (err) {
           console.error(`Error fetching products for subcategory ${sub.id} item category ${ic.id}:`, err);
+          setFetchedKeys((prev) => {
+            const next = new Set(prev);
+            next.add(`${sub.id}_${ic.id}`);
+            return next;
+          });
         }
       });
     });
@@ -488,9 +447,14 @@ const SubCategory = () => {
         </div>
 
         {/* =============== SUBCATEGORY SECTIONS (each → 3 item categories) =============== */}
-        {subcategoryItems.length > 0 ? (
-          subcategoryItems.map(({ sub, itemCategories }, si) => {
+        {visibleSubcategories.length > 0 ? (
+          visibleSubcategories.map(({ sub, itemCategories }, si) => {
             const theme = SUBCAT_THEME[si % SUBCAT_THEME.length];
+            const availableItemCategories = allFetched
+              ? itemCategories.filter(
+                  (ic) => (itemCatProducts[`${sub.id}_${ic.id}`] || []).length > 0
+                )
+              : itemCategories;
             return (
               <div className="subcat-group" key={sub.id}>
                 <div className="cat-banner subcat-banner">
@@ -511,7 +475,7 @@ const SubCategory = () => {
                   <a
                     href={`/categories/${category.slug}/${sub.slug}`}
                     className="cat-banner-arrow"
-                    style={{ color: theme.fg, borderColor: theme.fg, background: theme.light }}
+                    // style={{ color: theme.fg, borderColor: theme.fg, background: theme.light }}
                     aria-label={`View all products in ${sub.name}`}
                   >
                     →
@@ -533,8 +497,8 @@ const SubCategory = () => {
                   </div>
                 </div>
 
-                {itemCategories.length > 0 ? (
-                  itemCategories.map((ic) => (
+                {availableItemCategories.length > 0 ? (
+                  availableItemCategories.map((ic) => (
                     <div className="subcat-row" key={ic.id}>
                       <div className="subcat-info">
                         <div className="subcat-info-top">
@@ -553,7 +517,7 @@ const SubCategory = () => {
                         <a
                           href={`/categories/${category.slug}/${sub.slug}/${ic.slug}`}
                           className="subcat-info-link"
-                          style={{ color: theme.fg, borderColor: theme.fg, background: theme.light }}
+                          // style={{ color: theme.fg, borderColor: theme.fg, background: theme.light }}
                         >
                           View all Products <span>→</span>
                         </a>
@@ -621,7 +585,7 @@ const SubCategory = () => {
         )}
 
         {/* ============================= TRUST BAR ============================= */}
-        <div className="trust-bar">
+        {/* <div className="trust-bar">
           {TRUST_ITEMS.map((item) => (
             <div className="trust-item" key={item.title}>
               <span className="trust-item-icon">{ICONS[item.icon]}</span>
@@ -631,7 +595,7 @@ const SubCategory = () => {
               </div>
             </div>
           ))}
-        </div>
+        </div> */}
       </div>
     </section>
   );
@@ -655,11 +619,12 @@ const styles = `
 .cat-banner{
   position:relative;
   display:flex;
+  align-items:center;
   gap:18px;
   background:linear-gradient(120deg,#f4fbf8 0%,#fbfefd 55%,#ffffff 100%);
   border:1px solid #eef2f2;
   border-radius:12px;
-  padding:16px 20px;
+  padding:12px 20px 12px;
   overflow:hidden;
   margin-bottom:16px;
 }
@@ -674,11 +639,11 @@ const styles = `
 }
 .cat-banner-icon img{ width:100%;height:100%;object-fit:contain; }
 .cat-banner-copy{ position:relative; z-index:1; max-width:60%; }
-.cat-banner-title{ font-size:1.3rem; font-weight:700; margin:12px 0 6px; color:#252b2b; }
-.cat-banner-desc{ font-size:.82rem; color:#6f7777; margin:0; line-height:1.5; }
+.cat-banner-title{ font-size:1.3rem; font-weight:700; margin:0 0 6px; color:#252b2b; }
+.cat-banner-desc{ font-size:.82rem; color:#6f7777; margin:0; line-height:1.4; display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden; }
 .cat-banner-media{
   margin-left:auto;
-  width:280px; height:96px;
+  width:280px; height:72px;
   border-radius:12px;
   overflow:hidden;
   flex:0 0 auto;
@@ -742,7 +707,7 @@ const styles = `
 /* Subcategory group (banner header + its item-category rows) */
 .subcat-group{ margin-bottom:28px; }
 .subcat-group > .subcat-row:last-of-type{ border-bottom:none; }
-.subcat-banner{ margin-bottom:10px; }
+.subcat-banner{ margin:16px 0 8px; }
 .cat-banner-arrow{
   position:absolute;
   top:16px;
