@@ -6,6 +6,7 @@ const ItemCategory = require('../models/ItemCategory');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const Products = require('../models/Products');
+const Users = require('../models/Users');
 const UploadImage = require('../models/UploadImage');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const getMulterUpload = require('../utils/upload');
@@ -817,11 +818,18 @@ exports.getItemCategoriesBySelectedCategoryAndSubCategory = async (req, res) => 
       attributes: ['item_category_id', [fn('COUNT', col('product_id')), 'count']],
       where: {
         is_delete: 0,
-        // is_approve: 1,
+        is_approve: 1,
         status: 1,
         category: { [Op.in]: categories },
         sub_category: { [Op.in]: subcategories },
       },
+      include: [{
+        model: Users,
+        as: 'Users',
+        attributes: [],
+        required: true,
+        where: { status: 1, is_approve: 1, is_delete: 0 },
+      }],
       group: ['item_category_id'],
       raw: true,
     });

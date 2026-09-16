@@ -9,6 +9,7 @@ const Categories = require('../models/Categories');
 const ItemCategory = require('../models/ItemCategory');
 const ItemSubCategory = require('../models/ItemSubCategory');
 const Products = require('../models/Products');
+const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
 const SellerCategory = require('../models/SellerCategory');
 const UploadImage = require('../models/UploadImage');
@@ -201,9 +202,16 @@ exports.getSubCategoriesByCategories = async (req, res) => {
       attributes: ['sub_category', [fn('COUNT', col('product_id')), 'count']],
       where: {
         is_delete: 0,
-        // is_approve: 1, 
+        is_approve: 1,
         status: 1, category: { [Op.in]: categories }
       },
+      include: [{
+        model: Users,
+        as: 'Users',
+        attributes: [],
+        required: true,
+        where: { status: 1, is_approve: 1, is_delete: 0 },
+      }],
       group: ['sub_category'],
       raw: true,
     });

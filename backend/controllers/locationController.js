@@ -68,7 +68,12 @@ exports.getStatesByCountry = async (req, res) => {
           model: Users,
           as: 'Users',
           attributes: [],
-          where: { country: country_id },
+          where: {
+            country: country_id,
+            status: 1,
+            is_approve: 1,
+            is_delete: 0,
+          },
         },
         ...(category_ids ? [{
           model: Categories,
@@ -81,7 +86,7 @@ exports.getStatesByCountry = async (req, res) => {
       ],
       where: {
         is_delete: 0,
-        // is_approve: 1,
+        is_approve: 1,
         status: 1,
         ...(subcategory_ids && { sub_category: subcategory_ids.split(',') }),
         ...(item_category_ids && { item_category_id: item_category_ids.split(',') }),
