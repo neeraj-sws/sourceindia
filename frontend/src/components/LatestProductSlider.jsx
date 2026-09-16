@@ -815,7 +815,7 @@ const LatestProductSlider = ({
                 >
                   {/* Product Name */}
 
-                  <div
+                  {/* <div
                     className="product-name"
                     style={{
                       fontSize: "13px",
@@ -823,16 +823,38 @@ const LatestProductSlider = ({
                       lineHeight: "16px",
                       color: "#111",
                       marginBottom: "4px",
+                      marginTop: "4px",
+                      textAlign: "left",
                     }}
                   >
                     {product.title?.length > 35
                       ? product.title.slice(0, 35) + "..."
                       : product.title}
-                  </div>
+                  </div> */}
+
+                   <div
+  style={{
+    fontSize: "13px",
+    fontWeight: "600",
+    lineHeight: "16px",
+    color: "#111",
+    marginTop: "6px",   
+    marginBottom: "12px",   
+    textAlign: "left",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  }}
+>
+  {product.title?.length > 35
+    ? product.title.slice(0, 35) + "..."
+    : product.title}
+</div>
+
 
 
                   {/* Comapany Name */}
-                  {product.company_name && (
+                  {/* {product.company_name && (
                     <div
                       style={{
                         fontSize: "12px",
@@ -846,7 +868,53 @@ const LatestProductSlider = ({
                     >
                       <b>Sold by :</b> {product.company_name}
                     </div>
-                  )}
+                  )} */}
+                  {/* Company Name */}
+{product.company_name && (
+  <div>
+    {/* Small separator line */}
+    <div
+      style={{
+        width: "28px",
+        height: "2px",
+        backgroundColor: "#e5e5e5",
+        marginBottom: "8px",
+        borderRadius: "2px",
+      }}
+    />
+
+    {/* Sold by */}
+    <div
+      style={{
+        fontSize: "12px",
+        lineHeight: "13px",
+        color: "#777",
+        marginBottom: "4px",
+        textAlign: "left",
+      }}
+    >
+      Sold by :
+    </div>
+
+    {/* Company Name */}
+    <div
+      style={{
+        fontSize: "12px",
+        lineHeight: "14px",
+        fontWeight: "600",
+        color: "#1683d8",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        maxWidth: "150px",
+        marginBottom: "4px"
+      }}
+    >
+      {product.company_name}
+    </div>
+  </div>
+)}
+
 
                   {/* Price */}
 
