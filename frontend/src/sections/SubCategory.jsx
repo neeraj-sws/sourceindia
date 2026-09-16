@@ -8,32 +8,32 @@ import { useParams } from "react-router-dom";
    if you already have one, e.g. lucide-react / react-icons)
 ------------------------------------------------------------------------- */
 const ICONS = {
-  machine: (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-      <path d="M4 7h9l3 3h4v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-      <circle cx="8.5" cy="15" r="1.4" fill="currentColor" />
-      <circle cx="14.5" cy="15" r="1.4" fill="currentColor" />
-    </svg>
-  ),
-  instrument: (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-      <rect x="4" y="4" width="16" height="12" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M7 20h10M12 16v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M7 8h6M7 11h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  ),
-  laser: (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-      <path d="M3 12h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx="10" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M13 12h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeDasharray="1.6 2.2" />
-    </svg>
-  ),
-  medical: (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-      <path d="M3 12h4l2-5 3 10 2-7 1.5 2H21" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
+  // machine: (
+  //   <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+  //     <path d="M4 7h9l3 3h4v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+  //     <circle cx="8.5" cy="15" r="1.4" fill="currentColor" />
+  //     <circle cx="14.5" cy="15" r="1.4" fill="currentColor" />
+  //   </svg>
+  // ),
+  // instrument: (
+  //   <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+  //     <rect x="4" y="4" width="16" height="12" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
+  //     <path d="M7 20h10M12 16v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  //     <path d="M7 8h6M7 11h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  //   </svg>
+  // ),
+  // laser: (
+  //   <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+  //     <path d="M3 12h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  //     <circle cx="10" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.6" />
+  //     <path d="M13 12h8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeDasharray="1.6 2.2" />
+  //   </svg>
+  // ),
+  // medical: (
+  //   <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+  //     <path d="M3 12h4l2-5 3 10 2-7 1.5 2H21" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  //   </svg>
+  // ),
   eye: (
     <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
       <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
@@ -41,25 +41,25 @@ const ICONS = {
     </svg>
   ),
   shield: (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+    <svg viewBox="0 0 24 24" width="40" height="40" fill="none">
       <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
       <path d="M9 12.2l2 2 4-4.4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
   badge: (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+    <svg viewBox="0 0 24 24" width="40" height="40" fill="none">
       <circle cx="12" cy="9" r="5" stroke="currentColor" strokeWidth="1.6" />
       <path d="M8.5 13.5 7 21l5-2.4 5 2.4-1.5-7.5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
     </svg>
   ),
   tag: (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+    <svg viewBox="0 0 24 24" width="40" height="40" fill="none">
       <path d="M12 3h6a2 2 0 0 1 2 2v6l-9.5 9.5a2 2 0 0 1-2.8 0L4 17.8a2 2 0 0 1 0-2.8L13.5 5.5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
       <circle cx="16.2" cy="7.8" r="1.2" fill="currentColor" />
     </svg>
   ),
   headset: (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+    <svg viewBox="0 0 24 24" width="40" height="40" fill="none">
       <path d="M4 13v-1a8 8 0 0 1 16 0v1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       <rect x="3" y="13" width="4" height="6" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
       <rect x="17" y="13" width="4" height="6" rx="1.4" stroke="currentColor" strokeWidth="1.6" />
@@ -71,10 +71,10 @@ const ICONS = {
 // Cycle a palette + icon across subcategories so every row reads distinctly,
 // the way "Optical Machine / Instruments / Laser Machine / Medical Laser" do.
 const SUBCAT_THEME = [
-  { icon: "machine", bg: "#e7f6ee", fg: "#1c9a5b" },
-  { icon: "instrument", bg: "#fdece0", fg: "#e07a2c" },
-  { icon: "laser", bg: "#e6f0ff", fg: "#2f6fed" },
-  { icon: "medical", bg: "#e6f6f7", fg: "#159aa8" },
+  { icon: "machine", bg: "#F1FAF7", fg: "#00A88A", light: "#E8F7F1" },
+  { icon: "instrument", bg: "#FFF5ED", fg: "#FF8A3D", light: "#FFEAD8" },
+  { icon: "laser", bg: "#EFF9FD", fg: "#20AEEA", light: "#DDf3FC" },
+  { icon: "medical", bg: "#E6F6F7", fg: "#159AA8", light: "#D8F1F3" },
 ];
 
 const TRUST_ITEMS = [
@@ -507,14 +507,15 @@ const SubCategory = () => {
                   <div className="cat-banner-copy">
                     <h2 className="cat-banner-title">{sub.name}</h2>
                     {sub.description && <p className="cat-banner-desc">{sub.description}</p>}
-                    <a
-                      href={`/categories/${category.slug}/${sub.slug}`}
-                      className="subcat-info-link subcat-banner-link"
-                      style={{ color: theme.fg, borderColor: theme.fg }}
-                    >
-                      View all {sub.name} Products <span>→</span>
-                    </a>
                   </div>
+                  <a
+                    href={`/categories/${category.slug}/${sub.slug}`}
+                    className="cat-banner-arrow"
+                    style={{ color: theme.fg, borderColor: theme.fg, background: theme.light }}
+                    aria-label={`View all products in ${sub.name}`}
+                  >
+                    →
+                  </a>
                   <div className="cat-banner-media" aria-hidden="true">
                     {sub.file_name ? (
                       <img
@@ -536,22 +537,23 @@ const SubCategory = () => {
                   itemCategories.map((ic) => (
                     <div className="subcat-row" key={ic.id}>
                       <div className="subcat-info">
-                        <span className="subcat-info-icon" style={{ background: theme.bg, color: theme.fg }}>
-                          <img
-                            src={ic.file_name ? `${ROOT_URL}/${ic.file_name}` : "/default.png"}
-                            alt=""
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = "/default.png";
-                            }}
-                          />
-                        </span>
-                        <h5 className="subcat-info-title">{ic.name}</h5>
-                        {ic.description && <p className="subcat-info-desc">{ic.description}</p>}
+                        <div className="subcat-info-top">
+                          <span className="subcat-info-icon" style={{ background: theme.bg, color: theme.fg }}>
+                            <img
+                              src={ic.file_name ? `${ROOT_URL}/${ic.file_name}` : "/default.png"}
+                              alt=""
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/default.png";
+                              }}
+                            />
+                          </span>
+                          <h5 className="subcat-info-title">{ic.name}</h5>
+                        </div>
                         <a
                           href={`/categories/${category.slug}/${sub.slug}/${ic.slug}`}
                           className="subcat-info-link"
-                          style={{ color: theme.fg, borderColor: theme.fg }}
+                          style={{ color: theme.fg, borderColor: theme.fg, background: theme.light }}
                         >
                           View all Products <span>→</span>
                         </a>
@@ -579,25 +581,29 @@ const SubCategory = () => {
                                 />
                               </div>
                               <div className="product-card-name">{p.title}</div>
-                              <div className="product-card-company"><b>Sold by: </b>{p.company_name}</div>
+                              {p.company_name && (
+                                <div className="product-card-company"><b>Sold by :</b> {p.company_name}</div>
+                              )}
                               {/* <div className="product-card-price">
                                 {p.price ? (
                                   <>₹{p.price}</>
                                 ) : (
                                   <span className="product-card-cta">Get Latest Price</span>
                                 )}
-                              </div>
-                              <span className="product-card-view">
-                                {ICONS.eye} View Details
-                              </span> */}
+                              </div> */}
+                              {/* <div className="product-card-view">
+                                <span>View Details</span>
+                                <span className="product-card-eye">{ICONS.eye}</span>
+                              </div> */}
                             </a>
                           ))
                         ) : (
                           [...Array(4)].map((_, j) => (
                             <div key={j} className="product-card product-card--placeholder">
-                              <Skeleton height="90px" style={{ borderRadius: 8, marginBottom: 10 }} />
-                              <Skeleton height="12px" width="80%" style={{ marginBottom: 6 }} />
-                              <Skeleton height="12px" width="55%" />
+                              <Skeleton height="104px" style={{ borderRadius: 5, marginBottom: 8 }} />
+                              <Skeleton height="12px" width="85%" style={{ marginBottom: 6 }} />
+                              <Skeleton height="11px" width="55%" style={{ marginBottom: 6 }} />
+                              <Skeleton height="11px" width="70%" />
                             </div>
                           ))
                         )}
@@ -640,20 +646,22 @@ const SubCategory = () => {
 const styles = `
 @keyframes skeleton-loading { 0% { background-position:100% 50%; } 100% { background-position:0 50%; } }
 
-.categorySection { color:#1f2430; }
+.categorySection {
+  color:#202525;
+  font-family:'Inter',Roboto,-apple-system,'Segoe UI',system-ui,Arial,sans-serif;
+}
 
 /* Hero banner */
 .cat-banner{
   position:relative;
   display:flex;
-  align-items:center;
-  gap:20px;
-  background:linear-gradient(120deg,#eef8f2 0%,#f7fbf8 55%,#ffffff 100%);
-  border:1px solid #e3efe8;
-  border-radius:16px;
-  padding:22px 24px;
+  gap:18px;
+  background:linear-gradient(120deg,#f4fbf8 0%,#fbfefd 55%,#ffffff 100%);
+  border:1px solid #eef2f2;
+  border-radius:12px;
+  padding:16px 20px;
   overflow:hidden;
-  margin-bottom:20px;
+  margin-bottom:16px;
 }
 .cat-banner-icon{
   flex:0 0 auto;
@@ -666,8 +674,8 @@ const styles = `
 }
 .cat-banner-icon img{ width:100%;height:100%;object-fit:contain; }
 .cat-banner-copy{ position:relative; z-index:1; max-width:60%; }
-.cat-banner-title{ font-size:1.5rem; font-weight:700; margin:0 0 6px; color:#12261c; }
-.cat-banner-desc{ font-size:.9rem; color:#5b6a63; margin:0; line-height:1.5; }
+.cat-banner-title{ font-size:1.3rem; font-weight:700; margin:12px 0 6px; color:#252b2b; }
+.cat-banner-desc{ font-size:.82rem; color:#6f7777; margin:0; line-height:1.5; }
 .cat-banner-media{
   margin-left:auto;
   width:280px; height:96px;
@@ -683,14 +691,14 @@ const styles = `
 }
 @media (max-width:768px){
   .cat-banner{ flex-wrap:wrap; }
-  .cat-banner-copy{ max-width:100%; }
+  .cat-banner-copy{ max-width:100%; padding-right:40px; }
   .cat-banner-media{ display:none; }
 }
 
 /* Category simple text header */
-.category-header{ margin-bottom:22px; }
-.category-header-title{ font-size:1.7rem; font-weight:700; color:#12261c; margin:0 0 4px; }
-.category-header-desc{ font-size:.92rem; color:#5b6a63; margin:0; line-height:1.5; }
+.category-header{ margin-bottom:18px; }
+.category-header-title{ font-size:1.4rem; font-weight:700; color:#252b2b; margin:0 0 4px; }
+.category-header-desc{ font-size:.82rem; color:#6f7777; margin:0; line-height:1.5; }
 
 /* Quick-nav tabs */
 .cat-tabs{
@@ -735,51 +743,86 @@ const styles = `
 .subcat-group{ margin-bottom:28px; }
 .subcat-group > .subcat-row:last-of-type{ border-bottom:none; }
 .subcat-banner{ margin-bottom:10px; }
-.subcat-banner-link{ margin-top:10px; }
+.cat-banner-arrow{
+  position:absolute;
+  top:16px;
+  right:20px;
+  width:30px;height:30px;
+  border-radius:50%;
+  border:1px solid;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;
+  font-weight:600;
+  line-height:1;
+  text-decoration:none;
+  box-shadow:0 3px 6px rgba(0,0,0,.15);
+  z-index:2;
+}
 
 /* Subcategory row */
 .subcat-row{
   display:flex;
-  gap:24px;
-  padding:22px 0;
-  border-bottom:1px solid #eef0f2;
+  gap:18px;
+  padding:18px 0;
+  border-bottom:1px solid #f0f3f3;
   scroll-margin-top:16px;
 }
 .subcat-row:last-of-type{ border-bottom:none; }
+@media (max-width:745px){
+  .subcat-row{
+    display:block;
+  }
+  .subcat-info{
+    flex:none;
+    width:100%;
+    margin-bottom:12px;
+  }
+}
 
 .subcat-info{
   flex:0 0 220px;
   display:flex;
   flex-direction:column;
-  align-items:flex-start;
-  gap:6px;
+  align-items:stretch;
+  justify-content:space-between;
+  gap:8px;
+  padding:14px;
+  background:#fff;
+  border:1px solid #eef2f2;
+  border-radius:8px;
+
 }
+.subcat-info-top{ display:flex; align-items:center; gap:10px; min-width:0; }
 .subcat-info-icon{
+  flex:0 0 auto;
   width:40px;height:40px;
-  border-radius:10px;
+  border-radius:9px;
   display:flex;align-items:center;justify-content:center;
-  margin-bottom:4px;
   overflow:hidden;
 }
-.subcat-info-icon img{ width:100%;height:100%;object-fit:contain; }
-.subcat-info-title{ font-size:1rem; font-weight:700; margin:0; color:#12261c; }
-.subcat-info-desc{ font-size:.8rem; color:#7c848c; margin:0 0 4px; line-height:1.45; }
+.subcat-info-icon img{ width:24px;height:24px;object-fit:contain; }
+.subcat-info-title{ font-size:.95rem; font-weight:700; margin:0; color:#202525; line-height:1.25; }
+.subcat-info-desc{ font-size:.72rem; color:#6f7777; margin:0; line-height:1.45; }
 .subcat-info-link{
-  font-size:.8rem;
+  font-size:.72rem;
   font-weight:600;
   text-decoration:none;
-  padding:6px 14px;
+  padding:6px 12px;
   border:1px solid;
-  border-radius:20px;
+  border-radius:6px;
   display:inline-flex;
   align-items:center;
-  gap:6px;
+  gap:5px;
+  background:#fff;
+  transition:background .15s ease;
+  align-self:flex-start;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 .subcat-scroll-wrap{ position:relative; flex:1 1 auto; min-width:0; }
 .subcat-scroll{
   display:flex;
-  gap:16px;
+  gap:12px;
   overflow-x:auto;
   overflow-y:hidden;
   scroll-behavior:smooth;
@@ -807,66 +850,84 @@ const styles = `
   transform:translateY(-50%);
   width:30px;height:30px;
   border-radius:50%;
-  border:1px solid #e0e3e7;
+  border:1px solid #e8eeee;
   background:#fff;
-  font-size:1.1rem;
+  font-size:1rem;
   line-height:1;
-  color:#4a5158;
+  color:#6f7777;
   cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 2px 6px rgba(20,30,25,.08);
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
   z-index:1;
 }
 .subcat-scroll-arrow--left{ left:-6px; }
 .subcat-scroll-arrow--right{ right:-6px; }
 
+.subcat-scroll > *{
+  flex:0 0 calc((100% - 48px)/5); /* exactly 5 cards fill the available area (4 gaps x 12px) */
+  min-width:150px;
+  box-sizing:border-box;
+}
 .product-card{
-  flex:0 0 160px;
-  border:1px solid #edeff2;
-  border-radius:10px;
-  padding:14px;
+  display:flex;
+  flex-direction:column;
+  border:1px solid #eef2f2;
+  border-radius:7px;
+  padding:10px;
   text-decoration:none;
   color:inherit;
   background:#fff;
   transition:box-shadow .15s ease, transform .15s ease;
 }
-.product-card:hover{ box-shadow:0 6px 18px rgba(20,30,25,.08); transform:translateY(-2px); }
+.product-card:hover{ box-shadow:0 4px 14px rgba(0,0,0,.06); transform:translateY(-1px); }
 .product-card--placeholder{ pointer-events:none; }
 .product-card-img{
-  width:100%; height:96px;
+  flex:0 0 auto;
+  width:100%; height:104px;
   display:flex;align-items:center;justify-content:center;
-  margin-bottom:10px;
+  margin-bottom:8px;
+  background:#f7fafa;
+  border-radius:5px;
 }
-.product-card-img img{ max-width:100%; max-height:100%; object-fit:contain; }
+.product-card-img img{ width:100%; height:100%; object-fit:contain; padding:4px; box-sizing:border-box; }
 .product-card-name{
-  font-size:.8rem; font-weight:600; color:#1f2430;
-  line-height:1.35; margin-bottom:6px;
+  font-size:.8rem; font-weight:600; color:#202525;
+  line-height:1.4; margin-bottom:5px;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  white-space: nowrap; text-overflow: ellipsis;
 }
-  .product-card-company{ font-size:.72rem; color:#0a0b0c; margin-bottom:6px; }
-.product-card-price{ font-size:.8rem; font-weight:600; color:#1c9a5b; margin-bottom:6px; }
-.product-card-cta{ color:#2f6fed; }
-.product-card-view{
-  display:inline-flex; align-items:center; gap:5px;
-  font-size:.72rem; color:#8a929c;
+.product-card-company{
+  font-size:.68rem; color:#6f7777; margin-bottom:5px;
+  display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;
 }
+.product-card-price{ font-size:.78rem; font-weight:700; color:#00a88a; margin-bottom:5px; }
+.product-card-cta{ color:#00a88a; }
+// .product-card-view{
+//   margin-top:auto; /* pins all "View Details" to the same bottom line */
+//   display:flex; align-items:center; justify-content:space-between;
+//   border-top:1px solid #f1f4f4;
+//   padding-top:7px;
+//   font-size:.68rem; color:#6f7777;
+// }
+.product-card-eye{ display:inline-flex; align-items:center; color:#8a929c; font-size:.78rem; }
 
 /* Trust bar */
 .trust-bar{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:16px;
-  background:#f7f8fa;
-  border-radius:14px;
-  padding:20px 24px;
-  margin-top:28px;
+  gap:14px;
+  background:#f3faf8;
+  border:1px solid #eaf4f1;
+  border-radius:8px;
+  padding:12px 20px;
+  margin-top:24px;
 }
 @media (max-width:900px){ .trust-bar{ grid-template-columns:repeat(2,1fr); } }
 @media (max-width:520px){ .trust-bar{ grid-template-columns:1fr; } }
-.trust-item{ display:flex; align-items:flex-start; gap:12px; }
-.trust-item-icon{ color:#1c9a5b; flex:0 0 auto; margin-top:2px; }
-.trust-item-title{ font-size:.86rem; font-weight:700; color:#1f2430; }
-.trust-item-subtitle{ font-size:.76rem; color:#8a929c; }
+.trust-item{ display:flex; align-items:center; gap:10px; }
+.trust-item-icon{ color:#00a88a; flex:0 0 auto; }
+.trust-item-title{ font-size:.8rem; font-weight:700; color:#202525; }
+.trust-item-subtitle{ font-size:.7rem; color:#6f7777; }
 `;
 
 export default SubCategory;
