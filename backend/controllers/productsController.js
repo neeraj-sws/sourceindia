@@ -1797,6 +1797,13 @@ exports.getAllCompanyInfo = async (req, res) => {
     const productCounts = await Products.findAll({
       attributes: ['company_id', [fn('COUNT', col('product_id')), 'count']],
       where: { company_id: { [Op.in]: companyIds }, is_delete: 0, is_approve: 1, status: 1 },
+      include: [{
+        model: Users,
+        as: 'Users',
+        attributes: [],
+        required: true,
+        where: { status: 1, is_approve: 1, is_delete: 0 },
+      }],
       group: ['company_id'],
       raw: true
     });
