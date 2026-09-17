@@ -682,6 +682,7 @@ exports.getSellerCount = async (req, res) => {
         SELECT 1
         FROM company_info ci
         WHERE ci.company_id = u.company_id
+          AND ci.is_delete = 0
       )
     `;
 

@@ -44,6 +44,7 @@ const ProductDetail = () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/products/details/${slug}`);
 
+     
         setProduct(res.data);
         setShowSkeleton(false);
       } catch (error) {
@@ -833,7 +834,23 @@ const ProductDetail = () => {
                         </div>
                         <div className="productlink">
                           <p className="mb-0 title-clamp">{similar.title}</p>
-                          <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2" aria-label={`View ${similar.title}`}>
+                          {similar.company_name && (
+                            similar.company_slug ? (
+                              <Link to={`/companies/${similar.company_slug}`} className="recCompany text-decoration-none" title={similar.company_name}>
+                                <span className="recBy">by </span> {similar.company_name}
+                              </Link>
+                            ) : (
+                              <p className="mb-0 recCompany" title={similar.company_name}><span className="recBy">by </span>{similar.company_name}</p>
+                            )
+                          )}
+                          {(similar.city_name || similar.state_name) && (
+                            <div className="recLocation">
+                              {similar.city_name}
+                              {similar.city_name && similar.state_name ? ', ' : ''}
+                              {similar.state_name}
+                            </div>
+                          )}
+                          <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white" aria-label={`View ${similar.title}`}>
                             <span className="pe-2">View</span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" className="filtersvg" aria-hidden="true">
                               <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z" />
