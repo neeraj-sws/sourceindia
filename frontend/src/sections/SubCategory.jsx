@@ -51,10 +51,10 @@ const ProductSlider = ({ children }) => {
 
     updateArrows();
 
-    const raf = requestAnimationFrame(updateArrows); 
+    const raf = requestAnimationFrame(updateArrows);
 
     el.addEventListener("scroll", updateArrows, { passive: true });
-    el.addEventListener("load", updateArrows, true); 
+    el.addEventListener("load", updateArrows, true);
     window.addEventListener("resize", updateArrows);
 
     let ro;
@@ -452,8 +452,8 @@ const SubCategory = () => {
             const theme = SUBCAT_THEME[si % SUBCAT_THEME.length];
             const availableItemCategories = allFetched
               ? itemCategories.filter(
-                  (ic) => (itemCatProducts[`${sub.id}_${ic.id}`] || []).length > 0
-                )
+                (ic) => (itemCatProducts[`${sub.id}_${ic.id}`] || []).length > 0
+              )
               : itemCategories;
             return (
               <div className="subcat-group" key={sub.id}>
@@ -480,7 +480,7 @@ const SubCategory = () => {
                   >
                     →
                   </a>
-                 
+
                 </div>
 
                 {availableItemCategories.length > 0 ? (
@@ -503,7 +503,7 @@ const SubCategory = () => {
                         <a
                           href={`/categories/${category.slug}/${sub.slug}/${ic.slug}`}
                           className="subcat-info-link"
-                          // style={{ color: theme.fg, borderColor: theme.fg, background: theme.light }}
+                        // style={{ color: theme.fg, borderColor: theme.fg, background: theme.light }}
                         >
                           View all Products <span>→</span>
                         </a>
@@ -691,7 +691,11 @@ const styles = `
 .cat-tab-count{ font-size:.76rem; color:#8a929c; }
 
 /* Subcategory group (banner header + its item-category rows) */
-.subcat-group{ margin-bottom:28px; }
+.subcat-group {
+    margin-bottom: 45px;
+    background: white;
+    padding: 3px 35px;
+}
 .subcat-group > .subcat-row:last-of-type{ border-bottom:none; }
 .subcat-banner{ margin:16px 0 8px; }
 .cat-banner-arrow{
@@ -711,12 +715,14 @@ const styles = `
 }
 
 /* Subcategory row */
-.subcat-row{
-  display:flex;
-  gap:18px;
-  padding:18px 0;
-  border-bottom:1px solid #f0f3f3;
-  scroll-margin-top:16px;
+.subcat-row {
+    display: flex;
+    gap: 14px;
+    padding: 7px 0;
+    border-bottom: 1px solid #f0f3f3;
+    scroll-margin-top: 16px;
+    width: 100%;
+    margin: 0 auto;
 }
 .subcat-row:last-of-type{ border-bottom:none; }
 @media (max-width:745px){
@@ -730,18 +736,18 @@ const styles = `
   }
 }
 
-.subcat-info{
-  flex:0 0 220px;
-  display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  justify-content:space-between;
-  gap:8px;
-  padding:14px;
-  background:#fff;
-  border:1px solid #eef2f2;
-  border-radius:8px;
-
+.subcat-info {
+    flex: 0 0 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px;
+    background: linear-gradient(120deg,#f4fbf8 0%,#fbfefd 55%,#ffffff 100%);
+    border: 1px solid #dee4e4;
+    border-radius: 8px;
+    
 }
 .subcat-info-top{ display:flex; align-items:center; gap:10px; min-width:0; }
 .subcat-info-icon{
@@ -771,20 +777,19 @@ const styles = `
 }
 
 .subcat-scroll-wrap{ position:relative; flex:1 1 auto; min-width:0; }
-.subcat-scroll{
-  display:flex;
-  gap:12px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  scroll-behavior:smooth;
-  padding-bottom:4px;
-  cursor:grab;
-  -webkit-overflow-scrolling:touch;
-  touch-action:pan-y; /* let vertical page scroll pass through, we own horizontal drag */
-  overscroll-behavior-x:contain;
-  /* hide the scrollbar itself while keeping the element scrollable */
-  scrollbar-width:none;      /* Firefox */
-  -ms-overflow-style:none;   /* old Edge / IE */
+.subcat-scroll {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    padding-bottom: 4px;
+    cursor: grab;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 .subcat-scroll::-webkit-scrollbar{ display:none; height:0; } /* Chrome / Safari / new Edge */
 .subcat-scroll.is-dragging{
@@ -815,7 +820,7 @@ const styles = `
 .subcat-scroll-arrow--right{ right:-6px; }
 
 .subcat-scroll > *{
-  flex:0 0 calc((100% - 48px)/5); /* exactly 5 cards fill the available area (4 gaps x 12px) */
+  flex:0 0 calc((100% - 48px)/4); /* exactly 5 cards fill the available area (4 gaps x 12px) */
   min-width:150px;
   box-sizing:border-box;
 }
@@ -834,7 +839,7 @@ const styles = `
 .product-card--placeholder{ pointer-events:none; }
 .product-card-img{
   flex:0 0 auto;
-  width:100%; height:104px;
+  width:100%; height:90px;
   display:flex;align-items:center;justify-content:center;
   margin-bottom:8px;
   background:#f7fafa;
@@ -848,8 +853,8 @@ const styles = `
   white-space: nowrap; text-overflow: ellipsis;
 }
 .product-card-company{
-  font-size:.68rem; color:#6f7777; margin-bottom:5px;
-  display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;
+  font-size:.68rem; color:#335677; margin-bottom:5px;
+  display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;font-weight:500;
 }
 .product-card-price{ font-size:.78rem; font-weight:700; color:#00a88a; margin-bottom:5px; }
 .product-card-cta{ color:#00a88a; }
