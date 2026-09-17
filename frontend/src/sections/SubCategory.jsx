@@ -488,24 +488,23 @@ const SubCategory = () => {
                     <div className="subcat-row" key={ic.id}>
                       <div className="subcat-info">
                         <div className="subcat-info-top">
-                          <span className="subcat-info-icon">
                           {ic.file_name && (
-                            <img
-                              src={`${ROOT_URL}/${ic.file_name}`}
-                              alt=""
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.style.display = "none";
-                              }}
-                            />
+                            <span className="subcat-info-icon">
+                              <img
+                                src={`${ROOT_URL}/${ic.file_name}`}
+                                alt=""
+                                onError={(e) => {
+                                  e.currentTarget.parentElement.style.display = "none";
+                                }}
+                              />
+                            </span>
                           )}
-                        </span>
                           <h5 className="subcat-info-title">{ic.name}</h5>
                         </div>
-<a
+                        <a
                           href={`/products?item_category_id=${ic.id}`}
                           className="subcat-info-link"
-                          // style={{ color: theme.fg, borderColor: theme.fg, background: theme.light }}
+                        // style={{ color: theme.fg, borderColor: theme.fg, background: theme.light }}
                         >
                           View all Products <span>→</span>
                         </a>
