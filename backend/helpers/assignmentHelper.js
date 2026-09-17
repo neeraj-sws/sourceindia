@@ -427,7 +427,7 @@ async function processExpiredAssignments() {
       status: { [Op.in]: [0, 1] },
       assigned_at: { [Op.lt]: cutoffTime },
     },
-    include: [{ model: BuyerRequirements, as: 'requirement', where: { is_delete: 0, status: { [Op.lt]: 5 } } }],
+    include: [{ model: BuyerRequirements, as: 'requirement', where: { is_delete: 0, status: { [Op.in]: [1, 2] } } }],
   });
 
   for (const assignment of expiredAssignments) {
@@ -502,6 +502,41 @@ async function processExpiredAssignments() {
   return expiredAssignments.length;
 }
 
+// Self-healing: requirements stuck in an active status (1/2) but with NO active
+// assignment (e.g. after an auto-cancel/reject where no next seller was found and
+// the status never resolved) get resolved: assign next eligible seller or -> 5.
+async function repairStuckRequirements() {
+  const stuckReqs = await BuyerRequirements.findAll({
+    where: { is_delete: 0, status: { [Op.in]: [1, 2] } },
+  });
+  let fixed = 0;
+  for (const requirement of stuckReqs) {
+    try {
+      const activeAssignment = await RequirementAssignments.findOne({
+        where: {
+          requirement_id: requirement.id,
+          status: { [Op.in]: [0, 1, 2, 3, 6] },
+        },
+      });
+      if (activeAssignment) continue;
+
+      const result = await assignSellerToRequirement(requirement.id, requirement.buyer_ip);
+      if (!result.success && !result.message.includes('already')) {
+        await requirement.update({ status: 5 });
+        await logActivity(
+          requirement.id,
+          'no_seller_found',
+          `No active assignment and no eligible seller available (${result.message})`
+        );
+      }
+      fixed++;
+    } catch (err) {
+      console.error('repairStuckRequirements error for requirement', requirement.id, err.message);
+    }
+  }
+  return fixed;
+}
+
 module.exports = {
   assignSellerToRequirement,
   manualAssignSellerToRequirement,
@@ -511,5 +546,6 @@ module.exports = {
   handleSellerComplete,
   handleSellerView,
   processExpiredAssignments,
+  repairStuckRequirements,
   notifySeller,
 };

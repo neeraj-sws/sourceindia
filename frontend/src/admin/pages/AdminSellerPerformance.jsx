@@ -61,7 +61,7 @@ export function AdminSellerPerformance() {
                 { key: "score", label: "Overall Score", sortable: false },
                 { key: "leads", label: "Monthly Used", sortable: false },
                 { key: "response", label: "Avg Response (min)", sortable: false },
-                { key: "rejection_penalty", label: "Penalty (Rejection)", sortable: false },
+                { key: "rejection_penalty", label: "Penalty (Reject + Auto)", sortable: false },
                 { key: "receiving", label: "Receive Leads", sortable: false },
               ]}
               data={data}
@@ -82,13 +82,15 @@ export function AdminSellerPerformance() {
                   <td>{row.sno ?? ((page - 1) * limit + index + 1)}</td>
                   <td>{row.seller?.fname} {row.seller?.lname}<div className="text-muted small">{row.seller?.email}</div></td>
                   <td>{row.seller?.company_info?.organization_name || "-"}</td>
-                  <td>{row.overall_performance_score ?? "-"}</td>
+                  <td>
+                    <span title={`After penalty: ${row.overall_performance_score ?? "0.00"} / 100`}>{row.base_score ?? "0.00"}</span>
+                  </td>
                   <td>{row.monthly_leads_used || 0}</td>
                   <td>{row.avg_response_minutes ?? "-"}</td>
                   <td>
-                    {row.rejection_rate_pct > 0
-                      ? <span title={`${row.rejected_leads || 0} rejected of ${row.total_leads || 0} leads`}>
-                          -{row.rejection_penalty ?? "0.00"} <span className="text-muted small">({row.rejection_rate_pct}%)</span>
+                    {(row.rejection_rate_pct > 0 || row.auto_cancel_rate_pct > 0)
+                      ? <span title={`${row.rejected_leads || 0} rejected, ${row.auto_cancelled_leads || 0} auto-cancelled of ${row.total_leads || 0} leads`}>
+                          -{row.rejection_penalty ?? "0.00"} <span className="text-muted small">({row.rejection_rate_pct}% R + {row.auto_cancel_rate_pct}% A)</span>
                         </span>
                       : "0.00"}
                   </td>

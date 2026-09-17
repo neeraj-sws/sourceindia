@@ -323,9 +323,11 @@ export function AdminBuyRequirementDetail() {
   const assignments = req.assignments || [];
   const logs = req.activity_logs || [];
 
-  const activeAssign = assignments.find((a) => a.status !== 6 && a.status !== 5 && a.status !== 4) || assignments[assignments.length - 1];
-  const assignedSellerName = activeAssign?.seller
-    ? `${activeAssign.seller.fname || ""} ${activeAssign.seller.lname || ""}`.trim()
+  const activeAssign = assignments.find((a) => a.status !== 6 && a.status !== 5 && a.status !== 4);
+  const showAssignedTo = [1, 2, 3].includes(req.status);
+  const displayedAssign = showAssignedTo ? (activeAssign || assignments[assignments.length - 1]) : null;
+  const assignedSellerName = displayedAssign?.seller
+    ? `${displayedAssign.seller.fname || ""} ${displayedAssign.seller.lname || ""}`.trim()
     : "-";
 
   return (

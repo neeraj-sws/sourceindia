@@ -56,7 +56,7 @@ const membershipPlansRoutes = require('./routes/membershipPlansRoutes');
 const buyerEnquiryRoutes = require('./routes/buyerEnquiryRoutes');
 const buyerRequirementsRoutes = require('./routes/buyerRequirementsRoutes');
 const adminBuyerRequirementsRoutes = require('./routes/adminBuyerRequirementsRoutes');
-const { processExpiredAssignments } = require('./helpers/assignmentHelper');
+const { processExpiredAssignments, repairStuckRequirements } = require('./helpers/assignmentHelper');
 
 
 const app = express();
@@ -162,6 +162,14 @@ sequelize
         }
       } catch (err) {
         console.error('[SLA Processor] Error:', err.message);
+      }
+      try {
+        const fixed = await repairStuckRequirements();
+        if (fixed > 0) {
+          console.log(`[SLA Processor] Repaired ${fixed} stuck requirements`);
+        }
+      } catch (err) {
+        console.error('[SLA Processor] Repair error:', err.message);
       }
     }, 2 * 60 * 1000);
     console.log('[SLA Processor] Started (interval: 2 minutes)');

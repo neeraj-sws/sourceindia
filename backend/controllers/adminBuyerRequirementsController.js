@@ -163,7 +163,7 @@ async function getSellerPerformanceAdmin(req, res) {
         attributes: ['id', 'fname', 'lname', 'email'],
         include: [{ model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] }],
       }],
-      order: [['seller_id', 'ASC']],
+      order: [['overall_performance_score', 'DESC'], ['seller_id', 'ASC']],
       limit: parseInt(limit),
       offset,
     });
@@ -176,19 +176,24 @@ async function getSellerPerformanceAdmin(req, res) {
       const respondedLeads = Number(perf.responded_leads) || 0;
       const acceptedLeads = Number(perf.accepted_leads) || 0;
       const rejectedLeads = Number(perf.rejected_leads) || 0;
+      const autoCancelledLeads = Number(perf.auto_cancelled_leads) || 0;
       const onTimePct = respondedLeads > 0 ? ((Number(perf.on_time_response_count) || 0) / respondedLeads * 100) : 0;
       const acceptancePct = totalLeads > 0 ? (acceptedLeads / totalLeads * 100) : 0;
       const rejectionRate = totalLeads > 0 ? (rejectedLeads / totalLeads) : 0;
+      const autoCancelRate = totalLeads > 0 ? (autoCancelledLeads / totalLeads) : 0;
+      const penaltyRate = totalLeads > 0 ? ((rejectedLeads + autoCancelledLeads) / totalLeads) : 0;
       const baseScore = totalLeads > 0
         ? ((completedLeads / totalLeads) * 40 + (onTimePct / 100) * 30 + (acceptancePct / 100) * 30)
         : 0;
       return {
         ...perf,
         sno: offset + idx + 1,
+        base_score: Math.round(baseScore * 100) / 100,
         avg_response_seconds: avgSeconds,
         avg_response_minutes: avgSeconds > 0 ? Math.round((avgSeconds / 60) * 10) / 10 : 0,
         rejection_rate_pct: Math.round(rejectionRate * 10000) / 100,
-        rejection_penalty: Math.round(baseScore * rejectionRate * 100) / 100,
+        auto_cancel_rate_pct: Math.round(autoCancelRate * 10000) / 100,
+        rejection_penalty: Math.round(baseScore * penaltyRate * 100) / 100,
       };
     });
 
@@ -335,11 +340,16 @@ async function getSellersForAssign(req, res) {
     const config = await getSystemConfig();
     // No product with this keyword exists anywhere in the system -> block assignment.
     if (!(await isProductAvailableForKeyword(requirement.product_keyword_id))) {
-      return res.json({ sellers: [], message: 'Product is not available in the system.', productAvailable: false });
+      const hadSeller = (await RequirementAssignments.count({ where: { requirement_id: requirement.id } })) > 0;
+      return res.json({
+        sellers: [],
+        message: hadSeller ? 'No Seller Found' : 'Product is not available in the system.',
+        productAvailable: false,
+      });
     }
     const candidates = await findEligibleSellers(requirement, config.candidate_pool_size);
     if (candidates.length === 0) {
-      return res.json({ sellers: [], message: 'This product is not available with any seller.', productAvailable: true });
+      return res.json({ sellers: [], message: 'No Seller Found', productAvailable: true });
     }
 
     const enriched = await enrichSellers(candidates, requirement);
@@ -354,7 +364,7 @@ async function getSellersForAssign(req, res) {
     if (matched.length === 0) {
       const msg = search && search.trim()
         ? 'No seller found matching the search for this product.'
-        : 'No eligible seller remains for this requirement.';
+        : 'No Seller Found';
       return res.json({ sellers: [], message: msg, productAvailable: true });
     }
 

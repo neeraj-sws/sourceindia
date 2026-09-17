@@ -27,7 +27,7 @@ async function findEligibleSellers(requirement, candidatePoolSize) {
   const assignedSellerIds = await RequirementAssignments.findAll({
     where: {
       requirement_id: requirement.id,
-      status: { [Op.in]: [0, 1, 2, 3, 4, 6] },
+      status: { [Op.in]: [0, 1, 2, 3, 4, 5, 6] },
     },
     attributes: ['seller_id'],
     raw: true,
