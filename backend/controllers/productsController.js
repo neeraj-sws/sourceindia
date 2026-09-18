@@ -1369,13 +1369,6 @@ exports.getProductsDetail = async (req, res) => {
       };
     });
 
-    console.log('=== SIMILAR PRODUCTS DEBUG ===');
-    similarProducts.forEach(p => {
-      console.log(`productId=${p.id} | company_id=${p.company_id} | user_id=${p.user_id} | sellerCompanyExists=${!!p.Users?.company_info} | directCompanyExists=${!!p.company_info}`);
-    });
-    console.log('company_name values:', formattedSimilarProducts.map(p => ({ id: p.id, company_name: p.company_name })));
-    console.log('=== END SIMILAR PRODUCTS DEBUG ===');
-
     // Recommended companies (simplified)
     const allCompanies = await CompanyInfo.findAll({
       where: { id: { [Op.ne]: productData.company_info?.id } },

@@ -3,6 +3,7 @@ import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import { useParams } from "react-router-dom";
 import LatestProductSlider from "../components/LatestProductSlider";
+import getDiverseProducts from "./../utils/getDiverseProducts";
 
 const ItemCategory = () => {
   const { slug } = useParams();
@@ -75,15 +76,24 @@ const ItemCategory = () => {
             status: 1,
             is_approve: 1,
             is_front: 1,
-            limit: 10,
+            limit: 50,
             sort_by: "newest",
           },
         });
 
         if (!cancelled) {
+          const latestProducts = res.data.products || [];
+
+          // Keep a diverse mix: different item-subcategories
+          // and varied companies instead of one source
+          const diverseProducts = getDiverseProducts(
+            latestProducts,
+            50
+          );
+
           setCatProducts((prev) => ({
             ...prev,
-            [cat.id]: res.data.products || [],
+            [cat.id]: diverseProducts,
           }));
         }
       } catch (err) {

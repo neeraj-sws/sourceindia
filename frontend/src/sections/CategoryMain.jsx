@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import API_BASE_URL, { ROOT_URL } from "./../config";
 import LatestProductSlider from "../components/LatestProductSlider";
+import getDiverseProducts from "./../utils/getDiverseProducts";
 
 const CategoryMain = ({ isHome, limit }) => {
   const [categories, setCategories] = useState([]);
@@ -62,8 +63,8 @@ const CategoryMain = ({ isHome, limit }) => {
               is_approve: 1,
               is_front: 1,
 
-              // Latest 10 products
-              limit: 10,
+              // Larger pool so we can pick a diverse mix
+              limit: 50,
 
               // Newest first
               sort_by: "newest",
@@ -72,9 +73,20 @@ const CategoryMain = ({ isHome, limit }) => {
 
           if (cancelled) return;
 
+          const latestProducts = res.data?.products || [];
+
+          // Keep a diverse mix: different item-subcategories
+          // and varied companies instead of one source
+          const diverseProducts = getDiverseProducts(
+            latestProducts,
+            50
+          );
+
+          // console.log(diverseProducts.map(p => p.item_subcategory_name))
+
           setCatProducts((prev) => ({
             ...prev,
-            [cat.id]: res.data?.products || [],
+            [cat.id]: diverseProducts,
           }));
         } catch (err) {
           console.error(
