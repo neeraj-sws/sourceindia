@@ -37,6 +37,7 @@ const ProductDetail = () => {
   const [shareQty, setShareQty] = useState("");
   const [popularCategories, setPopularCategories] = useState([]);
   const [currentItemTypes, setCurrentItemTypes] = useState([]);
+  const [itemSubcategoryId, setItemSubcategoryId] = useState(null);
   const { user } = UseAuth();
 
   useEffect(() => {
@@ -80,6 +81,7 @@ const ProductDetail = () => {
 
       if (!itemCategoryName) {
         setCurrentItemTypes([]);
+        setItemSubcategoryId(null);
         return;
       }
 
@@ -96,6 +98,13 @@ const ProductDetail = () => {
             res.data?.data ||
             []
           );
+
+        const currentItemSubCategory = itemSubCategories.find((item) => {
+          const itemCategoryLabel = String(item.itemcategory_name || item.item_category_name || item?.ItemCategory?.name || "").trim().toLowerCase();
+          const itemName = String(item.name || "").trim().toLowerCase();
+          return itemCategoryLabel === itemCategoryName && itemName === currentItemSubCategoryName;
+        });
+        setItemSubcategoryId(currentItemSubCategory?.id || null);
 
         const matched = itemSubCategories
           .filter((item) => {
@@ -616,6 +625,23 @@ const ProductDetail = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="pd-similar-banner">
+                  <img
+                    src="/similar-product-img.png"
+                    alt="Discover similar products"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <Link
+                    to={`/products?item_subcategory_id=${itemSubcategoryId || ''}`}
+                    className="pd-similar-cta"
+                    aria-label="View similar products"
+                  >
+                    View Similar Products
+                    <span className="pd-similar-cta-arrow" aria-hidden="true">→</span>
+                  </Link>
                 </div>
 
                 <div className="pd-quote-widget">
