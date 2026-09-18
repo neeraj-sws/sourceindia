@@ -374,7 +374,7 @@ const SubCategory = () => {
       style={{
         width,
         height,
-        background: "linear-gradient(90deg,#e0e0e0 25%,#f5f5f5 37%,#e0e0e0 63%)",
+        background: "#edf7fc",
         backgroundSize: "400% 100%",
         animation: "skeleton-loading 1.4s ease infinite",
         borderRadius: "6px",
@@ -531,10 +531,12 @@ const SubCategory = () => {
                                   }}
                                 />
                               </div>
-                              <div className="product-card-name">{p.title}</div>
-                              {p.company_name && (
-                                <div className="product-card-company"><b>Sold by :</b> {p.company_name}</div>
-                              )}
+                              <div>
+                                <div className="product-card-name">{p.title}</div>
+                                {p.company_name && (
+                                  <div className="product-card-company"><b class="soldtext">Sold by :</b> {p.company_name}</div>
+                                )}
+                              </div>
                               {/* <div className="product-card-price">
                                 {p.price ? (
                                   <>₹{p.price}</>
@@ -603,26 +605,29 @@ const styles = `
 }
 
 /* Hero banner */
-.cat-banner{
-  position:relative;
-  display:flex;
-  align-items:center;
-  gap:18px;
-  background:linear-gradient(120deg,#f4fbf8 0%,#fbfefd 55%,#ffffff 100%);
-  border:1px solid #eef2f2;
-  border-radius:12px;
-  padding:12px 20px 12px;
-  overflow:hidden;
-  margin-bottom:16px;
+.cat-banner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #edf7fc;
+    border: 1px solid #eef2f2;
+    border-radius: 12px;
+    padding: 8px 8px 8px;
+    overflow: hidden;
+    margin-bottom: 16px;
 }
-.cat-banner-icon{
-  flex:0 0 auto;
-  width:52px;height:52px;
-  border-radius:12px;
-  background:#0f6d3f;
-  color:#fff;
-  display:flex;align-items:center;justify-content:center;
-  overflow:hidden;
+.cat-banner-icon {
+    flex: 0 0 auto;
+    width: 45px;
+    height: 35px;
+    border-radius: 12px;
+    background: #0f6d3f;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 .cat-banner-icon img{ width:100%;height:100%;object-fit:contain; }
 .cat-banner-copy{ position:relative; z-index:1; max-width:60%; }
@@ -693,15 +698,17 @@ const styles = `
 
 /* Subcategory group (banner header + its item-category rows) */
 .subcat-group {
-    margin-bottom: 45px;
+    margin-bottom: 25px;
     background: white;
-    padding: 3px 35px;
+    padding: 1px 15px;
+    box-shadow: 0 0 2px rgb(170 161 161 / 99%);
+    border-radius: 8px;
 }
 .subcat-group > .subcat-row:last-of-type{ border-bottom:none; }
 .subcat-banner{ margin:16px 0 8px; }
 .cat-banner-arrow{
   position:absolute;
-  top:16px;
+  top:10px;
   right:20px;
   width:30px;height:30px;
   border-radius:50%;
@@ -738,14 +745,14 @@ const styles = `
 }
 
 .subcat-info {
-    flex: 0 0 260px;
+    flex: 0 0 200px;
     display: flex;
     flex-direction: column;
     align-items: stretch;
     justify-content: space-between;
     gap: 8px;
     padding: 14px;
-    background: linear-gradient(120deg,#f4fbf8 0%,#fbfefd 55%,#ffffff 100%);
+    background: #edf7fc;
     border: 1px solid #dee4e4;
     border-radius: 8px;
     
@@ -759,22 +766,22 @@ const styles = `
   overflow:hidden;
 }
 .subcat-info-icon img{ width:24px;height:24px;object-fit:contain; }
-.subcat-info-title{ font-size:.95rem; font-weight:700; margin:0; color:#202525; line-height:1.25; }
+.subcat-info-title{ font-size:14px; font-weight:700; margin:0; color:#202525; line-height:1.25; }
 .subcat-info-desc{ font-size:.72rem; color:#6f7777; margin:0; line-height:1.45; }
-.subcat-info-link{
-  font-size:.72rem;
-  font-weight:600;
-  text-decoration:none;
-  padding:6px 12px;
-  border:1px solid;
-  border-radius:6px;
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  background:#fff;
-  transition:background .15s ease;
-  align-self:flex-start;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+.subcat-info-link {
+    font-size: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 4px 10px;
+    border: 1px solid;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #fff;
+    transition: background .15s ease;
+    align-self: flex-start;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 .subcat-scroll-wrap{ position:relative; flex:1 1 auto; min-width:0; }
@@ -817,17 +824,20 @@ const styles = `
   box-shadow:0 1px 4px rgba(0,0,0,.05);
   z-index:1;
 }
+  .soldtext {
+    color: #335577;
+}
 .subcat-scroll-arrow--left{ left:-6px; }
 .subcat-scroll-arrow--right{ right:-6px; }
 
 .subcat-scroll > *{
-  flex:0 0 calc((100% - 48px)/4); /* exactly 5 cards fill the available area (4 gaps x 12px) */
+  flex:0 0 calc((100% - 48px)/3); /* exactly 5 cards fill the available area (4 gaps x 12px) */
   min-width:150px;
   box-sizing:border-box;
 }
 .product-card{
   display:flex;
-  flex-direction:column;
+  // flex-direction:column;
   border:1px solid #eef2f2;
   border-radius:7px;
   padding:10px;
@@ -835,12 +845,14 @@ const styles = `
   color:inherit;
   background:#fff;
   transition:box-shadow .15s ease, transform .15s ease;
+  align-items: center;
+    gap: 6px;
 }
-.product-card:hover{ box-shadow:0 4px 14px rgba(0,0,0,.06); transform:translateY(-1px); }
+.product-card:hover{ box-shadow:0 4px 14px rgba(0,0,0,.06);  }
 .product-card--placeholder{ pointer-events:none; }
 .product-card-img{
   flex:0 0 auto;
-  width:100%; height:90px;
+  width:90px; height:75px;
   display:flex;align-items:center;justify-content:center;
   margin-bottom:8px;
   background:#f7fafa;
@@ -851,10 +863,10 @@ const styles = `
   font-size:.8rem; font-weight:600; color:#202525;
   line-height:1.4; margin-bottom:5px;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-  white-space: nowrap; text-overflow: ellipsis;
+  white-space: wrap; text-overflow: ellipsis;
 }
 .product-card-company{
-  font-size:.68rem; color:#335677; margin-bottom:5px;
+  font-size:.68rem; color:#ff6600; margin-bottom:5px;
   display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;font-weight:500;
 }
 .product-card-price{ font-size:.78rem; font-weight:700; color:#00a88a; margin-bottom:5px; }
