@@ -37,6 +37,7 @@ const ProductDetail = () => {
   const [shareQty, setShareQty] = useState("");
   const [popularCategories, setPopularCategories] = useState([]);
   const [currentItemTypes, setCurrentItemTypes] = useState([]);
+  const [itemSubcategoryId, setItemSubcategoryId] = useState(null);
   const { user } = UseAuth();
 
   useEffect(() => {
@@ -44,6 +45,7 @@ const ProductDetail = () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/products/details/${slug}`);
 
+     
         setProduct(res.data);
         setShowSkeleton(false);
       } catch (error) {
@@ -79,6 +81,7 @@ const ProductDetail = () => {
 
       if (!itemCategoryName) {
         setCurrentItemTypes([]);
+        setItemSubcategoryId(null);
         return;
       }
 
@@ -95,6 +98,13 @@ const ProductDetail = () => {
             res.data?.data ||
             []
           );
+
+        const currentItemSubCategory = itemSubCategories.find((item) => {
+          const itemCategoryLabel = String(item.itemcategory_name || item.item_category_name || item?.ItemCategory?.name || "").trim().toLowerCase();
+          const itemName = String(item.name || "").trim().toLowerCase();
+          return itemCategoryLabel === itemCategoryName && itemName === currentItemSubCategoryName;
+        });
+        setItemSubcategoryId(currentItemSubCategory?.id || null);
 
         const matched = itemSubCategories
           .filter((item) => {
@@ -617,6 +627,23 @@ const ProductDetail = () => {
                   </div>
                 </div>
 
+                <div className="pd-similar-banner">
+                  <img
+                    src="/similar-product-img.png"
+                    alt="Discover similar products"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <Link
+                    to={`/products?item_subcategory_id=${itemSubcategoryId || ''}`}
+                    className="pd-similar-cta"
+                    aria-label="View similar products"
+                  >
+                    View Similar Products
+                    <span className="pd-similar-cta-arrow" aria-hidden="true">→</span>
+                  </Link>
+                </div>
+
                 <div className="pd-quote-widget">
                   <p className="pd-qw-title">Looking for <span>{product.title}?</span></p>
                   <label>Quantity</label>
@@ -833,7 +860,23 @@ const ProductDetail = () => {
                         </div>
                         <div className="productlink">
                           <p className="mb-0 title-clamp">{similar.title}</p>
-                          <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white mt-2" aria-label={`View ${similar.title}`}>
+                          {similar.company_name && (
+                            similar.company_slug ? (
+                              <Link to={`/companies/${similar.company_slug}`} className="recCompany text-decoration-none" title={similar.company_name}>
+                                <span className="recBy">by </span> {similar.company_name}
+                              </Link>
+                            ) : (
+                              <p className="mb-0 recCompany" title={similar.company_name}><span className="recBy">by </span>{similar.company_name}</p>
+                            )
+                          )}
+                          {(similar.city_name || similar.state_name) && (
+                            <div className="recLocation">
+                              {similar.city_name}
+                              {similar.city_name && similar.state_name ? ', ' : ''}
+                              {similar.state_name}
+                            </div>
+                          )}
+                          <Link to={`/products/${similar.slug}`} className="d-inline-block pt-2 btn btn-primary lh-1 text-white" aria-label={`View ${similar.title}`}>
                             <span className="pe-2">View</span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="15" viewBox="4 9.28 23.91 13.44" className="filtersvg" aria-hidden="true">
                               <path d="M21.188 9.281 19.78 10.72 24.063 15H4v2h20.063l-4.282 4.281 1.407 1.438L27.905 16Z" />

@@ -1091,3 +1091,69 @@ strong {
 .modal .btn-close:hover {
     opacity: 1;
 }
+
+/* ============================================================
+   Similar Products banner — sidebar CTA (above quote widget)
+   ============================================================ */
+.pd-similar-banner {
+    position: relative;
+    margin-top: 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e4ecf8;
+}
+
+.pd-similar-banner img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+.pd-similar-banner .pd-similar-cta {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    color: #001e98;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    padding: 7px 56px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: normal;
+    text-align: center;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.pd-similar-banner .pd-similar-cta:hover {
+    background: #f9fafb;
+    color: #00449c;
+    border-color: #D1D5DB;
+}
+
+.pd-similar-banner .pd-similar-cta-arrow {
+    font-size: 17px;
+    line-height: 1;
+}
+
+@media (max-width: 575.98px) {
+    .pd-similar-banner .pd-similar-cta {
+        bottom: 12px;
+        font-size: 14px;
+        padding: 10px 16px;
+        gap: 6px;
+    }
+
+    .pd-similar-banner .pd-similar-cta-arrow {
+        font-size: 15px;
+    }
+}

@@ -1326,16 +1326,55 @@ exports.getProductsDetail = async (req, res) => {
 
     const similarProducts = await Products.findAll({
       where: similarWhere,
-      attributes: ['id', 'title', 'file_ids', 'slug'],
-      include: [{ model: UploadImage, as: 'file', attributes: ['file'] }]
+      attributes: ['id', 'title', 'file_ids', 'slug', 'company_id', 'user_id'],
+      include: [
+        { model: UploadImage, as: 'file', attributes: ['file'] },
+        {
+          model: Users,
+          as: 'Users',
+          attributes: ['id'],
+          include: [
+            {
+              model: CompanyInfo,
+              as: 'company_info',
+              attributes: ['organization_name', 'organization_slug', 'company_location']
+            },
+            { model: States, as: 'state_data', attributes: ['name'] },
+            { model: Cities, as: 'city_data', attributes: ['name'] }
+          ]
+        },
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['organization_name', 'organization_slug', 'company_location']
+        }
+      ]
     });
 
-    const formattedSimilarProducts = similarProducts.map(p => ({
-      id: p.id,
-      slug: p.slug,
-      title: p.title,
-      file_name: p.file?.file || null,
-    }));
+    const formattedSimilarProducts = similarProducts.map(p => {
+      const sellerCompany = p.Users?.company_info || null;
+      const directCompany = p.company_info || null;
+      const company = sellerCompany || directCompany;
+      return {
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        file_name: p.file?.file || null,
+        product_company_id: p.company_id || null,
+        seller_id: p.Users?.id || null,
+        company_name: company?.organization_name || null,
+        company_slug: company?.organization_slug || null,
+        city_name: p.Users?.city_data?.name || null,
+        state_name: p.Users?.state_data?.name || null,
+      };
+    });
+
+    console.log('=== SIMILAR PRODUCTS DEBUG ===');
+    similarProducts.forEach(p => {
+      console.log(`productId=${p.id} | company_id=${p.company_id} | user_id=${p.user_id} | sellerCompanyExists=${!!p.Users?.company_info} | directCompanyExists=${!!p.company_info}`);
+    });
+    console.log('company_name values:', formattedSimilarProducts.map(p => ({ id: p.id, company_name: p.company_name })));
+    console.log('=== END SIMILAR PRODUCTS DEBUG ===');
 
     // Recommended companies (simplified)
     const allCompanies = await CompanyInfo.findAll({

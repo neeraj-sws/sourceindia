@@ -492,23 +492,59 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  margin-bottom: 4px;
 }
 
 
 
 /* Ensure location line appears under title in productBox cards (used on ProductsDetail) */
 .companyProducts .productBox .productlink .recLocation {
-  font-size: 0.8rem;
+  font-size: 13px;
   color: #6c757d;
-  margin-top: 8px;
-  margin-bottom: 6px;
+  margin: 0;
   display: block;
   text-align: center;
 }
 
-.companyProducts .productBox .productlink .recLocation .recLocIcon {
-  margin-right: 6px;
+.companyProducts .productBox .productlink .recBy {
   color: #6c757d;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.companyProducts .productBox .productlink .recCompany {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: center;
+  font-size: 13px;
+  color: #3B3B3B;
+  font-weight: 500;
+  line-height: 1.25;
+  margin: 4px 0;
+  min-height: auto;
+}
+
+/* More space above the View button (Find Similar Products / product carousels) */
+.similar-products-carousel .productBox .productlink .btn {
+  margin-top: 16px !important;
+}
+
+/* Compact product title in similar-products carousels (reserve 2 lines so company name & location stay aligned across cards) */
+.similar-products-carousel .productBox .productlink p.title-clamp {
+  -webkit-line-clamp: 2;
+  min-height: 36px;
+  margin-bottom: 4px;
+}
+
+/* Keep company name & location on fixed single lines so all cards align */
+.similar-products-carousel .productBox .productlink .recCompany {
+  min-height: 17px;
+}
+
+.similar-products-carousel .productBox .productlink .recLocation {
+  min-height: 17px;
 }
 
 .companyProducts .productBox .productlink .recName,
