@@ -107,6 +107,7 @@ const AddProduct = () => {
       const aTokenMatchScore = getTokenMatchScore(queryTokens, aTokens);
       const bTokenMatchScore = getTokenMatchScore(queryTokens, bTokens);
       if (aTokenMatchScore !== bTokenMatchScore) return bTokenMatchScore - aTokenMatchScore;
+      if (aTokens.length !== bTokens.length) return bTokens.length - aTokens.length;
 
       const aPrefix = aTitle.startsWith(normalizedQuery) ? 1 : 0;
       const bPrefix = bTitle.startsWith(normalizedQuery) ? 1 : 0;
