@@ -5,6 +5,7 @@ const ItemCategory = require('../models/ItemCategory');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const Products = require('../models/Products');
+const { getKeywordMatchMetrics, compareProductKeywordSuggestions, normalizeMatchWord } = require('./productKeywordRanking');
 
 const SUGGEST_MATCH_STOP_WORDS = new Set([
   'i', 'we', 'our', 'us', 'are', 'is', 'am', 'be', 'being', 'been', 'me', 'my', 'mine', 'ours', 'you', 'your', 'yours',
@@ -213,26 +214,7 @@ const isSuggestWordMatch = (queryWord = '', keywordWord = '') => {
 };
 
 const getSuggestWordMatchStats = (queryWords = [], keywordWords = []) => {
-  const usedKeywordIndexes = new Set();
-  const matchedQueryWords = [];
-  const matchedKeywordWords = [];
-
-  queryWords.forEach((queryWord) => {
-    const keywordIndex = keywordWords.findIndex(
-      (keywordWord, index) => !usedKeywordIndexes.has(index) && isSuggestWordMatch(queryWord, keywordWord)
-    );
-
-    if (keywordIndex === -1) return;
-
-    usedKeywordIndexes.add(keywordIndex);
-    matchedQueryWords.push(queryWord);
-    matchedKeywordWords.push(keywordWords[keywordIndex]);
-  });
-
-  return {
-    matchedQueryWords: Array.from(new Set(matchedQueryWords)),
-    matchedKeywordWords: Array.from(new Set(matchedKeywordWords)),
-  };
+  return getKeywordMatchMetrics(queryWords, keywordWords);
 };
 
 const isStrongHeaderSuggestion = (suggestion) => {
@@ -282,6 +264,7 @@ const fetchWeightedProductKeywordSuggestions = async ({
 
   const keywordWhere = { status: 1 };
   const dbSearchWords = queryWords
+    .map(normalizeMatchWord)
     .filter(word => word.length >= 2);
 
   if (!dbSearchWords.length) {
@@ -360,9 +343,17 @@ const fetchWeightedProductKeywordSuggestions = async ({
     const normalizedKeyword = normalizeTextForSuggest(keyword.name);
     const keywordWords = tokenizeForSuggest(keyword.name);
     const keywordOrderTokens = tokenizeForOrder(keyword.name);
-    const { matchedQueryWords, matchedKeywordWords } = getSuggestWordMatchStats(queryWords, keywordWords);
-    const matchedQueryWordCount = matchedQueryWords.length;
-    const matchedKeywordWordCount = matchedKeywordWords.length;
+    const matchMetrics = getSuggestWordMatchStats(queryWords, keywordWords);
+    const {
+      matchedQueryWords,
+      matchedKeywordWords,
+      matchedQueryWordCount,
+      matchedKeywordWordCount,
+      keywordCoverage,
+      queryCoverage,
+      longestConsecutiveMatch,
+      fullKeywordMatch,
+    } = matchMetrics;
 
     const exactMatch = normalizedKeyword === normalizedQuery;
     const phrasePrefixMatch = normalizedQuery.length >= 2 && normalizedKeyword.startsWith(normalizedQuery);
@@ -379,8 +370,6 @@ const fetchWeightedProductKeywordSuggestions = async ({
       matchedKeywordWordCount * 50 -
       (keywordWords.length - matchedKeywordWordCount) * 10;
 
-    const keywordCoverage = keywordWords.length ? matchedKeywordWordCount / keywordWords.length : 0;
-    const queryCoverage = queryWords.length ? matchedQueryWordCount / queryWords.length : 0;
     let confidenceScore =
       (queryCoverage * 0.9) +
       (keywordCoverage * 0.1);
@@ -421,6 +410,10 @@ const fetchWeightedProductKeywordSuggestions = async ({
       matched_query_words: matchedQueryWords,
       matched_query_word_count: matchedQueryWordCount,
       matched_keyword_word_count: matchedKeywordWordCount,
+      keyword_coverage: keywordCoverage,
+      query_coverage: queryCoverage,
+      longest_consecutive_match: longestConsecutiveMatch,
+      full_keyword_match: fullKeywordMatch,
       query_word_count: queryWords.length,
       keyword_word_count: keywordWords.length,
       full_query_match: queryWords.length > 0 && matchedQueryWordCount === queryWords.length,
@@ -431,16 +424,7 @@ const fetchWeightedProductKeywordSuggestions = async ({
 
   const fullyMatched = scored
     .filter(x => x.full_query_match)
-    .sort((a, b) => {
-
-      if (a.exact_title_match !== b.exact_title_match)
-        return a.exact_title_match ? -1 : 1;
-
-      if (a.match_score !== b.match_score)
-        return b.match_score - a.match_score;
-
-      return a.keyword_word_count - b.keyword_word_count;
-    });
+    .sort(compareProductKeywordSuggestions);
 
   if (fullyMatched.length) {
     return {
@@ -469,92 +453,7 @@ const fetchWeightedProductKeywordSuggestions = async ({
 
 
 
-  matchedScored.sort((a, b) => {
-    const aExactPhrase = normalizeTextForSuggest(a.title) === normalizedQuery;
-    const bExactPhrase = normalizeTextForSuggest(b.title) === normalizedQuery;
-    if (aExactPhrase !== bExactPhrase) return aExactPhrase ? -1 : 1;
-
-    const aContainsPhrase = normalizeTextForSuggest(a.title).includes(normalizedQuery);
-    const bContainsPhrase = normalizeTextForSuggest(b.title).includes(normalizedQuery);
-    if (aContainsPhrase !== bContainsPhrase) return aContainsPhrase ? -1 : 1;
-
-    const aHasAllWords =
-      a.matched_query_word_count === queryWords.length;
-
-    const bHasAllWords =
-      b.matched_query_word_count === queryWords.length;
-
-    if (aHasAllWords !== bHasAllWords)
-      return aHasAllWords ? -1 : 1;
-
-
-
-    if (aHasAllWords !== bHasAllWords)
-      return aHasAllWords ? -1 : 1;
-
-    if (a.full_query_match !== b.full_query_match)
-      return a.full_query_match ? -1 : 1;
-
-    if (a.matched_query_word_count !== b.matched_query_word_count)
-      return b.matched_query_word_count - a.matched_query_word_count;
-
-    if (a.exact_word_match !== b.exact_word_match)
-      return a.exact_word_match ? -1 : 1;
-
-    if (a.exact_title_match !== b.exact_title_match)
-      return a.exact_title_match ? -1 : 1;
-
-    if (a.exact_match !== b.exact_match)
-      return a.exact_match ? -1 : 1;
-
-    if (a.full_query_match !== b.full_query_match)
-      return a.full_query_match ? -1 : 1;
-
-
-    const aCoverage = a.matched_query_word_count / Math.max(1, a.query_word_count);
-    const bCoverage = b.matched_query_word_count / Math.max(1, b.query_word_count);
-
-    if (aCoverage !== bCoverage)
-      return bCoverage - aCoverage;
-
-
-
-    if (a.matched_query_word_count !== b.matched_query_word_count)
-      return b.matched_query_word_count - a.matched_query_word_count;
-
-    if (a.match_score !== b.match_score)
-      return b.match_score - a.match_score;
-
-    if (a.confidence_score !== b.confidence_score)
-      return b.confidence_score - a.confidence_score;
-
-    if (a.phrase_prefix_match !== b.phrase_prefix_match)
-      return a.phrase_prefix_match ? -1 : 1;
-
-    if (a.leading_prefix_token_score !== b.leading_prefix_token_score)
-      return b.leading_prefix_token_score - a.leading_prefix_token_score;
-
-    if (a.phrase_includes_match !== b.phrase_includes_match)
-      return a.phrase_includes_match ? -1 : 1;
-
-
-    // // Same first word ko priority
-    // const aStarts = tokenizeForSuggest(a.title)[0] === queryWords[0];
-    // const bStarts = tokenizeForSuggest(b.title)[0] === queryWords[0];
-
-    // if (aStarts !== bStarts)
-    //     return aStarts ? -1 : 1;
-
-    // Jis keyword me extra words kam hon usko priority
-    const aExtraWords = a.keyword_word_count - a.matched_keyword_word_count;
-    const bExtraWords = b.keyword_word_count - b.matched_keyword_word_count;
-
-    if (aExtraWords !== bExtraWords)
-      return aExtraWords - bExtraWords;
-
-    return a.keyword_word_count - b.keyword_word_count;
-
-  });
+  matchedScored.sort(compareProductKeywordSuggestions);
 
   let suggestions = matchedScored;
 

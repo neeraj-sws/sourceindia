@@ -1,5 +1,6 @@
 // Product name autocomplete with master data
 const { fetchWeightedProductKeywordSuggestions } = require('../utils/productAdminsuggest');
+const { getKeywordMatchMetrics, compareProductKeywordSuggestions, normalizeMatchWord } = require('../utils/productKeywordRanking');
 
 const isTruthyQueryFlag = (value) => value === true || value === 'true' || value === '1' || value === 1;
 
@@ -92,25 +93,7 @@ const isSuggestWordMatch = (queryWord = '', keywordWord = '') => {
 };
 
 const getSuggestWordMatchStats = (queryWords = [], keywordWords = []) => {
-  const usedKeywordIndexes = new Set();
-  const matchedQueryWords = [];
-  const matchedKeywordWords = [];
-
-  queryWords.forEach((queryWord) => {
-    const keywordIndex = keywordWords.findIndex(
-      (keywordWord, index) => !usedKeywordIndexes.has(index) && isSuggestWordMatch(queryWord, keywordWord)
-    );
-
-    if (keywordIndex === -1) return;
-    usedKeywordIndexes.add(keywordIndex);
-    matchedQueryWords.push(queryWord);
-    matchedKeywordWords.push(keywordWords[keywordIndex]);
-  });
-
-  return {
-    matchedQueryWords: Array.from(new Set(matchedQueryWords)),
-    matchedKeywordWords: Array.from(new Set(matchedKeywordWords)),
-  };
+  return getKeywordMatchMetrics(queryWords, keywordWords);
 };
 
 exports.suggestProducts = async (req, res) => {
@@ -193,24 +176,25 @@ exports.suggestProducts = async (req, res) => {
     const keywordWhere = {
       status: 1
     };
+    const candidateQueryWords = queryWords.map(normalizeMatchWord).filter(Boolean);
 
     // Candidate filtering: keep dataset small while still allowing scoring logic.
-    if (queryWords.length > 1) {
+    if (candidateQueryWords.length > 1) {
 
       keywordWhere[Op.or] = [
         {
           name: {
-            [Op.like]: `%${queryWords.join('%')}%`
+            [Op.like]: `%${candidateQueryWords.join('%')}%`
           }
         },
         {
-          [Op.and]: queryWords.map(word => ({
+          [Op.and]: candidateQueryWords.map(word => ({
             name: {
               [Op.like]: `%${word}%`
             }
           }))
         },
-        ...queryWords.map(word => ({
+        ...candidateQueryWords.map(word => ({
           name: {
             [Op.like]: `%${word}%`
           }
@@ -219,7 +203,7 @@ exports.suggestProducts = async (req, res) => {
 
     } else {
 
-      keywordWhere[Op.or] = queryWords.map(word => ({
+      keywordWhere[Op.or] = candidateQueryWords.map(word => ({
         name: {
           [Op.like]: `%${word}%`
         }
@@ -257,16 +241,22 @@ exports.suggestProducts = async (req, res) => {
       const normalizedKeyword = normalizeTextForSuggest(keyword.name);
       const keywordWords = tokenizeForSuggest(keyword.name);
       const keywordOrderTokens = tokenizeForOrder(keyword.name);
-      const { matchedQueryWords, matchedKeywordWords } = getSuggestWordMatchStats(queryWords, keywordWords);
-      const matchedQueryWordCount = matchedQueryWords.length;
-      const matchedKeywordWordCount = matchedKeywordWords.length;
+      const matchMetrics = getSuggestWordMatchStats(queryWords, keywordWords);
+      const {
+        matchedQueryWords,
+        matchedKeywordWords,
+        matchedQueryWordCount,
+        matchedKeywordWordCount,
+        keywordCoverage,
+        queryCoverage,
+        longestConsecutiveMatch,
+        fullKeywordMatch,
+      } = matchMetrics;
 
       const phrasePrefixMatch = normalizedQuery.length >= 2 && normalizedKeyword.startsWith(normalizedQuery);
       const phraseIncludesMatch = normalizedQuery.length >= 2 && normalizedKeyword.includes(normalizedQuery);
       const leadingPrefixTokenScore = getLeadingPrefixTokenScore(queryOrderTokens, keywordOrderTokens);
 
-      const keywordCoverage = keywordWords.length ? matchedKeywordWordCount / keywordWords.length : 0;
-      const queryCoverage = queryWords.length ? matchedQueryWordCount / queryWords.length : 0;
       const matchScore =
         matchedQueryWordCount * 100 +
         matchedKeywordWordCount * 50 +
@@ -307,6 +297,10 @@ exports.suggestProducts = async (req, res) => {
         matched_query_words: matchedQueryWords,
         matched_query_word_count: matchedQueryWordCount,
         matched_keyword_word_count: matchedKeywordWordCount,
+        keyword_coverage: keywordCoverage,
+        query_coverage: queryCoverage,
+        longest_consecutive_match: longestConsecutiveMatch,
+        full_keyword_match: fullKeywordMatch,
         query_word_count: queryWords.length,
         keyword_word_count: keywordWords.length,
         full_query_match: queryWords.length > 0 && matchedQueryWordCount === queryWords.length,
@@ -314,31 +308,7 @@ exports.suggestProducts = async (req, res) => {
       };
     });
 
-    scored.sort((a, b) => {
-      const aAllWords = a.matched_query_word_count === queryWords.length;
-      const bAllWords = b.matched_query_word_count === queryWords.length;
-
-      if (aAllWords !== bAllWords)
-        return aAllWords ? -1 : 1;
-
-      const aPhrase =
-        normalizeTextForSuggest(a.title).includes(normalizedQuery);
-
-      const bPhrase =
-        normalizeTextForSuggest(b.title).includes(normalizedQuery);
-
-      if (aPhrase !== bPhrase)
-        return aPhrase ? -1 : 1;
-      if (a.exact_match !== b.exact_match) return a.exact_match ? -1 : 1;
-      if (a.leading_prefix_token_score !== b.leading_prefix_token_score) {
-        return b.leading_prefix_token_score - a.leading_prefix_token_score;
-      }
-      if (a.phrase_prefix_match !== b.phrase_prefix_match) return a.phrase_prefix_match ? -1 : 1;
-      if (a.phrase_includes_match !== b.phrase_includes_match) return a.phrase_includes_match ? -1 : 1;
-      if (a.match_score !== b.match_score) return b.match_score - a.match_score;
-      if (a.confidence_score !== b.confidence_score) return b.confidence_score - a.confidence_score;
-      return a.title.length - b.title.length;
-    });
+    scored.sort(compareProductKeywordSuggestions);
 
     const suggestions = scored.slice(0, 6);
     const bestConfidentMatch = suggestions.find((s) => s.is_confident_match) || null;
@@ -3152,11 +3122,11 @@ exports.getLatestHomeProducts = async (req, res) => {
 
       const newProductsWhere = lastCheck
         ? {
-            ...baseWhere,
-            approved_at: {
-              [Op.gt]: lastCheck
-            }
+          ...baseWhere,
+          approved_at: {
+            [Op.gt]: lastCheck
           }
+        }
         : baseWhere;
 
       const { products: newProducts } =
@@ -3196,55 +3166,55 @@ exports.getLatestHomeProducts = async (req, res) => {
       // =========================
 
       if (newProducts.length > 0) {
-  const remaining = PRODUCT_LIMIT - newProducts.length;
+        const remaining = PRODUCT_LIMIT - newProducts.length;
 
-  const {
-    count: totalProducts
-  } = await fetchApprovedProducts(
-    baseWhere,
-    [['approved_at', 'DESC']],
-    1,
-    0
-  );
+        const {
+          count: totalProducts
+        } = await fetchApprovedProducts(
+          baseWhere,
+          [['approved_at', 'DESC']],
+          1,
+          0
+        );
 
-  const safeOffset = totalProducts
-    ? currentOffset % totalProducts
-    : 0;
+        const safeOffset = totalProducts
+          ? currentOffset % totalProducts
+          : 0;
 
-  const {
-    products: oldProducts
-  } = await fetchApprovedProducts(
-    baseWhere,
-    [['approved_at', 'DESC']],
-    remaining,
-    safeOffset
-  );
+        const {
+          products: oldProducts
+        } = await fetchApprovedProducts(
+          baseWhere,
+          [['approved_at', 'DESC']],
+          remaining,
+          safeOffset
+        );
 
-  const display = [
-    ...newProducts,
-    ...oldProducts
-  ];
+        const display = [
+          ...newProducts,
+          ...oldProducts
+        ];
 
-  const newOffset = totalProducts
-    ? (safeOffset + oldProducts.length) % totalProducts
-    : 0;
+        const newOffset = totalProducts
+          ? (safeOffset + oldProducts.length) % totalProducts
+          : 0;
 
-  await setHomeSettingValue(
-    'latest_products_last_check',
-    now.toISOString()
-  );
+        await setHomeSettingValue(
+          'latest_products_last_check',
+          now.toISOString()
+        );
 
-  await setHomeSettingValue(
-    'latest_products_offset',
-    String(newOffset)
-  );
+        await setHomeSettingValue(
+          'latest_products_offset',
+          String(newOffset)
+        );
 
-  return res.json({
-    products: display,
-    refreshed: true,
-    has_more: oldProducts.length >= remaining
-  });
-}
+        return res.json({
+          products: display,
+          refreshed: true,
+          has_more: oldProducts.length >= remaining
+        });
+      }
 
 
       // =========================
@@ -3306,37 +3276,37 @@ exports.getLatestHomeProducts = async (req, res) => {
     // =========================
 
     const {
-  products: cachedProducts,
-  count: totalProducts
-} = await fetchApprovedProducts(
-  baseWhere,
-  [['approved_at', 'DESC']],
-  PRODUCT_LIMIT,
-  currentOffset
-);
+      products: cachedProducts,
+      count: totalProducts
+    } = await fetchApprovedProducts(
+      baseWhere,
+      [['approved_at', 'DESC']],
+      PRODUCT_LIMIT,
+      currentOffset
+    );
 
-const safeOffset = totalProducts
-  ? currentOffset % totalProducts
-  : 0;
+    const safeOffset = totalProducts
+      ? currentOffset % totalProducts
+      : 0;
 
-let finalProducts = cachedProducts;
+    let finalProducts = cachedProducts;
 
-if (currentOffset !== safeOffset) {
-  const result = await fetchApprovedProducts(
-    baseWhere,
-    [['approved_at', 'DESC']],
-    PRODUCT_LIMIT,
-    safeOffset
-  );
+    if (currentOffset !== safeOffset) {
+      const result = await fetchApprovedProducts(
+        baseWhere,
+        [['approved_at', 'DESC']],
+        PRODUCT_LIMIT,
+        safeOffset
+      );
 
-  finalProducts = result.products;
-}
+      finalProducts = result.products;
+    }
 
-return res.json({
-  products: finalProducts,
-  refreshed: false,
-  has_more: true
-});
+    return res.json({
+      products: finalProducts,
+      refreshed: false,
+      has_more: true
+    });
 
 
   } catch (err) {
