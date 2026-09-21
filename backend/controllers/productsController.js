@@ -1,5 +1,6 @@
 // Product name autocomplete with master data
 const { fetchWeightedProductKeywordSuggestions } = require('../utils/productAdminsuggest');
+const { getKeywordMatchMetrics, compareProductKeywordSuggestions, normalizeMatchWord } = require('../utils/productKeywordRanking');
 
 const isTruthyQueryFlag = (value) => value === true || value === 'true' || value === '1' || value === 1;
 
@@ -92,25 +93,7 @@ const isSuggestWordMatch = (queryWord = '', keywordWord = '') => {
 };
 
 const getSuggestWordMatchStats = (queryWords = [], keywordWords = []) => {
-  const usedKeywordIndexes = new Set();
-  const matchedQueryWords = [];
-  const matchedKeywordWords = [];
-
-  queryWords.forEach((queryWord) => {
-    const keywordIndex = keywordWords.findIndex(
-      (keywordWord, index) => !usedKeywordIndexes.has(index) && isSuggestWordMatch(queryWord, keywordWord)
-    );
-
-    if (keywordIndex === -1) return;
-    usedKeywordIndexes.add(keywordIndex);
-    matchedQueryWords.push(queryWord);
-    matchedKeywordWords.push(keywordWords[keywordIndex]);
-  });
-
-  return {
-    matchedQueryWords: Array.from(new Set(matchedQueryWords)),
-    matchedKeywordWords: Array.from(new Set(matchedKeywordWords)),
-  };
+  return getKeywordMatchMetrics(queryWords, keywordWords);
 };
 
 exports.suggestProducts = async (req, res) => {
@@ -193,24 +176,25 @@ exports.suggestProducts = async (req, res) => {
     const keywordWhere = {
       status: 1
     };
+    const candidateQueryWords = queryWords.map(normalizeMatchWord).filter(Boolean);
 
     // Candidate filtering: keep dataset small while still allowing scoring logic.
-    if (queryWords.length > 1) {
+    if (candidateQueryWords.length > 1) {
 
       keywordWhere[Op.or] = [
         {
           name: {
-            [Op.like]: `%${queryWords.join('%')}%`
+            [Op.like]: `%${candidateQueryWords.join('%')}%`
           }
         },
         {
-          [Op.and]: queryWords.map(word => ({
+          [Op.and]: candidateQueryWords.map(word => ({
             name: {
               [Op.like]: `%${word}%`
             }
           }))
         },
-        ...queryWords.map(word => ({
+        ...candidateQueryWords.map(word => ({
           name: {
             [Op.like]: `%${word}%`
           }
@@ -219,7 +203,7 @@ exports.suggestProducts = async (req, res) => {
 
     } else {
 
-      keywordWhere[Op.or] = queryWords.map(word => ({
+      keywordWhere[Op.or] = candidateQueryWords.map(word => ({
         name: {
           [Op.like]: `%${word}%`
         }
@@ -257,16 +241,22 @@ exports.suggestProducts = async (req, res) => {
       const normalizedKeyword = normalizeTextForSuggest(keyword.name);
       const keywordWords = tokenizeForSuggest(keyword.name);
       const keywordOrderTokens = tokenizeForOrder(keyword.name);
-      const { matchedQueryWords, matchedKeywordWords } = getSuggestWordMatchStats(queryWords, keywordWords);
-      const matchedQueryWordCount = matchedQueryWords.length;
-      const matchedKeywordWordCount = matchedKeywordWords.length;
+      const matchMetrics = getSuggestWordMatchStats(queryWords, keywordWords);
+      const {
+        matchedQueryWords,
+        matchedKeywordWords,
+        matchedQueryWordCount,
+        matchedKeywordWordCount,
+        keywordCoverage,
+        queryCoverage,
+        longestConsecutiveMatch,
+        fullKeywordMatch,
+      } = matchMetrics;
 
       const phrasePrefixMatch = normalizedQuery.length >= 2 && normalizedKeyword.startsWith(normalizedQuery);
       const phraseIncludesMatch = normalizedQuery.length >= 2 && normalizedKeyword.includes(normalizedQuery);
       const leadingPrefixTokenScore = getLeadingPrefixTokenScore(queryOrderTokens, keywordOrderTokens);
 
-      const keywordCoverage = keywordWords.length ? matchedKeywordWordCount / keywordWords.length : 0;
-      const queryCoverage = queryWords.length ? matchedQueryWordCount / queryWords.length : 0;
       const matchScore =
         matchedQueryWordCount * 100 +
         matchedKeywordWordCount * 50 +
@@ -307,6 +297,10 @@ exports.suggestProducts = async (req, res) => {
         matched_query_words: matchedQueryWords,
         matched_query_word_count: matchedQueryWordCount,
         matched_keyword_word_count: matchedKeywordWordCount,
+        keyword_coverage: keywordCoverage,
+        query_coverage: queryCoverage,
+        longest_consecutive_match: longestConsecutiveMatch,
+        full_keyword_match: fullKeywordMatch,
         query_word_count: queryWords.length,
         keyword_word_count: keywordWords.length,
         full_query_match: queryWords.length > 0 && matchedQueryWordCount === queryWords.length,
@@ -314,31 +308,7 @@ exports.suggestProducts = async (req, res) => {
       };
     });
 
-    scored.sort((a, b) => {
-      const aAllWords = a.matched_query_word_count === queryWords.length;
-      const bAllWords = b.matched_query_word_count === queryWords.length;
-
-      if (aAllWords !== bAllWords)
-        return aAllWords ? -1 : 1;
-
-      const aPhrase =
-        normalizeTextForSuggest(a.title).includes(normalizedQuery);
-
-      const bPhrase =
-        normalizeTextForSuggest(b.title).includes(normalizedQuery);
-
-      if (aPhrase !== bPhrase)
-        return aPhrase ? -1 : 1;
-      if (a.exact_match !== b.exact_match) return a.exact_match ? -1 : 1;
-      if (a.leading_prefix_token_score !== b.leading_prefix_token_score) {
-        return b.leading_prefix_token_score - a.leading_prefix_token_score;
-      }
-      if (a.phrase_prefix_match !== b.phrase_prefix_match) return a.phrase_prefix_match ? -1 : 1;
-      if (a.phrase_includes_match !== b.phrase_includes_match) return a.phrase_includes_match ? -1 : 1;
-      if (a.match_score !== b.match_score) return b.match_score - a.match_score;
-      if (a.confidence_score !== b.confidence_score) return b.confidence_score - a.confidence_score;
-      return a.title.length - b.title.length;
-    });
+    scored.sort(compareProductKeywordSuggestions);
 
     const suggestions = scored.slice(0, 6);
     const bestConfidentMatch = suggestions.find((s) => s.is_confident_match) || null;
@@ -659,6 +629,7 @@ const sequelize = require('../config/database');
 const { sendMail, getSiteConfig } = require('../helpers/mailHelper');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const Cities = require('../models/Cities');
+const HomeSettings = require('../models/HomeSettings');
 const parseCsv = (str) => str.split(',').map(s => s.trim()).filter(Boolean);
 const parseCsv2 = (value) => value.split(',').map(item => item.trim());
 
@@ -1311,19 +1282,69 @@ exports.getProductsDetail = async (req, res) => {
       attributes: ['id', 'file'],
     });
 
-    // Similar products
+    // Similar products - matched by item subcategory (fallback to category if item_subcategory_id is null)
+    const similarWhere = {
+      is_approve: 1,
+      status: 1,
+      id: { [Op.ne]: productData.id }
+    };
+    if (productData.item_subcategory_id) {
+      similarWhere.item_subcategory_id = productData.item_subcategory_id;
+    } else {
+      similarWhere.category = productData.category;
+    }
+
     const similarProducts = await Products.findAll({
-      where: { is_approve: 1, status: 1, category: productData.category, id: { [Op.ne]: productData.id } },
-      attributes: ['id', 'title', 'file_ids', 'slug'],
-      include: [{ model: UploadImage, as: 'file', attributes: ['file'] }]
+      where: similarWhere,
+      attributes: ['id', 'title', 'file_ids', 'slug', 'company_id', 'user_id'],
+      include: [
+        { model: UploadImage, as: 'file', attributes: ['file'] },
+        {
+          model: Users,
+          as: 'Users',
+          attributes: ['id'],
+          include: [
+            {
+              model: CompanyInfo,
+              as: 'company_info',
+              attributes: ['organization_name', 'organization_slug', 'company_location']
+            },
+            { model: States, as: 'state_data', attributes: ['name'] },
+            { model: Cities, as: 'city_data', attributes: ['name'] }
+          ]
+        },
+        {
+          model: CompanyInfo,
+          as: 'company_info',
+          attributes: ['organization_name', 'organization_slug', 'company_location']
+        }
+      ]
     });
 
-    const formattedSimilarProducts = similarProducts.map(p => ({
-      id: p.id,
-      slug: p.slug,
-      title: p.title,
-      file_name: p.file?.file || null,
-    }));
+    const formattedSimilarProducts = similarProducts.map(p => {
+      const sellerCompany = p.Users?.company_info || null;
+      const directCompany = p.company_info || null;
+      const company = sellerCompany || directCompany;
+      return {
+        id: p.id,
+        slug: p.slug,
+        title: p.title,
+        file_name: p.file?.file || null,
+        product_company_id: p.company_id || null,
+        seller_id: p.Users?.id || null,
+        company_name: company?.organization_name || null,
+        company_slug: company?.organization_slug || null,
+        city_name: p.Users?.city_data?.name || null,
+        state_name: p.Users?.state_data?.name || null,
+      };
+    });
+
+    console.log('=== SIMILAR PRODUCTS DEBUG ===');
+    similarProducts.forEach(p => {
+      console.log(`productId=${p.id} | company_id=${p.company_id} | user_id=${p.user_id} | sellerCompanyExists=${!!p.Users?.company_info} | directCompanyExists=${!!p.company_info}`);
+    });
+    console.log('company_name values:', formattedSimilarProducts.map(p => ({ id: p.id, company_name: p.company_name })));
+    console.log('=== END SIMILAR PRODUCTS DEBUG ===');
 
     // Recommended companies (simplified)
     const allCompanies = await CompanyInfo.findAll({
@@ -1785,6 +1806,13 @@ exports.getAllCompanyInfo = async (req, res) => {
     const productCounts = await Products.findAll({
       attributes: ['company_id', [fn('COUNT', col('product_id')), 'count']],
       where: { company_id: { [Op.in]: companyIds }, is_delete: 0, is_approve: 1, status: 1 },
+      include: [{
+        model: Users,
+        as: 'Users',
+        attributes: [],
+        required: true,
+        where: { status: 1, is_approve: 1, is_delete: 0 },
+      }],
       group: ['company_id'],
       raw: true
     });
@@ -2856,6 +2884,11 @@ exports.updateAccountStatus = async (req, res) => {
     const products = await Products.findByPk(req.params.id);
     if (!products) return res.status(404).json({ message: 'Product not found' });
     products.is_approve = is_approve;
+    if (is_approve === 1) {
+      products.approved_at = new Date();
+    } else {
+      products.approved_at = null;
+    }
     await products.save();
 
     // Send product approval email (template 103) when product is approved (is_approve === 1)
@@ -2957,5 +2990,333 @@ exports.productKeywordUpdate = async (req, res) => {
   } catch (err) {
     console.error('Error in productKeywordUpdate:', err);
     return res.status(500).json({ success: false, message: 'Server error', error: err.message });
+  }
+};
+
+const DEFAULT_INTERVAL_MS = 2 * 24 * 60 * 60 * 1000;
+
+async function getHomeSettingValue(metaKey, defaultValue = '') {
+  const setting = await HomeSettings.findOne({ where: { meta_key: metaKey } });
+  return setting ? setting.meta_value : defaultValue;
+}
+
+async function setHomeSettingValue(metaKey, value, section = 'home') {
+  const [setting] = await HomeSettings.findOrCreate({
+    where: { meta_key: metaKey },
+    defaults: { page: 'home', section, meta_value: String(value) }
+  });
+  setting.meta_value = String(value);
+  await setting.save();
+}
+
+function buildProductWhereClause() {
+  return { is_delete: 0, status: 1, is_approve: 1 };
+}
+
+function formatProductRow(row) {
+  const data = row.toJSON();
+  data.category_name = data.Categories?.name || null;
+  data.file_name = data.file?.file || null;
+  data.company_name = data.company_info?.organization_name || null;
+  data.state_name = data.Users?.state_data?.name || null;
+  data.user_full_name = data.Users ? `${data.Users.fname} ${data.Users.lname}` : null;
+  delete data.Categories;
+  delete data.SubCategories;
+  delete data.ItemCategory;
+  delete data.ItemSubCategory;
+  delete data.Items;
+  delete data.Color;
+  delete data.company_info;
+  delete data.file;
+  delete data.Users;
+  return data;
+}
+
+async function fetchApprovedProducts(where, order, limit, offset) {
+  const query = {
+    where,
+    order,
+    distinct: true,
+    include: [
+      { model: Categories, as: 'Categories', attributes: ['id', 'name'] },
+      { model: SubCategories, as: 'SubCategories', attributes: ['id', 'name'] },
+      { model: ItemCategory, as: 'ItemCategory', attributes: ['id', 'name'] },
+      { model: ItemSubCategory, as: 'ItemSubCategory', attributes: ['id', 'name'] },
+      { model: Items, as: 'Items', attributes: ['id', 'name'] },
+      { model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] },
+      { model: UploadImage, as: 'file', attributes: ['file'] },
+      {
+        model: Users,
+        as: 'Users',
+        attributes: ['id', 'fname', 'lname', 'state'],
+        where: {
+          is_approve: 1,
+          is_delete: 0,
+          status: 1
+        },
+        include: [
+          {
+            model: States,
+            as: 'state_data',
+            attributes: ['id', 'name']
+          }
+        ]
+      }
+    ]
+  };
+
+  if (limit) query.limit = limit;
+  if (offset !== undefined && offset !== null) {
+    query.offset = offset;
+  }
+
+  const { rows, count } = await Products.findAndCountAll(query);
+
+  return {
+    products: rows.map(formatProductRow),
+    count: typeof count === 'number' ? count : count.length
+  };
+}
+
+exports.getLatestHomeProducts = async (req, res) => {
+  try {
+    const PRODUCT_LIMIT = 6;
+
+    const lastCheckStr = await getHomeSettingValue(
+      'latest_products_last_check',
+      ''
+    );
+
+    const offsetStr = await getHomeSettingValue(
+      'latest_products_offset',
+      '0'
+    );
+
+    const intervalStr = await getHomeSettingValue(
+      'latest_products_interval_ms',
+      String(DEFAULT_INTERVAL_MS)
+    );
+
+    const lastCheck = lastCheckStr
+      ? new Date(lastCheckStr)
+      : null;
+
+    const currentOffset = parseInt(offsetStr, 10) || 0;
+
+    const intervalMs =
+      parseInt(intervalStr, 10) || DEFAULT_INTERVAL_MS;
+
+    const now = new Date();
+
+    const shouldRefresh =
+      !lastCheck ||
+      (now.getTime() - lastCheck.getTime() >= intervalMs);
+
+    const baseWhere = buildProductWhereClause();
+
+    if (shouldRefresh) {
+
+      // =========================
+      // STEP 1: NEW PRODUCTS
+      // =========================
+
+      const newProductsWhere = lastCheck
+        ? {
+          ...baseWhere,
+          approved_at: {
+            [Op.gt]: lastCheck
+          }
+        }
+        : baseWhere;
+
+      const { products: newProducts } =
+        await fetchApprovedProducts(
+          newProductsWhere,
+          [['approved_at', 'DESC']],
+          lastCheck ? PRODUCT_LIMIT : null,
+          undefined
+        );
+
+      // =========================
+      // STEP 2: 6 OR MORE NEW
+      // =========================
+
+      if (newProducts.length >= PRODUCT_LIMIT) {
+        const display = newProducts.slice(0, PRODUCT_LIMIT);
+
+        await setHomeSettingValue(
+          'latest_products_last_check',
+          now.toISOString()
+        );
+
+        await setHomeSettingValue(
+          'latest_products_offset',
+          '0'
+        );
+
+        return res.json({
+          products: display,
+          refreshed: true,
+          has_more: true
+        });
+      }
+
+      // =========================
+      // STEP 3: 1-5 NEW PRODUCTS
+      // =========================
+
+      if (newProducts.length > 0) {
+        const remaining = PRODUCT_LIMIT - newProducts.length;
+
+        const {
+          count: totalProducts
+        } = await fetchApprovedProducts(
+          baseWhere,
+          [['approved_at', 'DESC']],
+          1,
+          0
+        );
+
+        const safeOffset = totalProducts
+          ? currentOffset % totalProducts
+          : 0;
+
+        const {
+          products: oldProducts
+        } = await fetchApprovedProducts(
+          baseWhere,
+          [['approved_at', 'DESC']],
+          remaining,
+          safeOffset
+        );
+
+        const display = [
+          ...newProducts,
+          ...oldProducts
+        ];
+
+        const newOffset = totalProducts
+          ? (safeOffset + oldProducts.length) % totalProducts
+          : 0;
+
+        await setHomeSettingValue(
+          'latest_products_last_check',
+          now.toISOString()
+        );
+
+        await setHomeSettingValue(
+          'latest_products_offset',
+          String(newOffset)
+        );
+
+        return res.json({
+          products: display,
+          refreshed: true,
+          has_more: oldProducts.length >= remaining
+        });
+      }
+
+
+      // =========================
+      // STEP 4: NO NEW PRODUCTS
+      // =========================
+
+      const {
+        products: oldProducts,
+        count: totalProducts
+      } = await fetchApprovedProducts(
+        baseWhere,
+        [['approved_at', 'DESC']],
+        PRODUCT_LIMIT,
+        currentOffset
+      );
+
+      // Wrap-around
+      const safeOffset = totalProducts
+        ? currentOffset % totalProducts
+        : 0;
+
+      let finalOldProducts = oldProducts;
+
+      // Offset total count se bahar chala gaya
+      if (currentOffset !== safeOffset) {
+        const result = await fetchApprovedProducts(
+          baseWhere,
+          [['approved_at', 'DESC']],
+          PRODUCT_LIMIT,
+          safeOffset
+        );
+
+        finalOldProducts = result.products;
+      }
+
+      const newOffset = totalProducts
+        ? (safeOffset + finalOldProducts.length) % totalProducts
+        : 0;
+
+      await setHomeSettingValue(
+        'latest_products_last_check',
+        now.toISOString()
+      );
+
+      await setHomeSettingValue(
+        'latest_products_offset',
+        String(newOffset)
+      );
+
+      return res.json({
+        products: finalOldProducts,
+        refreshed: true,
+        has_more: finalOldProducts.length >= PRODUCT_LIMIT
+      });
+    }
+
+    // =========================
+    // STEP 5: CACHE
+    // =========================
+
+    const {
+      products: cachedProducts,
+      count: totalProducts
+    } = await fetchApprovedProducts(
+      baseWhere,
+      [['approved_at', 'DESC']],
+      PRODUCT_LIMIT,
+      currentOffset
+    );
+
+    const safeOffset = totalProducts
+      ? currentOffset % totalProducts
+      : 0;
+
+    let finalProducts = cachedProducts;
+
+    if (currentOffset !== safeOffset) {
+      const result = await fetchApprovedProducts(
+        baseWhere,
+        [['approved_at', 'DESC']],
+        PRODUCT_LIMIT,
+        safeOffset
+      );
+
+      finalProducts = result.products;
+    }
+
+    return res.json({
+      products: finalProducts,
+      refreshed: false,
+      has_more: true
+    });
+
+
+  } catch (err) {
+    console.error(
+      'Error in getLatestHomeProducts:',
+      err
+    );
+
+    return res.status(500).json({
+      error: err.message
+    });
   }
 };

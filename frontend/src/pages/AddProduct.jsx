@@ -14,6 +14,8 @@ import UseAuth from '../sections/UseAuth';
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
+import { FiBox, FiCheckCircle, FiImage } from 'react-icons/fi';
+import './AddProduct.css';
 
 const AddProduct = () => {
   const { showNotification } = useAlert();
@@ -119,6 +121,7 @@ const AddProduct = () => {
       const aTokenMatchScore = getTokenMatchScore(queryTokens, aTokens);
       const bTokenMatchScore = getTokenMatchScore(queryTokens, bTokens);
       if (aTokenMatchScore !== bTokenMatchScore) return bTokenMatchScore - aTokenMatchScore;
+      if (aTokens.length !== bTokens.length) return bTokens.length - aTokens.length;
 
       const aPrefix = aTitle.startsWith(normalizedQuery) ? 1 : 0;
       const bPrefix = bTitle.startsWith(normalizedQuery) ? 1 : 0;
@@ -1147,14 +1150,18 @@ const AddProduct = () => {
 
   return (
     <>
-      <div className="page-wrapper">
+      <div className="page-wrapper add-product-page">
         <div className="page-content">
           <Breadcrumb page="Product" title={isEditing ? "Edit Product" : "Add Product"} />
+          <div className="add-product-header">
+            <div className="add-product-header-icon"><FiBox /></div>
+            <div><h1>{isEditing ? "Edit Product" : "Add Product"}</h1><p>Add clear product details, specifications and images for better visibility.</p></div>
+          </div>
           <div className="row">
             <div className="col-xl-12 mx-auto">
-              <form className="row g-3" onSubmit={handleSubmit}>
+              <form className="row g-3 add-product-form" onSubmit={handleSubmit}>
                 <div className="col-md-8">
-                  <div className="card">
+                  <div className="card product-form-card">
                     <div className="card-body p-4">
                       <div className="row">
                         <div className="form-group mb-3 col-md-12">
@@ -1251,19 +1258,19 @@ const AddProduct = () => {
                                 (() => {
                                   const isActive = isSuggestionTagActive(suggestion);
                                   return (
-                                <button
-                                  key={`tag-${getSuggestionKey(suggestion)}`}
-                                  type="button"
-                                  className={`btn rounded-pill px-2 py-1 ${isActive ? 'btn-primary' : 'btn-outline-primary'}`}
-                                  style={{ fontSize: '0.72rem', lineHeight: 1.4 }}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    suppressTitleAutoSelectRef.current = true;
-                                    handleSuggestionSelect(suggestion);
-                                  }}
-                                >
-                                  {suggestion.title}
-                                </button>
+                                    <button
+                                      key={`tag-${getSuggestionKey(suggestion)}`}
+                                      type="button"
+                                      className={`btn rounded-pill px-2 py-1 ${isActive ? 'btn-primary' : 'btn-outline-primary'}`}
+                                      style={{ fontSize: '0.72rem', lineHeight: 1.4 }}
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        suppressTitleAutoSelectRef.current = true;
+                                        handleSuggestionSelect(suggestion);
+                                      }}
+                                    >
+                                      {suggestion.title}
+                                    </button>
                                   );
                                 })()
                               ))}
@@ -1344,7 +1351,7 @@ const AddProduct = () => {
                   </div>
                 </div>
                 <div className="col-md-4">
-                  <div className="card">
+                  <div className="card product-form-card">
                     <div className="card-body p-4">
                       <div className="row">
                         {/* <div className="col-12 mb-3 d-flex justify-content-end align-items-center">
@@ -1492,86 +1499,86 @@ const AddProduct = () => {
                       </div>
                     </div>
                   </div>
-                <div className="card mt-2">
-                  <div className="card-body p-4">
-                    <div className="row">
-                                                <div className="col-md-12">
-                        <label htmlFor="file" className="form-label required">Product Images</label><br />
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          style={{ display: "none" }}
-                          onChange={handleFileChange}
-                          multiple
-                          accept="image/png, image/jpeg"
-                        />
-                        <button type="button" className="btn btn-primary" onClick={() => fileInputRef.current.click()}>
-                          <i className="bx bxs-plus-square me-1" />Add Image
-                        </button>
-                        {errors.file && (<div className="text-danger small mt-1">{errors.file}</div>)}
-                      </div>
-                      <div className="col-md-12">
-                        <div className="mt-3 d-flex flex-wrap">
-                          {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
-                            <div key={index} className="position-relative m-2">
-                              <img
-                                src={`${ROOT_URL}/${image.file}`}
-                                alt={`Preview ${index}`}
-                                className="object-fit-cover m-3"
-                                width={80}
-                                height={80}
-                                loading="lazy"
-                                decoding="async"
-                              />
-                              <button
-                                type="button"
-                                className="btn btn-danger btn-remove-image"
-                                style={{ width: '1.5rem', height: '1.5rem' }}
-                                onClick={() => openDeleteModal(image.id)}
-                              >
-                                <i className="bx bx-x me-0" />
-                              </button>
-                            </div>
-                          ))}
-                          {files.length > 0 && files?.map((file, index) => (
-                            <div key={index} className="position-relative m-2">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={`New Preview ${index}`}
-                                className="object-fit-cover m-3"
-                                width={80}
-                                height={80}
-                                loading="lazy"
-                                decoding="async"
-                              />
-                              <button
-                                variant="danger"
-                                size="sm"
-                                className="btn btn-danger btn-remove-image"
-                                style={{ width: '1.5rem', height: '1.5rem' }}
-                                onClick={() => {
-                                  setFiles(prev => prev.filter((_, i) => i !== index));
-                                }}
-                              >
-                                <i className="bx bx-x me-0" />
-                              </button>
-                            </div>
-                          ))}
+                  <div className="card mt-3 product-form-card">
+                    <div className="card-body p-4">
+                      <div className="row">
+                        <div className="col-md-12">
+                          <label htmlFor="file" className="form-label required">Product Images</label><br />
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            style={{ display: "none" }}
+                            onChange={handleFileChange}
+                            multiple
+                            accept="image/png, image/jpeg"
+                          />
+                          <button type="button" className="product-image-add" onClick={() => fileInputRef.current.click()}>
+                            <FiImage /> Add Images
+                          </button>
+                          {errors.file && (<div className="text-danger small mt-1">{errors.file}</div>)}
+                        </div>
+                        <div className="col-md-12">
+                          <div className="mt-3 d-flex flex-wrap">
+                            {formData.images && formData.images.length > 0 && formData.images?.map((image, index) => (
+                              <div key={index} className="position-relative m-2">
+                                <img
+                                  src={`${ROOT_URL}/${image.file}`}
+                                  alt={`Preview ${index}`}
+                                  className="object-fit-cover m-3"
+                                  width={80}
+                                  height={80}
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-remove-image"
+                                  style={{ width: '1.5rem', height: '1.5rem' }}
+                                  onClick={() => openDeleteModal(image.id)}
+                                >
+                                  <i className="bx bx-x me-0" />
+                                </button>
+                              </div>
+                            ))}
+                            {files.length > 0 && files?.map((file, index) => (
+                              <div key={index} className="position-relative m-2">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`New Preview ${index}`}
+                                  className="object-fit-cover m-3"
+                                  width={80}
+                                  height={80}
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                                <button
+                                  variant="danger"
+                                  size="sm"
+                                  className="btn btn-danger btn-remove-image"
+                                  style={{ width: '1.5rem', height: '1.5rem' }}
+                                  onClick={() => {
+                                    setFiles(prev => prev.filter((_, i) => i !== index));
+                                  }}
+                                >
+                                  <i className="bx bx-x me-0" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-                </div>
-                <div className="col-12 text-end mt-2">
-                  <button type="submit" className="btn btn-sm btn-primary px-4 mt-3" disabled={submitting}>
+                <div className="col-12 add-product-actions">
+                  <button type="submit" className="product-save-btn" disabled={submitting}>
                     {submitting ? (
                       <>
                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                         {isEditing ? "Updating..." : "Saving..."}
                       </>
                     ) : (
-                      isEditing ? "Update" : "Save"
+                      <><FiCheckCircle /> {isEditing ? "Update Product" : "Save Product"}</>
                     )}
                   </button>
                 </div>

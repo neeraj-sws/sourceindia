@@ -7,6 +7,7 @@ const ItemCategory = require('../models/ItemCategory');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const Products = require('../models/Products');
+const Users = require('../models/Users');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
@@ -84,7 +85,7 @@ exports.createItemSubCategory = async (req, res) => {
 };
 
 exports.getAllItemSubCategory = async (req, res) => {
-  try {
+    try {
     const where = { is_delete: req.query.getDeleted === 'true' ? 1 : 0 };
 
     // Exclude item subcategories that are linked to products
@@ -117,6 +118,10 @@ exports.getAllItemSubCategory = async (req, res) => {
           as: 'ItemCategory',
           attributes: ['id', 'name'],
         },
+        {
+          model: UploadImage,
+          attributes: ['id', 'file'],  
+        },
       ],
     });
 
@@ -132,6 +137,7 @@ exports.getAllItemSubCategory = async (req, res) => {
         Categories: undefined,
         SubCategories: undefined,
         ItemCategory: undefined,
+        file_name: data.UploadImage?.file || null,
       };
     });
 
@@ -448,12 +454,19 @@ exports.getItemSubCategoriesBySelectedCategorySubCategoryItemCategory = async (r
       attributes: ['item_subcategory_id', [fn('COUNT', col('product_id')), 'count']],
       where: {
         is_delete: 0,
-        // is_approve: 1,
+        is_approve: 1,
         status: 1,
         category: { [Op.in]: categories },
         sub_category: { [Op.in]: subcategories },
         item_category_id: { [Op.in]: itemCategories },
       },
+      include: [{
+        model: Users,
+        as: 'Users',
+        attributes: [],
+        required: true,
+        where: { status: 1, is_approve: 1, is_delete: 0 },
+      }],
       group: ['item_subcategory_id'],
       raw: true,
     });

@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-const moment = require('moment');
+const moment = require('moment-timezone');
 const { Op, fn, col } = Sequelize;
 const fs = require('fs');
 const path = require('path');
@@ -235,16 +235,16 @@ exports.getBuyerById = async (req, res) => {
 
 exports.getBuyerCount = async (req, res) => {
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
+    // Dashboard dates are business dates. Use IST explicitly so this count
+    // does not change with the timezone configured on the application server.
+    const todayStart = moment.tz('Asia/Kolkata').startOf('day').toDate();
+    const todayEnd = moment.tz('Asia/Kolkata').endOf('day').toDate();
     const [total, addedToday, statusActive, statusInactive, notApproved, deleted] = await Promise.all([
       Users.count({
         where: { is_seller: 0 },
       }),
 
-      // Sellers added today
+      // Buyers added today (India business day)
       Users.count({
 
         where: {

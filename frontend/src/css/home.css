@@ -378,7 +378,7 @@
 
 .search-suggestion-title {
     /* color: #15315d; */
-    font-size: 13px;
+    font-size: 14px !important;
     font-weight: 400;
     line-height: 1.2;
     white-space: nowrap;
@@ -417,7 +417,7 @@
     gap: 12px;
     padding: 10px 14px 9px;
     color: #0a57c1;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     text-align: left;
 }

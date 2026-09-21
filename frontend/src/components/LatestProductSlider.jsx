@@ -317,49 +317,49 @@ const LatestProductSlider = ({
        PRICE
        ===================================================== */
 
-    .latest-product-card
-      > a
-      > div:last-child
-      > div:not(.product-name) {
+    // .latest-product-card
+    //   > a
+    //   > div:last-child
+    //   > div:not(.product-name) {
 
-      width: 100% !important;
+    //   width: 100% !important;
 
-      min-width: 0 !important;
+    //   min-width: 0 !important;
 
-      font-size: 11px !important;
+    //   font-size: 11px !important;
 
-      line-height: 14px !important;
+    //   line-height: 14px !important;
 
-      font-weight: 400 !important;
+    //   font-weight: 400 !important;
 
-      color: #e51c23 !important;
+    //   color: #e51c23 !important;
 
-      margin: 0 !important;
+    //   margin: 0 !important;
 
-      padding: 0 !important;
+    //   padding: 0 !important;
 
-      white-space: nowrap !important;
+    //   white-space: nowrap !important;
 
-      overflow: hidden !important;
+    //   overflow: hidden !important;
 
-      text-overflow: ellipsis !important;
-    }
+    //   text-overflow: ellipsis !important;
+    // }
 
 
     /* =====================================================
        PRICE VALUE
        ===================================================== */
 
-    .latest-product-card
-      > a
-      > div:last-child
-      > div:not(.product-name)
-      span {
+    // .latest-product-card
+    //   > a
+    //   > div:last-child
+    //   > div:not(.product-name)
+    //   span {
 
-      color: #e51c23 !important;
+    //   color: #e51c23 !important;
 
-      font-weight: 400 !important;
-    }
+    //   font-weight: 400 !important;
+    // }
 
 
     /* =====================================================
@@ -728,7 +728,11 @@ const LatestProductSlider = ({
             boxSizing: "border-box",
           }}
         >
-          {products.map((product) => (
+          {/* {products.map((product) => ( */}
+{products.map((product) => {
+  // console.log("LATEST PRODUCT DATA:", product);
+
+  return (  
             <div
               key={product.id}
               className="latest-product-card"
@@ -811,7 +815,7 @@ const LatestProductSlider = ({
                 >
                   {/* Product Name */}
 
-                  <div
+                  {/* <div
                     className="product-name"
                     style={{
                       fontSize: "13px",
@@ -819,12 +823,98 @@ const LatestProductSlider = ({
                       lineHeight: "16px",
                       color: "#111",
                       marginBottom: "4px",
+                      marginTop: "4px",
+                      textAlign: "left",
                     }}
                   >
                     {product.title?.length > 35
                       ? product.title.slice(0, 35) + "..."
                       : product.title}
-                  </div>
+                  </div> */}
+
+                   <div
+  style={{
+    fontSize: "13px",
+    fontWeight: "600",
+    lineHeight: "16px",
+    color: "#111",
+    marginTop: "6px",   
+    marginBottom: "12px",   
+    textAlign: "left",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  }}
+>
+  {product.title?.length > 35
+    ? product.title.slice(0, 35) + "..."
+    : product.title}
+</div>
+
+
+
+                  {/* Comapany Name */}
+                  {/* {product.company_name && (
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        lineHeight: "15px",
+                        color: "#333 !important",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      <b>Sold by :</b> {product.company_name}
+                    </div>
+                  )} */}
+                  {/* Company Name */}
+{product.company_name && (
+  <div>
+    {/* Small separator line */}
+    <div
+      style={{
+        width: "28px",
+        height: "2px",
+        backgroundColor: "#e5e5e5",
+        marginBottom: "8px",
+        borderRadius: "2px",
+      }}
+    />
+
+    {/* Sold by */}
+    <div
+      style={{
+        fontSize: "12px",
+        lineHeight: "13px",
+        color: "#777",
+        marginBottom: "4px",
+        textAlign: "left",
+      }}
+    >
+      Sold by :
+    </div>
+
+    {/* Company Name */}
+    <div
+      style={{
+        fontSize: "12px",
+        lineHeight: "14px",
+        fontWeight: "600",
+        color: "#1683d8",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        maxWidth: "150px",
+        marginBottom: "4px"
+      }}
+    >
+      {product.company_name}
+    </div>
+  </div>
+)}
+
 
                   {/* Price */}
 
@@ -852,7 +942,7 @@ const LatestProductSlider = ({
                 </div>
               </a>
             </div>
-          ))}
+          )})}
         </div>
 
         {/* ===================================================
