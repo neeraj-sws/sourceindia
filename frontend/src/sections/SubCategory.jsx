@@ -698,10 +698,10 @@ const styles = `
 
 /* Subcategory group (banner header + its item-category rows) */
 .subcat-group {
-    margin-bottom: 25px;
+    margin-bottom: 40px;
     background: white;
     padding: 1px 15px;
-    box-shadow: 0 0 2px rgb(170 161 161 / 99%);
+    box-shadow:0 0 4px rgb(170 161 161 / 99%);
     border-radius: 8px;
 }
 .subcat-group > .subcat-row:last-of-type{ border-bottom:none; }
@@ -769,7 +769,7 @@ const styles = `
 .subcat-info-title{ font-size:14px; font-weight:700; margin:0; color:#202525; line-height:1.25; }
 .subcat-info-desc{ font-size:.72rem; color:#6f7777; margin:0; line-height:1.45; }
 .subcat-info-link {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     text-decoration: none;
     padding: 4px 10px;
@@ -782,6 +782,7 @@ const styles = `
     transition: background .15s ease;
     align-self: flex-start;
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+    color: rgb(22, 131, 216);
 }
 
 .subcat-scroll-wrap{ position:relative; flex:1 1 auto; min-width:0; }
@@ -860,13 +861,13 @@ const styles = `
 }
 .product-card-img img{ width:100%; height:100%; object-fit:contain; padding:4px; box-sizing:border-box; }
 .product-card-name{
-  font-size:.8rem; font-weight:600; color:#202525;
+  font-size:15px; font-weight:600; color:#202525;
   line-height:1.4; margin-bottom:5px;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   white-space: wrap; text-overflow: ellipsis;
 }
 .product-card-company{
-  font-size:.68rem; color:#ff6600; margin-bottom:5px;
+  font-size:.8rem; color:rgb(22, 131, 216); margin-bottom:5px;
   display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden;font-weight:500;
 }
 .product-card-price{ font-size:.78rem; font-weight:700; color:#00a88a; margin-bottom:5px; }
