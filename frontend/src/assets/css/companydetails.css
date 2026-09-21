@@ -429,11 +429,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 208px;
-  height: 120px;
+  width: 250px;
+  height: 160px;
   border-radius: 6px;
   overflow: hidden;
-  background: transparent;
+  background: #f8f9fb;
   /* remove subtle fill to let image cover fully */
   border: none;
 }
@@ -519,7 +519,7 @@
   overflow: hidden;
   text-align: center;
   font-size: 13px;
-  color: #3B3B3B;
+  color: rgb(22, 131, 216);
   font-weight: 500;
   line-height: 1.25;
   margin: 4px 0;

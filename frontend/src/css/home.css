@@ -1306,9 +1306,10 @@ button.nav-link:hover {
 }
 
 .swiper .productBox img {
-    max-height: 110px;
-    max-width: 110px;
+    max-height: 145px;
+    max-width: 120px;
     min-height: unset;
+    object-fit: cover !important;
 }
 
 .filtersvg {
