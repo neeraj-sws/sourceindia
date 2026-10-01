@@ -206,6 +206,14 @@ const UserSidebar = () => {
       show: user?.is_seller === 0,
     },
 
+    // My Requirement History (for buyers - not sellers)
+    {
+      title: "Requirement History",
+      icon: "bx bx-time-five",
+      link: "/my-requirement-history",
+      show: user?.is_seller === 0,
+    },
+
     // Buy Leads (for sellers with complete+approve)
     {
       title: "Buy Leads",
@@ -216,6 +224,14 @@ const UserSidebar = () => {
         user?.is_complete === 1 &&
         user?.is_approve === 1,
     },
+
+    // Lead History 
+    {
+      title: "Lead History",
+      icon: "bx bx-history",
+      link: "/lead-history",
+      show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
+    },
   ];
 
   // ✅ Filtering logic
@@ -225,33 +241,74 @@ const UserSidebar = () => {
 
   return (
     <div className="sidebar-wrapper" data-simplebar="init">
-      <div className="simplebar-content" style={{ padding: 0 }}>
-        <div className="sidebar-header">
-          <div>
-            <Link to="/">
-              <img src={logoUrl} className="logo-icon" alt="logo icon" loading="lazy"
-                decoding="async" onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "/logo.png";
-                }} />
-            </Link>
-          </div>
-          <div className="toggle-icon ms-auto">
-            <i className="bx bx-arrow-to-left" />
+      <div className="simplebar-wrapper" style={{ margin: 0 }}>
+        <div className="simplebar-height-auto-observer-wrapper">
+          <div className="simplebar-height-auto-observer" />
+        </div>
+        <div className="simplebar-mask">
+          <div className="simplebar-offset" style={{ right: 0, bottom: 0 }}>
+            <div
+              className="simplebar-content-wrapper"
+              style={{ height: "100%", overflow: "hidden scroll" }}
+            >
+              <div className="simplebar-content mm-active" style={{ padding: 0 }}>
+                <div className="sidebar-header">
+                  <div>
+                    <Link to="/">
+                      <img src={logoUrl} className="logo-icon" alt="logo icon" loading="lazy"
+                        decoding="async" onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "/logo.png";
+                        }} />
+                    </Link>
+                  </div>
+                  <div className="toggle-icon ms-auto">
+                    <i className="bx bx-arrow-to-left" />
+                  </div>
+                </div>
+                {/*navigation*/}
+                <ul className="metismenu" id="menu">
+                  {filteredMenu.map((item, idx) => (
+                    <SidebarItem
+                      key={idx}
+                      item={item}
+                      currentPath={currentPath}
+                      isOpen={openIndex === idx}
+                      onClick={() => handleToggle(idx)}
+                    />
+                  ))}
+                </ul>
+                {/*end navigation*/}
+              </div>
+            </div>
           </div>
         </div>
-
-        <ul className="metismenu" id="menu">
-          {filteredMenu.map((item, idx) => (
-            <SidebarItem
-              key={idx}
-              item={item}
-              currentPath={currentPath}
-              isOpen={openIndex === idx}
-              onClick={() => handleToggle(idx)}
-            />
-          ))}
-        </ul>
+        <div
+          className="simplebar-placeholder"
+          style={{ width: "auto", height: 1391 }}
+        />
+      </div>
+      <div
+        className="simplebar-track simplebar-horizontal"
+        style={{ visibility: "hidden" }}
+      >
+        <div
+          className="simplebar-scrollbar simplebar-visible"
+          style={{ width: 0, display: "none" }}
+        />
+      </div>
+      <div
+        className="simplebar-track simplebar-vertical"
+        style={{ visibility: "visible" }}
+      >
+        <div
+          className="simplebar-scrollbar simplebar-visible"
+          style={{
+            height: 78,
+            transform: "translate3d(0px, 0px, 0px)",
+            display: "block"
+          }}
+        />
       </div>
     </div>
   );

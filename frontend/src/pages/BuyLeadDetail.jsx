@@ -45,6 +45,10 @@ const BuyLeadDetail = () => {
   useEffect(() => { if (user) fetchDetail(); /* eslint-disable-next-line */ }, [user, id]);
 
   const doRespond = async (action) => {
+    if (action === "reject" && !rejectionReason.trim()) {
+      showNotification("Rejection reason is required to reject a lead", "error");
+      return;
+    }
     setBusy(true);
     try {
       await axios.post(`${API_BASE_URL}/buyer-requirements/seller/lead/${id}/respond`,
@@ -89,7 +93,9 @@ const BuyLeadDetail = () => {
             <div className="card">
               <div className="card-header d-flex align-items-center justify-content-between">
                 <h5 className="mb-0">Buy Lead {lead.assignment_number}</h5>
-                <span className={`badge bg-${st.class}`}>{st.label}</span>
+                <div>
+                  <span className={`badge bg-${st.class}`}>{st.label}</span>
+                </div>
               </div>
               <div className="card-body">
                 <h4>{req.product_name_snapshot}</h4>
@@ -99,7 +105,7 @@ const BuyLeadDetail = () => {
                   <div className="col-md-6"><strong>Item Category:</strong> {req.itemCategory?.name || "-"}</div>
                   <div className="col-md-6"><strong>Item Sub Category:</strong> {req.itemSubCategory?.name || "-"}</div>
                   <div className="col-md-6"><strong>Quantity:</strong> {req.quantity || "-"}{req.quantity_unit ? ` ${req.quantity_unit}` : ""}</div>
-                  <div className="col-md-6"><strong>Requirement Type:</strong> {req.product_type === 1 ? "Product" : "Both/Other"}</div>
+                  {/* "Requirement Type" removed: reads product_type, column dropped from buyer_requirements */}
                   <div className="col-md-6"><strong>Supplier Preference:</strong> {req.supplier_preference || "-"}</div>
                   <div className="col-md-6"><strong>Posted:</strong> {formatDateTime(req.created_at)}</div>
                   <div className="col-12 mt-2"><strong>Description:</strong> {req.description || "-"}</div>
@@ -120,6 +126,22 @@ const BuyLeadDetail = () => {
                 </div>
               </div>
             </div>
+
+            {req.buyer_rating ? (
+              <div className="card">
+                <div className="card-header"><h6 className="mb-0">Buyer Feedback</h6></div>
+                <div className="card-body">
+                  <div className="mb-2">
+                    <strong>Rating:</strong>{" "}
+                    <span className="badge bg-warning text-dark">{req.buyer_rating}/5</span>
+                  </div>
+                  <div>
+                    <strong>Feedback:</strong>
+                    <p className="mb-0 mt-1" style={{ whiteSpace: "pre-wrap" }}>{req.buyer_feedback || "-"}</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="col-lg-4">
@@ -145,12 +167,17 @@ const BuyLeadDetail = () => {
                     <textarea
                       className="form-control mb-2"
                       rows="2"
-                      placeholder="Rejection reason (optional for reject)"
+                      placeholder="Rejection reason (required to reject)"
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
                     />
-                    <button className="btn btn-danger w-100" disabled={busy} onClick={() => doRespond("reject")}>
-                      Reject & Reassign
+                    <button
+                      className="btn btn-danger w-100"
+                      title="Reject and reassign to other seller"
+                      disabled={busy}
+                      onClick={() => doRespond("reject")}
+                    >
+                      Reject
                     </button>
                   </>
                 )}

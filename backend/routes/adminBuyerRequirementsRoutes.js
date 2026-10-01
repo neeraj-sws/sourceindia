@@ -2,8 +2,15 @@ const express = require('express');
 const router = express.Router();
 const adminBuyerRequirementsController = require('../controllers/adminBuyerRequirementsController');
 
+// No auth guard on this router, matching sellerRoutes.js and the other
+// admin routers in this project. Admin pages still send
+// `Authorization: Bearer <token>`, it is simply not verified here.
+
 // Admin: List all requirements
 router.get('/requirements', adminBuyerRequirementsController.getAllRequirements);
+
+// Admin: All assignments history
+router.get('/history', adminBuyerRequirementsController.getAllAssignmentsHistory);
 
 // Admin: Requirement counts
 router.get('/requirements/counts', adminBuyerRequirementsController.getRequirementCounts);
@@ -23,11 +30,14 @@ router.post('/requirements/:id/assign', adminBuyerRequirementsController.adminAs
 // Admin: Change requirement status
 router.put('/requirements/:id/status', adminBuyerRequirementsController.adminUpdateRequirementStatus);
 
-// Admin: Close requirement
-router.put('/requirements/:id/close', adminBuyerRequirementsController.adminCloseRequirementAction);
+// Admin: Close requirement (disabled for now)
+// router.put('/requirements/:id/close', adminBuyerRequirementsController.adminCloseRequirementAction);
 
 // Admin: Seller performance list
 router.get('/seller-performance', adminBuyerRequirementsController.getSellerPerformanceAdmin);
+
+// Admin: Seller performance detail report (charts + breakdown + monthly trends)
+router.get('/seller-performance/:id/details', adminBuyerRequirementsController.getSellerPerformanceDetail);
 
 // Admin: Update seller performance settings
 router.put('/seller-performance/:id', adminBuyerRequirementsController.updateSellerPerformanceSettings);

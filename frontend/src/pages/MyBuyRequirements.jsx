@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { formatDateTime } from "../utils/formatDate";
+import { renderAssignedSeller as ownerCell } from "../utils/assignedSeller";
 import { Link } from "react-router-dom";
 
 const DataTable = lazy(() => import("../admin/common/DataTable"));
@@ -23,6 +24,12 @@ const MyBuyRequirements = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
 
+  const [feedbackReq, setFeedbackReq] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState("");
+
   const getRangeText = () => {
     if (totalRecords === 0) return "Showing 0 to 0 of 0 entries";
     const start = (page - 1) * limit + 1;
@@ -35,6 +42,7 @@ const MyBuyRequirements = () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/buyer-requirements/my`, {
         params: { page, limit, search },
+        headers: { Authorization: `Bearer ${localStorage.getItem("user_token")}` },
       });
       setData(res.data.data);
       setTotalRecords(res.data.totalRecords);
@@ -46,6 +54,38 @@ const MyBuyRequirements = () => {
   };
 
   useEffect(() => { fetchData(); }, [page, limit, search]);
+
+  const handleSubmitFeedback = async () => {
+    if (!rating || rating < 1 || rating > 5) {
+      setFeedbackMsg("Please select a rating between 1 and 5");
+      return;
+    }
+    if (!feedbackText || feedbackText.trim().length < 3) {
+      setFeedbackMsg("Feedback must be at least 3 characters long");
+      return;
+    }
+    setIsSubmitting(true);
+    setFeedbackMsg("");
+    try {
+      await axios.post(
+        `${API_BASE_URL}/buyer-requirements/${feedbackReq.id}/feedback`,
+        { rating, feedback: feedbackText.trim() },
+        { headers: { Authorization: `Bearer ${localStorage.getItem("user_token")}` } }
+      );
+      setFeedbackMsg("Feedback submitted successfully");
+      setTimeout(() => {
+        setFeedbackReq(null);
+        setRating(0);
+        setFeedbackText("");
+        setFeedbackMsg("");
+        fetchData();
+      }, 1200);
+    } catch (err) {
+      setFeedbackMsg(err.response?.data?.message || "Failed to submit feedback");
+    } finally {
+      setIsSubmitting(false); 
+    }
+  };
 
   if (isLoading) return <p>Loading...</p>;
 
@@ -68,6 +108,7 @@ const MyBuyRequirements = () => {
                   { key: "created_at", label: "Posted", sortable: true },
                   { key: "status", label: "Status", sortable: false },
                   { key: "assignments", label: "Assigned Sellers", sortable: false },
+                  { key: "actions", label: "Rating & Feedback", sortable: false },
                 ]}
                 data={data}
                 loading={isLoading}
@@ -84,7 +125,6 @@ const MyBuyRequirements = () => {
                 getRangeText={getRangeText}
                 renderRow={(row) => {
                   const st = reqStatusMap[row.status] || { label: "Unknown", class: "secondary" };
-                  const sellers = (row.assignments || []).filter(a => a.status === 3);
                   return (
                     <tr key={row.id}>
                       <td>{row.id}</td>
@@ -93,10 +133,15 @@ const MyBuyRequirements = () => {
                       <td>{row.quantity || "-"}{row.quantity_unit ? ` ${row.quantity_unit}` : ""}</td>
                       <td>{formatDateTime(row.created_at)}</td>
                       <td><span className={`badge bg-${st.class}`}>{st.label}</span></td>
+                      <td>{ownerCell(row)}</td>
                       <td>
-                        {sellers.length
-                          ? sellers.map(s => s.seller ? <div key={s.id}>{s.seller.fname} {s.seller.lname} {s.seller.company_info?.organization_name ? `(${s.seller.company_info.organization_name})` : ""}</div> : null)
-                          : (row.assignments?.length || 0) > 0 ? `${row.assignments.length} assigned` : "None"}
+                        {row.status === 3 ? (
+                          row.buyer_rating
+                            ? <span className="badge bg-success">Rated {row.buyer_rating}/5</span>
+                            : <button className="btn btn-sm btn-outline-primary" onClick={() => { setFeedbackReq(row); setRating(0); setFeedbackText(""); setFeedbackMsg(""); }}>
+                                Rate & Feedback
+                              </button>
+                        ) : "-"}
                       </td>
                     </tr>
                   );
@@ -106,6 +151,50 @@ const MyBuyRequirements = () => {
           </div>
         </div>
       </div>
+
+      {feedbackReq && (
+        <div className="modal fade show d-block" tabIndex="-1" role="dialog" aria-modal="true" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: 500 }}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Rate & Feedback</h5>
+                <button type="button" className="btn-close" onClick={() => setFeedbackReq(null)} aria-label="Close"></button>
+              </div>
+              <div className="modal-body">
+                <p className="text-muted small mb-2">{feedbackReq.product_name_snapshot}</p>
+                <label className="form-label">Your Rating</label>
+                <div className="mb-3">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      className={`btn btn-sm me-1 ${rating >= n ? "btn-warning" : "btn-outline-secondary"}`}
+                      onClick={() => setRating(n)}
+                    >
+                      {n}★
+                    </button>
+                  ))}
+                </div>
+                <label className="form-label">Feedback</label>
+                <textarea
+                  className="form-control"
+                  rows={4}
+                  placeholder="Share your experience with the seller..."
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                />
+                {feedbackMsg && <div className="mt-2 small text-info">{feedbackMsg}</div>}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setFeedbackReq(null)}>Cancel</button>
+                <button type="button" className="btn btn-primary" onClick={handleSubmitFeedback} disabled={isSubmitting}>
+                  {isSubmitting ? "Submitting..." : "Submit"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Suspense>
   );
 };

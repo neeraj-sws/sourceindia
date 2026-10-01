@@ -4,25 +4,192 @@ const Users = require('../models/Users');
 const CompanyInfo = require('../models/CompanyInfo');
 const BuyerRequirements = require('../models/BuyerRequirements');
 const RequirementAssignments = require('../models/RequirementAssignments');
-const SellerPerformance = require('../models/SellerPerformance');
-const { logActivity, ensureSellerPerformance, getSystemConfig, recalculateSellerPerformance } = require('./requirementHelper');
+const { logActivity, ensureSellerPerformance, incrementSellerPerformance, getSystemConfig, recalculateSellerPerformance } = require('./requirementHelper');
 const { findEligibleSellers, hasSellerProductMatch, isProductAvailableForKeyword } = require('./matchingHelper');
-const { rankCandidates } = require('./rankingHelper');
-const { selectFinalSeller, isSameDayCityProductAssigned } = require('./sellerEligibilityHelper');
+const { enrichSellers, evaluateSellerEligibility, isSameDayCityProductAssigned, matchesSupplierPreference, normalizeText } = require('./sellerEligibilityHelper');
+const { getOrCreateSellerLeadCount, consumeSellerLeadCount } = require('./leadLimitHelper');
 const { sendMail } = require('./mailHelper');
+const {
+  ASSIGNED, VIEWED, RESPONDED, ACCEPTED, REJECTED, COMPLETED,
+  LIVE_STATUSES,
+  isRequirementLocked,
+  lockRequirementRow, lockAssignmentRow, findOwningAssignment,
+  hasOwningAssignment, closeCompetingAssignments,
+} = require('./leadOwnershipHelper');
 
-async function assignSellerToRequirement(requirementId, ipAddress = null) {
+// Expected, user-facing failure inside the claim transaction (bad state, wrong
+// seller, someone else already owns the lead). Rolled back and returned as a
+// normal failure instead of a 500.
+class AssignmentError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'AssignmentError';
+  }
+}
+
+// ---------------------------------------------------------------
+// Multi-seller (parallel) assignment model
+// ---------------------------------------------------------------
+// A requirement goes to EVERY eligible distinct seller who stocks the product,
+// each as its own independent assignment with its own SLA lifecycle. One
+// seller's inaction/reassignment never blocks the others' already-assigned
+// leads. The global Monthly Lead Limit per Seller only stops a single seller
+// when their own seller_lead_count is used up.
+//
+// Location tiers (STEP 4):
+//   T1 exact-city   - eligible sellers in the buyer's city (all get a lead)
+//   T2 same-state   - only when ZERO sellers exist in the exact city; nearest first
+//   T3 anywhere     - only when no city/state match exists; nearest first
+// An exhausted-but-existing exact-city seller does NOT trigger the fallback
+// (they go through the normal per-product no-seller/incomplete path instead).
+// ---------------------------------------------------------------
+
+// Build the tiered list of sellers to assign for this requirement.
+// Returns { tier, sellers, notePrefix, cityCandidatesExist }
+async function collectAssignmentCandidates(requirement, config) {
+  const pool = await findEligibleSellers(requirement, config.candidate_pool_size, { countSearchAppearances: true });
+  if (!pool.length) return { tier: 'none', sellers: [], cityCandidatesExist: false };
+
+  const enriched = await enrichSellers(pool, requirement);
+  const evaluated = await evaluateSellerEligibility(enriched, requirement);
+
+  // Enforce the requirement's Supplier Preference (Within My City / Within My State)
+  const prefFiltered = evaluated.filter((s) => {
+    const chk = matchesSupplierPreference({ city: s.city, state: s.state_name }, requirement);
+    return chk.matches;
+  });
+
+  const cityCandidates = prefFiltered.filter((s) => s.same_city);
+  const nonCityCandidates = prefFiltered.filter((s) => !s.same_city);
+
+  const eligibleCity = cityCandidates.filter((s) => s.is_eligible);
+  if (eligibleCity.length > 0) {
+    return { tier: 'exact_city', sellers: eligibleCity, cityCandidatesExist: true, notePrefix: null };
+  }
+
+  // Zero eligible in the exact city, but sellers WITH the product exist there
+  // (all exhausted / lead receiving off) -> no city fallback; per-product incomplete.
+  if (cityCandidates.length > 0) {
+    return { tier: 'city_exhausted', sellers: [], cityCandidatesExist: true, notePrefix: null };
+  }
+
+  // No seller in the exact city at all -> T2 same-state (nearest city first).
+  if (requirement.buyer_state) {
+    const buyerState = normalizeText(String(requirement.buyer_state));
+    const sameState = nonCityCandidates.filter(
+      (s) => s.is_eligible && s.state_name && normalizeText(String(s.state_name)) === buyerState
+    );
+    if (sameState.length > 0) {
+      const ordered = [...sameState].sort((a, b) => ((a.distance_km ?? Infinity) - (b.distance_km ?? Infinity)));
+      return {
+        tier: 'same_state',
+        sellers: ordered,
+        cityCandidatesExist: false,
+        notePrefix: requirement.buyer_city ? `No seller available in ${requirement.buyer_city}` : 'No seller available in buyer city',
+      };
+    }
+  }
+
+  // T3 anywhere (no city known, or no state match) -> nearest first where known.
+  const anywhereEligible = nonCityCandidates.filter((s) => s.is_eligible);
+  if (anywhereEligible.length > 0) {
+    const ordered = [...anywhereEligible].sort((a, b) => ((a.distance_km ?? Infinity) - (b.distance_km ?? Infinity)));
+    return {
+      tier: 'anywhere',
+      sellers: ordered,
+      cityCandidatesExist: false,
+      notePrefix: requirement.buyer_city ? `No seller available in ${requirement.buyer_city}` : null,
+    };
+  }
+
+  return { tier: 'none', sellers: [], cityCandidatesExist: false, notePrefix: null };
+}
+
+function buildAssignmentNote(tier, notePrefix, seller) {
+  if (!notePrefix) return null;
+  const sellerLoc = `${seller.city || 'n/a'}${seller.state_name ? ', ' + seller.state_name : ''}`;
+  return `${notePrefix} — assigned from nearest city: ${sellerLoc}.`;
+}
+
+// Recompute the requirement-level status from its current assignment set.
+// Single-ownership: an accepted/completed assignment is final. The requirement
+// never drops back to Assigned and never becomes "No Seller Found" once a seller
+// has taken ownership.
+async function refreshRequirementStatus(requirement) {
+  const completed = await RequirementAssignments.count({ where: { requirement_id: requirement.id, status: COMPLETED } });
+  const accepted = await RequirementAssignments.count({ where: { requirement_id: requirement.id, status: ACCEPTED } });
+  const active = await RequirementAssignments.count({ where: { requirement_id: requirement.id, status: { [Op.in]: [ASSIGNED, VIEWED, RESPONDED] } } });
+
+  if (completed > 0) {
+    if (requirement.status !== 3) await requirement.update({ status: 3 });
+  } else if (accepted > 0) {
+    if (requirement.status !== 2) await requirement.update({ status: 2 });
+  } else if (active > 0) {
+    if (requirement.status !== 1) await requirement.update({ status: 1 });
+  } else {
+    // No active, none accepted/completed and not explicitly closed/unavailable:
+    // every lead fell through -> No Seller Found (5).
+    if (requirement.status !== 5 && ![4, 6].includes(requirement.status)) {
+      await requirement.update({ status: 5 });
+    }
+  }
+}
+
+async function reassignmentCount(requirementId) {
+  return RequirementAssignments.count({ where: { requirement_id: requirementId, is_reassigned: 1 } });
+}
+
+// Close a requirement out as No Seller Found (5) - but ONLY when nothing is left
+// live. This helper is reached both from fresh assignment (where there is never
+// anything live yet) and from the reassignment path (where sibling assignments
+// may still be pending with their own SLA running). Writing 5 unconditionally in
+// the latter case told the buyer "no seller found" while sellers were still
+// holding live offers, and dropped the requirement out of the SLA sweep - which
+// only selects status 1/2 - so those remaining offers could never be
+// auto-cancelled or reassigned again.
+// Returns true when the requirement was actually closed out.
+async function markNoSellerFound(requirement, message) {
+  const liveCount = await RequirementAssignments.count({
+    where: { requirement_id: requirement.id, status: { [Op.in]: LIVE_STATUSES } },
+  });
+  if (liveCount > 0) {
+    // Still live offers out there - keep the derived status (stays 1).
+    await refreshRequirementStatus(requirement);
+    return false;
+  }
+  if (Number(requirement.status) !== 5) {
+    await requirement.update({ status: 5 });
+  }
+  await logActivity(requirement.id, 'no_seller_found', message);
+  return true;
+}
+
+// Assign the requirement to ALL eligible sellers (parallel). When `reassigned`
+// is true, newly created assignments are tagged is_reassigned=1 and the count
+// of previous reassignments is checked against max_reassignment_attempts.
+async function assignSellerToRequirement(requirementId, ipAddress = null, opts = {}) {
   const config = await getSystemConfig();
   const requirement = await BuyerRequirements.findByPk(requirementId);
   if (!requirement || requirement.is_delete) return { success: false, message: 'Requirement not found' };
 
-  if (requirement.status >= 3) {
-    return { success: false, message: 'Requirement already completed or closed' };
+  // Single-ownership lock. Status 2 (Accepted), 3 (Completed) and 4 (Closed)
+  // must never gain another assignment; a seller owning the lead is caught
+  // separately just below.
+  // 5 (No Seller Found) and 6 (Product Not Available) are NOT locked: they are
+  // derived outcomes, not decisions, and a requirement sitting on 5 is exactly
+  // the state a single auto-cancelled/rejected offer leaves behind. Blocking
+  // them here would make the auto-cancel -> reassign path a no-op, so the
+  // "status >= 2" test is replaced by the explicit lock set.
+  if (isRequirementLocked(requirement)) {
+    return { success: false, message: 'Requirement already accepted or completed' };
+  }
+  if (await hasOwningAssignment(requirementId)) {
+    return { success: false, message: 'Requirement already accepted by a seller' };
   }
 
   // Product itself does not exist in the system -> Product Not Available (6), not No Seller Found (5).
-// Only for requirements that NEVER had any seller assigned; once a seller was ever assigned,
-// never flip to 6 (keep the no-seller flow -> 5).
+  // Only for requirements that NEVER had any seller assigned; once a seller was ever assigned,
+  // never flip to 6 (keep the no-seller flow -> 5).
   if (requirement.product_keyword_id && !(await isProductAvailableForKeyword(requirement.product_keyword_id))) {
     const hadSeller = (await RequirementAssignments.count({ where: { requirement_id: requirementId } })) > 0;
     if (!hadSeller) {
@@ -32,78 +199,138 @@ async function assignSellerToRequirement(requirementId, ipAddress = null) {
     }
   }
 
-  const activeAssignment = await RequirementAssignments.findOne({
-    where: {
+  if (opts.reassigned && await reassignmentCount(requirementId) >= requirement.max_reassignment_attempts) {
+    return { success: false, message: 'Reassignment limit reached' };
+  }
+
+  const cand = await collectAssignmentCandidates(requirement, config);
+
+  if (cand.tier === 'city_exhausted') {
+    await markNoSellerFound(requirement, 'All sellers in the buyer city have reached their lead limit for this period');
+    return { success: false, message: 'All sellers in the buyer city have reached their lead limit for this period' };
+  }
+
+  if (cand.tier === 'none' || cand.sellers.length === 0) {
+    await markNoSellerFound(requirement, 'No eligible seller available anywhere');
+    return { success: false, message: 'No eligible seller available anywhere' };
+  }
+
+  const assignments = [];
+  let nextNumber = requirement.assignment_count;
+
+  for (const seller of cand.sellers) {
+    if (!seller || !seller.seller_id) continue;
+
+    const perf = await ensureSellerPerformance(seller.seller_id);
+    if (!perf.lead_receiving_enabled) continue;
+
+    // Fresh capacity re-check (race-safe, against the current period's count)
+    const row = await getOrCreateSellerLeadCount(seller.seller_id, config);
+    if (row.leads_received >= row.limit_at_period_start) continue;
+
+    if (await isSameDayCityProductAssigned(seller.seller_id, requirement)) continue;
+
+    // Never create a second live assignment row for the same seller on the same
+    // requirement: the first one is the offer, later attempts are duplicates.
+    const existingLive = await RequirementAssignments.findOne({
+      where: { requirement_id: requirementId, seller_id: seller.seller_id, status: { [Op.in]: LIVE_STATUSES } },
+    });
+    if (existingLive) continue;
+
+    nextNumber += 1;
+    const assignmentNote = buildAssignmentNote(cand.tier, cand.notePrefix, seller);
+    const assignment = await RequirementAssignments.create({
       requirement_id: requirementId,
-      status: { [Op.in]: [0, 1, 2, 3, 6] },
-    },
-  });
-  if (activeAssignment) {
-    return { success: false, message: 'Active assignment already exists' };
+      seller_id: seller.seller_id,
+      assignment_number: nextNumber,
+      status: 0,
+      product_match_level: seller.match_level,
+      product_match_score: seller.match_score,
+      total_rank_score: seller.performance_score || 0,
+      is_reassigned: opts.reassigned ? 1 : 0,
+      assignment_note: assignmentNote,
+      assigned_at: new Date(),
+    });
+
+    await incrementSellerPerformance(seller.seller_id, { monthly_leads_used: 1, total_leads: 1 });
+
+    if (row && row.id) {
+      try {
+        const consumed = await consumeSellerLeadCount(row.id);
+        if (!consumed) {
+          console.log(`[assignSellerToRequirement] WARN: lead count not consumed (race) for seller #${seller.seller_id}, requirement #${requirementId}`);
+        }
+      } catch (err) {
+        console.error(`[assignSellerToRequirement] ERROR consuming lead count for seller #${seller.seller_id}:`, err.message);
+      }
+    }
+
+    const action = opts.reassigned ? 'lead_reassigned' : 'seller_assigned';
+    const detail = opts.reassigned
+      ? `Reassigned to seller #${seller.seller_id}${assignmentNote ? ' — ' + assignmentNote : ''}`
+      : `Assigned to seller #${seller.seller_id} (match: ${seller.match_level}, score: ${seller.performance_score})${assignmentNote ? ' — ' + assignmentNote : ''}`;
+    await logActivity(requirementId, action, detail, seller.seller_id, assignment.id, ipAddress);
+
+    assignments.push({ assignment, seller_id: seller.seller_id });
+
+    // A reassignment advances the chain by exactly ONE seller.
+    //
+    // The candidate pool for a reassignment is "sellers not yet tried on this
+    // requirement". Fan-out here handed that whole pool to a single hop, which
+    // broke the chain in two ways:
+    //   1. reassignmentCount() (used for max_reassignment_attempts) jumped by
+    //      the size of the pool in one step, so the cap could be blown inside a
+    //      single pass and the next hop was rejected as over-limit.
+    //   2. Every remaining seller already had an assignment row, so when that
+    //      hop's seller then rejected or auto-cancelled there was nobody left to
+    //      move the lead to - the chain always stopped after one hop.
+    // Taking the first candidate only keeps the chain one hop per failure and
+    // makes the counter match the configured attempt limit exactly. The fresh
+    // (non-reassignment) path is still a full parallel fan-out.
+    if (opts.reassigned) break;
   }
 
-  // Final, revalidated seller selection (same-city priority + same-day/city/product exclusion + nearest-city fallback)
-  const selection = await selectFinalSeller(requirement);
-  if (!selection.success || !selection.seller) {
-    await requirement.update({ status: 5 });
-    await logActivity(requirementId, 'no_seller_found', selection.message || 'No eligible sellers found');
-    return { success: false, message: selection.message || 'No eligible sellers found' };
+  if (assignments.length === 0) {
+    await markNoSellerFound(requirement, 'No eligible seller received the lead (all exhausted or no capacity this period)');
+    return { success: false, message: 'No eligible seller received the lead (all exhausted or no capacity this period)' };
   }
 
-  const candidate = selection.seller;
-  const perf = await ensureSellerPerformance(candidate.seller_id);
-  if (!perf.lead_receiving_enabled) {
-    await requirement.update({ status: 5 });
-    await logActivity(requirementId, 'no_seller_found', 'Selected seller not receiving leads');
-    return { success: false, message: 'Selected seller not receiving leads' };
-  }
-  if (perf.monthly_leads_used >= config.monthly_limit) {
-    await requirement.update({ status: 5 });
-    await logActivity(requirementId, 'no_seller_found', 'Selected seller monthly limit reached');
-    return { success: false, message: 'Selected seller monthly limit reached' };
-  }
-  if (await isSameDayCityProductAssigned(candidate.seller_id, requirement)) {
-    await requirement.update({ status: 5 });
-    await logActivity(requirementId, 'no_seller_found', 'Selected seller already assigned for same date/city/product');
-    return { success: false, message: 'Selected seller already assigned for same date/city/product' };
-  }
-
-  const assignmentNumber = requirement.assignment_count + 1;
-  const assignment = await RequirementAssignments.create({
-    requirement_id: requirementId,
-    seller_id: candidate.seller_id,
-    assignment_number: assignmentNumber,
-    status: 0,
-    product_match_level: candidate.match_level,
-    product_match_score: candidate.match_score,
-    total_rank_score: candidate.total_score,
-    assigned_at: new Date(),
-  });
-
-  await perf.update({ monthly_leads_used: perf.monthly_leads_used + 1, total_leads: perf.total_leads + 1 });
   await requirement.update({
     status: 1,
-    current_assignment_id: assignment.id,
-    assignment_count: assignmentNumber,
+    assignment_count: nextNumber,
   });
 
-  await logActivity(
-    requirementId,
-    'seller_assigned',
-    `Assigned to seller #${candidate.seller_id} (match: ${candidate.match_level}, score: ${candidate.total_score})`,
-    candidate.seller_id,
-    assignment.id,
-    ipAddress
-  );
+  for (const { assignment, seller_id } of assignments) {
+    await notifySeller(seller_id, requirement, assignment);
+  }
 
-  await notifySeller(candidate.seller_id, requirement, assignment);
-
-  return { success: true, assignment, seller_id: candidate.seller_id, score: candidate.total_score };
+  return {
+    success: true,
+    assignments: assignments.map((a) => a.assignment),
+    seller_ids: assignments.map((a) => a.seller_id),
+    score: assignments[0].assignment.total_rank_score,
+  };
 }
 
+// Admin override: add a specific seller's assignment to the requirement.
+// Multiple concurrent assignments are allowed; previously-assigned sellers are
+// left untouched (their independent SLA lifecycle continues). Once a seller has
+// accepted or completed the lead the requirement is locked and no further
+// assignment is allowed, admin or otherwise.
 async function manualAssignSellerToRequirement(requirementId, sellerId, ipAddress = null) {
   const requirement = await BuyerRequirements.findByPk(requirementId);
   if (!requirement || requirement.is_delete) return { success: false, message: 'Requirement not found' };
+
+  // Admin override: an admin may still rescue a requirement that ended up with
+  // no seller (5 = No Seller Found, 6 = Product Not Available) - that override
+  // is the whole point of the manual flow. Only a locked status (accepted /
+  // completed / closed) or an existing owner blocks it.
+  if (isRequirementLocked(requirement)) {
+    return { success: false, message: 'Requirement already accepted, completed or closed' };
+  }
+  if (await hasOwningAssignment(requirementId)) {
+    return { success: false, message: 'Requirement already accepted by a seller' };
+  }
 
   const seller = await Users.findByPk(sellerId);
   if (!seller || seller.is_delete) return { success: false, message: 'Seller not found' };
@@ -120,39 +347,12 @@ async function manualAssignSellerToRequirement(requirementId, sellerId, ipAddres
     return { success: false, message: 'Seller already assigned for same date + same city + same product on this day' };
   }
 
-  const activeAssignment = await RequirementAssignments.findOne({
-    where: {
-      requirement_id: requirementId,
-      status: { [Op.in]: [0, 1, 2, 3, 6] },
-    },
-  });
-  if (activeAssignment) {
-    if (activeAssignment.seller_id === parseInt(sellerId)) {
-      return { success: false, message: 'This seller already has the active assignment for this requirement' };
-    }
-    const oldPerf = await ensureSellerPerformance(activeAssignment.seller_id);
-    await oldPerf.update({ auto_cancelled_leads: oldPerf.auto_cancelled_leads + 1 });
-    await activeAssignment.update({
-      status: 5,
-      auto_cancelled_at: new Date(),
-      reassignment_reason: 'admin_override',
-    });
-    await logActivity(
-      requirementId,
-      'seller_auto_cancelled',
-      `Admin override: existing assignment to seller #${activeAssignment.seller_id} cancelled for re-assignment`,
-      activeAssignment.seller_id,
-      activeAssignment.id,
-      ipAddress
-    );
-  }
-
   const alreadyAssigned = await RequirementAssignments.findOne({
-    where: { requirement_id: requirementId, seller_id: sellerId },
+    where: { requirement_id: requirementId, seller_id: sellerId, status: { [Op.in]: LIVE_STATUSES } },
   });
-  if (alreadyAssigned) return { success: false, message: 'Seller was already assigned to this requirement' };
+  if (alreadyAssigned) return { success: false, message: 'This seller already has an active assignment for this requirement' };
 
-  const perf = await ensureSellerPerformance(sellerId);
+  await ensureSellerPerformance(sellerId);
   const config = await getSystemConfig();
 
   const assignmentNumber = requirement.assignment_count + 1;
@@ -161,15 +361,22 @@ async function manualAssignSellerToRequirement(requirementId, sellerId, ipAddres
     seller_id: sellerId,
     assignment_number: assignmentNumber,
     status: 0,
+    is_reassigned: 0,
     assigned_at: new Date(),
   });
 
-  await perf.update({ monthly_leads_used: perf.monthly_leads_used + 1, total_leads: perf.total_leads + 1 });
+  await incrementSellerPerformance(sellerId, { monthly_leads_used: 1, total_leads: 1 });
+  try {
+    const leadRow = await getOrCreateSellerLeadCount(parseInt(sellerId), config);
+    await consumeSellerLeadCount(leadRow.id);
+  } catch (err) {
+    console.error(`[manualAssignSellerToRequirement] ERROR updating lead count for seller #${sellerId}:`, err.message);
+  }
+
   await requirement.update({
-    status: 1,
-    current_assignment_id: assignment.id,
     assignment_count: assignmentNumber,
   });
+  await refreshRequirementStatus(requirement);
 
   await logActivity(
     requirementId,
@@ -217,7 +424,7 @@ async function adminCloseRequirement(requirementId, ipAddress = null) {
   if (!requirement || requirement.is_delete) return { success: false, message: 'Requirement not found' };
   if (requirement.status === 4) return { success: false, message: 'Requirement is already closed' };
 
-  await requirement.update({ status: 4, current_assignment_id: null });
+  await requirement.update({ status: 4 });
   await logActivity(requirementId, 'closed', 'Requirement closed by admin', null, null, ipAddress);
   return { success: true };
 }
@@ -259,63 +466,129 @@ async function notifySeller(sellerId, requirement, assignment) {
   }
 }
 
-async function handleSellerResponse(assignmentId, sellerId, action, rejectionReason = null, ipAddress = null) {
-  const assignment = await RequirementAssignments.findByPk(assignmentId, {
-    include: [{ model: BuyerRequirements, as: 'requirement' }],
-  });
-  if (!assignment) return { success: false, message: 'Assignment not found' };
-  if (assignment.seller_id !== sellerId) return { success: false, message: 'Unauthorized' };
-  if (assignment.status !== 0 && assignment.status !== 1) {
+// Claiming a lead is the one place ownership changes hands, so it runs inside a
+// transaction that locks the requirement row first. Two sellers accepting the
+// same lead at the same time serialise on that lock: the first commits, the
+// second sees the owner and is rejected. Accepting also closes every other
+// pending assignment so nobody else can end up owning the same lead.
+async function claimAssignment(assignmentId, sellerId, action) {
+  const isAccept = action === 'accept';
+  const newStatus = isAccept ? ACCEPTED : RESPONDED;
+
+  const preview = await RequirementAssignments.findByPk(assignmentId);
+  if (!preview) return { success: false, message: 'Assignment not found' };
+  if (preview.seller_id !== sellerId) return { success: false, message: 'Unauthorized' };
+  if (preview.status !== ASSIGNED && preview.status !== VIEWED) {
     return { success: false, message: 'Assignment no longer active' };
   }
 
   const now = new Date();
-  const responseTimeSeconds = Math.floor((now - new Date(assignment.assigned_at)) / 1000);
+  const responseTimeSeconds = Math.max(0, Math.floor((now - new Date(preview.assigned_at)) / 1000));
 
-  if (action === 'respond' || action === 'accept') {
-    const isAccept = action === 'accept';
-    const newStatus = isAccept ? 3 : 2; // accept -> assignment Accepted (3)
-    await assignment.update({
-      status: newStatus,
-      responded_at: now,
-      accepted_at: isAccept ? now : null,
-      response_time_seconds: responseTimeSeconds,
-    });
+  let assignment;
+  let superseded = [];
+  try {
+    await sequelize.transaction(async (t) => {
+      await lockRequirementRow(preview.requirement_id, t);
 
-    await logActivity(
-      assignment.requirement_id,
-      action === 'accept' ? 'seller_accepted' : 'seller_responded',
-      `Seller ${action === 'accept' ? 'accepted' : 'responded'} (response time: ${responseTimeSeconds}s)`,
-      sellerId,
-      assignment.id
-    );
+      const locked = await lockAssignmentRow(assignmentId, t);
+      if (!locked) throw new AssignmentError('Assignment not found');
+      if (Number(locked.seller_id) !== Number(sellerId)) throw new AssignmentError('Unauthorized');
+      if (Number(locked.status) !== ASSIGNED && Number(locked.status) !== VIEWED) {
+        throw new AssignmentError('Assignment no longer active');
+      }
 
-    if (isAccept) {
-      await assignment.requirement.update({ status: 2 }); // requirement -> Accepted (2)
-      await logActivity(assignment.requirement_id, 'lead_accepted', `Requirement accepted by seller #${sellerId}`, sellerId, assignment.id);
-    } else {
-      await assignment.requirement.update({ status: 1 }); // responded but not accepted -> stays Assigned (1)
-    }
-
-    const perf = await SellerPerformance.findOne({ where: { seller_id: sellerId } });
-    if (perf) {
-      const config = await getSystemConfig();
-      const slaSeconds = config.sla_minutes * 60;
-      await perf.update({
-        responded_leads: perf.responded_leads + 1,
-        accepted_leads: isAccept ? perf.accepted_leads + 1 : perf.accepted_leads,
-        total_response_time_seconds: perf.total_response_time_seconds + responseTimeSeconds,
-        on_time_response_count: responseTimeSeconds <= slaSeconds
-          ? perf.on_time_response_count + 1
-          : perf.on_time_response_count,
+      // Single-ownership lock: somebody else already took this lead.
+      const owner = await findOwningAssignment(locked.requirement_id, {
+        excludeAssignmentId: assignmentId,
+        transaction: t,
       });
-      await recalculateSellerPerformance(sellerId);
+      if (owner) throw new AssignmentError('This lead has already been accepted by another seller');
+
+      await RequirementAssignments.update(
+        {
+          status: newStatus,
+          responded_at: now,
+          accepted_at: isAccept ? now : locked.accepted_at,
+          response_time_seconds: responseTimeSeconds,
+        },
+        { where: { id: assignmentId }, transaction: t }
+      );
+
+      if (isAccept) {
+        superseded = await closeCompetingAssignments(locked.requirement_id, assignmentId, t);
+      }
+
+      assignment = await RequirementAssignments.findByPk(assignmentId, { transaction: t });
+    });
+  } catch (err) {
+    if (err instanceof AssignmentError) return { success: false, message: err.message };
+    throw err;
+  }
+
+  await logActivity(
+    preview.requirement_id,
+    isAccept ? 'seller_accepted' : 'seller_responded',
+    `Seller ${isAccept ? 'accepted' : 'responded'} (response time: ${responseTimeSeconds}s)`,
+    sellerId,
+    assignmentId
+  );
+
+  if (isAccept) {
+    await logActivity(preview.requirement_id, 'lead_accepted', `Requirement accepted by seller #${sellerId}`, sellerId, assignmentId);
+    for (const s of superseded) {
+      await logActivity(
+        preview.requirement_id,
+        'lead_closed',
+        `Lead closed for seller #${s.seller_id}: requirement already accepted by seller #${sellerId}`,
+        s.seller_id,
+        s.id
+      );
+    }
+  }
+
+  const requirement = await BuyerRequirements.findByPk(preview.requirement_id);
+  await refreshRequirementStatus(requirement);
+
+  await ensureSellerPerformance(sellerId);
+  const config = await getSystemConfig();
+  const slaSeconds = config.sla_minutes * 60;
+  await incrementSellerPerformance(sellerId, {
+    responded_leads: 1,
+    accepted_leads: isAccept ? 1 : 0,
+    total_response_time_seconds: responseTimeSeconds,
+    on_time_response_count: responseTimeSeconds <= slaSeconds ? 1 : 0,
+  });
+  await recalculateSellerPerformance(sellerId);
+
+  return { success: true, assignment, superseded_count: superseded.length };
+}
+
+// Per-assignment seller response. Requirement-level status is derived from the
+// whole assignment set (one seller's accept/reject never collapses the others).
+async function handleSellerResponse(assignmentId, sellerId, action, rejectionReason = null, ipAddress = null) {
+  if (action === 'respond' || action === 'accept') {
+    return claimAssignment(assignmentId, sellerId, action);
+  }
+
+  if (action === 'reject') {
+    const assignment = await RequirementAssignments.findByPk(assignmentId, {
+      include: [{ model: BuyerRequirements, as: 'requirement' }],
+    });
+    if (!assignment) return { success: false, message: 'Assignment not found' };
+    if (assignment.seller_id !== sellerId) return { success: false, message: 'Unauthorized' };
+    if (assignment.status !== 0 && assignment.status !== 1) {
+      return { success: false, message: 'Assignment no longer active' };
+    }
+    if (!(rejectionReason || '').trim()) {
+      return { success: false, message: 'Rejection reason is required to reject a lead' };
     }
 
-    return { success: true, assignment };
-  } else if (action === 'reject') {
+    const now = new Date();
+    const responseTimeSeconds = Math.floor((now - new Date(assignment.assigned_at)) / 1000);
+
     await assignment.update({
-      status: 4,
+      status: REJECTED,
       rejected_at: now,
       rejection_reason: rejectionReason,
       response_time_seconds: responseTimeSeconds,
@@ -329,23 +602,23 @@ async function handleSellerResponse(assignmentId, sellerId, action, rejectionRea
       assignment.id
     );
 
-    const perf = await SellerPerformance.findOne({ where: { seller_id: sellerId } });
-    if (perf) {
-      await perf.update({
-        rejected_leads: perf.rejected_leads + 1,
-      });
-      await recalculateSellerPerformance(sellerId);
-    }
-
-    await assignment.requirement.update({ current_assignment_id: null });
+    await ensureSellerPerformance(sellerId);
+    await incrementSellerPerformance(sellerId, { rejected_leads: 1 });
+    await recalculateSellerPerformance(sellerId);
 
     const requirement = assignment.requirement;
+    await refreshRequirementStatus(requirement);
 
-    if (requirement.assignment_count >= requirement.max_reassignment_attempts) {
-      await requirement.update({ status: 5 });
-      await logActivity(
-        requirement.id,
-        'no_seller_found',
+    // Reassign while the requirement is still up for grabs. Same reasoning as the
+    // SLA path: refreshRequirementStatus above has just derived 5 (No Seller
+    // Found) when this rejection removed the last live offer, and the old
+    // `status !== 1` guard read that as "stop reassigning".
+    if (isRequirementLocked(requirement)) return { success: true };
+    if (await hasOwningAssignment(requirement.id)) return { success: true };
+
+    if (await reassignmentCount(requirement.id) >= requirement.max_reassignment_attempts) {
+      await markNoSellerFound(
+        requirement,
         `No seller found after rejection (reassignment limit ${requirement.max_reassignment_attempts} reached)`
       );
       return { success: true };
@@ -359,16 +632,19 @@ async function handleSellerResponse(assignmentId, sellerId, action, rejectionRea
       assignment.id
     );
 
-    const reassignmentResult = await assignSellerToRequirement(requirement.id, ipAddress);
+    const reassignmentResult = await assignSellerToRequirement(requirement.id, ipAddress, { reassigned: true });
     if (!reassignmentResult.success) {
-      await requirement.update({ status: 5 });
-      await logActivity(
-        requirement.id,
-        'no_seller_found',
-        reassignmentResult.message
-          ? `No seller found after rejection (${reassignmentResult.message})`
-          : 'No seller found after rejection'
-      );
+      await refreshRequirementStatus(requirement);
+      // Sibling offers may still be live - only report when nothing is left.
+      if (Number(requirement.status) === 5) {
+        await logActivity(
+          requirement.id,
+          'no_seller_found',
+          reassignmentResult.message
+            ? `No seller found after rejection (${reassignmentResult.message})`
+            : 'No seller found after rejection'
+        );
+      }
     }
     return { success: true };
   }
@@ -376,7 +652,7 @@ async function handleSellerResponse(assignmentId, sellerId, action, rejectionRea
   return { success: false, message: 'Invalid action' };
 }
 
-// Seller marks an accepted lead as completed -> requirement Completed (5), assignment Completed (6)
+// Seller marks an accepted lead as completed -> requirement Completed (3), assignment Completed (6)
 async function handleSellerComplete(assignmentId, sellerId) {
   const assignment = await RequirementAssignments.findByPk(assignmentId, {
     include: [{ model: BuyerRequirements, as: 'requirement' }],
@@ -388,8 +664,11 @@ async function handleSellerComplete(assignmentId, sellerId) {
   }
 
   const now = new Date();
-  await assignment.update({ status: 6, completed_at: now });
-  await assignment.requirement.update({ status: 3 }); // requirement -> Completed (3)
+  await assignment.update({ status: COMPLETED, completed_at: now });
+  // Completion is terminal: close out any sibling assignment that somehow is
+  // still pending so the completed lead stays with this seller only.
+  const superseded = await closeCompetingAssignments(assignment.requirement_id, assignment.id, null);
+  await refreshRequirementStatus(assignment.requirement);
 
   await logActivity(
     assignment.requirement_id,
@@ -398,12 +677,19 @@ async function handleSellerComplete(assignmentId, sellerId) {
     sellerId,
     assignment.id
   );
-
-  const perf = await SellerPerformance.findOne({ where: { seller_id: sellerId } });
-  if (perf) {
-    await perf.update({ completed_leads: perf.completed_leads + 1 });
-    await recalculateSellerPerformance(sellerId);
+  for (const s of superseded) {
+    await logActivity(
+      assignment.requirement_id,
+      'lead_closed',
+      `Lead closed for seller #${s.seller_id}: requirement completed by seller #${sellerId}`,
+      s.seller_id,
+      s.id
+    );
   }
+
+  await ensureSellerPerformance(sellerId);
+  await incrementSellerPerformance(sellerId, { completed_leads: 1 });
+  await recalculateSellerPerformance(sellerId);
 
   return { success: true, assignment };
 }
@@ -417,6 +703,11 @@ async function handleSellerView(assignmentId, sellerId) {
   }
 }
 
+// No-action auto-cancel + independent per-assignment reassignment (STEP 3).
+// Each lead has its own SLA window; on timeout it is auto-cancelled and the
+// requirement is re-checked: if a new eligible seller exists (and the
+// requirement is still awaiting a response) the slot is reassigned and marked
+// is_reassigned=1. One seller's timeout never cancels another seller's lead.
 async function processExpiredAssignments() {
   const config = await getSystemConfig();
   const slaMs = config.sla_minutes * 60 * 1000;
@@ -435,13 +726,35 @@ async function processExpiredAssignments() {
       const requirement = assignment.requirement;
       if (!requirement || requirement.is_delete) continue;
 
-      const currentActive = await RequirementAssignments.findOne({
-        where: {
-          requirement_id: requirement.id,
-          status: { [Op.in]: [0, 1, 2, 3, 6] },
-        },
+      // Single-ownership: a requirement owned by an accepted/completed seller is
+      // frozen. Close out any leftover pending offers (legacy data) and stop -
+      // no SLA cancellation, no lead-count penalty, no reassignment.
+      if (await hasOwningAssignment(requirement.id)) {
+        const superseded = await closeCompetingAssignments(requirement.id, null, null);
+        for (const s of superseded) {
+          await logActivity(
+            requirement.id,
+            'lead_closed',
+            `Lead closed for seller #${s.seller_id}: requirement already accepted by another seller`,
+            s.seller_id,
+            s.id
+          );
+        }
+        continue;
+      }
+
+      // Still the current lead for this seller? (idempotency guard)
+      const fresh = await RequirementAssignments.findByPk(assignment.id);
+      if (!fresh || ![0, 1].includes(fresh.status)) continue;
+
+      // Re-check under the ownership lock: a seller may have accepted this lead
+      // between the query above and now.
+      let owned = false;
+      await sequelize.transaction(async (t) => {
+        await lockRequirementRow(requirement.id, t);
+        owned = await hasOwningAssignment(requirement.id, { transaction: t });
       });
-      if (!currentActive || currentActive.id !== assignment.id) continue;
+      if (owned) continue;
 
       await assignment.update({
         status: 5,
@@ -457,42 +770,54 @@ async function processExpiredAssignments() {
         assignment.id
       );
 
-      const perf = await SellerPerformance.findOne({ where: { seller_id: assignment.seller_id } });
-      if (perf) {
-        await perf.update({
-          auto_cancelled_leads: perf.auto_cancelled_leads + 1,
-        });
-        await recalculateSellerPerformance(assignment.seller_id);
-      }
+      await ensureSellerPerformance(assignment.seller_id);
+      await incrementSellerPerformance(assignment.seller_id, { auto_cancelled_leads: 1 });
+      await recalculateSellerPerformance(assignment.seller_id);
 
-      await requirement.update({ current_assignment_id: null });
+      await refreshRequirementStatus(requirement);
 
-      if (requirement.assignment_count >= requirement.max_reassignment_attempts) {
-        await requirement.update({ status: 5 });
-        await logActivity(
-          requirement.id,
-          'no_seller_found',
-          `Seller did not respond within SLA (${config.sla_minutes} min); reassignment limit (${requirement.max_reassignment_attempts}) reached; lead closed`
-        );
+      // Reassign while the requirement is still up for grabs. The derived status
+      // CANNOT be used as that test: refreshRequirementStatus above just set 5
+      // (No Seller Found) whenever this cancelled offer was the last live one -
+      // i.e. in precisely the case that most needs a next seller - and the old
+      // `status !== 1` guard then read that consequence as "stop reassigning".
+      // The real preconditions are the explicit lock set (2 accepted / 3
+      // completed / 4 closed) and no seller having taken ownership.
+      if (isRequirementLocked(requirement)) continue;
+      if (await hasOwningAssignment(requirement.id)) continue;
+
+      if (await reassignmentCount(requirement.id) >= requirement.max_reassignment_attempts) {
+        await refreshRequirementStatus(requirement);
+        if (Number(requirement.status) === 5) {
+          await logActivity(
+            requirement.id,
+            'no_seller_found',
+            `Seller did not respond within SLA (${config.sla_minutes} min); reassignment limit (${requirement.max_reassignment_attempts}) reached; lead closed`
+          );
+        }
         continue;
       }
 
       await logActivity(
         requirement.id,
         'lead_reassigned',
-        `Seller #${assignment.seller_id} did not respond within SLA (${config.sla_minutes} min); reassigning to next seller`,
+        `Seller #${assignment.seller_id} did not respond within SLA (${config.sla_minutes} min); reassigning to next eligible seller`,
         null,
         assignment.id
       );
 
-      const reassignmentResult = await assignSellerToRequirement(requirement.id, requirement.buyer_ip);
+      const reassignmentResult = await assignSellerToRequirement(requirement.id, requirement.buyer_ip, { reassigned: true });
       if (!reassignmentResult.success) {
-        await requirement.update({ status: 5 });
-        await logActivity(
-          requirement.id,
-          'no_seller_found',
-          reassignmentResult.message || 'No eligible sellers left for reassignment'
-        );
+        await refreshRequirementStatus(requirement);
+        // Only report "no seller found" when the requirement really has nothing
+        // live left; sibling offers may still be pending with their own SLA.
+        if (Number(requirement.status) === 5) {
+          await logActivity(
+            requirement.id,
+            'no_seller_found',
+            reassignmentResult.message || 'No eligible sellers left for reassignment'
+          );
+        }
       }
     } catch (err) {
       console.error('processExpiredAssignments error for assignment', assignment.id, err.message);
@@ -503,8 +828,8 @@ async function processExpiredAssignments() {
 }
 
 // Self-healing: requirements stuck in an active status (1/2) but with NO active
-// assignment (e.g. after an auto-cancel/reject where no next seller was found and
-// the status never resolved) get resolved: assign next eligible seller or -> 5.
+// assignment (e.g. after auto-cancel/reject where no next seller was found) get
+// resolved: assign any newly-eligible seller or -> 5.
 async function repairStuckRequirements() {
   const stuckReqs = await BuyerRequirements.findAll({
     where: { is_delete: 0, status: { [Op.in]: [1, 2] } },
@@ -512,17 +837,20 @@ async function repairStuckRequirements() {
   let fixed = 0;
   for (const requirement of stuckReqs) {
     try {
+      // Single-ownership: never "repair" a requirement a seller already owns.
+      if (await hasOwningAssignment(requirement.id)) continue;
+
       const activeAssignment = await RequirementAssignments.findOne({
         where: {
           requirement_id: requirement.id,
-          status: { [Op.in]: [0, 1, 2, 3, 6] },
+          status: { [Op.in]: LIVE_STATUSES },
         },
       });
       if (activeAssignment) continue;
 
       const result = await assignSellerToRequirement(requirement.id, requirement.buyer_ip);
-      if (!result.success && !result.message.includes('already')) {
-        await requirement.update({ status: 5 });
+      if (!result.success) {
+        await refreshRequirementStatus(requirement);
         await logActivity(
           requirement.id,
           'no_seller_found',
@@ -547,5 +875,6 @@ module.exports = {
   handleSellerView,
   processExpiredAssignments,
   repairStuckRequirements,
+  refreshRequirementStatus,
   notifySeller,
 };

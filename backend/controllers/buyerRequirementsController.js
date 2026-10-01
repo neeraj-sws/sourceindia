@@ -14,8 +14,10 @@ const Categories = require('../models/Categories');
 const Cities = require('../models/Cities');
 const States = require('../models/States');
 const Countries = require('../models/Countries');
-const { logActivity, getBuyerLocation, geocodeCity, getSystemConfig, ensureSellerPerformance, recalculateSellerPerformance, detectRequirementCategories } = require('../helpers/requirementHelper');
+const { logActivity, getBuyerLocation, geocodeCity, reverseGeocodePostcode, getSystemConfig, ensureSellerPerformance, recalculateSellerPerformance, detectRequirementCategories, hasLeadPriority, getLeadPriorityTag } = require('../helpers/requirementHelper');
 const { assignSellerToRequirement, handleSellerResponse, handleSellerComplete, handleSellerView } = require('../helpers/assignmentHelper');
+const { withAssignedSeller } = require('../helpers/leadOwnershipHelper');
+const { getLeadUsage } = require('../helpers/leadLimitHelper');
 
 const getClientIp = (req) => {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
@@ -59,11 +61,11 @@ async function createRequirement(req, res) {
   try {
     const {
       product_keyword_id, item_subcategory_id, item_category_id,
-      subcategory_id, category_id, product_type,
+      subcategory_id, category_id,
       product_name_snapshot, quantity, quantity_unit,
       description, supplier_preference, preference_states,
       buyer_name, buyer_email, buyer_phone, buyer_company, buyer_country_code,
-      buyer_city, buyer_state,
+      buyer_city, buyer_state, buyer_pincode,
     } = req.body;
 
     if (!product_name_snapshot || !product_name_snapshot.trim()) {
@@ -73,6 +75,7 @@ async function createRequirement(req, res) {
 
     const ipAddress = getClientIp(req);
     const buyerLocation = await getBuyerLocation(ipAddress);
+    const systemConfig = await getSystemConfig();
 
     // If a logged-in buyer/user posted this, resolve their profile so the
     // requirement keeps real identity (JWT payload only carries id/email/is_seller).
@@ -101,12 +104,20 @@ async function createRequirement(req, res) {
     const finalCity = buyer_city || buyerLocation.buyer_city || null;
     const finalState = buyer_state || buyerLocation.buyer_state || null;
 
+    // An explicit pincode from an API caller wins; otherwise it is derived below.
+    const submittedPincode = String(buyer_pincode || '').replace(/\D/g, '').slice(0, 10) || null;
+
     // If IP geolocation gave no lat/lon, geocode the selected city so distance works
     let geo = { buyer_latitude: buyerLocation.buyer_latitude, buyer_longitude: buyerLocation.buyer_longitude };
     if (!geo.buyer_latitude || !geo.buyer_longitude) {
       const g = await geocodeCity(finalCity, finalState);
       if (g) geo = { buyer_latitude: g.latitude, buyer_longitude: g.longitude };
     }
+
+    // Now that we have coordinates, derive the pincode the same way - silently,
+    // with no buyer input. Best-effort; stays null if the lookup fails.
+    const finalPincode = submittedPincode
+      || await reverseGeocodePostcode(geo.buyer_latitude, geo.buyer_longitude);
 
     const requirement = await BuyerRequirements.create({
       buyer_id: buyerIdentity.buyer_id || null,
@@ -120,7 +131,6 @@ async function createRequirement(req, res) {
       item_category_id: item_category_id || detected.item_category_id || null,
       subcategory_id: subcategory_id || detected.subcategory_id || null,
       category_id: category_id || detected.category_id || null,
-      product_type: product_type || 2,
       product_name_snapshot: product_name_snapshot.trim(),
       quantity: quantity || null,
       quantity_unit: quantity_unit || null,
@@ -132,7 +142,9 @@ async function createRequirement(req, res) {
       ...geo,
       buyer_city: finalCity,
       buyer_state: finalState,
+      buyer_pincode: finalPincode,
       status: 0,
+      max_reassignment_attempts: systemConfig.max_reassignment_attempts,
     }, { transaction: t });
 
     await logActivity(requirement.id, 'requirement_created', `Requirement created by ${requirement.buyer_name || 'guest'}`, null, null, ipAddress, t);
@@ -164,6 +176,13 @@ async function getRequirementById(req, res) {
         { model: SubCategories, as: 'subCategory', attributes: ['id', 'name'] },
         { model: Categories, as: 'category', attributes: ['id', 'name'] },
         { model: Users, as: 'buyer', attributes: ['id', 'fname', 'lname', 'email', 'mobile'] },
+        {
+          model: RequirementAssignments, as: 'assignments',
+          include: [{ model: Users, as: 'seller', attributes: ['id', 'fname', 'lname'],
+            include: [{ model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] }],
+          }],
+          order: [['assignment_number', 'ASC']],
+        },
       ],
     });
     if (!requirement) return res.status(404).json({ message: 'Requirement not found' });
@@ -177,7 +196,7 @@ async function getMyRequirements(req, res) {
   try {
     const { page = 1, limit = 25, search = '', sortBy = 'created_at', sort = 'DESC' } = req.query;
 
-    const where = { is_delete: 0 };
+    const where = { is_delete: 0, buyer_id: req.user.id };
     if (search) {
       where[Op.or] = [
         { product_name_snapshot: { [Op.like]: `%${search}%` } },
@@ -186,11 +205,12 @@ async function getMyRequirements(req, res) {
     }
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    const { count, rows } = await BuyerRequirements.findAndCountAll({
+    const count = await BuyerRequirements.count({ where });
+    const rows = await BuyerRequirements.findAll({
       where,
       include: [
         { model: Categories, as: 'category', attributes: ['id', 'name'] },
-        { model: RequirementAssignments, as: 'assignments', attributes: ['id', 'status', 'seller_id'],
+        { model: RequirementAssignments, as: 'assignments', attributes: ['id', 'status', 'seller_id', 'is_reassigned', 'assignment_note', 'assigned_at', 'accepted_at', 'completed_at'],
           include: [{ model: Users, as: 'seller', attributes: ['id', 'fname', 'lname'],
             include: [{ model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] }],
           }],
@@ -202,7 +222,8 @@ async function getMyRequirements(req, res) {
     });
 
     return res.json({
-      data: rows,
+      // Only the seller that actually holds the lead is exposed as the assignee.
+      data: withAssignedSeller(rows),
       totalRecords: count,
       filteredRecords: count,
       page: parseInt(page),
@@ -338,7 +359,15 @@ async function getSellerPerformance(req, res) {
     const perf = await ensureSellerPerformance(sellerId);
     await recalculateSellerPerformance(sellerId);
     const updated = await SellerPerformance.findOne({ where: { seller_id: sellerId } });
-    return res.json(updated);
+    const data = updated.toJSON ? updated.toJSON() : updated;
+    data.score_breakdown = data.score_breakdown ? (() => { try { return JSON.parse(data.score_breakdown); } catch (e) { return null; } })() : null;
+    const score = Number(data.overall_performance_score) || 0;
+    data.overall_performance_score = score;
+    data.has_lead_priority = hasLeadPriority(score);
+    data.lead_priority = getLeadPriorityTag(score);
+    data.search_appearance_count = Number(data.search_appearance_count) || 0;
+    data.late_response_count = Math.max(0, (Number(data.responded_leads) || 0) - (Number(data.on_time_response_count) || 0));
+    return res.json(data);
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -369,7 +398,223 @@ async function getSellerLeadCounts(req, res) {
     result.monthly_used = perf.monthly_leads_used;
     result.monthly_limit = config.monthly_limit;
 
+    const score = Number(perf.overall_performance_score) || 0;
+    result.overall_performance_score = score;
+    result.has_lead_priority = hasLeadPriority(score);
+    result.lead_priority = getLeadPriorityTag(score);
+    result.search_appearance_count = Number(perf.search_appearance_count) || 0;
+    result.on_time_response_count = Number(perf.on_time_response_count) || 0;
+    result.on_time_response_percentage = Number(perf.on_time_response_percentage) || 0;
+    result.late_response_count = Math.max(0, (Number(perf.responded_leads) || 0) - (Number(perf.on_time_response_count) || 0));
+    result.auto_cancelled = Number(perf.auto_cancelled_leads) || result.auto_cancelled;
+    result.completed_performance = Number(perf.completed_leads) || 0;
+    result.sla_minutes = config.sla_minutes;
+
+    const usage = await getLeadUsage(sellerId);
+    result.period_used = usage.leads_received;
+    result.period_limit = usage.limit_at_period_start;
+    result.period_remaining = usage.remaining;
+    result.period_start = usage.period_start;
+    result.period_end = usage.period_end;
+    result.period_type = usage.period_type;
+
     return res.json(result);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+async function getSellerHistory(req, res) {
+  try {
+    const sellerId = req.user.id;
+    const { page = 1, limit = 25, search = '', status: statusFilter, from, to } = req.query;
+
+    const where = { seller_id: sellerId };
+    if (statusFilter !== undefined && statusFilter !== '') {
+      where.status = parseInt(statusFilter);
+    }
+    if (from || to) {
+      where.assigned_at = {};
+      if (from) where.assigned_at[Op.gte] = new Date(from);
+      if (to) where.assigned_at[Op.lte] = new Date(to);
+    }
+
+    const reqWhere = { is_delete: 0 };
+    if (search) {
+      reqWhere[Op.or] = [
+        { product_name_snapshot: { [Op.like]: `%${search}%` } },
+        { buyer_name: { [Op.like]: `%${search}%` } },
+        { buyer_company: { [Op.like]: `%${search}%` } },
+        { buyer_email: { [Op.like]: `%${search}%` } },
+      ];
+    }
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { count, rows } = await RequirementAssignments.findAndCountAll({
+      where,
+      include: [{
+        model: BuyerRequirements,
+        as: 'requirement',
+        where: reqWhere,
+        required: true,
+        include: [
+          { model: Categories, as: 'category', attributes: ['id', 'name'] },
+          { model: SubCategories, as: 'subCategory', attributes: ['id', 'name'] },
+          { model: ItemCategory, as: 'itemCategory', attributes: ['id', 'name'] },
+          { model: ItemSubCategory, as: 'itemSubCategory', attributes: ['id', 'name'] },
+          { model: ProductKeyword, as: 'keyword', attributes: ['id', 'name'] },
+        ],
+      }],
+      order: [['assigned_at', 'DESC']],
+      limit: parseInt(limit),
+      offset,
+    });
+
+    // On-time is judged against the SLA currently configured, same as the stored
+    // on_time_response_count counter. A rejection is a seller action but is not
+    // counted as a "response to" the lead, so it is reported separately.
+    const config = await getSystemConfig();
+    const slaSeconds = (Number.parseInt(config.sla_minutes, 10) || 0) * 60;
+    const data = rows.map((row) => {
+      const plain = typeof row.toJSON === 'function' ? row.toJSON() : { ...row };
+      const responseSeconds = Number(plain.response_time_seconds);
+      const hasResponse = plain.responded_at != null && Number.isFinite(responseSeconds);
+      plain.response_time_minutes = hasResponse ? Math.round((responseSeconds / 60) * 10) / 10 : null;
+      plain.is_on_time = hasResponse ? responseSeconds <= slaSeconds : null;
+      plain.sla_minutes = config.sla_minutes;
+      return plain;
+    });
+
+    return res.json({
+      data,
+      totalRecords: count,
+      filteredRecords: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+    });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+async function submitBuyerFeedback(req, res) {
+  try {
+    const buyerId = req.user ? req.user.id : null;
+    if (!buyerId) return res.status(401).json({ message: 'Authentication required' });
+
+    const { rating, feedback } = req.body;
+    const ratingNum = parseInt(rating, 10);
+    if (!ratingNum || ratingNum < 1 || ratingNum > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+    if (!feedback || typeof feedback !== 'string' || feedback.trim().length < 3) {
+      return res.status(400).json({ message: 'Feedback must be at least 3 characters long' });
+    }
+
+    const requirement = await BuyerRequirements.findOne({
+      where: { id: req.params.id, buyer_id: buyerId, is_delete: 0 },
+      include: [{
+        model: RequirementAssignments,
+        as: 'assignments',
+        where: { status: 6 },
+        required: true,
+        attributes: ['id', 'seller_id', 'status'],
+      }],
+    });
+
+    if (!requirement) return res.status(404).json({ message: 'Completed requirement not found' });
+    if (requirement.status !== 3) {
+      return res.status(400).json({ message: 'Only completed requirements can be rated' });
+    }
+    if (requirement.buyer_rating != null) {
+      return res.status(400).json({ message: 'Feedback already submitted for this requirement' });
+    }
+
+    const assignment = requirement.assignments[0];
+    const sellerId = assignment.seller_id;
+
+    await requirement.update({
+      buyer_rating: ratingNum,
+      buyer_feedback: feedback.trim(),
+    });
+
+    const perf = await SellerPerformance.findOne({ where: { seller_id: sellerId } });
+    if (perf) {
+      const newCount = (perf.buyer_rating_count || 0) + 1;
+      const newAvg = perf.buyer_rating_count > 0
+        ? Math.round(((perf.buyer_rating_avg * perf.buyer_rating_count + ratingNum) / newCount) * 100) / 100
+        : ratingNum;
+      await perf.update({ buyer_rating_avg: newAvg, buyer_rating_count: newCount });
+      await recalculateSellerPerformance(sellerId);
+    }
+
+    await RequirementActivityLog.create({
+      requirement_id: requirement.id,
+      assignment_id: assignment.id,
+      seller_id: sellerId,
+      action: 'buyer_feedback',
+      details: `Buyer rated ${ratingNum}/5`,
+      ip_address: getClientIp(req),
+    });
+
+    return res.json({ success: true, message: 'Feedback submitted successfully' });
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
+async function getBuyerRequirementHistory(req, res) {
+  try {
+    const buyerId = req.user.id;
+    const { page = 1, limit = 25, search = '', status: statusFilter, from, to } = req.query;
+
+    const where = { buyer_id: buyerId, is_delete: 0 };
+    if (statusFilter !== undefined && statusFilter !== '') {
+      where.status = parseInt(statusFilter);
+    }
+    if (search) {
+      where[Op.or] = [
+        { product_name_snapshot: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        { buyer_name: { [Op.like]: `%${search}%` } },
+      ];
+    }
+    if (from || to) {
+      where.created_at = {};
+      if (from) where.created_at[Op.gte] = new Date(from);
+      if (to) where.created_at[Op.lte] = new Date(to);
+    }
+
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const count = await BuyerRequirements.count({ where });
+    const rows = await BuyerRequirements.findAll({
+      where,
+      include: [
+        { model: Categories, as: 'category', attributes: ['id', 'name'] },
+        { model: SubCategories, as: 'subCategory', attributes: ['id', 'name'] },
+        { model: ItemCategory, as: 'itemCategory', attributes: ['id', 'name'] },
+        { model: ItemSubCategory, as: 'itemSubCategory', attributes: ['id', 'name'] },
+        { model: ProductKeyword, as: 'keyword', attributes: ['id', 'name'] },
+        {
+          model: RequirementAssignments, as: 'assignments',
+          include: [{ model: Users, as: 'seller', attributes: ['id', 'fname', 'lname'],
+            include: [{ model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] }],
+          }],
+        },
+      ],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset,
+    });
+
+    return res.json({
+      // Only the seller that actually holds the lead is exposed as the assignee.
+      data: withAssignedSeller(rows),
+      totalRecords: count,
+      filteredRecords: count,
+      page: parseInt(page),
+      limit: parseInt(limit),
+    });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -387,4 +632,7 @@ module.exports = {
   sellerCompleteLead,
   getSellerPerformance,
   getSellerLeadCounts,
+  getSellerHistory,
+  getBuyerRequirementHistory,
+  submitBuyerFeedback,
 };

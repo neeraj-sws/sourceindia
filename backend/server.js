@@ -8,6 +8,9 @@ const companiesRoutes = require('./routes/companiesRoutes');
 
 const sequelize = require('./config/database');
 const { backfillMainProductKeywords } = require('./utils/mainProductKeywordSync');
+const { ensureSellerPerformanceColumns } = require('./utils/sellerPerformanceSchema');
+const { ensureBuyerRequirementColumns } = require('./utils/buyerRequirementsSchema');
+const { ensureRequirementAssignmentOwnership } = require('./utils/requirementAssignmentsSchema');
 const fileRoutes = require('./routes/fileRoutes');
 const adminAuthRoutes = require('./routes/adminAuthRoutes');
 const activityRoutes = require('./routes/activityRoutes');
@@ -57,6 +60,7 @@ const buyerEnquiryRoutes = require('./routes/buyerEnquiryRoutes');
 const buyerRequirementsRoutes = require('./routes/buyerRequirementsRoutes');
 const adminBuyerRequirementsRoutes = require('./routes/adminBuyerRequirementsRoutes');
 const { processExpiredAssignments, repairStuckRequirements } = require('./helpers/assignmentHelper');
+const { rolloverSellerLeadCounts } = require('./helpers/leadLimitHelper');
 
 
 const app = express();
@@ -148,6 +152,11 @@ sequelize
   .then(async () => {
     const backfilledKeywords = await backfillMainProductKeywords();
     console.log(`Product keyword main records synchronized: ${backfilledKeywords}`);
+    const addedColumns = await ensureSellerPerformanceColumns();
+    console.log(`Seller performance columns ensured: ${addedColumns.length ? addedColumns.join(', ') : 'up to date'}`);
+    const addedRequirementColumns = await ensureBuyerRequirementColumns();
+    console.log(`Buyer requirement columns ensured: ${addedRequirementColumns.length ? addedRequirementColumns.join(', ') : 'up to date'}`);
+    await ensureRequirementAssignmentOwnership();
     console.log('MySQL connected and models synced');
     app.listen(5000, () =>
       console.log('Server running on http://localhost:5000' + basePath)
@@ -173,5 +182,24 @@ sequelize
       }
     }, 2 * 60 * 1000);
     console.log('[SLA Processor] Started (interval: 2 minutes)');
+
+    // Lead Limit Processor: create fresh per-seller period rows once a period ends.
+    // Runs shortly after startup and then every 24h. Sellers with no row get one
+    // lazily on their first lead of a period, so this only handles rollovers.
+    rolloverSellerLeadCounts()
+      .then((created) => {
+        if (created > 0) console.log(`[Lead Limit Processor] Created ${created} new period rows`);
+        else console.log('[Lead Limit Processor] No overdue periods to roll over');
+      })
+      .catch((err) => console.error('[Lead Limit Processor] Error:', err.message));
+    setInterval(async () => {
+      try {
+        const created = await rolloverSellerLeadCounts();
+        if (created > 0) console.log(`[Lead Limit Processor] Created ${created} new period rows`);
+      } catch (err) {
+        console.error('[Lead Limit Processor] Error:', err.message);
+      }
+    }, 24 * 60 * 60 * 1000);
+    console.log('[Lead Limit Processor] Started (interval: 24 hours)');
   })
   .catch((err) => console.error('DB connection error:', err));

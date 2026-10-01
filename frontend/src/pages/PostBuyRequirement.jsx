@@ -290,7 +290,7 @@ const PostBuyRequirement = () => {
 
   const validate = () => {
     const e = {};
-    if (!productKeyword.id) e.product = "Please Enter Products/Services.";
+    if (!productKeyword.id) e.product = "Please Enter Products";
     if (!form.quantity || String(form.quantity).trim() === "") {
       e.quantity = "Please Enter Quantity.";
     } else if (Number(form.quantity) <= 0) {
@@ -401,7 +401,7 @@ const PostBuyRequirement = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="pbr-field">
-                <label className="pbr-label" htmlFor="pbr-product">Product / Service</label>
+                <label className="pbr-label" htmlFor="pbr-product">Product</label>
                 <div className="pbr-autocomplete">
                   <input
                     id="pbr-product"
@@ -412,7 +412,7 @@ const PostBuyRequirement = () => {
                     onChange={handleProductChange}
                     onFocus={handleProductFocus}
                     onBlur={closeSuggestions}
-                    placeholder="Products / Services you are looking for"
+                    placeholder="Products you are looking for"
                     maxLength={120}
                     autoComplete="off"
                   />

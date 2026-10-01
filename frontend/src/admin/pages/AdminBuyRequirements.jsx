@@ -11,7 +11,7 @@ const reqStatusMap = {
   1: { label: "Assigned", class: "warning" },
   2: { label: "Accepted", class: "success" },
   3: { label: "Completed", class: "success" },
-  4: { label: "Closed", class: "dark" },
+  // 4: { label: "Closed", class: "dark" },
   5: { label: "No Seller Found", class: "danger" },
   6: { label: "Product Not Available", class: "danger" },
 };
@@ -72,7 +72,7 @@ export function AdminBuyRequirements() {
     { label: "Assigned", value: counts.assigned, icon: "bx bxs-group" },
     { label: "Accepted", value: counts.accepted, icon: "bx bx-check-double" },
     { label: "Completed", value: counts.completed, icon: "bx bx-check-circle" },
-    { label: "Closed", value: counts.closed, icon: "bx bx-lock" },
+    // { label: "Closed", value: counts.closed, icon: "bx bx-lock" },
     { label: "No Seller Found", value: counts.no_seller_found, icon: "bx bx-x-circle" },
     { label: "Product Not Available", value: counts.product_not_available, icon: "bx bxs-package" },
   ] : [];
@@ -323,98 +323,219 @@ export function AdminBuyRequirementDetail() {
   const assignments = req.assignments || [];
   const logs = req.activity_logs || [];
 
-  const activeAssign = assignments.find((a) => a.status !== 6 && a.status !== 5 && a.status !== 4);
   const showAssignedTo = [1, 2, 3].includes(req.status);
-  const displayedAssign = showAssignedTo ? (activeAssign || assignments[assignments.length - 1]) : null;
-  const assignedSellerName = displayedAssign?.seller
-    ? `${displayedAssign.seller.fname || ""} ${displayedAssign.seller.lname || ""}`.trim()
-    : "-";
+  const liveAssignments = showAssignedTo
+    ? assignments.filter((a) => [0, 1, 2, 3, 6].includes(Number(a.status)))
+    : [];
+  const ownerAssign =
+    liveAssignments.find((a) => Number(a.status) === 6) ||
+    liveAssignments.find((a) => Number(a.status) === 3);
+  const assignedSellerNames = [
+    ...new Set(
+      (ownerAssign ? [ownerAssign] : liveAssignments)
+        .map((a) => (a.seller ? `${a.seller.fname || ""} ${a.seller.lname || ""}`.trim() : ""))
+        .filter(Boolean)
+    ),
+  ];
+  const assignedSellerName = assignedSellerNames.length ? assignedSellerNames.join(", ") : "-";
+
+  const asgStatusClass = {
+    0: "badge bg-secondary", 1: "badge bg-info", 2: "badge bg-primary",
+    3: "badge bg-success", 4: "badge bg-danger", 5: "badge bg-dark", 6: "badge bg-success",
+  };
+
+  const categoryChain = [
+    { label: "Category", value: req.category?.name },
+    { label: "Sub Category", value: req.subCategory?.name },
+    { label: "Item Category", value: req.itemCategory?.name },
+    { label: "Item Sub Category", value: req.itemSubCategory?.name },
+  ].filter((c) => c.value);
+
+  const statItems = [
+    { label: "Assigned To", value: assignedSellerName, names: assignedSellerNames },
+    { label: "Quantity", value: req.quantity ? `${req.quantity}${req.quantity_unit || ""}` : "-" },
+    { label: "Preference", value: req.supplier_preference || "-" },
+    // { label: "Assignments", value: assignments.length },
+    // { label: "Buyer", value: req.buyer_name || "Guest" },
+    // { label: "Location", value: [req.buyer_city, req.buyer_state].filter(Boolean).join(", ") || "-" },
+  ];
 
   return (
     <div className="page-wrapper">
       <div className="page-content">
         <Breadcrumb page="Workflow" title={`Requirement #${req.id}`} actions={
-          <button className="btn btn-sm btn-light mb-2" onClick={() => navigate("/admin/buy-requirements")}>← Back</button>
+          <button className="btn btn-sm btn-light mb-2" onClick={() => navigate("/admin/buy-requirements-history")}>← Back</button>
         } />
 
-        <div className="d-flex flex-wrap gap-2 mb-3">
-          <button className="btn btn-sm btn-primary" onClick={openAssign}>＋ Assign Seller</button>
-          <div className="d-inline-flex align-items-center gap-2">
-            <select className="form-select form-select-sm w-auto" value={changeStatus} onChange={(e) => setChangeStatus(e.target.value)}>
-              {Object.entries(reqStatusMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </select>
-            <button className="btn btn-sm btn-outline-primary" onClick={handleStatusChange} disabled={statusSaving}>Update Status</button>
-          </div>
-          <button className="btn btn-sm btn-outline-dark" onClick={handleClose}>Close</button>
-        </div>
-
-        <div className="card">
-          <div className="card-header d-flex justify-content-between align-items-center">
-            <h5 className="mb-0">{req.product_name_snapshot}</h5>
-            <div className="d-flex gap-2">
+        <div className="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+          <div>
+            <h4 className="mb-1 fw-semibold">{req.product_name_snapshot}</h4>
+            <div className="d-flex align-items-center gap-2 flex-wrap">
               <span className={`badge bg-${st.class}`}>{st.label}</span>
+              <span className="text-muted small">Req #{req.id} · Posted {formatDateTime(req.created_at)}</span>
+              {req.keyword?.name ? <span className="badge bg-light border text-dark">{req.keyword.name}</span> : null}
             </div>
           </div>
-          <div className="card-body">
-            <div className="row">
-              <div className="col-md-4"><strong>Assigned To (Seller):</strong> {assignments.length ? assignedSellerName : "-"}</div>
-              <div className="col-md-4"><strong>Category:</strong> {req.category?.name || "-"}</div>
-              <div className="col-md-4"><strong>Sub Category:</strong> {req.subCategory?.name || "-"}</div>
-              <div className="col-md-4"><strong>Item Category:</strong> {req.itemCategory?.name || "-"}</div>
-              <div className="col-md-4"><strong>Item Sub Category:</strong> {req.itemSubCategory?.name || "-"}</div>
-              <div className="col-md-4"><strong>Quantity:</strong> {req.quantity || "-"}{req.quantity_unit ? ` ${req.quantity_unit}` : ""}</div>
-              <div className="col-md-4"><strong>Supplier Preference:</strong> {req.supplier_preference || "-"}</div>
-              <div className="col-md-4"><strong>Posted:</strong> {formatDateTime(req.created_at)}</div>
-              <div className="col-md-4"><strong>Buyer:</strong> {req.buyer_name || "-"}</div>
-              <div className="col-md-4"><strong>Email:</strong> {req.buyer_email || "-"}</div>
-              <div className="col-md-4"><strong>Phone:</strong> {req.buyer_phone || "-"}</div>
-              <div className="col-md-4"><strong>Company:</strong> {req.buyer_company || "-"}</div>
-              <div className="col-md-4"><strong>City:</strong> {req.buyer_city || "-"}</div>
-              <div className="col-md-4"><strong>State:</strong> {req.buyer_state || "-"}</div>
-              <div className="col-12 mt-2"><strong>Description:</strong> {req.description || "-"}</div>
+          <button className="btn btn-primary" onClick={openAssign}>
+            <i className="bx bx-plus me-1"></i> Assign Seller
+          </button>
+        </div>
+
+        <div className="row row-cols-2 row-cols-md-3 row-cols-xl-6 g-3 mb-3">
+          {statItems.map((s, i) => (
+            <div className="col" key={i}>
+              <div className="card card-border radius-2 h-100 mb-0">
+                <div className="card-body py-3">
+                  <p className="text-muted small mb-0">{s.label}</p>
+                  {s.names && s.names.length > 0 ? (
+                    <div className="d-flex flex-wrap gap-1 mt-1" title={s.value}>
+                      {s.names.map((n, ni) => (
+                        <span
+                          key={ni}
+                          className="badge bg-light border text-dark fw-semibold small text-wrap"
+                          style={{ maxWidth: "100%", overflowWrap: "anywhere" }}
+                        >
+                          {n}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mb-0 fw-semibold text-truncate" title={s.value}>{s.value}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="row g-3 mb-3">
+          <div className="col-lg-7">
+            <div className="card card-border radius-2">
+              <div className="card-header py-3">
+                <h6 className="mb-0"><i className="bx bx-info-circle me-1"></i> Sourcing Details</h6>
+              </div>
+              <div className="card-body">
+                {categoryChain.length > 0 && (
+                  <div className="d-flex flex-wrap gap-2 mb-3">
+                    {categoryChain.map((c) => (
+                      <span key={c.label} className="badge bg-light border text-dark px-3 py-2">
+                        {c.label}: <strong>{c.value}</strong>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="row g-3">
+                  {/* "Buy Type" block removed: reads product_type, column dropped from buyer_requirements */}
+                  <div className="col-md-6">
+                    <div className="text-muted small mb-1"><i className="bx bx-cube me-1"></i>Quantity</div>
+                    <div>{req.quantity ? `${req.quantity}${req.quantity_unit ? ` ${req.quantity_unit}` : ""}` : "-"}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="text-muted small mb-1"><i className="bx bx-globe me-1"></i>Supplier Preference</div>
+                    <div>{req.supplier_preference || "-"}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="text-muted small mb-1"><i className="bx bx-calendar me-1"></i>Last Updated</div>
+                    <div>{formatDateTime(req.updated_at)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="card card-border radius-2">
+              <div className="card-header py-3">
+                <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Buyer Details</h6>
+              </div>
+              <div className="card-body">
+                <div className="d-flex align-items-center gap-3 mb-3">
+                  <div>
+                    <div className="fw-semibold">{req.buyer_name || "Guest Buyer"}
+                      {!req.buyer_id ? <span className="badge bg-warning ms-2">Guest</span> : null}
+                    </div>
+                    <div className="text-muted small">{req.buyer_email || "-"}</div>
+                  </div>
+                </div>
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <div className="text-muted small mb-1"><i className="bx bx-phone me-1"></i>Phone</div>
+                    <div>{req.buyer_phone || "-"}</div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="text-muted small mb-1"><i className="bx bx-map-pin me-1"></i>City / State</div>
+                    <div>{[req.buyer_city, req.buyer_state].filter(Boolean).join(", ") || "-"}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-lg-5">
+            <div className="card card-border radius-2">
+              <div className="card-header py-3">
+                <h6 className="mb-0"><i className="bx bx-time-five me-1"></i> Activity Log</h6>
+              </div>
+              <div className="card-body p-0 thin-scroll" style={{ maxHeight: "47  0px" }}>
+                {logs.length === 0 ? (
+                  <p className="text-muted small p-3 mb-0">No activity yet</p>
+                ) : (
+                  <ul className="list-group list-group-flush">
+                    {logs.map((l, idx) => (
+                      <li key={l.id} className="list-group-item d-flex gap-3 py-3">
+                        <div className="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 28, height: 28 }}>
+                          <i className={idx === 0 ? "bx bxs-check-circle" : "bx bx-dots-vertical-rounded"}></i>
+                        </div>
+                        <div className="min-w-0">
+                          <div><code className="text-primary">{l.action}</code></div>
+                          <div className="text-muted small">{l.details || "-"}</div>
+                          <div className="text-muted small">{formatDateTime(l.created_at)}{l.seller ? ` · ${l.seller.fname} ${l.seller.lname}` : ""}</div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="card">
-          <div className="card-header"><h6 className="mb-0">Seller Assignment History</h6></div>
-          <div className="card-body p-0">
-            <table className="table table-striped mb-0">
-              <thead><tr><th>No</th><th>Seller</th><th>Company</th><th>Status</th><th>Assigned At</th><th>Responded At</th></tr></thead>
-              <tbody>
-                {assignments.length === 0 && <tr><td colSpan="6" className="text-center">No assignments yet</td></tr>}
-                {assignments.map((a) => (
-                  <tr key={a.id}>
-                    <td>{a.assignment_number}</td>
-                    <td>{a.seller?.fname} {a.seller?.lname}</td>
-                    <td>{a.seller?.company_info?.organization_name || "-"}</td>
-                    <td><span className="badge bg-secondary">{assignStatusMap[a.status] || a.status}</span></td>
-                    <td>{formatDateTime(a.assigned_at)}</td>
-                    <td>{a.responded_at ? formatDateTime(a.responded_at) : "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="card card-border radius-2">
+          <div className="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 className="mb-0"><i className="bx bx-transfer-alt me-1"></i> Seller Assignment History</h6>
+            <span className="badge bg-light text-dark">{assignments.length} total</span>
           </div>
-        </div>
-
-        <div className="card">
-          <div className="card-header"><h6 className="mb-0">Activity Log</h6></div>
           <div className="card-body p-0">
-            <table className="table table-striped mb-0">
-              <thead><tr><th>Time</th><th>Action</th><th>Details</th><th>Seller</th></tr></thead>
-              <tbody>
-                {logs.length === 0 && <tr><td colSpan="4" className="text-center">No activity</td></tr>}
-                {logs.map((l) => (
-                  <tr key={l.id}>
-                    <td>{formatDateTime(l.created_at)}</td>
-                    <td><code>{l.action}</code></td>
-                    <td>{l.details || "-"}</td>
-                    <td>{l.seller ? `${l.seller.fname} ${l.seller.lname}` : "-"}</td>
+            <div className="table-responsive">
+              <table className="table table-hover align-middle mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>#</th><th>Seller</th><th>Company</th><th>Match</th>
+                    {/* <th>Status</th> */}
+                    {/* <th>Assigned At</th><th>Responded At</th><th>Note</th> */}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {assignments.length === 0 && <tr><td colSpan="8" className="text-center py-4">No assignments yet</td></tr>}
+                  {assignments.map((a) => (
+                    <tr key={a.id}>
+                      <td>{a.assignment_number}</td>
+                      <td><div className="fw-semibold">{a.seller?.fname} {a.seller?.lname}</div>{a.seller?.email ? <div className="text-muted small">{a.seller.email}</div> : null}</td>
+                      <td>{a.seller?.company_info?.organization_name || "-"}</td>
+                      <td>
+                        {a.product_match_level || "-"}
+                        {a.product_match_score ? <div className="text-muted small">score: {a.product_match_score}</div> : null}
+                      </td>
+                      {/* <td>
+                        <span className={asgStatusClass[a.status] || "badge bg-secondary"}>{assignStatusMap[a.status] || a.status}</span>
+                        {a.is_reassigned === 1 ? <span className="badge bg-warning text-dark ms-1">Reassigned</span> : null}
+                      </td>
+                      <td>{formatDateTime(a.assigned_at)}</td> */}
+                      {/* <td>{a.responded_at ? formatDateTime(a.responded_at) : "-"}</td> */}
+                      {/* <td>{a.assignment_note ? <span className="text-muted small">{a.assignment_note}</span> : "-"}</td> */}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -422,22 +543,26 @@ export function AdminBuyRequirementDetail() {
           <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Assign Seller to Requirement</h5>
+                <div className="modal-header border-0 pb-0">
+                  <h5 className="modal-title"><i className="bx bx-user-plus me-1"></i>Assign Seller</h5>
                   <button type="button" className="btn-close" onClick={() => setShowAssign(false)}></button>
                 </div>
                 <div className="modal-body">
-                  <input
-                    type="text"
-                    className="form-control mb-2"
-                    placeholder="Search seller by name / email / company..."
-                    value={sellerSearch}
-                    onChange={(e) => { setSellerSearch(e.target.value); fetchSellers(e.target.value); }}
-                  />
+                  <div className="input-group mb-3">
+                    <span className="input-group-text bg-transparent"><i className="bx bx-search"></i></span>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Search by name / email / company..."
+                      value={sellerSearch}
+                      onChange={(e) => { setSellerSearch(e.target.value); fetchSellers(e.target.value); }}
+                    />
+                  </div>
+                  <p className="text-muted small mb-2"><i className="bx bx-info-circle me-1"></i>Tap a seller to select them for assignment.</p>
                   {sellerLoading && <p className="text-muted small">Loading sellers...</p>}
                   {!sellerLoading && sellers.length === 0 && <p className="text-muted small">{assignMessage || "No sellers found"}</p>}
                   {!sellerLoading && sellers.length > 0 && (
-                    <ul className="list-group" style={{ maxHeight: "280px", overflowY: "auto" }}>
+                    <ul className="list-group" style={{ maxHeight: "300px", overflowY: "auto" }}>
                       {sellers.map((s) => (
                         <li
                           key={s.id}
@@ -445,21 +570,43 @@ export function AdminBuyRequirementDetail() {
                           style={{ cursor: "pointer" }}
                           onClick={() => setSelectedSeller(s)}
                         >
-                          <strong>{s.fname} {s.lname}</strong>
-                          <div className="small">{s.company_info?.organization_name || "-"} {s.email ? `· ${s.email}` : ""}</div>
-                          <div className="small text-muted">
-                            {(s.city_data?.name || "-")}
-                            {(s.city_data?.States?.name || s.state_data?.name) ? `, ${s.city_data?.States?.name || s.state_data?.name}` : ""}
+                          <div className="d-flex align-items-center justify-content-between gap-2">
+                            <div className="min-w-0">
+                              <div className="fw-semibold">
+                                {s.fname} {s.lname}
+                                {s.same_city ? <span className="badge bg-success ms-2">Same City</span> : null}
+                                {selectedSeller?.id === s.id ? <i className="bx bxs-check-circle ms-1"></i> : null}
+                              </div>
+                              <div className="small text-truncate">
+                                {s.company_info?.organization_name || "-"}
+                              </div>
+                              <div className="small text-muted">
+                                {s.city_data?.name || "-"}
+                                {(s.city_data?.States?.name || s.state_data?.name) ? `, ${s.city_data?.States?.name || s.state_data?.name}` : ""}
+                                {s.distance_km != null ? ` · ~${s.distance_km} km` : ""}
+                              </div>
+                            </div>
+                            {s.match_score != null && (
+                              <div className="text-end flex-shrink-0">
+                                <div className={`badge ${s.match_level === "Exact" ? "bg-success" : s.match_level === "Similar" ? "bg-primary" : "bg-light text-dark border"}`}>{s.match_level || "Match"}</div>
+                                <div className={`small fw-semibold ${selectedSeller?.id === s.id ? "" : "text-primary"}`}>{s.match_score}%</div>
+                              </div>
+                            )}
                           </div>
                         </li>
                       ))}
                     </ul>
                   )}
+                  {productUnavailable && !sellerLoading && (
+                    <p className="text-danger small mb-0 mt-2"><i className="bx bx-x-circle me-1"></i>Product is not available in the system.</p>
+                  )}
                 </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-light" onClick={() => setShowAssign(false)}>Close</button>
+                <div className="modal-footer border-0 pt-0">
+                  <button type="button" className="btn btn-light" onClick={() => setShowAssign(false)}>Cancel</button>
                   <button type="button" className="btn btn-primary" onClick={handleAssign} disabled={assigning || !selectedSeller || productUnavailable}>
-                    {assigning ? "Assigning..." : "Assign"}
+                    {assigning ? (
+                      <><span className="spinner-border spinner-border-sm me-1"></span> Assigning...</>
+                    ) : ("Assign Seller")}
                   </button>
                 </div>
               </div>

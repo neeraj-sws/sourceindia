@@ -75,15 +75,25 @@ const SellerBuyLeads = () => {
     { label: "Accepted", value: counts?.accepted || 0, icon: "bx bx-check-double", cls: "success" },
     { label: "Rejected", value: counts?.rejected || 0, icon: "bx bx-x-circle", cls: "danger" },
     { label: "Monthly Used", value: `${counts?.monthly_used || 0}/${counts?.monthly_limit || "-"}`, icon: "bx bx-calendar-check", cls: "info" },
+    { label: "Responded On Time", value: `${counts?.on_time_response_count || 0} (${counts?.on_time_response_percentage || 0}%)`, icon: "bx bx-stopwatch", cls: "success" },
+    { label: "Auto-Cancelled", value: counts?.auto_cancelled || 0, icon: "bx bx-time", cls: "dark" },
+    { label: "Search Appearances", value: counts?.search_appearance_count || 0, icon: "bx bx-search", cls: "info" },
   ];
+
+  const priority = counts?.lead_priority || { label: "Standard", class: "secondary" };
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <div className="page-wrapper">
         <div className="page-content">
-          <h4 className="mb-3">Buy Leads</h4>
+          <h4 className="mb-3 d-flex align-items-center gap-2">
+            Buy Leads
+            <span className={`badge bg-${priority.class}`} title={`Overall performance score: ${counts?.overall_performance_score ?? 0} / 100`}>
+              {priority.label}
+            </span>
+          </h4>
 
-          <div className="row row-cols-1 row-cols-md-3 row-cols-xl-5">
+          <div className="row row-cols-1 row-cols-md-3 row-cols-xl-4">
             {statCards.map((s, i) => (
               <div className="col mb-3" key={i}>
                 <div className="card radius-2 overflow-hidden position-relative h-100 card-border">
@@ -114,6 +124,7 @@ const SellerBuyLeads = () => {
                   { key: "quantity", label: "Quantity", sortable: false },
                   { key: "assigned_at", label: "Assigned", sortable: true },
                   { key: "status", label: "Status", sortable: false },
+                  { key: "rating", label: "Buyer Rating", sortable: false },
                   { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}
@@ -141,6 +152,11 @@ const SellerBuyLeads = () => {
                       <td>{row.requirement?.quantity || "-"}{row.requirement?.quantity_unit ? ` ${row.requirement.quantity_unit}` : ""}</td>
                       <td>{formatDateTime(row.assigned_at)}</td>
                       <td><span className={`badge ${st.class}`}>{st.label}</span></td>
+                      <td>
+                        {row.requirement?.buyer_rating
+                          ? <span className="badge bg-warning text-dark" title={row.requirement?.buyer_feedback || ""}>{row.requirement.buyer_rating}/5</span>
+                          : <span className="text-muted">-</span>}
+                      </td>
                       <td>
                         <Link className="btn btn-sm btn-primary" to={`/buy-lead-detail/${row.id}`}>View</Link>
                       </td>

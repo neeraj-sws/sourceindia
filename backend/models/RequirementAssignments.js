@@ -94,6 +94,17 @@ const RequirementAssignments = sequelize.define('RequirementAssignments', {
     allowNull: true,
     comment: 'sla_timeout, rejected, seller_inactive, etc.',
   },
+  is_reassigned: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    comment: '1 = this lead was assigned via reassignment (SLA/reject), not a fresh first-time lead',
+  },
+  assignment_note: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Human-visible note, e.g. city/state fallback explanation',
+  },
 }, {
   tableName: 'requirement_assignments',
   timestamps: true,

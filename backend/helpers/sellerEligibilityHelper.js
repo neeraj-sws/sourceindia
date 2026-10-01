@@ -10,6 +10,7 @@ const SellerPerformance = require('../models/SellerPerformance');
 const { getSystemConfig, geocodeCity } = require('./requirementHelper');
 const { findEligibleSellers, getSellerActiveProductCount, getProductKeywordSellerCount, isProductAvailableForKeyword } = require('./matchingHelper');
 const { rankCandidates, haversineDistance } = require('./rankingHelper');
+const { getLeadUsage } = require('./leadLimitHelper');
 
 // Base city name (strip state suffix like "Faridabad, Haryana" -> "faridabad")
 const normalizeCity = (city) => {
@@ -167,6 +168,10 @@ async function enrichSellers(candidates, requirement) {
 }
 
 // Compute eligibility + exclusion reasons for a set of seller candidates
+// The remaining lead count comes from the per-seller seller_lead_count tracker
+// (remaining = limit_at_period_start - leads_received). Sellers who have used
+// all of this period's shared global limit are excluded from candidacy; the
+// final assignment additionally revalidates the count at assign time.
 async function evaluateSellerEligibility(sellers, requirement) {
   const config = await getSystemConfig();
   const results = [];
@@ -178,7 +183,8 @@ async function evaluateSellerEligibility(sellers, requirement) {
       eligible = false;
       reasons.push('Lead receiving disabled');
     }
-    if (s.monthly_leads_used >= config.monthly_limit) {
+    const usage = await getLeadUsage(s.seller_id, config);
+    if (usage.remaining <= 0) {
       eligible = false;
       reasons.push('Monthly lead limit reached');
     }
@@ -191,7 +197,7 @@ async function evaluateSellerEligibility(sellers, requirement) {
       reasons.push('Already assigned for same date + same city + same product');
     }
 
-    results.push({ ...s, is_eligible: eligible, reasons });
+    results.push({ ...s, lead_used: usage.leads_received, lead_limit: usage.limit_at_period_start, lead_remaining: usage.remaining, is_eligible: eligible, reasons });
   }
   return results;
 }
@@ -220,13 +226,17 @@ async function buildSellerPreview(requirement) {
     const ranked = await rankCandidates(eligibleSameCity.map((s) => ({
       seller_id: s.seller_id, match_level: s.match_level, match_score: s.match_score,
     })), requirement);
-    const recommended = ranked[0] ? { ...eligibleSameCity.find((s) => s.seller_id === ranked[0].seller_id), total_score: ranked[0].total_score } : null;
+    const orderedCandidates = ranked
+      .map((r) => ({ ...eligibleSameCity.find((s) => s.seller_id === r.seller_id), total_score: r.total_score }))
+      .filter((s) => s && s.seller_id);
+    const recommended = orderedCandidates[0] || null;
     return {
       same_city_eligible_count: eligibleSameCity.length,
       same_city_sellers: evaluated.filter((s) => s.same_city),
       excluded_sellers: evaluated.filter((s) => !s.is_eligible),
       nearest_city_sellers: [],
       recommended_seller: recommended,
+      ordered_candidates: orderedCandidates,
       recommendation_reason: recommended
         ? 'Same city + eligible + not already assigned for the same date/city/product'
         : '',
@@ -255,6 +265,18 @@ async function buildSellerPreview(requirement) {
       seller_id: s.seller_id, match_level: s.match_level, match_score: s.match_score,
     })), requirement);
     const recommended = ranked[0] ? { ...nearestGroup.find((s) => s.seller_id === ranked[0].seller_id), total_score: ranked[0].total_score } : null;
+    // Ordered assignment order: nearest group ranked first, then remaining
+    // nearest-city sellers by distance; no duplicates.
+    const scoreMap = new Map(ranked.map((r) => [r.seller_id, r.total_score]));
+    const orderedCandidates = [];
+    for (const r of ranked) {
+      const s = nearestGroup.find((x) => x.seller_id === r.seller_id);
+      if (s) orderedCandidates.push({ ...s, total_score: r.total_score });
+    }
+    for (const s of nearest) {
+      if (orderedCandidates.some((o) => o.seller_id === s.seller_id)) continue;
+      orderedCandidates.push({ ...s, total_score: scoreMap.get(s.seller_id) ?? null });
+    }
     // group nearest by city name for display
     const byCity = {};
     nearest.forEach((s) => {
@@ -272,6 +294,7 @@ async function buildSellerPreview(requirement) {
         sellers: byCity[city],
       })),
       recommended_seller: recommended,
+      ordered_candidates: orderedCandidates,
       recommendation_reason: recommended
         ? `No eligible seller in requirement city; nearest city selected (${recommended.city || 'n/a'}${recommended.distance_km != null ? ', ' + Math.round(recommended.distance_km) + ' km' : ''})`
         : '',
@@ -290,6 +313,7 @@ async function buildSellerPreview(requirement) {
     excluded_sellers: evaluated.filter((s) => !s.is_eligible),
     nearest_city_sellers: [],
     recommended_seller: null,
+    ordered_candidates: [],
     recommendation_reason: recommendationReason,
     strategy: 'none',
   };
@@ -299,9 +323,9 @@ async function buildSellerPreview(requirement) {
 async function selectFinalSeller(requirement) {
   const preview = await buildSellerPreview(requirement);
   if (preview.recommended_seller && preview.recommended_seller.is_eligible) {
-    return { success: true, preview, seller: preview.recommended_seller };
+    return { success: true, preview, seller: preview.recommended_seller, ordered: preview.ordered_candidates || [] };
   }
-  return { success: false, preview, seller: null, message: preview.recommendation_reason || 'No eligible seller' };
+  return { success: false, preview, seller: null, ordered: preview.ordered_candidates || [], message: preview.recommendation_reason || 'No eligible seller' };
 }
 
 module.exports = {

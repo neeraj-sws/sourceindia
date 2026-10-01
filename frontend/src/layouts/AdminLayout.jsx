@@ -77,6 +77,11 @@ const ProductCategoriesGraph = lazy(() => import('../admin/pages/ProductCategori
 const SellerCategoriesGraph = lazy(() => import('../admin/pages/SellerCategoriesGraph'));
 const SourcingInterestsGraph = lazy(() => import('../admin/pages/SourcingInterestsGraph'));
 import { AdminSellerPerformance, AdminBuyRequirementConfig } from '../admin/pages/AdminSellerPerformance';
+const SellerPerformanceDetail = lazy(() =>
+  import('../admin/pages/SellerPerformanceDetail').then(m => ({
+    default: m.SellerPerformanceDetail,
+  }))
+);
 const AdminBuyRequirements = lazy(() =>
   import('../admin/pages/AdminBuyRequirements').then(m => ({
     default: m.AdminBuyRequirements,
@@ -86,6 +91,11 @@ const AdminBuyRequirements = lazy(() =>
 const AdminBuyRequirementDetail = lazy(() => 
   import('../admin/pages/AdminBuyRequirements').then(m => ({
     default: m.AdminBuyRequirementDetail,
+  }))
+);
+const AdminRequirementHistory = lazy(() =>
+  import('../admin/pages/AdminRequirementHistory').then(m => ({
+    default: m.AdminRequirementHistory,
   }))
 );
 
@@ -209,7 +219,9 @@ function AdminLayout() {
               <Route path="/sourcing_interest_graph" element={<ProtectedRoute><SourcingInterestsGraph /></ProtectedRoute>} />
               <Route path="/buy-requirements" element={<ProtectedRoute><AdminBuyRequirements /></ProtectedRoute>} />
               <Route path="/buy-requirements/:id" element={<ProtectedRoute><AdminBuyRequirementDetail /></ProtectedRoute>} />
+              <Route path="/buy-requirements-history" element={<ProtectedRoute><AdminRequirementHistory /></ProtectedRoute>} />
               <Route path="/seller-performance" element={<ProtectedRoute><AdminSellerPerformance /></ProtectedRoute>} />
+              <Route path="/seller-performance/:id" element={<ProtectedRoute><Suspense fallback={<div></div>}><SellerPerformanceDetail /></Suspense></ProtectedRoute>} />
               <Route path="/buy-requirement-config" element={<ProtectedRoute><AdminBuyRequirementConfig /></ProtectedRoute>} />
 
 

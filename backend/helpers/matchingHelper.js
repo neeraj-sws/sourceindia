@@ -16,12 +16,40 @@ const PRODUCT_MATCH_SCORES = {
   category: 20,
 };
 
+// Every time a seller's product is returned as a match candidate for a buyer's
+// requirement, bump that seller's search-appearance counter. Single atomic
+// upsert so concurrent requirement creations for the same seller cannot lose
+// increments, and so a seller matched before their first lead still gets a row.
+// Callers that only preview candidates (admin seller picker) must not pass
+// { countSearchAppearances: true } or browsing would inflate the metric.
+async function recordSearchAppearances(sellerIds, transaction = null) {
+  const ids = [...new Set((sellerIds || []).map((id) => parseInt(id, 10)))]
+    .filter((id) => Number.isInteger(id) && id > 0);
+  if (ids.length === 0) return 0;
+
+  const values = ids.map(() => '(UUID(), ?, 1, NOW(), NOW())').join(', ');
+  try {
+    const [result] = await sequelize.query(
+      `INSERT INTO seller_performance (uuid, seller_id, search_appearance_count, created_at, updated_at)
+       VALUES ${values}
+       ON DUPLICATE KEY UPDATE
+         search_appearance_count = search_appearance_count + 1,
+         updated_at = NOW()`,
+      { replacements: ids, transaction }
+    );
+    return Array.isArray(result) ? result.length : ids.length;
+  } catch (err) {
+    console.error('recordSearchAppearances error:', err.message);
+    return 0;
+  }
+}
+
 // Candidate pool: ONLY sellers who actually have the required product.
 // A seller is a candidate only when they hold an active/approved product tagged
 // with the requirement's product_keyword_id. Subcategory/category members are
 // NOT considered "having the product" - the system must never suggest or assign
 // a seller who does not have the particular required product.
-async function findEligibleSellers(requirement, candidatePoolSize) {
+async function findEligibleSellers(requirement, candidatePoolSize, options = {}) {
   if (!requirement.product_keyword_id) return [];
 
   const assignedSellerIds = await RequirementAssignments.findAll({
@@ -76,7 +104,12 @@ async function findEligibleSellers(requirement, candidatePoolSize) {
         });
       }
     }
-    if (allCandidates.length > 0) return allCandidates;
+    if (allCandidates.length > 0) {
+      if (options && options.countSearchAppearances) {
+        await recordSearchAppearances(allCandidates.map((c) => c.seller_id), options.transaction);
+      }
+      return allCandidates;
+    }
   }
 
   return [];
@@ -134,6 +167,7 @@ async function getSellerActiveProductCount(sellerId) {
 
 module.exports = {
   findEligibleSellers,
+  recordSearchAppearances,
   hasSellerProductMatch,
   getProductKeywordSellerCount,
   getSellerActiveProductCount,

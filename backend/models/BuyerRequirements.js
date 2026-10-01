@@ -65,11 +65,8 @@ const BuyerRequirements = sequelize.define('BuyerRequirements', {
     type: DataTypes.INTEGER,
     allowNull: true,
   },
-  product_type: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    comment: '1=Service, 2=Product',
-  },
+  // product_type removed: column was dropped from buyer_requirements table
+  // (was: type INTEGER, '1=Service, 2=Product')
   product_name_snapshot: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -109,6 +106,10 @@ const BuyerRequirements = sequelize.define('BuyerRequirements', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  buyer_pincode: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+  },
   buyer_country: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -132,11 +133,6 @@ const BuyerRequirements = sequelize.define('BuyerRequirements', {
     allowNull: false,
     defaultValue: 0,
     comment: '1=assigned, 2=accepted, 3=completed, 4=closed, 5=no_seller_found, 6=product_not_available (0 internal pending)',
-  },
-  current_assignment_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    comment: 'ID of current active assignment',
   },
   assignment_count: {
     type: DataTypes.INTEGER,
