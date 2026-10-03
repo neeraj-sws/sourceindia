@@ -172,6 +172,10 @@ async function enrichSellers(candidates, requirement) {
 // (remaining = limit_at_period_start - leads_received). Sellers who have used
 // all of this period's shared global limit are excluded from candidacy; the
 // final assignment additionally revalidates the count at assign time.
+//
+// "Used" means leads the seller ACCEPTED or REJECTED. Unanswered pending
+// assignments are deliberately not counted, so holding several offers never
+// makes a seller look exhausted.
 async function evaluateSellerEligibility(sellers, requirement) {
   const config = await getSystemConfig();
   const results = [];

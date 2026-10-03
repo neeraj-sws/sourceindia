@@ -16,6 +16,13 @@ const reqStatusMap = {
   6: { label: "Product Not Available", class: "danger" },
 };
 
+// Source of the requirement's product field, as saved at creation time.
+// Rows created before this was recorded have no value and render as "-".
+const reqTypeMap = {
+  admin: { label: "Admin", class: "primary" },
+  other: { label: "Other", class: "info" },
+};
+
 const assignStatusMap = {
   0: "Assigned",
   1: "Viewed",
@@ -142,6 +149,7 @@ export function AdminBuyRequirements() {
               columns={[
                 { key: "id", label: "Req ID", sortable: true },
                 { key: "product", label: "Product", sortable: false },
+                { key: "type", label: "Type", sortable: false },
                 { key: "category", label: "Category", sortable: false },
                 { key: "buyer", label: "Buyer", sortable: false },
                 { key: "location", label: "Location", sortable: false },
@@ -165,10 +173,12 @@ export function AdminBuyRequirements() {
               getRangeText={getRangeText}
               renderRow={(row, index) => {
                 const st = reqStatusMap[row.status] || { label: "Unknown", class: "secondary" };
+                const ty = reqTypeMap[row.type] || null;
                 return (
                   <tr key={row.id}>
                     <td>{row.id}</td>
                     <td>{row.product_name_snapshot}</td>
+                    <td>{ty ? <span className={`badge bg-${ty.class}`}>{ty.label}</span> : "-"}</td>
                     <td>{row.category?.name || "-"}</td>
                     <td>{row.buyer_name || row.buyer_email || row.buyer_company || "-"}</td>
                     <td>{row.buyer_city || "-"}{row.buyer_state ? <div className="text-muted small">{row.buyer_state}</div> : null}</td>
@@ -374,6 +384,7 @@ export function AdminBuyRequirementDetail() {
               <span className={`badge bg-${st.class}`}>{st.label}</span>
               <span className="text-muted small">Req #{req.id} · Posted {formatDateTime(req.created_at)}</span>
               {req.keyword?.name ? <span className="badge bg-light border text-dark">{req.keyword.name}</span> : null}
+              {reqTypeMap[req.type] ? <span className={`badge bg-${reqTypeMap[req.type].class}`}>{reqTypeMap[req.type].label}</span> : null}
             </div>
           </div>
           <button className="btn btn-primary" onClick={openAssign}>

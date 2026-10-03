@@ -10,6 +10,10 @@ router.post('/create', optionalAuthMiddleware, buyerRequirementsController.creat
 // Buyer: Search cities for city dropdown (public)
 router.get('/cities/search', buyerRequirementsController.searchCities);
 
+// Buyer: Quantity unit options for the Post Buy Requirement form (public).
+// Must stay above '/:id' so "units" is not read as a requirement id.
+router.get('/units', buyerRequirementsController.getUnits);
+
 // Buyer: Get my requirements (auth required)
 router.get('/my', authMiddleware, buyerRequirementsController.getMyRequirements);
 
@@ -36,6 +40,11 @@ router.post('/seller/lead/:id/complete', authMiddleware, buyerRequirementsContro
 
 // Seller: Get performance
 router.get('/seller/performance', authMiddleware, buyerRequirementsController.getSellerPerformance);
+
+// Seller: Get own full performance report (same metrics as the admin detail
+// page). Scoped to the logged-in seller via their token - there is deliberately
+// no :id param, so a seller cannot request another seller's report.
+router.get('/seller/my-performance', authMiddleware, buyerRequirementsController.getSellerMyPerformance);
 
 // Seller: Get full lead history (auth required)
 router.get('/seller/history', authMiddleware, buyerRequirementsController.getSellerHistory);

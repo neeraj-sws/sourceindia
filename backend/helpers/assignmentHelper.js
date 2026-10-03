@@ -7,7 +7,7 @@ const RequirementAssignments = require('../models/RequirementAssignments');
 const { logActivity, ensureSellerPerformance, incrementSellerPerformance, getSystemConfig, recalculateSellerPerformance } = require('./requirementHelper');
 const { findEligibleSellers, hasSellerProductMatch, isProductAvailableForKeyword } = require('./matchingHelper');
 const { enrichSellers, evaluateSellerEligibility, isSameDayCityProductAssigned, matchesSupplierPreference, normalizeText } = require('./sellerEligibilityHelper');
-const { getOrCreateSellerLeadCount, consumeSellerLeadCount } = require('./leadLimitHelper');
+const { getOrCreateSellerLeadCount, consumeSellerLeadQuota } = require('./leadLimitHelper');
 const { sendMail } = require('./mailHelper');
 const {
   ASSIGNED, VIEWED, RESPONDED, ACCEPTED, REJECTED, COMPLETED,
@@ -224,7 +224,10 @@ async function assignSellerToRequirement(requirementId, ipAddress = null, opts =
     const perf = await ensureSellerPerformance(seller.seller_id);
     if (!perf.lead_receiving_enabled) continue;
 
-    // Fresh capacity re-check (race-safe, against the current period's count)
+    // Fresh capacity re-check (race-safe, against the current period's count).
+    // leads_received only counts leads this seller ACCEPTED or REJECTED, so a
+    // seller sitting on unanswered offers is still selectable here - pending
+    // assignments must not read as "full".
     const row = await getOrCreateSellerLeadCount(seller.seller_id, config);
     if (row.leads_received >= row.limit_at_period_start) continue;
 
@@ -252,18 +255,14 @@ async function assignSellerToRequirement(requirementId, ipAddress = null, opts =
       assigned_at: new Date(),
     });
 
-    await incrementSellerPerformance(seller.seller_id, { monthly_leads_used: 1, total_leads: 1 });
+    await incrementSellerPerformance(seller.seller_id, { total_leads: 1 });
 
-    if (row && row.id) {
-      try {
-        const consumed = await consumeSellerLeadCount(row.id);
-        if (!consumed) {
-          console.log(`[assignSellerToRequirement] WARN: lead count not consumed (race) for seller #${seller.seller_id}, requirement #${requirementId}`);
-        }
-      } catch (err) {
-        console.error(`[assignSellerToRequirement] ERROR consuming lead count for seller #${seller.seller_id}:`, err.message);
-      }
-    }
+    // Monthly Used is deliberately NOT consumed here. An offer the seller has
+    // not answered yet costs them nothing; the quota is spent in
+    // consumeSellerLeadQuota(), called from the accept and reject paths only.
+    // That also means a seller holding several pending offers is NOT treated as
+    // exhausted by this loop - `row` above still holds whatever they had
+    // actually accepted or rejected, so the re-check stays accurate.
 
     const action = opts.reassigned ? 'lead_reassigned' : 'seller_assigned';
     const detail = opts.reassigned
@@ -353,7 +352,6 @@ async function manualAssignSellerToRequirement(requirementId, sellerId, ipAddres
   if (alreadyAssigned) return { success: false, message: 'This seller already has an active assignment for this requirement' };
 
   await ensureSellerPerformance(sellerId);
-  const config = await getSystemConfig();
 
   const assignmentNumber = requirement.assignment_count + 1;
   const assignment = await RequirementAssignments.create({
@@ -365,13 +363,9 @@ async function manualAssignSellerToRequirement(requirementId, sellerId, ipAddres
     assigned_at: new Date(),
   });
 
-  await incrementSellerPerformance(sellerId, { monthly_leads_used: 1, total_leads: 1 });
-  try {
-    const leadRow = await getOrCreateSellerLeadCount(parseInt(sellerId), config);
-    await consumeSellerLeadCount(leadRow.id);
-  } catch (err) {
-    console.error(`[manualAssignSellerToRequirement] ERROR updating lead count for seller #${sellerId}:`, err.message);
-  }
+  await incrementSellerPerformance(sellerId, { total_leads: 1 });
+  // Monthly Used is not consumed at assignment time - see assignSellerToRequirement.
+  // It is spent when this seller accepts or rejects the lead.
 
   await requirement.update({
     assignment_count: assignmentNumber,
@@ -471,6 +465,9 @@ async function notifySeller(sellerId, requirement, assignment) {
 // same lead at the same time serialise on that lock: the first commits, the
 // second sees the owner and is rejected. Accepting also closes every other
 // pending assignment so nobody else can end up owning the same lead.
+//
+// 'accept' takes ownership and consumes the seller's Monthly Used quota.
+// 'respond' is neither an accept nor a reject, so it consumes nothing.
 async function claimAssignment(assignmentId, sellerId, action) {
   const isAccept = action === 'accept';
   const newStatus = isAccept ? ACCEPTED : RESPONDED;
@@ -545,6 +542,10 @@ async function claimAssignment(assignmentId, sellerId, action) {
         s.id
       );
     }
+
+    // Accepting is what spends the quota. The sellers in `superseded` never
+    // accepted or rejected, so they are correctly not charged anything.
+    await consumeSellerLeadQuota(sellerId);
   }
 
   const requirement = await BuyerRequirements.findByPk(preview.requirement_id);
@@ -604,6 +605,11 @@ async function handleSellerResponse(assignmentId, sellerId, action, rejectionRea
 
     await ensureSellerPerformance(sellerId);
     await incrementSellerPerformance(sellerId, { rejected_leads: 1 });
+
+    // Rejecting spends the quota too: the seller took an action on the lead and
+    // used up their Monthly Used slot for this period, exactly as accepting does.
+    await consumeSellerLeadQuota(sellerId);
+
     await recalculateSellerPerformance(sellerId);
 
     const requirement = assignment.requirement;
@@ -708,6 +714,9 @@ async function handleSellerView(assignmentId, sellerId) {
 // requirement is re-checked: if a new eligible seller exists (and the
 // requirement is still awaiting a response) the slot is reassigned and marked
 // is_reassigned=1. One seller's timeout never cancels another seller's lead.
+//
+// An SLA timeout is the seller doing NOTHING, so it must NOT touch Monthly Used:
+// consumeSellerLeadQuota() is deliberately absent from this function.
 async function processExpiredAssignments() {
   const config = await getSystemConfig();
   const slaMs = config.sla_minutes * 60 * 1000;
@@ -770,6 +779,9 @@ async function processExpiredAssignments() {
         assignment.id
       );
 
+      // Monthly Used is deliberately NOT incremented here: the seller took no
+      // action, so this costs them nothing. `auto_cancelled_leads` below is a
+      // performance metric, not quota, and is tracked separately.
       await ensureSellerPerformance(assignment.seller_id);
       await incrementSellerPerformance(assignment.seller_id, { auto_cancelled_leads: 1 });
       await recalculateSellerPerformance(assignment.seller_id);

@@ -14,16 +14,31 @@ const Categories = require('../models/Categories');
 const Cities = require('../models/Cities');
 const States = require('../models/States');
 const Countries = require('../models/Countries');
+const Units = require('../models/Units');
 const { logActivity, getBuyerLocation, geocodeCity, reverseGeocodePostcode, getSystemConfig, ensureSellerPerformance, recalculateSellerPerformance, detectRequirementCategories, hasLeadPriority, getLeadPriorityTag } = require('../helpers/requirementHelper');
 const { assignSellerToRequirement, handleSellerResponse, handleSellerComplete, handleSellerView } = require('../helpers/assignmentHelper');
 const { withAssignedSeller } = require('../helpers/leadOwnershipHelper');
 const { getLeadUsage } = require('../helpers/leadLimitHelper');
+const { getSellerPerformanceDetailData } = require('../services/sellerPerformanceDetailService');
 
 const getClientIp = (req) => {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
     req.connection?.remoteAddress ||
     req.ip || '';
 };
+
+async function getUnits(req, res) {
+  try {
+    const units = await Units.findAll({
+      attributes: ['id', 'name'],
+      where: { is_active: 1 },
+      order: [['name', 'ASC']],
+    });
+    return res.json(units);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
 
 async function searchCities(req, res) {
   try {
@@ -97,6 +112,15 @@ async function createRequirement(req, res) {
       }
     }
 
+    // Where the product field came from. Derived from what the buyer actually did
+    // rather than trusted from the request body: a submitted product_keyword_id
+    // means they picked a row out of the product list ("admin"), an absent one
+    // means they typed a name of their own that never came from the list
+    // ("other"). Computed BEFORE detectRequirementCategories below, so the fuzzy
+    // keyword lookup that still runs for custom names never rewrites the
+    // recorded source - "other" keeps meaning "typed by the buyer".
+    const productEntryType = product_keyword_id ? 'admin' : 'other';
+
     const detected = product_keyword_id
       ? {}
       : await detectRequirementCategories(product_name_snapshot);
@@ -127,6 +151,7 @@ async function createRequirement(req, res) {
       buyer_company: buyer_company || buyerIdentity.buyer_company || '',
       buyer_country_code: buyer_country_code || 'IN^91',
       product_keyword_id: product_keyword_id || detected.product_keyword_id || null,
+      type: productEntryType,
       item_subcategory_id: item_subcategory_id || detected.item_subcategory_id || null,
       item_category_id: item_category_id || detected.item_category_id || null,
       subcategory_id: subcategory_id || detected.subcategory_id || null,
@@ -395,8 +420,15 @@ async function getSellerLeadCounts(req, res) {
 
     const perf = await ensureSellerPerformance(sellerId);
     const config = await getSystemConfig();
-    result.monthly_used = perf.monthly_leads_used;
-    result.monthly_limit = config.monthly_limit;
+
+    // "Monthly Used" is read from seller_lead_count - the same row the quota is
+    // actually enforced against in seller selection - so this card, the admin
+    // list and the admin detail page can never disagree. It counts leads the
+    // seller accepted or rejected; pending assignments and SLA auto-cancels are
+    // not counted.
+    const usage = await getLeadUsage(sellerId, config);
+    result.monthly_used = usage.leads_received;
+    result.monthly_limit = usage.limit_at_period_start;
 
     const score = Number(perf.overall_performance_score) || 0;
     result.overall_performance_score = score;
@@ -410,7 +442,6 @@ async function getSellerLeadCounts(req, res) {
     result.completed_performance = Number(perf.completed_leads) || 0;
     result.sla_minutes = config.sla_minutes;
 
-    const usage = await getLeadUsage(sellerId);
     result.period_used = usage.leads_received;
     result.period_limit = usage.limit_at_period_start;
     result.period_remaining = usage.remaining;
@@ -620,9 +651,36 @@ async function getBuyerRequirementHistory(req, res) {
   }
 }
 
+/**
+ * Seller-facing twin of the admin seller-performance detail report.
+ *
+ * The seller id comes exclusively from the verified JWT (authMiddleware), never
+ * from a path param, query, or body field, so a seller can only ever read their
+ * own report. The metrics themselves are computed by the same shared service the
+ * admin detail endpoint uses, which keeps both sides showing identical numbers.
+ */
+async function getSellerMyPerformance(req, res) {
+  try {
+    const sellerId = req.user.id;
+    if (!sellerId) return res.status(401).json({ message: 'Unauthorized: No token provided' });
+
+    // Guarantees a performance row exists so a brand-new seller sees a report
+    // instead of a 404.
+    await ensureSellerPerformance(sellerId);
+
+    // Feedback is admin-only surface, so it is skipped here to avoid loading
+    // buyer details the seller page never renders.
+    const result = await getSellerPerformanceDetailData(sellerId, req.query, { includeFeedback: false });
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    return res.status(500).json({ message: err.message });
+  }
+}
+
 module.exports = {
   createRequirement,
   searchCities,
+  getUnits,
   getRequirementById,
   getMyRequirements,
   getRequirementActivityLog,
@@ -631,6 +689,7 @@ module.exports = {
   sellerRespondToLead,
   sellerCompleteLead,
   getSellerPerformance,
+  getSellerMyPerformance,
   getSellerLeadCounts,
   getSellerHistory,
   getBuyerRequirementHistory,

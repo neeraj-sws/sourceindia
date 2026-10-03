@@ -7,15 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/bootstrap.css";
 
-const UNIT_OPTIONS = [
-  "Bag", "Bale", "Barrel", "Box", "Bundle", "Carat", "Carton", "Centimeter",
-  "Chain", "Cubic Feet", "Cubic Meter", "Dozen", "Each", "Feet", "Gallon",
-  "Gram", "Hectare", "Kilogram", "Kiloliter", "Kilometer", "Kit", "Liter",
-  "Long Ton", "Meter", "Metric Ton", "Milligram", "Milliliter", "Millimeter",
-  "Number", "Ounce", "Pair", "Piece", "Pound", "Quintal", "Roll", "Set",
-  "Short Ton", "Square Feet", "Square Meter", "Square Yard", "Ton", "Tonne",
-  "Unit", "Yard",
-];
+const MAX_QUANTITY_DIGITS = 8;
 
 const PostBuyRequirement = () => {
   const { showNotification } = useAlert();
@@ -63,6 +55,7 @@ const PostBuyRequirement = () => {
   const suggestTimer = useRef(null);
   const suggestReqSeq = useRef(0);
 
+  const [unitOptions, setUnitOptions] = useState([]);
   const [unitSuggestions, setUnitSuggestions] = useState([]);
   const [showUnitDropdown, setShowUnitDropdown] = useState(false);
   const unitRef = useRef(null);
@@ -83,6 +76,21 @@ const PostBuyRequirement = () => {
     setErrors((prev) => (prev[errKey] ? { ...prev, [errKey]: "" } : prev));
   };
 
+  // `maxLength` is ignored by browsers on <input type="number">, so the 8-digit
+  // cap has to be enforced here. Only the quantity field routes through this
+  // handler; every other input keeps using handleChange above.
+  const handleQuantityChange = (e) => {
+    // Quantity is a whole number: strip anything that is not a digit so a
+    // decimal point can never reach state, and the controlled value snaps the
+    // field back to the digits only.
+    const digitsOnly = e.target.value.replace(/[^0-9]/g, "");
+    // Over the cap: drop the keystroke instead of storing a truncated value, so
+    // what the buyer sees always matches what is in state.
+    if (digitsOnly.length > MAX_QUANTITY_DIGITS) return;
+    setForm((prev) => ({ ...prev, quantity: digitsOnly }));
+    setErrors((prev) => (prev.quantity ? { ...prev, quantity: "" } : prev));
+  };
+
   const handleUnitChange = (e) => {
     const val = e.target.value;
     setForm((prev) => ({ ...prev, quantity_unit: val }));
@@ -92,7 +100,7 @@ const PostBuyRequirement = () => {
       setShowUnitDropdown(false);
       return;
     }
-    const filtered = UNIT_OPTIONS.filter((u) =>
+    const filtered = unitOptions.filter((u) =>
       u.toLowerCase().startsWith(val.toLowerCase())
     );
     setUnitSuggestions(filtered);
@@ -228,6 +236,21 @@ const PostBuyRequirement = () => {
     if (suggestTimer.current) clearTimeout(suggestTimer.current);
   }, []);
 
+  // Unit options come from the units table so the list can be maintained on the
+  // database instead of in this component.
+  useEffect(() => {
+    const fetchUnits = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/buyer-requirements/units`);
+        const rows = Array.isArray(res.data) ? res.data : [];
+        setUnitOptions(rows.map((u) => u.name).filter(Boolean));
+      } catch (err) {
+        console.error("Error fetching units", err);
+      }
+    };
+    fetchUnits();
+  }, []);
+
   useEffect(() => {
     const onClickOutside = (e) => {
       if (unitRef.current && !unitRef.current.contains(e.target)) {
@@ -290,9 +313,18 @@ const PostBuyRequirement = () => {
 
   const validate = () => {
     const e = {};
-    if (!productKeyword.id) e.product = "Please Enter Products";
+    // A product is required, but it does NOT have to come from the suggestion
+    // list: a name the buyer typed themselves is accepted too. When they picked
+    // a suggestion, productKeyword.id holds its keyword_id and the backend
+    // records the requirement as a list ("admin") entry; when they did not, id
+    // stays empty and it is recorded as their own ("other") entry.
+    if (!productKeyword.name.trim()) e.product = "Please Enter Products";
     if (!form.quantity || String(form.quantity).trim() === "") {
       e.quantity = "Please Enter Quantity.";
+    } else if (!/^\d+$/.test(String(form.quantity))) {
+      e.quantity = "Please Enter a Whole Number Quantity.";
+    } else if (String(form.quantity).length > MAX_QUANTITY_DIGITS) {
+      e.quantity = `Please Enter a Quantity of up to ${MAX_QUANTITY_DIGITS} digits.`;
     } else if (Number(form.quantity) <= 0) {
       e.quantity = "Please Enter a Valid Quantity.";
     }
@@ -459,9 +491,9 @@ const PostBuyRequirement = () => {
                     style={errors.quantity ? { borderColor: "#e74c3c" } : undefined}
                     name="quantity"
                     value={form.quantity}
-                    onChange={handleChange}
+                    onChange={handleQuantityChange}
                     placeholder="Quantity"
-                    maxLength="8"
+                    maxLength={MAX_QUANTITY_DIGITS}
                   />
                   {errors.quantity && <div className="pbr-error">{errors.quantity}</div>}
                 </div>

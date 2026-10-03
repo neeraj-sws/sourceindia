@@ -11,6 +11,9 @@ const { backfillMainProductKeywords } = require('./utils/mainProductKeywordSync'
 const { ensureSellerPerformanceColumns } = require('./utils/sellerPerformanceSchema');
 const { ensureBuyerRequirementColumns } = require('./utils/buyerRequirementsSchema');
 const { ensureRequirementAssignmentOwnership } = require('./utils/requirementAssignmentsSchema');
+// Requiring the seed also registers the Units model, so the table is created by
+// sequelize.sync() below.
+const { seedUnits } = require('./utils/unitsSeed');
 const fileRoutes = require('./routes/fileRoutes');
 const adminAuthRoutes = require('./routes/adminAuthRoutes');
 const activityRoutes = require('./routes/activityRoutes');
@@ -157,6 +160,8 @@ sequelize
     const addedRequirementColumns = await ensureBuyerRequirementColumns();
     console.log(`Buyer requirement columns ensured: ${addedRequirementColumns.length ? addedRequirementColumns.join(', ') : 'up to date'}`);
     await ensureRequirementAssignmentOwnership();
+    const seededUnits = await seedUnits();
+    console.log(`Units seeded: ${seededUnits ? `${seededUnits} added` : 'up to date'}`);
     console.log('MySQL connected and models synced');
     app.listen(5000, () =>
       console.log('Server running on http://localhost:5000' + basePath)

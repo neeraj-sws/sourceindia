@@ -67,6 +67,14 @@ const BuyerRequirements = sequelize.define('BuyerRequirements', {
   },
   // product_type removed: column was dropped from buyer_requirements table
   // (was: type INTEGER, '1=Service, 2=Product')
+  //
+  // `type` below is an unrelated column that reuses the freed name: it records
+  // the SOURCE of the product field, not the nature of the product.
+  type: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    comment: 'admin = picked from the product list, other = buyer typed their own',
+  },
   product_name_snapshot: {
     type: DataTypes.STRING,
     allowNull: false,

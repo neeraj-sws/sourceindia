@@ -54,6 +54,7 @@ const PostBuyRequirement = lazy(() => import('../pages/PostBuyRequirement'));
 const MyBuyRequirements = lazy(() => import('../pages/MyBuyRequirements'));
 const SellerBuyLeads = lazy(() => import('../pages/SellerBuyLeads'));
 const SellerLeadHistory = lazy(() => import('../pages/SellerLeadHistory'));
+const SellerMyPerformance = lazy(() => import('../pages/SellerMyPerformance'));
 const BuyerRequirementHistory = lazy(() => import('../pages/BuyerRequirementHistory'));
 const BuyLeadDetail = lazy(() => import('../pages/BuyLeadDetail'));
 import { ToastContainer } from 'react-toastify';
@@ -72,7 +73,8 @@ function FrontLayout() {
   const userLayoutPaths = ['/dashboard', '/profile', '/profile-edit', '/company-edit', '/my-product',
     '/add_product', '/edit_product', '/seller_enquiry', '/my_enquiry', '/open-enquiry-dashboard', '/open-enquiry',
     '/my-open-enquiry-dashboard', '/is-interested', '/lead-detail', '/my-all-enquiries-chats', '/all-leads-chats', 'open-enquiry-dashboard', '/my-buyer-enquiries',
-    '/buy-leads', '/buy-lead-detail', '/my-buy-requirements', '/lead-history', '/my-requirement-history'];
+    '/buy-leads', '/buy-lead-detail', '/my-buy-requirements', '/lead-history', '/my-requirement-history',
+    '/my-performance'];
   const isUserLayout = userLayoutPaths.some(path => location.pathname.startsWith(path));
 
   return (
@@ -136,6 +138,7 @@ function FrontLayout() {
                 <Route path="/my-buy-requirements" element={<PrivateRoute><MyBuyRequirements /></PrivateRoute>} />
                 <Route path="/buy-leads" element={<PrivateRoute><SellerBuyLeads /></PrivateRoute>} />
                 <Route path="/lead-history" element={<PrivateRoute><SellerLeadHistory /></PrivateRoute>} />
+                <Route path="/my-performance" element={<PrivateRoute><SellerMyPerformance /></PrivateRoute>} />
                 <Route path="/my-requirement-history" element={<PrivateRoute><BuyerRequirementHistory /></PrivateRoute>} />
                 <Route path="/buy-lead-detail/:id" element={<PrivateRoute><BuyLeadDetail /></PrivateRoute>} />
                 <Route path="/faq" element={<FAQPage />} />

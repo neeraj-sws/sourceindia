@@ -232,6 +232,14 @@ const UserSidebar = () => {
       link: "/lead-history",
       show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
     },
+
+    // My Performance (for sellers with complete+approve)
+    {
+      title: "My Performance",
+      icon: "bx bx-line-chart",
+      link: "/my-performance",
+      show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
+    },
   ];
 
   // ✅ Filtering logic

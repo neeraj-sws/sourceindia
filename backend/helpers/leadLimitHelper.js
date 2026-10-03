@@ -1,7 +1,7 @@
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 const SellerLeadCount = require('../models/SellerLeadCount');
-const { getSystemConfig } = require('./requirementHelper');
+const { getSystemConfig, ensureSellerPerformance, incrementSellerPerformance } = require('./requirementHelper');
 
 const LEAD_PERIOD_TYPES = ['weekly', 'monthly', '6-monthly', 'yearly'];
 const DEFAULT_PERIOD_TYPE = 'monthly';
@@ -96,6 +96,62 @@ async function consumeSellerLeadCount(rowId) {
   return result && result.affectedRows === 1;
 }
 
+// ============================================================
+// WHEN "Monthly Used" IS CONSUMED
+// ============================================================
+// The quota is consumed by a seller ACTION on a lead, not by being handed one:
+//
+//   accept      -> +1   the seller took the lead on
+//   reject      -> +1   the seller spent the opportunity deciding not to
+//   assignment  -> +0   an offer nobody has answered yet costs nothing
+//   auto-cancel -> +0   the seller took no action at all (SLA expiry)
+//
+// This function is the ONLY place either counter is bumped, so every "Monthly
+// Used" surface - the quota enforced during seller selection and every admin /
+// seller UI reading it - moves together and cannot drift apart.
+//
+// Both tracked counters advance here:
+//   seller_lead_count.leads_received      - the enforced quota (period aware:
+//                                          weekly / monthly / 6-monthly / yearly)
+//   seller_performance.monthly_leads_used - the "Monthly Used" figure shown in
+//                                          the seller UI
+// Returns true when the enforced quota (leads_received) actually moved.
+async function consumeSellerLeadQuota(sellerId, config) {
+  const id = parseInt(sellerId, 10);
+  if (!Number.isInteger(id) || id <= 0) return false;
+
+  const cfg = config || await getSystemConfig();
+
+  try {
+    await ensureSellerPerformance(id);
+    await incrementSellerPerformance(id, { monthly_leads_used: 1 });
+  } catch (err) {
+    console.error(`[leadQuota] ERROR bumping Monthly Used for seller #${id}:`, err.message);
+  }
+
+  let row;
+  try {
+    row = await getOrCreateSellerLeadCount(id, cfg);
+  } catch (err) {
+    console.error(`[leadQuota] ERROR resolving lead-count row for seller #${id}:`, err.message);
+    return false;
+  }
+
+  try {
+    const consumed = await consumeSellerLeadCount(row.id);
+    if (!consumed) {
+      // The seller was already at their limit for this period when they acted.
+      // The limit stays a hard cap: the action still counts towards Monthly Used
+      // but the enforced quota is not pushed past the cap.
+      console.log(`[leadQuota] seller #${id} is at their lead limit for this period; enforced quota not incremented`);
+    }
+    return consumed;
+  } catch (err) {
+    console.error(`[leadQuota] ERROR consuming lead count for seller #${id}:`, err.message);
+    return false;
+  }
+}
+
 // Daily rollover: for every seller whose last period has ended, create the
 // current period's fresh row snapshotting whatever the global limit is now.
 // Sellers with no row at all get one lazily on their first lead of the period.
@@ -139,7 +195,7 @@ module.exports = {
   getCurrentPeriod,
   getOrCreateSellerLeadCount,
   getLeadUsage,
-  consumeSellerLeadCount,
+  consumeSellerLeadQuota,
   rolloverSellerLeadCounts,
   fmtDate,
 };

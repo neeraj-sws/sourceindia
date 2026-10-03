@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
 import useAuth from "../sections/UseAuth";
 import { formatDateTime } from "../utils/formatDate";
+import ConfirmActionModal from "../components/ConfirmActionModal";
+
+const MAX_REJECTION_WORDS = 500;
+const REJECTION_MIN_ROWS = 2;
+const REJECTION_MAX_ROWS = 5;
 
 const statusMap = {
   0: { label: "Assigned", class: "secondary" },
@@ -25,6 +30,42 @@ const BuyLeadDetail = () => {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectionError, setRejectionError] = useState("");
+  // Which action is awaiting confirmation in the modal: null | "accept" |
+  // "reject" | "complete". Null means the modal is closed and nothing pending.
+  const [pendingAction, setPendingAction] = useState(null);
+  const rejectionReasonRef = useRef(null);
+
+  // Keeps the textarea between its original 2 rows and a 5-row ceiling, then
+  // scrolls past that. Height is driven inline so the rendered size never
+  // depends on how many words are present.
+  const resizeRejectionReason = () => {
+    const el = rejectionReasonRef.current;
+    if (!el) return;
+    const cs = window.getComputedStyle(el);
+    const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.5;
+    const minHeight = lineHeight * REJECTION_MIN_ROWS;
+    const maxHeight = lineHeight * REJECTION_MAX_ROWS;
+
+    el.style.height = "auto";
+    const next = Math.min(Math.max(el.scrollHeight, minHeight), maxHeight);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+  };
+
+  // 500-word cap counted on whitespace-separated words. A word already in
+  // progress (a trailing space) does not count, so typing space on word 500 is
+  // still allowed while the 501st word can never start.
+  const handleRejectionReasonChange = (e) => {
+    const value = e.target.value;
+    const words = value.trim() === "" ? [] : value.trim().split(/\s+/);
+    if (words.length <= MAX_REJECTION_WORDS) {
+      setRejectionReason(value);
+      if (rejectionError) setRejectionError("");
+    }
+  };
+
+  useEffect(resizeRejectionReason, [rejectionReason]);
 
   const fetchDetail = async () => {
     setLoading(true);
@@ -46,30 +87,48 @@ const BuyLeadDetail = () => {
 
   const doRespond = async (action) => {
     if (action === "reject" && !rejectionReason.trim()) {
-      showNotification("Rejection reason is required to reject a lead", "error");
+      setRejectionError("Rejection reason is required.");
       return;
     }
+    // Only the confirmation UI moved from window.confirm to ConfirmActionModal.
+    // Cancelling sets pendingAction back to null, which runs none of the code
+    // below: no API call, no setBusy, no state change.
+    setPendingAction(action === "accept" ? "accept" : "reject");
+  };
+
+  const doComplete = async () => {
+    setPendingAction("complete");
+  };
+
+  // Runs the real action once the seller confirms in the modal. Identical to the
+  // code that used to sit after the `if (!window.confirm(...)) return;` guard.
+  const performPendingAction = async () => {
+    const action = pendingAction;
+    setPendingAction(null);
+    if (!action) return;
+
+    if (action === "complete") {
+      setBusy(true);
+      try {
+        await axios.post(`${API_BASE_URL}/buyer-requirements/seller/lead/${id}/complete`,
+          {},
+          { headers: { Authorization: `Bearer ${localStorage.getItem("user_token")}` } });
+        showNotification("Lead marked as completed", "success");
+        fetchDetail();
+      } catch (err) {
+        showNotification(err.response?.data?.message || "Action failed", "error");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     setBusy(true);
     try {
       await axios.post(`${API_BASE_URL}/buyer-requirements/seller/lead/${id}/respond`,
         { action, rejection_reason: action === "reject" ? rejectionReason : undefined },
         { headers: { Authorization: `Bearer ${localStorage.getItem("user_token")}` } });
       showNotification(action === "accept" ? "Lead accepted" : "Lead rejected", "success");
-      fetchDetail();
-    } catch (err) {
-      showNotification(err.response?.data?.message || "Action failed", "error");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const doComplete = async () => {
-    setBusy(true);
-    try {
-      await axios.post(`${API_BASE_URL}/buyer-requirements/seller/lead/${id}/complete`,
-        {},
-        { headers: { Authorization: `Bearer ${localStorage.getItem("user_token")}` } });
-      showNotification("Lead marked as completed", "success");
       fetchDetail();
     } catch (err) {
       showNotification(err.response?.data?.message || "Action failed", "error");
@@ -165,12 +224,14 @@ const BuyLeadDetail = () => {
                       Accept Lead
                     </button>
                     <textarea
+                      ref={rejectionReasonRef}
                       className="form-control mb-2"
                       rows="2"
                       placeholder="Rejection reason (required to reject)"
                       value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
+                      onChange={handleRejectionReasonChange}
                     />
+                    {rejectionError && <div className="text-danger small">{rejectionError}</div>}
                     <button
                       className="btn btn-danger w-100"
                       title="Reject and reassign to other seller"
@@ -185,6 +246,45 @@ const BuyLeadDetail = () => {
             </div>
           </div>
         </div>
+
+        <ConfirmActionModal
+          show={pendingAction === "accept"}
+          icon="bx bx-check-circle"
+          iconClass="text-success"
+          title="Accept this lead?"
+          description={`You are accepting Buy Lead ${lead.assignment_number} for ${req.product_name_snapshot || "this product"}.`}
+          confirmLabel="Yes, Accept"
+          confirmClass="btn-success"
+          confirmDisabled={busy}
+          onConfirm={performPendingAction}
+          onCancel={() => setPendingAction(null)}
+        />
+
+        <ConfirmActionModal
+          show={pendingAction === "reject"}
+          icon="bx bx-x-circle"
+          iconClass="text-danger"
+          title="Reject this lead?"
+          description="The lead will be rejected and reassigned to another seller. This cannot be undone."
+          confirmLabel="Yes, Reject"
+          confirmClass="btn-danger"
+          confirmDisabled={busy}
+          onConfirm={performPendingAction}
+          onCancel={() => setPendingAction(null)}
+        />
+
+        <ConfirmActionModal
+          show={pendingAction === "complete"}
+          icon="bx bx-check-double"
+          iconClass="text-info"
+          title="Mark this lead as completed?"
+          description={`This marks Buy Lead ${lead.assignment_number} as completed and closes the requirement.`}
+          confirmLabel="Yes, Mark Completed"
+          confirmClass="btn-info"
+          confirmDisabled={busy}
+          onConfirm={performPendingAction}
+          onCancel={() => setPendingAction(null)}
+        />
       </div>
     </div>
   );
