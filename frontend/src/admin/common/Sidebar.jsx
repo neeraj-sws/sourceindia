@@ -248,13 +248,14 @@ const menuData = [
     ],
   },
   {
-    title: 'Buy Requirement Workflow',
+    title: 'Post Buy Requirement',
     icon: 'bx bx-cart-alt',
     subMenu: [
       { title: 'Buy Requirements', link: '/admin/buy-requirements' },
       { title: 'Requirement History', link: '/admin/buy-requirements-history' },
       { title: 'Seller Performance', link: '/admin/seller-performance' },
       { title: 'Workflow Config', link: '/admin/buy-requirement-config' },
+      { title: 'Unit Master', link: '/admin/unit-master' },
     ],
   },
 ];

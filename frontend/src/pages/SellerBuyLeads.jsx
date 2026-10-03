@@ -124,7 +124,7 @@ const SellerBuyLeads = () => {
                   { key: "quantity", label: "Quantity", sortable: false },
                   { key: "assigned_at", label: "Assigned", sortable: true },
                   { key: "status", label: "Status", sortable: false },
-                  { key: "rating", label: "Buyer Rating", sortable: false },
+                  { key: "rating", label: "Member Rating", sortable: false },
                   { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}

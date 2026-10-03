@@ -15,7 +15,7 @@ const Cities = require('../models/Cities');
 const States = require('../models/States');
 const Countries = require('../models/Countries');
 const Units = require('../models/Units');
-const { logActivity, getBuyerLocation, geocodeCity, reverseGeocodePostcode, getSystemConfig, ensureSellerPerformance, recalculateSellerPerformance, detectRequirementCategories, hasLeadPriority, getLeadPriorityTag } = require('../helpers/requirementHelper');
+const { logActivity, getBuyerLocation, geocodeCity, reverseGeocodePostcode, getSystemConfig, ensureSellerPerformance, recalculateSellerPerformance, detectRequirementCategories, findUnitByName, findExactProductKeyword, hasLeadPriority, getLeadPriorityTag } = require('../helpers/requirementHelper');
 const { assignSellerToRequirement, handleSellerResponse, handleSellerComplete, handleSellerView } = require('../helpers/assignmentHelper');
 const { withAssignedSeller } = require('../helpers/leadOwnershipHelper');
 const { getLeadUsage } = require('../helpers/leadLimitHelper');
@@ -115,15 +115,28 @@ async function createRequirement(req, res) {
     // Where the product field came from. Derived from what the buyer actually did
     // rather than trusted from the request body: a submitted product_keyword_id
     // means they picked a row out of the product list ("admin"), an absent one
-    // means they typed a name of their own that never came from the list
-    // ("other"). Computed BEFORE detectRequirementCategories below, so the fuzzy
-    // keyword lookup that still runs for custom names never rewrites the
-    // recorded source - "other" keeps meaning "typed by the buyer".
-    const productEntryType = product_keyword_id ? 'admin' : 'other';
+    // means they typed a name of their own ("other"). Before falling back to
+    // "other" we check whether the typed name is already an existing keyword -
+    // typing "capacitor array" for the existing "Capacitor Array" is the same
+    // choice as clicking it, so it must be recorded as "admin" with that id.
+    const submittedKeywordId = product_keyword_id || null;
+    const typedKeyword = submittedKeywordId ? null : await findExactProductKeyword(product_name_snapshot);
+    const productEntryType = (submittedKeywordId || typedKeyword) ? 'admin' : 'other';
 
-    const detected = product_keyword_id
+    const detected = submittedKeywordId
       ? {}
-      : await detectRequirementCategories(product_name_snapshot);
+      : typedKeyword
+        ? typedKeyword
+        : await detectRequirementCategories(product_name_snapshot);
+
+    // Same idea for the quantity unit: normalise it to the canonical row from
+    // the units master when the typed value matches one (case/space
+    // insensitive). An unmatched value is stored exactly as typed, preserving
+    // the existing custom-unit behaviour.
+    const matchedUnit = quantity_unit ? await findUnitByName(quantity_unit) : null;
+    const resolvedUnit = matchedUnit
+      ? matchedUnit.name
+      : (quantity_unit ? String(quantity_unit).trim().replace(/\s+/g, ' ') : null);
 
     const finalCity = buyer_city || buyerLocation.buyer_city || null;
     const finalState = buyer_state || buyerLocation.buyer_state || null;
@@ -150,7 +163,7 @@ async function createRequirement(req, res) {
       buyer_phone: buyer_phone || buyerIdentity.buyer_phone || '',
       buyer_company: buyer_company || buyerIdentity.buyer_company || '',
       buyer_country_code: buyer_country_code || 'IN^91',
-      product_keyword_id: product_keyword_id || detected.product_keyword_id || null,
+      product_keyword_id: submittedKeywordId || detected.product_keyword_id || null,
       type: productEntryType,
       item_subcategory_id: item_subcategory_id || detected.item_subcategory_id || null,
       item_category_id: item_category_id || detected.item_category_id || null,
@@ -158,7 +171,7 @@ async function createRequirement(req, res) {
       category_id: category_id || detected.category_id || null,
       product_name_snapshot: product_name_snapshot.trim(),
       quantity: quantity || null,
-      quantity_unit: quantity_unit || null,
+      quantity_unit: resolvedUnit,
       description: description || null,
       supplier_preference: supplier_preference || 'Anywhere in India',
       preference_states: preference_states ? JSON.stringify(preference_states) : null,

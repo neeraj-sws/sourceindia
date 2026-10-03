@@ -75,7 +75,7 @@ export function AdminRequirementHistory() {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead="Requirement History" maincount={totalRecords} page="Workflow" title="Lead Assignment History" />
+        <Breadcrumb mainhead="Requirement History" maincount={totalRecords} page="Post Buy Requirement" title="Requirement History" />
 
         <div className="card">
           <div className="card-body">
@@ -91,7 +91,7 @@ export function AdminRequirementHistory() {
               columns={[
                 { key: "id", label: "Req ID", sortable: true },
                 { key: "product", label: "Product", sortable: false },
-                { key: "buyer", label: "Buyer", sortable: false },
+                { key: "buyer", label: "Requested by", sortable: false },
                 { key: "city", label: "City", sortable: false },
                 { key: "created_at", label: "Posted", sortable: true },
                 { key: "status", label: "Status", sortable: false },
@@ -118,14 +118,14 @@ export function AdminRequirementHistory() {
                   <tr key={row.id}>
                     <td>{row.id}</td>
                     <td>
-                      <div>{row.product_name_snapshot}</div>
-                      {row.category?.name ? <div className="text-muted small">{row.category.name}</div> : null}
+                      <div className="text-capitalize">{row.product_name_snapshot}</div>
+                      {row.category?.name ? <div className="text-muted small text-capitalize">{row.category.name}</div> : null}
                       {row.quantity ? <div className="text-muted small">Qty: {row.quantity}{row.quantity_unit || ""}</div> : null}
                     </td>
                     <td>
-                      {buyerName}
-                      {buyerName === "-" ? <span className="badge bg-warning ms-1">Guest</span> : null}
-                      {row.buyer_email ? <div className="text-muted small">{row.buyer_email}</div> : null}
+                      <span className="text-capitalize">{buyerName}</span>
+                      {buyerName === "-" ? <span className="badge bg-warning ms-1 text-capitalize">Guest</span> : null}
+                      {row.buyer_email ? <div className="text-muted small ">{row.buyer_email}</div> : null}
                       {row.buyer_company ? <div className="text-muted small">{row.buyer_company}</div> : null}
                     </td>
                     <td>{[row.buyer_city, row.buyer_state].filter(Boolean).join(", ") || "-"}</td>

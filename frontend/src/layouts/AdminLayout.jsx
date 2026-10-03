@@ -98,6 +98,7 @@ const AdminRequirementHistory = lazy(() =>
     default: m.AdminRequirementHistory,
   }))
 );
+const UnitMaster = lazy(() => import('../admin/pages/UnitMaster'));
 
 function AdminLayout() {
   const location = useLocation();
@@ -223,6 +224,7 @@ function AdminLayout() {
               <Route path="/seller-performance" element={<ProtectedRoute><AdminSellerPerformance /></ProtectedRoute>} />
               <Route path="/seller-performance/:id" element={<ProtectedRoute><Suspense fallback={<div></div>}><SellerPerformanceDetail /></Suspense></ProtectedRoute>} />
               <Route path="/buy-requirement-config" element={<ProtectedRoute><AdminBuyRequirementConfig /></ProtectedRoute>} />
+              <Route path="/unit-master" element={<ProtectedRoute><UnitMaster /></ProtectedRoute>} />
 
 
               <Route path="/buyer-enquiries" element={<ProtectedRoute><Suspense fallback={<div></div>}><AdminBuyerEnquiries /></Suspense></ProtectedRoute>} />

@@ -91,6 +91,20 @@ const PostBuyRequirement = () => {
     setErrors((prev) => (prev.quantity ? { ...prev, quantity: "" } : prev));
   };
 
+  const normalizeUnit = (v) => String(v == null ? "" : v).trim().replace(/\s+/g, " ");
+  const normalizeUnitKey = (v) => normalizeUnit(v).toLowerCase();
+
+  // A typed value that already exists in the unit list resolves to that entry
+  // instead of becoming a custom/"other" value. Comparison is trim + case
+  // insensitive so "capacitor array" and "  Capacitor   Array  " both map to
+  // the same existing option. Returns the canonical list name, or null when
+  // the value is not in the list.
+  const findMatchingUnit = (v) => {
+    const nv = normalizeUnitKey(v);
+    if (!nv) return null;
+    return unitOptions.find((u) => normalizeUnitKey(u) === nv) || null;
+  };
+
   const handleUnitChange = (e) => {
     const val = e.target.value;
     setForm((prev) => ({ ...prev, quantity_unit: val }));
@@ -105,6 +119,16 @@ const PostBuyRequirement = () => {
     );
     setUnitSuggestions(filtered);
     setShowUnitDropdown(filtered.length > 0);
+
+    // Exact (normalized) match on what was typed: snap the field to the
+    // existing list value so the manual selection and the typed path submit
+    // the same thing.
+    const matched = findMatchingUnit(val);
+    if (matched) {
+      setForm((prev) => ({ ...prev, quantity_unit: matched }));
+      setUnitSuggestions([]);
+      setShowUnitDropdown(false);
+    }
   };
 
   const handleUnitSelect = (unit) => {
@@ -356,6 +380,10 @@ const PostBuyRequirement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const matchedUnit = findMatchingUnit(form.quantity_unit);
+    if (matchedUnit) {
+      setForm((prev) => ({ ...prev, quantity_unit: matchedUnit }));
+    }
     const v = validate();
     setErrors(v);
     const firstKey = Object.keys(v)[0];
@@ -373,7 +401,9 @@ const PostBuyRequirement = () => {
       subcategory_id: productKeyword.subcategory_id,
       category_id: productKeyword.category_id,
       quantity: form.quantity,
-      quantity_unit: form.quantity_unit,
+      // No list match: submit the buyer's own text, only trimmed/collapsed -
+      // the existing custom-unit behaviour is left untouched.
+      quantity_unit: matchedUnit || normalizeUnit(form.quantity_unit),
       description: form.description,
       supplier_preference: form.supplier_preference,
       buyer_name: form.buyer_name,

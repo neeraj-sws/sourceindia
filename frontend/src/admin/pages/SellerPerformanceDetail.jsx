@@ -223,7 +223,13 @@ export function SellerPerformanceDetail() {
 
   const leadMetricCards = [
     { label: "Total Leads Received", value: aggregate?.total_received ?? 0, sub: "all-time assignments", cls: "text-primary" },
-    { label: "Responded On Time", value: aggregate?.on_time ?? 0, sub: `${aggregate?.on_time_percentage ?? 0}% of responses · SLA ${sla_minutes ?? "-"} min`, cls: "text-success" },
+    // { label: "Responded On Time", value: aggregate?.on_time ?? 0, sub: `${aggregate?.on_time_percentage ?? 0}% of responses · SLA ${sla_minutes ?? "-"} min`, cls: "text-success" },
+    {
+  label: "On-Time Response",
+  value: `${aggregate?.on_time_percentage ?? 0}%`,
+  sub: `${aggregate?.on_time ?? 0} of ${aggregate?.responded ?? 0} responses · SLA ${sla_minutes ?? "-"} min`,
+  cls: "text-success",
+},
     // { label: "Late Responses", value: aggregate?.late ?? 0, sub: "responded after the SLA", cls: "text-danger" },
     { label: "Auto-Cancelled", value: aggregate?.auto_cancelled ?? 0, sub: "no action taken in SLA", cls: "text-dark" },
     { label: "Search Appearances", value: search_appearance_count ?? 0, sub: "matched in buyer requirement searches", cls: "text-info" },

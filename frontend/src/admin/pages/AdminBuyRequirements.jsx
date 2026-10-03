@@ -125,7 +125,7 @@ export function AdminBuyRequirements() {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead="Buy Requirements" maincount={totalRecords} page="Workflow" title="Buyer Requirements" />
+        <Breadcrumb mainhead="Buy Requirements" maincount={totalRecords} page="Post Buy Requirement" title="Buy Requirement" />
 
         {statCards.length > 0 && (
           <div className="row row-cols-1 row-cols-md-2 row-cols-xl-4">
@@ -144,6 +144,11 @@ export function AdminBuyRequirements() {
                   {Object.entries(reqStatusMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
               </div>
+              {/* <div className="col-md-3 ms-auto">
+                <Link className="btn btn-outline-primary w-100" to="/admin/unit-master">
+                  <i className="bx bx-slider me-1"></i> Unit Master
+                </Link>
+              </div> */}
             </div>
             <DataTable
               columns={[
@@ -151,7 +156,7 @@ export function AdminBuyRequirements() {
                 { key: "product", label: "Product", sortable: false },
                 { key: "type", label: "Type", sortable: false },
                 { key: "category", label: "Category", sortable: false },
-                { key: "buyer", label: "Buyer", sortable: false },
+                { key: "buyer", label: "Requested by", sortable: false },
                 { key: "location", label: "Location", sortable: false },
                 { key: "qty", label: "Quantity", sortable: false },
                 { key: "created_at", label: "Created", sortable: true },
@@ -347,7 +352,7 @@ export function AdminBuyRequirementDetail() {
         .filter(Boolean)
     ),
   ];
-  const assignedSellerName = assignedSellerNames.length ? assignedSellerNames.join(", ") : "-";
+  const assignedSellerName = assignedSellerNames.length ? assignedSellerNames.join(", ") : "";
 
   const asgStatusClass = {
     0: "badge bg-secondary", 1: "badge bg-info", 2: "badge bg-primary",
@@ -362,7 +367,7 @@ export function AdminBuyRequirementDetail() {
   ].filter((c) => c.value);
 
   const statItems = [
-    { label: "Assigned To", value: assignedSellerName, names: assignedSellerNames },
+    { label: "Assigned To", value: `assignedSellerName`, names: assignedSellerNames },
     { label: "Quantity", value: req.quantity ? `${req.quantity}${req.quantity_unit || ""}` : "-" },
     { label: "Preference", value: req.supplier_preference || "-" },
     // { label: "Assignments", value: assignments.length },
@@ -379,44 +384,48 @@ export function AdminBuyRequirementDetail() {
 
         <div className="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
           <div>
-            <h4 className="mb-1 fw-semibold">{req.product_name_snapshot}</h4>
+            <h4 className="mb-1 fw-semibold text-capitalize">{req.product_name_snapshot}</h4>
             <div className="d-flex align-items-center gap-2 flex-wrap">
-              <span className={`badge bg-${st.class}`}>{st.label}</span>
-              <span className="text-muted small">Req #{req.id} · Posted {formatDateTime(req.created_at)}</span>
-              {req.keyword?.name ? <span className="badge bg-light border text-dark">{req.keyword.name}</span> : null}
-              {reqTypeMap[req.type] ? <span className={`badge bg-${reqTypeMap[req.type].class}`}>{reqTypeMap[req.type].label}</span> : null}
+              
+              {/* <span className="text-muted small">Req #{req.id} · Posted {formatDateTime(req.created_at)}</span> */}
+              {/* {req.keyword?.name ? <span className="badge bg-light border text-dark">{req.keyword.name}</span> : null} */}
+              {/* <span className={`badge bg-${st.class}`}>{st.label}</span>
+              {reqTypeMap[req.type] ? <span className={`badge bg-${reqTypeMap[req.type].class}`}>{reqTypeMap[req.type].label}</span> : null} */}
             </div>
           </div>
-          <button className="btn btn-primary" onClick={openAssign}>
-            <i className="bx bx-plus me-1"></i> Assign Seller
+          <button className="btn btn-primary" onClick={openAssign} style={{ display: "none" }}>
+            <i className="bx bx-plus me-1 "></i> Assign Seller
           </button>
         </div>
 
         <div className="row row-cols-2 row-cols-md-3 row-cols-xl-6 g-3 mb-3">
-          {statItems.map((s, i) => (
-            <div className="col" key={i}>
-              <div className="card card-border radius-2 h-100 mb-0">
-                <div className="card-body py-3">
-                  <p className="text-muted small mb-0">{s.label}</p>
-                  {s.names && s.names.length > 0 ? (
-                    <div className="d-flex flex-wrap gap-1 mt-1" title={s.value}>
-                      {s.names.map((n, ni) => (
-                        <span
-                          key={ni}
-                          className="badge bg-light border text-dark fw-semibold small text-wrap"
-                          style={{ maxWidth: "100%", overflowWrap: "anywhere" }}
-                        >
-                          {n}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="mb-0 fw-semibold text-truncate" title={s.value}>{s.value}</p>
-                  )}
+          {statItems.map((s, i) => {
+            if (s.label === "Assigned To" && !assignedSellerName) return null;
+            return (
+              <div className="col" key={i}>
+                <div className="card card-border radius-2 h-100 mb-0">
+                  <div className="card-body py-3">
+                    <p className="text-muted small mb-0">{s.label}</p>
+                    {s.names && s.names.length > 0 ? (
+                      <div className="d-flex flex-wrap gap-1 mt-1" title={s.value}>
+                        {s.names.map((n, ni) => (
+                          <span
+                            key={ni}
+                            className="badge bg-light border text-dark fw-semibold small text-wrap"
+                            style={{ maxWidth: "100%", overflowWrap: "anywhere" }}
+                          >
+                            {n}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mb-0 fw-semibold text-truncate" title={s.value}>{s.value}</p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="row g-3 mb-3">
@@ -449,19 +458,31 @@ export function AdminBuyRequirementDetail() {
                     <div className="text-muted small mb-1"><i className="bx bx-calendar me-1"></i>Last Updated</div>
                     <div>{formatDateTime(req.updated_at)}</div>
                   </div>
+                  <div className="col-md-6">
+                    <span className={`badge bg-${st.class}`}>{st.label}</span>
+                    <br />
+                    {reqTypeMap[req.type] ? <span className={`badge bg-${reqTypeMap[req.type].class}`}>{reqTypeMap[req.type].label}</span> : null}
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="card card-border radius-2">
               <div className="card-header py-3">
-                <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Buyer Details</h6>
+                {/* <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Buyer Details</h6> */}
+                {!req?.buyer_id ? (
+  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Guest Details</h6>
+) : (req?.buyer_is_seller === 1 || req?.buyer?.is_seller === 1) ? (
+  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Seller Details</h6>
+) : (
+  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Buyer Details</h6>
+)}
               </div>
               <div className="card-body">
                 <div className="d-flex align-items-center gap-3 mb-3">
                   <div>
-                    <div className="fw-semibold">{req.buyer_name || "Guest Buyer"}
-                      {!req.buyer_id ? <span className="badge bg-warning ms-2">Guest</span> : null}
+                    <div className="fw-semibold text-capitalize">{req.buyer_name || "Guest Buyer"}
+                      {/* {!req.buyer_id ? <span className="badge bg-warning ms-2">Guest</span> : null} */}
                     </div>
                     <div className="text-muted small">{req.buyer_email || "-"}</div>
                   </div>
@@ -493,7 +514,8 @@ export function AdminBuyRequirementDetail() {
                     {logs.map((l, idx) => (
                       <li key={l.id} className="list-group-item d-flex gap-3 py-3">
                         <div className="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 28, height: 28 }}>
-                          <i className={idx === 0 ? "bx bxs-check-circle" : "bx bx-dots-vertical-rounded"}></i>
+                          {/* <i className={idx === 0 ? "bx bxs-check-circle" : "bx bx-dots-vertical-rounded"}></i> */}
+                          <i className="bx bx-dots-vertical-rounded"></i>
                         </div>
                         <div className="min-w-0">
                           <div><code className="text-primary">{l.action}</code></div>
@@ -519,7 +541,8 @@ export function AdminBuyRequirementDetail() {
               <table className="table table-hover align-middle mb-0">
                 <thead className="table-light">
                   <tr>
-                    <th>#</th><th>Seller</th><th>Company</th><th>Match</th>
+                    <th>S.No.</th><th>Seller</th><th>Company</th>
+                    {/* <th>Match</th> */}
                     {/* <th>Status</th> */}
                     {/* <th>Assigned At</th><th>Responded At</th><th>Note</th> */}
                   </tr>
@@ -531,10 +554,10 @@ export function AdminBuyRequirementDetail() {
                       <td>{a.assignment_number}</td>
                       <td><div className="fw-semibold">{a.seller?.fname} {a.seller?.lname}</div>{a.seller?.email ? <div className="text-muted small">{a.seller.email}</div> : null}</td>
                       <td>{a.seller?.company_info?.organization_name || "-"}</td>
-                      <td>
+                      {/* <td>
                         {a.product_match_level || "-"}
                         {a.product_match_score ? <div className="text-muted small">score: {a.product_match_score}</div> : null}
-                      </td>
+                      </td> */}
                       {/* <td>
                         <span className={asgStatusClass[a.status] || "badge bg-secondary"}>{assignStatusMap[a.status] || a.status}</span>
                         {a.is_reassigned === 1 ? <span className="badge bg-warning text-dark ms-1">Reassigned</span> : null}

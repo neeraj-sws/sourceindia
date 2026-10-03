@@ -40,17 +40,19 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick }) => {
 
       {hasSubMenu && (
         <ul className={`mm-collapse ${shouldExpand ? "mm-show" : ""}`}>
-          {item.subMenu?.map((sub, idx) => (
-            <li
-              key={idx}
-              className={sub.link === currentPath ? "mm-active" : ""}
-            >
-              <Link to={sub.link}>
-                <i className="bx bx-right-arrow-alt" />
-                {sub.title}
-              </Link>
-            </li>
-          ))}
+          {item.subMenu
+            ?.filter((sub) => sub.show === undefined || sub.show === true)
+            .map((sub, idx) => (
+              <li
+                key={idx}
+                className={sub.link === currentPath ? "mm-active" : ""}
+              >
+                <Link to={sub.link}>
+                  <i className="bx bx-right-arrow-alt" />
+                  {sub.title}
+                </Link>
+              </li>
+            ))}
         </ul>
       )}
     </li>
@@ -63,14 +65,12 @@ const UserSidebar = () => {
   const [openIndex, setOpenIndex] = useState(null);
   const { user } = UseAuth();
   const [logoUrl, setLogoUrl] = useState('/logo.png'); // state to store logo URL
-  const [siteData, setSiteData] = useState(null); // state to store site settings data
 
   useEffect(() => {
     const fetchSiteSettings = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/settings/site`);
         const data = response.data;
-        setSiteData(data);
         if (data?.logo_file) {
           setLogoUrl(ROOT_URL + '/' + data.logo_file);
         } else {
@@ -198,47 +198,29 @@ const UserSidebar = () => {
     { title: "Add Open Enquiries", icon: "bx bx-plus", link: "/enquiry" },
     // { title: "My All Enquiries Chats", icon: "bx bx-message", link: "/my-all-enquiries-chats" },
 
-    // My Buy Requirements (for buyers and sellers)
     {
-      title: "My Buy Requirements",
+      title: "Post Buy Requirement",
       icon: "bx bx-list-ul",
-      link: "/my-buy-requirements",
       show: true,
-    },
-
-    // My Requirement History
-    {
-      title: "Requirement History",
-      icon: "bx bx-time-five",
-      link: "/my-requirement-history",
-      show: true,
-    },
-
-    // Buy Leads (for sellers with complete+approve)
-    {
-      title: "Buy Leads",
-      icon: "bx bx-package",
-      link: "/buy-leads",
-      show:
-        user?.is_seller === 1 &&
-        user?.is_complete === 1 &&
-        user?.is_approve === 1,
-    },
-
-    // Lead History 
-    {
-      title: "Lead History",
-      icon: "bx bx-history",
-      link: "/lead-history",
-      show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
-    },
-
-    // My Performance (for sellers with complete+approve)
-    {
-      title: "My Performance",
-      icon: "bx bx-line-chart",
-      link: "/my-performance",
-      show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
+      subMenu: [
+        { title: "Send", link: "/my-buy-requirements", show: true },
+        { title: "Send History", link: "/my-requirement-history", show: true },
+        {
+          title: "Received",
+          link: "/buy-leads",
+          show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
+        },
+        {
+          title: "Received History",
+          link: "/lead-history",
+          show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
+        },
+        {
+          title: "My Performance",
+          link: "/my-performance",
+          show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
+        },
+      ],
     },
   ];
 

@@ -62,6 +62,7 @@ const membershipPlansRoutes = require('./routes/membershipPlansRoutes');
 const buyerEnquiryRoutes = require('./routes/buyerEnquiryRoutes');
 const buyerRequirementsRoutes = require('./routes/buyerRequirementsRoutes');
 const adminBuyerRequirementsRoutes = require('./routes/adminBuyerRequirementsRoutes');
+const unitsRoutes = require('./routes/unitsRoutes');
 const { processExpiredAssignments, repairStuckRequirements } = require('./helpers/assignmentHelper');
 const { rolloverSellerLeadCounts } = require('./helpers/leadLimitHelper');
 
@@ -148,6 +149,9 @@ app.use(basePath + '/api/membership_plans', membershipPlansRoutes);
 app.use(basePath + '/api/buyerenquiry', buyerEnquiryRoutes);
 app.use(basePath + '/api/buyer-requirements', buyerRequirementsRoutes);
 app.use(basePath + '/api/admin/buyer-requirements', adminBuyerRequirementsRoutes);
+// Unit Master: manages the quantity unit list used by the Post Buy Requirement
+// form. Public GET / is the same list the form already consumes.
+app.use(basePath + '/api/units', unitsRoutes);
 app.use(basePath + '/api/companies', companiesRoutes);
 
 sequelize

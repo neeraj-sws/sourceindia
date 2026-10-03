@@ -11,6 +11,7 @@ const RequirementAssignments = require('../models/RequirementAssignments');
 const RequirementActivityLog = require('../models/RequirementActivityLog');
 const SellerPerformance = require('../models/SellerPerformance');
 const ProductKeyword = require('../models/ProductKeyword');
+const Units = require('../models/Units');
 const ItemSubCategory = require('../models/ItemSubCategory');
 const ItemCategory = require('../models/ItemCategory');
 const SubCategories = require('../models/SubCategories');
@@ -234,6 +235,64 @@ async function recalculateSellerPerformance(sellerId) {
   return perf;
 }
 
+// Normalization used whenever a free-text value has to be compared against an
+// existing master list (units, product keywords). Trims, collapses repeated
+// whitespace and lowercases, so "  Capacitor   Array " and "capacitor array"
+// are treated as the same entry.
+function normalizeMasterValue(value) {
+  return String(value == null ? '' : value).trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+// Resolve a typed quantity unit to an existing row in the `units` table.
+// Returns the canonical row (with its id) on an exact normalized match, or
+// null when the buyer typed something that is not in the list - the caller
+// then keeps the custom/"other" behaviour untouched.
+async function findUnitByName(unitName) {
+  const normalized = normalizeMasterValue(unitName);
+  if (!normalized) return null;
+  return Units.findOne({
+    where: { name: { [Op.eq]: unitName.trim().replace(/\s+/g, ' ') } },
+    order: [['id', 'ASC']],
+  }).catch(() => null).then(async (exact) => {
+    if (exact) return exact;
+    // Fall back to a case-insensitive exact comparison, done in JS because a
+    // case-insensitive collation is not guaranteed across MySQL installs.
+    const candidates = await Units.findAll({
+      attributes: ['id', 'name'],
+      where: { is_active: 1 },
+    });
+    return candidates.find((u) => normalizeMasterValue(u.name) === normalized) || null;
+  });
+}
+
+// Same idea for the product field: an exact (normalized) match against the
+// product keyword list means the buyer typed a name that already exists, so it
+// should be recorded as a list ("admin") entry instead of their own ("other").
+async function findExactProductKeyword(productText) {
+  const normalized = normalizeMasterValue(productText);
+  if (!normalized) return null;
+  // Narrow with a LIKE on the trimmed text first so only plausible rows are
+  // loaded; the authoritative comparison is still done in JS, since a
+  // case-insensitive collation is not guaranteed across MySQL installs.
+  const candidates = await ProductKeyword.findAll({
+    where: {
+      status: 1,
+      name: { [Op.like]: `%${productText.trim().replace(/[%_]/g, (m) => `\\${m}`)}%` },
+    },
+    include: [{ model: ItemSubCategory, as: 'ItemSubCategory' }],
+  });
+  const match = candidates.find((k) => normalizeMasterValue(k.name) === normalized);
+  if (!match) return null;
+  const its = match.ItemSubCategory || null;
+  return {
+    product_keyword_id: match.id,
+    item_subcategory_id: match.item_subcategory_id || null,
+    item_category_id: its ? its.item_category_id : null,
+    subcategory_id: its ? its.subcategory_id : null,
+    category_id: its ? its.category_id : null,
+  };
+}
+
 async function detectRequirementCategories(productText) {
   if (!productText || !productText.trim()) return {};
   const text = productText.trim().replace(/\s+/g, ' ');
@@ -388,6 +447,9 @@ module.exports = {
   getLeadPriorityTag,
   recalculateSellerPerformance,
   detectRequirementCategories,
+  normalizeMasterValue,
+  findUnitByName,
+  findExactProductKeyword,
   getBuyerLocation,
   geocodeCity,
   reverseGeocodePostcode,

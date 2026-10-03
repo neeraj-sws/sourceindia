@@ -46,7 +46,7 @@ export function AdminSellerPerformance() {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead="Seller Performance" maincount={totalRecords} page="Reporting" title="Seller Performance" />
+        <Breadcrumb mainhead="Seller Performance" maincount={totalRecords} page="Post Buy Requirement" title="Seller Performance" />
         <div className="card">
           <div className="card-body">
             <DataTable
@@ -208,7 +208,7 @@ export function AdminBuyRequirementConfig() {
   return (
     <div className="page-wrapper">
       <div className="page-content">
-        <Breadcrumb mainhead="Buy Requirement Config" page="Workflow" title="System Configuration" />
+        <Breadcrumb mainhead="Buy Requirement Config" page="Post Buy Requirement" title="Workflow Config" />
         <div className="card">
           <div className="card-body">
             <h6 className="mb-3 fw-semibold">Lead Handling & Reassignment</h6>
