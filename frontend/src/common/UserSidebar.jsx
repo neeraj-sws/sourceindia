@@ -198,20 +198,20 @@ const UserSidebar = () => {
     { title: "Add Open Enquiries", icon: "bx bx-plus", link: "/enquiry" },
     // { title: "My All Enquiries Chats", icon: "bx bx-message", link: "/my-all-enquiries-chats" },
 
-    // My Buy Requirements (for buyers - not sellers)
+    // My Buy Requirements (for buyers and sellers)
     {
       title: "My Buy Requirements",
       icon: "bx bx-list-ul",
       link: "/my-buy-requirements",
-      show: user?.is_seller === 0,
+      show: true,
     },
 
-    // My Requirement History (for buyers - not sellers)
+    // My Requirement History
     {
       title: "Requirement History",
       icon: "bx bx-time-five",
       link: "/my-requirement-history",
-      show: user?.is_seller === 0,
+      show: true,
     },
 
     // Buy Leads (for sellers with complete+approve)

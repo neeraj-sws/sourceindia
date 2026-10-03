@@ -335,6 +335,11 @@ async function manualAssignSellerToRequirement(requirementId, sellerId, ipAddres
   if (!seller || seller.is_delete) return { success: false, message: 'Seller not found' };
   if (seller.is_seller !== 1) return { success: false, message: 'Selected user is not a seller' };
 
+  // Prevent self-match: a seller cannot be assigned to their own requirement
+  if (requirement.buyer_id && parseInt(sellerId) === parseInt(requirement.buyer_id)) {
+    return { success: false, message: 'Cannot assign a seller to their own posted requirement' };
+  }
+
   if (requirement.product_keyword_id) {
     const hasProduct = await hasSellerProductMatch(parseInt(sellerId), requirement.product_keyword_id);
     if (!hasProduct) {

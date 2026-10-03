@@ -24,7 +24,9 @@ const Units = sequelize.define('Units', {
   },
 }, {
   tableName: 'units',
-  timestamps: false,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
 });
 
-module.exports = Units;
+module.exports = Units; 

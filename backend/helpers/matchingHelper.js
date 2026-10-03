@@ -94,7 +94,11 @@ async function findEligibleSellers(requirement, candidatePoolSize, options = {})
 
     const allCandidates = [];
     const seenSellerIds = new Set();
+    const excludeBuyerId = requirement.buyer_id ? parseInt(requirement.buyer_id) : null;
     for (const seller of sellers) {
+      if (excludeBuyerId && parseInt(seller.id) === excludeBuyerId) {
+        continue;
+      }
       if (!seenSellerIds.has(seller.id) && !assignedSellerIds.includes(seller.id)) {
         seenSellerIds.add(seller.id);
         allCandidates.push({

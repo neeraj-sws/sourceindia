@@ -491,7 +491,12 @@ async function getSellersForAssign(req, res) {
         s.reasons.push(chk.reason);
       }
     }
-    const eligibleSellers = evaluated.filter((s) => s.is_eligible);
+    // Exclude the requirement's own poster from the results (same as auto-matching)
+    const excludeBuyerId = requirement.buyer_id ? parseInt(requirement.buyer_id) : null;
+    const evaluatedFiltered = excludeBuyerId
+      ? evaluated.filter((s) => parseInt(s.seller_id) !== excludeBuyerId)
+      : evaluated;
+    const eligibleSellers = evaluatedFiltered.filter((s) => s.is_eligible);
 
     const rankByTotal = async (list) => {
       if (list.length === 0) return [];
