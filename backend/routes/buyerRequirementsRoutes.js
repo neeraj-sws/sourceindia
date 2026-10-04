@@ -18,12 +18,12 @@ router.get('/units', buyerRequirementsController.getUnits);
 router.get('/my', authMiddleware, buyerRequirementsController.getMyRequirements);
 
 // Buyer: Get requirement by ID
-router.get('/:id', buyerRequirementsController.getRequirementById);
+router.get('/:id', authMiddleware, buyerRequirementsController.getRequirementById);
 
 // Buyer: Get requirement activity log
-router.get('/:id/activity-log', buyerRequirementsController.getRequirementActivityLog);
+router.get('/:id/activity-log', authMiddleware, buyerRequirementsController.getRequirementActivityLog);
 
-// Seller: Get buy leads
+// Seller: Get Received Requirements
 router.get('/seller/leads', authMiddleware, buyerRequirementsController.getSellerBuyLeads);
 
 // Seller: Get lead counts

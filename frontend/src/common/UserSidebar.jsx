@@ -204,17 +204,17 @@ const UserSidebar = () => {
       show: true,
       subMenu: [
         { title: "Send", link: "/my-buy-requirements", show: true },
-        { title: "Send History", link: "/my-requirement-history", show: true },
+        // { title: "Send History", link: "/my-requirement-history", show: true },
         {
           title: "Received",
           link: "/buy-leads",
           show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
         },
-        {
-          title: "Received History",
-          link: "/lead-history",
-          show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
-        },
+        // {
+        //   title: "Received History",
+        //   link: "/lead-history",
+        //   show: user?.is_seller === 1 && user?.is_complete === 1 && user?.is_approve === 1,
+        // },
         {
           title: "My Performance",
           link: "/my-performance",

@@ -6,7 +6,7 @@ const BuyerRequirements = require('../models/BuyerRequirements');
 const RequirementAssignments = require('../models/RequirementAssignments');
 const { logActivity, ensureSellerPerformance, incrementSellerPerformance, getSystemConfig, recalculateSellerPerformance } = require('./requirementHelper');
 const { findEligibleSellers, hasSellerProductMatch, isProductAvailableForKeyword } = require('./matchingHelper');
-const { enrichSellers, evaluateSellerEligibility, isSameDayCityProductAssigned, matchesSupplierPreference, normalizeText } = require('./sellerEligibilityHelper');
+const { enrichSellers, evaluateSellerEligibility, isSameDayCityProductAssigned, matchesSupplierPreference, normalizeText, SAME_DAY_CITY_PRODUCT_REASON } = require('./sellerEligibilityHelper');
 const { getOrCreateSellerLeadCount, consumeSellerLeadQuota } = require('./leadLimitHelper');
 const { sendMail } = require('./mailHelper');
 const {
@@ -44,6 +44,25 @@ class AssignmentError extends Error {
 // (they go through the normal per-product no-seller/incomplete path instead).
 // ---------------------------------------------------------------
 
+// Activity Log reason for the one No Seller Found case driven purely by the
+// same-day + same-city + same-product eligibility rule.
+const ALREADY_POSTED_REASON = 'Requirement already posted for the same product and city today';
+
+// True when every seller still in scope was disqualified by the same-day +
+// same-city + same-product rule in evaluateSellerEligibility() AND by nothing
+// else, so that rule is the reason no eligible seller is left. Requires
+// reasons.length === 1 on purpose: a seller that also ran out of quota, has lead
+// receiving off or has no active product keeps the reason it had before, so this
+// never fires for those cases.
+function allCandidatesBlockedAsAlreadyPosted(sellers) {
+  return sellers.length > 0 && sellers.every(
+    (s) => !s.is_eligible
+      && Array.isArray(s.reasons)
+      && s.reasons.length === 1
+      && s.reasons[0] === SAME_DAY_CITY_PRODUCT_REASON
+  );
+}
+
 // Build the tiered list of sellers to assign for this requirement.
 // Returns { tier, sellers, notePrefix, cityCandidatesExist }
 async function collectAssignmentCandidates(requirement, config) {
@@ -62,6 +81,10 @@ async function collectAssignmentCandidates(requirement, config) {
   const cityCandidates = prefFiltered.filter((s) => s.same_city);
   const nonCityCandidates = prefFiltered.filter((s) => !s.same_city);
 
+  // Only the "sellers exist but none eligible" outcomes below can be caused by
+  // the same-day + same-city + same-product rule, so only they carry the flag.
+  const alreadyPosted = allCandidatesBlockedAsAlreadyPosted(prefFiltered);
+
   const eligibleCity = cityCandidates.filter((s) => s.is_eligible);
   if (eligibleCity.length > 0) {
     return { tier: 'exact_city', sellers: eligibleCity, cityCandidatesExist: true, notePrefix: null };
@@ -70,7 +93,7 @@ async function collectAssignmentCandidates(requirement, config) {
   // Zero eligible in the exact city, but sellers WITH the product exist there
   // (all exhausted / lead receiving off) -> no city fallback; per-product incomplete.
   if (cityCandidates.length > 0) {
-    return { tier: 'city_exhausted', sellers: [], cityCandidatesExist: true, notePrefix: null };
+    return { tier: 'city_exhausted', sellers: [], cityCandidatesExist: true, notePrefix: null, alreadyPosted };
   }
 
   // No seller in the exact city at all -> T2 same-state (nearest city first).
@@ -102,7 +125,7 @@ async function collectAssignmentCandidates(requirement, config) {
     };
   }
 
-  return { tier: 'none', sellers: [], cityCandidatesExist: false, notePrefix: null };
+  return { tier: 'none', sellers: [], cityCandidatesExist: false, notePrefix: null, alreadyPosted };
 }
 
 function buildAssignmentNote(tier, notePrefix, seller) {
@@ -206,12 +229,14 @@ async function assignSellerToRequirement(requirementId, ipAddress = null, opts =
   const cand = await collectAssignmentCandidates(requirement, config);
 
   if (cand.tier === 'city_exhausted') {
-    await markNoSellerFound(requirement, 'All sellers in the buyer city have reached their lead limit for this period');
+    // Status stays 5 (No Seller Found); only the Activity Log reason differs when
+    // the same-day + same-city + same-product rule is what left nobody eligible.
+    await markNoSellerFound(requirement, cand.alreadyPosted ? ALREADY_POSTED_REASON : 'All sellers in the buyer city have reached their lead limit for this period');
     return { success: false, message: 'All sellers in the buyer city have reached their lead limit for this period' };
   }
 
   if (cand.tier === 'none' || cand.sellers.length === 0) {
-    await markNoSellerFound(requirement, 'No eligible seller available anywhere');
+    await markNoSellerFound(requirement, cand.alreadyPosted ? ALREADY_POSTED_REASON : 'No eligible seller available anywhere');
     return { success: false, message: 'No eligible seller available anywhere' };
   }
 

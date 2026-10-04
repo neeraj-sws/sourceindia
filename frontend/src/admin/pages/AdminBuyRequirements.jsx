@@ -33,6 +33,14 @@ const assignStatusMap = {
   6: "Completed",
 };
 
+const ALREADY_POSTED_REASON = "Requirement already posted for the same product and city today";
+
+// Display-only. One specific "No Seller Found" entry is labelled "Already Posted"
+// so the buyer sees why no seller was assigned. Every other entry keeps showing
+// its raw action, and the stored reason/details are never altered.
+const isAlreadyPostedLog = (log) =>
+  log?.action === "no_seller_found" && log?.details === ALREADY_POSTED_REASON;
+
 export function AdminBuyRequirements() {
   const [data, setData] = useState([]);
   const [counts, setCounts] = useState(null);
@@ -182,10 +190,10 @@ export function AdminBuyRequirements() {
                 return (
                   <tr key={row.id}>
                     <td>{row.id}</td>
-                    <td>{row.product_name_snapshot}</td>
+                    <td className="text-capitalize">{row.product_name_snapshot}</td>
                     <td>{ty ? <span className={`badge bg-${ty.class}`}>{ty.label}</span> : "-"}</td>
                     <td>{row.category?.name || "-"}</td>
-                    <td>{row.buyer_name || row.buyer_email || row.buyer_company || "-"}</td>
+                    <td className="text-capitalize">{row.buyer_name || row.buyer_email || row.buyer_company || "-"}</td>
                     <td>{row.buyer_city || "-"}{row.buyer_state ? <div className="text-muted small">{row.buyer_state}</div> : null}</td>
                     <td>{row.quantity || "-"}{row.quantity_unit ? ` ${row.quantity_unit}` : ""}</td>
                     <td>{formatDateTime(row.created_at)}</td>
@@ -379,7 +387,7 @@ export function AdminBuyRequirementDetail() {
     <div className="page-wrapper">
       <div className="page-content">
         <Breadcrumb page="Workflow" title={`Requirement #${req.id}`} actions={
-          <button className="btn btn-sm btn-light mb-2" onClick={() => navigate("/admin/buy-requirements-history")}>← Back</button>
+          <button className="btn btn-sm btn-light mb-2" onClick={() => navigate("/admin/buy-requirements")}>← Back</button>
         } />
 
         <div className="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
@@ -431,8 +439,13 @@ export function AdminBuyRequirementDetail() {
         <div className="row g-3 mb-3">
           <div className="col-lg-7">
             <div className="card card-border radius-2">
-              <div className="card-header py-3">
+              <div className="card-header py-3 d-flex align-items-center justify-content-between">
                 <h6 className="mb-0"><i className="bx bx-info-circle me-1"></i> Sourcing Details</h6>
+                <div className="d-flex align-items-center justify-content-between" >
+                    <span className={`badge bg-${st.class} me-2`}>{st.label}</span>
+                    <br />
+                    {reqTypeMap[req.type] ? <span className={`badge bg-${reqTypeMap[req.type].class}`}>{reqTypeMap[req.type].label}</span> : null}
+                  </div>
               </div>
               <div className="card-body">
                 {categoryChain.length > 0 && (
@@ -458,11 +471,6 @@ export function AdminBuyRequirementDetail() {
                     <div className="text-muted small mb-1"><i className="bx bx-calendar me-1"></i>Last Updated</div>
                     <div>{formatDateTime(req.updated_at)}</div>
                   </div>
-                  <div className="col-md-6">
-                    <span className={`badge bg-${st.class}`}>{st.label}</span>
-                    <br />
-                    {reqTypeMap[req.type] ? <span className={`badge bg-${reqTypeMap[req.type].class}`}>{reqTypeMap[req.type].label}</span> : null}
-                  </div>
                 </div>
               </div>
             </div>
@@ -471,12 +479,12 @@ export function AdminBuyRequirementDetail() {
               <div className="card-header py-3">
                 {/* <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Buyer Details</h6> */}
                 {!req?.buyer_id ? (
-  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Guest Details</h6>
-) : (req?.buyer_is_seller === 1 || req?.buyer?.is_seller === 1) ? (
-  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Seller Details</h6>
-) : (
-  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Buyer Details</h6>
-)}
+                  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Guest Details</h6>
+                ) : (req?.buyer?.is_seller === 1) ? (
+                  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Seller Details</h6>
+                ) : (
+                  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Buyer Details</h6>
+                )}
               </div>
               <div className="card-body">
                 <div className="d-flex align-items-center gap-3 mb-3">
@@ -518,7 +526,7 @@ export function AdminBuyRequirementDetail() {
                           <i className="bx bx-dots-vertical-rounded"></i>
                         </div>
                         <div className="min-w-0">
-                          <div><code className="text-primary">{l.action}</code></div>
+                          <div><code className="text-primary">{isAlreadyPostedLog(l) ? "Already Posted" : l.action}</code></div>
                           <div className="text-muted small">{l.details || "-"}</div>
                           <div className="text-muted small">{formatDateTime(l.created_at)}{l.seller ? ` · ${l.seller.fname} ${l.seller.lname}` : ""}</div>
                         </div>

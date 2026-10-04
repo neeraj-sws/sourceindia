@@ -21,12 +21,21 @@ const statusMap = {
   6: { label: "Completed", class: "success" },
 };
 
+const ALREADY_POSTED_REASON = "Requirement already posted for the same product and city today";
+
+// Display-only. One specific "No Seller Found" entry is labelled "Already Posted"
+// so the buyer sees why no seller was assigned. Every other entry keeps showing
+// its raw action, and the stored reason/details are never altered.
+const isAlreadyPostedLog = (log) =>
+  log?.action === "no_seller_found" && log?.details === ALREADY_POSTED_REASON;
+
 const BuyLeadDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showNotification } = useAlert();
   const [lead, setLead] = useState(null);
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -74,6 +83,14 @@ const BuyLeadDetail = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("user_token")}` },
       });
       setLead(res.data);
+      try {
+        const logRes = await axios.get(`${API_BASE_URL}/buyer-requirements/${res.data?.requirement_id || res.data?.requirement?.id}/activity-log`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("user_token")}` },
+        });
+        setLogs(logRes.data || []);
+      } catch (e) {
+        setLogs([]);
+      }
     } catch (err) {
       const msg = err.response?.data?.message || "Lead not found";
       showNotification(msg, "error");
@@ -173,7 +190,13 @@ const BuyLeadDetail = () => {
             </div>
 
             <div className="card">
-              <div className="card-header"><h6 className="mb-0">Buyer Details</h6></div>
+              <div className="card-header"> {!req?.buyer_id ? (
+                  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Guest Details</h6>
+                ) : (req?.buyer?.is_seller === 1) ? (
+                  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Seller Details</h6>
+                ) : (
+                  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Buyer Details</h6>
+                )}</div>
               <div className="card-body">
                 <div className="row">
                   <div className="col-md-6"><strong>Name:</strong> {req.buyer_name || "-"}</div>
@@ -231,6 +254,7 @@ const BuyLeadDetail = () => {
                       value={rejectionReason}
                       onChange={handleRejectionReasonChange}
                     />
+                    <span className="text-muted small mb-1 d-block">Maximum word limit 500</span>
                     {rejectionError && <div className="text-danger small">{rejectionError}</div>}
                     <button
                       className="btn btn-danger w-100"
@@ -241,6 +265,42 @@ const BuyLeadDetail = () => {
                       Reject
                     </button>
                   </>
+                )}
+              </div>
+            </div>
+
+            <div className="card card-border radius-2 mt-3">
+              <div className="card-header py-3">
+                <h6 className="mb-0">
+                  <i className="bx bx-time-five me-1"></i> Activity Log
+                </h6>
+              </div>
+              <div className="card-body p-0 thin-scroll" style={{ maxHeight: 400 }}>
+                {logs.length === 0 ? (
+                  <p className="text-muted small p-3 mb-0">No activity yet</p>
+                ) : (
+                  <ul className="list-group list-group-flush">
+                    {logs.map((l) => (
+                      <li key={l.id} className="list-group-item d-flex gap-3 py-3">
+                        <div
+                          className="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center flex-shrink-0"
+                          style={{ width: 28, height: 28 }}
+                        >
+                          <i className="bx bx-dots-vertical-rounded"></i>
+                        </div>
+                        <div className="min-w-0">
+                          <div>
+                            <code className="text-primary">{isAlreadyPostedLog(l) ? "Already Posted" : l.action}</code>
+                          </div>
+                          <div className="text-muted small">{l.details || "-"}</div>
+                          <div className="text-muted small">
+                            {formatDateTime(l.created_at)}
+                            {l.seller ? ` • ${l.seller.fname} ${l.seller.lname}` : ""}
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>

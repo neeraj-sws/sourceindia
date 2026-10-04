@@ -206,6 +206,7 @@ async function createRequirement(req, res) {
 async function getRequirementById(req, res) {
   try {
     const { id } = req.params;
+    const user = req.user;
     const requirement = await BuyerRequirements.findByPk(id, {
       include: [
         { model: ProductKeyword, as: 'keyword', attributes: ['id', 'name'] },
@@ -224,7 +225,13 @@ async function getRequirementById(req, res) {
       ],
     });
     if (!requirement) return res.status(404).json({ message: 'Requirement not found' });
-    return res.json(requirement);
+
+    if (!user) return res.status(403).json({ message: 'Access denied' });
+    if (user.is_admin) return res.json(requirement);
+    if (requirement.buyer_id === user.id) return res.json(requirement);
+    const hasAssignment = (requirement.assignments || []).some((a) => a.seller_id === user.id);
+    if (hasAssignment) return res.json(requirement);
+    return res.status(403).json({ message: 'Access denied' });
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -275,6 +282,36 @@ async function getMyRequirements(req, res) {
 async function getRequirementActivityLog(req, res) {
   try {
     const { id } = req.params;
+    const user = req.user;
+
+    const requirement = await BuyerRequirements.findByPk(id, {
+      attributes: ['id', 'buyer_id'],
+      include: [
+        {
+          model: RequirementAssignments,
+          as: 'assignments',
+          attributes: ['id', 'seller_id'],
+        },
+      ],
+    });
+    if (!requirement) return res.status(404).json({ message: 'Requirement not found' });
+
+    let hasAccess = false;
+    if (user) {
+      if (user.is_admin) {
+        hasAccess = true;
+      }
+      if (requirement.buyer_id === user.id) {
+        hasAccess = true;
+      }
+      if (!hasAccess && Array.isArray(requirement.assignments)) {
+        hasAccess = requirement.assignments.some((a) => a.seller_id === user.id);
+      }
+    }
+    if (!hasAccess) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     const logs = await RequirementActivityLog.findAll({
       where: { requirement_id: id },
       include: [{ model: Users, as: 'seller', attributes: ['id', 'fname', 'lname'] }],
@@ -344,6 +381,7 @@ async function getBuyLeadDetail(req, res) {
           { model: ItemCategory, as: 'itemCategory', attributes: ['id', 'name'] },
           { model: ItemSubCategory, as: 'itemSubCategory', attributes: ['id', 'name'] },
           { model: ProductKeyword, as: 'keyword', attributes: ['id', 'name'] },
+          { model: Users, as: 'buyer', attributes: ['id', 'is_seller'] },
         ],
       }],
     });

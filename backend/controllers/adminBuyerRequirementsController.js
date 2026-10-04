@@ -90,27 +90,28 @@ async function getAllRequirements(req, res) {
 async function getRequirementDetailAdmin(req, res) {
   try {
     const { id } = req.params;
-    const requirement = await BuyerRequirements.findByPk(id, {
-      include: [
-        { model: Categories, as: 'category', attributes: ['id', 'name'] },
-        { model: SubCategories, as: 'subCategory', attributes: ['id', 'name'] },
-        { model: ItemCategory, as: 'itemCategory', attributes: ['id', 'name'] },
-        { model: ItemSubCategory, as: 'itemSubCategory', attributes: ['id', 'name'] },
-        { model: ProductKeyword, as: 'keyword', attributes: ['id', 'name'] },
-        {
-          model: RequirementAssignments, as: 'assignments',
-          include: [{ model: Users, as: 'seller', attributes: ['id', 'fname', 'lname', 'email'],
-            include: [{ model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] }],
-          }],
-          order: [['assignment_number', 'ASC']],
-        },
-        {
-          model: RequirementActivityLog, as: 'activity_logs',
-          include: [{ model: Users, as: 'seller', attributes: ['id', 'fname', 'lname'] }],
-          order: [['created_at', 'ASC']],
-        },
-      ],
-    });
+      const requirement = await BuyerRequirements.findByPk(id, {
+        include: [
+          { model: Categories, as: 'category', attributes: ['id', 'name'] },
+          { model: SubCategories, as: 'subCategory', attributes: ['id', 'name'] },
+          { model: ItemCategory, as: 'itemCategory', attributes: ['id', 'name'] },
+          { model: ItemSubCategory, as: 'itemSubCategory', attributes: ['id', 'name'] },
+          { model: ProductKeyword, as: 'keyword', attributes: ['id', 'name'] },
+          { model: Users, as: 'buyer', attributes: ['id', 'fname', 'lname', 'email', 'mobile', 'is_seller'] },
+          {
+            model: RequirementAssignments, as: 'assignments',
+            include: [{ model: Users, as: 'seller', attributes: ['id', 'fname', 'lname', 'email', 'is_seller'],
+              include: [{ model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] }],
+            }],
+            order: [['assignment_number', 'ASC']],
+          },
+          {
+            model: RequirementActivityLog, as: 'activity_logs',
+            include: [{ model: Users, as: 'seller', attributes: ['id', 'fname', 'lname'] }],
+            order: [['created_at', 'ASC']],
+          },
+        ],
+      });
     if (!requirement) return res.status(404).json({ message: 'Requirement not found' });
     return res.json(requirement);
   } catch (err) {

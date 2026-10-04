@@ -1,4 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import useAuth from "../sections/UseAuth";
 import API_BASE_URL from "../config";
@@ -79,6 +80,7 @@ const BuyerRequirementHistory = () => {
                   { key: "created_at", label: "Posted", sortable: true },
                   { key: "status", label: "Status", sortable: false },
                   { key: "assignments", label: "Assigned Sellers", sortable: false },
+                  { key: "action", label: "Action", sortable: false },
                 ]}
                 data={data}
                 loading={isLoading}
@@ -104,6 +106,9 @@ const BuyerRequirementHistory = () => {
                       <td>{formatDateTime(row.created_at)}</td>
                       <td><span className={`badge bg-${st.class}`}>{st.label}</span></td>
                       <td>{ownerCell(row)}</td>
+                      <td>
+                        <Link className="btn btn-sm btn-primary" to={`/my-buy-requirement-detail/${row.id}`}>View</Link>
+                      </td>
                     </tr>
                   );
                 }}

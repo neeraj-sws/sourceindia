@@ -641,8 +641,82 @@ textarea.pbr-input {
   background: #f0f0f0;
 }
 
+/* ============ THANK YOU POPUP ============ */
+/* Desktop width is capped so the popup stays compact, and the 100dvh term keeps
+   the whole artwork on screen. The artwork is 1426x1103, so its width/height
+   ratio is 1.29284 - dividing the available height by it gives the widest popup
+   that still fits vertically, which is what removes any need to scroll. */
+.pbr-thankyou-modal {
+  z-index: 1055;
+}
+
+.pbr-thankyou-modal .modal-dialog {
+  width: min(600px, 100%, calc((100dvh - 32px) * 1.29284));
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.pbr-thankyou-modal .modal-content {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.pbr-thankyou-modal .btn-close {
+  z-index: 2;
+}
+
+.pbr-thankyou-backdrop {
+  z-index: 1050;
+  padding: 0;
+  border: 0;
+  appearance: none;
+}
+
+.pbr-thankyou-media {
+  position: relative;
+  width: 100%;
+  container-type: inline-size;
+}
+
+.pbr-thankyou-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Actions sit inside the blank band the artwork leaves at the bottom
+   (y 989-1070 of 1103) and are sized from the media width, so they stay
+   proportional and never overlap the design at any screen size. */
+.pbr-thankyou-actions {
+  position: absolute;
+  top: 89.66%;
+  bottom: 2.9%;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: min(2.2cqw, 2vw);
+}
+
+.pbr-thankyou-actions .btn {
+  font-size: min(2.3cqw, 2.1vw);
+  line-height: 1.4;
+  padding: min(0.9cqw, 0.85vw) min(3.2cqw, 2.9vw);
+  border-radius: min(1cqw, 0.95vw);
+  white-space: nowrap;
+}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width: 991.98px) {
+  .pbr-thankyou-modal .modal-dialog {
+    width: min(520px, 100%, calc((100dvh - 32px) * 1.29284));
+  }
+
   .pbr-card {
     flex-direction: column;
     margin-top: -48px;
@@ -661,6 +735,15 @@ textarea.pbr-input {
 }
 
 @media (max-width: 575.98px) {
+  /* Wider gutters would crowd the artwork, so the popup uses a consistent
+     12px breathing room and still shrinks by height in landscape. The width
+     subtracts those 12px margins, which an explicit width would otherwise ignore. */
+  .pbr-thankyou-modal .modal-dialog {
+    width: min(520px, calc(100% - 24px), calc((100dvh - 24px) * 1.29284));
+    margin: 12px auto;
+    min-height: calc(100% - 24px);
+  }
+
   .pbr-hero {
     padding: 28px 16px 76px;
   }

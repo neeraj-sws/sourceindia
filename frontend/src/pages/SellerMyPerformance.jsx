@@ -273,12 +273,12 @@ const SellerMyPerformance = () => {
       <div className="page-content">
         <h4 className="mb-3 d-flex flex-wrap align-items-center gap-2">
           My Performance
-          <span
+          {/* <span
             className={`badge bg-${priority.class}`}
             title={`Overall performance score: ${overall_performance_score ?? 0} / 100`}
           >
             {priority.label}
-          </span>
+          </span> */}
         </h4>
 
         {error && (

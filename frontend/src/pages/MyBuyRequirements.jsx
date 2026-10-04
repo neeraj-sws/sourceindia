@@ -94,7 +94,7 @@ const MyBuyRequirements = () => {
       <div className="page-wrapper">
         <div className="page-content">
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <h4 className="mb-0">My Buy Requirements</h4>
+            <h4 className="mb-0">Send Requirements</h4>
             <Link className="btn btn-primary" to="/post-buy-requirement">+ New Requirement</Link>
           </div>
           <div className="card">
@@ -107,8 +107,9 @@ const MyBuyRequirements = () => {
                   { key: "quantity", label: "Quantity", sortable: false },
                   { key: "created_at", label: "Posted", sortable: true },
                   { key: "status", label: "Status", sortable: false },
-                  { key: "assignments", label: "Assigned Sellers", sortable: false },
-                  { key: "actions", label: "Rating & Feedback", sortable: false },
+                  // { key: "assignments", label: "Assigned Sellers", sortable: false },
+                  { key: "feedback", label: "Feedback", sortable: false },
+                  { key: "actions", label: "Actions", sortable: false },
                 ]}
                 data={data}
                 loading={isLoading}
@@ -133,15 +134,18 @@ const MyBuyRequirements = () => {
                       <td>{row.quantity || "-"}{row.quantity_unit ? ` ${row.quantity_unit}` : ""}</td>
                       <td>{formatDateTime(row.created_at)}</td>
                       <td><span className={`badge bg-${st.class}`}>{st.label}</span></td>
-                      <td>{ownerCell(row)}</td>
+                      {/* <td>{ownerCell(row)}</td> */}
                       <td>
                         {row.status === 3 ? (
                           row.buyer_rating
                             ? <span className="badge bg-success">Rated {row.buyer_rating}/5</span>
-                            : <button className="btn btn-sm btn-outline-primary" onClick={() => { setFeedbackReq(row); setRating(0); setFeedbackText(""); setFeedbackMsg(""); }}>
+                            : <button className="btn btn-xs btn-outline-primary" style={{ padding: '2px 8px', fontSize: '12px' }} onClick={() => { setFeedbackReq(row); setRating(0); setFeedbackText(""); setFeedbackMsg(""); }}>
                                 Rate & Feedback
                               </button>
                         ) : "-"}
+                      </td>
+                      <td>
+                        <Link className="btn btn-sm btn-primary" to={`/my-buy-requirement-detail/${row.id}`}>View</Link>
                       </td>
                     </tr>
                   );

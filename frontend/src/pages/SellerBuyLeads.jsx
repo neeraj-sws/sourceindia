@@ -46,7 +46,7 @@ const SellerBuyLeads = () => {
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
     } catch (err) {
-      console.error("Error fetching buy leads", err);
+      console.error("Error fetching received requirements", err);
     } finally {
       setIsLoading(false);
     }
@@ -87,10 +87,10 @@ const SellerBuyLeads = () => {
       <div className="page-wrapper">
         <div className="page-content">
           <h4 className="mb-3 d-flex align-items-center gap-2">
-            Buy Leads
-            <span className={`badge bg-${priority.class}`} title={`Overall performance score: ${counts?.overall_performance_score ?? 0} / 100`}>
+            Received Requirements
+            {/* <span className={`badge bg-${priority.class}`} title={`Overall performance score: ${counts?.overall_performance_score ?? 0} / 100`}>
               {priority.label}
-            </span>
+            </span> */}
           </h4>
 
           <div className="row row-cols-1 row-cols-md-3 row-cols-xl-4">

@@ -508,7 +508,7 @@ const Banner = () => {
                 { label: "Products", value: "50,000+", icon: "bx bx-package", iconClass: "product-icon" },
                 { label: "Manufacturers", value: "3,000+", icon: "bx bx-buildings", iconClass: "manufacturer-icon" },
                 { label: "Buyers", value: "10,000+", icon: "bx bx-user", iconClass: "buyers-icon" },
-                { label: "Buy Leads", value: "5,000+", icon: "bx bx-message-alt-edit", iconClass: "leads-icon" },
+                { label: "Received", value: "5,000+", icon: "bx bx-message-alt-edit", iconClass: "leads-icon" },
                 { label: "Verified", value: "100%", icon: "bx bx-shield-quarter", iconClass: "verified-icon" },
               ].map((stat, idx) => (
                 <div key={idx} className="innerBox">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
@@ -11,7 +11,9 @@ const MAX_QUANTITY_DIGITS = 8;
 
 const PostBuyRequirement = () => {
   const { showNotification } = useAlert();
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
+  const navigate = useNavigate();
+  const [showThankYouPopup, setShowThankYouPopup] = useState(false);
   const [form, setForm] = useState({
     product_name_snapshot: "",
     quantity: "",
@@ -416,10 +418,9 @@ const PostBuyRequirement = () => {
     };
     try {
       const token = localStorage.getItem("user_token");
-      const res = await axios.post(`${API_BASE_URL}/buyer-requirements/create`, payload, {
+      await axios.post(`${API_BASE_URL}/buyer-requirements/create`, payload, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
-      showNotification(res.data.message || "Requirement submitted", "success");
       setForm({
         product_name_snapshot: "", quantity: "", quantity_unit: "", description: "",
         supplier_preference: "Anywhere in India",
@@ -436,12 +437,27 @@ const PostBuyRequirement = () => {
       setCitySuggestions([]);
       setShowCityDropdown(false);
       setErrors({});
+      setShowThankYouPopup(true);
     } catch (err) {
       const msg = err.response?.data?.message || "Failed to submit requirement";
       showNotification(msg, "error");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const closeThankYouPopup = () => {
+     if (!isLoggedIn) {
+    setShowThankYouPopup(false);
+    navigate("/registration");
+    return;
+  }
+    setShowThankYouPopup(false);
+  };
+
+  const goRegister = () => {
+    setShowThankYouPopup(false);
+    navigate("/registration");
   };
 
   return (
@@ -733,6 +749,61 @@ const PostBuyRequirement = () => {
           </aside>
         </div>
       </section>
+
+      {/* Post-submit popup: the provided image is the whole popup content.
+          Container sizing and responsiveness live in .pbr-thankyou-* (style.css). */}
+      {showThankYouPopup && (
+        <>
+          <div
+            className="modal fade show pbr-thankyou-modal"
+            tabIndex="-1"
+            role="dialog"
+            aria-modal="true"
+            style={{ display: "block" }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) closeThankYouPopup();
+            }}
+          >
+            <div className="modal-dialog modal-dialog-centered" role="document">
+              <div className="modal-content">
+                <button
+                  type="button"
+                  className="btn-close position-absolute top-0 end-0 m-2"
+                  onClick={closeThankYouPopup}
+                  aria-label="Close"
+                ></button>
+                <div className="pbr-thankyou-media">
+                  <img src="/thank-u-pop-up.png" alt="Requirement submitted" />
+                  {!isLoggedIn && (
+                    <div className="pbr-thankyou-actions">
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={closeThankYouPopup}
+                      >
+                        Continue Browsing
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary"
+                        onClick={goRegister}
+                      >
+                        Register Now
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="modal-backdrop fade show pbr-thankyou-backdrop"
+            aria-label="Close"
+            onClick={closeThankYouPopup}
+          ></button>
+        </>
+      )}
     </div>
   );
 };

@@ -12,6 +12,12 @@ const { findEligibleSellers, getSellerActiveProductCount, getProductKeywordSelle
 const { rankCandidates, haversineDistance } = require('./rankingHelper');
 const { getLeadUsage } = require('./leadLimitHelper');
 
+// Exclusion reason pushed by evaluateSellerEligibility when the same-day +
+// same-city + same-product rule is what disqualified a seller. Named (not
+// inlined) so callers can recognise that specific exclusion without matching
+// on the wording. The eligibility decision itself is unchanged.
+const SAME_DAY_CITY_PRODUCT_REASON = 'Already assigned for same date + same city + same product';
+
 // Base city name (strip state suffix like "Faridabad, Haryana" -> "faridabad")
 const normalizeCity = (city) => {
   const base = String(city || '').split(',')[0] || '';
@@ -198,7 +204,7 @@ async function evaluateSellerEligibility(sellers, requirement) {
     }
     if (await isSameDayCityProductAssigned(s.seller_id, requirement)) {
       eligible = false;
-      reasons.push('Already assigned for same date + same city + same product');
+      reasons.push(SAME_DAY_CITY_PRODUCT_REASON);
     }
 
     results.push({ ...s, lead_used: usage.leads_received, lead_limit: usage.limit_at_period_start, lead_remaining: usage.remaining, is_eligible: eligible, reasons });
@@ -336,6 +342,7 @@ module.exports = {
   normalizeCity,
   normalizeText,
   toDateKey,
+  SAME_DAY_CITY_PRODUCT_REASON,
   isSameDayCityProductAssigned,
   getCityIdsByName,
   enrichSellers,
