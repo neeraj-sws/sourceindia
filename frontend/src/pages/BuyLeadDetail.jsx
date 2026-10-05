@@ -168,7 +168,9 @@ const BuyLeadDetail = () => {
           <div className="col-lg-8">
             <div className="card">
               <div className="card-header d-flex align-items-center justify-content-between">
-                <h5 className="mb-0">Buy Lead {lead.assignment_number}</h5>
+                <h5 className="mb-0">Received Requirements
+                  {/* {lead.assignment_number} */}
+                </h5>
                 <div>
                   <span className={`badge bg-${st.class}`}>{st.label}</span>
                 </div>
@@ -240,7 +242,14 @@ const BuyLeadDetail = () => {
                     </button>
                   </>
                 ) : lead.status === 4 || lead.status === 5 ? (
-                  <div className="alert alert-secondary mb-0">This lead is no longer active for you.</div>
+                  <div className="alert alert-secondary mb-0">
+                    <div>This lead is no longer active for you.</div>
+                    {lead.status === 4 && lead.rejection_reason ? (
+                      <div className="mt-2 small">{lead.rejection_reason}</div>
+                    ) : lead.status === 5 ? (
+                      <div className="mt-2 small">Auto-cancelled — seller did not respond in time.</div>
+                    ) : null}
+                  </div>
                 ) : (
                   <>
                     <button className="btn btn-success w-100 mb-2" disabled={busy} onClick={() => doRespond("accept")}>
@@ -312,7 +321,7 @@ const BuyLeadDetail = () => {
           icon="bx bx-check-circle"
           iconClass="text-success"
           title="Accept this lead?"
-          description={`You are accepting Buy Lead ${lead.assignment_number} for ${req.product_name_snapshot || "this product"}.`}
+          description={`You are accepting Lead ${lead.assignment_number} for ${req.product_name_snapshot || "this product"}.`}
           confirmLabel="Yes, Accept"
           confirmClass="btn-success"
           confirmDisabled={busy}
@@ -338,7 +347,7 @@ const BuyLeadDetail = () => {
           icon="bx bx-check-double"
           iconClass="text-info"
           title="Mark this lead as completed?"
-          description={`This marks Buy Lead ${lead.assignment_number} as completed and closes the requirement.`}
+          description={`This marks Lead ${lead.assignment_number} as completed and closes the requirement.`}
           confirmLabel="Yes, Mark Completed"
           confirmClass="btn-info"
           confirmDisabled={busy}

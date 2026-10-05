@@ -312,7 +312,7 @@ async function updateSystemConfig(req, res) {
   try {
     const {
       lead_sla_minutes, lead_monthly_limit, lead_period_type,
-      max_reassignment_attempts,
+      max_reassignment_attempts, multi_seller_rollout_gap_minutes,
       performance_weight_leads, performance_weight_products, performance_weight_buyer_rating,
     } = req.body;
 
@@ -320,6 +320,13 @@ async function updateSystemConfig(req, res) {
       const n = Number(max_reassignment_attempts);
       if (!Number.isInteger(n) || n <= 0) {
         return res.status(400).json({ message: 'max_reassignment_attempts must be a positive integer' });
+      }
+    }
+
+    if (multi_seller_rollout_gap_minutes !== undefined) {
+      const n = Number(multi_seller_rollout_gap_minutes);
+      if (!Number.isInteger(n) || n < 0) {
+        return res.status(400).json({ message: 'multi_seller_rollout_gap_minutes must be a non-negative integer' });
       }
     }
 
@@ -351,7 +358,7 @@ async function updateSystemConfig(req, res) {
     const updates = {};
     const fields = {
       lead_sla_minutes, lead_monthly_limit, lead_period_type,
-      max_reassignment_attempts,
+      max_reassignment_attempts, multi_seller_rollout_gap_minutes,
       performance_weight_leads, performance_weight_products, performance_weight_buyer_rating,
     };
 
@@ -377,7 +384,7 @@ async function getSystemConfigAdmin(req, res) {
   try {
     const settings = await SiteSettings.findAll({
       where: {
-        meta_key: { [Op.in]: ['lead_sla_minutes', 'lead_monthly_limit', 'lead_period_type', 'lead_candidate_pool_size', 'max_reassignment_attempts', 'performance_weight_leads', 'performance_weight_products', 'performance_weight_buyer_rating'] },
+        meta_key: { [Op.in]: ['lead_sla_minutes', 'lead_monthly_limit', 'lead_period_type', 'lead_candidate_pool_size', 'max_reassignment_attempts', 'multi_seller_rollout_gap_minutes', 'performance_weight_leads', 'performance_weight_products', 'performance_weight_buyer_rating'] },
       },
       raw: true,
     });
@@ -390,6 +397,7 @@ async function getSystemConfigAdmin(req, res) {
       // lead_candidate_pool_size: parseInt(config.lead_candidate_pool_size) || 15,
       lead_candidate_pool_size: 15,
       max_reassignment_attempts: parseInt(config.max_reassignment_attempts) || 15,
+      multi_seller_rollout_gap_minutes: parseInt(config.multi_seller_rollout_gap_minutes) || 20,
       performance_weight_leads: parseFloat(config.performance_weight_leads) || 0.60,
       performance_weight_products: parseFloat(config.performance_weight_products) || 0.30,
       performance_weight_buyer_rating: parseFloat(config.performance_weight_buyer_rating) || 0.10,

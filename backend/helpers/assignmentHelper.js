@@ -324,15 +324,41 @@ async function assignSellerToRequirement(requirementId, ipAddress = null, opts =
     assignment_count: nextNumber,
   });
 
-  for (const { assignment, seller_id } of assignments) {
-    await notifySeller(seller_id, requirement, assignment);
+  // For fresh (non-reassigned) parallel assignments with multiple sellers,
+  // use staggered rollout with time gaps between releases.
+  const isFreshParallel = !opts.reassigned && assignments.length > 1;
+
+  if (isFreshParallel) {
+    const gapMs = config.multi_seller_rollout_gap_minutes * 60 * 1000;
+    const now = new Date();
+    for (let i = 0; i < assignments.length; i++) {
+      const { assignment } = assignments[i];
+      const isFirst = i === 0;
+      const updates = {
+        rollout_status: isFirst ? 'released' : 'queued',
+        rollout_sequence: i + 1,
+        scheduled_release_at: isFirst ? now : new Date(now.getTime() + i * gapMs),
+      };
+      if (isFirst) {
+        updates.released_at = now;
+        updates.assigned_at = now;
+      }
+      await assignment.update(updates);
+      if (isFirst) {
+        await notifySeller(assignment.seller_id, requirement, assignment);
+      }
+    }
+  } else {
+    for (const { assignment, seller_id } of assignments) {
+      await notifySeller(seller_id, requirement, assignment);
+    }
   }
 
   return {
     success: true,
     assignments: assignments.map((a) => a.assignment),
     seller_ids: assignments.map((a) => a.seller_id),
-    score: assignments[0].assignment.total_rank_score,
+    score: assignments[0] ? assignments[0].assignment.total_rank_score : null,
   };
 }
 
@@ -599,7 +625,14 @@ async function claimAssignment(assignmentId, sellerId, action) {
 // whole assignment set (one seller's accept/reject never collapses the others).
 async function handleSellerResponse(assignmentId, sellerId, action, rejectionReason = null, ipAddress = null) {
   if (action === 'respond' || action === 'accept') {
-    return claimAssignment(assignmentId, sellerId, action);
+    const result = await claimAssignment(assignmentId, sellerId, action);
+    if (result.success && action === 'accept') {
+      const assignment = await RequirementAssignments.findByPk(assignmentId);
+      if (assignment) {
+        await cancelRemainingQueuedAssignments(assignment.requirement_id, 'lead_accepted');
+      }
+    }
+    return result;
   }
 
   if (action === 'reject') {
@@ -652,11 +685,28 @@ async function handleSellerResponse(assignmentId, sellerId, action, rejectionRea
     if (isRequirementLocked(requirement)) return { success: true };
     if (await hasOwningAssignment(requirement.id)) return { success: true };
 
+    // Check if there are queued assignments in staggered rollout - release next immediately
+    const hasQueued = await RequirementAssignments.findOne({
+      where: { requirement_id: requirement.id, rollout_status: 'queued', status: { [Op.in]: [0, 1, 2, 3] } },
+    });
+    if (hasQueued) {
+      await logActivity(
+        requirement.id,
+        'lead_reassigned',
+        `Seller #${sellerId} rejected the requirement; releasing next queued seller in staggered rollout`,
+        null,
+        assignment.id
+      );
+      await releaseNextQueuedAssignment(requirement.id);
+      return { success: true };
+    }
+
     if (await reassignmentCount(requirement.id) >= requirement.max_reassignment_attempts) {
       await markNoSellerFound(
         requirement,
         `No seller found after rejection (reassignment limit ${requirement.max_reassignment_attempts} reached)`
       );
+      await cancelRemainingQueuedAssignments(requirement.id, 'reassignment_limit_reached');
       return { success: true };
     }
 
@@ -681,6 +731,7 @@ async function handleSellerResponse(assignmentId, sellerId, action, rejectionRea
             : 'No seller found after rejection'
         );
       }
+      await cancelRemainingQueuedAssignments(requirement.id, 'no_next_seller_after_rejection');
     }
     return { success: true };
   }
@@ -747,15 +798,139 @@ async function handleSellerView(assignmentId, sellerId) {
 //
 // An SLA timeout is the seller doing NOTHING, so it must NOT touch Monthly Used:
 // consumeSellerLeadQuota() is deliberately absent from this function.
+async function releaseNextQueuedAssignment(requirementId) {
+  const now = new Date();
+  const next = await RequirementAssignments.findOne({
+    where: {
+      requirement_id: requirementId,
+      rollout_status: 'queued',
+      status: { [Op.in]: [0, 1] },
+    },
+    order: [['rollout_sequence', 'ASC'], ['scheduled_release_at', 'ASC'], ['id', 'ASC']],
+  });
+  if (!next) return null;
+  if (next.scheduled_release_at && next.scheduled_release_at > now) return null;
+  await next.update({
+    rollout_status: 'released',
+    released_at: now,
+    assigned_at: now,
+  });
+  const requirement = await BuyerRequirements.findByPk(requirementId);
+  if (requirement) {
+    await notifySeller(next.seller_id, requirement, next);
+  }
+  await logActivity(requirementId, 'lead_reassigned', `Releasing next seller in staggered rollout (seller #${next.seller_id})`, next.seller_id, next.id);
+  return next;
+}
+
+async function cancelRemainingQueuedAssignments(requirementId, reason = 'lead_accepted_by_another_seller') {
+  const queued = await RequirementAssignments.findAll({
+    where: {
+      requirement_id: requirementId,
+      rollout_status: 'queued',
+      status: { [Op.in]: [0, 1, 2, 3] },
+    },
+  });
+  for (const q of queued) {
+    await q.update({
+      rollout_status: 'skipped',
+      status: 5,
+      auto_cancelled_at: new Date(),
+      reassignment_reason: reason,
+    });
+    await logActivity(requirementId, 'lead_closed', `Queued assignment cancelled: ${reason}`, q.seller_id, q.id);
+  }
+  return queued.length;
+}
+
 async function processExpiredAssignments() {
   const config = await getSystemConfig();
   const slaMs = config.sla_minutes * 60 * 1000;
   const cutoffTime = new Date(Date.now() - slaMs);
+  const now = new Date();
+
+  // First, handle releasing queued assignments whose scheduled time has come
+  const queuedReady = await RequirementAssignments.findAll({
+    where: {
+      rollout_status: 'queued',
+      scheduled_release_at: { [Op.lte]: now },
+      status: { [Op.in]: [0, 1] },
+    },
+    include: [{ model: BuyerRequirements, as: 'requirement', where: { is_delete: 0, status: { [Op.in]: [1, 2] } } }],
+  });
+  // Also handle gap timeout for currently released assignments in staggered rollout
+  const gapMs = config.multi_seller_rollout_gap_minutes * 60 * 1000;
+  const releasedPending = await RequirementAssignments.findAll({
+    where: {
+      rollout_status: 'released',
+      status: { [Op.in]: [0, 1] },
+      released_at: { [Op.ne]: null },
+    },
+    include: [{ model: BuyerRequirements, as: 'requirement', where: { is_delete: 0, status: { [Op.in]: [1, 2] } } }],
+  });
+  for (const r of releasedPending) {
+    try {
+      const releasedAt = r.released_at ? new Date(r.released_at) : null;
+      if (releasedAt && (now - releasedAt) >= gapMs) {
+        // Check if there are queued assignments for this requirement
+        const hasQueued = await RequirementAssignments.findOne({
+          where: { requirement_id: r.requirement_id, rollout_status: 'queued', status: { [Op.in]: [0, 1, 2, 3] } },
+        });
+        if (hasQueued) {
+          if (await hasOwningAssignment(r.requirement_id)) {
+            await cancelRemainingQueuedAssignments(r.requirement_id, 'lead_accepted_by_another_seller');
+          } else {
+            await r.update({
+              status: 5,
+              auto_cancelled_at: now,
+              reassignment_reason: 'rollout_gap_timeout',
+              rollout_status: 'released',
+            });
+            await logActivity(
+              r.requirement_id,
+              'seller_auto_cancelled',
+              `Assignment auto-cancelled due to rollout gap timeout (${config.multi_seller_rollout_gap_minutes} min)`,
+              r.seller_id,
+              r.id
+            );
+            await ensureSellerPerformance(r.seller_id);
+            await incrementSellerPerformance(r.seller_id, { auto_cancelled_leads: 1 });
+            await recalculateSellerPerformance(r.seller_id);
+            await releaseNextQueuedAssignment(r.requirement_id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('processExpiredAssignments gap timeout error:', err.message);
+    }
+  }
+
+  for (const q of queuedReady) {
+    try {
+      if (await hasOwningAssignment(q.requirement_id)) {
+        await q.update({ rollout_status: 'skipped', status: 5, auto_cancelled_at: new Date(), reassignment_reason: 'lead_already_accepted' });
+        continue;
+      }
+      await q.update({
+        rollout_status: 'released',
+        released_at: now,
+        assigned_at: now,
+      });
+      await notifySeller(q.seller_id, q.requirement, q);
+      await logActivity(q.requirement_id, 'lead_reassigned', `Releasing queued seller in staggered rollout (seller #${q.seller_id})`, q.seller_id, q.id);
+    } catch (err) {
+      console.error('processExpiredAssignments queued release error:', err.message);
+    }
+  }
 
   const expiredAssignments = await RequirementAssignments.findAll({
     where: {
       status: { [Op.in]: [0, 1] },
       assigned_at: { [Op.lt]: cutoffTime },
+      [Op.or]: [
+        { rollout_status: null },
+        { rollout_status: 'released' },
+      ],
     },
     include: [{ model: BuyerRequirements, as: 'requirement', where: { is_delete: 0, status: { [Op.in]: [1, 2] } } }],
   });
@@ -779,6 +954,7 @@ async function processExpiredAssignments() {
             s.id
           );
         }
+        await cancelRemainingQueuedAssignments(requirement.id, 'lead_accepted_by_another_seller');
         continue;
       }
 
@@ -793,7 +969,10 @@ async function processExpiredAssignments() {
         await lockRequirementRow(requirement.id, t);
         owned = await hasOwningAssignment(requirement.id, { transaction: t });
       });
-      if (owned) continue;
+      if (owned) {
+        await cancelRemainingQueuedAssignments(requirement.id, 'lead_accepted_by_another_seller');
+        continue;
+      }
 
       await assignment.update({
         status: 5,
@@ -825,8 +1004,39 @@ async function processExpiredAssignments() {
       // `status !== 1` guard then read that consequence as "stop reassigning".
       // The real preconditions are the explicit lock set (2 accepted / 3
       // completed / 4 closed) and no seller having taken ownership.
-      if (isRequirementLocked(requirement)) continue;
-      if (await hasOwningAssignment(requirement.id)) continue;
+      if (isRequirementLocked(requirement)) {
+        await cancelRemainingQueuedAssignments(requirement.id, 'requirement_locked');
+        continue;
+      }
+      if (await hasOwningAssignment(requirement.id)) {
+        await cancelRemainingQueuedAssignments(requirement.id, 'lead_accepted_by_another_seller');
+        continue;
+      }
+
+      // Check if there are queued assignments in staggered rollout - release next
+      const hasQueuedForTimeout = await RequirementAssignments.findOne({
+        where: { requirement_id: requirement.id, rollout_status: 'queued', status: { [Op.in]: [0, 1, 2, 3] } },
+      });
+      if (hasQueuedForTimeout) {
+        await assignment.update({
+          status: 5,
+          auto_cancelled_at: now,
+          reassignment_reason: 'rollout_gap_timeout',
+          rollout_status: assignment.rollout_status || 'released',
+        });
+        await logActivity(
+          requirement.id,
+          'seller_auto_cancelled',
+          `Assignment auto-cancelled due to rollout gap timeout (${config.multi_seller_rollout_gap_minutes} min)`,
+          assignment.seller_id,
+          assignment.id
+        );
+        await ensureSellerPerformance(assignment.seller_id);
+        await incrementSellerPerformance(assignment.seller_id, { auto_cancelled_leads: 1 });
+        await recalculateSellerPerformance(assignment.seller_id);
+        await releaseNextQueuedAssignment(requirement.id);
+        continue;
+      }
 
       if (await reassignmentCount(requirement.id) >= requirement.max_reassignment_attempts) {
         await refreshRequirementStatus(requirement);
@@ -837,6 +1047,7 @@ async function processExpiredAssignments() {
             `Seller did not respond within SLA (${config.sla_minutes} min); reassignment limit (${requirement.max_reassignment_attempts}) reached; lead closed`
           );
         }
+        await cancelRemainingQueuedAssignments(requirement.id, 'reassignment_limit_reached');
         continue;
       }
 
@@ -860,6 +1071,7 @@ async function processExpiredAssignments() {
             reassignmentResult.message || 'No eligible sellers left for reassignment'
           );
         }
+        await cancelRemainingQueuedAssignments(requirement.id, 'no_next_seller_for_reassignment');
       }
     } catch (err) {
       console.error('processExpiredAssignments error for assignment', assignment.id, err.message);

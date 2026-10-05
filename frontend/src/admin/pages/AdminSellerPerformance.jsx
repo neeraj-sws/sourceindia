@@ -179,6 +179,7 @@ export function AdminBuyRequirementConfig() {
   const slaFields = [
     { key: "lead_sla_minutes", label: "SLA (Service Level Agreement) in minutes - default 120 (2 hrs)", help: "SLA = the deadline for a seller to respond to a lead." },
     { key: "lead_monthly_limit", label: "Monthly Lead Limit per Seller" },
+    { key: "multi_seller_rollout_gap_minutes", label: "Multi-Seller Rollout Gap (minutes)", help: "Gap between releasing leads to parallel sellers in staggered rollout. Default 20." },
     // { key: "max_reassignment_attempts", label: "Max Reassignment Attempts per Requirement", help: "Caps how many times one requirement can be reassigned to the next seller." },
     // { key: "lead_candidate_pool_size", label: "Candidate Pool Size", help: "Number of sellers evaluated per requirement." },
   ];

@@ -105,6 +105,26 @@ const RequirementAssignments = sequelize.define('RequirementAssignments', {
     allowNull: true,
     comment: 'Human-visible note, e.g. city/state fallback explanation',
   },
+  rollout_status: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    comment: 'queued, released for staggered rollout',
+  },
+  rollout_sequence: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'Order in staggered rollout queue',
+  },
+  scheduled_release_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'When this queued assignment should be released',
+  },
+  released_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'When this queued assignment was actually released',
+  },
 }, {
   tableName: 'requirement_assignments',
   timestamps: true,

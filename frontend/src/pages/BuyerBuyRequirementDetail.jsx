@@ -88,7 +88,12 @@ const BuyerBuyRequirementDetail = () => {
             <div className="card">
               <div className="card-header d-flex align-items-center justify-content-between">
                 <h5 className="mb-0">Buy Requirement #{req.id}</h5>
-                <span className={`badge bg-${st.class}`}>{st.label}</span>
+                <div>
+                  <span className={`badge bg-${st.class}`}>{st.label}</span>
+                  {req.status === 5 ? (
+                    <div className="small text-muted mt-1 text-end">Auto-cancelled — seller did not respond in time.</div>
+                  ) : null}
+                </div>
               </div>
               <div className="card-body">
                 <h4 className="text-capitalize">{req.product_name_snapshot}</h4>
@@ -204,6 +209,11 @@ const BuyerBuyRequirementDetail = () => {
                               <td>{a.seller?.company_info?.organization_name || "-"}</td>
                               <td>
                                 <span className={`badge bg-${ast.class}`}>{ast.label}</span>
+                                {a.status === 4 && a.rejection_reason ? (
+                                  <div className="small text-muted mt-1">{a.rejection_reason}</div>
+                                ) : a.status === 5 ? (
+                                  <div className="small text-muted mt-1">Auto-cancelled — seller did not respond in time.</div>
+                                ) : null}
                               </td>
                               <td>{formatDateTime(a.assigned_at)}</td>
                             </tr>

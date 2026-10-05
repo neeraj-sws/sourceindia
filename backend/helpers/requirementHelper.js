@@ -23,6 +23,7 @@ const DEFAULT_LEAD_LIMIT = 6;
 const DEFAULT_SLA_MINUTES = 120;
 const DEFAULT_CANDIDATE_POOL_SIZE = 15;
 const DEFAULT_MAX_REASSIGNMENT_ATTEMPTS = 15;
+const DEFAULT_MULTI_SELLER_ROLLOUT_GAP_MINUTES = 20;
 const DEFAULT_WEIGHT_LEADS = 0.60;
 const DEFAULT_WEIGHT_PRODUCTS = 0.30;
 const DEFAULT_WEIGHT_BUYER_RATING = 0.10;
@@ -53,7 +54,7 @@ if (!Object.prototype.hasOwnProperty.call(BuyerRequirements.associations || {}, 
 async function getSystemConfig() {
   const SiteSettings = require('../models/SiteSettings');
   const settings = await SiteSettings.findAll({
-    where: { meta_key: { [Op.in]: ['lead_sla_minutes', 'lead_monthly_limit', 'lead_period_type', 'lead_candidate_pool_size', 'max_reassignment_attempts', 'performance_weight_leads', 'performance_weight_products', 'performance_weight_buyer_rating'] } },
+    where: { meta_key: { [Op.in]: ['lead_sla_minutes', 'lead_monthly_limit', 'lead_period_type', 'lead_candidate_pool_size', 'max_reassignment_attempts', 'multi_seller_rollout_gap_minutes', 'performance_weight_leads', 'performance_weight_products', 'performance_weight_buyer_rating'] } },
     attributes: ['meta_key', 'meta_value'],
     raw: true,
   });
@@ -66,6 +67,7 @@ async function getSystemConfig() {
     // candidate_pool_size: parseInt(config.lead_candidate_pool_size) || DEFAULT_CANDIDATE_POOL_SIZE,
     candidate_pool_size: DEFAULT_CANDIDATE_POOL_SIZE,
     max_reassignment_attempts: parseInt(config.max_reassignment_attempts) || DEFAULT_MAX_REASSIGNMENT_ATTEMPTS,
+    multi_seller_rollout_gap_minutes: parseInt(config.multi_seller_rollout_gap_minutes) || DEFAULT_MULTI_SELLER_ROLLOUT_GAP_MINUTES,
     performance_weight_leads: parseFloat(config.performance_weight_leads) || DEFAULT_WEIGHT_LEADS,
     performance_weight_products: parseFloat(config.performance_weight_products) || DEFAULT_WEIGHT_PRODUCTS,
     performance_weight_buyer_rating: parseFloat(config.performance_weight_buyer_rating) || DEFAULT_WEIGHT_BUYER_RATING,

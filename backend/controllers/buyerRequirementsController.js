@@ -217,6 +217,7 @@ async function getRequirementById(req, res) {
         { model: Users, as: 'buyer', attributes: ['id', 'fname', 'lname', 'email', 'mobile'] },
         {
           model: RequirementAssignments, as: 'assignments',
+          attributes: ['id', 'status', 'seller_id', 'assignment_number', 'assigned_at', 'accepted_at', 'completed_at', 'rejected_at', 'auto_cancelled_at', 'rejection_reason', 'reassignment_reason'],
           include: [{ model: Users, as: 'seller', attributes: ['id', 'fname', 'lname'],
             include: [{ model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] }],
           }],
@@ -255,7 +256,7 @@ async function getMyRequirements(req, res) {
       where,
       include: [
         { model: Categories, as: 'category', attributes: ['id', 'name'] },
-        { model: RequirementAssignments, as: 'assignments', attributes: ['id', 'status', 'seller_id', 'is_reassigned', 'assignment_note', 'assigned_at', 'accepted_at', 'completed_at'],
+        { model: RequirementAssignments, as: 'assignments', attributes: ['id', 'status', 'seller_id', 'is_reassigned', 'assignment_note', 'assigned_at', 'accepted_at', 'completed_at', 'rejection_reason', 'reassignment_reason'],
           include: [{ model: Users, as: 'seller', attributes: ['id', 'fname', 'lname'],
             include: [{ model: CompanyInfo, as: 'company_info', attributes: ['id', 'organization_name'] }],
           }],
@@ -349,6 +350,7 @@ async function getSellerBuyLeads(req, res) {
           { model: ProductKeyword, as: 'keyword', attributes: ['id', 'name'] },
         ],
       }],
+      attributes: { include: ['rejection_reason', 'reassignment_reason'] },
       order: [['assigned_at', 'DESC']],
       limit: parseInt(limit),
       offset,
@@ -384,6 +386,7 @@ async function getBuyLeadDetail(req, res) {
           { model: Users, as: 'buyer', attributes: ['id', 'is_seller'] },
         ],
       }],
+      attributes: { include: ['rejection_reason', 'reassignment_reason'] },
     });
     if (!assignment) return res.status(404).json({ message: 'Lead not found' });
 
@@ -547,6 +550,7 @@ async function getSellerHistory(req, res) {
           { model: ProductKeyword, as: 'keyword', attributes: ['id', 'name'] },
         ],
       }],
+      attributes: { include: ['rejection_reason', 'reassignment_reason'] },
       order: [['assigned_at', 'DESC']],
       limit: parseInt(limit),
       offset,

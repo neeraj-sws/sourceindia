@@ -99,6 +99,24 @@ async function ensureRequirementAssignmentOwnership() {
       return result;
     }
 
+    // Ensure staggered rollout columns exist
+    const rolloutColumns = [
+      { name: 'rollout_status', ddl: "`rollout_status` VARCHAR(20) NULL" },
+      { name: 'rollout_sequence', ddl: "`rollout_sequence` INT NULL" },
+      { name: 'scheduled_release_at', ddl: "`scheduled_release_at` DATETIME NULL" },
+      { name: 'released_at', ddl: "`released_at` DATETIME NULL" },
+    ];
+    for (const rc of rolloutColumns) {
+      if (!columns.has(rc.name)) {
+        try {
+          await sequelize.query(`ALTER TABLE ${ASSIGNMENTS_TABLE} ADD COLUMN ${rc.ddl}`);
+          console.log(`ensureRequirementAssignmentOwnership: added ${rc.name} to requirement_assignments`);
+        } catch (err) {
+          console.error(`ensureRequirementAssignmentOwnership: failed to add ${rc.name}:`, err.message);
+        }
+      }
+    }
+
     if (!columns.has(GENERATED_COLUMN)) {
       await sequelize.query(`ALTER TABLE ${ASSIGNMENTS_TABLE} ADD COLUMN ${GENERATED_DDL}`);
       result.columnAdded = true;
