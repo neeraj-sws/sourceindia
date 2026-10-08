@@ -9,6 +9,8 @@ const SubCategories = require('../models/SubCategories');
 const SellerCategory = require('../models/SellerCategory');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const { fetchWeightedProductKeywordSuggestions } = require('../utils/productSuggest');
+const { prepareSearchQuery, normalize } = require('../utils/searchEngine');
+const sequelize = require('../config/database');
 
 exports.createFrontMenu = async (req, res) => {
   try {
@@ -20,14 +22,35 @@ exports.createFrontMenu = async (req, res) => {
   }
 };
 
+// Keyword suggestions for every way of reading the query (as typed, spelling-corrected, synonyms),
+// the typed query's own results first; then products matched by title, part number or brand.
 const searchProducts = async (q, type) => {
-  const { suggestions } = await fetchWeightedProductKeywordSuggestions({
-    query: q,
-    only_with_products: true,
-    header_strict: true,
-    limit: 6,
-  });
-  return suggestions.map((item) => ({
+  const prepared = await prepareSearchQuery(q);
+  const typed = [];
+  const fromVariants = [];
+  const seenKeywordIds = new Set();
+  for (const [index, variant] of prepared.variants.entries()) {
+    if (fromVariants.length >= 6) break;
+    const { suggestions } = await fetchWeightedProductKeywordSuggestions({
+      query: variant,
+      only_with_products: true,
+      header_strict: true,
+      limit: 6,
+    });
+    suggestions.forEach((item) => {
+      if (seenKeywordIds.has(item.id)) return;
+      // A spelling fix or synonym must match all its words, or it only adds noise.
+      if (index > 0 && !item.full_query_match) return;
+      seenKeywordIds.add(item.id);
+      (index === 0 ? typed : fromVariants).push(item);
+    });
+  }
+  // When the typed text has no full match ("switch mode power supply"), the synonym's full
+  // matches ("SMPS") lead; otherwise the typed results keep their place first.
+  const typedHasFullMatch = typed.some((item) => item.full_query_match);
+  const keywords = (typedHasFullMatch || !fromVariants.length ? [...typed, ...fromVariants] : [...fromVariants, ...typed]).slice(0, 6);
+
+  const keywordItems = keywords.map((item) => ({
     id: item.id,
     keyword_id: item.id,
     category_id: item.category || 0,
@@ -38,7 +61,74 @@ const searchProducts = async (q, type) => {
     type: 'keyword',
     search_type: type,
   }));
+
+  const productItems = await searchProductMatches(prepared, keywordItems.length, type);
+  return [...keywordItems, ...productItems];
 };
+
+const LIVE_PRODUCT_SQL = `p.is_delete = 0 AND p.status = 1 AND p.is_approve = 1
+  AND EXISTS (SELECT 1 FROM users u WHERE u.user_id = p.user_id AND u.status = 1 AND u.is_approve = 1 AND u.is_delete = 0)`;
+
+// Products whose title, part number (code / article number) or brand (company) matches.
+// Shown for part-number searches, or when few keywords matched.
+const searchProductMatches = async (prepared, keywordCount, type) => {
+  const partNumbers = prepared.tokens.filter((token) => /\d/.test(token) && token.length >= 3);
+  if (!partNumbers.length && keywordCount >= 3) return [];
+  const limit = partNumbers.length ? 6 : Math.max(2, 6 - keywordCount);
+
+  const phrases = prepared.variants.map(normalize).filter((phrase) => phrase.length >= 3);
+  const replacements = {};
+  const titleOr = [];
+  phrases.forEach((phrase, i) => {
+    replacements[`ph${i}`] = `%${phrase}%`;
+    titleOr.push(`p.title LIKE :ph${i}`);
+  });
+  partNumbers.forEach((token, i) => {
+    replacements[`pn${i}`] = `%${token}%`;
+    titleOr.push(`p.title LIKE :pn${i}`, `p.code LIKE :pn${i}`, `p.article_number LIKE :pn${i}`);
+  });
+  if (!titleOr.length) return [];
+
+  const run = (conditions, extraReplacements = {}) => sequelize.query(
+    `SELECT p.product_id AS id, p.title, p.slug FROM products p
+     WHERE ${LIVE_PRODUCT_SQL} AND (${conditions.join(' OR ')})
+     ORDER BY (p.title LIKE :prefix) DESC, CHAR_LENGTH(p.title) ASC
+     LIMIT ${limit}`,
+    {
+      replacements: { ...replacements, ...extraReplacements, prefix: `${phrases[0] || ''}%` },
+      type: Sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  let rows = await run(titleOr);
+  // Nothing by title: try the brand (company name) and the short description.
+  if (!rows.length && !keywordCount) {
+    const extra = [];
+    const extraReplacements = {};
+    phrases.filter((phrase) => phrase.length >= 4).forEach((phrase, i) => {
+      extraReplacements[`bd${i}`] = `%${phrase}%`;
+      extra.push(
+        `p.short_description LIKE :bd${i}`,
+        `p.company_id IN (SELECT ci.company_id FROM company_info ci WHERE ci.is_delete = 0 AND ci.organization_name LIKE :bd${i})`
+      );
+    });
+    if (extra.length) rows = await run(extra, extraReplacements);
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    product_id: row.id,
+    category_id: 0,
+    subcategory_id: 0,
+    item_category_id: 0,
+    item_subcategory_id: 0,
+    name: row.title,
+    slug: row.slug,
+    type: 'product',
+    search_type: type,
+  }));
+};
+
 const searchSellers = async (q, type) => {
 
   const companyMatches = await Users.findAll({

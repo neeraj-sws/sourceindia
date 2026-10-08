@@ -8,6 +8,7 @@ import { useAlert } from "../../context/AlertContext";
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import ProductModals from "./modal/ProductModals";
+import { shouldKeepTypedTitle, findConfidentSuggestion, findMainKeyword } from "../../utils/productKeywordPick";
 import "select2/dist/css/select2.min.css";
 import "select2";
 import "select2-bootstrap-theme/dist/select2-bootstrap.min.css";
@@ -57,6 +58,11 @@ const AddProduct = () => {
   const [itemSubCategories, setItemSubCategories] = useState([]);
   const [selectedItemCategory, setSelectedItemCategory] = useState('');
   const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
+  // 'item_category' when the chosen keyword comes from Product Keyword Category: it has no
+  // Item Sub Category, so clearing / changing the Item Sub Category must not drop it.
+  const keywordScopeRef = useRef('');
+  // Current Keyword options, readable from the select2 handler bound once on mount.
+  const keywordsRef = useRef([]);
   const [keywords, setKeywords] = useState([]);
   const [selectedKeyword, setSelectedKeyword] = useState('');
   const [items, setItems] = useState([]);
@@ -163,6 +169,7 @@ const AddProduct = () => {
   };
 
   const resetCategorySelections = () => {
+    keywordScopeRef.current = '';
     setSelectedCategory('');
     setSelectedSubCategory('');
     setSelectedItemCategory('');
@@ -222,8 +229,21 @@ const AddProduct = () => {
 
   useEffect(() => {
     if (!selectedItemSubCategory) {
-      setKeywords([]);
-      setSelectedKeyword('');
+      if (keywordScopeRef.current !== 'item_category') setSelectedKeyword('');
+      if (!selectedItemCategory) {
+        setKeywords([]);
+        return;
+      }
+      // No Item Sub Category: offer the Item Category's own keywords (Keyword Master > Product Keyword Category).
+      axios.get(`${API_BASE_URL}/keyword_categories/by-item-category/${selectedItemCategory}`)
+        .then((res) => {
+          const rows = Array.isArray(res.data) ? res.data : [];
+          setKeywords(rows.map((row) => ({ ...row, keyword_type: 'item_category' })));
+        })
+        .catch((err) => {
+          console.error("Error fetching item category keywords:", err);
+          setKeywords([]);
+        });
       return;
     }
 
@@ -236,7 +256,29 @@ const AddProduct = () => {
         console.error("Error fetching keywords:", err);
         setKeywords([]);
       });
-  }, [selectedItemSubCategory]);
+  }, [selectedItemSubCategory, selectedItemCategory]);
+
+  useEffect(() => {
+    keywordsRef.current = keywords;
+  }, [keywords]);
+
+  // Every product gets a keyword: with none chosen, take the main keyword of the chosen
+  // Item Sub Category (or Item Category), e.g. after picking the categories by hand.
+  useEffect(() => {
+    if (selectedKeyword || keywords.length === 0) return;
+    const mainKeyword = findMainKeyword(keywords);
+    if (mainKeyword) handleKeywordChange(String(mainKeyword.id));
+  }, [keywords, selectedKeyword]);
+
+  // Picking a keyword by hand: remember whether it is an Item Category keyword.
+  const selectedKeywordInfo = keywords.find((keyword) => String(keyword.id) === String(selectedKeyword)) || null;
+  const keywordChoices = formData.title.trim().length >= 2 ? productSuggestions.slice(0, 3) : [];
+
+  const handleKeywordChange = (value) => {
+    const picked = keywordsRef.current.find((keyword) => String(keyword.id) === String(value));
+    keywordScopeRef.current = picked?.keyword_type === 'item_category' ? 'item_category' : '';
+    setSelectedKeyword(value || '');
+  };
 
   useEffect(() => {
     if (selectedItemCategory && itemCategories.length > 0) {
@@ -426,6 +468,7 @@ const AddProduct = () => {
     setSelectedItemCategory(itemCategoryId);
 
     // Reset lower dropdowns
+    keywordScopeRef.current = '';
     setSelectedItemSubCategory('');
     setSelectedKeyword('');
     setSelectedItem('');
@@ -450,7 +493,7 @@ const AddProduct = () => {
   const handleItemSubCategoryChange = async (event) => {
     const itemSubCategoryId = event.target.value;
     setSelectedItemSubCategory(itemSubCategoryId);
-    setSelectedKeyword('');
+    if (keywordScopeRef.current !== 'item_category') setSelectedKeyword('');
     console.log(itemSubCategoryId);
     // Reset lower dropdown
     setSelectedItem('');
@@ -527,7 +570,7 @@ const AddProduct = () => {
     $('#keyword_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Keyword" })
       .on("change", function () {
-        setSelectedKeyword($(this).val() || '');
+        handleKeywordChange($(this).val() || '');
       });
 
     $('#item_id')
@@ -611,6 +654,7 @@ const AddProduct = () => {
       title: preserveTypedTitle ? typedTitle : suggestion.title
     }));
     setShowSuggestions(false);
+    keywordScopeRef.current = suggestion?.keyword_type === 'item_category' ? 'item_category' : '';
 
     if (suggestion.category && suggestion.category_name) {
       setCategories(prev => {
@@ -640,6 +684,9 @@ const AddProduct = () => {
 
     if (suggestion.item_subcategory_id) {
       setSelectedItemSubCategory(String(suggestion.item_subcategory_id));
+    } else if (suggestion.keyword_type === 'item_category') {
+      // Item Category keyword: the admin may still pick an Item Sub Category.
+      setSelectedItemSubCategory('');
     }
     if (suggestion.id) {
       setSelectedKeyword(String(suggestion.id));
@@ -660,16 +707,17 @@ const AddProduct = () => {
         return;
       }
 
-      if (productSuggestions.length > 0 && formData.title.trim().length >= 2) {
-        const topSuggestion = productSuggestions[0];
-        handleSuggestionSelect(topSuggestion, {
+      const confidentSuggestion = formData.title.trim().length >= 2
+        ? findConfidentSuggestion(formData.title, productSuggestions)
+        : null;
+      if (confidentSuggestion && !selectedKeyword) {
+        handleSuggestionSelect(confidentSuggestion, {
           preserveTypedTitle: true,
           typedTitle: formData.title
         });
         return;
-      } else {
-        setShowSuggestions(false);
       }
+      setShowSuggestions(false);
     }, 150);
   };
 
@@ -684,6 +732,7 @@ const AddProduct = () => {
     if (!selectedCategory) errs.category = "Category is required";
     if (!selectedSubCategory) errs.sub_category = "Sub Category is required";
     if (!selectedItemCategory) errs.item_category = "Item Category is required";
+    if (keywords.length > 0 && !selectedKeyword) errs.keyword = "Keyword is required";
 
     if (!formData.status) errs.status = 'Status is required';
     // if (!formData.short_description) errs.short_description = 'Short description is required';
@@ -734,6 +783,8 @@ const AddProduct = () => {
         setSelectedSubCategory(String(data.sub_category || ""));
         setSelectedItemCategory(data.item_category_id || '');
         setSelectedItemSubCategory(data.item_subcategory_id || '');
+        // A keyword without an Item Sub Category is an Item Category keyword (Product Keyword Category).
+        keywordScopeRef.current = data.keyword_id && !data.item_subcategory_id ? 'item_category' : '';
         setSelectedKeyword(data.keyword_id ? String(data.keyword_id) : '');
         setSelectedItem(data.item_id || '');
         // Fetch dependent dropdowns sequentially in correct order
@@ -1126,6 +1177,12 @@ const AddProduct = () => {
       <div className="page-wrapper">
         <div className="page-content">
           <Breadcrumb page="Products" title={isEditing ? "Edit Product" : "Add Product"} add_button="Back" add_link="/admin/products" />
+          {isEditing && Number(selectedItemCategory) > 0 && !(Number(selectedItemSubCategory) > 0) && (
+            <div className="alert border-0 mb-3" style={{ backgroundColor: "#fff3cd", color: "#664d03" }}>
+              <i className="bx bx-info-circle me-1" />
+              This product is only up to <strong>Item Category</strong>. It has no Item Sub Category.
+            </div>
+          )}
           <div className="row">
             <div className="col-xl-12 mx-auto">
               <form className="row g-3" onSubmit={handleSubmit}>
@@ -1195,7 +1252,9 @@ const AddProduct = () => {
                                       style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
                                       onMouseDown={() => {
                                         suppressTitleAutoSelectRef.current = true;
-                                        handleSuggestionSelect(s);
+                                        handleSuggestionSelect(s, shouldKeepTypedTitle(formData.title, s.title)
+                                          ? { preserveTypedTitle: true, typedTitle: formData.title }
+                                          : {});
                                       }}
                                     >
                                       <div><b>{s.title}</b></div>
@@ -1216,6 +1275,32 @@ const AddProduct = () => {
                                   <div className="d-none">No suggestions found</div>
                                 )
                               )}
+                            </div>
+                          )}
+                          {!showSuggestions && selectedKeywordInfo && (
+                            <div className="small mt-1 text-muted">
+                              Keyword: <strong className="text-dark">{selectedKeywordInfo.name}</strong>
+                              {" "}({selectedKeywordInfo.keyword_type === 'item_category' ? 'Item Category' : 'Item Sub Category'})
+                              {" · "}
+                              <a href="#keyword_id" onClick={(e) => { e.preventDefault(); $('#keyword_id').select2('open'); }}>Change</a>
+                            </div>
+                          )}
+                          {!showSuggestions && !selectedKeyword && keywordChoices.length > 0 && (
+                            <div className="small mt-1">
+                              <span className="text-danger me-1">Choose a keyword for this product:</span>
+                              {keywordChoices.map((s) => (
+                                <button
+                                  key={`choice-${s.id}`}
+                                  type="button"
+                                  className="btn btn-sm btn-outline-secondary py-0 px-2 me-1 mt-1"
+                                  onMouseDown={() => { suppressTitleAutoSelectRef.current = true; }}
+                                  onClick={() => handleSuggestionSelect(s, shouldKeepTypedTitle(formData.title, s.title)
+                                    ? { preserveTypedTitle: true, typedTitle: formData.title }
+                                    : {})}
+                                >
+                                  {s.title}
+                                </button>
+                              ))}
                             </div>
                           )}
                         </div>
@@ -1399,7 +1484,8 @@ const AddProduct = () => {
                           {errors.item_category && (<div className="text-danger small">{errors.item_category}</div>)}
                         </div>
 
-                        <div className="form-group mb-3 col-md-12">
+                        {/* Item Sub Category shows only when the product has one. */}
+                        <div className={`form-group mb-3 col-md-12 ${selectedItemSubCategory ? '' : 'd-none'}`}>
                           <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
                           <select
                             id="item_sub_category_id"
@@ -1417,19 +1503,20 @@ const AddProduct = () => {
                         </div>
 
                         <div className="form-group mb-3 col-md-12">
-                          <label htmlFor="keyword_id" className="form-label">Keyword</label>
+                          <label htmlFor="keyword_id" className={`form-label ${keywords.length > 0 ? "required" : ""}`}>Keyword</label>
                           <select
                             id="keyword_id"
                             className="form-control"
                             value={selectedKeyword}
-                            onChange={(event) => setSelectedKeyword(event.target.value)}
-                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory || !selectedItemSubCategory}
+                            onChange={(event) => handleKeywordChange(event.target.value)}
+                            disabled={!selectedCategory || !selectedSubCategory || !selectedItemCategory}
                           >
                             <option value="">Select Keyword</option>
                             {keywords.map((keyword) => (
                               <option key={keyword.id} value={keyword.id}>{keyword.name}</option>
                             ))}
                           </select>
+                          {errors.keyword && <div className="text-danger small mt-1">{errors.keyword}</div>}
                         </div>
 
                         {/* <div className="form-group mb-3 col-md-12">

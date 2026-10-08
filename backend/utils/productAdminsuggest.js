@@ -262,7 +262,8 @@ const fetchWeightedProductKeywordSuggestions = async ({
     };
   }
 
-  const keywordWhere = { status: 1 };
+  // item_subcategory_id > 0 leaves out Item Category keywords (Product Keyword Category).
+  const keywordWhere = { status: 1, item_subcategory_id: { [Op.gt]: 0 } };
   const dbSearchWords = queryWords
     .map(normalizeMatchWord)
     .filter(word => word.length >= 2);

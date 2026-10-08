@@ -146,6 +146,16 @@ const Banner = () => {
           ? "/company-list"
           : "/buyer-list";
 
+    if (searchType === "product") {
+      const exactSuggestion = suggestions.find(
+        (item) => item?.type !== "product" && normalizeSearchValue(item?.name || "") === normalizedSearch
+      );
+      if (exactSuggestion?.url) {
+        handleSuggestionClick(exactSuggestion);
+        return;
+      }
+    }
+
     navigate(`${path}?search=${encodeURIComponent(normalizedSearch)}`);
   };
 
@@ -155,7 +165,10 @@ const Banner = () => {
     if (!searchValue) return;
     setSearchQuery(searchValue);
     setShowDropdown(false);
-    navigate(`${item.url.includes("?") ? `${item.url}&search=${encodeURIComponent(searchValue)}` : `${item.url}?search=${encodeURIComponent(searchValue)}`}`);
+    const keywordParam = item.type !== "product" && Number(item.keyword_id) > 0
+      ? `&keyword_id=${Number(item.keyword_id)}`
+      : "";
+    navigate(`${item.url.includes("?") ? `${item.url}&search=${encodeURIComponent(searchValue)}` : `${item.url}?search=${encodeURIComponent(searchValue)}`}${keywordParam}`);
   };
 
   const getSuggestionMeta = (item = {}) => {
@@ -377,7 +390,7 @@ const Banner = () => {
                             <ul className="search-suggestion-box list-unstyled shadow-sm">
                               {suggestions.map((item) => (
                                 <li
-                                  key={item.id || item.name}
+                                  key={`${item.type || 'item'}-${item.id || item.name}`}
                                   onMouseDown={(e) => {
                                     e.preventDefault();
                                     handleSuggestionClick(item);
@@ -389,10 +402,13 @@ const Banner = () => {
                                     return (
                                       <div className="suggestion-row">
                                         <span className="search-suggestion-icon">
-                                          <i className="bx bx-history" />
+                                          <i className={item.type === 'product' ? 'bx bx-package' : 'bx bx-history'} />
                                         </span>
                                         <div className="search-suggestion-content">
                                           <div className="search-suggestion-title">{meta.title}</div>
+                                          {item.type === 'product' && (
+                                            <div className="small text-muted">Product</div>
+                                          )}
                                           
                                         </div>
                                       </div>

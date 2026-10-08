@@ -120,9 +120,12 @@ const FrontHeader = () => {
     setSearchQuery(displayValue);
     setShowDropdown(false);
 
+    const keywordParam = item.type !== "product" && Number(item.keyword_id) > 0
+      ? `&keyword_id=${Number(item.keyword_id)}`
+      : "";
     const url = item.url.includes("?")
-      ? `${item.url}&search=${encodeURIComponent(searchValue)}`
-      : `${item.url}?search=${encodeURIComponent(searchValue)}`;
+      ? `${item.url}&search=${encodeURIComponent(searchValue)}${keywordParam}`
+      : `${item.url}?search=${encodeURIComponent(searchValue)}${keywordParam}`;
 
     navigate(url, {
       state: { headerDisplaySearch: displayValue }
@@ -149,7 +152,7 @@ const FrontHeader = () => {
 
     if (searchType === "product" && suggestions.length > 0) {
       const exactSuggestion = suggestions.find(
-        (item) => normalizeSearchValue(item?.name || "") === normalizedSearch
+        (item) => item?.type !== 'product' && normalizeSearchValue(item?.name || "") === normalizedSearch
       );
 
       if (exactSuggestion && navigateToSuggestion(exactSuggestion, {
@@ -234,7 +237,7 @@ const FrontHeader = () => {
                       <ul className="search-suggestion-box list-unstyled search-suggestion-box-header">
                         {suggestions.map((item) => (
                           <li
-                            key={item.id}
+                            key={`${item.type || 'item'}-${item.id}`}
                             onMouseDown={(e) => {
                               e.preventDefault();
                               navigateToSuggestion(item);
@@ -244,11 +247,13 @@ const FrontHeader = () => {
                           >
                             <div className="suggestion-row">
                               <span className="search-suggestion-icon">
-                                <i className="bx bx-history" />
+                                <i className={item.type === 'product' ? 'bx bx-package' : 'bx bx-history'} />
                               </span>
                               <div className="search-suggestion-content">
                                 <div className="search-suggestion-title">{item.name}</div>
-
+                                {item.type === 'product' && (
+                                  <div className="small text-muted">Product</div>
+                                )}
                               </div>
                             </div>
                           </li>

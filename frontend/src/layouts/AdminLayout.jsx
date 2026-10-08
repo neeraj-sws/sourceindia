@@ -67,6 +67,9 @@ const UsersHistory = lazy(() => import('../admin/pages/UsersHistory'));
 const ItemCategory = lazy(() => import('../admin/pages/ItemCategory'));
 const ItemSubCategory = lazy(() => import('../admin/pages/ItemSubCategory'));
 const ProductKeywords = lazy(() => import('../admin/pages/ProductKeywords'));
+const ProductKeywordCategory = lazy(() => import('../admin/pages/ProductKeywordCategory'));
+const SearchSynonyms = lazy(() => import('../admin/pages/SearchSynonyms'));
+const SearchLogs = lazy(() => import('../admin/pages/SearchLogs'));
 const NewItems = lazy(() => import('../admin/pages/NewItems'));
 const ShortcutPage = lazy(() => import('../admin/pages/ShortcutPage'));
 const PageEdit = lazy(() => import('../admin/pages/PageEdit'));
@@ -185,6 +188,9 @@ function AdminLayout() {
               <Route path="/item_sub_category" element={<ProtectedRoute><ItemSubCategory /></ProtectedRoute>} />
               <Route path="/item-sub-category-remove-list" element={<ProtectedRoute><ItemSubCategory getDeleted={true} /></ProtectedRoute>} />
               <Route path="/product_keywords" element={<ProtectedRoute><ProductKeywords /></ProtectedRoute>} />
+              <Route path="/product_keyword_category" element={<ProtectedRoute><ProductKeywordCategory /></ProtectedRoute>} />
+              <Route path="/search_synonyms" element={<ProtectedRoute><SearchSynonyms /></ProtectedRoute>} />
+              <Route path="/search_logs" element={<ProtectedRoute><SearchLogs /></ProtectedRoute>} />
               <Route path="/new_items" element={<ProtectedRoute><NewItems /></ProtectedRoute>} />
               <Route path="/items-remove-list" element={<ProtectedRoute><NewItems getDeleted={true} /></ProtectedRoute>} />
               <Route path="/terms_conditions" element={<ProtectedRoute><PageEdit pageId={9} title="Terms & Conditions" /></ProtectedRoute>} />

@@ -184,6 +184,62 @@ const ItemCategory = () => {
     return <ItemCategorySkeleton />;
   }
 
+  // One box in a row: the Item Category itself first, then its Item Sub Categories.
+  const renderBox = ({ key, href, fileName, name, count, highlight = false }) => (
+    <div
+      key={key}
+      className="col-6 col-sm-4 col-md-3 col-lg-2 text-center itemcolblock mb-3"
+    >
+
+      <div
+        className="border rounded p-3 h-100"
+        style={highlight ? { boxShadow: "inset 0 0 0 1px #ff6600", backgroundColor: "#fff7f0" } : undefined}
+      >
+
+        <a
+          href={href}
+        >
+
+          <img
+            src={
+              fileName
+                ? `${ROOT_URL}/${fileName}`
+                : "/default.png"
+            }
+            className="img-fluid rounded mb-2 w-100"
+            alt={name}
+            style={{
+              height: "125px",
+            }}
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src =
+                "/default.png";
+            }}
+          />
+
+          <h6 className="small fw-semibold mb-1" style={highlight ? { color: "#ff6600" } : undefined}>
+            {name.length > 45
+              ? name.slice(0, 45) +
+              "..."
+              : name}
+          </h6>
+
+          {count > 0 && (
+            <div className="text-success small">
+              ({count})
+            </div>
+          )}
+
+        </a>
+
+      </div>
+
+    </div>
+  );
+
   return (
     <section className="categorySection py-md-4 pt-2 my-4">
       <div className="container-xxl">
@@ -250,25 +306,6 @@ const ItemCategory = () => {
 
                   <div className="card-body">
 
-                    {/* =================================================
-                        CATEGORY TITLE
-                    ================================================= */}
-
-                    <a
-                      href={`/products?category_id=${subcategory.category.id}&subcategory_id=${subcategory.id}&item_category_id=${cat.id}`}
-                      className="d-block text-decoration-none"
-                    >
-                      <div className="d-flex justify-content-between align-items-start">
-
-                        <h6 className="fw-semibold mb-3" style={{ color: "#ff6600" }}>
-                          {cat.name} ({cat.product_count})
-                        </h6>
-
-                        <span>→</span>
-
-                      </div>
-                    </a>
-
                     <div className="d--flex justify-content-between align-items--center gap-1 gridulimgcontainer">
 
                       {/* =================================================
@@ -277,73 +314,24 @@ const ItemCategory = () => {
 
                       <div className="row categorylistul">
 
-                        {(cat.items || []).length > 0 ? (
+                        {renderBox({
+                          key: `cat-${cat.id}`,
+                          href: `/products?category_id=${subcategory.category.id}&subcategory_id=${subcategory.id}&item_category_id=${cat.id}`,
+                          fileName: cat.file_name,
+                          name: cat.name,
+                          count: cat.product_count,
+                          highlight: true,
+                        })}
 
-                          cat.items
-                            .filter(
-                              (item) => item.product_count > 0
-                            )
-                            .map((item) => (
-
-                              <div
-                                key={item.id}
-                                className="col-6 col-sm-4 col-md-3 col-lg-2 text-center itemcolblock mb-3"
-                              >
-
-                                <div className="border rounded p-3">
-
-                                  <a
-                                    href={`/products?category_id=${subcategory.category.id}&subcategory_id=${subcategory.id}&item_category_id=${cat.id}&item_subcategory_id=${item.id}`}
-                                  >
-
-                                    <img
-                                      src={
-                                        item.file_name
-                                          ? `${ROOT_URL}/${item.file_name}`
-                                          : "/default.png"
-                                      }
-                                      className="img-fluid rounded mb-2 w-100"
-                                      alt={item.name}
-                                      style={{
-                                        height: "125px",
-                                      }}
-                                      loading="lazy"
-                                      decoding="async"
-                                      onError={(e) => {
-                                        e.target.onerror = null;
-                                        e.target.src =
-                                          "/default.png";
-                                      }}
-                                    />
-
-                                    <h6 className="small fw-semibold mb-1">
-                                      {item.name.length > 45
-                                        ? item.name.slice(0, 45) +
-                                        "..."
-                                        : item.name}
-                                    </h6>
-
-                                    {item.product_count > 0 && (
-                                      <div className="text-success small">
-                                        ({item.product_count})
-                                      </div>
-                                    )}
-
-                                  </a>
-
-                                </div>
-
-                              </div>
-
-                            ))
-
-                        ) : (
-
-                          <p className="text-muted small">
-                            No items found.
-                          </p>
-
-                        )}
+                        {(cat.items || [])
+                          .filter((item) => item.product_count > 0)
+                          .map((item) => renderBox({
+                            key: item.id,
+                            href: `/products?category_id=${subcategory.category.id}&subcategory_id=${subcategory.id}&item_category_id=${cat.id}&item_subcategory_id=${item.id}`,
+                            fileName: item.file_name,
+                            name: item.name,
+                            count: item.product_count,
+                          }))}
 
                       </div>
 

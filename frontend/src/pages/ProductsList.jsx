@@ -5,12 +5,32 @@ import { Suspense, lazy } from 'react';
 const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
 import { Link, useSearchParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+import EnquiryForm from "./EnquiryForm";
 
+// Sidebar filters and sort kept in the URL (?cat=1,2&state=5&sort=newest) so Back, refresh and
+// shared links show the same list.
+const URL_FILTER_KEYS = ["cat", "sub", "icat", "isub", "state", "company", "sort"];
+const parseIdList = (value) => String(value || "")
+  .split(",")
+  .map(Number)
+  .filter((id) => Number.isInteger(id) && id > 0);
+
+// Lower-case words without a plural "s", so "Transistors" and "Power Transistor" share "transistor".
+const keywordWords = (value = "") => String(value).toLowerCase().split(/[^a-z0-9]+/)
+  .filter(Boolean)
+  .map((word) => (word.length > 3 && word.endsWith("s") ? word.slice(0, -1) : word));
+
+// A keyword picked in the header/home dropdown comes as ?keyword_id=. While the search text is
+// unchanged, use that keyword plus the keywords naming all words of it or of one of its synonyms
+// ("Transistors" keeps "Power Transistor", "PCBA" keeps "PCB Assembly", "Rain Sensor" keeps only
+// rain sensors). Typed searches use every matching keyword, as before.
 const resolveProductKeywordIds = async ({
   searchTerm,
+  picked = null,
 }) => {
   const trimmedSearch = searchTerm.trim();
   if (trimmedSearch.length < 2) return [];
+  const usePicked = picked && picked.search === trimmedSearch;
 
   try {
     const res = await axios.post(
@@ -18,14 +38,30 @@ const resolveProductKeywordIds = async ({
     );
     const suggestions = Array.isArray(res.data) ? res.data : [];
 
+    const keywordSuggestions = suggestions.filter((item) => item?.type !== 'product');
+    if (usePicked) {
+      const preview = await axios.get(`${API_BASE_URL}/search_synonyms/preview`, { params: { q: trimmedSearch } })
+        .catch(() => null);
+      const pickedForms = [trimmedSearch, ...(preview?.data?.variants || [])].map(keywordWords);
+      return [...new Set([
+        picked.id,
+        ...keywordSuggestions
+          .filter((item) => {
+            const words = keywordWords(item?.name);
+            return pickedForms.some((form) => form.length > 0 && form.every((word) => words.includes(word)));
+          })
+          .map((item) => Number(item?.keyword_id ?? item?.id)),
+      ].filter((id) => Number.isInteger(id) && id > 0))];
+    }
+
     return [...new Set(
-      suggestions
+      keywordSuggestions
         .map((item) => Number(item?.keyword_id ?? item?.id))
         .filter((id) => Number.isInteger(id) && id > 0)
     )];
   } catch (err) {
     console.error('Error resolving product keyword IDs:', err);
-    return [];
+    return usePicked ? [picked.id] : [];
   }
 };
 
@@ -35,11 +71,15 @@ const ProductsList = () => {
   const [searchInput, setSearchInput] = useState("");
   const [, setResolvedKeywordIds] = useState([]);
   const [suggestedItemSubCategories, setSuggestedItemSubCategories] = useState([]);
+  // Item Category of an Item Category keyword search, offered as an "All <name>" chip.
+  const [suggestedItemCategory, setSuggestedItemCategory] = useState(null);
+  const [itemCategoryChipActive, setItemCategoryChipActive] = useState(false);
   const debounceTimeout = useRef();
   const suggestionRequestIdRef = useRef(0);
   const productsRequestIdRef = useRef(0);
   const loadingRef = useRef(false);
   const scrollLoadingRef = useRef(false);
+  const pickedKeywordRef = useRef(null);
   const [searchParams] = useSearchParams();
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -67,6 +107,8 @@ const ProductsList = () => {
   const [selectedCompanies, setSelectedCompanies] = useState([]);
   const [companiesSearchTerm, setCompaniesSearchTerm] = useState("");
   const [productsTotal, setProductsTotal] = useState(0);
+  // What the search actually looked for (spelling fix / synonyms), from the products API.
+  const [searchMeta, setSearchMeta] = useState(null);
   const [sortBy, setSortBy] = useState("");
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -76,6 +118,8 @@ const ProductsList = () => {
 
   const location = useLocation();
   const [showFilter, setShowFilter] = useState(false);
+  // Product whose "Send Enquiry" was clicked on a card.
+  const [enquiryProduct, setEnquiryProduct] = useState(null);
   const [filtersReady, setFiltersReady] = useState(false);
 
   const selectedSuggestedItemSubCategorySet = new Set(
@@ -84,6 +128,10 @@ const ProductsList = () => {
 
   useEffect(() => {
     const searchValue = (searchParams.get("search") || "").trim();
+    const pickedKeywordId = Number(searchParams.get("keyword_id"));
+    pickedKeywordRef.current = searchValue && Number.isInteger(pickedKeywordId) && pickedKeywordId > 0
+      ? { id: pickedKeywordId, search: searchValue }
+      : null;
 
     setSearchTerm(searchValue);
     setSearchInput(searchValue);
@@ -93,12 +141,35 @@ const ProductsList = () => {
     setSelectedItems([]);
     setResolvedKeywordIds([]);
     setSuggestedItemSubCategories([]);
+    setSuggestedItemCategory(null);
+    setItemCategoryChipActive(false);
   }, [searchParams]);
 
   useEffect(() => {
     setFiltersReady(false);
 
     const queryParams = new URLSearchParams(location.search);
+
+    // Filters saved by this page (see the URL sync below). Applied after the first render's
+    // effects, which clear dependent selections while the category lists are still empty.
+    if (URL_FILTER_KEYS.some((key) => queryParams.has(key))) {
+      let cancelled = false;
+      (async () => {
+        await Promise.resolve();
+        if (cancelled) return;
+        setSelectedCategories(parseIdList(queryParams.get("cat")));
+        setSelectedSubCategories(parseIdList(queryParams.get("sub")));
+        setSelectedItemCategories(parseIdList(queryParams.get("icat")));
+        setSelectedItemSubCategories(parseIdList(queryParams.get("isub")));
+        setSelectedItems([]);
+        setSelectedStates(parseIdList(queryParams.get("state")));
+        setSelectedCompanies(parseIdList(queryParams.get("company")));
+        const sort = queryParams.get("sort") || "";
+        setSortBy(["a_to_z", "z_to_a", "newest"].includes(sort) ? sort : "");
+        setFiltersReady(true);
+      })();
+      return () => { cancelled = true; };
+    }
 
     const mapping = [
       { key: 'item_id', type: 'item' },
@@ -324,11 +395,12 @@ const ProductsList = () => {
 
       if (trimmedSearch.length < 2) {
         setSuggestedItemSubCategories([]);
+        setSuggestedItemCategory(null);
         return;
       }
 
       try {
-        const keywordIds = await resolveProductKeywordIds({ searchTerm: trimmedSearch });
+        const keywordIds = await resolveProductKeywordIds({ searchTerm: trimmedSearch, picked: pickedKeywordRef.current });
         if (requestId !== suggestionRequestIdRef.current) return;
 
         const params = new URLSearchParams({
@@ -427,10 +499,12 @@ const ProductsList = () => {
         });
 
         setSuggestedItemSubCategories(orderedSuggestions);
+        setSuggestedItemCategory(res.data?.matched_item_category || null);
       } catch (err) {
         if (requestId !== suggestionRequestIdRef.current) return;
         console.error('Error fetching suggested item subcategories:', err);
         setSuggestedItemSubCategories([]);
+        setSuggestedItemCategory(null);
       }
     };
 
@@ -475,6 +549,7 @@ const ProductsList = () => {
       const nextResolvedKeywordIds = shouldApplyKeywordIds
         ? await resolveProductKeywordIds({
           searchTerm,
+          picked: pickedKeywordRef.current,
         })
         : [];
       if (requestId !== productsRequestIdRef.current) return;
@@ -518,6 +593,7 @@ const ProductsList = () => {
       if (requestId !== productsRequestIdRef.current) return;
       const newProducts = res.data.products || [];
       setProductsTotal(res.data.total);
+      if (!append) setSearchMeta(res.data.search_meta || null);
       if (append) {
         setProductsData((prev) => [...prev, ...newProducts]);
       } else {
@@ -574,6 +650,36 @@ const ProductsList = () => {
     sortBy,
     searchTerm // <-- add searchTerm here
   ]);
+
+  // Keep the URL in step with the filters without reloading the page (React Router is not told,
+  // so this does not re-run the URL reading above).
+  useEffect(() => {
+    if (!filtersReady) return;
+    const url = new URL(window.location.href);
+    const params = url.searchParams;
+    ["category_id", "subcategory_id", "item_category_id", "item_subcategory_id", "item_id", ...URL_FILTER_KEYS]
+      .forEach((key) => params.delete(key));
+    const setList = (key, ids) => { if (ids.length > 0) params.set(key, ids.join(",")); };
+    setList("cat", selectedCategories);
+    setList("sub", selectedSubCategories);
+    setList("icat", selectedItemCategories);
+    setList("isub", selectedItemSubCategories);
+    setList("state", selectedStates);
+    setList("company", selectedCompanies);
+    if (sortBy) params.set("sort", sortBy);
+
+    const trimmedSearch = searchTerm.trim();
+    if (trimmedSearch) params.set("search", trimmedSearch);
+    else params.delete("search");
+    const picked = pickedKeywordRef.current;
+    if (!(picked && picked.search === trimmedSearch)) params.delete("keyword_id");
+
+    const next = `${url.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+    if (next !== `${window.location.pathname}${window.location.search}`) {
+      window.history.replaceState(window.history.state, "", next);
+    }
+  }, [filtersReady, selectedCategories, selectedSubCategories, selectedItemCategories, selectedItemSubCategories,
+    selectedStates, selectedCompanies, sortBy, searchTerm]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -639,6 +745,21 @@ const ProductsList = () => {
 
   // Server-side search, so no need to filter client-side
   const filteredProducts = productsData;
+
+  const hasActiveFilters = selectedCategories.length > 0 || selectedSubCategories.length > 0
+    || selectedItemCategories.length > 0 || selectedItemSubCategories.length > 0 || selectedItems.length > 0
+    || selectedStates.length > 0 || selectedCompanies.length > 0;
+
+  const clearAllFilters = () => {
+    setSelectedCategories([]);
+    setSelectedSubCategories([]);
+    setSelectedItemCategories([]);
+    setSelectedItemSubCategories([]);
+    setSelectedItems([]);
+    setSelectedStates([]);
+    setSelectedCompanies([]);
+    setItemCategoryChipActive(false);
+  };
 
   const getNameById = (array, id) => {
     const item = array.find((el) => el.id === id);
@@ -1159,9 +1280,27 @@ const ProductsList = () => {
             </div>
             <div className="d-sm-flex align-items-center justify-content-between mb-2 primary-color-bg px-3 py-2 rounded-2 text-white">
               <div className="d-flex mobileblock mb-0">
-                <strong>Sort By :</strong>
+                <strong className="text-nowrap me-1">Sort By :</strong>
                 <ul className="list-unstyled filterLst d-flex flex-wrap mb-0">
-                  <li className="sortPopular px-sm-2 ps-0 pe-2">
+                  <li className="sortPopular px-sm-2 ps-0 pe-2 border-0 border-end">
+                    <label
+                      htmlFor="sortByDefault"
+                      className="m-0 cursor-pointer sort-label"
+                      title={searchTerm.trim() ? "Best match for your search first" : "Default order"}
+                    >
+                      <input
+                        type="radio"
+                        className="invisible d-none"
+                        id="sortByDefault"
+                        name="sortBy"
+                        value=""
+                        checked={sortBy === ""}
+                        onChange={() => setSortBy("")}
+                      />
+                      <span>{searchTerm.trim() ? "Relevance" : "Default"}</span>
+                    </label>
+                  </li>
+                  <li className="sortPopular px-2">
                     <label
                       htmlFor="sortByPopularAtoZ"
                       className="m-0 cursor-pointer sort-label"
@@ -1194,7 +1333,7 @@ const ProductsList = () => {
                         onChange={(e) => setSortBy(e.target.value)}
                       />
                       <span>Z to A
-                        <i className="bx bx-sort-z-a ms-1" aria-hidden="true" />Z</span>
+                        <i className="bx bx-sort-z-a ms-1" aria-hidden="true" /></span>
                     </label>
                   </li>
                   <li className="sortPopular px-2">
@@ -1214,18 +1353,6 @@ const ProductsList = () => {
                       <span>Newest First
                         <i className="fadeIn animated bx bx-sort-up ms-1" aria-hidden="true" /></span>
                     </label>
-                  </li>
-                  <li>
-                    <a
-                      href="#"
-                      className="text-white ms-4 font-16"
-                      onClick={(e) => {
-                        e.preventDefault(); // Prevent default anchor behavior
-                        setSortBy(""); // Set sortBy to blank
-                      }}
-                    >
-                      <i className="fadeIn animated bx bx-refresh"></i>
-                    </a>
                   </li>
                 </ul>
               </div>
@@ -1262,10 +1389,51 @@ const ProductsList = () => {
               </div>
             </div>
 
-            {searchTerm.trim().length >= 2 && (suggestedItemSubCategories.length > 0 || selectedItemSubCategories.length > 0) && (
+            {searchTerm.trim() && searchMeta?.corrected_query && (
+              <div className="mb-3 px-3 py-2 bg-white border rounded-2 small">
+                Showing results for <strong>{searchMeta.corrected_query}</strong>
+                <span className="text-muted"> (you searched &quot;{searchTerm.trim()}&quot;)</span>
+              </div>
+            )}
+
+            {searchTerm.trim().length >= 2 && (suggestedItemSubCategories.length > 0 || selectedItemSubCategories.length > 0 || suggestedItemCategory) && (
               <div className="mb-3 border px-3 py-2 bg-white rounded-2">
                 <div className="d-flex align-items-center gap-2 flex-wrap">
                   <strong>Suggested</strong>
+                  {suggestedItemCategory && (() => {
+                    // Whole Item Category, including products that have no Item Sub Category.
+                    const itemCategoryId = Number(suggestedItemCategory.id);
+                    const isActive = itemCategoryChipActive
+                      && selectedItemSubCategories.length === 0
+                      && selectedItemCategories.map(Number).includes(itemCategoryId);
+
+                    return (
+                      <button
+                        key={`suggest-item-cat-${itemCategoryId}`}
+                        type="button"
+                        className={`btn btn-sm rounded-pill ${isActive ? 'btn-primary' : 'btn-outline-primary'}`}
+                        onClick={() => {
+                          if (isActive) {
+                            setSelectedCategories([]);
+                            setSelectedSubCategories([]);
+                            setSelectedItemCategories([]);
+                            setItemCategoryChipActive(false);
+                            return;
+                          }
+                          const categoryId = Number(suggestedItemCategory.category_id);
+                          const subCategoryId = Number(suggestedItemCategory.subcategory_id);
+                          setSelectedCategories(Number.isInteger(categoryId) && categoryId > 0 ? [categoryId] : []);
+                          setSelectedSubCategories(Number.isInteger(subCategoryId) && subCategoryId > 0 ? [subCategoryId] : []);
+                          setSelectedItemCategories([itemCategoryId]);
+                          setSelectedItemSubCategories([]);
+                          setSelectedItems([]);
+                          setItemCategoryChipActive(true);
+                        }}
+                      >
+                        All {suggestedItemCategory.name}
+                      </button>
+                    );
+                  })()}
                   {suggestedItemSubCategories.map((suggestion) => {
                     const isActive = selectedSuggestedItemSubCategorySet.has(Number(suggestion.id));
 
@@ -1293,6 +1461,7 @@ const ProductsList = () => {
                           }
 
                           // Keep suggested chips single-select, and sync sidebar parent filters.
+                          setItemCategoryChipActive(false);
                           if (Number.isInteger(targetCategoryId) && targetCategoryId > 0) {
                             setSelectedCategories([targetCategoryId]);
                           }
@@ -1408,24 +1577,7 @@ const ProductsList = () => {
 
                     </div>
                     <button
-                      onClick={() => {
-                        // Clear state variables
-                        setSelectedCategories([]);
-                        setSelectedSubCategories([]);
-                        setSelectedItemCategories([]);
-                        setSelectedItemSubCategories([]);
-                        setSelectedItems([]);
-                        setSelectedStates([]);
-                        setSelectedCompanies([]);
-
-                        // Clear URL query parameters
-                        const url = new URL(window.location.href);
-                        url.searchParams.delete('category_id');
-                        url.searchParams.delete('subcategory_id');
-                        url.searchParams.delete('item_category_id');
-                        url.searchParams.delete('item_subcategory_id');
-                        window.history.pushState({}, '', url); // Update the URL without reloading the page
-                      }}
+                      onClick={clearAllFilters}
                       className="btn btn-sm btn-outline-danger text-nowrap"
                       style={{
                         padding: '0.188rem 0.625rem',
@@ -1462,11 +1614,11 @@ const ProductsList = () => {
                           }}
                         >
                           <img
-                            src={product.file_name ? `${ROOT_URL}/${product.file_name}` : '/default-image.png'}
+                            src={product.file_name ? `${ROOT_URL}/${product.file_name}` : '/default.png'}
                             className="img-fluid p-2"
                             alt={product.title || 'Product Image'}
                             style={{ objectFit: 'cover', borderRadius: '4px' }}
-                            onError={e => { e.target.onerror = null; e.target.src = '/default-image.png'; }}
+                            onError={e => { if (e.currentTarget.dataset.fallback) return; e.currentTarget.dataset.fallback = '1'; e.currentTarget.src = '/default.png'; }}
                           />
                         </div>
 
@@ -1478,6 +1630,18 @@ const ProductsList = () => {
                           style={{ flex: 1 }}
                         >
                           <h5 className="card-title">{product.title}</h5>
+                          {String(product.article_number || "").trim() && (
+                            <p className="card-text small text-muted mb-1">Part No: {product.article_number}</p>
+                          )}
+                          {String(product.short_description || "").trim() && (
+                            <p
+                              className="card-text small text-muted mb-2"
+                              style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                              title={product.short_description}
+                            >
+                              {product.short_description}
+                            </p>
+                          )}
                           <p className="card-text">
                             <i className="bx bx-building" />{" "}
                             {product.company_name}
@@ -1487,22 +1651,39 @@ const ProductsList = () => {
                           </p>
 
                           {isListView ? (
-                            <div className="mt-auto">
-                              <button className="btn btn-sm btn-orange text-white w-100 text-nowrap py-1 fw-medium orange-hoverbtn">
+                            <div className="mt-auto d-flex gap-2">
+                              <Link
+                                to={`/products/${product.slug}`}
+                                className="btn btn-sm btn-orange text-white w-50 text-nowrap py-1 fw-medium orange-hoverbtn"
+                              >
                                 View Details
+                              </Link>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-primary w-50 text-nowrap py-1 fw-medium"
+                                onClick={() => setEnquiryProduct(product)}
+                              >
+                                Send Enquiry
                               </button>
                             </div>
                           ) : null}
                         </div>
 
                         {!isListView && (
-                          <div className="card-footer">
+                          <div className="card-footer d-flex gap-2">
                             <Link
                               to={`/products/${product.slug}`}
-                              className="btn btn-sm btn-orange text-white w-100 text-nowrap py-1 fw-medium orange-hoverbtn d-inline-block pt-2"
+                              className="btn btn-sm btn-orange text-white w-50 text-nowrap py-1 fw-medium orange-hoverbtn d-inline-block pt-2"
                             >
-                              <span className="pe-2">View</span>
+                              <span>View</span>
                             </Link>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-primary w-50 text-nowrap py-1 fw-medium"
+                              onClick={() => setEnquiryProduct(product)}
+                            >
+                              Send Enquiry
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1510,7 +1691,27 @@ const ProductsList = () => {
                   ))
                 ) : (
                   <div className="col-12">
-                    <p className="text-center">No products found.</p>
+                    <p className="text-center">
+                      {hasActiveFilters ? "No products match the selected filters." : "No products found."}
+                    </p>
+                    {hasActiveFilters && (
+                      <p className="text-center">
+                        <button type="button" className="btn btn-sm btn-outline-danger" onClick={clearAllFilters}>
+                          Remove all filters
+                        </button>
+                      </p>
+                    )}
+                    {searchTerm.trim() && (searchMeta?.variants || []).length > 1 && (
+                      <p className="text-center small">
+                        Try:{' '}
+                        {searchMeta.variants.slice(1, 4).map((variant, index) => (
+                          <React.Fragment key={variant}>
+                            {index > 0 && ', '}
+                            <Link to={`/products?search=${encodeURIComponent(variant)}`}>{variant}</Link>
+                          </React.Fragment>
+                        ))}
+                      </p>
+                    )}
                   </div>
                 )}
                 {!loading && scrollLoading && (
@@ -1521,6 +1722,16 @@ const ProductsList = () => {
           </section>
         </div>
       </div>
+      {enquiryProduct && (
+        <EnquiryForm
+          show={Boolean(enquiryProduct)}
+          onHide={() => setEnquiryProduct(null)}
+          productId={`${enquiryProduct.id}`}
+          companyId={`${enquiryProduct.company_id}`}
+          productTitle={`${enquiryProduct.title}`}
+          companyName={`${enquiryProduct.company_name}`}
+        />
+      )}
     </Suspense>
   );
 };
