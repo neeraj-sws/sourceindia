@@ -81,6 +81,7 @@ const menuData = [
       { key: 'item_category', title: 'Item Categories', link: '/admin/item_category' },
       { key: 'item_sub_category', title: 'Item Sub Categories', link: '/admin/item_sub_category' },
       { key: 'new_items', title: 'New Items', link: '/admin/new_items' },
+      { key: 'category_restructure', title: 'Move / Merge', link: '/admin/category_restructure' },
     ],
   },
   {
