@@ -19,6 +19,8 @@ const CompanyDetail = () => {
   const { slug } = useParams();
   const [company, setCompany] = useState(null);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  // Company is not listed: deleted, or its account is not Active + Approved.
+  const [notFound, setNotFound] = useState(false);
   const { showNotification } = useAlert();
   // ⭐ Review form state
   const [rating, setRating] = useState(0);
@@ -48,11 +50,16 @@ const CompanyDetail = () => {
         }, 1000);
 
       } catch (error) {
-        console.error("Error fetching company:", error);
+        if (error.response?.status === 404) {
+          setNotFound(true);
+        } else {
+          console.error("Error fetching company:", error);
+        }
         setShowSkeleton(false);
       }
     };
 
+    setNotFound(false);
     fetchCompany();
   }, [slug]);
 
@@ -180,6 +187,19 @@ const CompanyDetail = () => {
   );
 
   if (showSkeleton) return <CompanyDetailSkeleton />;
+
+  if (notFound) {
+    return (
+      <section className="productDetail py-5">
+        <div className="container-xxl text-center py-5">
+          <i className="bx bx-buildings" style={{ fontSize: 48, color: "#adb5bd" }} />
+          <h4 className="mt-3">This company is not available</h4>
+          <p className="text-muted">It may have been removed or is not listed on Source India yet.</p>
+          <Link to="/companies" className="btn btn-orange">Browse companies</Link>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>

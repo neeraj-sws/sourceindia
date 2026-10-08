@@ -22,6 +22,8 @@ const ProductDetail = () => {
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
   const [showSkeleton, setShowSkeleton] = useState(true);
+  // The product is not on the website (not Active + Approved, or deleted).
+  const [notAvailable, setNotAvailable] = useState(false);
   const thumbsSwiper = useRef(null); // Correct use of useRef
   const { showNotification } = useAlert();
   // ⭐ Review form state
@@ -45,11 +47,15 @@ const ProductDetail = () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/products/details/${slug}`);
 
-     
+        setNotAvailable(false);
         setProduct(res.data);
         setShowSkeleton(false);
       } catch (error) {
-        console.error("Error fetching product:", error);
+        if (error.response?.status === 404) {
+          setNotAvailable(true);
+        } else {
+          console.error("Error fetching product:", error);
+        }
         setShowSkeleton(false);
       }
     };
@@ -244,6 +250,19 @@ const ProductDetail = () => {
 
 
   if (showSkeleton) return <ProductDetailSkeleton />;
+
+  if (notAvailable) {
+    return (
+      <section className="productDetail py-5">
+        <div className="container-xxl text-center py-5">
+          <i className="bx bx-package" style={{ fontSize: 48, color: "#adb5bd" }} />
+          <h4 className="mt-3">This product is not available</h4>
+          <p className="text-muted">It may have been removed or is not listed on Source India yet.</p>
+          <Link to="/products" className="btn btn-orange">Browse products</Link>
+        </div>
+      </section>
+    );
+  }
 
 
 
