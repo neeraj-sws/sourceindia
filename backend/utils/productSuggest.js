@@ -5,6 +5,8 @@ const ItemCategory = require('../models/ItemCategory');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const Products = require('../models/Products');
+const ProductKeywordCategory = require('../models/ProductKeywordCategory');
+const { ensureKeywordItemCategoryColumn } = require('./itemCategoryKeywordSync');
 const { getKeywordMatchMetrics, compareProductKeywordSuggestions, normalizeMatchWord } = require('./productKeywordRanking');
 
 const SUGGEST_MATCH_STOP_WORDS = new Set([
@@ -262,7 +264,8 @@ const fetchWeightedProductKeywordSuggestions = async ({
     };
   }
 
-  const keywordWhere = { status: 1 };
+  // item_subcategory_id > 0 leaves out Item Category keywords (Product Keyword Category).
+  const keywordWhere = { status: 1, item_subcategory_id: { [Op.gt]: 0 } };
   const dbSearchWords = queryWords
     .map(normalizeMatchWord)
     .filter(word => word.length >= 2);
@@ -335,12 +338,57 @@ const fetchWeightedProductKeywordSuggestions = async ({
   };
 
 
-  const keywords = await ProductKeyword.findAll({
+  const subCategoryKeywords = await ProductKeyword.findAll({
     where: keywordWhere,
     attributes: ['id', 'name', 'item_subcategory_id'],
     limit: 1000,
     raw: true
   });
+
+  // Item Category keywords (Keyword Master > Product Keyword Category), item_subcategory_id = 0.
+  // Shown when the keyword itself is on a live product, or its Item Category has live products.
+  let itemCategoryKeywords = [];
+  if (!item_subcategory_id) {
+    try {
+      await ensureKeywordItemCategoryColumn();
+      itemCategoryKeywords = await ProductKeywordCategory.findAll({
+        where: {
+          status: 1,
+          item_subcategory_id: 0,
+          item_category_id: item_category_id ? item_category_id : { [Op.gt]: 0 },
+          [Op.or]: keywordWhere[Op.or],
+          [Op.and]: [literal(`(
+            product_keyword_id IN (
+              SELECT DISTINCT p.keyword_id FROM products p
+              INNER JOIN users u ON p.user_id = u.user_id
+              WHERE p.status = 1 AND p.is_approve = 1 AND p.is_delete = 0 AND p.keyword_id IS NOT NULL
+                AND u.status = 1 AND u.is_approve = 1 AND u.is_delete = 0
+            )
+            OR item_category_id IN (
+              SELECT DISTINCT p.item_category_id FROM products p
+              INNER JOIN users u ON p.user_id = u.user_id
+              WHERE p.status = 1 AND p.is_approve = 1 AND p.is_delete = 0 AND p.item_category_id > 0
+                AND u.status = 1 AND u.is_approve = 1 AND u.is_delete = 0
+            )
+          )`)],
+        },
+        attributes: ['id', 'name', 'item_category_id'],
+        limit: 1000,
+        raw: true
+      });
+    } catch (keywordCategoryError) {
+      console.error('Item Category keywords skipped in productSuggest:', keywordCategoryError.message);
+    }
+  }
+
+  const keywords = [
+    ...subCategoryKeywords,
+    ...itemCategoryKeywords.map((keyword) => ({
+      ...keyword,
+      item_subcategory_id: null,
+      keyword_type: 'item_category',
+    })),
+  ];
 
   const scored = keywords.map((keyword) => {
     const normalizedKeyword = normalizeTextForSuggest(keyword.name);
@@ -391,6 +439,8 @@ const fetchWeightedProductKeywordSuggestions = async ({
       id: keyword.id,
       user_id: null,
       title: keyword.name,
+      keyword_type: keyword.keyword_type || 'item_subcategory',
+      keyword_item_category_id: keyword.keyword_type === 'item_category' ? keyword.item_category_id : null,
       category: keyword.ItemSubCategory?.category_id || null,
       exact_title_match: normalizedKeyword === normalizedQuery,
       exact_word_match: exactWordMatch,
@@ -478,9 +528,22 @@ const fetchWeightedProductKeywordSuggestions = async ({
     const usedKeywordIds = new Set(usedKeywordRows.map((row) => String(row.keyword_id)));
     const usedItemSubCategoryIds = new Set(usedKeywordRows.map((row) => String(row.item_subcategory_id)));
 
+    // Item Category keywords count as used when their Item Category has live products.
+    const keywordItemCategoryIds = suggestions.map((suggestion) => suggestion.keyword_item_category_id).filter(Boolean);
+    const usedItemCategoryRows = keywordItemCategoryIds.length
+      ? await Products.findAll({
+        where: { item_category_id: { [Op.in]: keywordItemCategoryIds }, status: 1, is_approve: 1, is_delete: 0 },
+        attributes: ['item_category_id'],
+        group: ['item_category_id'],
+        raw: true,
+      })
+      : [];
+    const usedItemCategoryIds = new Set(usedItemCategoryRows.map((row) => String(row.item_category_id)));
+
     suggestions = suggestions.filter((suggestion) => (
       usedKeywordIds.has(String(suggestion.id))
       || usedItemSubCategoryIds.has(String(suggestion.item_subcategory_id))
+      || usedItemCategoryIds.has(String(suggestion.keyword_item_category_id))
     ));
   }
 

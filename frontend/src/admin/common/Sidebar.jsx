@@ -90,6 +90,9 @@ const menuData = [
     icon: 'lni lni-keyword-research',
     subMenu: [
       { key: 'product_keywords', title: 'Product Keywords', link: '/admin/product_keywords' },
+      { key: 'product_keyword_category', title: 'Product Keyword Category', link: '/admin/product_keyword_category' },
+      { key: 'search_synonyms', title: 'Search Synonyms', link: '/admin/search_synonyms' },
+      { key: 'search_logs', title: 'Search Logs', link: '/admin/search_logs' },
     ],
   },
   {

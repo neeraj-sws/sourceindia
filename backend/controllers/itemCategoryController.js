@@ -14,6 +14,10 @@ const ItemSubCategory = require('../models/ItemSubCategory');
 const ProductKeyword = require('../models/ProductKeyword');
 const sequelize = require('../config/database');
 const { findCategoryNameConflict, logCategoryConflict } = require('../utils/categoryNameConflictHelper');
+const {
+  syncItemCategoryMainKeyword,
+  deleteItemCategoryMainKeywords,
+} = require('../utils/itemCategoryKeywordSync');
 
 let keywordCodeColumnExistsCache = null;
 
@@ -103,8 +107,9 @@ exports.createItemCategory = async (req, res) => {
         status,
         file_id: uploadImage.id,
       });
-      const category = await Categories.findByPk(category_id);
-      const subCategory = await SubCategories.findByPk(subcategory_id);
+      await syncItemCategoryMainKeyword(itemCategory);
+      const category = await Categories.findByPk(category_id, { attributes: ['id', 'name'] });
+      const subCategory = await SubCategories.findByPk(subcategory_id, { attributes: ['id', 'name'] });
       const itemCategoryWithNames = {
         ...itemCategory.toJSON(),
         category_name: category ? category.name : '',
@@ -284,6 +289,7 @@ exports.updateItemCategory = async (req, res) => {
       itemCategory.status = status;
       itemCategory.updated_at = new Date();
       await itemCategory.save();
+      await syncItemCategoryMainKeyword(itemCategory);
 
       res.json({ message: 'Item Category updated', itemCategory });
     } catch (err) {
@@ -391,6 +397,15 @@ exports.deleteItemCategory = async (req, res) => {
   try {
     const itemCategory = await ItemCategory.findByPk(req.params.id);
     if (!itemCategory) return res.status(404).json({ message: 'Item Category not found' });
+    const productUsageCount = await Products.count({
+      where: { item_category_id: itemCategory.id },
+    });
+    if (productUsageCount > 0) {
+      return res.status(409).json({
+        message: `Item Category cannot be deleted because it is used in ${productUsageCount} product(s).`,
+      });
+    }
+    await deleteItemCategoryMainKeywords(itemCategory.id);
     if (itemCategory.file_id && itemCategory.file_id !== 0) {
       const uploadImage = await UploadImage.findByPk(itemCategory.file_id);
       if (uploadImage) {
@@ -429,10 +444,20 @@ exports.deleteSelectedItemCategory = async (req, res) => {
       return res.status(404).json({ message: 'No Item Category found with the given IDs.' });
     }
 
+    const productUsageCount = await Products.count({
+      where: { item_category_id: { [Op.in]: parsedIds } },
+    });
+    if (productUsageCount > 0) {
+      return res.status(409).json({
+        message: `Selected Item Category cannot be deleted because one or more are used in ${productUsageCount} product(s).`,
+      });
+    }
+
     await ItemCategory.update(
       { is_delete: 1 },
       { where: { id: { [Op.in]: parsedIds } } }
     );
+    await deleteItemCategoryMainKeywords(parsedIds);
 
     res.json({ message: `${itemCategories.length} Item Category(s) deleted successfully.` });
   } catch (err) {
@@ -454,6 +479,7 @@ exports.updateItemCategoryStatus = async (req, res) => {
 
     itemCategory.status = status;
     await itemCategory.save();
+    await syncItemCategoryMainKeyword(itemCategory);
 
     res.json({ message: 'Status updated', itemCategory });
   } catch (err) {
@@ -469,8 +495,23 @@ exports.updateItemCategoryDeleteStatus = async (req, res) => {
     }
     const itemCategory = await ItemCategory.findByPk(req.params.id);
     if (!itemCategory) return res.status(404).json({ message: 'Item Category not found' });
+    if (is_delete === 1) {
+      const productUsageCount = await Products.count({
+        where: { item_category_id: itemCategory.id },
+      });
+      if (productUsageCount > 0) {
+        return res.status(409).json({
+          message: `Item Category cannot be deleted because it is used in ${productUsageCount} product(s).`,
+        });
+      }
+    }
     itemCategory.is_delete = is_delete;
     await itemCategory.save();
+    if (is_delete === 1) {
+      await deleteItemCategoryMainKeywords(itemCategory.id);
+    } else {
+      await syncItemCategoryMainKeyword(itemCategory);
+    }
     res.json({ message: 'Item Category delete status updated', itemCategory });
   } catch (err) {
     res.status(500).json({ error: err.message });

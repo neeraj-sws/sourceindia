@@ -316,7 +316,7 @@ const ItemCategory = ({ getDeleted, excludeItemCategories }) => {
         showNotification(res.data?.message || "Selected category deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting selected category:", error);
-        showNotification("Failed to delete selected category.", "error");
+        showNotification(error?.response?.data?.message || "Failed to delete selected category.", "error");
       } finally {
         closeDeleteModal();
       }
@@ -330,7 +330,8 @@ const ItemCategory = ({ getDeleted, excludeItemCategories }) => {
         showNotification("Category deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting item category:", error);
-        showNotification("Failed to delete item category.", "error");
+        closeDeleteModal();
+        showNotification(error?.response?.data?.message || "Failed to delete item category.", "error");
       }
     }
   };

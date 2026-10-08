@@ -415,12 +415,7 @@ exports.getItemsBySelectedCategorySubCategoryItemCategoryItemSubCategory = async
       };
     });
 
-    if (modifiedItems.length === 0) {
-      return res.status(404).json({
-        message: 'No items found for the given category, subcategory, item category, and item subcategory filters.'
-      });
-    }
-
+    // No items for these filters is a normal, empty result (the products page filter list).
     res.json(modifiedItems);
 
   } catch (err) {

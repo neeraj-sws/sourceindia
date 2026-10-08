@@ -156,10 +156,242 @@ exports.suggestProducts = async (req, res) => {
       });
     }
 
-    const normalizedQuery = normalizeTextForSuggest(query);
-    const queryWords = tokenizeForSuggest(query);
-    const queryOrderTokens = tokenizeForOrder(query);
-    if (!queryWords.length) {
+    // Scores keyword suggestions for one way of reading the query (unchanged logic).
+    const scoreKeywords = async (queryText) => {
+      const normalizedQuery = normalizeTextForSuggest(queryText);
+      const queryWords = tokenizeForSuggest(queryText);
+      const queryOrderTokens = tokenizeForOrder(queryText);
+      if (!queryWords.length) return { normalizedQuery, queryWords, scored: [] };
+
+      // Item Sub Category keywords only; Item Category keywords are fetched separately below.
+      const keywordWhere = {
+        status: 1,
+        item_subcategory_id: { [Op.gt]: 0 }
+      };
+      const candidateQueryWords = queryWords.map(normalizeMatchWord).filter(Boolean);
+
+      // Candidate filtering: keep dataset small while still allowing scoring logic.
+      if (candidateQueryWords.length > 1) {
+
+        keywordWhere[Op.or] = [
+          {
+            name: {
+              [Op.like]: `%${candidateQueryWords.join('%')}%`
+            }
+          },
+          {
+            [Op.and]: candidateQueryWords.map(word => ({
+              name: {
+                [Op.like]: `%${word}%`
+              }
+            }))
+          },
+          ...candidateQueryWords.map(word => ({
+            name: {
+              [Op.like]: `%${word}%`
+            }
+          }))
+        ];
+
+      } else {
+
+        keywordWhere[Op.or] = candidateQueryWords.map(word => ({
+          name: {
+            [Op.like]: `%${word}%`
+          }
+        }));
+
+      }
+
+      const itemSubCategoryWhere = {};
+      if (category) itemSubCategoryWhere.category_id = category;
+      if (sub_category) itemSubCategoryWhere.subcategory_id = sub_category;
+      if (item_category_id) itemSubCategoryWhere.item_category_id = item_category_id;
+      if (item_subcategory_id) itemSubCategoryWhere.id = item_subcategory_id;
+
+      const keywords = await ProductKeyword.findAll({
+        where: keywordWhere,
+        limit: 200,
+        attributes: ['id', 'name', 'item_subcategory_id'],
+        include: [
+          {
+            model: ItemSubCategory,
+            as: 'ItemSubCategory',
+            required: Object.keys(itemSubCategoryWhere).length > 0,
+            where: Object.keys(itemSubCategoryWhere).length > 0 ? itemSubCategoryWhere : undefined,
+            attributes: ['id', 'name', 'item_category_id', 'category_id', 'subcategory_id'],
+            include: [
+              { model: Categories, as: 'Categories', required: false, attributes: ['id', 'name'] },
+              { model: SubCategories, as: 'SubCategories', required: false, attributes: ['id', 'name'] },
+              { model: ItemCategory, as: 'ItemCategory', required: false, attributes: ['id', 'name'] }
+            ]
+          }
+        ]
+      });
+
+      // Item Category keywords (Keyword Master > Product Keyword Category): item_subcategory_id = 0,
+      // hierarchy taken from the Item Category. Skipped when an Item Sub Category is already chosen.
+      let itemCategoryKeywords = [];
+      if (!item_subcategory_id) {
+        try {
+          await ensureKeywordItemCategoryColumn();
+          const itemCategoryWhere = { is_delete: 0 };
+          if (category) itemCategoryWhere.category_id = category;
+          if (sub_category) itemCategoryWhere.subcategory_id = sub_category;
+          if (item_category_id) itemCategoryWhere.id = item_category_id;
+
+          itemCategoryKeywords = await ProductKeywordCategory.findAll({
+            where: { ...keywordWhere, item_subcategory_id: 0, item_category_id: { [Op.gt]: 0 } },
+            limit: 200,
+            attributes: ['id', 'name', 'item_category_id'],
+            include: [
+              {
+                model: ItemCategory,
+                as: 'ItemCategory',
+                required: true,
+                where: itemCategoryWhere,
+                attributes: ['id', 'name', 'category_id', 'subcategory_id'],
+                include: [
+                  { model: Categories, as: 'Categories', required: false, attributes: ['id', 'name'] },
+                  { model: SubCategories, as: 'SubCategories', required: false, attributes: ['id', 'name'] }
+                ]
+              }
+            ]
+          });
+        } catch (keywordCategoryError) {
+          console.error('Item Category keywords skipped in suggestProducts:', keywordCategoryError.message);
+        }
+      }
+
+      // One shape for both kinds of keyword before scoring.
+      const candidates = [
+        ...keywords.map((keyword) => ({
+          id: keyword.id,
+          name: keyword.name,
+          keyword_type: 'item_subcategory',
+          category: keyword.ItemSubCategory?.category_id || null,
+          category_name: keyword.ItemSubCategory?.Categories?.name || '',
+          sub_category: keyword.ItemSubCategory?.subcategory_id || null,
+          sub_category_name: keyword.ItemSubCategory?.SubCategories?.name || '',
+          item_category_id: keyword.ItemSubCategory?.item_category_id || null,
+          item_category_name: keyword.ItemSubCategory?.ItemCategory?.name || '',
+          item_subcategory_id: keyword.item_subcategory_id,
+          item_subcategory_name: keyword.ItemSubCategory?.name || '',
+        })),
+        ...itemCategoryKeywords.map((keyword) => ({
+          id: keyword.id,
+          name: keyword.name,
+          keyword_type: 'item_category',
+          category: keyword.ItemCategory?.category_id || null,
+          category_name: keyword.ItemCategory?.Categories?.name || '',
+          sub_category: keyword.ItemCategory?.subcategory_id || null,
+          sub_category_name: keyword.ItemCategory?.SubCategories?.name || '',
+          item_category_id: keyword.item_category_id,
+          item_category_name: keyword.ItemCategory?.name || '',
+          item_subcategory_id: null,
+          item_subcategory_name: '',
+        })),
+      ];
+
+      const scored = candidates.map((keyword) => {
+        const normalizedKeyword = normalizeTextForSuggest(keyword.name);
+        const keywordWords = tokenizeForSuggest(keyword.name);
+        const keywordOrderTokens = tokenizeForOrder(keyword.name);
+        const matchMetrics = getSuggestWordMatchStats(queryWords, keywordWords);
+        const {
+          matchedQueryWords,
+          matchedKeywordWords,
+          matchedQueryWordCount,
+          matchedKeywordWordCount,
+          keywordCoverage,
+          queryCoverage,
+          longestConsecutiveMatch,
+          fullKeywordMatch,
+        } = matchMetrics;
+
+        const phrasePrefixMatch = normalizedQuery.length >= 2 && normalizedKeyword.startsWith(normalizedQuery);
+        const phraseIncludesMatch = normalizedQuery.length >= 2 && normalizedKeyword.includes(normalizedQuery);
+        const leadingPrefixTokenScore = getLeadingPrefixTokenScore(queryOrderTokens, keywordOrderTokens);
+
+        const matchScore =
+          matchedQueryWordCount * 100 +
+          matchedKeywordWordCount * 50 +
+          leadingPrefixTokenScore * 20 -
+          (keywordWords.length - matchedKeywordWordCount) * 10; const exactMatch = normalizedKeyword === normalizedQuery;
+        let confidenceScore =
+          (queryCoverage * 0.9) +
+          (keywordCoverage * 0.1);
+
+        if (exactMatch)
+          confidenceScore = 1;
+
+        confidenceScore = Number(confidenceScore.toFixed(3));
+
+        const isConfidentMatch = exactMatch || (matchedKeywordWordCount >= 2 && matchedQueryWordCount >= 2);
+
+        return {
+          id: keyword.id,
+          user_id: null,
+          title: keyword.name,
+          keyword_type: keyword.keyword_type,
+          category: keyword.category,
+          category_name: keyword.category_name,
+          sub_category: keyword.sub_category,
+          sub_category_name: keyword.sub_category_name,
+          item_category_id: keyword.item_category_id,
+          item_category_name: keyword.item_category_name,
+          item_subcategory_id: keyword.item_subcategory_id,
+          item_subcategory_name: keyword.item_subcategory_name,
+          item_id: null,
+          item_name: '',
+          match_score: matchScore,
+          confidence_score: confidenceScore,
+          exact_match: exactMatch,
+          phrase_prefix_match: phrasePrefixMatch,
+          phrase_includes_match: phraseIncludesMatch,
+          leading_prefix_token_score: leadingPrefixTokenScore,
+          matched_words: matchedKeywordWords,
+          matched_query_words: matchedQueryWords,
+          matched_query_word_count: matchedQueryWordCount,
+          matched_keyword_word_count: matchedKeywordWordCount,
+          keyword_coverage: keywordCoverage,
+          query_coverage: queryCoverage,
+          longest_consecutive_match: longestConsecutiveMatch,
+          full_keyword_match: fullKeywordMatch,
+          query_word_count: queryWords.length,
+          keyword_word_count: keywordWords.length,
+          full_query_match: queryWords.length > 0 && matchedQueryWordCount === queryWords.length,
+          is_confident_match: isConfidentMatch,
+        };
+      });
+
+      scored.sort(compareProductKeywordSuggestions);
+      return { normalizedQuery, queryWords, scored };
+    };
+
+    // The query as typed first, then its spelling fix and synonyms (Keyword Master > Search Synonyms).
+    const prepared = await prepareSearchQuery(query);
+    const typedResult = await scoreKeywords(prepared.variants[0] || query);
+    const { normalizedQuery, queryWords } = typedResult;
+    const fromVariants = [];
+    const seenSuggestionIds = new Set(typedResult.scored.map((item) => item.id));
+    for (const variant of prepared.variants.slice(1)) {
+      if (fromVariants.length >= 6) break;
+      const { scored: more } = await scoreKeywords(variant);
+      more.forEach((item) => {
+        // A spelling fix or synonym must match all its words, or it only adds noise.
+        if (seenSuggestionIds.has(item.id) || !item.full_query_match) return;
+        seenSuggestionIds.add(item.id);
+        fromVariants.push(item);
+      });
+    }
+    // The typed text keeps its results first unless it has no full match and a variant does.
+    const typedHasFullMatch = typedResult.scored.some((item) => item.full_query_match);
+    const scored = typedHasFullMatch || !fromVariants.length
+      ? [...typedResult.scored, ...fromVariants]
+      : [...fromVariants, ...typedResult.scored];
+
+    if (!scored.length && !queryWords.length) {
       return res.json({
         success: true,
         data: [],
@@ -172,143 +404,6 @@ exports.suggestProducts = async (req, res) => {
         normalized_query: normalizedQuery,
       });
     }
-
-    const keywordWhere = {
-      status: 1
-    };
-    const candidateQueryWords = queryWords.map(normalizeMatchWord).filter(Boolean);
-
-    // Candidate filtering: keep dataset small while still allowing scoring logic.
-    if (candidateQueryWords.length > 1) {
-
-      keywordWhere[Op.or] = [
-        {
-          name: {
-            [Op.like]: `%${candidateQueryWords.join('%')}%`
-          }
-        },
-        {
-          [Op.and]: candidateQueryWords.map(word => ({
-            name: {
-              [Op.like]: `%${word}%`
-            }
-          }))
-        },
-        ...candidateQueryWords.map(word => ({
-          name: {
-            [Op.like]: `%${word}%`
-          }
-        }))
-      ];
-
-    } else {
-
-      keywordWhere[Op.or] = candidateQueryWords.map(word => ({
-        name: {
-          [Op.like]: `%${word}%`
-        }
-      }));
-
-    }
-
-    const itemSubCategoryWhere = {};
-    if (category) itemSubCategoryWhere.category_id = category;
-    if (sub_category) itemSubCategoryWhere.subcategory_id = sub_category;
-    if (item_category_id) itemSubCategoryWhere.item_category_id = item_category_id;
-    if (item_subcategory_id) itemSubCategoryWhere.id = item_subcategory_id;
-
-    const keywords = await ProductKeyword.findAll({
-      where: keywordWhere,
-      limit: 200,
-      attributes: ['id', 'name', 'item_subcategory_id'],
-      include: [
-        {
-          model: ItemSubCategory,
-          as: 'ItemSubCategory',
-          required: Object.keys(itemSubCategoryWhere).length > 0,
-          where: Object.keys(itemSubCategoryWhere).length > 0 ? itemSubCategoryWhere : undefined,
-          attributes: ['id', 'name', 'item_category_id', 'category_id', 'subcategory_id'],
-          include: [
-            { model: Categories, as: 'Categories', required: false, attributes: ['id', 'name'] },
-            { model: SubCategories, as: 'SubCategories', required: false, attributes: ['id', 'name'] },
-            { model: ItemCategory, as: 'ItemCategory', required: false, attributes: ['id', 'name'] }
-          ]
-        }
-      ]
-    });
-
-    const scored = keywords.map((keyword) => {
-      const normalizedKeyword = normalizeTextForSuggest(keyword.name);
-      const keywordWords = tokenizeForSuggest(keyword.name);
-      const keywordOrderTokens = tokenizeForOrder(keyword.name);
-      const matchMetrics = getSuggestWordMatchStats(queryWords, keywordWords);
-      const {
-        matchedQueryWords,
-        matchedKeywordWords,
-        matchedQueryWordCount,
-        matchedKeywordWordCount,
-        keywordCoverage,
-        queryCoverage,
-        longestConsecutiveMatch,
-        fullKeywordMatch,
-      } = matchMetrics;
-
-      const phrasePrefixMatch = normalizedQuery.length >= 2 && normalizedKeyword.startsWith(normalizedQuery);
-      const phraseIncludesMatch = normalizedQuery.length >= 2 && normalizedKeyword.includes(normalizedQuery);
-      const leadingPrefixTokenScore = getLeadingPrefixTokenScore(queryOrderTokens, keywordOrderTokens);
-
-      const matchScore =
-        matchedQueryWordCount * 100 +
-        matchedKeywordWordCount * 50 +
-        leadingPrefixTokenScore * 20 -
-        (keywordWords.length - matchedKeywordWordCount) * 10; const exactMatch = normalizedKeyword === normalizedQuery;
-      let confidenceScore =
-        (queryCoverage * 0.9) +
-        (keywordCoverage * 0.1);
-
-      if (exactMatch)
-        confidenceScore = 1;
-
-      confidenceScore = Number(confidenceScore.toFixed(3));
-
-      const isConfidentMatch = exactMatch || (matchedKeywordWordCount >= 2 && matchedQueryWordCount >= 2);
-
-      return {
-        id: keyword.id,
-        user_id: null,
-        title: keyword.name,
-        category: keyword.ItemSubCategory?.category_id || null,
-        category_name: keyword.ItemSubCategory?.Categories?.name || '',
-        sub_category: keyword.ItemSubCategory?.subcategory_id || null,
-        sub_category_name: keyword.ItemSubCategory?.SubCategories?.name || '',
-        item_category_id: keyword.ItemSubCategory?.item_category_id || null,
-        item_category_name: keyword.ItemSubCategory?.ItemCategory?.name || '',
-        item_subcategory_id: keyword.item_subcategory_id,
-        item_subcategory_name: keyword.ItemSubCategory?.name || '',
-        item_id: null,
-        item_name: '',
-        match_score: matchScore,
-        confidence_score: confidenceScore,
-        exact_match: exactMatch,
-        phrase_prefix_match: phrasePrefixMatch,
-        phrase_includes_match: phraseIncludesMatch,
-        leading_prefix_token_score: leadingPrefixTokenScore,
-        matched_words: matchedKeywordWords,
-        matched_query_words: matchedQueryWords,
-        matched_query_word_count: matchedQueryWordCount,
-        matched_keyword_word_count: matchedKeywordWordCount,
-        keyword_coverage: keywordCoverage,
-        query_coverage: queryCoverage,
-        longest_consecutive_match: longestConsecutiveMatch,
-        full_keyword_match: fullKeywordMatch,
-        query_word_count: queryWords.length,
-        keyword_word_count: keywordWords.length,
-        full_query_match: queryWords.length > 0 && matchedQueryWordCount === queryWords.length,
-        is_confident_match: isConfidentMatch,
-      };
-    });
-
-    scored.sort(compareProductKeywordSuggestions);
 
     const suggestions = scored.slice(0, 6);
     const bestConfidentMatch = suggestions.find((s) => s.is_confident_match) || null;
@@ -420,8 +515,37 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
         ],
       });
 
-      if (keywordCandidates.length > 0) {
+      // Item Category keywords (Product Keyword Category, item_subcategory_id = 0) point straight
+      // at their Item Category; without this they were skipped and chips depended on a name match.
+      let itemCategoryKeywords = [];
+      try {
+        await ensureKeywordItemCategoryColumn();
+        itemCategoryKeywords = await ProductKeywordCategory.findAll({
+          where: {
+            id: { [Op.in]: keywordIdsArray },
+            status: 1,
+            item_subcategory_id: 0,
+            item_category_id: { [Op.gt]: 0 },
+          },
+          attributes: ['id', 'name', 'item_category_id'],
+          include: [
+            { model: ItemCategory, as: 'ItemCategory', required: true, where: { is_delete: 0 }, attributes: [] },
+          ],
+        });
+      } catch (keywordCategoryError) {
+        console.error('Item Category keywords skipped in getSuggestedItemSubCategories:', keywordCategoryError.message);
+      }
+
+      if (keywordCandidates.length > 0 || itemCategoryKeywords.length > 0) {
         const byId = new Map(keywordCandidates.map((k) => [Number(k.id), k]));
+        itemCategoryKeywords.forEach((k) => {
+          byId.set(Number(k.id), {
+            id: k.id,
+            name: k.name,
+            item_subcategory_id: 0,
+            keyword_item_category_id: Number(k.item_category_id),
+          });
+        });
         const ordered = keywordIdsArray.map((id) => byId.get(Number(id))).filter(Boolean);
         matchedKeywords = ordered;
 
@@ -455,7 +579,7 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
     const matchedItemCategoryIds = Array.from(
       new Set(
         matchedKeywords
-          .map((k) => Number(k?.ItemSubCategory?.item_category_id))
+          .map((k) => Number(k?.ItemSubCategory?.item_category_id || k?.keyword_item_category_id))
           .filter((id) => Number.isInteger(id) && id > 0)
       )
     );
@@ -544,6 +668,21 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
       subQuery: false,
     });
 
+    let matchedItemCategory = null;
+    if (matchedKeyword?.keyword_item_category_id) {
+      const itemCategory = await ItemCategory.findByPk(matchedKeyword.keyword_item_category_id, {
+        attributes: ['id', 'name', 'category_id', 'subcategory_id'],
+      });
+      if (itemCategory) {
+        matchedItemCategory = {
+          id: itemCategory.id,
+          name: itemCategory.name,
+          category_id: itemCategory.category_id,
+          subcategory_id: itemCategory.subcategory_id,
+        };
+      }
+    }
+
     const data = rows
       .map((row) => {
         const raw = row.toJSON();
@@ -586,11 +725,14 @@ exports.getSuggestedItemSubCategories = async (req, res) => {
         : null,
       matched_item_category_id: matchedItemCategoryId,
       matched_item_category_ids: matchedItemCategoryIds,
+      // Set only when the best match is an Item Category keyword: lets the page offer an
+      // "All <Item Category>" chip that also covers products without an Item Sub Category.
+      matched_item_category: matchedItemCategory,
       matched_keywords: matchedKeywords.map((k) => ({
         id: k.id,
         name: k.name,
         item_subcategory_id: k.item_subcategory_id,
-        item_category_id: k.ItemSubCategory?.item_category_id || null,
+        item_category_id: k.ItemSubCategory?.item_category_id || k.keyword_item_category_id || null,
       })),
       data,
     });
@@ -610,6 +752,16 @@ const fs = require('fs');
 const path = require('path');
 const Products = require('../models/Products');
 const ProductKeyword = require('../models/ProductKeyword');
+const ProductKeywordCategory = require('../models/ProductKeywordCategory');
+const { ensureKeywordItemCategoryColumn } = require('../utils/itemCategoryKeywordSync');
+const {
+  prepareSearchQuery,
+  normalize: normalizeSearchText,
+  wholeWordPatterns,
+  isShortWord,
+  logSearch,
+  FILLER_WORDS,
+} = require('../utils/searchEngine');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const UploadImage = require('../models/UploadImage');
@@ -682,6 +834,12 @@ exports.allProduct = async (req, res) => {
   }
 };
 
+// Optional hierarchy ids (Item Sub Category, Item, Keyword) arrive as '' when not chosen.
+// Strict-mode MySQL rejects '' for an INT column, so store 0; a field not sent stays untouched.
+const emptyIdToZero = (value) => (
+  value === '' || value === 'null' || value === 'undefined' ? 0 : value
+);
+
 exports.createProducts = async (req, res) => {
   const upload = getMulterUpload('products');
   upload.array('files', 10)(req, res, async (err) => { // allow up to 10 files
@@ -751,9 +909,9 @@ exports.createProducts = async (req, res) => {
         file_id: uploadImages[0].id,
         file_ids: fileIds,
         item_category_id,
-        item_subcategory_id,
-        item_id,
-        keyword_id,
+        item_subcategory_id: emptyIdToZero(item_subcategory_id),
+        item_id: emptyIdToZero(item_id),
+        keyword_id: emptyIdToZero(keyword_id),
         company_id: user.company_id,
       });
 
@@ -983,6 +1141,93 @@ exports.getAllProductsold = async (req, res) => {
   }
 };
 
+// Words that say nothing about the product ("i need ... for ... in india").
+const LIST_SEARCH_STOP_WORDS = new Set([
+  'i', 'we', 'need', 'needs', 'want', 'looking', 'for', 'of', 'the', 'a', 'an', 'and', 'or', 'in', 'on', 'with',
+  'to', 'from', 'by', 'at', 'me', 'my', 'buy', 'best', 'top', 'manufacturer', 'manufacturers', 'manufacturing',
+  'supplier', 'suppliers', 'dealer', 'dealers', 'company', 'companies', 'price', 'india',
+]);
+
+// SQL for the website products page search (is_front=1). Every condition only adds matches, and the
+// typed text keeps its old meaning, so existing searches still find what they found before.
+const buildFrontProductSearch = ({ search, prepared, keywordMatchConditions, withDescription }) => {
+  const esc = (value) => sequelize.escape(value);
+  const col = (name) => `\`Products\`.\`${name}\``;
+  // A 2-3 letter word must start a word, or end a joined word in capitals ("PowerLED"),
+  // so "led" finds LED lights but not "controlled", and "ic" not "SURGICAL" or "ACRYLIC".
+  const regexSafe = (value) => value.replace(/[^A-Za-z0-9]/g, (ch) => `\\${ch}`);
+  const likeWord = (column, word) => (isShortWord(word)
+    ? `(${[
+      ...wholeWordPatterns(word).map((pattern) => `${column} LIKE ${esc(pattern)}`),
+      `${column} REGEXP BINARY ${esc(`[a-z0-9]${regexSafe(word.toUpperCase())}([^A-Za-z]|$)`)}`,
+    ].join(' OR ')})`
+    : `${column} LIKE ${esc(`%${word}%`)}`);
+
+  const typedNormalized = normalizeSearchText(search);
+  const typedIsShortWord = !typedNormalized.includes(' ') && isShortWord(typedNormalized);
+
+  // 1. The typed text in the title (a 2-3 letter word only as a whole word: "ic" not "ceramic").
+  const typedTitle = typedIsShortWord
+    ? likeWord(col('title'), typedNormalized)
+    : `${col('title')} LIKE ${esc(`%${search}%`)}`;
+  const typedPrefix = typedIsShortWord
+    ? `(${col('title')} LIKE ${esc(`${typedNormalized} %`)} OR ${col('title')} LIKE ${esc(typedNormalized)})`
+    : `${col('title')} LIKE ${esc(`${search}%`)}`;
+
+  // 2. Other ways of writing it (spelling fix, synonyms) and "all important words" in the title.
+  const strongTitle = [];
+  prepared.variants.forEach((variant, index) => {
+    const phrase = normalizeSearchText(variant);
+    const words = phrase.split(' ').filter((w) => w.length > 1 && !LIST_SEARCH_STOP_WORDS.has(w) && !FILLER_WORDS.has(w));
+    if (index > 0 && phrase) {
+      strongTitle.push(!phrase.includes(' ') && isShortWord(phrase)
+        ? likeWord(col('title'), phrase)
+        : `${col('title')} LIKE ${esc(`%${phrase}%`)}`);
+    }
+    if (words.length >= 2 || (index > 0 && words.length === 1)) {
+      strongTitle.push(`(${words.map((w) => likeWord(col('title'), w)).join(' AND ')})`);
+    }
+  });
+
+  // 3. Part numbers in the title, SKU (code) or article number.
+  const partNumbers = prepared.tokens.filter((token) => /\d/.test(token) && token.length >= 3);
+  const partSql = partNumbers.flatMap((token) => ['title', 'code', 'article_number']
+    .map((name) => `${col(name)} LIKE ${esc(`%${token}%`)}`));
+
+  // 4. Only when nothing else matched: short description and brand (company name).
+  const descriptionSql = withDescription
+    ? prepared.variants.map(normalizeSearchText).filter((phrase) => phrase.length >= 4).flatMap((phrase) => [
+      `${col('short_description')} LIKE ${esc(`%${phrase}%`)}`,
+      `${col('company_id')} IN (SELECT ci.company_id FROM company_info ci WHERE ci.is_delete = 0 AND ci.organization_name LIKE ${esc(`%${phrase}%`)})`,
+    ])
+    : [];
+
+  const whereOr = [
+    literal(`(${typedTitle})`),
+    ...strongTitle.map((sql) => literal(`(${sql})`)),
+    ...partSql.map((sql) => literal(`(${sql})`)),
+    ...descriptionSql.map((sql) => literal(`(${sql})`)),
+    ...keywordMatchConditions,
+  ];
+
+  const keywordRank = keywordMatchConditions.length
+    ? keywordMatchConditions.map((condition) => {
+      const [field, value] = Object.entries(condition)[0];
+      const ids = value[Op.in] || [];
+      return ids.length ? `${col(field)} IN (${ids.map(Number).join(',')})` : null;
+    }).filter(Boolean)
+    : [];
+  const caseSql = [
+    `WHEN ${typedPrefix} THEN 0`,
+    `WHEN ${typedTitle} THEN 1`,
+    ...(strongTitle.length ? [`WHEN (${strongTitle.join(' OR ')}) THEN 2`] : []),
+    ...(keywordRank.length ? [`WHEN (${keywordRank.join(' OR ')}) THEN 3`] : []),
+    ...(partSql.length ? [`WHEN (${partSql.join(' OR ')}) THEN 3`] : []),
+  ].join(' ');
+
+  return { whereOr, order: literal(`CASE ${caseSql} ELSE 4 END`) };
+};
+
 exports.getAllProducts = async (req, res) => {
   try {
     const isDebug = String(req.query.debug ?? '') === '1' || String(req.query.debug ?? '').toLowerCase() === 'true';
@@ -1027,8 +1272,43 @@ exports.getAllProducts = async (req, res) => {
         .filter((id) => Number.isInteger(id) && id > 0)
       : [];
 
+    // Item Category keywords (item_subcategory_id = 0) stand for every product of their Item Category.
+    let keywordItemCategoryIds = [];
+    if (keywordIdsArray.length > 0) {
+      try {
+        await ensureKeywordItemCategoryColumn();
+        const itemCategoryKeywordRows = await ProductKeywordCategory.findAll({
+          where: { id: { [Op.in]: keywordIdsArray }, item_subcategory_id: 0, item_category_id: { [Op.gt]: 0 } },
+          attributes: ['item_category_id'],
+          raw: true,
+        });
+        keywordItemCategoryIds = [...new Set(itemCategoryKeywordRows.map((row) => Number(row.item_category_id)))];
+      } catch (keywordCategoryError) {
+        console.error('Item Category keywords skipped in getAllProducts:', keywordCategoryError.message);
+      }
+    }
+    // On the website a main keyword (an Item Sub Category's own name) also stands for that Item Sub Category.
+    let keywordItemSubCategoryIds = [];
+    if (keywordIdsArray.length > 0 && isTruthyQueryFlag(is_front)) {
+      const mainKeywordRows = await ProductKeyword.findAll({
+        where: { id: { [Op.in]: keywordIdsArray }, is_main: 1, item_subcategory_id: { [Op.gt]: 0 } },
+        attributes: ['item_subcategory_id'],
+        raw: true,
+      });
+      keywordItemSubCategoryIds = [...new Set(mainKeywordRows.map((row) => Number(row.item_subcategory_id)))];
+    }
+    const keywordMatchConditions = [
+      { keyword_id: { [Op.in]: keywordIdsArray } },
+      ...(keywordItemCategoryIds.length ? [{ item_category_id: { [Op.in]: keywordItemCategoryIds } }] : []),
+      ...(keywordItemSubCategoryIds.length ? [{ item_subcategory_id: { [Op.in]: keywordItemSubCategoryIds } }] : []),
+    ];
+
     if (keywordIdsArray.length > 0 && !search) {
-      productWhereClause.keyword_id = { [Op.in]: keywordIdsArray };
+      if (keywordItemCategoryIds.length) {
+        productWhereClause[Op.and] = [...(productWhereClause[Op.and] || []), { [Op.or]: keywordMatchConditions }];
+      } else {
+        productWhereClause.keyword_id = { [Op.in]: keywordIdsArray };
+      }
     }
     if (is_delete) {
       productWhereClause.is_delete = is_delete;
@@ -1040,8 +1320,21 @@ exports.getAllProducts = async (req, res) => {
       productWhereClause.is_approve = is_approve;
     }
 
-    // General search filter
-    if (search) {
+    // Website products page: spelling fixes, synonyms, part numbers, whole words, sentences.
+    let frontSearch = null;
+    if (search && isTruthyQueryFlag(is_front)) {
+      const prepared = await prepareSearchQuery(search);
+      const built = buildFrontProductSearch({
+        search,
+        prepared,
+        keywordMatchConditions: keywordIdsArray.length > 0 ? keywordMatchConditions : [],
+        withDescription: false,
+      });
+      frontSearch = { prepared, keywordMatchConditions: keywordIdsArray.length > 0 ? keywordMatchConditions : [] };
+      productWhereClause[Op.or] = built.whereOr;
+      if (!sort_by) order = [[built.order, 'ASC'], ['title', 'ASC'], ['id', 'DESC']];
+    } else if (search) {
+      // General search filter
       const searchOrConditions = [
         {
           title: {
@@ -1051,11 +1344,7 @@ exports.getAllProducts = async (req, res) => {
       ];
 
       if (keywordIdsArray.length > 0) {
-        searchOrConditions.push({
-          keyword_id: {
-            [Op.in]: keywordIdsArray,
-          },
-        });
+        searchOrConditions.push(...keywordMatchConditions);
       }
 
       productWhereClause[Op.or] = searchOrConditions;
@@ -1066,9 +1355,12 @@ exports.getAllProducts = async (req, res) => {
           .replace(/'/g, "''");
         const escapedPrefixSearch = `'${safeSearch}%'`;
         const escapedContainsSearch = `'%${safeSearch}%'`;
-        const keywordRelevanceClause = keywordIdsArray.length > 0
+        const keywordRelevanceClause = (keywordIdsArray.length > 0
           ? ` WHEN keyword_id IN (${keywordIdsArray.join(',')}) THEN 2`
-          : '';
+          : '')
+          + (keywordItemCategoryIds.length > 0
+            ? ` WHEN \`Products\`.\`item_category_id\` IN (${keywordItemCategoryIds.join(',')}) THEN 2`
+            : '');
 
         order = [
           [
@@ -1093,7 +1385,7 @@ exports.getAllProducts = async (req, res) => {
       userWhereClause.is_delete = 0;
       userWhereClause.status = 1;
     }
-    const { count, rows } = await Products.findAndCountAll({
+    const productQuery = {
       where: productWhereClause,
       order,
       ...(limit && offset !== null ? { limit, offset } : {}),
@@ -1114,7 +1406,30 @@ exports.getAllProducts = async (req, res) => {
           include: [{ model: States, as: 'state_data', attributes: ['id', 'name'] }]
         }
       ]
-    });
+    };
+    let { count, rows } = await Products.findAndCountAll(productQuery);
+
+    // Nothing by title, keyword or part number: look in the short description and the brand.
+    if (frontSearch && count === 0) {
+      const widened = buildFrontProductSearch({
+        search,
+        prepared: frontSearch.prepared,
+        keywordMatchConditions: frontSearch.keywordMatchConditions,
+        withDescription: true,
+      });
+      productWhereClause[Op.or] = widened.whereOr;
+      ({ count, rows } = await Products.findAndCountAll(productQuery));
+    }
+
+    if (frontSearch && (!page || page === 1)) {
+      logSearch({
+        query: search,
+        normalized: frontSearch.prepared.normalized,
+        corrected: frontSearch.prepared.corrected,
+        resultCount: count,
+        source: 'products_page',
+      });
+    }
 
     if (isDebug) {
       console.log('[getAllProducts][request_query]', req.query);
@@ -1151,7 +1466,14 @@ exports.getAllProducts = async (req, res) => {
     });
     res.json({
       total: count,
-      products: modifiedProducts
+      products: modifiedProducts,
+      ...(frontSearch ? {
+        search_meta: {
+          corrected_query: frontSearch.prepared.corrected,
+          corrections: frontSearch.prepared.corrections,
+          variants: frontSearch.prepared.variants,
+        },
+      } : {}),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1479,9 +1801,9 @@ exports.updateProducts = async (req, res) => {
       short_description,
       description,
       item_category_id,
-      item_subcategory_id,
-      item_id,
-      keyword_id,
+      item_subcategory_id: emptyIdToZero(item_subcategory_id),
+      item_id: emptyIdToZero(item_id),
+      keyword_id: emptyIdToZero(keyword_id),
     });
 
     res.status(200).json({

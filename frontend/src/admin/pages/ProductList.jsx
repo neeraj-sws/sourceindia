@@ -335,6 +335,16 @@ const ProductList = ({ getDeleted, isApprove }) => {
   useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate,
     appliedCategory, appliedSubCategory, appliedItemCategory, appliedItemSubCategory, appliedItem, appliedCompanies, appliedProductStatus, isApprove, userIdFromUrl]);
 
+  // Product filed only up to Item Category (its keyword has no Item Sub Category).
+  const isItemCategoryOnly = (row) => Number(row.item_category_id) > 0 && !(Number(row.item_subcategory_id) > 0);
+  // Product without a keyword: not linked to any Product Keyword (shown in red, before the above).
+  const hasNoKeyword = (row) => !(Number(row.keyword_id) > 0);
+  const rowHighlight = (row) => {
+    if (hasNoKeyword(row)) return { className: "no-keyword-row", title: "No keyword: product is not linked to any Product Keyword" };
+    if (isItemCategoryOnly(row)) return { className: "item-category-only-row", title: "Only up to Item Category: no Item Sub Category" };
+    return {};
+  };
+
   const handleSortChange = (column) => {
     if (sortBy === column) {
       setSortDirection(sortDirection == "ASC" ? "DESC" : "ASC");
@@ -714,6 +724,18 @@ const ProductList = ({ getDeleted, isApprove }) => {
           </div>
           <div className="card">
             <div className="card-body">
+              <style>{`.item-category-only-row > td { background-color: #fff3cd !important; }
+                .no-keyword-row > td { background-color: #f8d7da !important; }`}</style>
+              <div className="small text-muted mb-2 d-flex flex-wrap align-items-center gap-3">
+                <span className="d-flex align-items-center gap-2">
+                  <span style={{ display: "inline-block", width: 14, height: 14, backgroundColor: "#f8d7da", border: "1px solid #f1aeb5", borderRadius: 3 }} />
+                  No keyword
+                </span>
+                <span className="d-flex align-items-center gap-2">
+                  <span style={{ display: "inline-block", width: 14, height: 14, backgroundColor: "#fff3cd", border: "1px solid #ffda6a", borderRadius: 3 }} />
+                  Only up to Item Category (no Item Sub Category)
+                </span>
+              </div>
               <DataTable
                 columns={[
                   ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
@@ -743,7 +765,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
                 onLimitChange={(val) => { setLimit(val); setPage(1); }}
                 getRangeText={getRangeText}
                 renderRow={(row, index) => (
-                  <tr key={row.id}>
+                  <tr key={row.id} {...rowHighlight(row)}>
                     {!getDeleted && (
                       <td>
                         <input type="checkbox" checked={selectedProducts.includes(row.id)} onChange={() => handleSelectProducts(row.id)} />
@@ -752,12 +774,12 @@ const ProductList = ({ getDeleted, isApprove }) => {
                     <td>{(page - 1) * limit + index + 1}</td>
                     <td>
                       <img
-                        src={row.file_name ? `${ROOT_URL}/${row.file_name}` : '/default-image.png'}
+                        src={row.file_name ? `${ROOT_URL}/${row.file_name}` : '/default.png'}
                         width={40}
                         height={40}
                         alt={row.title || 'Product Image'}
                         style={{ objectFit: 'cover', borderRadius: '4px' }}
-                        onError={e => { e.target.onerror = null; e.target.src = '/default-image.png'; }}
+                        onError={e => { if (e.currentTarget.dataset.fallback) return; e.currentTarget.dataset.fallback = '1'; e.currentTarget.src = '/default.png'; }}
                       />
                     </td>
                     <td><a href={`/products/${row.slug}`} target="_blank"> {row.title?.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</a></td>

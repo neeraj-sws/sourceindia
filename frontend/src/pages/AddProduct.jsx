@@ -9,6 +9,7 @@ import { useAlert } from "./../context/AlertContext";
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import ProductModals from "../admin/pages/modal/ProductModals";
+import { shouldKeepTypedTitle, findConfidentSuggestion, findMainKeyword } from "../utils/productKeywordPick";
 import { createPortal } from 'react-dom';
 import UseAuth from '../sections/UseAuth';
 import "select2/dist/css/select2.min.css";
@@ -55,8 +56,13 @@ const AddProduct = () => {
   const [selectedItemCategory, setSelectedItemCategory] = useState('');
   const [itemSubCategories, setItemSubCategories] = useState([]);
   const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
+  // 'item_category' when the chosen keyword comes from Product Keyword Category: it has no
+  // Item Sub Category, so clearing / changing the Item Sub Category must not drop it.
+  const keywordScopeRef = useRef('');
   const [keywords, setKeywords] = useState([]);
   const [selectedKeyword, setSelectedKeyword] = useState('');
+  // Name and level of a keyword picked from the suggestions, shown under the name box.
+  const [pickedKeywordLabel, setPickedKeywordLabel] = useState(null);
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -148,6 +154,7 @@ const AddProduct = () => {
   const applyOtherCategorySelection = () => {
     const otherCategory = findOtherCategoryOption();
 
+    keywordScopeRef.current = '';
     setSelectedCategory(otherCategory ? String(otherCategory.id) : '');
     setSelectedSubCategory('');
     setSelectedItemCategory('');
@@ -208,6 +215,7 @@ const AddProduct = () => {
   }, [subCategories]);
 
   const resetCategorySelections = () => {
+    keywordScopeRef.current = '';
     setSelectedCategory('');
     setSelectedSubCategory('');
     setSelectedItemCategory('');
@@ -611,7 +619,7 @@ const AddProduct = () => {
   const handleItemSubCategoryChange = async (event) => {
     const itemSubCategoryId = event.target.value;
     setSelectedItemSubCategory(itemSubCategoryId);
-    setSelectedKeyword('');
+    if (keywordScopeRef.current !== 'item_category') setSelectedKeyword('');
     setSelectedItem('');
     setKeywords([]);
     setItems([]);
@@ -742,7 +750,17 @@ const AddProduct = () => {
   useEffect(() => {
     if (!selectedItemSubCategory) {
       setKeywords([]);
-      setSelectedKeyword('');
+      if (keywordScopeRef.current !== 'item_category') setSelectedKeyword('');
+      if (!selectedItemCategory) return;
+      axios.get(`${API_BASE_URL}/keyword_categories/by-item-category/${selectedItemCategory}`)
+        .then((res) => {
+          const rows = Array.isArray(res.data) ? res.data : [];
+          setKeywords(rows.map((row) => ({ ...row, keyword_type: 'item_category' })));
+        })
+        .catch((err) => {
+          console.error("Error fetching item category keywords:", err);
+          setKeywords([]);
+        });
       return;
     }
 
@@ -755,7 +773,24 @@ const AddProduct = () => {
         console.error("Error fetching keywords:", err);
         setKeywords([]);
       });
-  }, [selectedItemSubCategory]);
+  }, [selectedItemSubCategory, selectedItemCategory]);
+
+  // Every product gets a keyword: with none chosen, take the main keyword of the chosen
+  // Item Sub Category (or Item Category), e.g. after picking the categories by hand.
+  useEffect(() => {
+    if (selectedKeyword || keywords.length === 0) return;
+    const mainKeyword = findMainKeyword(keywords);
+    if (!mainKeyword) return;
+    keywordScopeRef.current = mainKeyword.keyword_type === 'item_category' ? 'item_category' : '';
+    setSelectedKeyword(String(mainKeyword.id));
+  }, [keywords, selectedKeyword]);
+
+  const selectedKeywordInfo = (() => {
+    if (!selectedKeyword) return null;
+    const listed = keywords.find((keyword) => String(keyword.id) === String(selectedKeyword));
+    if (listed) return { name: listed.name, keyword_type: listed.keyword_type || 'item_subcategory' };
+    return pickedKeywordLabel && pickedKeywordLabel.id === String(selectedKeyword) ? pickedKeywordLabel : null;
+  })();
 
   const fetchProductSuggestions = async (queryValue) => {
     const filteredParams = {
@@ -833,10 +868,16 @@ const AddProduct = () => {
     }));
     setActiveSuggestionKey(getSuggestionKey(suggestion));
     setIsOtherLabelSelected(false);
+    keywordScopeRef.current = suggestion?.keyword_type === 'item_category' ? 'item_category' : '';
     if (!isAutoSelect) {
       setSelectedSuggestionTitle(String(suggestion?.title || '').trim());
     }
     setShowSuggestions(false);
+    setPickedKeywordLabel(suggestion?.id ? {
+      id: String(suggestion.id),
+      name: suggestion.title,
+      keyword_type: suggestion.keyword_type === 'item_category' ? 'item_category' : 'item_subcategory',
+    } : null);
 
     if (suggestion.category && suggestion.category_name) {
       setCategories(prev => {
@@ -883,6 +924,9 @@ const AddProduct = () => {
     }
     if (suggestion.item_subcategory_id) {
       setSelectedItemSubCategory(String(suggestion.item_subcategory_id));
+    } else if (suggestion.keyword_type === 'item_category') {
+      // Item Category keyword: the seller may still pick an Item Sub Category.
+      setSelectedItemSubCategory('');
     }
     if (suggestion.id) {
       setSelectedKeyword(String(suggestion.id));
@@ -909,12 +953,16 @@ const AddProduct = () => {
       }
 
       if (productSuggestions.length > 0 && formData.title.trim().length >= 2) {
-        const topSuggestion = productSuggestions[0];
-        handleSuggestionSelect(topSuggestion, {
-          preserveTypedTitle: true,
-          typedTitle: formData.title,
-          isAutoSelect: true
-        });
+        const confidentSuggestion = findConfidentSuggestion(formData.title, productSuggestions);
+        if (confidentSuggestion && !selectedKeyword) {
+          handleSuggestionSelect(confidentSuggestion, {
+            preserveTypedTitle: true,
+            typedTitle: formData.title,
+            isAutoSelect: true
+          });
+          return;
+        }
+        setShowSuggestions(false);
         return;
       } else {
         if (formData.title.trim().length > 0) {
@@ -939,6 +987,7 @@ const AddProduct = () => {
     // if (!selectedCategory) errs.category = "Category is required";
     if (!isOtherCategorySelected && !selectedSubCategory) errs.sub_category = "Sub Category is required";
     if (!isOtherCategorySelected && !selectedItemCategory) errs.item_category = "Item Category is required";
+    if (!isOtherCategorySelected && keywords.length > 0 && !selectedKeyword) errs.keyword = "Keyword is required: choose a tag under the product name";
     if (!formData.status) errs.status = 'Status is required';
     if (!formData.short_description) errs.short_description = 'Short specifications is required';
 
@@ -982,10 +1031,9 @@ const AddProduct = () => {
           best_product: Number(data.best_product) || 0,
         });
 
-        // Initialize hierarchy once for edit mode.
-        setSelectedCategory(data.category || "");
-        setSelectedSubCategory(data.sub_category ? String(data.sub_category) : "");
-
+        // Initialize hierarchy once for edit mode. Everything is set together after the request:
+        // setting Category / Sub Category first rendered a half-filled hierarchy whose effect
+        // could run late and clear the keyword set below.
         let itemCatRes = [];
         if (data.category && data.sub_category) {
           const resIC = await axios.get(
@@ -995,8 +1043,12 @@ const AddProduct = () => {
           setItemCategories(itemCatRes);
         }
 
+        setSelectedCategory(data.category || "");
+        setSelectedSubCategory(data.sub_category ? String(data.sub_category) : "");
         setSelectedItemCategory(data.item_category_id || '');
         setSelectedItemSubCategory(data.item_subcategory_id || '');
+        // A keyword without an Item Sub Category is an Item Category keyword (Product Keyword Category).
+        keywordScopeRef.current = data.keyword_id && !data.item_subcategory_id ? 'item_category' : '';
         setSelectedKeyword(data.keyword_id ? String(data.keyword_id) : '');
         setSelectedItem(data.item_id || '');
 
@@ -1234,7 +1286,9 @@ const AddProduct = () => {
                                         style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
                                         onMouseDown={() => {
                                           suppressTitleAutoSelectRef.current = true;
-                                          handleSuggestionSelect(s);
+                                          handleSuggestionSelect(s, shouldKeepTypedTitle(formData.title, s.title)
+                                          ? { preserveTypedTitle: true, typedTitle: formData.title }
+                                          : {});
                                         }}
                                       >
                                         <div><b>{s.title}</b></div>
@@ -1266,7 +1320,9 @@ const AddProduct = () => {
                                       onMouseDown={(e) => {
                                         e.preventDefault();
                                         suppressTitleAutoSelectRef.current = true;
-                                        handleSuggestionSelect(suggestion);
+                                        handleSuggestionSelect(suggestion, shouldKeepTypedTitle(formData.title, suggestion.title)
+                                          ? { preserveTypedTitle: true, typedTitle: formData.title }
+                                          : {});
                                       }}
                                     >
                                       {suggestion.title}
@@ -1288,6 +1344,17 @@ const AddProduct = () => {
                               </button>
                             </div>
                           )}
+                          {!showSuggestions && !isOtherCategorySelected && selectedKeywordInfo && (
+                            <div className="small mt-2 text-muted">
+                              Keyword: <strong className="text-dark">{selectedKeywordInfo.name}</strong>
+                              {" "}({selectedKeywordInfo.keyword_type === 'item_category' ? 'Item Category' : 'Item Sub Category'})
+                              {" · "}choose another tag above to change it
+                            </div>
+                          )}
+                          {!showSuggestions && !isOtherCategorySelected && !selectedKeyword && formData.title.trim().length >= 2 && productSuggestions.length > 0 && (
+                            <div className="small mt-2 text-danger">Choose the tag that fits this product best, or &quot;Other&quot;.</div>
+                          )}
+                          {errors.keyword && <div className="text-danger small mt-1">{errors.keyword}</div>}
                         </div>
                         <div className="form-group mb-3 col-md-4">
                           <label htmlFor="code" className="form-label">Sku</label>
@@ -1351,7 +1418,8 @@ const AddProduct = () => {
                   </div>
                 </div>
                 <div className="col-md-4">
-                  <div className="card product-form-card">
+                  {/* Item Sub Category shows only when the product has one (from its keyword or saved data). */}
+                  <div className={`card product-form-card ${selectedItemSubCategory ? '' : 'd-none'}`}>
                     <div className="card-body p-4">
                       <div className="row">
                         {/* <div className="col-12 mb-3 d-flex justify-content-end align-items-center">
