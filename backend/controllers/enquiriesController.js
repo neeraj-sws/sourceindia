@@ -22,6 +22,7 @@ const UploadImage = require('../models/UploadImage');
 const CoreActivity = require('../models/CoreActivity');
 const Activity = require('../models/Activity');
 const BuyerEnquiry = require('../models/BuyerEnquiry');
+const { isProductLive } = require('../utils/productVisibility');
 
 async function createUniqueSlug(name) {
   if (!name) return '';
@@ -1176,6 +1177,9 @@ exports.storeEnquiry = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+    if (!isProductLive(product)) {
+      return res.status(404).json({ message: 'This product is not available for enquiry' });
+    }
 
     /* -------------------- 2. Fetch seller company -------------------- */
     const companyinfo = await CompanyInfo.findByPk(product.company_id);
@@ -1324,6 +1328,9 @@ exports.submitEnquiryuser = async (req, res) => {
 
     const product = await Products.findByPk(product_id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
+    if (!isProductLive(product)) {
+      return res.status(404).json({ message: 'This product is not available for enquiry' });
+    }
 
     const senderUser = await Users.findByPk(userId, {
       include: [{ model: CompanyInfo, as: 'company_info', attributes: ['organization_name'] }]

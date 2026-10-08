@@ -814,7 +814,11 @@ exports.allProduct = async (req, res) => {
       return res.status(422).json({ success: false, message: 'Company ID must be a valid positive number', data: [] });
     }
 
-    const products = await Products.findAll({ where: { company_id: parseInt(company_id) }, attributes: ['id', 'title', 'description'] });
+    // Only products on the website can be picked for an enquiry.
+    const products = await Products.findAll({
+      where: { company_id: parseInt(company_id), ...LIVE_PRODUCT_WHERE },
+      attributes: ['id', 'title', 'description'],
+    });
 
 
     /*if (!products || products.length === 0) {
@@ -833,6 +837,8 @@ exports.allProduct = async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error while fetching products', data: [] });
   }
 };
+
+const { isProductLive, LIVE_PRODUCT_WHERE } = require('../utils/productVisibility');
 
 // Optional hierarchy ids (Item Sub Category, Item, Keyword) arrive as '' when not chosen.
 // Strict-mode MySQL rejects '' for an INT column, so store 0; a field not sent stays untouched.
@@ -1583,6 +1589,11 @@ exports.getProductsDetail = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Product page only for an Active + Approved product, also when opened by direct URL.
+    if (!isProductLive(product)) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
     const productData = product.toJSON();
 
     // Calculate average rating
@@ -1606,8 +1617,7 @@ exports.getProductsDetail = async (req, res) => {
 
     // Similar products - matched by item subcategory (fallback to category if item_subcategory_id is null)
     const similarWhere = {
-      is_approve: 1,
-      status: 1,
+      ...LIVE_PRODUCT_WHERE,
       id: { [Op.ne]: productData.id }
     };
     if (productData.item_subcategory_id) {
@@ -2373,7 +2383,7 @@ exports.getCompanyInfoById = async (req, res) => {
       ]
     });
 
-    if (!company) {
+    if (!company || Number(company.is_delete) === 1) {
       return res.status(404).json({ message: 'Company not found' });
     }
 
@@ -2395,6 +2405,12 @@ exports.getCompanyInfoById = async (req, res) => {
       ],
       order: [['id', 'ASC']]
     });
+
+    // Company page only when its account is Active + Approved (inactive, pending or rejected
+    // accounts give Not Found, also when opened by direct URL).
+    if (!user) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
 
     let categoryNames = [];
     let subCategoryNames = [];
