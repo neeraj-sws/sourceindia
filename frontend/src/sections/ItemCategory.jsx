@@ -306,6 +306,25 @@ const ItemCategory = () => {
 
                   <div className="card-body">
 
+                    {/* =================================================
+                        CATEGORY TITLE
+                    ================================================= */}
+
+                    <a
+                      href={`/products?category_id=${subcategory.category.id}&subcategory_id=${subcategory.id}&item_category_id=${cat.id}`}
+                      className="d-block text-decoration-none"
+                    >
+                      <div className="d-flex justify-content-between align-items-start">
+
+                        <h6 className="fw-semibold mb-3" style={{ color: "#ff6600" }}>
+                          {cat.name} ({cat.product_count})
+                        </h6>
+
+                        <span>→</span>
+
+                      </div>
+                    </a>
+
                     <div className="d--flex justify-content-between align-items--center gap-1 gridulimgcontainer">
 
                       {/* =================================================
