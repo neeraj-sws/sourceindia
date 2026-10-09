@@ -96,16 +96,27 @@ const AddProduct = () => {
     return score;
   };
 
+  const toSingularWord = (word = '') => {
+    if (word.length > 3 && word.endsWith('ies')) return `${word.slice(0, -3)}y`;
+    if (word.length > 3 && word.endsWith('s') && !/(ss|us|is)$/.test(word)) return word.slice(0, -1);
+    return word;
+  };
+
+  const toSingularPhrase = (normalizedText = '') =>
+    normalizedText.split(' ').map(toSingularWord).join(' ');
+
   const rankSuggestionsByQuery = (suggestions = [], query = '') => {
     const normalizedQuery = normalizeSuggestText(query);
     const queryTokens = tokenizeSuggestText(query, 3);
     if (!normalizedQuery) return suggestions;
+    const singularQuery = toSingularPhrase(normalizedQuery);
 
     return [...suggestions].sort((a, b) => {
       const aTitle = normalizeSuggestText(a?.title || '');
       const bTitle = normalizeSuggestText(b?.title || '');
-      const aExact = aTitle === normalizedQuery ? 1 : 0;
-      const bExact = bTitle === normalizedQuery ? 1 : 0;
+      // "Resistor" and "RESISTORS" count as an exact match.
+      const aExact = aTitle === normalizedQuery || toSingularPhrase(aTitle) === singularQuery ? 1 : 0;
+      const bExact = bTitle === normalizedQuery || toSingularPhrase(bTitle) === singularQuery ? 1 : 0;
       if (aExact !== bExact) return bExact - aExact;
 
       const aTokens = tokenizeSuggestText(a?.title || '', 1);
@@ -113,11 +124,13 @@ const AddProduct = () => {
       const aTokenMatchScore = getTokenMatchScore(queryTokens, aTokens);
       const bTokenMatchScore = getTokenMatchScore(queryTokens, bTokens);
       if (aTokenMatchScore !== bTokenMatchScore) return bTokenMatchScore - aTokenMatchScore;
-      if (aTokens.length !== bTokens.length) return bTokens.length - aTokens.length;
 
       const aPrefix = aTitle.startsWith(normalizedQuery) ? 1 : 0;
       const bPrefix = bTitle.startsWith(normalizedQuery) ? 1 : 0;
       if (aPrefix !== bPrefix) return bPrefix - aPrefix;
+
+      // Fewer extra words means a closer match.
+      if (aTokens.length !== bTokens.length) return aTokens.length - bTokens.length;
 
       const aContains = aTitle.includes(normalizedQuery) ? 1 : 0;
       const bContains = bTitle.includes(normalizedQuery) ? 1 : 0;

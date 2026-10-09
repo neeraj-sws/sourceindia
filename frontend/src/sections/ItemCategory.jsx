@@ -220,7 +220,7 @@ const ItemCategory = () => {
             }}
           />
 
-          <h6 className="small fw-semibold mb-1">
+          <h6 className="small fw-semibold mb-1" >
             {name.length > 45
               ? name.slice(0, 45) +
               "..."
