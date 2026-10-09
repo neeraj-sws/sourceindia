@@ -29,6 +29,9 @@ const tokenizeForSuggest = (text = '') =>
     .map((w) => w.trim())
     .filter((w) => w.length > 1 && !SUGGEST_MATCH_STOP_WORDS.has(w));
 
+const toSingularPhrase = (normalizedText = '') =>
+  normalizedText.split(' ').map(normalizeMatchWord).join(' ');
+
 const tokenizeForOrder = (text = '') =>
   normalizeTextForSuggest(text)
     .split(' ')
@@ -212,6 +215,8 @@ exports.suggestProducts = async (req, res) => {
       const keywords = await ProductKeyword.findAll({
         where: keywordWhere,
         limit: 200,
+        // Shortest names first, so an exact keyword is never cut off by the limit.
+        order: [[fn('CHAR_LENGTH', col('ProductKeyword.name')), 'ASC']],
         attributes: ['id', 'name', 'item_subcategory_id'],
         include: [
           {
@@ -243,6 +248,7 @@ exports.suggestProducts = async (req, res) => {
           itemCategoryKeywords = await ProductKeywordCategory.findAll({
             where: { ...keywordWhere, item_subcategory_id: 0, item_category_id: { [Op.gt]: 0 } },
             limit: 200,
+            order: [[fn('CHAR_LENGTH', col('ProductKeywordCategory.name')), 'ASC']],
             attributes: ['id', 'name', 'item_category_id'],
             include: [
               {
@@ -317,7 +323,10 @@ exports.suggestProducts = async (req, res) => {
           matchedQueryWordCount * 100 +
           matchedKeywordWordCount * 50 +
           leadingPrefixTokenScore * 20 -
-          (keywordWords.length - matchedKeywordWordCount) * 10; const exactMatch = normalizedKeyword === normalizedQuery;
+          (keywordWords.length - matchedKeywordWordCount) * 10;
+        // "Resistor" and "RESISTORS" count as the same keyword.
+        const exactMatch = normalizedKeyword === normalizedQuery
+          || toSingularPhrase(normalizedKeyword) === toSingularPhrase(normalizedQuery);
         let confidenceScore =
           (queryCoverage * 0.9) +
           (keywordCoverage * 0.1);

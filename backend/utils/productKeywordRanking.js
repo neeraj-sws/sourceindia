@@ -97,6 +97,9 @@ const getKeywordMatchMetrics = (queryWords = [], keywordWords = []) => {
 };
 
 const compareProductKeywordSuggestions = (a, b) => {
+    // An exact match always comes first.
+    if (Boolean(a.exact_match) !== Boolean(b.exact_match)) return a.exact_match ? -1 : 1;
+
     for (const field of ['matched_keyword_word_count', 'keyword_coverage', 'longest_consecutive_match']) {
         if (a[field] !== b[field]) return b[field] - a[field];
     }
