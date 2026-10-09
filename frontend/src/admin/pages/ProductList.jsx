@@ -48,6 +48,8 @@ const ProductList = ({ getDeleted, isApprove }) => {
   const queryParams = new URLSearchParams(location.search);
   const userIdFromUrl = queryParams.get("id");
   const companyIdFromUrl = queryParams.get("cid");
+  const keywordIdFromUrl = queryParams.get("keyword_id");
+  const keywordNameFromUrl = queryParams.get("keyword");
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -319,7 +321,8 @@ const ProductList = ({ getDeleted, isApprove }) => {
         params: {
           page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false',
           dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "", item_category_id: appliedItemCategory || "",
-          item_subcategory_id: appliedItemSubCategory || "", item_id: appliedItem || "", company: appliedCompanies || "", product_status: appliedProductStatus, is_approve: isApprove, user_id: userIdFromUrl || ""
+          item_subcategory_id: appliedItemSubCategory || "", item_id: appliedItem || "", company: appliedCompanies || "", product_status: appliedProductStatus, is_approve: isApprove, user_id: userIdFromUrl || "",
+          keyword_id: keywordIdFromUrl || ""
         },
       });
       setData(response.data.data);
@@ -333,7 +336,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
   };
 
   useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate,
-    appliedCategory, appliedSubCategory, appliedItemCategory, appliedItemSubCategory, appliedItem, appliedCompanies, appliedProductStatus, isApprove, userIdFromUrl]);
+    appliedCategory, appliedSubCategory, appliedItemCategory, appliedItemSubCategory, appliedItem, appliedCompanies, appliedProductStatus, isApprove, userIdFromUrl, keywordIdFromUrl]);
 
   // Product filed only up to Item Category (its keyword has no Item Sub Category).
   const isItemCategoryOnly = (row) => Number(row.item_category_id) > 0 && !(Number(row.item_subcategory_id) > 0);
@@ -463,7 +466,8 @@ const ProductList = ({ getDeleted, isApprove }) => {
           company: appliedCompanies || "",
           product_status: appliedProductStatus || "",
           is_approve: isApprove,
-          user_id: userIdFromUrl || ""
+          user_id: userIdFromUrl || "",
+          keyword_id: keywordIdFromUrl || ""
         }
       });
 
@@ -722,6 +726,17 @@ const ProductList = ({ getDeleted, isApprove }) => {
               </div>
             </div>
           </div>
+          {keywordIdFromUrl && (
+            <div className="alert alert-info d-flex align-items-center justify-content-between py-2">
+              <span>
+                <i className="bx bx-filter-alt me-1" />
+                Showing products linked to keyword <strong>{keywordNameFromUrl || `#${keywordIdFromUrl}`}</strong>
+              </span>
+              <button className="btn btn-sm btn-outline-secondary" onClick={() => { setPage(1); navigate(location.pathname); }}>
+                Clear keyword filter
+              </button>
+            </div>
+          )}
           <div className="card">
             <div className="card-body">
               <style>{`.item-category-only-row > td { background-color: #fff3cd !important; }
