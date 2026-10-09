@@ -12,6 +12,7 @@ const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
+const { withProductUsage, keywordUsageConflict } = require('../utils/keywordProductUsage');
 
 let keywordCodeColumnExistsCache = null;
 
@@ -484,6 +485,8 @@ exports.updateKeyword = async (req, res) => {
     if (Number(keyword.is_main) === 1) {
       return res.status(403).json({ message: 'This keyword is managed by Item Sub Category and cannot be edited here.' });
     }
+    const usageConflict = await keywordUsageConflict([keyword], 'edited');
+    if (usageConflict) return res.status(409).json({ message: usageConflict });
     const name = (req.body.name || '').toString().trim();
     if (!name) return res.status(400).json({ message: 'Name is required.' });
 
@@ -525,19 +528,8 @@ exports.deleteItemSubCategory = async (req, res) => {
     if (Number(keyword.is_main) === 1) {
       return res.status(403).json({ message: 'This keyword is managed by Item Sub Category and cannot be deleted here.' });
     }
-    const productUsageCount = await Products.count({
-      where: {
-        [Op.or]: [
-          { keyword_id: keyword.id },
-          { item_subcategory_id: keyword.item_subcategory_id },
-        ],
-      },
-    });
-    if (productUsageCount > 0) {
-      return res.status(409).json({
-        message: `Product Keyword cannot be deleted because it is used in ${productUsageCount} product(s).`,
-      });
-    }
+    const usageConflict = await keywordUsageConflict([keyword], 'deleted');
+    if (usageConflict) return res.status(409).json({ message: usageConflict });
     await keyword.destroy();
     res.json({ message: 'Keyword deleted successfully' });
   } catch (err) {
@@ -568,27 +560,10 @@ exports.deleteSelectedItemSubCategory = async (req, res) => {
       .filter((keyword) => Number(keyword.is_main) !== 1)
       .map((keyword) => keyword.id);
 
-    const productUsageCount = deletableIds.length
-      ? await Products.count({
-        where: {
-          [Op.or]: [
-            { keyword_id: { [Op.in]: deletableIds } },
-            {
-              item_subcategory_id: {
-                [Op.in]: keywords
-                  .filter((keyword) => deletableIds.includes(keyword.id))
-                  .map((keyword) => keyword.item_subcategory_id),
-              },
-            },
-          ],
-        },
-      })
-      : 0;
-    if (productUsageCount > 0) {
-      return res.status(409).json({
-        message: `Selected Product Keywords cannot be deleted because one or more are used in ${productUsageCount} product(s).`,
-      });
-    }
+    const usageConflict = deletableIds.length
+      ? await keywordUsageConflict(keywords.filter((keyword) => deletableIds.includes(keyword.id)), 'deleted')
+      : null;
+    if (usageConflict) return res.status(409).json({ message: usageConflict });
 
     if (deletableIds.length) {
       await ProductKeyword.destroy({
@@ -908,24 +883,7 @@ exports.getKeywordsBySubcategoryId = async (req, res) => {
       order: [['id', 'ASC']],
       raw: true,
     });
-    const keywordIds = keywords.map((keyword) => keyword.id);
-    const usedKeywordRows = keywordIds.length
-      ? await Products.findAll({
-        where: { keyword_id: { [Op.in]: keywordIds } },
-        attributes: ['keyword_id'],
-        group: ['keyword_id'],
-        raw: true,
-      })
-      : [];
-    const usedKeywordIds = new Set(usedKeywordRows.map((row) => Number(row.keyword_id)));
-    const itemSubCategoryUsageCount = await Products.count({
-      where: { item_subcategory_id },
-    });
-
-    res.json(keywords.map((keyword) => ({
-      ...keyword,
-      is_used: itemSubCategoryUsageCount > 0 || usedKeywordIds.has(Number(keyword.id)),
-    })));
+    res.json(await withProductUsage(keywords));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });

@@ -7,6 +7,7 @@ const SubCategories = require('../models/SubCategories');
 const Products = require('../models/Products');
 const UploadImage = require('../models/UploadImage');
 const sequelize = require('../config/database');
+const { withProductUsage, keywordUsageConflict } = require('../utils/keywordProductUsage');
 const {
   ensureKeywordItemCategoryColumn,
   syncItemCategoryMainKeyword,
@@ -348,22 +349,7 @@ exports.getKeywordsByItemCategoryId = async (req, res) => {
       raw: true,
     });
 
-    const keywordIds = keywords.map((keyword) => keyword.id);
-    const usedKeywordRows = keywordIds.length
-      ? await Products.findAll({
-        where: { keyword_id: { [Op.in]: keywordIds } },
-        attributes: ['keyword_id'],
-        group: ['keyword_id'],
-        raw: true,
-      })
-      : [];
-    const usedKeywordIds = new Set(usedKeywordRows.map((row) => Number(row.keyword_id)));
-    const itemCategoryUsageCount = await Products.count({ where: { item_category_id: itemCategoryId } });
-
-    res.json(keywords.map((keyword) => ({
-      ...keyword,
-      is_used: itemCategoryUsageCount > 0 || usedKeywordIds.has(Number(keyword.id)),
-    })));
+    res.json(await withProductUsage(keywords));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -381,6 +367,8 @@ exports.updateKeyword = async (req, res) => {
     if (Number(keyword.is_main) === 1) {
       return res.status(403).json({ message: 'This keyword is managed by Item Category and cannot be edited here.' });
     }
+    const usageConflict = await keywordUsageConflict([keyword], 'edited');
+    if (usageConflict) return res.status(409).json({ message: usageConflict });
     const name = (req.body.name || '').toString().trim();
     if (!name) return res.status(400).json({ message: 'Name is required.' });
 
@@ -399,15 +387,6 @@ exports.updateKeyword = async (req, res) => {
   }
 };
 
-const usedInProductsCount = (keywords) => Products.count({
-  where: {
-    [Op.or]: [
-      { keyword_id: { [Op.in]: keywords.map((k) => k.id) } },
-      { item_category_id: { [Op.in]: [...new Set(keywords.map((k) => k.item_category_id))] } },
-    ],
-  },
-});
-
 exports.deleteKeyword = async (req, res) => {
   try {
     const keyword = await ProductKeywordCategory.findOne({
@@ -418,12 +397,8 @@ exports.deleteKeyword = async (req, res) => {
     if (Number(keyword.is_main) === 1) {
       return res.status(403).json({ message: 'This keyword is managed by Item Category and cannot be deleted here.' });
     }
-    const productUsageCount = await usedInProductsCount([keyword]);
-    if (productUsageCount > 0) {
-      return res.status(409).json({
-        message: `Product Keyword cannot be deleted because it is used in ${productUsageCount} product(s).`,
-      });
-    }
+    const usageConflict = await keywordUsageConflict([keyword], 'deleted');
+    if (usageConflict) return res.status(409).json({ message: usageConflict });
     await keyword.destroy();
     res.json({ message: 'Keyword deleted successfully' });
   } catch (err) {
@@ -448,12 +423,8 @@ exports.deleteSelectedKeywords = async (req, res) => {
     }
 
     const deletable = keywords.filter((keyword) => Number(keyword.is_main) !== 1);
-    const productUsageCount = deletable.length ? await usedInProductsCount(deletable) : 0;
-    if (productUsageCount > 0) {
-      return res.status(409).json({
-        message: `Selected Product Keywords cannot be deleted because one or more are used in ${productUsageCount} product(s).`,
-      });
-    }
+    const usageConflict = deletable.length ? await keywordUsageConflict(deletable, 'deleted') : null;
+    if (usageConflict) return res.status(409).json({ message: usageConflict });
 
     const deletableIds = deletable.map((keyword) => keyword.id);
     if (deletableIds.length) {
