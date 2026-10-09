@@ -1,0 +1,210 @@
+﻿level,id,status,old_name,new_name,old_slug,new_slug,why
+Sub Category,37,deleted,"Machining and Precision Parts","Machining and Precision Parts-deleted-37","machining-and-precision-parts","machining-and-precision-parts-deleted-37",deleted: name and slug freed
+Sub Category,54,deleted,"PCBA","PCBA-deleted-54","pcba","pcba-deleted-54",deleted: name and slug freed
+Sub Category,83,active,"Dielectric Film/ BOPP Film","Dielectric Film/ BOPP Film","wound-components","dielectric-film-bopp-film",duplicate or out-of-date slug
+Sub Category,84,deleted,"Adhesives & Chemicals","Adhesives & Chemicals-deleted-84","wound-components","wound-components-deleted-84",deleted: name and slug freed
+Sub Category,85,active,"SMT / Assembly Equipment","SMT / Assembly Equipment","wound-components","smt-assembly-equipment",duplicate or out-of-date slug
+Sub Category,91,deleted,"Material Testing Equipment","Material Testing Equipment-deleted-91","material-testing-equipment","material-testing-equipment-deleted-91",deleted: name and slug freed
+Sub Category,110,deleted,"PCB Machine","PCB Machine-deleted-110","pcb-machine","pcb-machine-deleted-110",deleted: name and slug freed
+Sub Category,111,deleted,"PCB machine-2","PCB machine-2-deleted-111","pcb-machine","pcb-machine-deleted-111",deleted: name and slug freed
+Sub Category,115,deleted,"Crusher, Shredder & Presses","Crusher, Shredder & Presses-deleted-115","crusher-shredder-and-presses","crusher-shredder-and-presses-deleted-115",deleted: name and slug freed
+Sub Category,116,deleted,"Wire Drawing & Cabling Machines","Wire Drawing & Cabling Machines-deleted-116","wire-drawing-and-cabling-machines","wire-drawing-and-cabling-machines-deleted-116",deleted: name and slug freed
+Sub Category,118,active,"Pollution Control Devices & Machines-2","Pollution Control Devices & Machines-2","pollution-control-devices-and-machines","pollution-control-devices-and-machines-2",duplicate or out-of-date slug
+Sub Category,143,active,"Machine & Precision Tools","Machine & Precision Tools","machine-and-precision-tools","machine-and-precision-tools-2",duplicate or out-of-date slug
+Item Category,11,deleted,"Antenna Components","Antenna Components-deleted-11","antenna-components","antenna-components-deleted-11",deleted: name and slug freed
+Item Category,35,deleted,"Ceramic RF Components","Ceramic RF Components-deleted-35","ceramic-rf-components","ceramic-rf-components-deleted-35",deleted: name and slug freed
+Item Category,128,active,"LED (Chip, packaging)","LED (Chip, packaging)","led-(chip-packaging)","led-chip-packaging",duplicate or out-of-date slug
+Item Category,214,deleted,"RF Amplifiers","RF Amplifiers-deleted-214","rf-amplifiers","rf-amplifiers-deleted-214",deleted: name and slug freed
+Item Category,215,deleted,"RF Attenuators","RF Attenuators-deleted-215","rf-attenuators","rf-attenuators-deleted-215",deleted: name and slug freed
+Item Category,216,deleted,"RF Circulators","RF Circulators-deleted-216","rf-circulators","rf-circulators-deleted-216",deleted: name and slug freed
+Item Category,217,deleted,"RF Connectors","RF Connectors-deleted-217","rf-connectors","rf-connectors-deleted-217",deleted: name and slug freed
+Item Category,218,deleted,"RF Couplers","RF Couplers-deleted-218","rf-couplers","rf-couplers-deleted-218",deleted: name and slug freed
+Item Category,219,deleted,"RF Filters","RF Filters-deleted-219","rf-filters","rf-filters-deleted-219",deleted: name and slug freed
+Item Category,220,deleted,"RF Isolators","RF Isolators-deleted-220","rf-isolators","rf-isolators-deleted-220",deleted: name and slug freed
+Item Category,221,deleted,"RF Mixers","RF Mixers-deleted-221","rf-mixers","rf-mixers-deleted-221",deleted: name and slug freed
+Item Category,222,deleted,"RF Splitters/Dividers","RF Splitters/Dividers-deleted-222","rf-splitters-dividers","rf-splitters-dividers-deleted-222",deleted: name and slug freed
+Item Category,223,deleted,"RF Switches","RF Switches-deleted-223","rf-switches","rf-switches-deleted-223",deleted: name and slug freed
+Item Category,383,deleted,"Oscillators","Oscillators-deleted-383","oscillators","oscillators-deleted-383",deleted: name and slug freed
+Item Sub Category,905,active,"EV Charging Connector-2","EV Charging Connector-2","ev-charging-connector","ev-charging-connector-2",duplicate or out-of-date slug
+Item Sub Category,935,active,"SMT Stencil Printer-2","SMT Stencil Printer-2","smt-stencil-printer","smt-stencil-printer-2",duplicate or out-of-date slug
+Item Sub Category,991,active,"Environmental Test Chambers-2","Environmental Test Chambers-2","environmental-test-chambers","environmental-test-chambers-2",duplicate or out-of-date slug
+Item Sub Category,1049,active,"Torque Sensors-2","Torque Sensors-2","torque-sensors","torque-sensors-2",duplicate or out-of-date slug
+Item Sub Category,1066,active,"Servo Voltage Stabilizer-2","Servo Voltage Stabilizer-2","servo-voltage-stabilizer","servo-voltage-stabilizer-2",duplicate or out-of-date slug
+Item Sub Category,1132,active,"Double Sided PCB","Double Sided PCB","double-sided-pcb","double-sided-pcb-2",duplicate or out-of-date slug
+Item Sub Category,1285,active,"Common-mode Choke","Common-mode Choke","common-mode-choke","common-mode-choke-2",duplicate or out-of-date slug
+Item,84,active,"Cable Ties-3","Cable Ties-3","cable-ties","cable-ties-3",duplicate or out-of-date slug
+Item,107,active,"CAT5 Patch Cord-3","CAT5 Patch Cord-3","cat5-patch-cord","cat5-patch-cord-3",duplicate or out-of-date slug
+Item,109,active,"CAT6 Patch Cord-3","CAT6 Patch Cord-3","cat6-patch-cord","cat6-patch-cord-3",duplicate or out-of-date slug
+Item,144,active,"Coaxial Cable-3","Coaxial Cable-3","coaxial-cable","coaxial-cable-3",duplicate or out-of-date slug
+Item,167,active,"Connectors-3","Connectors-3","connectors","connectors-3",duplicate or out-of-date slug
+Item,179,active,"Corrugated Boxes, Foam Inserts, Bubble Wrap-3","Corrugated Boxes, Foam Inserts, Bubble Wrap-3","corrugated-boxes-foam-inserts-bubble-wrap","corrugated-boxes-foam-inserts-bubble-wrap-3",duplicate or out-of-date slug
+Item,193,active,"Custom Ceramic Antennas & Resonators-3","Custom Ceramic Antennas & Resonators-3","custom-ceramic-antennas-and-resonators","custom-ceramic-antennas-and-resonators-3",duplicate or out-of-date slug
+Item,223,active,"Digital Amplifier-3","Digital Amplifier-3","digital-amplifier","digital-amplifier-3",duplicate or out-of-date slug
+Item,287,active,"Electrochemical Test Station-2","Electrochemical Test Station-2","electrochemical-test-station","electrochemical-test-station-2",duplicate or out-of-date slug
+Item,288,active,"Electrochemical Test Station-3","Electrochemical Test Station-3","electrochemical-test-station","electrochemical-test-station-3",duplicate or out-of-date slug
+Item,289,active,"Electrochemical Test Station-4","Electrochemical Test Station-4","electrochemical-test-station","electrochemical-test-station-4",duplicate or out-of-date slug
+Item,290,active,"Electrochemical Test Station-5","Electrochemical Test Station-5","electrochemical-test-station","electrochemical-test-station-5",duplicate or out-of-date slug
+Item,291,active,"Electrochemical Test Station-3-2","Electrochemical Test Station-3-2","electrochemical-test-station","electrochemical-test-station-3-2",duplicate or out-of-date slug
+Item,337,active,"ESD Table Mat-3","ESD Table Mat-3","esd-table-mat","esd-table-mat-3",duplicate or out-of-date slug
+Item,347,active,"Ethernet Cable-3","Ethernet Cable-3","ethernet-cable","ethernet-cable-3",duplicate or out-of-date slug
+Item,379,active,"Flip-Chip Bump Substrate-3","Flip-Chip Bump Substrate-3","flip-chip-bump-substrate","flip-chip-bump-substrate-3",duplicate or out-of-date slug
+Item,417,active,"Gesture Sensor (e.g., APDS-9960)","Gesture Sensor (e.g., APDS-9960)","gesture-sensor-(e.g.-apds-9960)","gesture-sensor-eg-apds-9960",duplicate or out-of-date slug
+Item,443,active,"HDMI Cable-3","HDMI Cable-3","hdmi-cable","hdmi-cable-3",duplicate or out-of-date slug
+Item,473,active,"HN Male Connector Clamp/Solder For RG14, RG217 Cable","HN Male Connector Clamp/Solder For RG14, RG217 Cable","hn-male-connector-clamp-solder-for-rg14-rg217-cable","hn-male-connector-clampsolder-for-rg14-rg217-cable",duplicate or out-of-date slug
+Item,506,active,"Incubator-3","Incubator-3","incubator","incubator-3",duplicate or out-of-date slug
+Item,554,active,"Iron weights, Hexagonal (50kg to 50g)","Iron weights, Hexagonal (50kg to 50g)","iron-weights-hexagonal-(50kg-to-50g)","iron-weights-hexagonal-50kg-to-50g",duplicate or out-of-date slug
+Item,555,active,"Iron weights, Parallelepiped (50kg to 5kg)","Iron weights, Parallelepiped (50kg to 5kg)","iron-weights-parallelepiped-(50kg-to-5kg)","iron-weights-parallelepiped-50kg-to-5kg",duplicate or out-of-date slug
+Item,567,active,"Joystick-3","Joystick-3","joystick","joystick-3",duplicate or out-of-date slug
+Item,572,active,"Junction Box-5","Junction Box-5","junction-box","junction-box-5",duplicate or out-of-date slug
+Item,573,active,"Junction Box-3","Junction Box-3","junction-box","junction-box-3",duplicate or out-of-date slug
+Item,611,active,"LED Driver-3","LED Driver-3","led-driver","led-driver-3",duplicate or out-of-date slug
+Item,794,active,"PFSA Membrane Powder-5","PFSA Membrane Powder-5","pfsa-membrane-powder","pfsa-membrane-powder-5",duplicate or out-of-date slug
+Item,795,active,"PFSA Membrane Powder-3","PFSA Membrane Powder-3","pfsa-membrane-powder","pfsa-membrane-powder-3",duplicate or out-of-date slug
+Item,802,active,"Photoresist Stripper-3","Photoresist Stripper-3","photoresist-stripper","photoresist-stripper-3",duplicate or out-of-date slug
+Item,839,active,"Power & Signal Cable Assembly-3","Power & Signal Cable Assembly-3","power-and-signal-cable-assembly","power-and-signal-cable-assembly-3",duplicate or out-of-date slug
+Item,945,active,"RFID Reader-3","RFID Reader-3","rfid-reader","rfid-reader-3",duplicate or out-of-date slug
+Item,954,active,"RJ45 Connector-3","RJ45 Connector-3","rj45-connector","rj45-connector-3",duplicate or out-of-date slug
+Item,969,active,"Rubber Gasket-3","Rubber Gasket-3","rubber-gasket","rubber-gasket-3",duplicate or out-of-date slug
+Item,972,active,"Rubber Mat-3","Rubber Mat-3","rubber-mat","rubber-mat-3",duplicate or out-of-date slug
+Item,974,active,"Rubber Parts for Wiring Harnesses & Towbars-3","Rubber Parts for Wiring Harnesses & Towbars-3","rubber-parts-for-wiring-harnesses-and-towbars","rubber-parts-for-wiring-harnesses-and-towbars-3",duplicate or out-of-date slug
+Item,979,active,"Rubber Sheet-3","Rubber Sheet-3","rubber-sheet","rubber-sheet-3",duplicate or out-of-date slug
+Item,1006,active,"Screws-3","Screws-3","screws","screws-3",duplicate or out-of-date slug
+Item,1061,active,"SMA Connector-3","SMA Connector-3","sma-connector","sma-connector-3",duplicate or out-of-date slug
+Item,1074,active,"Smart IO Node M4 – Building Automation & Energy Meter Management","Smart IO Node M4 – Building Automation & Energy Meter Management","smart-io-node-m4-–-building-automation-and-energy-meter-management","smart-io-node-m4-building-automation-and-energy-meter-management",duplicate or out-of-date slug
+Item,1082,active,"SMD LED-3","SMD LED-3","smd-led","smd-led-3",duplicate or out-of-date slug
+Item,1084,active,"Smoke Sensor (e.g., MQ2, MQ135)","Smoke Sensor (e.g., MQ2, MQ135)","smoke-sensor-(e.g.-mq2-mq135)","smoke-sensor-eg-mq2-mq135",duplicate or out-of-date slug
+Item,1095,active,"Softgle Cartridge (Comfort & Fog Cartridge)","Softgle Cartridge (Comfort & Fog Cartridge)","softgle-cartridge-(comfort-and-fog-cartridge)","softgle-cartridge-comfort-and-fog-cartridge",duplicate or out-of-date slug
+Item,1162,active,"TE Connectors-3","TE Connectors-3","te-connectors","te-connectors-3",duplicate or out-of-date slug
+Item,1184,active,"Thermal Pad-3","Thermal Pad-3","thermal-pad","thermal-pad-3",duplicate or out-of-date slug
+Item,1203,active,"Tin Plating Solution-3","Tin Plating Solution-3","tin-plating-solution","tin-plating-solution-3",duplicate or out-of-date slug
+Item,1238,active,"UPS & Power Systems Testing (IS 16242)","UPS & Power Systems Testing (IS 16242)","ups-and-power-systems-testing-(is-16242)","ups-and-power-systems-testing-is-16242",duplicate or out-of-date slug
+Item,1242,active,"USB Cable-3","USB Cable-3","usb-cable","usb-cable-3",duplicate or out-of-date slug
+Item,1263,active,"VGA Cable-3","VGA Cable-3","vga-cable","vga-cable-3",duplicate or out-of-date slug
+Item,1266,active,"Vibration Sensor-3","Vibration Sensor-3","vibration-sensor","vibration-sensor-3",duplicate or out-of-date slug
+Item,1284,active,"Voltage Stabilizer-3","Voltage Stabilizer-3","voltage-stabilizer","voltage-stabilizer-3",duplicate or out-of-date slug
+Item,1312,active,"Wire Harness-3","Wire Harness-3","wire-harness","wire-harness-3",duplicate or out-of-date slug
+Item,1333,active,"Zestfloor – MES & Traceability Software","Zestfloor – MES & Traceability Software","zestfloor-–-mes-and-traceability-software","zestfloor-mes-and-traceability-software",duplicate or out-of-date slug
+Item,1358,active,"Acrylic Conformal Coating-3","Acrylic Conformal Coating-3","acrylic-conformal-coating","acrylic-conformal-coating-3",duplicate or out-of-date slug
+Item,1396,active,"AOI (Automated Optical Inspection)-3","AOI (Automated Optical Inspection)-3","aoi-(automated-optical-inspection)","aoi-automated-optical-inspection-3",duplicate or out-of-date slug
+Item,1417,active,"21.5"" SURGICAL DISPLAY MHSD-2100RC BUILT-IN RECORDING & STORAGE","21.5"" SURGICAL DISPLAY MHSD-2100RC BUILT-IN RECORDING & STORAGE","21.5""-surgical-display-mhsd-2100rc-built-in-recording-and-storage","215-surgical-display-mhsd-2100rc-built-in-recording-and-storage",duplicate or out-of-date slug
+Item,1419,active,"21.5"" SURGICAL DISPLAY MHSD-2120 ","21.5"" SURGICAL DISPLAY MHSD-2120 ","21.5""-surgical-display-mhsd-2120 ","215-surgical-display-mhsd-2120",duplicate or out-of-date slug
+Item,1420,active,"21.5"" 24"" SURGICAL DISPLAY MHSD-2400NRC BUILT-IN RECORDING & STORAGE ","21.5"" 24"" SURGICAL DISPLAY MHSD-2400NRC BUILT-IN RECORDING & STORAGE ","21.5""-24""-surgical-display-mhsd-2400nrc-built-in-recording-and-storage ","215-24-surgical-display-mhsd-2400nrc-built-in-recording-and-storage",duplicate or out-of-date slug
+Item,1421,active,"24"" SURGICAL DISPLAY MHSD-2412N ","24"" SURGICAL DISPLAY MHSD-2412N ","24""-surgical-display-mhsd-2412n ","24-surgical-display-mhsd-2412n",duplicate or out-of-date slug
+Item,1422,active,"24"" SURGICAL DISPLAY MHSD-2420N ","24"" SURGICAL DISPLAY MHSD-2420N ","24""-surgical-display-mhsd-2420n ","24-surgical-display-mhsd-2420n",duplicate or out-of-date slug
+Item,1424,active,"27"" SURGICAL DISPLAY MHSD-2712 ","27"" SURGICAL DISPLAY MHSD-2712 ","27""-surgical-display-mhsd-2712 ","27-surgical-display-mhsd-2712",duplicate or out-of-date slug
+Item,1425,active,"27"" SURGICAL DISPLAY MHSD-2720 ","27"" SURGICAL DISPLAY MHSD-2720 ","27""-surgical-display-mhsd-2720 ","27-surgical-display-mhsd-2720",duplicate or out-of-date slug
+Item,1426,active,"32"" SURGICAL DISPLAY MHSD-3200RC BUILT-IN RECORDING & STORAGE ","32"" SURGICAL DISPLAY MHSD-3200RC BUILT-IN RECORDING & STORAGE ","32""-surgical-display-mhsd-3200rc-built-in-recording-and-storage ","32-surgical-display-mhsd-3200rc-built-in-recording-and-storage",duplicate or out-of-date slug
+Item,1427,active,"32"" SURGICAL DISPLAY MHSD-3212 ","32"" SURGICAL DISPLAY MHSD-3212 ","32""-surgical-display-mhsd-3212 ","32-surgical-display-mhsd-3212",duplicate or out-of-date slug
+Item,1429,active,"32"" SURGICAL DISPLAY MHSD-3220 ","32"" SURGICAL DISPLAY MHSD-3220 ","32""-surgical-display-mhsd-3220 ","32-surgical-display-mhsd-3220",duplicate or out-of-date slug
+Item,1430,active,"32"" SURGICAL DISPLAY MHSD-3240_V2 4K DISPLAY ","32"" SURGICAL DISPLAY MHSD-3240_V2 4K DISPLAY ","32""-surgical-display-mhsd-3240_v2-4k-display ","32-surgical-display-mhsd-3240v2-4k-display",duplicate or out-of-date slug
+Item,1431,active,"43"" SURGICAL DISPLAY MHSD-4340_V2 4K DISPLAY ","43"" SURGICAL DISPLAY MHSD-4340_V2 4K DISPLAY ","43""-surgical-display-mhsd-4340_v2-4k-display ","43-surgical-display-mhsd-4340v2-4k-display",duplicate or out-of-date slug
+Item,1432,active,"55"" SURGICAL DISPLAY MHSD-5540_V2 4K DISPLAY ","55"" SURGICAL DISPLAY MHSD-5540_V2 4K DISPLAY ","55""-surgical-display-mhsd-5540_v2-4k-display ","55-surgical-display-mhsd-5540v2-4k-display",duplicate or out-of-date slug
+Item,1433,active,"24” Portable Dual Monitor Workstation ","24” Portable Dual Monitor Workstation ","24”-portable-dual-monitor-workstation ","24-portable-dual-monitor-workstation",duplicate or out-of-date slug
+Item,1434,active,"4‑Layer PCB, 6‑Layer PCB, 8‑Layer PCB ","4‑Layer PCB, 6‑Layer PCB, 8‑Layer PCB ","4‑layer-pcb-6‑layer-pcb-8‑layer-pcb ","4layer-pcb-6layer-pcb-8layer-pcb",duplicate or out-of-date slug
+Item,1477,active,"PCB Infrared Curing Oven-3","PCB Infrared Curing Oven-3","pcb-infrared-curing-oven","pcb-infrared-curing-oven-3",duplicate or out-of-date slug
+Item,1479,active,"INLINE LASER MARKING Machine-3","INLINE LASER MARKING Machine-3","inline-laser-marking-machine","inline-laser-marking-machine-3",duplicate or out-of-date slug
+Item,1498,active,"MCP Panel-3","MCP Panel-3","mcp-panel","mcp-panel-3",duplicate or out-of-date slug
+Product,647,deleted,"Medium Power SMD LED","Medium Power SMD LED","medium-power-smd-led","medium-power-smd-led-2",deleted row, duplicate slug
+Product,649,active,"Medium Power SMD LED","Medium Power SMD LED","medium-power-smd-led","medium-power-smd-led-3",duplicate or out-of-date slug
+Product,650,active,"Medium Power SMD LED","Medium Power SMD LED","medium-power-smd-led","medium-power-smd-led-4",duplicate or out-of-date slug
+Product,778,deleted,"FLOAT CUM BOOST CHARGER DC POWER SUPPLIES","FLOAT CUM BOOST CHARGER DC POWER SUPPLIES","float-cum-boost-charger-dc-power-supplies","float-cum-boost-charger-dc-power-supplies-2",deleted row, duplicate slug
+Product,788,active,"Electronic Components","Electronic Components","electronic-components","electronic-components-3",duplicate or out-of-date slug
+Product,1072,active,"PCB Assembly","PCB Assembly","pcb-assembly","pcb-assembly-10",duplicate or out-of-date slug
+Product,1081,active,"Medium Power SMD LED","Medium Power SMD LED","medium-power-smd-led","medium-power-smd-led-5",duplicate or out-of-date slug
+Product,1082,active,"Medium Power SMD LED","Medium Power SMD LED","medium-power-smd-led","medium-power-smd-led-6",duplicate or out-of-date slug
+Product,1139,active,"Industrial Enclosures","Industrial Enclosures","industrial-enclosures","industrial-enclosures-2",duplicate or out-of-date slug
+Product,1241,deleted,"test","test","test","test-5",deleted row, duplicate slug
+Product,1244,deleted,"test data","test data","test-data","test-data-2",deleted row, duplicate slug
+Product,1253,active,"PCBA","PCBA","pcba","pcba-4",duplicate or out-of-date slug
+Product,1259,active,"Conformal coating","Conformal coating","conformal-coating","conformal-coating-3",duplicate or out-of-date slug
+Product,1261,active,"PCBA","PCBA","pcba","pcba-5",duplicate or out-of-date slug
+Product,1392,deleted,"test","test","test","test-6",deleted row, duplicate slug
+Product,1402,active,"Motor Run Capacitor","Motor Run Capacitor","motor-run-capacitor","motor-run-capacitor-2",duplicate or out-of-date slug
+Product,1407,active,"Motor Run Capacitor","Motor Run Capacitor","motor-run-capacitor","motor-run-capacitor-3",duplicate or out-of-date slug
+Product,1460,active,"High Voltage DC Power Supply for Electrostatic Oil Cleaning Machine","High Voltage DC Power Supply for Electrostatic Oil Cleaning Machine","high-voltage-dc-power-supply-for-electrostatic-oil-cleaning-machine","high-voltage-dc-power-supply-for-electrostatic-oil-cleaning-machine-2",duplicate or out-of-date slug
+Product,1461,active,"High Voltage DC Power Supply for Electrostatic Oil Cleaning Machine","High Voltage DC Power Supply for Electrostatic Oil Cleaning Machine","high-voltage-dc-power-supply-for-electrostatic-oil-cleaning-machine","high-voltage-dc-power-supply-for-electrostatic-oil-cleaning-machine-3",duplicate or out-of-date slug
+Product,1462,active,"High Voltage DC Power Supply for Electrostatic Oil Cleaning Machine","High Voltage DC Power Supply for Electrostatic Oil Cleaning Machine","high-voltage-dc-power-supply-for-electrostatic-oil-cleaning-machine","high-voltage-dc-power-supply-for-electrostatic-oil-cleaning-machine-4",duplicate or out-of-date slug
+Product,1595,active,"COB","COB","cob","cob-3",duplicate or out-of-date slug
+Product,1597,active,"COB","COB","cob","cob-4",duplicate or out-of-date slug
+Product,1598,active,"COB","COB","cob","cob-5",duplicate or out-of-date slug
+Product,1702,active,"Ultrasonic Spray Coating Machine","Ultrasonic Spray Coating Machine","ultrasonic-spray-coating-machine","ultrasonic-spray-coating-machine-3",duplicate or out-of-date slug
+Product,1748,active,"Fans","Fans","fans","fans-2",duplicate or out-of-date slug
+Product,1856,active,"PVD Coating Services for Cutting Tools","PVD Coating Services for Cutting Tools","pvd-coating-services-for-cutting-tools","pvd-coating-services-for-cutting-tools-3",duplicate or out-of-date slug
+Product,1986,deleted,"test","test","test","test-7",deleted row, duplicate slug
+Product,1987,deleted,"test","test","test","test-8",deleted row, duplicate slug
+Product,1988,deleted,"test","test","test","test-9",deleted row, duplicate slug
+Product,1990,deleted,"MVP Small Oil Rotary Pump","MVP Small Oil Rotary Pump","mvp-small-oil-rotary-pump","mvp-small-oil-rotary-pump-2",deleted row, duplicate slug
+Product,2008,deleted,"Corrugated boxes for packaging","Corrugated boxes for packaging","corrugated-boxes-for-packaging","corrugated-boxes-for-packaging-2",deleted row, duplicate slug
+Product,2090,active,"Precision PCB Depaneling Machine,Semi-Automatic V-Cut PCB Separator,CWV-1M/1A","Precision PCB Depaneling Machine,Semi-Automatic V-Cut PCB Separator,CWV-1M/1A","precision-pcb-depaneling-machinesemi-automatic-v-cut-pcb-separatorcwv-1m1a","precision-pcb-depaneling-machinesemi-automatic-v-cut-pcb-separatorcwv-1m1a-2",duplicate or out-of-date slug
+Company,353,active,"IND-SPHINX PRECISION LTD.","IND-SPHINX PRECISION LTD.","ind-sphinx-precision-ltd","ind-sphinx-precision-ltd-2",duplicate or out-of-date slug
+Company,406,active,"EMS Technologies Pvt Ltd","EMS Technologies Pvt Ltd","ems-technologies-pvt-ltd","ems-technologies-pvt-ltd-2",duplicate or out-of-date slug
+Company,472,deleted,"infinityinfo","infinityinfo","","infinityinfo",had no slug
+Company,655,active,"InFocus Electronics Technology","InFocus Electronics Technology","infocus-electronics-technology","infocus-electronics-technology-2",duplicate or out-of-date slug
+Company,678,active,"ITC Limited","ITC Limited","itc-limited","itc-limited-2",duplicate or out-of-date slug
+Company,692,active,"Matrix Comsec Pvt Ltd","Matrix Comsec Pvt Ltd","matrix-comsec-pvt-ltd","matrix-comsec-pvt-ltd-8",duplicate or out-of-date slug
+Company,819,deleted,"test","test","test","test-4",deleted row, duplicate slug
+Company,853,active,"Sanmina SCI india PVT Ltd","Sanmina SCI india PVT Ltd","sanmina-sci-india-pvt-ltd","sanmina-sci-india-pvt-ltd-2",duplicate or out-of-date slug
+Company,865,active,"sdfsdf","sdfsdf","","sdfsdf",had no slug
+Company,866,active,"sdfsdf","sdfsdf","","sdfsdf-2",had no slug
+Company,867,active,"sdfsdf","sdfsdf","","sdfsdf-3",had no slug
+Company,868,active,"test","test","","test-7",had no slug
+Company,870,active,"Salcomp Manufacturing India pvt ltd","Salcomp Manufacturing India pvt ltd","salcomp-manufacturing-india-pvt-ltd","salcomp-manufacturing-india-pvt-ltd-3",duplicate or out-of-date slug
+Company,889,active,"Matrix Comsec Pvt Ltd","Matrix Comsec Pvt Ltd","matrix-comsec-pvt-ltd","matrix-comsec-pvt-ltd-9",duplicate or out-of-date slug
+Company,977,deleted,"ZUPPA GEO NAVIGATION TECHNOLOGIES PRIVATE LIMITED","ZUPPA GEO NAVIGATION TECHNOLOGIES PRIVATE LIMITED","zuppa-geo-navigation-technologies-private-limited","zuppa-geo-navigation-technologies-private-limited-2",deleted row, duplicate slug
+Company,995,active,"","","","",had no slug
+Company,1030,active,"Salcomp manufacturing India pvt ltd.","Salcomp manufacturing India pvt ltd.","salcomp-manufacturing-india-pvt-ltd-2","salcomp-manufacturing-india-pvt-ltd-4",duplicate or out-of-date slug
+Company,1032,active,"Matrix Comsec Pvt. Ltd.","Matrix Comsec Pvt. Ltd.","matrix-comsec-pvt-ltd","matrix-comsec-pvt-ltd-10",duplicate or out-of-date slug
+Company,1087,active,"Matrix Comsec Pvt. Ltd.","Matrix Comsec Pvt. Ltd.","matrix-comsec-pvt-ltd","matrix-comsec-pvt-ltd-11",duplicate or out-of-date slug
+Company,1127,active,"MATRIX COMSEC PVT LTD","MATRIX COMSEC PVT LTD","matrix-comsec-pvt-ltd","matrix-comsec-pvt-ltd-12",duplicate or out-of-date slug
+Company,1155,active,"","","","",had no slug
+Company,1172,deleted,"Peridot Technologies","Peridot Technologies","peridot-technologies","peridot-technologies-2",deleted row, duplicate slug
+Company,1178,deleted,"","","","",had no slug
+Company,1179,deleted,"Zettaone Technologies India Pvt Ltd","Zettaone Technologies India Pvt Ltd","zettaone-technologies-india-pvt-ltd","zettaone-technologies-india-pvt-ltd-2",deleted row, duplicate slug
+Company,1180,active,"","","","",had no slug
+Company,1194,deleted,"Exposome Private Limited","Exposome Private Limited","exposome-private-limited","exposome-private-limited-2",deleted row, duplicate slug
+Company,1217,active,"","","","",had no slug
+Company,1230,deleted,"Test","Test","test-2","test-8",deleted row, duplicate slug
+Company,1232,deleted,"Zettaone Technologies India Pvt LTD","Zettaone Technologies India Pvt LTD","zettaone-technologies-india-pvt-ltd","zettaone-technologies-india-pvt-ltd-3",deleted row, duplicate slug
+Company,1241,active,"","","","",had no slug
+Company,1278,active,"EMC-RF Technology Solutions","EMC-RF Technology Solutions","emc-rf-technology-solutions","emc-rf-technology-solutions-2",duplicate or out-of-date slug
+Company,1282,active,"Technosphere Labs Pvt Ltd","Technosphere Labs Pvt Ltd","technosphere-labs-pvt-ltd","technosphere-labs-pvt-ltd-2",duplicate or out-of-date slug
+Company,1293,active,"Radha Raman Engg Co","Radha Raman Engg Co","radha-raman-engg-co","radha-raman-engg-co-2",duplicate or out-of-date slug
+Company,1322,active,"Sri Saraswathi artificial intelligence and Robotics private limited","Sri Saraswathi artificial intelligence and Robotics private limited","","sri-saraswathi-artificial-intelligence-and-robotics-private-limited-2",had no slug
+Company,1353,active,"Siargo Ltd.","Siargo Ltd.","siargo-ltd","siargo-ltd-2",duplicate or out-of-date slug
+Company,1405,active,"Inevitable Electronics Private Limited","Inevitable Electronics Private Limited","inevitable-electronics-private-limited","inevitable-electronics-private-limited-2",duplicate or out-of-date slug
+Company,1421,active,"ABHISHA DEVICES INC.","ABHISHA DEVICES INC.","abhisha-devices-inc","abhisha-devices-inc-2",duplicate or out-of-date slug
+Company,1422,active,"Stratnel Technologies LLP","Stratnel Technologies LLP","stratnel-technologies-llp","stratnel-technologies-llp-2",duplicate or out-of-date slug
+Company,1426,active,"","","","",had no slug
+Company,1488,active,"","","","",had no slug
+Company,1490,active,"","","","",had no slug
+Company,1617,active,"ERIKS PTE LTD","ERIKS PTE LTD","eriks-pte-ltd","eriks-pte-ltd-2",duplicate or out-of-date slug
+Company,1731,active,"Sharang Corporation","Sharang Corporation","sharang-corporation","sharang-corporation-2",duplicate or out-of-date slug
+Company,1752,deleted,"Dupat Industries Pvt Ltd","Dupat Industries Pvt Ltd","dupat-industries-pvt-ltd","dupat-industries-pvt-ltd-2",deleted row, duplicate slug
+Company,1764,deleted,"meta","meta","meta","meta-2",deleted row, duplicate slug
+Company,1835,deleted,"testcompany","testcompany","testcompany","testcompany-4",deleted row, duplicate slug
+Company,1934,active,"Findx Pro","Findx Pro","findx-pro","findx-pro-2",duplicate or out-of-date slug
+Company,1950,active,"Mootek Technologies Private Limited","Mootek Technologies Private Limited","mootek-technologies-private-limited","mootek-technologies-private-limited-2",duplicate or out-of-date slug
+Company,1979,active,"Shreetronics","Shreetronics","shreetronics","shreetronics-7",duplicate or out-of-date slug
+Company,1990,deleted,"abc","abc","abc","abc-6",deleted row, duplicate slug
+Company,2003,deleted,"abc","abc","abc-3","abc-7",deleted row, duplicate slug
+Company,2059,active,"Hitachi High-Tech India Pvt. Ltd.","Hitachi High-Tech India Pvt. Ltd.","hitachi-high-tech-india-pvt-ltd","hitachi-high-tech-india-pvt-ltd-2",duplicate or out-of-date slug
+Company,2086,active,"Salcomp Manufacturing India Private Limited","Salcomp Manufacturing India Private Limited","salcomp-manufacturing-india-private-limited","salcomp-manufacturing-india-private-limited-2",duplicate or out-of-date slug
+Company,2098,active,"Matrix Comsec Pvt Ltd","Matrix Comsec Pvt Ltd","matrix-comsec-pvt-ltd-4","matrix-comsec-pvt-ltd-13",duplicate or out-of-date slug
+Company,2105,active,"MATRIX COMSEC PVT LTD","MATRIX COMSEC PVT LTD","matrix-comsec-pvt-ltd","matrix-comsec-pvt-ltd-14",duplicate or out-of-date slug
+Company,2118,active,"Mouser Electronics","Mouser Electronics","mouser-electronics","mouser-electronics-2",duplicate or out-of-date slug
+Company,2155,active,"SRM Technologies Pvt Ltd","SRM Technologies Pvt Ltd","srm-technologies-pvt-ltd","srm-technologies-pvt-ltd-2",duplicate or out-of-date slug
+Company,2172,active,"Valeo India Pvt Ltd","Valeo India Pvt Ltd","valeo-india-pvt-ltd","valeo-india-pvt-ltd-2",duplicate or out-of-date slug
+Company,2173,active,"SSD Tracetech PCB Private Limited","SSD Tracetech PCB Private Limited","ssd-tracetech-pcb-private-limited","ssd-tracetech-pcb-private-limited-2",duplicate or out-of-date slug
+Company,2186,active,"ASC CONSULTING PRIVATE LIMITED","ASC CONSULTING PRIVATE LIMITED","asc-consulting-private-limited","asc-consulting-private-limited-2",duplicate or out-of-date slug
+Company,2277,active,"","","","",had no slug
+Company,2281,active,"","","","",had no slug
+Company,2323,active,"india","india","","india",had no slug
+Company,2384,active,"Bonded Textiles PVT LTD","Bonded Textiles PVT LTD","","bonded-textiles-pvt-ltd",had no slug
+Company,2385,active,"abc","abc","","abc-8",had no slug
+Company,2419,active,"abc","abc","","abc-9",had no slug
+Company,2420,active,"abc","abc","","abc-10",had no slug
+Company,2421,active,"abc","abc","","abc-11",had no slug
+Company,2422,active,"abc","abc","","abc-12",had no slug
+Company,2423,active,"abc","abc","","abc-13",had no slug
+Company,2424,active,"abc","abc","","abc-14",had no slug
+Company,2425,active,"abc","abc","","abc-15",had no slug

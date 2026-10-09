@@ -65,6 +65,7 @@ const basePath = '/v2'; // All APIs will start with /v2
 
 // Register adminEnquiriesRoutes after app and basePath are defined
 const adminEnquiriesRoutes = require('./routes/adminEnquiriesRoutes');
+const { ensureSlugIndexes } = require('./utils/categorySlug');
 app.use(basePath + '/api/admin', adminEnquiriesRoutes);
 // Companies route (must be after app is defined)
 
@@ -149,6 +150,8 @@ sequelize
   .then(async () => {
     const backfilledKeywords = await backfillMainProductKeywords();
     console.log(`Product keyword main records synchronized: ${backfilledKeywords}`);
+    const slugIndexes = await ensureSlugIndexes(sequelize);
+    if (slugIndexes.length) console.log(`Unique slug index added: ${slugIndexes.join(', ')}`);
     console.log('MySQL connected and models synced');
     app.listen(5000, () =>
       console.log('Server running on http://localhost:5000' + basePath)

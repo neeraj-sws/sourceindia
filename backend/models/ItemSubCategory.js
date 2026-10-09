@@ -4,7 +4,7 @@ const ItemCategory = require('./ItemCategory');
 const Categories = require('./Categories');
 const SubCategories = require('./SubCategories');
 const UploadImage = require('./UploadImage');
-const slugify = require('slugify'); // 🟢 import slugify
+const { attachCategorySlugHooks } = require('../utils/categorySlug');
 
 const ItemSubCategory = sequelize.define('ItemSubCategory', {
   id: {
@@ -98,41 +98,7 @@ ItemSubCategory.belongsTo(UploadImage, {
   onDelete: 'CASCADE'
 });
 
-// 🟢 Hook: Auto-generate slug before create
-ItemSubCategory.beforeCreate((itemSubCategory, options) => {
-  if (!itemSubCategory.slug && itemSubCategory.name) {
-    itemSubCategory.slug = slugify(itemSubCategory.name, {
-      lower: true,
-      strict: true, // removes special characters
-      remove: /[*+~.()'"!:@]/g,
-    });
-  }
-});
-
-// 🟢 Hook: Auto-update slug if name changes
-ItemSubCategory.beforeUpdate((itemSubCategory, options) => {
-  // ✅ When marking as deleted, append -deleted-{id} to name
-  if (itemSubCategory.changed('is_delete') && itemSubCategory.is_delete === 1) {
-    if (!itemSubCategory.name.includes('-deleted-')) {
-      itemSubCategory.name = `${itemSubCategory.name}-deleted-${itemSubCategory.id}`;
-    }
-  }
-
-  // Restore the original name when moving an entry out of Recently Deleted.
-  if (itemSubCategory.changed('is_delete') && itemSubCategory.is_delete === 0) {
-    itemSubCategory.name = itemSubCategory.name.replace(
-      new RegExp(`-deleted-${itemSubCategory.id}$`, 'i'),
-      ''
-    );
-  }
-
-  if (itemSubCategory.changed('name')) {
-    itemSubCategory.slug = slugify(itemSubCategory.name, {
-      lower: true,
-      strict: true,
-      remove: /[*+~.()'"!:@]/g,
-    });
-  }
-});
+// Slug follows the name, stays unique, and steps aside on delete (utils/categorySlug.js).
+attachCategorySlugHooks(ItemSubCategory);
 
 module.exports = ItemSubCategory;

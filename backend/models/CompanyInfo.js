@@ -7,6 +7,7 @@ const CoreActivity = require('./CoreActivity');
 const Activity = require('./Activity');
 const MembershipPlan = require('./MembershipPlan');
 const NatureBusinesses = require('./NatureBusinesses');
+const { attachSlugHooks } = require('../utils/categorySlug');
 
 const CompanyInfo = sequelize.define('CompanyInfo', {
   id: {
@@ -71,5 +72,8 @@ CompanyInfo.belongsTo(CoreActivity, { foreignKey: 'core_activity', targetKey: 'i
 CompanyInfo.belongsTo(Activity, { foreignKey: 'activity', targetKey: 'id', as: 'Activity', constraints: false });
 CompanyInfo.belongsTo(MembershipPlan, { foreignKey: 'membership_plan', targetKey: 'id', as: 'MembershipPlan', constraints: false });
 CompanyInfo.belongsTo(NatureBusinesses, { foreignKey: 'nature_business', targetKey: 'id', as: 'NatureBusinesses', constraints: false });
+
+// Slug follows the company name and stays unique; a deleted company keeps it (utils/categorySlug.js).
+attachSlugHooks(CompanyInfo, { nameField: 'organization_name', slugField: 'organization_slug' });
 
 module.exports = CompanyInfo;

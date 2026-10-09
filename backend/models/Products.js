@@ -12,6 +12,7 @@ const ItemCategory = require('./ItemCategory');
 const ItemSubCategory = require('./ItemSubCategory');
 const Items = require('./Items');
 const ProductKeyword = require('./ProductKeyword');
+const { attachSlugHooks } = require('../utils/categorySlug');
 
 const Products = sequelize.define('Products', {
   id: {
@@ -77,5 +78,8 @@ Products.belongsTo(SubCategories, { foreignKey: 'sub_category', targetKey: 'id',
 Products.belongsTo(Applications, { foreignKey: 'application', targetKey: 'id', as: 'Applications', constraints: false });
 Products.belongsTo(Items, { foreignKey: 'item_id', targetKey: 'id', as: 'Items', constraints: false });
 Products.belongsTo(ProductKeyword, { foreignKey: 'keyword_id', targetKey: 'id', as: 'Keyword', constraints: false });
+
+// Slug follows the title and stays unique; a deleted product keeps its slug (utils/categorySlug.js).
+attachSlugHooks(Products, { nameField: 'title', slugField: 'slug' });
 
 module.exports = Products;

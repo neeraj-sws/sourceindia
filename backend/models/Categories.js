@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const UploadImage = require('./UploadImage');
-const slugify = require('slugify');
+const { attachCategorySlugHooks } = require('../utils/categorySlug');
 
 const Categories = sequelize.define('Categories', {
   id: {
@@ -81,33 +81,7 @@ Categories.belongsTo(UploadImage, {
   onDelete: 'CASCADE'
 });
 
-// 🟢 Hook: Auto slug generate from name
-Categories.beforeCreate((category, options) => {
-  if (!category.slug && category.name) {
-    category.slug = slugify(category.name, {
-      lower: true,
-      strict: true, // removes special chars
-      remove: /[*+~.()'"!:@]/g,
-    });
-  }
-});
-
-// 🟢 Hook: Auto-update slug if name changes
-Categories.beforeUpdate((category, options) => {
-  // ✅ When marking as deleted, append -deleted-{id} to name
-  if (category.changed('is_delete') && category.is_delete === 1) {
-    if (!category.name.includes('-deleted-')) {
-      category.name = `${category.name}-deleted-${category.id}`;
-    }
-  }
-
-  if (category.changed('name')) {
-    category.slug = slugify(category.name, {
-      lower: true,
-      strict: true,
-      remove: /[*+~.()'"!:@]/g,
-    });
-  }
-});
+// Slug follows the name, stays unique, and steps aside on delete (utils/categorySlug.js).
+attachCategorySlugHooks(Categories);
 
 module.exports = Categories;

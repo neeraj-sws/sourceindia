@@ -11,6 +11,7 @@ const Products = require('../models/Products');
 const Users = require('../models/Users');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
+const { findCategoryNameConflict, findRestoreNameConflict } = require('../utils/categoryNameConflictHelper');
 
 exports.createItems = async (req, res) => {
   const upload = getMulterUpload('items');
@@ -21,6 +22,10 @@ exports.createItems = async (req, res) => {
       /*if (!name || !category_id || !subcategory_id || !item_category_id || !item_sub_category_id || status === undefined) {
         return res.status(400).json({ message: 'All fields (name, category_id, subcategory_id, item_category_id, item_sub_category_id, status) are required' });
       }*/
+      // Same name, or a name making the same slug ("Cable Ties" / "Cable-Ties"), is a duplicate.
+      if (await findCategoryNameConflict(name, [{ model: Items, module: 'Item' }])) {
+        return res.status(400).json({ error: 'Item name already exists. Please use a different name.' });
+      }
       const uploadImage = await UploadImage.create({
         file: `upload/items/${req.file.filename}`,
       });
@@ -135,6 +140,9 @@ exports.updateItems = async (req, res) => {
       const { name, category_id, subcategory_id, item_category_id, item_sub_category_id, status } = req.body;
       const items = await Items.findByPk(req.params.id);
       if (!items) return res.status(404).json({ message: 'Item not found' });
+      if (name !== undefined && await findCategoryNameConflict(name, [{ model: Items, module: 'Item' }], items.id)) {
+        return res.status(400).json({ error: 'Item name already exists. Please use a different name.' });
+      }
       const uploadDir = path.resolve('upload/items');
       if (!fs.existsSync(uploadDir)) {
         console.log("Directory does not exist, creating:", uploadDir);
@@ -258,6 +266,10 @@ exports.updateItemsDeleteStatus = async (req, res) => {
     }
     const items = await Items.findByPk(req.params.id);
     if (!items) return res.status(404).json({ message: 'Item not found' });
+    if (is_delete === 0) {
+      const restoreConflict = await findRestoreNameConflict(items, [{ model: Items, module: 'Item' }]);
+      if (restoreConflict) return res.status(409).json({ message: restoreConflict, error: restoreConflict });
+    }
     items.is_delete = is_delete;
     await items.save();
     res.json({ message: 'Item delete status updated', items });

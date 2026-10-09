@@ -14,7 +14,7 @@ const CompanyInfo = require('../models/CompanyInfo');
 const SellerCategory = require('../models/SellerCategory');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
-const { findCategoryNameConflict, logCategoryConflict } = require('../utils/categoryNameConflictHelper');
+const { findCategoryNameConflict, logCategoryConflict, categoryLevelModels, findRestoreNameConflict } = require('../utils/categoryNameConflictHelper');
 
 exports.createSubCategories = async (req, res) => {
   const upload = getMulterUpload('sub_category');
@@ -432,6 +432,10 @@ exports.updateSubCategoriesDeleteStatus = async (req, res) => {
     }
     const subCategories = await SubCategories.findByPk(req.params.id);
     if (!subCategories) return res.status(404).json({ message: 'Sub Categories not found' });
+    if (is_delete === 0) {
+      const restoreConflict = await findRestoreNameConflict(subCategories, categoryLevelModels());
+      if (restoreConflict) return res.status(409).json({ message: restoreConflict, error: restoreConflict });
+    }
     subCategories.is_delete = is_delete;
     await subCategories.save();
     res.json({ message: 'Sub Categories is removed', subCategories });

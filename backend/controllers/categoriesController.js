@@ -14,7 +14,7 @@ const Products = require('../models/Products');
 const CompanyInfo = require('../models/CompanyInfo');
 const SellerCategory = require('../models/SellerCategory');
 const getMulterUpload = require('../utils/upload');
-const { findCategoryNameConflict, logCategoryConflict } = require('../utils/categoryNameConflictHelper');
+const { findCategoryNameConflict, logCategoryConflict, categoryLevelModels, findRestoreNameConflict } = require('../utils/categoryNameConflictHelper');
 const Users = require('../models/Users');
 
 
@@ -475,6 +475,10 @@ exports.updateCategoriesDeleteStatus = async (req, res) => {
       ],
     });
     if (!categories) return res.status(404).json({ message: 'Categories not found' });
+    if (is_delete === 0) {
+      const restoreConflict = await findRestoreNameConflict(categories, categoryLevelModels());
+      if (restoreConflict) return res.status(409).json({ message: restoreConflict, error: restoreConflict });
+    }
     categories.is_delete = is_delete;
     await categories.save();
     res.json({ message: 'Categories is removed', categories });

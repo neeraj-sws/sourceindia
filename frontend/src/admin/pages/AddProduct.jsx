@@ -58,6 +58,8 @@ const AddProduct = () => {
   const [itemSubCategories, setItemSubCategories] = useState([]);
   const [selectedItemCategory, setSelectedItemCategory] = useState('');
   const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
+  // Keyword id set from the top suggestion because the title matched none: shown as "auto-selected".
+  const [autoPickedKeywordId, setAutoPickedKeywordId] = useState('');
   // 'item_category' when the chosen keyword comes from Product Keyword Category: it has no
   // Item Sub Category, so clearing / changing the Item Sub Category must not drop it.
   const keywordScopeRef = useRef('');
@@ -720,14 +722,19 @@ const AddProduct = () => {
         return;
       }
 
+      // A suggestion named in the title wins; otherwise the top (highest ranked) suggestion is
+      // set so nobody has to click, and marked "auto-selected" for checking.
       const confidentSuggestion = formData.title.trim().length >= 2
         ? findConfidentSuggestion(formData.title, productSuggestions)
         : null;
-      if (confidentSuggestion && !selectedKeyword) {
-        handleSuggestionSelect(confidentSuggestion, {
+      const autoSuggestion = confidentSuggestion
+        || (formData.title.trim().length >= 2 ? productSuggestions[0] : null);
+      if (autoSuggestion && !selectedKeyword) {
+        handleSuggestionSelect(autoSuggestion, {
           preserveTypedTitle: true,
           typedTitle: formData.title
         });
+        setAutoPickedKeywordId(confidentSuggestion ? '' : String(autoSuggestion.id));
         return;
       }
       setShowSuggestions(false);
@@ -1294,6 +1301,9 @@ const AddProduct = () => {
                             <div className="small mt-1 text-muted">
                               Keyword: <strong className="text-dark">{selectedKeywordInfo.name}</strong>
                               {" "}({selectedKeywordInfo.keyword_type === 'item_category' ? 'Item Category' : 'Item Sub Category'})
+                              {autoPickedKeywordId && autoPickedKeywordId === String(selectedKeyword) && (
+                                <span className="text-warning-emphasis"> · auto-selected, change it if it does not fit</span>
+                              )}
                               {" · "}
                               <a href="#keyword_id" onClick={(e) => { e.preventDefault(); $('#keyword_id').select2('open'); }}>Change</a>
                             </div>

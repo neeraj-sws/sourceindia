@@ -13,7 +13,7 @@ const getMulterUpload = require('../utils/upload');
 const ItemSubCategory = require('../models/ItemSubCategory');
 const ProductKeyword = require('../models/ProductKeyword');
 const sequelize = require('../config/database');
-const { findCategoryNameConflict, logCategoryConflict } = require('../utils/categoryNameConflictHelper');
+const { findCategoryNameConflict, logCategoryConflict, categoryLevelModels, findRestoreNameConflict } = require('../utils/categoryNameConflictHelper');
 const {
   syncItemCategoryMainKeyword,
   deleteItemCategoryMainKeywords,
@@ -504,6 +504,10 @@ exports.updateItemCategoryDeleteStatus = async (req, res) => {
           message: `Item Category cannot be deleted because it is used in ${productUsageCount} product(s).`,
         });
       }
+    }
+    if (is_delete === 0) {
+      const restoreConflict = await findRestoreNameConflict(itemCategory, categoryLevelModels());
+      if (restoreConflict) return res.status(409).json({ message: restoreConflict, error: restoreConflict });
     }
     itemCategory.is_delete = is_delete;
     await itemCategory.save();
