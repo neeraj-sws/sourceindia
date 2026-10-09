@@ -63,6 +63,8 @@ const AddProduct = () => {
   const [selectedKeyword, setSelectedKeyword] = useState('');
   // Name and level of a keyword picked from the suggestions, shown under the name box.
   const [pickedKeywordLabel, setPickedKeywordLabel] = useState(null);
+  // Keyword id set from the top suggestion because the title matched none: shown as "auto-selected".
+  const [autoPickedKeywordId, setAutoPickedKeywordId] = useState('');
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
@@ -196,7 +198,10 @@ const AddProduct = () => {
     return match?.name || '';
   };
   const getSubCategoryCategoryId = (subCategory) => subCategory?.category_id ?? subCategory?.category ?? null;
-  const isSuggestionTagActive = (suggestion) => activeSuggestionKey === getSuggestionKey(suggestion);
+  // A tag shows as chosen while it is the product's keyword, also after more of the title is typed.
+  const isSuggestionTagActive = (suggestion) => (selectedKeyword
+    ? String(suggestion?.id) === String(selectedKeyword)
+    : activeSuggestionKey === getSuggestionKey(suggestion));
 
   const isOtherCategorySelected = (() => {
     if (isOtherLabelSelected) return true;
@@ -805,6 +810,12 @@ const AddProduct = () => {
     return pickedKeywordLabel && pickedKeywordLabel.id === String(selectedKeyword) ? pickedKeywordLabel : null;
   })();
 
+  // The chosen keyword stays among the tags even when a changed title no longer suggests it.
+  const tagSuggestions = selectedKeywordInfo
+    && !productSuggestions.some((suggestion) => String(suggestion?.id) === String(selectedKeyword))
+    ? [{ id: selectedKeyword, title: selectedKeywordInfo.name, isChosenOnly: true }, ...productSuggestions]
+    : productSuggestions;
+
   const fetchProductSuggestions = async (queryValue) => {
     const filteredParams = {
       query: queryValue,
@@ -966,13 +977,17 @@ const AddProduct = () => {
       }
 
       if (productSuggestions.length > 0 && formData.title.trim().length >= 2) {
+        // A suggestion named in the title wins; otherwise the top (highest ranked) suggestion is
+        // set so nobody has to click, and marked "auto-selected" for checking.
         const confidentSuggestion = findConfidentSuggestion(formData.title, productSuggestions);
-        if (confidentSuggestion && !selectedKeyword) {
-          handleSuggestionSelect(confidentSuggestion, {
+        const autoSuggestion = confidentSuggestion || productSuggestions[0];
+        if (autoSuggestion && !selectedKeyword) {
+          handleSuggestionSelect(autoSuggestion, {
             preserveTypedTitle: true,
             typedTitle: formData.title,
             isAutoSelect: true
           });
+          setAutoPickedKeywordId(confidentSuggestion ? '' : String(autoSuggestion.id));
           return;
         }
         setShowSuggestions(false);
@@ -1321,7 +1336,7 @@ const AddProduct = () => {
                           </div>
                           {formData.title.trim().length >= 2 && !suggestionLoading && (
                             <div className="d-flex flex-wrap gap-2 mt-2">
-                              {productSuggestions.map((suggestion) => (
+                              {tagSuggestions.map((suggestion) => (
                                 (() => {
                                   const isActive = isSuggestionTagActive(suggestion);
                                   return (
@@ -1333,6 +1348,7 @@ const AddProduct = () => {
                                       onMouseDown={(e) => {
                                         e.preventDefault();
                                         suppressTitleAutoSelectRef.current = true;
+                                        if (suggestion.isChosenOnly) return; // already the product's keyword
                                         handleSuggestionSelect(suggestion, shouldKeepTypedTitle(formData.title, suggestion.title)
                                           ? { preserveTypedTitle: true, typedTitle: formData.title }
                                           : {});
@@ -1361,7 +1377,9 @@ const AddProduct = () => {
                             <div className="small mt-2 text-muted">
                               Keyword: <strong className="text-dark">{selectedKeywordInfo.name}</strong>
                               {" "}({selectedKeywordInfo.keyword_type === 'item_category' ? 'Item Category' : 'Item Sub Category'})
-                              {" · "}choose another tag above to change it
+                              {autoPickedKeywordId && autoPickedKeywordId === String(selectedKeyword)
+                                ? <span className="text-warning-emphasis"> · auto-selected, choose another tag above if it does not fit</span>
+                                : <>{" · "}choose another tag above to change it</>}
                             </div>
                           )}
                           {!showSuggestions && !isOtherCategorySelected && !selectedKeyword && formData.title.trim().length >= 2 && productSuggestions.length > 0 && (

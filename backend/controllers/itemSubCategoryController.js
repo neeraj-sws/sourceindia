@@ -11,7 +11,7 @@ const Users = require('../models/Users');
 const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
-const { findCategoryNameConflict, logCategoryConflict } = require('../utils/categoryNameConflictHelper');
+const { findCategoryNameConflict, logCategoryConflict, categoryLevelModels, findRestoreNameConflict } = require('../utils/categoryNameConflictHelper');
 const {
   syncMainProductKeyword,
   deleteMainProductKeywords,
@@ -703,6 +703,10 @@ exports.updateItemSubCategoryDeleteStatus = async (req, res) => {
           message: `Item Sub Category cannot be deleted because it is used in ${productUsageCount} product(s).`,
         });
       }
+    }
+    if (is_delete === 0) {
+      const restoreConflict = await findRestoreNameConflict(itemSubCategory, categoryLevelModels());
+      if (restoreConflict) return res.status(409).json({ message: restoreConflict, error: restoreConflict });
     }
     itemSubCategory.is_delete = is_delete;
     await itemSubCategory.save();
