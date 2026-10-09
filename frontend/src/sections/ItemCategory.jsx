@@ -193,7 +193,7 @@ const ItemCategory = () => {
 
       <div
         className="border rounded p-3 h-100"
-        style={highlight ? { boxShadow: "inset 0 0 0 1px #ff6600", backgroundColor: "#fff7f0" } : undefined}
+        
       >
 
         <a
@@ -220,7 +220,7 @@ const ItemCategory = () => {
             }}
           />
 
-          <h6 className="small fw-semibold mb-1" style={highlight ? { color: "#ff6600" } : undefined}>
+          <h6 className="small fw-semibold mb-1">
             {name.length > 45
               ? name.slice(0, 45) +
               "..."

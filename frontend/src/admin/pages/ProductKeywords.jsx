@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
@@ -176,7 +177,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
   });
 
   const startInlineEdit = (keyword) => {
-    if (Number(keyword.is_main) === 1) return;
+    if (Number(keyword.is_main) === 1 || keyword.is_used) return;
     setInlineEditId(keyword.id);
     setInlineEditName(keyword.name || "");
   };
@@ -675,6 +676,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
                       <tr>
                         <th>#</th>
                         <th>Name</th>
+                        <th>Products</th>
                         <th>Action</th>
                       </tr>
                     </thead>
@@ -705,8 +707,39 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
                             )}
                           </td>
                           <td>
+                            {Number(kw.product_count) > 0 ? (
+                              <Link
+                                to={`/admin/products?keyword_id=${kw.id}&keyword=${encodeURIComponent(kw.name || "")}`}
+                                className="badge bg-primary text-decoration-none"
+                                title="View products linked to this keyword"
+                              >
+                                {kw.product_count}
+                              </Link>
+                            ) : (
+                              <span className="text-muted">{kw.product_count === undefined ? "–" : 0}</span>
+                            )}
+                            {Number(kw.deleted_product_count) > 0 && (
+                              <Link
+                                to={`/admin/product-remove?keyword_id=${kw.id}&keyword=${encodeURIComponent(kw.name || "")}`}
+                                className="ms-2 small text-danger"
+                                title="Recently deleted products still linked to this keyword"
+                              >
+                                +{kw.deleted_product_count} deleted
+                              </Link>
+                            )}
+                          </td>
+                          <td>
                             {Number(kw.is_main) === 1 ? (
                               <span className="badge bg-secondary">Managed by Item Subcategory</span>
+                            ) : kw.is_used ? (
+                              <span
+                                className="text-muted"
+                                title={kw.product_count === undefined
+                                  ? "Used in products. Cannot be edited or deleted."
+                                  : `Used in ${Number(kw.product_count) + Number(kw.deleted_product_count || 0)} product(s). Cannot be edited or deleted.`}
+                              >
+                                <i className="bx bx-lock-alt"></i>
+                              </span>
                             ) : inlineEditId === kw.id ? (
                               <>
                                 <button

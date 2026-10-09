@@ -2625,7 +2625,8 @@ exports.getAllProductsServerSide = async (req, res) => {
       item_id,
       company,
       product_status,
-      is_approve
+      is_approve,
+      keyword_id
     } = req.query;
     const validColumns = ['id', 'title', 'article_number', 'created_at', 'updated_at', 'category_name', 'subcategory_name', 'company_name', 'company_slug'];
     const viewType = req.query.viewType || '';
@@ -2719,6 +2720,9 @@ exports.getAllProductsServerSide = async (req, res) => {
     }
     if (item_id) {
       baseWhere.item_id = item_id;
+    }
+    if (keyword_id) {
+      baseWhere.keyword_id = keyword_id;
     }
     if (company) {
       baseWhere.company_id = company;
