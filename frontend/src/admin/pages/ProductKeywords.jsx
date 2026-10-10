@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import KeywordSuggestInput from "../common/KeywordSuggestInput";
 import useCategoryListFilter from "../common/useCategoryListFilter";
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
@@ -24,7 +25,19 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
   // Filter panel of the list (Category Master levels + status); see common/useCategoryListFilter.
-  const listFilter = useCategoryListFilter({ levels: ["category", "subcategory", "itemCategory"], onChange: () => setPage(1) });
+  // "Website search" box: the suggestions of the website search (keywords with live products,
+  // and products). A pick shows the row that keyword / product belongs to.
+  const [websiteSearch, setWebsiteSearch] = useState("");
+  const [pickedRow, setPickedRow] = useState(null); // { id, label }
+  const listFilter = useCategoryListFilter({
+    levels: ["category", "subcategory", "itemCategory"],
+    // Rows whose keywords are / are not used by a product.
+    extraFilters: [{
+      param: "has_products", label: "Products", placeholder: "With or without products",
+      options: [{ id: "1", name: "With products" }, { id: "0", name: "Without products" }],
+    }],
+    onChange: () => setPage(1),
+  });
   const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
@@ -86,7 +99,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
       setLoading(true);
       try {
         const response = await axios.get(`${API_BASE_URL}/keywords/server-side`, {
-          params: { page, limit, search, sortBy, sort: sortDirection, excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false', ...listFilter.params },
+          params: { page, limit, search, sortBy, sort: sortDirection, excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false', ...listFilter.params, row_id: pickedRow?.id || '' },
         });
         setData(response.data.data);
         setTotalRecords(response.data.totalRecords);
@@ -99,7 +112,30 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
     };
 
     fetchData();
-  }, [page, limit, search, sortBy, sortDirection, excludeItemSubCategories, listFilter.paramsKey]);
+  }, [page, limit, search, sortBy, sortDirection, excludeItemSubCategories, listFilter.paramsKey, pickedRow?.id]);
+
+  // Website search pick: a keyword shows its row; a product shows the row it is filed under.
+  const handleWebsitePick = async (suggestion) => {
+    setPage(1);
+    if (suggestion.type !== "product") {
+                          setSearch("");
+                          setPickedRow({ id: Number(suggestion.item_subcategory_id), label: `keyword "${suggestion.title}"` });
+      return;
+    }
+    try {
+      const res = await axios.get(`${API_BASE_URL}/products/${suggestion.id}`);
+      const rowId = Number(res.data?.item_subcategory_id);
+      if (rowId > 0) {
+        setSearch("");
+        setPickedRow({ id: rowId, label: `product "${suggestion.title}"` });
+      } else {
+        setPickedRow(null);
+        showNotification("This product has no Item Sub Category, so it is not in this list.", "error");
+      }
+    } catch {
+      showNotification("Could not load the product.", "error");
+    }
+  };
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -467,14 +503,55 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
               <div className="card">
                 <div className="card-body">
                   <DataTable
-                    toolbar={listFilter.toolbar}
-                    filterPanel={listFilter.panel}
+                    toolbar={(
+                      <>
+                        <label htmlFor="websiteSearchKeywords" className="d-block ms-3 text-nowrap">Website search:</label>
+                        <KeywordSuggestInput
+                          id="websiteSearchKeywords"
+                          source="front"
+                          keywordType="item_subcategory"
+                          placeholder="As on the website..."
+                          wrapperClassName="ms-2"
+                          inputClassName="form-control form-control-sm"
+                          inputStyle={{ padding: "6px 12px", width: "260px", maxWidth: "60vw" }}
+                          value={websiteSearch}
+                          onChange={(text) => { setWebsiteSearch(text); if (!text.trim()) setPickedRow(null); }}
+                          onSelect={handleWebsitePick}
+                          onEnter={(text) => { setPickedRow(null); setSearch(text); setPage(1); }}
+                        />
+                        {listFilter.toolbar}
+                      </>
+                    )}
+                    filterPanel={(
+                      <>
+                        {listFilter.panel}
+                        {pickedRow && (
+                          <div className="d-flex flex-wrap align-items-center gap-2 mt-3">
+                            <span className="small text-muted"><i className="bx bx-search-alt me-1" />Website search:</span>
+                            <span
+                              className="d-inline-flex align-items-center rounded-pill small px-3 py-1"
+                              style={{ backgroundColor: "#e8f0fe", color: "#0b3d91", border: "1px solid #c6d8fb" }}
+                            >
+                              Item Sub Category of {pickedRow.label}
+                              <button
+                                type="button"
+                                className="btn-close ms-2"
+                                style={{ fontSize: "0.55em" }}
+                                aria-label="Remove website search"
+                                onClick={() => { setPickedRow(null); setWebsiteSearch(""); }}
+                              />
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
                     columns={[
                       ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
                       { key: "id", label: "S.No.", sortable: true },
                       { key: "image", label: "Image", sortable: false },
                       { key: "name", label: "Name", sortable: true },
                       { key: "itemcategory_name", label: "Item Category", sortable: true },
+                      { key: "product_count", label: "Products", sortable: false },
                       ...(!excludeItemSubCategories ? [{ key: "action", label: "Action", sortable: false }] : []),
                       ...(excludeItemSubCategories ? [{ key: "created_at", label: "Created", sortable: true }] : []),
                       ...(excludeItemSubCategories ? [{ key: "updated_at", label: "Last Update", sortable: true }] : []),
@@ -491,6 +568,18 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
                     onSortChange={handleSortChange}
                     onSearchChange={(val) => { setSearch(val); setPage(1); }}
                     search={search}
+                    searchInput={(
+                      <KeywordSuggestInput
+                        id="searchDatatable"
+                        keywordType="item_subcategory"
+                        placeholder="Search name or keyword..."
+                        wrapperClassName="ms-2"
+                        inputClassName="form-control form-control-sm"
+                        inputStyle={{ padding: "6px 12px", width: "360px", maxWidth: "60vw" }}
+                        value={search}
+                        onChange={(text) => { setSearch(text); setPage(1); }}
+                      />
+                    )}
                     onLimitChange={(val) => { setLimit(val); setPage(1); }}
                     getRangeText={getRangeText}
                     renderRow={(row, index) => (
@@ -512,6 +601,11 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
                         /></td>
                         <td>{row.name}</td>
                         <td>{row.itemcategory_name}</td>
+                        <td>
+                          {Number(row.product_count) > 0
+                            ? <span className="badge bg-success" title="Products using the keywords of this row">{row.product_count}</span>
+                            : <span className="badge bg-light text-muted border fw-normal" title="No product uses these keywords">0</span>}
+                        </td>
                         {!excludeItemSubCategories && (
                           <>
                             <td>
@@ -818,6 +912,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
           { label: "Name", key: "name" },
           { label: "Item SubCategory", key: "item_subcategory_name" },
           { label: "ItemCategory", key: "itemcategory_name" },
+          { label: "Products", key: "product_count" },
           { label: "Status", key: "status" },
           { label: "Main", key: "is_main" },
           { label: "Created At", key: "created_at", format: (val) => dayjs(val).format("YYYY-MM-DD hh:mm A") },

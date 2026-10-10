@@ -10,6 +10,9 @@ import API_BASE_URL from "../../config";
 //   axios.get(url, { params: { ...other, ...filter.params } })        // server-side list
 //   <DataTable toolbar={filter.toolbar} filterPanel={filter.panel} />  // button + panel + chips
 //   filter.filterRows(allRows)                                         // same filter for the Excel export
+//
+// extraFilters adds page-specific dropdowns after the levels, e.g.
+//   [{ param: "has_products", label: "Products", placeholder: "All", options: [{ id: "1", name: "With products" }] }]
 
 const LEVELS = [
   { key: "category", param: "category_id", label: "Category", plural: "Categories" },
@@ -29,8 +32,9 @@ const fetchList = async (url) => {
   }
 };
 
-const useCategoryListFilter = ({ levels = [], rowFields = {}, onChange } = {}) => {
-  const [values, setValues] = useState(EMPTY);
+const useCategoryListFilter = ({ levels = [], rowFields = {}, extraFilters = [], onChange } = {}) => {
+  const emptyValues = { ...EMPTY, ...Object.fromEntries(extraFilters.map((extra) => [extra.param, ""])) };
+  const [values, setValues] = useState(emptyValues);
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState({ category: [], subcategory: [], itemCategory: [], itemSubCategory: [] });
 
@@ -75,13 +79,14 @@ const useCategoryListFilter = ({ levels = [], rowFields = {}, onChange } = {}) =
     if (onChange) onChange();
   };
   const clearAll = () => {
-    setValues(EMPTY);
+    setValues(emptyValues);
     if (onChange) onChange();
   };
 
   const params = useMemo(() => {
     const result = {};
     activeLevels.forEach((level) => { if (values[level.param]) result[level.param] = values[level.param]; });
+    extraFilters.forEach((extra) => { if (values[extra.param] !== "") result[extra.param] = values[extra.param]; });
     if (values.status !== "") result.status = values.status;
     return result;
   }, [values, levels.join(",")]);
@@ -94,6 +99,10 @@ const useCategoryListFilter = ({ levels = [], rowFields = {}, onChange } = {}) =
   const chips = [
     ...activeLevels.filter((level) => values[level.param])
       .map((level) => ({ param: level.param, text: `${level.label}: ${optionName(level.key, values[level.param])}` })),
+    ...extraFilters.filter((extra) => values[extra.param] !== "").map((extra) => ({
+      param: extra.param,
+      text: `${extra.label}: ${extra.options.find((option) => String(option.id) === String(values[extra.param]))?.name || ""}`,
+    })),
     ...(values.status !== "" ? [{ param: "status", text: `Status: ${values.status === "1" ? "Active" : "Inactive"}` }] : []),
   ];
 
@@ -105,7 +114,7 @@ const useCategoryListFilter = ({ levels = [], rowFields = {}, onChange } = {}) =
 
   // Up to three filters share one row; with more, the levels fill the first row left to right
   // (Category > ... > Item Sub Category) and Status starts the next one.
-  const columnClass = activeLevels.length + 1 >= 4 ? "col-sm-6 col-lg-3" : "col-sm-6 col-lg-4";
+  const columnClass = activeLevels.length + extraFilters.length + 1 >= 4 ? "col-sm-6 col-lg-3" : "col-sm-6 col-lg-4";
 
   const renderSelect = (param, label, list, disabled, placeholder) => {
     const chosen = values[param] !== "";
@@ -180,6 +189,7 @@ const useCategoryListFilter = ({ levels = [], rowFields = {}, onChange } = {}) =
                 waitingForParent ? `Select ${parent.label} first` : `All ${level.plural}`
               );
             })}
+            {extraFilters.map((extra) => renderSelect(extra.param, extra.label, extra.options, false, extra.placeholder || "All"))}
             {renderSelect("status", "Status", STATUS_OPTIONS, false, "Any status")}
           </div>
         </div>

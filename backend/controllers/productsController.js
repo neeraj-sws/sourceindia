@@ -2635,7 +2635,8 @@ exports.getAllProductsServerSide = async (req, res) => {
       company,
       product_status,
       is_approve,
-      keyword_id
+      keyword_id,
+      keyword
     } = req.query;
     const validColumns = ['id', 'title', 'article_number', 'created_at', 'updated_at', 'category_name', 'subcategory_name', 'company_name', 'company_slug'];
     const viewType = req.query.viewType || '';
@@ -2732,6 +2733,14 @@ exports.getAllProductsServerSide = async (req, res) => {
     }
     if (keyword_id) {
       baseWhere.keyword_id = keyword_id;
+    } else if (keyword && String(keyword).trim()) {
+      // Keyword filter of the admin list: products linked to a keyword whose name contains the text.
+      baseWhere.keyword_id = {
+        [Op.in]: literal(`(
+          SELECT product_keyword_id FROM product_keywords
+          WHERE name LIKE ${sequelize.escape(`%${String(keyword).trim()}%`)}
+        )`),
+      };
     }
     if (company) {
       baseWhere.company_id = company;
