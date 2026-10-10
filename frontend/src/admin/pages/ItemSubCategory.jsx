@@ -3,6 +3,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import useCategoryListFilter from "../common/useCategoryListFilter";
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
@@ -24,6 +25,8 @@ const ItemSubCategory = ({ getDeleted, excludeItemSubCategories }) => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
+  // Filter panel of the list (levels above this one + status); see common/useCategoryListFilter.
+  const listFilter = useCategoryListFilter({ levels: ["category", "subcategory", "itemCategory"], rowFields: {}, onChange: () => setPage(1) });
   const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const navigate = useNavigate();
@@ -67,6 +70,7 @@ const ItemSubCategory = ({ getDeleted, excludeItemSubCategories }) => {
         params: {
           page, limit, search, sortBy, sort: sortDirection,
           getDeleted: getDeleted ? 'true' : 'false',
+          ...listFilter.params,
           excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false'
         },
       });
@@ -80,7 +84,7 @@ const ItemSubCategory = ({ getDeleted, excludeItemSubCategories }) => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, excludeItemSubCategories]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, listFilter.paramsKey, getDeleted, excludeItemSubCategories]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -619,6 +623,8 @@ const ItemSubCategory = ({ getDeleted, excludeItemSubCategories }) => {
               <div className="card">
                 <div className="card-body">
                   <DataTable
+                    toolbar={listFilter.toolbar}
+                    filterPanel={listFilter.panel}
                     columns={[
                       ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                       { key: "id", label: "S.No.", sortable: true },
@@ -755,7 +761,7 @@ const ItemSubCategory = ({ getDeleted, excludeItemSubCategories }) => {
         ref={excelExportRef}
         columnWidth={34.29}
         fileName={getDeleted ? "Recently Deleted Item SubCategory.xlsx" : excludeItemSubCategories ? "Unused Item SubCategory.xlsx" : "Item SubCategory Export.xlsx"}
-        data={itemSubCategoryData}
+        data={listFilter.filterRows(itemSubCategoryData)}
         columns={[
           { label: "Name", key: "name" },
           { label: "Category", key: "category_name" },

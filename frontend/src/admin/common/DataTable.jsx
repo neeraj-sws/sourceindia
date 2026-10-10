@@ -17,6 +17,9 @@ const DataTable = ({
   onLimitChange,
   getRangeText,
   renderRow,
+  toolbar = null, // optional: controls shown next to the search box (e.g. a Filter button)
+  filterPanel = null, // optional: content shown between the header row and the table
+  searchInput = null, // optional: replaces the plain search box (e.g. one with suggestions)
 }) => {
   const totalPages = Math.ceil(filteredRecords / limit);
   const isPaginationDisabled = totalRecords === 0;
@@ -53,17 +56,21 @@ const DataTable = ({
         </div>
         <div className="d-md-flex align-items-center col-md-auto ms-auto">
           <label htmlFor="searchDatatable" className="d-block">Search:</label>
-          <input
-            type="text"
-            id="searchDatatable"
-            className="form-control form-control-sm ms-2"
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            style={{ padding: "6px 12px", width: "200px" }}
-          />
+          {searchInput || (
+            <input
+              type="text"
+              id="searchDatatable"
+              className="form-control form-control-sm ms-2"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              style={{ padding: "6px 12px", width: "200px" }}
+            />
+          )}
+          {toolbar}
         </div>
       </div>
+      {filterPanel}
       <div className="table-responsive border rounded-2 mt-4">
         <table className="table table-striped table-hover align-middle dataTable mb-0">
           <thead>

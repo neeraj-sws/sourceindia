@@ -4,6 +4,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import useCategoryListFilter from "../common/useCategoryListFilter";
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
@@ -26,6 +27,8 @@ const ProductSubCategoryList = ({ getDeleted, excludeSellerSubCategories, exclud
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
+  // Filter panel of the list (levels above this one + status); see common/useCategoryListFilter.
+  const listFilter = useCategoryListFilter({ levels: ["category"], rowFields: { category_id: "category" }, onChange: () => setPage(1) });
   const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
@@ -76,6 +79,7 @@ const ProductSubCategoryList = ({ getDeleted, excludeSellerSubCategories, exclud
         params: {
           page, limit, search, sortBy, sort: sortDirection,
           getDeleted: getDeleted ? 'true' : 'false',
+          ...listFilter.params,
           excludeSellerSubCategories: excludeSellerSubCategories ? 'true' : 'false',
           excludeProductSubCategories: excludeProductSubCategories ? 'true' : 'false',
           dateRange, startDate, endDate
@@ -91,7 +95,7 @@ const ProductSubCategoryList = ({ getDeleted, excludeSellerSubCategories, exclud
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, excludeSellerSubCategories, excludeProductSubCategories,
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, listFilter.paramsKey, getDeleted, excludeSellerSubCategories, excludeProductSubCategories,
     dateRange, startDate, endDate]);
 
   const handleSortChange = (column) => {
@@ -613,6 +617,8 @@ const ProductSubCategoryList = ({ getDeleted, excludeSellerSubCategories, exclud
               <div className="card">
                 <div className="card-body">
                   <DataTable
+                    toolbar={listFilter.toolbar}
+                    filterPanel={listFilter.panel}
                     columns={[
                       ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                       { key: "id", label: "S.No.", sortable: true },
@@ -752,7 +758,7 @@ const ProductSubCategoryList = ({ getDeleted, excludeSellerSubCategories, exclud
           excludeSellerSubCategories ? "Unused Seller Sub Category.xlsx" :
             excludeProductSubCategories ? "Unused Product Sub Category.xlsx" :
               "Sub Category.xlsx"}
-        data={subCategoryData}
+        data={listFilter.filterRows(subCategoryData)}
         columns={[
           { label: "Sub Category", key: "name" },
           { label: "Category", key: "category_name" },

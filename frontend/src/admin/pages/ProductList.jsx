@@ -4,6 +4,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import KeywordSuggestInput from "../common/KeywordSuggestInput";
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
@@ -73,6 +74,14 @@ const ProductList = ({ getDeleted, isApprove }) => {
   const [productStatus, setProductStatus] = useState([]);
   const [selectedProductStatus, setSelectedProductStatus] = useState("");
   const [appliedProductStatus, setAppliedProductStatus] = useState("");
+  // Keyword filter: text typed in the box, and the text the list is filtered by after Apply.
+  const [keywordInput, setKeywordInput] = useState("");
+  const [appliedKeyword, setAppliedKeyword] = useState("");
+  // Keyword picked from the suggestions: the list shows the products of exactly that keyword.
+  const [appliedKeywordId, setAppliedKeywordId] = useState("");
+  const pickedKeywordIdRef = useRef(""); // id behind the text in the box; cleared when the text is edited
+  // "Website search" box: suggests what the website search suggests (keywords with live products, and products).
+  const [websiteSearchInput, setWebsiteSearchInput] = useState("");
   const datePickerRef = useRef(null);
 
 
@@ -322,7 +331,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
           page, limit, search, sortBy, sort: sortDirection, getDeleted: getDeleted ? 'true' : 'false',
           dateRange, startDate, endDate, category: appliedCategory || "", sub_category: appliedSubCategory || "", item_category_id: appliedItemCategory || "",
           item_subcategory_id: appliedItemSubCategory || "", item_id: appliedItem || "", company: appliedCompanies || "", product_status: appliedProductStatus, is_approve: isApprove, user_id: userIdFromUrl || "",
-          keyword_id: keywordIdFromUrl || ""
+          keyword_id: keywordIdFromUrl || appliedKeywordId || "", keyword: appliedKeyword
         },
       });
       setData(response.data.data);
@@ -336,7 +345,7 @@ const ProductList = ({ getDeleted, isApprove }) => {
   };
 
   useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, getDeleted, dateRange, startDate, endDate,
-    appliedCategory, appliedSubCategory, appliedItemCategory, appliedItemSubCategory, appliedItem, appliedCompanies, appliedProductStatus, isApprove, userIdFromUrl, keywordIdFromUrl]);
+    appliedCategory, appliedSubCategory, appliedItemCategory, appliedItemSubCategory, appliedItem, appliedCompanies, appliedProductStatus, appliedKeyword, appliedKeywordId, isApprove, userIdFromUrl, keywordIdFromUrl]);
 
   // Product filed only up to Item Category (its keyword has no Item Sub Category).
   const isItemCategoryOnly = (row) => Number(row.item_category_id) > 0 && !(Number(row.item_subcategory_id) > 0);
@@ -467,7 +476,8 @@ const ProductList = ({ getDeleted, isApprove }) => {
           product_status: appliedProductStatus || "",
           is_approve: isApprove,
           user_id: userIdFromUrl || "",
-          keyword_id: keywordIdFromUrl || ""
+          keyword_id: keywordIdFromUrl || appliedKeywordId || "",
+          keyword: appliedKeyword
         }
       });
 
@@ -534,6 +544,12 @@ const ProductList = ({ getDeleted, isApprove }) => {
     setAppliedCompanies("");
     setSelectedProductStatus("");
     setAppliedProductStatus("");
+    setKeywordInput("");
+    setAppliedKeyword("");
+    setAppliedKeywordId("");
+    pickedKeywordIdRef.current = "";
+    if (websiteSearchInput) setSearch(""); // a product picked there filled the table search
+    setWebsiteSearchInput("");
     setPage(1);
     $("#category").val("").trigger("change");
     $("#sub_category").val("").trigger("change");
@@ -658,6 +674,47 @@ const ProductList = ({ getDeleted, isApprove }) => {
                         ))}
                       </select>
                     </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label" htmlFor="product_keyword_filter">Keyword</label>
+                      <KeywordSuggestInput
+                        id="product_keyword_filter"
+                        placeholder="Type a keyword"
+                        value={keywordInput}
+                        onChange={(text) => { pickedKeywordIdRef.current = ""; setKeywordInput(text); }}
+                        onSelect={(suggestion) => {
+                          pickedKeywordIdRef.current = String(suggestion.id);
+                          setAppliedKeywordId(String(suggestion.id));
+                          setAppliedKeyword("");
+                          setPage(1);
+                        }}
+                        onEnter={(text) => { pickedKeywordIdRef.current = ""; setAppliedKeywordId(""); setAppliedKeyword(text); setPage(1); }}
+                      />
+                    </div>
+                    <div className="col-md-3 mb-3">
+                      <label className="form-label" htmlFor="product_website_search">Website search</label>
+                      <KeywordSuggestInput
+                        id="product_website_search"
+                        source="front"
+                        placeholder="Search as on the website"
+                        value={websiteSearchInput}
+                        onChange={(text) => setWebsiteSearchInput(text)}
+                        onSelect={(suggestion) => {
+                          if (suggestion.type === "product") {
+                            // A product: show it in the list through the table search.
+                            setSearch(suggestion.title);
+                          } else {
+                            // A keyword: same as picking it in the Keyword box.
+                            pickedKeywordIdRef.current = String(suggestion.id);
+                            setKeywordInput(suggestion.title);
+                            setAppliedKeywordId(String(suggestion.id));
+                            setAppliedKeyword("");
+                          }
+                          setPage(1);
+                        }}
+                        onEnter={(text) => { setSearch(text); setPage(1); }}
+                      />
+                      <div className="form-text">Same suggestions as the website search.</div>
+                    </div>
                   </>
                 )}
                 <div className={!getDeleted ? "col-md-6 mb-3" : "col-md-8 d-flex align-items-center gap-2"}>
@@ -716,6 +773,9 @@ const ProductList = ({ getDeleted, isApprove }) => {
                       setAppliedItem(selectedItem);
                       setAppliedCompanies(selectedCompanies);
                       setAppliedProductStatus(selectedProductStatus);
+                      // A picked suggestion filters by that keyword; typed text matches keywords by name.
+                      setAppliedKeywordId(pickedKeywordIdRef.current);
+                      setAppliedKeyword(pickedKeywordIdRef.current ? "" : keywordInput.trim());
                       setPage(1);
                     }}
                   >

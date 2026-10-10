@@ -15,6 +15,7 @@ const SellerCategory = require('../models/SellerCategory');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
 const { findCategoryNameConflict, logCategoryConflict, categoryLevelModels, findRestoreNameConflict } = require('../utils/categoryNameConflictHelper');
+const { categoryListFilters } = require('../utils/categoryListFilter');
 
 exports.createSubCategories = async (req, res) => {
   const upload = getMulterUpload('sub_category');
@@ -490,7 +491,8 @@ exports.getAllSubCategoriesServerSide = async (req, res) => {
         )`)
       };
     }
-    const searchWhere = { ...where };
+    // List filters (Filter panel of the admin list); the total above the list stays unfiltered.
+    const searchWhere = { ...where, ...categoryListFilters(req.query, { category_id: 'category', status: 'status' }) };
     if (search) {
       searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },

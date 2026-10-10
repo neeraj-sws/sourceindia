@@ -8,6 +8,7 @@ const Products = require('../models/Products');
 const UploadImage = require('../models/UploadImage');
 const sequelize = require('../config/database');
 const { withProductUsage, keywordUsageConflict } = require('../utils/keywordProductUsage');
+const { categoryListFilters } = require('../utils/categoryListFilter');
 const {
   ensureKeywordItemCategoryColumn,
   syncItemCategoryMainKeyword,
@@ -277,14 +278,37 @@ exports.getAllItemCategoriesServerSide = async (req, res) => {
         )`)
       };
     }
-    const searchWhere = { ...where };
+    // List filters (Filter panel of the admin list); the total above the list stays unfiltered.
+    const searchWhere = { ...where, ...categoryListFilters(req.query, { category_id: 'category_id', subcategory_id: 'subcategory_id', status: 'status', row_id: 'id' }) };
     if (search) {
       searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         { '$SubCategories.name$': { [Op.like]: `%${search}%` } },
+        // Also by the keywords inside the row (the "Keywords" popup), e.g. a keyword added by hand.
+        {
+          id: {
+            [Op.in]: literal(`(
+              SELECT item_category_id FROM product_keywords
+              WHERE item_subcategory_id = 0 AND item_category_id > 0
+                AND name LIKE ${sequelize.escape(`%${search}%`)}
+            )`),
+          },
+        },
       ];
     }
 
+    // Filter "Products": rows whose keywords are (1) / are not (0) used by a product.
+    if (req.query.has_products === '1' || req.query.has_products === '0') {
+      searchWhere[Op.and] = [{
+        id: {
+          [req.query.has_products === '1' ? Op.in : Op.notIn]: literal(`(
+            SELECT DISTINCT pk.item_category_id FROM products p
+            INNER JOIN product_keywords pk ON pk.product_keyword_id = p.keyword_id
+            WHERE p.is_delete = 0 AND pk.item_subcategory_id = 0 AND pk.item_category_id > 0
+          )`),
+        },
+      }];
+    }
     const totalRecords = await ItemCategory.count({ where });
     const { count: filteredRecords, rows } = await ItemCategory.findAndCountAll({
       where: searchWhere,
@@ -299,12 +323,32 @@ exports.getAllItemCategoriesServerSide = async (req, res) => {
       ],
     });
 
+    // Per row: how many keywords it holds and how many (not deleted) products use them.
+    const rowIds = rows.map((row) => Number(row.id));
+    const countByRow = async (sql) => {
+      if (!rowIds.length) return {};
+      const [result] = await sequelize.query(sql, { replacements: { ids: rowIds } });
+      return Object.fromEntries(result.map((r) => [r.id, Number(r.c)]));
+    };
+    const keywordCounts = await countByRow(
+      `SELECT item_category_id AS id, COUNT(*) AS c FROM product_keywords
+       WHERE item_subcategory_id = 0 AND item_category_id IN (:ids) GROUP BY item_category_id`
+    );
+    const productCounts = await countByRow(
+      `SELECT pk.item_category_id AS id, COUNT(*) AS c FROM products p
+       INNER JOIN product_keywords pk ON pk.product_keyword_id = p.keyword_id
+       WHERE p.is_delete = 0 AND pk.item_subcategory_id = 0 AND pk.item_category_id IN (:ids)
+       GROUP BY pk.item_category_id`
+    );
+
     res.json({
       data: rows.map((row) => ({
         id: row.id,
         name: row.name,
         status: row.status,
         is_parent: true,
+        keyword_count: keywordCounts[row.id] || 0,
+        product_count: productCounts[row.id] || 0,
         item_category_id: row.id,
         item_category_name: row.name,
         subcategory_name: row.SubCategories?.name || null,
