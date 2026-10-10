@@ -13,6 +13,7 @@ const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
 const sequelize = require('../config/database');
 const { withProductUsage, keywordUsageConflict } = require('../utils/keywordProductUsage');
+const { categoryListFilters } = require('../utils/categoryListFilter');
 
 let keywordCodeColumnExistsCache = null;
 
@@ -770,11 +771,21 @@ exports.getAllItemSubCategoryServerSide = async (req, res) => {
       order = [['id', 'DESC']];
     }
     const where = { is_delete: 0 };
-    const searchWhere = { ...where };
+    // List filters (Filter panel of the admin list); the total above the list stays unfiltered.
+    const searchWhere = { ...where, ...categoryListFilters(req.query, { category_id: 'category_id', subcategory_id: 'subcategory_id', item_category_id: 'item_category_id', status: 'status' }) };
     if (search) {
       searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },
         { '$ItemCategory.name$': { [Op.like]: `%${search}%` } },
+        // Also by the keywords inside the row (the "Keywords" popup), e.g. a keyword added by hand.
+        {
+          id: {
+            [Op.in]: literal(`(
+              SELECT item_subcategory_id FROM product_keywords
+              WHERE item_subcategory_id > 0 AND name LIKE ${sequelize.escape(`%${search}%`)}
+            )`),
+          },
+        },
       ];
     }
     const totalRecords = await ItemSubCategory.count({ where });

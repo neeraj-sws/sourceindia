@@ -12,6 +12,7 @@ const BuyerSourcingInterests = require('../models/BuyerSourcingInterests');
 const UploadImage = require('../models/UploadImage');
 const getMulterUpload = require('../utils/upload');
 const { findCategoryNameConflict, logCategoryConflict, categoryLevelModels, findRestoreNameConflict } = require('../utils/categoryNameConflictHelper');
+const { categoryListFilters } = require('../utils/categoryListFilter');
 const {
   syncMainProductKeyword,
   deleteMainProductKeywords,
@@ -540,7 +541,8 @@ exports.getAllItemSubCategoryServerSide = async (req, res) => {
         )`)
       };
     }
-    const searchWhere = { ...where };
+    // List filters (Filter panel of the admin list); the total above the list stays unfiltered.
+    const searchWhere = { ...where, ...categoryListFilters(req.query, { category_id: 'category_id', subcategory_id: 'subcategory_id', item_category_id: 'item_category_id', status: 'status' }) };
     if (search) {
       searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },

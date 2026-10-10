@@ -4,6 +4,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import useCategoryListFilter from "../common/useCategoryListFilter";
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
@@ -25,6 +26,8 @@ const NewItems = ({ excludeItem, getDeleted }) => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
+  // Filter panel of the list (levels above this one + status); see common/useCategoryListFilter.
+  const listFilter = useCategoryListFilter({ levels: ["category", "subcategory", "itemCategory", "itemSubCategory"], rowFields: { item_subcategory_id: "item_sub_category_id" }, onChange: () => setPage(1) });
   const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
@@ -80,7 +83,7 @@ const NewItems = ({ excludeItem, getDeleted }) => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/items/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, excludeItem: excludeItem ? 'true' : 'false', getDeleted: getDeleted ? 'true' : 'false' },
+        params: { page, limit, search, sortBy, sort: sortDirection, excludeItem: excludeItem ? 'true' : 'false', getDeleted: getDeleted ? 'true' : 'false', ...listFilter.params },
       });
       setData(response.data.data);
       setTotalRecords(response.data.totalRecords);
@@ -92,7 +95,7 @@ const NewItems = ({ excludeItem, getDeleted }) => {
     }
   };
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, excludeItem, getDeleted]);
+  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, listFilter.paramsKey, excludeItem, getDeleted]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -666,6 +669,8 @@ const NewItems = ({ excludeItem, getDeleted }) => {
               <div className="card">
                 <div className="card-body">
                   <DataTable
+                    toolbar={listFilter.toolbar}
+                    filterPanel={listFilter.panel}
                     columns={[
                       ...(!getDeleted ? [{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }] : []),
                       { key: "id", label: "S.No.", sortable: true },
@@ -800,7 +805,7 @@ const NewItems = ({ excludeItem, getDeleted }) => {
         ref={excelExportRef}
         columnWidth={34.29}
         fileName={getDeleted ? "Item Remove Export.xlsx" : excludeItem ? "Unused Item.xlsx" : "Item Export.xlsx"}
-        data={itemsData}
+        data={listFilter.filterRows(itemsData)}
         columns={[
           { label: "Name", key: "name" },
           { label: "Category", key: "category_name" },

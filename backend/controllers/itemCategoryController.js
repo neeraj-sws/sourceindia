@@ -14,6 +14,7 @@ const ItemSubCategory = require('../models/ItemSubCategory');
 const ProductKeyword = require('../models/ProductKeyword');
 const sequelize = require('../config/database');
 const { findCategoryNameConflict, logCategoryConflict, categoryLevelModels, findRestoreNameConflict } = require('../utils/categoryNameConflictHelper');
+const { categoryListFilters } = require('../utils/categoryListFilter');
 const {
   syncItemCategoryMainKeyword,
   deleteItemCategoryMainKeywords,
@@ -947,7 +948,8 @@ exports.getAllItemCategoryServerSide = async (req, res) => {
         )`)
       };
     }
-    const searchWhere = { ...where };
+    // List filters (Filter panel of the admin list); the total above the list stays unfiltered.
+    const searchWhere = { ...where, ...categoryListFilters(req.query, { category_id: 'category_id', subcategory_id: 'subcategory_id', status: 'status' }) };
     if (search) {
       searchWhere[Op.or] = [
         { name: { [Op.like]: `%${search}%` } },

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
+import useCategoryListFilter from "../common/useCategoryListFilter";
 import ImageWithFallback from "../common/ImageWithFallback";
 import API_BASE_URL, { ROOT_URL } from "../../config";
 import { useAlert } from "../../context/AlertContext";
@@ -22,6 +23,8 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
   const [sortBy, setSortBy] = useState("id");
   const [sortDirection, setSortDirection] = useState("DESC");
   const [page, setPage] = useState(1);
+  // Filter panel of the list (Category Master levels + status); see common/useCategoryListFilter.
+  const listFilter = useCategoryListFilter({ levels: ["category", "subcategory", "itemCategory"], onChange: () => setPage(1) });
   const [limit, setLimit] = useState(25);
   const { showNotification } = useAlert();
   const [isEditing, setIsEditing] = useState(false);
@@ -83,7 +86,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
       setLoading(true);
       try {
         const response = await axios.get(`${API_BASE_URL}/keywords/server-side`, {
-          params: { page, limit, search, sortBy, sort: sortDirection, excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false' },
+          params: { page, limit, search, sortBy, sort: sortDirection, excludeItemSubCategories: excludeItemSubCategories ? 'true' : 'false', ...listFilter.params },
         });
         setData(response.data.data);
         setTotalRecords(response.data.totalRecords);
@@ -96,7 +99,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
     };
 
     fetchData();
-  }, [page, limit, search, sortBy, sortDirection, excludeItemSubCategories]);
+  }, [page, limit, search, sortBy, sortDirection, excludeItemSubCategories, listFilter.paramsKey]);
 
   const handleSortChange = (column) => {
     if (sortBy === column) {
@@ -464,6 +467,8 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
               <div className="card">
                 <div className="card-body">
                   <DataTable
+                    toolbar={listFilter.toolbar}
+                    filterPanel={listFilter.panel}
                     columns={[
                       ...([{ key: "select", label: <input type="checkbox" onChange={handleSelectAll} /> }]),
                       { key: "id", label: "S.No.", sortable: true },
