@@ -60,6 +60,10 @@ const AddProduct = () => {
   const [selectedItemSubCategory, setSelectedItemSubCategory] = useState('');
   // Keyword id set from the top suggestion because the title matched none: shown as "auto-selected".
   const [autoPickedKeywordId, setAutoPickedKeywordId] = useState('');
+  // Name of the keyword that was auto-selected (not clicked). It is kept only while the title
+  // still contains that name; otherwise the title is a new product name (typed over, or made
+  // more specific) and the keyword is released, to be auto-selected again for the new title.
+  const autoSelectedTitleRef = useRef('');
   // 'item_category' when the chosen keyword comes from Product Keyword Category: it has no
   // Item Sub Category, so clearing / changing the Item Sub Category must not drop it.
   const keywordScopeRef = useRef('');
@@ -185,6 +189,7 @@ const AddProduct = () => {
 
   const resetCategorySelections = () => {
     keywordScopeRef.current = '';
+    autoSelectedTitleRef.current = '';
     setSelectedCategory('');
     setSelectedSubCategory('');
     setSelectedItemCategory('');
@@ -611,17 +616,22 @@ const AddProduct = () => {
     setFormData({ ...formData, [id]: value });
     // Product name autocomplete logic
     if (id === 'title') {
-      if (!value.trim()) {
+      const autoKeywordName = autoSelectedTitleRef.current;
+      const isNewTitle = Boolean(autoKeywordName) && Boolean(value.trim())
+        && !findConfidentSuggestion(value, [{ title: autoKeywordName }]);
+      const startOver = !value.trim() || isNewTitle;
+      if (startOver) {
         resetCategorySelections();
       }
       if (value.length >= 2) {
         setSuggestionLoading(true);
+        // A new product name is not tied to the categories of the old one.
         const filteredParams = {
           query: value,
-          category: selectedCategory || undefined,
-          sub_category: selectedSubCategory || undefined,
-          item_category_id: selectedItemCategory || undefined,
-          item_subcategory_id: selectedItemSubCategory || undefined,
+          category: (!startOver && selectedCategory) || undefined,
+          sub_category: (!startOver && selectedSubCategory) || undefined,
+          item_category_id: (!startOver && selectedItemCategory) || undefined,
+          item_subcategory_id: (!startOver && selectedItemSubCategory) || undefined,
         };
 
         const fetchSuggestions = async (params) => {
@@ -669,6 +679,7 @@ const AddProduct = () => {
       title: preserveTypedTitle ? typedTitle : suggestion.title
     }));
     setShowSuggestions(false);
+    autoSelectedTitleRef.current = ''; // set again by the caller when this is an auto-selection
     keywordScopeRef.current = suggestion?.keyword_type === 'item_category' ? 'item_category' : '';
 
     if (suggestion.category && suggestion.category_name) {
@@ -734,6 +745,7 @@ const AddProduct = () => {
           preserveTypedTitle: true,
           typedTitle: formData.title
         });
+        autoSelectedTitleRef.current = String(autoSuggestion.title || '');
         setAutoPickedKeywordId(confidentSuggestion ? '' : String(autoSuggestion.id));
         return;
       }
