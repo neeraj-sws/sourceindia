@@ -1,5 +1,5 @@
 const { Op, fn, col, literal } = require('sequelize');
-const moment = require('moment');
+const moment = require('moment-timezone');
 const SearchSynonym = require('../models/SearchSynonym');
 const SearchLog = require('../models/SearchLog');
 const { normalize, invalidateSynonyms, prepareSearchQuery } = require('../utils/searchEngine');
@@ -113,13 +113,14 @@ exports.previewQuery = async (req, res) => {
 };
 
 // ---------- search logs ----------
+// Day and month boundaries in India time, so "Today" starts at midnight IST, not the server's midnight.
 const dateWhere = (range) => {
-  const now = moment();
+  const now = moment.tz('Asia/Kolkata');
   switch (range) {
-    case 'today': return { [Op.gte]: moment().startOf('day').toDate() };
-    case 'last7days': return { [Op.gte]: moment().subtract(6, 'days').startOf('day').toDate() };
-    case 'last30days': return { [Op.gte]: moment().subtract(29, 'days').startOf('day').toDate() };
-    case 'thismonth': return { [Op.gte]: moment().startOf('month').toDate(), [Op.lte]: now.toDate() };
+    case 'today': return { [Op.gte]: now.clone().startOf('day').toDate() };
+    case 'last7days': return { [Op.gte]: now.clone().subtract(6, 'days').startOf('day').toDate() };
+    case 'last30days': return { [Op.gte]: now.clone().subtract(29, 'days').startOf('day').toDate() };
+    case 'thismonth': return { [Op.gte]: now.clone().startOf('month').toDate(), [Op.lte]: now.toDate() };
     default: return null;
   }
 };
