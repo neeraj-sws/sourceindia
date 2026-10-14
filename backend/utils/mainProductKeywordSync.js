@@ -65,7 +65,8 @@ const backfillMainProductKeywords = async () => {
       pk.status = isc.status,
       pk.updated_at = CURRENT_TIMESTAMP
     WHERE COALESCE(pk.is_main, 0) <> 1
-      AND LOWER(TRIM(pk.name)) = LOWER(TRIM(isc.name))
+      AND CONVERT(LOWER(TRIM(pk.name)) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+        = CONVERT(LOWER(TRIM(isc.name)) USING utf8mb4) COLLATE utf8mb4_unicode_ci
   `);
 
   return Number(result?.affectedRows ?? result ?? 0);

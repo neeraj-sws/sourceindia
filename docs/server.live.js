@@ -1,0 +1,191 @@
+const express = require('express');
+const compression = require('compression');
+const path = require('path');
+const cors = require('cors');
+
+const companiesRoutes = require('./routes/companiesRoutes');
+const sequelize = require('./config/database');
+const fileRoutes = require('./routes/fileRoutes');
+const adminAuthRoutes = require('./routes/adminAuthRoutes');
+const activityRoutes = require('./routes/activityRoutes');
+const coreActivityRoutes = require('./routes/coreActivityRoutes');
+const ticketCategoryRoutes = require('./routes/ticketCategoryRoutes');
+const testimonialRoutes = require('./routes/testimonialRoutes');
+const faqCategoryRoutes = require('./routes/faqCategoryRoutes');
+const faqRoutes = require('./routes/faqRoutes');
+const homeBannerRoutes = require('./routes/homeBannerRoutes');
+const rolesRoutes = require('./routes/rolesRoutes');
+const subAdminRoutes = require('./routes/subAdminRoutes');
+const knowledgeCenterRoutes = require('./routes/knowledgeCenterRoutes');
+const locationRoutes = require('./routes/locationRoutes');
+const buyerRoutes = require('./routes/buyerRoutes');
+const membershipPlanRoutes = require('./routes/membershipPlanRoutes');
+const categoriesRoutes = require('./routes/categoriesRoutes');
+const subCategoryRoutes = require('./routes/subCategoryRoutes');
+const interestCategoriesRoutes = require('./routes/interestCategoriesRoutes');
+const interestSubCategoriesRoutes = require('./routes/interestSubCategoriesRoutes');
+
+const ticketRoutes = require('./routes/ticketRoutes');
+const sellerRoutes = require('./routes/sellerRoutes');
+const applicationRoutes = require('./routes/applicationRoutes');
+const productsRoutes = require('./routes/productsRoutes');
+const settingRoutes = require('./routes/settingRoutes');
+const newsletterRoutes = require('./routes/newsletterRoutes');
+const enquiriesRoutes = require('./routes/enquiriesRoutes');
+const openEnquiriesRoutes = require('./routes/openEnquiriesRoutes');
+const seoPagesRoutes = require('./routes/seoPagesRoutes');
+const userActivityRoutes = require('./routes/userActivityRoutes');
+const categoryConflictLogsRoutes = require('./routes/categoryConflictLogsRoutes');
+const categoryRestructureRoutes = require('./routes/categoryRestructureRoutes');
+const sellerMailHistoriesRoutes = require('./routes/sellerMailHistoriesRoutes');
+const contactsRoutes = require('./routes/contactsRoutes');
+const emailsRoutes = require('./routes/emailsRoutes');
+
+const newsletterHistoriesRoutes = require('./routes/newsletterHistoriesRoutes');
+
+
+const usersRoutes = require('./routes/usersRoutes');
+
+const usersDashboardRoutes = require('./routes/usersDashboardRoutes');
+const registrationsRoutes = require('./routes/registrationsRoutes');
+const itemCategoryRoutes = require('./routes/itemCategoryRoutes');
+const itemSubCategoryRoutes = require('./routes/itemSubCategoryRoutes');
+
+const keywordsRoutes = require('./routes/keywordsRoutes');
+const productKeywordCategoryRoutes = require('./routes/productKeywordCategoryRoutes');
+const searchSynonymRoutes = require('./routes/searchSynonymRoutes');
+
+const itemsRoutes = require('./routes/itemsRoutes');
+const shortcutRoutes = require('./routes/shortcutRoutes');
+const pagesRoutes = require('./routes/pagesRoutes');
+const frontMenuRoutes = require('./routes/frontMenuRoutes');
+const membershipPlansRoutes = require('./routes/membershipPlansRoutes');
+const buyerEnquiryRoutes = require('./routes/buyerEnquiryRoutes');
+const adminEnquiriesRoutes = require('./routes/adminEnquiriesRoutes');
+const { backfillMainProductKeywords } = require('./utils/mainProductKeywordSync');
+const { ensureSlugIndexes } = require('./utils/categorySlug');
+
+
+const app = express();
+const basePath = '/v1'; // All APIs will start with /v1
+
+app.use(cors());
+
+app.use(compression());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Health check
+app.get(basePath + '/', (req, res) => {
+  res.send('Node.js app is running under ' + basePath);
+});
+
+
+// Serve static files under basePath with cache headers
+
+app.use(basePath + '/upload', express.static(path.join(__dirname, 'upload'), {
+
+  maxAge: '30d'
+
+}));
+
+// Example: API caching for list endpoints
+
+// You can add this middleware to specific routes or globally for all list endpoints
+
+// Example usage for a list endpoint:
+
+// app.get(basePath + '/api/items', (req, res, next) => {
+
+//   res.set('Cache-Control', 'public, max-age=300');
+
+//   next();
+
+// }, itemsRoutes);
+
+// All APIs under /v2/api/...
+app.use(basePath + '/api/files', fileRoutes);
+app.use(basePath + '/api/admin', adminAuthRoutes);
+app.use(basePath + '/api/admin', adminEnquiriesRoutes);
+app.use(basePath + '/api/activities', activityRoutes);
+app.use(basePath + '/api/core_activities', coreActivityRoutes);
+app.use(basePath + '/api/ticket_categories', ticketCategoryRoutes);
+app.use(basePath + '/api/testimonials', testimonialRoutes);
+app.use(basePath + '/api/faq_categories', faqCategoryRoutes);
+app.use(basePath + '/api/faqcategories', faqCategoryRoutes); 
+app.use(basePath + '/api/faqs', faqRoutes);
+app.use(basePath + '/api/home_banners', homeBannerRoutes);
+
+app.use(basePath + '/api/roles', rolesRoutes);
+app.use(basePath + '/api/sub_admin', subAdminRoutes);
+app.use(basePath + '/api/knowledge_center', knowledgeCenterRoutes);
+app.use(basePath + '/api/location', locationRoutes);
+app.use(basePath + '/api/buyers', buyerRoutes);
+app.use(basePath + '/api/membership_plan', membershipPlanRoutes);
+app.use(basePath + '/api/categories', categoriesRoutes);
+app.use(basePath + '/api/sub_categories', subCategoryRoutes);
+app.use(basePath + '/api/interest_categories', interestCategoriesRoutes);
+app.use(basePath + '/api/interest_sub_categories', interestSubCategoriesRoutes);
+
+app.use(basePath + '/api/tickets', ticketRoutes);
+app.use(basePath + '/api/sellers', sellerRoutes);
+app.use(basePath + '/api/applications', applicationRoutes);
+app.use(basePath + '/api/products', productsRoutes);
+app.use(basePath + '/api/settings', settingRoutes);
+app.use(basePath + '/api/newsletters', newsletterRoutes);
+app.use(basePath + '/api/enquiries', enquiriesRoutes);
+app.use(basePath + '/api/open_enquiries', openEnquiriesRoutes);
+app.use(basePath + '/api/seo_pages', seoPagesRoutes);
+app.use(basePath + '/api/user_activity', userActivityRoutes);
+app.use(basePath + '/api/category_conflict_logs', categoryConflictLogsRoutes);
+app.use(basePath + '/api/category_restructure', categoryRestructureRoutes);
+app.use(basePath + '/api/seller_mail_histories', sellerMailHistoriesRoutes);
+app.use(basePath + '/api/contacts', contactsRoutes);
+app.use(basePath + '/api/emails', emailsRoutes);
+app.use(basePath + '/api/newsletter_histories', newsletterHistoriesRoutes);
+app.use(basePath + '/api/signup', usersRoutes);
+app.use(basePath + '/api/users', usersRoutes);
+app.use(basePath + '/api/dashboard', usersDashboardRoutes);
+app.use(basePath + '/api/registrations', registrationsRoutes);
+app.use(basePath + '/api/item_category', itemCategoryRoutes);
+app.use(basePath + '/api/item_sub_category', itemSubCategoryRoutes);
+
+app.use(basePath + '/api/keywords', keywordsRoutes);
+app.use(basePath + '/api/keyword_categories', productKeywordCategoryRoutes);
+app.use(basePath + '/api/search_synonyms', searchSynonymRoutes);
+
+
+app.use(basePath + '/api/items', itemsRoutes);
+app.use(basePath + '/api/shortcut', shortcutRoutes);
+app.use(basePath + '/api/pages', pagesRoutes);
+app.use(basePath + '/api/front_menu', frontMenuRoutes);
+app.use(basePath + '/api/membership_plans', membershipPlansRoutes);
+app.use(basePath + '/api/buyerenquiry', buyerEnquiryRoutes);
+app.use(basePath + '/api/companies', companiesRoutes);
+
+
+sequelize
+  .sync()
+  .then(async () => {
+    // Housekeeping only: a failure here is logged and must not keep the server from starting.
+    try {
+      const backfilledKeywords = await backfillMainProductKeywords();
+      console.log(`Product keyword main records synchronized: ${backfilledKeywords}`);
+    } catch (err) {
+      console.error('Main keyword sync skipped:', err.parent?.sqlMessage || err.message);
+    }
+    try {
+      const slugIndexes = await ensureSlugIndexes(sequelize);
+      if (slugIndexes.length) console.log(`Unique slug index added: ${slugIndexes.join(', ')}`);
+    } catch (err) {
+      console.error('Slug index check skipped:', err.parent?.sqlMessage || err.message);
+    }
+    console.log('MySQL connected and models synced');
+
+    const PORT = process.env.PORT || 5000;
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}${basePath}`);
+    });
+  })
+  .catch((err) => console.error('DB connection error:', err));

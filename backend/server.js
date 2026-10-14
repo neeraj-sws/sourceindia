@@ -148,10 +148,19 @@ app.use(basePath + '/api/companies', companiesRoutes);
 sequelize
   .sync()
   .then(async () => {
-    const backfilledKeywords = await backfillMainProductKeywords();
-    console.log(`Product keyword main records synchronized: ${backfilledKeywords}`);
-    const slugIndexes = await ensureSlugIndexes(sequelize);
-    if (slugIndexes.length) console.log(`Unique slug index added: ${slugIndexes.join(', ')}`);
+    // Housekeeping only: a failure here is logged and must not keep the server from starting.
+    try {
+      const backfilledKeywords = await backfillMainProductKeywords();
+      console.log(`Product keyword main records synchronized: ${backfilledKeywords}`);
+    } catch (err) {
+      console.error('Main keyword sync skipped:', err.parent?.sqlMessage || err.message);
+    }
+    try {
+      const slugIndexes = await ensureSlugIndexes(sequelize);
+      if (slugIndexes.length) console.log(`Unique slug index added: ${slugIndexes.join(', ')}`);
+    } catch (err) {
+      console.error('Slug index check skipped:', err.parent?.sqlMessage || err.message);
+    }
     console.log('MySQL connected and models synced');
     app.listen(5000, () =>
       console.log('Server running on http://localhost:5000' + basePath)

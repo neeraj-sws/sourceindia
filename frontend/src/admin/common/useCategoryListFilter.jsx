@@ -32,7 +32,9 @@ const fetchList = async (url) => {
   }
 };
 
-const useCategoryListFilter = ({ levels = [], rowFields = {}, extraFilters = [], onChange } = {}) => {
+// showStatus: false leaves the Status dropdown out, for lists where the row's status means
+// nothing to the reader (the keyword lists: a row there is a category, not a keyword).
+const useCategoryListFilter = ({ levels = [], rowFields = {}, extraFilters = [], showStatus = true, onChange } = {}) => {
   const emptyValues = { ...EMPTY, ...Object.fromEntries(extraFilters.map((extra) => [extra.param, ""])) };
   const [values, setValues] = useState(emptyValues);
   const [open, setOpen] = useState(false);
@@ -87,9 +89,9 @@ const useCategoryListFilter = ({ levels = [], rowFields = {}, extraFilters = [],
     const result = {};
     activeLevels.forEach((level) => { if (values[level.param]) result[level.param] = values[level.param]; });
     extraFilters.forEach((extra) => { if (values[extra.param] !== "") result[extra.param] = values[extra.param]; });
-    if (values.status !== "") result.status = values.status;
+    if (showStatus && values.status !== "") result.status = values.status;
     return result;
-  }, [values, levels.join(",")]);
+  }, [values, levels.join(","), showStatus]);
   const paramsKey = JSON.stringify(params);
 
   const optionName = (levelKey, id) => {
@@ -103,7 +105,7 @@ const useCategoryListFilter = ({ levels = [], rowFields = {}, extraFilters = [],
       param: extra.param,
       text: `${extra.label}: ${extra.options.find((option) => String(option.id) === String(values[extra.param]))?.name || ""}`,
     })),
-    ...(values.status !== "" ? [{ param: "status", text: `Status: ${values.status === "1" ? "Active" : "Inactive"}` }] : []),
+    ...(showStatus && values.status !== "" ? [{ param: "status", text: `Status: ${values.status === "1" ? "Active" : "Inactive"}` }] : []),
   ];
 
   // Same filter on rows already loaded (the Excel export); rowFields maps a filter to its row field.
@@ -114,7 +116,7 @@ const useCategoryListFilter = ({ levels = [], rowFields = {}, extraFilters = [],
 
   // Up to three filters share one row; with more, the levels fill the first row left to right
   // (Category > ... > Item Sub Category) and Status starts the next one.
-  const columnClass = activeLevels.length + extraFilters.length + 1 >= 4 ? "col-sm-6 col-lg-3" : "col-sm-6 col-lg-4";
+  const columnClass = activeLevels.length + extraFilters.length + (showStatus ? 1 : 0) >= 4 ? "col-sm-6 col-lg-3" : "col-sm-6 col-lg-4";
 
   const renderSelect = (param, label, list, disabled, placeholder) => {
     const chosen = values[param] !== "";
@@ -190,7 +192,7 @@ const useCategoryListFilter = ({ levels = [], rowFields = {}, extraFilters = [],
               );
             })}
             {extraFilters.map((extra) => renderSelect(extra.param, extra.label, extra.options, false, extra.placeholder || "All"))}
-            {renderSelect("status", "Status", STATUS_OPTIONS, false, "Any status")}
+            {showStatus && renderSelect("status", "Status", STATUS_OPTIONS, false, "Any status")}
           </div>
         </div>
       )}

@@ -36,6 +36,7 @@ const ProductKeywords = ({ excludeItemSubCategories }) => {
       param: "has_products", label: "Products", placeholder: "With or without products",
       options: [{ id: "1", name: "With products" }, { id: "0", name: "Without products" }],
     }],
+    showStatus: false,
     onChange: () => setPage(1),
   });
   const [limit, setLimit] = useState(25);

@@ -513,8 +513,10 @@ const AddProduct = () => {
   const handleItemSubCategoryChange = async (event) => {
     const itemSubCategoryId = event.target.value;
     setSelectedItemSubCategory(itemSubCategoryId);
-    if (keywordScopeRef.current !== 'item_category') setSelectedKeyword('');
-    console.log(itemSubCategoryId);
+    // Chosen by hand: the keyword now comes from this Item Sub Category (its main keyword is
+    // picked once the list loads), or from the Item Category again when it is cleared.
+    keywordScopeRef.current = '';
+    setSelectedKeyword('');
     // Reset lower dropdown
     setSelectedItem('');
     setKeywords([]);
@@ -1519,9 +1521,11 @@ const AddProduct = () => {
                           {errors.item_category && (<div className="text-danger small">{errors.item_category}</div>)}
                         </div>
 
-                        {/* Item Sub Category shows only when the product has one. */}
-                        <div className={`form-group mb-3 col-md-12 ${selectedItemSubCategory ? '' : 'd-none'}`}>
-                          <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
+                        {/* Item Sub Category shows when the product has one, or the chosen Item Category
+                            has some to pick from (Category > Sub Category > Item Category > Item Sub Category).
+                            It stays optional: a product may be filed only up to its Item Category. */}
+                        <div className={`form-group mb-3 col-md-12 ${selectedItemSubCategory || itemSubCategories.length > 0 ? '' : 'd-none'}`}>
+                          <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category <span className="text-muted fw-normal">(optional)</span></label>
                           <select
                             id="item_sub_category_id"
                             className="form-control"
