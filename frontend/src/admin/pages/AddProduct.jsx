@@ -204,78 +204,99 @@ const AddProduct = () => {
     setPickerSelection(emptyPickerSelection);
   };
 
+  // These effects alone load the Item Category / Item Sub Category / Item lists for the current
+  // selection. A response for an older selection is ignored, so a slow request can't empty a
+  // list that already belongs to what is selected now.
   useEffect(() => {
-    if (selectedCategory && selectedSubCategory) {
-      axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${selectedSubCategory}`)
-        .then(res => setItemCategories(res.data))
-        .catch(err => {
-          console.error("Error fetching item categories:", err);
-          setItemCategories([]);
-        });
-    } else {
+    if (!(selectedCategory && selectedSubCategory)) {
       setItemCategories([]);
+      return;
     }
+    let cancelled = false;
+    setItemCategories([]);
+    axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${selectedCategory}/${selectedSubCategory}`)
+      .then(res => { if (!cancelled) setItemCategories(res.data || []); })
+      .catch(err => {
+        if (cancelled) return;
+        console.error("Error fetching item categories:", err);
+        setItemCategories([]);
+      });
+    return () => { cancelled = true; };
   }, [selectedCategory, selectedSubCategory]);
 
   useEffect(() => {
-    if (selectedCategory && selectedSubCategory && selectedItemCategory) {
-      axios.get(
-        `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}`
-      )
-        .then(res => setItemSubCategories(res.data))
-        .catch(err => {
-          console.error("Error fetching item sub categories:", err);
-          setItemSubCategories([]);
-        });
-    } else {
+    if (!(selectedCategory && selectedSubCategory && selectedItemCategory)) {
       setItemSubCategories([]);
+      return;
     }
+    let cancelled = false;
+    setItemSubCategories([]);
+    axios.get(
+      `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}`
+    )
+      .then(res => { if (!cancelled) setItemSubCategories(res.data || []); })
+      .catch(err => {
+        if (cancelled) return;
+        // 404 = this Item Category has no Item Sub Categories.
+        if (err?.response?.status !== 404) console.error("Error fetching item sub categories:", err);
+        setItemSubCategories([]);
+      });
+    return () => { cancelled = true; };
   }, [selectedCategory, selectedSubCategory, selectedItemCategory]);
 
   useEffect(() => {
-    if (selectedCategory && selectedSubCategory && selectedItemCategory && selectedItemSubCategory) {
-      axios.get(
-        `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${selectedItemSubCategory}`
-      )
-        .then(res => setItems(res.data))
-        .catch(err => {
-          console.error("Error fetching items:", err);
-          setItems([]);
-        });
-    } else {
+    if (!(selectedCategory && selectedSubCategory && selectedItemCategory && selectedItemSubCategory)) {
       setItems([]);
+      return;
     }
+    let cancelled = false;
+    setItems([]);
+    axios.get(
+      `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${selectedItemSubCategory}`
+    )
+      .then(res => { if (!cancelled) setItems(res.data || []); })
+      .catch(err => {
+        if (cancelled) return;
+        console.error("Error fetching items:", err);
+        setItems([]);
+      });
+    return () => { cancelled = true; };
   }, [selectedCategory, selectedSubCategory, selectedItemCategory, selectedItemSubCategory]);
 
   useEffect(() => {
+    // Drop the old list first so the main keyword is never picked from the previous selection.
+    setKeywords([]);
+    let cancelled = false;
     if (!selectedItemSubCategory) {
       if (keywordScopeRef.current !== 'item_category') setSelectedKeyword('');
-      if (!selectedItemCategory) {
-        setKeywords([]);
-        return;
-      }
+      if (!selectedItemCategory) return;
       // No Item Sub Category: offer the Item Category's own keywords (Keyword Master > Product Keyword Category).
       axios.get(`${API_BASE_URL}/keyword_categories/by-item-category/${selectedItemCategory}`)
         .then((res) => {
+          if (cancelled) return;
           const rows = Array.isArray(res.data) ? res.data : [];
           setKeywords(rows.map((row) => ({ ...row, keyword_type: 'item_category' })));
         })
         .catch((err) => {
+          if (cancelled) return;
           console.error("Error fetching item category keywords:", err);
           setKeywords([]);
         });
-      return;
+      return () => { cancelled = true; };
     }
 
     axios.get(`${API_BASE_URL}/keywords/by-subcategory/${selectedItemSubCategory}`)
       .then((res) => {
+        if (cancelled) return;
         const rows = Array.isArray(res.data) ? res.data : [];
         setKeywords(rows);
       })
       .catch((err) => {
+        if (cancelled) return;
         console.error("Error fetching keywords:", err);
         setKeywords([]);
       });
+    return () => { cancelled = true; };
   }, [selectedItemSubCategory, selectedItemCategory]);
 
   useEffect(() => {
@@ -439,25 +460,11 @@ const AddProduct = () => {
     setSelectedSubCategory(subCategoryId);
     setSelectedCategory(subCatCategoryId ? String(subCatCategoryId) : "");
 
-    // Reset dependent dropdowns
+    // Reset dependent dropdowns; their option lists reload from the effects above.
     setSelectedItemCategory('');
     setSelectedItemSubCategory('');
     setSelectedKeyword('');
     setSelectedItem('');
-    setItemCategories([]);
-    setItemSubCategories([]);
-    setKeywords([]);
-    setItems([]);
-
-    // fetch item categories for this subcategory
-    if (subCat && subCatCategoryId) {
-      axios.get(`${API_BASE_URL}/item_category/by-category-subcategory/${subCatCategoryId}/${subCategoryId}`)
-        .then(res => setItemCategories(res.data))
-        .catch(err => {
-          console.error("Error fetching item categories:", err);
-          setItemCategories([]);
-        });
-    }
   };
 
   const handleCategoryChange = (event) => {
@@ -476,66 +483,48 @@ const AddProduct = () => {
     setSelectedItemSubCategory('');
     setSelectedKeyword('');
     setSelectedItem('');
-    setItemCategories([]);
-    setItemSubCategories([]);
-    setKeywords([]);
-    setItems([]);
   };
 
   // Handle Item Category Change
-  const handleItemCategoryChange = async (event) => {
+  const handleItemCategoryChange = (event) => {
     const itemCategoryId = event.target.value;
     setSelectedItemCategory(itemCategoryId);
 
-    // Reset lower dropdowns
+    // Reset lower dropdowns; the Item Sub Category list reloads from the effect above.
     keywordScopeRef.current = '';
     setSelectedItemSubCategory('');
     setSelectedKeyword('');
     setSelectedItem('');
-    setItemSubCategories([]);
-    setKeywords([]);
-    setItems([]);
-
-    if (selectedCategory && selectedSubCategory && itemCategoryId) {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${selectedCategory}/${selectedSubCategory}/${itemCategoryId}`
-        );
-        setItemSubCategories(res.data);
-      } catch (error) {
-        console.error("Error fetching item sub categories:", error);
-        setItemSubCategories([]);
-      }
-    }
   };
 
   // Handle Item Sub Category Change
-  const handleItemSubCategoryChange = async (event) => {
+  const handleItemSubCategoryChange = (event) => {
     const itemSubCategoryId = event.target.value;
     setSelectedItemSubCategory(itemSubCategoryId);
-    if (keywordScopeRef.current !== 'item_category') setSelectedKeyword('');
-    console.log(itemSubCategoryId);
-    // Reset lower dropdown
+    // Chosen by hand: the keyword now comes from this Item Sub Category (its main keyword is
+    // picked once the list loads), or from the Item Category again when it is cleared.
+    keywordScopeRef.current = '';
+    setSelectedKeyword('');
     setSelectedItem('');
-    setKeywords([]);
-    setItems([]);
-
-    if (selectedCategory && selectedSubCategory && selectedItemCategory && itemSubCategoryId) {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/items/by-category-subcategory-itemcategory-itemsubcategory/${selectedCategory}/${selectedSubCategory}/${selectedItemCategory}/${itemSubCategoryId}`
-        );
-        setItems(res.data);
-      } catch (error) {
-        console.error("Error fetching items:", error);
-        setItems([]);
-      }
-    }
   };
 
   // Handle Item Change
   const handleItemChange = (event) => {
     setSelectedItem(event.target.value);
+  };
+
+  // select2 change events are bound only when the option lists load, so they call the
+  // handlers through this ref to always see the current Category / Sub Category / Item Category.
+  const select2HandlersRef = useRef({});
+  select2HandlersRef.current = {
+    handleSellersChange,
+    handleApplicationsChange,
+    handleSubCategoryChange,
+    handleCategoryChange,
+    handleItemCategoryChange,
+    handleItemSubCategoryChange,
+    handleKeywordChange,
+    handleItemChange,
   };
 
   useEffect(() => {
@@ -545,7 +534,7 @@ const AddProduct = () => {
       placeholder: "Select Seller"
     }).on("change", function () {
       const userId = $(this).val();
-      handleSellersChange({ target: { value: userId } });
+      select2HandlersRef.current.handleSellersChange({ target: { value: userId } });
     });
 
     $('#application').select2({
@@ -554,7 +543,7 @@ const AddProduct = () => {
       placeholder: "Select application"
     }).on("change", function () {
       const applicationId = $(this).val();
-      handleApplicationsChange({ target: { value: applicationId } });
+      select2HandlersRef.current.handleApplicationsChange({ target: { value: applicationId } });
     });
 
     $('#sub_category').select2({
@@ -563,7 +552,7 @@ const AddProduct = () => {
       placeholder: "Select Sub Category"
     }).on("change", function () {
       const subCategoryId = $(this).val();
-      handleSubCategoryChange({ target: { value: subCategoryId } });
+      select2HandlersRef.current.handleSubCategoryChange({ target: { value: subCategoryId } });
     });
 
     $('#category').select2({
@@ -572,37 +561,39 @@ const AddProduct = () => {
       placeholder: "Select Category"
     }).on("change", function () {
       const categoryId = $(this).val();
-      handleCategoryChange({ target: { value: categoryId } });
+      select2HandlersRef.current.handleCategoryChange({ target: { value: categoryId } });
     });
     $('#item_category_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
       .on("change", function () {
-        handleItemCategoryChange({ target: { value: $(this).val() } });
+        select2HandlersRef.current.handleItemCategoryChange({ target: { value: $(this).val() } });
       });
 
 
     $('#item_sub_category_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
       .on("change", function () {
-        handleItemSubCategoryChange({ target: { value: $(this).val() } });
+        select2HandlersRef.current.handleItemSubCategoryChange({ target: { value: $(this).val() } });
       });
 
     $('#keyword_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Keyword" })
       .on("change", function () {
-        handleKeywordChange($(this).val() || '');
+        select2HandlersRef.current.handleKeywordChange($(this).val() || '');
       });
 
     $('#item_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item" })
       .on("change", function () {
-        handleItemChange({ target: { value: $(this).val() } });
+        select2HandlersRef.current.handleItemChange({ target: { value: $(this).val() } });
       });
 
     return () => {
       $('#user_id').off("change").select2('destroy');
       $('#application').off("change").select2('destroy');
       $('#sub_category').off("change").select2('destroy');
+      // Unbind change too, or every re-run adds one more handler to these dropdowns.
+      $('#category, #item_category_id, #item_sub_category_id, #keyword_id, #item_id').off("change");
       if ($('#category').data('select2')) $('#category').select2('destroy');
       if ($('#item_category_id').data('select2')) $('#item_category_id').select2('destroy');
       if ($('#item_sub_category_id').data('select2')) $('#item_sub_category_id').select2('destroy');
@@ -1519,9 +1510,11 @@ const AddProduct = () => {
                           {errors.item_category && (<div className="text-danger small">{errors.item_category}</div>)}
                         </div>
 
-                        {/* Item Sub Category shows only when the product has one. */}
-                        <div className={`form-group mb-3 col-md-12 ${selectedItemSubCategory ? '' : 'd-none'}`}>
-                          <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category</label>
+                        {/* Item Sub Category shows when the product has one, or the chosen Item Category
+                            has some to pick from (Category > Sub Category > Item Category > Item Sub Category).
+                            It stays optional: a product may be filed only up to its Item Category. */}
+                        <div className={`form-group mb-3 col-md-12 ${selectedItemSubCategory || itemSubCategories.length > 0 ? '' : 'd-none'}`}>
+                          <label htmlFor="item_sub_category_id" className="form-label">Item Sub Category <span className="text-muted fw-normal">(optional)</span></label>
                           <select
                             id="item_sub_category_id"
                             className="form-control"
