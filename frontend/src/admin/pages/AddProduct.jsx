@@ -540,6 +540,20 @@ const AddProduct = () => {
     setSelectedItem(event.target.value);
   };
 
+  // select2 change events are bound only when the option lists load, so they call the
+  // handlers through this ref to always see the current Category / Sub Category / Item Category.
+  const select2HandlersRef = useRef({});
+  select2HandlersRef.current = {
+    handleSellersChange,
+    handleApplicationsChange,
+    handleSubCategoryChange,
+    handleCategoryChange,
+    handleItemCategoryChange,
+    handleItemSubCategoryChange,
+    handleKeywordChange,
+    handleItemChange,
+  };
+
   useEffect(() => {
     $('#user_id').select2({
       theme: "bootstrap",
@@ -547,7 +561,7 @@ const AddProduct = () => {
       placeholder: "Select Seller"
     }).on("change", function () {
       const userId = $(this).val();
-      handleSellersChange({ target: { value: userId } });
+      select2HandlersRef.current.handleSellersChange({ target: { value: userId } });
     });
 
     $('#application').select2({
@@ -556,7 +570,7 @@ const AddProduct = () => {
       placeholder: "Select application"
     }).on("change", function () {
       const applicationId = $(this).val();
-      handleApplicationsChange({ target: { value: applicationId } });
+      select2HandlersRef.current.handleApplicationsChange({ target: { value: applicationId } });
     });
 
     $('#sub_category').select2({
@@ -565,7 +579,7 @@ const AddProduct = () => {
       placeholder: "Select Sub Category"
     }).on("change", function () {
       const subCategoryId = $(this).val();
-      handleSubCategoryChange({ target: { value: subCategoryId } });
+      select2HandlersRef.current.handleSubCategoryChange({ target: { value: subCategoryId } });
     });
 
     $('#category').select2({
@@ -574,31 +588,31 @@ const AddProduct = () => {
       placeholder: "Select Category"
     }).on("change", function () {
       const categoryId = $(this).val();
-      handleCategoryChange({ target: { value: categoryId } });
+      select2HandlersRef.current.handleCategoryChange({ target: { value: categoryId } });
     });
     $('#item_category_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Category" })
       .on("change", function () {
-        handleItemCategoryChange({ target: { value: $(this).val() } });
+        select2HandlersRef.current.handleItemCategoryChange({ target: { value: $(this).val() } });
       });
 
 
     $('#item_sub_category_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item Sub Category" })
       .on("change", function () {
-        handleItemSubCategoryChange({ target: { value: $(this).val() } });
+        select2HandlersRef.current.handleItemSubCategoryChange({ target: { value: $(this).val() } });
       });
 
     $('#keyword_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Keyword" })
       .on("change", function () {
-        handleKeywordChange($(this).val() || '');
+        select2HandlersRef.current.handleKeywordChange($(this).val() || '');
       });
 
     $('#item_id')
       .select2({ theme: "bootstrap", width: '100%', placeholder: "Select Item" })
       .on("change", function () {
-        handleItemChange({ target: { value: $(this).val() } });
+        select2HandlersRef.current.handleItemChange({ target: { value: $(this).val() } });
       });
 
     return () => {
