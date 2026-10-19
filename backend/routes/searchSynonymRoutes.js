@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/searchSynonymController');
+const authenticateToken = require('../middleware/authenticateToken');
 
 // Search synonyms (Keyword Master > Search Synonyms)
 router.get('/server-side', controller.getSynonymsServerSide);
@@ -12,5 +13,7 @@ router.delete('/:id', controller.deleteSynonym);
 
 // Search logs (Keyword Master > Search Logs)
 router.get('/logs/server-side', controller.getSearchLogsServerSide);
+router.get('/logs/users', authenticateToken, controller.getSearchLogUsers);
+router.get('/logs/:id/entries', authenticateToken, controller.getSearchLogEntries);
 
 module.exports = router;

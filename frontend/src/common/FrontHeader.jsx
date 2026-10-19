@@ -89,8 +89,11 @@ const FrontHeader = () => {
           return;
         }
 
+        const userToken = localStorage.getItem("user_token");
         const res = await axios.post(
-          `${API_BASE_URL}/front_menu/main-search?q=${encodeURIComponent(normalizedQuery)}&type=${searchType}`
+          `${API_BASE_URL}/front_menu/main-search?q=${encodeURIComponent(normalizedQuery)}&type=${searchType}`,
+          undefined,
+          userToken ? { headers: { Authorization: `Bearer ${userToken}` } } : undefined
         );
 
         if (cancelled) return;

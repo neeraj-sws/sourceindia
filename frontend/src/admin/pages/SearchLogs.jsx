@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 import { formatDateTime } from "../../utils/formatDate";
+import SearchLogEntriesModal from "./modal/SearchLogEntriesModal";
 
 // Keyword Master > Search Logs: what customers searched on the products page, and which searches
 // found nothing (add those as keywords or synonyms).
@@ -21,23 +22,49 @@ const SearchLogs = () => {
   const [limit, setLimit] = useState(25);
   const [zeroOnly, setZeroOnly] = useState(false);
   const [dateRange, setDateRange] = useState("");
+  const [loggedInOnly, setLoggedInOnly] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [users, setUsers] = useState([]);
+  const [entriesLog, setEntriesLog] = useState(null);
+  const [error, setError] = useState("");
+  const [userQuery, setUserQuery] = useState("");
+  const token = localStorage.getItem("token");
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
+      const params = { page, limit, search, sortBy, sort: sortDirection, zero_only: zeroOnly ? "true" : "false", dateRange };
+      if (loggedInOnly) params.logged_in_only = "true";
+      if (selectedUserId) params.user_id = selectedUserId;
       const res = await axios.get(`${API_BASE_URL}/search_synonyms/logs/server-side`, {
-        params: { page, limit, search, sortBy, sort: sortDirection, zero_only: zeroOnly ? "true" : "false", dateRange },
+        params,
       });
       setData(res.data.data || []);
       setTotalRecords(res.data.totalRecords || 0);
       setFilteredRecords(res.data.filteredRecords || 0);
       setSummary(res.data.summary || null);
+    } catch (err) {
+      console.error("Error fetching search logs:", err);
+      setError("Could not load search logs. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit, search, sortBy, sortDirection, zeroOnly, dateRange, loggedInOnly, selectedUserId]);
 
-  useEffect(() => { fetchData(); }, [page, limit, search, sortBy, sortDirection, zeroOnly, dateRange]);
+  const fetchUsers = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/search_synonyms/logs/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(res.data.data || []);
+    } catch (err) {
+      console.error("Error fetching search log users:", err);
+    }
+  }, [token]);
+
+  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const getRangeText = () => {
     if (!filteredRecords) return "Showing 0 to 0 of 0 entries";
@@ -45,7 +72,11 @@ const SearchLogs = () => {
     const end = Math.min(page * limit, filteredRecords);
     return `Showing ${start} to ${end} of ${filteredRecords} entries`;
   };
-
+const getUserName = (value) => {
+  const text = String(value || "").trim();
+  const name = text.replace(/\s*\([^)]*\)\s*$/, "").trim();
+  return name || text;
+};
   return (
     <div className="page-wrapper">
       <div className="page-content">
@@ -93,11 +124,35 @@ const SearchLogs = () => {
                 <option value="last30days">Last 30 days</option>
                 <option value="thismonth">This month</option>
               </select>
+              <div className="form-check form-switch mb-0">
+                <input
+                  id="loggedInOnly"
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={loggedInOnly}
+                  onChange={(e) => { setLoggedInOnly(e.target.checked); setPage(1); }}
+                />
+                <label htmlFor="loggedInOnly" className="form-check-label">Logged-in users only</label>
+              </div>
+              {/* <select
+                className="form-select form-select-sm"
+                style={{ maxWidth: 240 }}
+                value={selectedUserId}
+                onChange={(e) => { setSelectedUserId(e.target.value); setPage(1); }}
+                aria-label="Filter by user"
+              >
+                <option value="">All users</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>{user.name || user.email} {user.email ? `(${user.email})` : ""}</option>
+                ))}
+              </select> */}
+              
               <span className="small text-muted">
                 Searches with no result: add the text as a <Link to="/admin/product_keywords">Product Keyword</Link> or
                 a <Link to="/admin/search_synonyms">Search Synonym</Link>.
               </span>
             </div>
+            {error && <div className="alert alert-danger py-2" role="alert">{error}</div>}
             <DataTable
               columns={[
                 { key: "id", label: "S.No.", sortable: false },
@@ -105,6 +160,7 @@ const SearchLogs = () => {
                 { key: "searches", label: "Times searched", sortable: true },
                 { key: "last_result_count", label: "Results", sortable: true },
                 { key: "corrected", label: "Searched as", sortable: false },
+                { key: "user", label: "User", sortable: false },
                 { key: "last_searched", label: "Last searched", sortable: true },
                 { key: "open", label: "Open", sortable: false },
               ]}
@@ -129,13 +185,35 @@ const SearchLogs = () => {
                 <tr key={row.normalized_query}>
                   <td>{(page - 1) * limit + index + 1}</td>
                   <td>{row.query}</td>
-                  <td>{row.searches}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 align-baseline text-decoration-none"
+                      onClick={() => setEntriesLog({ ...row, id: row.log_id ?? row.id })}
+                      aria-label={`View search entries for ${row.query}`}
+                    >
+                      {row.searches}
+                    </button>
+                  </td>
                   <td>
                     {Number(row.max_result_count) === 0
                       ? <span className="badge bg-danger">No result</span>
                       : row.max_result_count}
                   </td>
                   <td className="small text-muted">{row.corrected_query || "-"}</td>
+                  <td className="small">
+                    {row.user_names
+                      ? (
+                        <>
+                          {/* {row.user_names} */}
+                          {getUserName(row.user_names)}
+                          {Number(row.users_count) > 1 ? (
+                            <span className="text-muted"> +{Number(row.users_count) - 1} more</span>
+                          ) : null}
+                        </>
+                      )
+                      : Number(row.entries_count) > 0 ? "Guest" : "-"}
+                  </td>
                   <td className="small">{formatDateTime(row.last_searched)}</td>
                   <td>
                     <a href={`/products?search=${encodeURIComponent(row.query)}`} target="_blank" rel="noopener noreferrer">
@@ -147,6 +225,14 @@ const SearchLogs = () => {
             />
           </div>
         </div>
+        {entriesLog && (
+          <SearchLogEntriesModal
+            searchLog={entriesLog}
+            apiBase={API_BASE_URL}
+            token={token}
+            onClose={() => setEntriesLog(null)}
+          />
+        )}
       </div>
     </div>
   );

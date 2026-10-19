@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const productsController = require('../controllers/productsController');
+const optionalAuth = require('../middleware/optionalAuth');
 router.get('/all-products', productsController.allProduct);
 router.get('/suggest', productsController.suggestProducts);
 router.get('/suggested-item-subcategories', productsController.getSuggestedItemSubCategories);
@@ -9,7 +10,7 @@ router.get('/latest-home', productsController.getLatestHomeProducts);
 
 router.post('/', productsController.createProducts);
 router.get('/count', productsController.getProductsCount);
-router.get('/', productsController.getAllProducts);
+router.get('/', optionalAuth, productsController.getAllProducts);
 router.get('/server-side', productsController.getAllProductsServerSide);
 router.delete('/delete-selected', productsController.deleteSelectedProducts);
 router.get('/companies', productsController.getAllCompanyInfo);
