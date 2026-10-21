@@ -411,8 +411,8 @@ exports.updateKeyword = async (req, res) => {
     if (Number(keyword.is_main) === 1) {
       return res.status(403).json({ message: 'This keyword is managed by Item Category and cannot be edited here.' });
     }
-    const usageConflict = await keywordUsageConflict([keyword], 'edited');
-    if (usageConflict) return res.status(409).json({ message: usageConflict });
+    // const usageConflict = await keywordUsageConflict([keyword], 'edited');
+    // if (usageConflict) return res.status(409).json({ message: usageConflict });
     const name = (req.body.name || '').toString().trim();
     if (!name) return res.status(400).json({ message: 'Name is required.' });
 
