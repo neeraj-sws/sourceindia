@@ -218,7 +218,7 @@ const ProductKeywordCategory = ({ excludeItemCategories }) => {
   });
 
   const startInlineEdit = (keyword) => {
-    if (Number(keyword.is_main) === 1 || keyword.is_used) return;
+    if (Number(keyword.is_main) === 1) return;
     setInlineEditId(keyword.id);
     setInlineEditName(keyword.name || "");
   };
@@ -832,16 +832,18 @@ const ProductKeywordCategory = ({ excludeItemCategories }) => {
                           <td>
                             {Number(kw.is_main) === 1 ? (
                               <span className="badge bg-secondary">Managed by Item Category</span>
-                            ) : kw.is_used ? (
-                              <span
-                                className="text-muted"
-                                title={kw.product_count === undefined
-                                  ? "Used in products. Cannot be edited or deleted."
-                                  : `Used in ${Number(kw.product_count) + Number(kw.deleted_product_count || 0)} product(s). Cannot be edited or deleted.`}
-                              >
-                                <i className="bx bx-lock-alt"></i>
-                              </span>
-                            ) : inlineEditId === kw.id ? (
+                            ) 
+                            // : kw.is_used ? (
+                            //   <span
+                            //     className="text-muted"
+                            //     title={kw.product_count === undefined
+                            //       ? "Used in products. Cannot be edited or deleted."
+                            //       : `Used in ${Number(kw.product_count) + Number(kw.deleted_product_count || 0)} product(s). Cannot be edited or deleted.`}
+                            //   >
+                            //     <i className="bx bx-lock-alt"></i>
+                            //   </span>
+                            // )
+                            : inlineEditId === kw.id ? (
                               <>
                                 <button
                                   className="btn btn-success btn-sm me-1"
@@ -866,7 +868,9 @@ const ProductKeywordCategory = ({ excludeItemCategories }) => {
                                 <i className="bx bx-edit"></i>
                               </button>
                             )}
-                            {Number(kw.is_main) !== 1 && !kw.is_used && (
+                            {Number(kw.is_main) !== 1 && 
+                            // !kw.is_used
+                            (
                               <button
                                 className="btn pe-0 ps-1 text-danger btn-sm"
                                 disabled={inlineSubmitting}
