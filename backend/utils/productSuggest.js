@@ -5,9 +5,6 @@ const ItemCategory = require('../models/ItemCategory');
 const Categories = require('../models/Categories');
 const SubCategories = require('../models/SubCategories');
 const Products = require('../models/Products');
-const ProductKeywordCategory = require('../models/ProductKeywordCategory');
-const { ensureKeywordItemCategoryColumn } = require('./itemCategoryKeywordSync');
-const { getKeywordMatchMetrics, compareProductKeywordSuggestions, normalizeMatchWord } = require('./productKeywordRanking');
 
 const SUGGEST_MATCH_STOP_WORDS = new Set([
   'i', 'we', 'our', 'us', 'are', 'is', 'am', 'be', 'being', 'been', 'me', 'my', 'mine', 'ours', 'you', 'your', 'yours',
@@ -216,7 +213,26 @@ const isSuggestWordMatch = (queryWord = '', keywordWord = '') => {
 };
 
 const getSuggestWordMatchStats = (queryWords = [], keywordWords = []) => {
-  return getKeywordMatchMetrics(queryWords, keywordWords);
+  const usedKeywordIndexes = new Set();
+  const matchedQueryWords = [];
+  const matchedKeywordWords = [];
+
+  queryWords.forEach((queryWord) => {
+    const keywordIndex = keywordWords.findIndex(
+      (keywordWord, index) => !usedKeywordIndexes.has(index) && isSuggestWordMatch(queryWord, keywordWord)
+    );
+
+    if (keywordIndex === -1) return;
+
+    usedKeywordIndexes.add(keywordIndex);
+    matchedQueryWords.push(queryWord);
+    matchedKeywordWords.push(keywordWords[keywordIndex]);
+  });
+
+  return {
+    matchedQueryWords: Array.from(new Set(matchedQueryWords)),
+    matchedKeywordWords: Array.from(new Set(matchedKeywordWords)),
+  };
 };
 
 const isStrongHeaderSuggestion = (suggestion) => {
@@ -264,10 +280,8 @@ const fetchWeightedProductKeywordSuggestions = async ({
     };
   }
 
-  // item_subcategory_id > 0 leaves out Item Category keywords (Product Keyword Category).
-  const keywordWhere = { status: 1, item_subcategory_id: { [Op.gt]: 0 } };
+  const keywordWhere = { status: 1 };
   const dbSearchWords = queryWords
-    .map(normalizeMatchWord)
     .filter(word => word.length >= 2);
 
   if (!dbSearchWords.length) {
@@ -338,73 +352,20 @@ const fetchWeightedProductKeywordSuggestions = async ({
   };
 
 
-  const subCategoryKeywords = await ProductKeyword.findAll({
+  const keywords = await ProductKeyword.findAll({
     where: keywordWhere,
     attributes: ['id', 'name', 'item_subcategory_id'],
     limit: 1000,
     raw: true
   });
 
-  // Item Category keywords (Keyword Master > Product Keyword Category), item_subcategory_id = 0.
-  // Shown when the keyword itself is on a live product, or its Item Category has live products.
-  let itemCategoryKeywords = [];
-  if (!item_subcategory_id) {
-    try {
-      await ensureKeywordItemCategoryColumn();
-      itemCategoryKeywords = await ProductKeywordCategory.findAll({
-        where: {
-          status: 1,
-          item_subcategory_id: 0,
-          item_category_id: item_category_id ? item_category_id : { [Op.gt]: 0 },
-          [Op.or]: keywordWhere[Op.or],
-          [Op.and]: [literal(`(
-            product_keyword_id IN (
-              SELECT DISTINCT p.keyword_id FROM products p
-              INNER JOIN users u ON p.user_id = u.user_id
-              WHERE p.status = 1 AND p.is_approve = 1 AND p.is_delete = 0 AND p.keyword_id IS NOT NULL
-                AND u.status = 1 AND u.is_approve = 1 AND u.is_delete = 0
-            )
-            OR item_category_id IN (
-              SELECT DISTINCT p.item_category_id FROM products p
-              INNER JOIN users u ON p.user_id = u.user_id
-              WHERE p.status = 1 AND p.is_approve = 1 AND p.is_delete = 0 AND p.item_category_id > 0
-                AND u.status = 1 AND u.is_approve = 1 AND u.is_delete = 0
-            )
-          )`)],
-        },
-        attributes: ['id', 'name', 'item_category_id'],
-        limit: 1000,
-        raw: true
-      });
-    } catch (keywordCategoryError) {
-      console.error('Item Category keywords skipped in productSuggest:', keywordCategoryError.message);
-    }
-  }
-
-  const keywords = [
-    ...subCategoryKeywords,
-    ...itemCategoryKeywords.map((keyword) => ({
-      ...keyword,
-      item_subcategory_id: null,
-      keyword_type: 'item_category',
-    })),
-  ];
-
   const scored = keywords.map((keyword) => {
     const normalizedKeyword = normalizeTextForSuggest(keyword.name);
     const keywordWords = tokenizeForSuggest(keyword.name);
     const keywordOrderTokens = tokenizeForOrder(keyword.name);
-    const matchMetrics = getSuggestWordMatchStats(queryWords, keywordWords);
-    const {
-      matchedQueryWords,
-      matchedKeywordWords,
-      matchedQueryWordCount,
-      matchedKeywordWordCount,
-      keywordCoverage,
-      queryCoverage,
-      longestConsecutiveMatch,
-      fullKeywordMatch,
-    } = matchMetrics;
+    const { matchedQueryWords, matchedKeywordWords } = getSuggestWordMatchStats(queryWords, keywordWords);
+    const matchedQueryWordCount = matchedQueryWords.length;
+    const matchedKeywordWordCount = matchedKeywordWords.length;
 
     const exactMatch = normalizedKeyword === normalizedQuery;
     const phrasePrefixMatch = normalizedQuery.length >= 2 && normalizedKeyword.startsWith(normalizedQuery);
@@ -421,6 +382,8 @@ const fetchWeightedProductKeywordSuggestions = async ({
       matchedKeywordWordCount * 50 -
       (keywordWords.length - matchedKeywordWordCount) * 10;
 
+    const keywordCoverage = keywordWords.length ? matchedKeywordWordCount / keywordWords.length : 0;
+    const queryCoverage = queryWords.length ? matchedQueryWordCount / queryWords.length : 0;
     let confidenceScore =
       (queryCoverage * 0.9) +
       (keywordCoverage * 0.1);
@@ -439,8 +402,6 @@ const fetchWeightedProductKeywordSuggestions = async ({
       id: keyword.id,
       user_id: null,
       title: keyword.name,
-      keyword_type: keyword.keyword_type || 'item_subcategory',
-      keyword_item_category_id: keyword.keyword_type === 'item_category' ? keyword.item_category_id : null,
       category: keyword.ItemSubCategory?.category_id || null,
       exact_title_match: normalizedKeyword === normalizedQuery,
       exact_word_match: exactWordMatch,
@@ -463,10 +424,6 @@ const fetchWeightedProductKeywordSuggestions = async ({
       matched_query_words: matchedQueryWords,
       matched_query_word_count: matchedQueryWordCount,
       matched_keyword_word_count: matchedKeywordWordCount,
-      keyword_coverage: keywordCoverage,
-      query_coverage: queryCoverage,
-      longest_consecutive_match: longestConsecutiveMatch,
-      full_keyword_match: fullKeywordMatch,
       query_word_count: queryWords.length,
       keyword_word_count: keywordWords.length,
       full_query_match: queryWords.length > 0 && matchedQueryWordCount === queryWords.length,
@@ -477,13 +434,22 @@ const fetchWeightedProductKeywordSuggestions = async ({
 
   const fullyMatched = scored
     .filter(x => x.full_query_match)
-    .sort(compareProductKeywordSuggestions);
+    .sort((a, b) => {
+
+      if (a.exact_title_match !== b.exact_title_match)
+        return a.exact_title_match ? -1 : 1;
+
+      if (a.match_score !== b.match_score)
+        return b.match_score - a.match_score;
+
+      return a.keyword_word_count - b.keyword_word_count;
+    });
 
   if (fullyMatched.length) {
     return {
       normalizedQuery,
       queryWords,
-      suggestions: fullyMatched.slice(0, limit),
+      suggestions: fullyMatched.slice(0, limit)
     };
   }
 
@@ -503,7 +469,95 @@ const fetchWeightedProductKeywordSuggestions = async ({
     matchedScored = fullyMatchedSuggestions;
   }
 
-  matchedScored.sort(compareProductKeywordSuggestions);
+
+
+
+  matchedScored.sort((a, b) => {
+    const aExactPhrase = normalizeTextForSuggest(a.title) === normalizedQuery;
+    const bExactPhrase = normalizeTextForSuggest(b.title) === normalizedQuery;
+    if (aExactPhrase !== bExactPhrase) return aExactPhrase ? -1 : 1;
+
+    const aContainsPhrase = normalizeTextForSuggest(a.title).includes(normalizedQuery);
+    const bContainsPhrase = normalizeTextForSuggest(b.title).includes(normalizedQuery);
+    if (aContainsPhrase !== bContainsPhrase) return aContainsPhrase ? -1 : 1;
+
+    const aHasAllWords =
+      a.matched_query_word_count === queryWords.length;
+
+    const bHasAllWords =
+      b.matched_query_word_count === queryWords.length;
+
+    if (aHasAllWords !== bHasAllWords)
+      return aHasAllWords ? -1 : 1;
+
+
+
+    if (aHasAllWords !== bHasAllWords)
+      return aHasAllWords ? -1 : 1;
+
+    if (a.full_query_match !== b.full_query_match)
+      return a.full_query_match ? -1 : 1;
+
+    if (a.matched_query_word_count !== b.matched_query_word_count)
+      return b.matched_query_word_count - a.matched_query_word_count;
+
+    if (a.exact_word_match !== b.exact_word_match)
+      return a.exact_word_match ? -1 : 1;
+
+    if (a.exact_title_match !== b.exact_title_match)
+      return a.exact_title_match ? -1 : 1;
+
+    if (a.exact_match !== b.exact_match)
+      return a.exact_match ? -1 : 1;
+
+    if (a.full_query_match !== b.full_query_match)
+      return a.full_query_match ? -1 : 1;
+
+
+    const aCoverage = a.matched_query_word_count / Math.max(1, a.query_word_count);
+    const bCoverage = b.matched_query_word_count / Math.max(1, b.query_word_count);
+
+    if (aCoverage !== bCoverage)
+      return bCoverage - aCoverage;
+
+
+
+    if (a.matched_query_word_count !== b.matched_query_word_count)
+      return b.matched_query_word_count - a.matched_query_word_count;
+
+    if (a.match_score !== b.match_score)
+      return b.match_score - a.match_score;
+
+    if (a.confidence_score !== b.confidence_score)
+      return b.confidence_score - a.confidence_score;
+
+    if (a.phrase_prefix_match !== b.phrase_prefix_match)
+      return a.phrase_prefix_match ? -1 : 1;
+
+    if (a.leading_prefix_token_score !== b.leading_prefix_token_score)
+      return b.leading_prefix_token_score - a.leading_prefix_token_score;
+
+    if (a.phrase_includes_match !== b.phrase_includes_match)
+      return a.phrase_includes_match ? -1 : 1;
+
+
+    // // Same first word ko priority
+    // const aStarts = tokenizeForSuggest(a.title)[0] === queryWords[0];
+    // const bStarts = tokenizeForSuggest(b.title)[0] === queryWords[0];
+
+    // if (aStarts !== bStarts)
+    //     return aStarts ? -1 : 1;
+
+    // Jis keyword me extra words kam hon usko priority
+    const aExtraWords = a.keyword_word_count - a.matched_keyword_word_count;
+    const bExtraWords = b.keyword_word_count - b.matched_keyword_word_count;
+
+    if (aExtraWords !== bExtraWords)
+      return aExtraWords - bExtraWords;
+
+    return a.keyword_word_count - b.keyword_word_count;
+
+  });
 
   let suggestions = matchedScored;
 
@@ -528,22 +582,9 @@ const fetchWeightedProductKeywordSuggestions = async ({
     const usedKeywordIds = new Set(usedKeywordRows.map((row) => String(row.keyword_id)));
     const usedItemSubCategoryIds = new Set(usedKeywordRows.map((row) => String(row.item_subcategory_id)));
 
-    // Item Category keywords count as used when their Item Category has live products.
-    const keywordItemCategoryIds = suggestions.map((suggestion) => suggestion.keyword_item_category_id).filter(Boolean);
-    const usedItemCategoryRows = keywordItemCategoryIds.length
-      ? await Products.findAll({
-        where: { item_category_id: { [Op.in]: keywordItemCategoryIds }, status: 1, is_approve: 1, is_delete: 0 },
-        attributes: ['item_category_id'],
-        group: ['item_category_id'],
-        raw: true,
-      })
-      : [];
-    const usedItemCategoryIds = new Set(usedItemCategoryRows.map((row) => String(row.item_category_id)));
-
     suggestions = suggestions.filter((suggestion) => (
       usedKeywordIds.has(String(suggestion.id))
       || usedItemSubCategoryIds.has(String(suggestion.item_subcategory_id))
-      || usedItemCategoryIds.has(String(suggestion.keyword_item_category_id))
     ));
   }
 
