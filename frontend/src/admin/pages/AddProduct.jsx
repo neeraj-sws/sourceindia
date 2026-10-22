@@ -54,6 +54,8 @@ const AddProduct = () => {
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
+  const suggestionRequestIdRef = useRef(0);
+  const editSuggestionPickRef = useRef(0);
   const [itemCategories, setItemCategories] = useState([]);
   const [itemSubCategories, setItemSubCategories] = useState([]);
   const [selectedItemCategory, setSelectedItemCategory] = useState('');
@@ -307,9 +309,12 @@ const AddProduct = () => {
   // Item Sub Category (or Item Category), e.g. after picking the categories by hand.
   useEffect(() => {
     if (selectedKeyword || keywords.length === 0) return;
+    // Edit forms must retain the keyword saved on the product. A keyword is auto-picked
+    // only on Add Product; on Edit it changes only when an admin chooses it.
+    if (isEditing) return;
     const mainKeyword = findMainKeyword(keywords);
     if (mainKeyword) handleKeywordChange(String(mainKeyword.id));
-  }, [keywords, selectedKeyword]);
+  }, [keywords, selectedKeyword, isEditing]);
 
   // Picking a keyword by hand: remember whether it is an Item Category keyword.
   const selectedKeywordInfo = keywords.find((keyword) => String(keyword.id) === String(selectedKeyword)) || null;
@@ -610,11 +615,12 @@ const AddProduct = () => {
       const autoKeywordName = autoSelectedTitleRef.current;
       const isNewTitle = Boolean(autoKeywordName) && Boolean(value.trim())
         && !findConfidentSuggestion(value, [{ title: autoKeywordName }]);
-      const startOver = !value.trim() || isNewTitle;
+      const startOver = !isEditing && (!value.trim() || isNewTitle);
       if (startOver) {
         resetCategorySelections();
       }
       if (value.length >= 2) {
+        const requestId = ++suggestionRequestIdRef.current;
         setSuggestionLoading(true);
         // A new product name is not tied to the categories of the old one.
         const filteredParams = {
@@ -646,16 +652,22 @@ const AddProduct = () => {
               });
             }
 
+            if (isEditing && requestId !== suggestionRequestIdRef.current) return;
             setProductSuggestions(rankSuggestionsByQuery(suggestions, value));
             setShowSuggestions(true);
           } catch {
+            if (isEditing && requestId !== suggestionRequestIdRef.current) return;
             setProductSuggestions([]);
             setShowSuggestions(false);
           } finally {
-            setSuggestionLoading(false);
+            if (!isEditing || requestId === suggestionRequestIdRef.current) setSuggestionLoading(false);
           }
         })();
       } else {
+        if (isEditing) {
+          suggestionRequestIdRef.current += 1;
+          setSuggestionLoading(false);
+        }
         setProductSuggestions([]);
         setShowSuggestions(false);
       }
@@ -665,6 +677,7 @@ const AddProduct = () => {
   // When user selects a suggestion
   const handleSuggestionSelect = (suggestion, options = {}) => {
     const { preserveTypedTitle = false, typedTitle = '' } = options;
+    if (isEditing) editSuggestionPickRef.current += 1;
     setFormData(prev => ({
       ...prev,
       title: preserveTypedTitle ? typedTitle : suggestion.title
@@ -689,27 +702,21 @@ const AddProduct = () => {
       });
     }
 
-    if (suggestion.category) {
-      setSelectedCategory(String(suggestion.category));
-    }
-    if (suggestion.sub_category) {
-      setSelectedSubCategory(String(suggestion.sub_category));
-    }
-    if (suggestion.item_category_id) {
-      setSelectedItemCategory(String(suggestion.item_category_id));
-    }
-
-    if (suggestion.item_subcategory_id) {
-      setSelectedItemSubCategory(String(suggestion.item_subcategory_id));
-    } else if (suggestion.keyword_type === 'item_category') {
-      // Item Category keyword: the admin may still pick an Item Sub Category.
-      setSelectedItemSubCategory('');
-    }
-    if (suggestion.id) {
-      setSelectedKeyword(String(suggestion.id));
-    }
-    if (suggestion.item_id) {
-      setSelectedItem(String(suggestion.item_id));
+    if (isEditing) {
+      setSelectedCategory(suggestion.category ? String(suggestion.category) : '');
+      setSelectedSubCategory(suggestion.sub_category ? String(suggestion.sub_category) : '');
+      setSelectedItemCategory(suggestion.item_category_id ? String(suggestion.item_category_id) : '');
+      setSelectedItemSubCategory(suggestion.item_subcategory_id ? String(suggestion.item_subcategory_id) : '');
+      setSelectedKeyword(suggestion.id ? String(suggestion.id) : '');
+      setSelectedItem(suggestion.item_id ? String(suggestion.item_id) : '');
+    } else {
+      if (suggestion.category) setSelectedCategory(String(suggestion.category));
+      if (suggestion.sub_category) setSelectedSubCategory(String(suggestion.sub_category));
+      if (suggestion.item_category_id) setSelectedItemCategory(String(suggestion.item_category_id));
+      if (suggestion.item_subcategory_id) setSelectedItemSubCategory(String(suggestion.item_subcategory_id));
+      else if (suggestion.keyword_type === 'item_category') setSelectedItemSubCategory('');
+      if (suggestion.id) setSelectedKeyword(String(suggestion.id));
+      if (suggestion.item_id) setSelectedItem(String(suggestion.item_id));
     }
 
   };
@@ -729,8 +736,8 @@ const AddProduct = () => {
       const confidentSuggestion = formData.title.trim().length >= 2
         ? findConfidentSuggestion(formData.title, productSuggestions)
         : null;
-      const autoSuggestion = confidentSuggestion
-        || (formData.title.trim().length >= 2 ? productSuggestions[0] : null);
+      const autoSuggestion = isEditing ? null : (confidentSuggestion
+        || (formData.title.trim().length >= 2 ? productSuggestions[0] : null));
       if (autoSuggestion && !selectedKeyword) {
         handleSuggestionSelect(autoSuggestion, {
           preserveTypedTitle: true,
@@ -782,12 +789,15 @@ const AddProduct = () => {
     if (!isEditing) return;
 
     const fetchProduct = async () => {
+      const suggestionPickAtStart = editSuggestionPickRef.current;
       try {
         const res = await axios.get(`${API_BASE_URL}/products/${productId}`);
         const data = res.data;
+        const suggestionPickedDuringLoad = editSuggestionPickRef.current !== suggestionPickAtStart;
 
-        setFormData({
-          title: data.title || '',
+        setFormData(prev => ({
+          ...prev,
+          title: suggestionPickedDuringLoad ? prev.title : (data.title || ''),
           code: data.code || '',
           article_number: data.article_number || '',
           status: String(data.status),
@@ -798,9 +808,10 @@ const AddProduct = () => {
           is_featured: Number(data.is_featured) || 0,
           is_recommended: Number(data.is_recommended) || 0,
           best_product: Number(data.best_product) || 0,
-        });
+        }));
         setSelectedSellers(String(data.user_id || ""));
         setSelectedApplications(String(data.application || ""));
+        if (suggestionPickedDuringLoad) return;
         // Set category & subcategory first
         setSelectedCategory(data.category || "");
         setSelectedSubCategory(String(data.sub_category || ""));
@@ -816,6 +827,7 @@ const AddProduct = () => {
             `${API_BASE_URL}/sellers/seller-categories`,
             { params: { user_id: data.user_id } }
           );
+          if (editSuggestionPickRef.current !== suggestionPickAtStart) return;
           const sellerCategoryList = normalizeList(catRes.data);
           setCategories(mergeCategoryOptions(allCategories, sellerCategoryList));
         }
@@ -824,6 +836,7 @@ const AddProduct = () => {
             const res = await axios.get(`${API_BASE_URL}/sellers/seller-subcategories-by-user`, {
               params: { user_id: data.user_id, category_id: data.category }
             });
+            if (editSuggestionPickRef.current !== suggestionPickAtStart) return;
             setSubCategories(normalizeList(res.data));
           } catch (err) {
             console.error("Error fetching subcategories:", err);
@@ -838,6 +851,7 @@ const AddProduct = () => {
           const resIC = await axios.get(
             `${API_BASE_URL}/item_category/by-category-subcategory/${data.category}/${data.sub_category}`
           );
+          if (editSuggestionPickRef.current !== suggestionPickAtStart) return;
           itemCatRes = resIC.data;
           setItemCategories(itemCatRes);
         }
@@ -851,6 +865,7 @@ const AddProduct = () => {
             const resISC = await axios.get(
               `${API_BASE_URL}/item_sub_category/by-category-subcategory-itemcategory/${data.category}/${data.sub_category}/${data.item_category_id}`
             );
+            if (editSuggestionPickRef.current !== suggestionPickAtStart) return;
             itemSubCatRes = resISC.data;
             setItemSubCategories(itemSubCatRes);
           } catch (err) {
@@ -1254,7 +1269,12 @@ const AddProduct = () => {
                                 setFormData(prev => ({ ...prev, title: '' }));
                                 setProductSuggestions([]);
                                 setShowSuggestions(false);
-                                resetCategorySelections();
+                                if (isEditing) {
+                                  suggestionRequestIdRef.current += 1;
+                                  setSuggestionLoading(false);
+                                } else {
+                                  resetCategorySelections();
+                                }
                               }}
                               title="Clear Product Name"
                             >
