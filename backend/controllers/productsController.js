@@ -1336,8 +1336,13 @@ exports.getAllProducts = async (req, res) => {
     }
 
     // Website products page: spelling fixes, synonyms, part numbers, whole words, sentences.
+    // let frontSearch = null;
+    // if (search && isTruthyQueryFlag(is_front)) {
+        // Website products page: spelling fixes, synonyms, part numbers, whole words, sentences.
+    // true karoge to naya website search chalega, false par purana.
+    const USE_NEW_FRONT_SEARCH = false;
     let frontSearch = null;
-    if (search && isTruthyQueryFlag(is_front)) {
+    if (USE_NEW_FRONT_SEARCH && search && isTruthyQueryFlag(is_front)) {
       const prepared = await prepareSearchQuery(search);
       const built = buildFrontProductSearch({
         search,
