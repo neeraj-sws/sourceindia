@@ -907,7 +907,7 @@ exports.updateProfile = async (req, res) => {
         products: req.body.products,
         walkin_buyer: 0
       };
-      if (user.is_seller == 0) {
+      if (user.is_seller == 0 && companyInfo) {
         await companyInfo.update({
           company_website: req.body.company_website,
           user_category: req.body.user_category,
