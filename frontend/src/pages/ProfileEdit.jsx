@@ -8,10 +8,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../context/AlertContext';
 import { FiCheckCircle, FiRefreshCw, FiUploadCloud, FiUser } from 'react-icons/fi';
 import './CompanyEdit.css';
+import UseAuth from '../sections/UseAuth';
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
   const { showNotification } = useAlert();
+  const { refetchUser } = UseAuth();
   const [user, setUser] = useState({
     fname: "",
     lname: "",
@@ -231,6 +233,8 @@ const ProfileEdit = () => {
           "Content-Type": "multipart/form-data",
         },
       });
+
+          await refetchUser();
 
       showNotification("Profile updated successfully!", "success");
       navigate("/profile");
