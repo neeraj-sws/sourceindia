@@ -1199,7 +1199,10 @@ const buildFrontProductSearch = ({ search, prepared, keywordMatchConditions, wit
         ? likeWord(col('title'), phrase)
         : `${col('title')} LIKE ${esc(`%${phrase}%`)}`);
     }
-    if (words.length >= 2 || (index > 0 && words.length === 1)) {
+    // if (words.length >= 2 || (index > 0 && words.length === 1)) {
+    if (words.length >= 2) {
+      strongTitle.push(`${col('title')} LIKE ${esc(`%${words.join('%')}%`)}`);
+    } else if (index > 0 && words.length === 1) {
       strongTitle.push(`(${words.map((w) => likeWord(col('title'), w)).join(' AND ')})`);
     }
   });
@@ -1336,13 +1339,8 @@ exports.getAllProducts = async (req, res) => {
     }
 
     // Website products page: spelling fixes, synonyms, part numbers, whole words, sentences.
-    // let frontSearch = null;
-    // if (search && isTruthyQueryFlag(is_front)) {
-        // Website products page: spelling fixes, synonyms, part numbers, whole words, sentences.
-    // true karoge to naya website search chalega, false par purana.
-    const USE_NEW_FRONT_SEARCH = false;
     let frontSearch = null;
-    if (USE_NEW_FRONT_SEARCH && search && isTruthyQueryFlag(is_front)) {
+    if (search && isTruthyQueryFlag(is_front)) {
       const prepared = await prepareSearchQuery(search);
       const built = buildFrontProductSearch({
         search,
