@@ -88,17 +88,16 @@ const getUserName = (value) => {
             { label: "Different search texts", value: summary?.distinct_queries },
             { label: "Searches with no result", value: summary?.zero_result_searches, danger: true },
             {
-              label: "People who searched",
+              label: "Total unique searchers",
               value: summary?.total_people,
-              detail: `${summary?.unique_users ?? "-"} logged-in + ${summary?.unique_guests ?? "-"} guests (since ${summary?.tracking_since ? formatDateTime(summary.tracking_since) : "-"})`,
+              detail: `${summary?.unique_users ?? "-"} logged-in · ${summary?.unique_guests ?? "-"} guests`,
             },
           ].map((tile) => (
-            <div className="col-md-4" key={tile.label}>
-              <div className="card mb-0">
+            <div className="col-12 col-sm-6 col-md-3 d-flex" key={tile.label}>
+              <div className="card mb-0 h-100 w-100" title={tile.detail}>
                 <div className="card-body py-3">
                   <div className="small text-muted">{tile.label}</div>
                   <div className={`fs-4 fw-bold ${tile.danger ? "text-danger" : ""}`}>{tile.value ?? "-"}</div>
-                  {tile.detail && <div className="small text-muted">{tile.detail}</div>}
                 </div>
               </div>
             </div>
