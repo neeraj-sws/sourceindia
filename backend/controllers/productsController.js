@@ -1199,7 +1199,10 @@ const buildFrontProductSearch = ({ search, prepared, keywordMatchConditions, wit
         ? likeWord(col('title'), phrase)
         : `${col('title')} LIKE ${esc(`%${phrase}%`)}`);
     }
-    if (words.length >= 2 || (index > 0 && words.length === 1)) {
+    // if (words.length >= 2 || (index > 0 && words.length === 1)) {
+    if (words.length >= 2) {
+      strongTitle.push(`${col('title')} LIKE ${esc(`%${words.join('%')}%`)}`);
+    } else if (index > 0 && words.length === 1) { 
       strongTitle.push(`(${words.map((w) => likeWord(col('title'), w)).join(' AND ')})`);
     }
   });
