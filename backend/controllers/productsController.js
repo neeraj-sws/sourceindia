@@ -1444,7 +1444,7 @@ exports.getAllProducts = async (req, res) => {
         resultCount: count,
         source: 'products_page',
         entryUserId: req.user?.id,
-        sessionId: req.sessionID,
+        sessionId: req.visitorId || req.sessionID,
         ipAddress: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket?.remoteAddress,
       });
     }

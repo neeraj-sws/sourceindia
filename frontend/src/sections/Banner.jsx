@@ -72,10 +72,14 @@ const Banner = () => {
         }
 
         const userToken = localStorage.getItem("user_token");
+        const visitorId = localStorage.getItem("si_vid");
         const res = await axios.post(
           `${API_BASE_URL}/front_menu/main-search?q=${encodeURIComponent(normalizedQuery)}&type=${searchType}`,
           undefined,
-          userToken ? { headers: { Authorization: `Bearer ${userToken}` } } : undefined
+          { headers: {
+            ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+            ...(visitorId ? { "X-Visitor-Id": visitorId } : {}),
+          } }
         );
 
         if (cancelled) return;

@@ -34,10 +34,14 @@ const resolveProductKeywordIds = async ({
 
   try {
     const userToken = localStorage.getItem('user_token');
+    const visitorId = localStorage.getItem('si_vid');
     const res = await axios.post(
       `${API_BASE_URL}/front_menu/main-search?q=${encodeURIComponent(trimmedSearch)}&type=product`,
       undefined,
-      userToken ? { headers: { Authorization: `Bearer ${userToken}` } } : undefined
+      { headers: {
+        ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+        ...(visitorId ? { 'X-Visitor-Id': visitorId } : {}),
+      } }
     );
     const suggestions = Array.isArray(res.data) ? res.data : [];
 
@@ -593,8 +597,12 @@ const ProductsList = () => {
         url += `&keyword_ids=${nextResolvedKeywordIds.join(',')}`;
       }
       const userToken = localStorage.getItem('user_token');
+      const visitorId = localStorage.getItem('si_vid');
       const res = await axios.get(url, {
-        headers: userToken ? { Authorization: `Bearer ${userToken}` } : {},
+        headers: {
+          ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+          ...(visitorId ? { 'X-Visitor-Id': visitorId } : {}),
+        },
       });
       if (requestId !== productsRequestIdRef.current) return;
       const newProducts = res.data.products || [];

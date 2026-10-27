@@ -2,6 +2,10 @@ const jwt = require('jsonwebtoken');
 
 // Attach a verified user when a valid bearer token is present; public requests continue either way.
 const optionalAuth = (req, res, next) => {
+  const visitorId = req.get('X-Visitor-Id');
+  if (typeof visitorId === 'string' && /^[A-Za-z0-9_-]{1,255}$/.test(visitorId.trim())) {
+    req.visitorId = visitorId.trim();
+  }
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
 

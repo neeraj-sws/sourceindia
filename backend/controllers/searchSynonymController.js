@@ -200,6 +200,31 @@ exports.getSearchLogsServerSide = async (req, res) => {
       replacements,
     });
 
+    const entryDateFrom = created?.[Op.gte] || null;
+    const entryDateTo = created?.[Op.lte] || null;
+    const entrySummaryRows = await sequelize.query(
+      `SELECT COUNT(DISTINCT e.user_id) AS unique_users,
+              COUNT(DISTINCT CASE WHEN e.user_id IS NULL THEN e.session_id END) AS unique_guests,
+              MIN(e.created_at) AS tracking_since
+         FROM search_log_entries e
+        WHERE (:dateFrom IS NULL OR e.created_at >= :dateFrom)
+          AND (:dateTo IS NULL OR e.created_at <= :dateTo)
+          AND (:userId IS NULL OR e.user_id = :userId)
+          AND (:loggedInOnly = 0 OR e.user_id IS NOT NULL)`,
+      {
+        replacements: {
+          dateFrom: entryDateFrom,
+          dateTo: entryDateTo,
+          userId: user_id === undefined ? null : Number(user_id),
+          loggedInOnly: String(logged_in_only).toLowerCase() === 'true' ? 1 : 0,
+        },
+        type: QueryTypes.SELECT,
+      }
+    );
+    const entrySummary = entrySummaryRows[0] || {};
+    const uniqueUsers = Number(entrySummary.unique_users || 0);
+    const uniqueGuests = Number(entrySummary.unique_guests || 0);
+
     // Per-keyword user info for the current page: the latest logged-in user across ALL
     // occurrences of the search text, how many distinct users searched it, and the total
     // entry count (so the UI can tell "only guests" from "no data"). Decorative only:
@@ -260,6 +285,10 @@ exports.getSearchLogsServerSide = async (req, res) => {
         total_searches: Number(summary?.total_searches || 0),
         zero_result_searches: Number(summary?.zero_result_searches || 0),
         distinct_queries: Number(summary?.distinct_queries || 0),
+        unique_users: uniqueUsers,
+        unique_guests: uniqueGuests,
+        total_people: uniqueUsers + uniqueGuests,
+        tracking_since: entrySummary.tracking_since || null,
       },
     });
   } catch (err) {
