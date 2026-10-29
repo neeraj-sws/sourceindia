@@ -365,7 +365,7 @@ const SellerMyPerformance = () => {
                   {years.map((y) => <option key={y} value={y}>{y}</option>)}
                 </select>
               </div>
-              <span className="badge bg-primary bg-opacity-10 text-primary fs-6 align-self-center px-3 py-2">
+              <span className="badge bg-primary bg-opacity-10 text-light fs-6 align-self-center px-3 py-2 mt-4">
                 {chartLabel}
               </span>
             </div>

@@ -145,9 +145,9 @@ const SellerBuyLeads = () => {
                   return (
                     <tr key={row.id}>
                       <td>{row.assignment_number}</td>
-                      <td>{row.requirement?.product_name_snapshot}</td>
+                      <td className="text-capitalize">{row.requirement?.product_name_snapshot}</td>
                       <td>{row.requirement?.itemSubCategory?.name || row.requirement?.itemCategory?.name || row.requirement?.subCategory?.name || row.requirement?.category?.name || "-"}</td>
-                      <td>{row.requirement?.buyer_name || row.requirement?.buyer_email || row.requirement?.buyer_company || "-"}</td>
+                      <td className="text-capitalize">{row.requirement?.buyer_name || row.requirement?.buyer_email || row.requirement?.buyer_company || "-"}</td>
                       <td>{row.requirement?.buyer_city || "-"}{row.requirement?.buyer_state ? <div className="text-muted small">{row.requirement.buyer_state}</div> : null}</td>
                       <td>{row.requirement?.quantity || "-"}{row.requirement?.quantity_unit ? ` ${row.requirement.quantity_unit}` : ""}</td>
                       <td>{formatDateTime(row.assigned_at)}</td>

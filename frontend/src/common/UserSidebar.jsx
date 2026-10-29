@@ -23,7 +23,8 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick }) => {
               ? item.link[0]
               : item.link || "#"
         }
-        className={hasSubMenu ? "has-arrow" : ""}
+        // className={hasSubMenu ? "has-arrow" : ""}
+          className={`${hasSubMenu ? "has-arrow" : ""} ${item.className || ""}`}
         aria-expanded={shouldExpand}
         onClick={(e) => {
           if (hasSubMenu) {
@@ -201,6 +202,7 @@ const UserSidebar = () => {
     {
       title: "Post Buy Requirement",
       icon: "bx bx-list-ul",
+      className: 'post-buy-requirement',
       show: true,
       subMenu: [
         { title: "Send", link: "/my-buy-requirements", show: true },

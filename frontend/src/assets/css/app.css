@@ -262,7 +262,11 @@ a {
 }
 
 .sidebar-wrapper .metismenu a .menu-title {
-	margin-left: 10px,
+	margin-left: 10px;
+}
+
+.post-buy-requirement {
+  letter-spacing: 0.10px !important;
 }
 
 .sidebar-wrapper .metismenu ul a {

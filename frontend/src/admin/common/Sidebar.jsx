@@ -250,6 +250,7 @@ const menuData = [
   {
     title: 'Post Buy Requirement',
     icon: 'bx bx-cart-alt',
+    className: 'post-buy-requirement',
     subMenu: [
       { title: 'Buy Requirements', link: '/admin/buy-requirements' },
       // { title: 'Requirement History', link: '/admin/buy-requirements-history' },
@@ -402,7 +403,8 @@ const SidebarItem = ({ item, currentPath, isOpen, onClick, counts }) => {
     <li className={`${isItemActive ? 'mm-active' : ''} ${shouldExpand ? 'mm-show' : ''}`}>
       <Link
         to={hasSubMenu ? '#' : (Array.isArray(item.link) ? item.link[0] : item.link) || '#'}
-        className={hasSubMenu ? 'has-arrow' : ''}
+        // className={hasSubMenu ? 'has-arrow' : ''}
+        className={`${hasSubMenu ? 'has-arrow' : ''} ${item.className || ''}`}
         aria-expanded={shouldExpand}
         onClick={(e) => {
           if (hasSubMenu) { e.preventDefault(); onClick(); }
