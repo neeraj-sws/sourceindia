@@ -411,6 +411,18 @@ async function sellerRespondToLead(req, res) {
       return res.status(400).json({ message: 'Invalid action' });
     }
 
+    if (action === 'reject') {
+      const reason = typeof rejection_reason === 'string' ? rejection_reason : '';
+      const trimmedReason = reason.trim();
+      const words = trimmedReason === '' ? [] : trimmedReason.split(/\s+/);
+      if (words.length === 0) {
+        return res.status(400).json({ message: 'Rejection reason is required to reject a lead' });
+      }
+      if (words.length > 500) {
+        return res.status(400).json({ message: 'Rejection reason cannot exceed 500 words' });
+      }
+    }
+
     const result = await handleSellerResponse(parseInt(id), sellerId, action, rejection_reason, req.ip);
     if (!result.success) return res.status(400).json({ message: result.message });
     return res.json({ message: 'Action completed successfully', data: result });

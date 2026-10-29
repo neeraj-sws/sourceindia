@@ -79,7 +79,7 @@ export function AdminSellerPerformance() {
                 <tr key={row.id}>
                   <td>{row.sno ?? ((page - 1) * limit + index + 1)}</td>
                   <td>
-                    <div className="fw-semibold">{row.seller?.fname} {row.seller?.lname}</div>
+                    <div className="fw-semibold text-capitalize">{row.seller?.fname} {row.seller?.lname}</div>
                     <div className="text-muted small">{row.seller?.email}</div>
                   </td>
                   <td>{row.seller?.company_info?.organization_name || "-"}</td>
@@ -187,7 +187,7 @@ export function AdminBuyRequirementConfig() {
   const weightFields = [
     { key: "performance_weight_leads", label: "Lead Performance Weight", help: "Default 0.60" },
     { key: "performance_weight_products", label: "Product Listing Weight", help: "Default 0.30" },
-    { key: "performance_weight_buyer_rating", label: "Buyer Rating Weight", help: "Default 0.10" },
+    { key: "performance_weight_buyer_rating", label: "Member Rating Weight", help: "Default 0.10" },
   ];
 
   const renderFields = (fields) =>

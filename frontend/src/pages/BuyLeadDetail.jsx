@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
+import { formatAutoCancelledReason } from "../utils/requirementReason";
 import useAuth from "../sections/UseAuth";
 import { formatDateTime } from "../utils/formatDate";
 import ConfirmActionModal from "../components/ConfirmActionModal";
@@ -176,12 +177,20 @@ const BuyLeadDetail = () => {
                 </div>
               </div>
               <div className="card-body">
-                <h4>{req.product_name_snapshot}</h4>
+                <h4 className="text-capitalize pbr-heading">{req.product_name_snapshot}</h4>
+                <nav aria-label="breadcrumb" className="pbr-breadcrumb mb-3">
+                  <ol className="breadcrumb mb-0 flex-wrap">
+                    <li className="breadcrumb-item"><Link to="/">Home</Link></li>
+                    <li className="breadcrumb-item">Post Buy Requirement</li>
+                    <li className="breadcrumb-item"><Link to="/buy-leads">Received</Link></li>
+                    <li className="breadcrumb-item active" aria-current="page">Requirement Detail</li>
+                  </ol>
+                </nav>
                 <div className="row">
-                  <div className="col-md-6"><strong>Category:</strong> {req.category?.name || "-"}</div>
-                  <div className="col-md-6"><strong>Sub Category:</strong> {req.subCategory?.name || "-"}</div>
-                  <div className="col-md-6"><strong>Item Category:</strong> {req.itemCategory?.name || "-"}</div>
-                  <div className="col-md-6"><strong>Item Sub Category:</strong> {req.itemSubCategory?.name || "-"}</div>
+                  <div className="col-md-6"><strong>Category:</strong> <span className="text-capitalize">{req.category?.name || "-"}</span></div>
+                  <div className="col-md-6"><strong>Sub Category:</strong> <span className="text-capitalize">{req.subCategory?.name || "-"}</span></div>
+                  <div className="col-md-6"><strong>Item Category:</strong> <span className="text-capitalize">{req.itemCategory?.name || "-"}</span></div>
+                  <div className="col-md-6"><strong>Item Sub Category:</strong> <span className="text-capitalize">{req.itemSubCategory?.name || "-"}</span></div>
                   <div className="col-md-6"><strong>Quantity:</strong> {req.quantity || "-"}{req.quantity_unit ? ` ${req.quantity_unit}` : ""}</div>
                   {/* "Requirement Type" removed: reads product_type, column dropped from buyer_requirements */}
                   <div className="col-md-6"><strong>Supplier Preference:</strong> {req.supplier_preference || "-"}</div>
@@ -197,11 +206,11 @@ const BuyLeadDetail = () => {
                 ) : (req?.buyer?.is_seller === 1) ? (
                   <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Seller Details</h6>
                 ) : (
-                  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Buyer Details</h6>
+                  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Requested By</h6>
                 )}</div>
               <div className="card-body">
                 <div className="row">
-                  <div className="col-md-6"><strong>Name:</strong> {req.buyer_name || "-"}</div>
+                  <div className="col-md-6"><strong>Name:</strong> <span className="text-capitalize">{req.buyer_name || "-"}</span></div>
                   <div className="col-md-6"><strong>Company:</strong> {req.buyer_company || "-"}</div>
                   <div className="col-md-6"><strong>City:</strong> {req.buyer_city || "-"}</div>
                   <div className="col-md-6"><strong>State:</strong> {req.buyer_state || "-"}</div>
@@ -245,9 +254,17 @@ const BuyLeadDetail = () => {
                   <div className="alert alert-secondary mb-0">
                     <div>This lead is no longer active for you.</div>
                     {lead.status === 4 && lead.rejection_reason ? (
-                      <div className="mt-2 small">{lead.rejection_reason}</div>
+                      <div className="alert alert-danger mt-2 mb-0">
+                        <strong>Rejection Reason</strong>
+                        <div className="mt-1" style={{ whiteSpace: "pre-wrap" }}>{lead.rejection_reason}</div>
+                      </div>
                     ) : lead.status === 5 ? (
-                      <div className="mt-2 small">Auto-cancelled — seller did not respond in time.</div>
+                      <div className="alert alert-warning mt-2 mb-0">
+                        <strong>Auto Cancelled Reason</strong>
+                        <div className="mt-1" style={{ whiteSpace: "pre-wrap" }}>
+                          {formatAutoCancelledReason(lead.reassignment_reason)}
+                        </div>
+                      </div>
                     ) : null}
                   </div>
                 ) : (
@@ -304,7 +321,7 @@ const BuyLeadDetail = () => {
                           <div className="text-muted small">{l.details || "-"}</div>
                           <div className="text-muted small">
                             {formatDateTime(l.created_at)}
-                            {l.seller ? ` • ${l.seller.fname} ${l.seller.lname}` : ""}
+                            {l.seller ? <> • <span className="text-capitalize">{l.seller.fname} {l.seller.lname}</span></> : ""}
                           </div>
                         </div>
                       </li>

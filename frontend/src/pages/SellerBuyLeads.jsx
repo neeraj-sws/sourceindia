@@ -86,12 +86,19 @@ const SellerBuyLeads = () => {
     <Suspense fallback={<div>Loading...</div>}>
       <div className="page-wrapper">
         <div className="page-content">
-          <h4 className="mb-3 d-flex align-items-center gap-2">
+          <h4 className="mb-1 pbr-heading d-flex align-items-center gap-2">
             Received Requirements
             {/* <span className={`badge bg-${priority.class}`} title={`Overall performance score: ${counts?.overall_performance_score ?? 0} / 100`}>
               {priority.label}
             </span> */}
           </h4>
+          <nav aria-label="breadcrumb" className="pbr-breadcrumb mb-3">
+            <ol className="breadcrumb mb-0 flex-wrap">
+              <li className="breadcrumb-item"><Link to="/">Home</Link></li>
+              <li className="breadcrumb-item">Post Buy Requirement</li>
+              <li className="breadcrumb-item active" aria-current="page">Received</li>
+            </ol>
+          </nav>
 
           <div className="row row-cols-1 row-cols-md-3 row-cols-xl-4">
             {statCards.map((s, i) => (
@@ -119,7 +126,7 @@ const SellerBuyLeads = () => {
                   { key: "assignment_number", label: "Lead No", sortable: true },
                   { key: "product", label: "Product", sortable: false },
                   { key: "category", label: "Category", sortable: false },
-                  { key: "buyer", label: "Buyer", sortable: false },
+                  { key: "buyer", label: "Requested By", sortable: false },
                   { key: "location", label: "Location", sortable: false },
                   { key: "quantity", label: "Quantity", sortable: false },
                   { key: "assigned_at", label: "Assigned", sortable: true },
@@ -146,8 +153,8 @@ const SellerBuyLeads = () => {
                     <tr key={row.id}>
                       <td>{row.assignment_number}</td>
                       <td className="text-capitalize">{row.requirement?.product_name_snapshot}</td>
-                      <td>{row.requirement?.itemSubCategory?.name || row.requirement?.itemCategory?.name || row.requirement?.subCategory?.name || row.requirement?.category?.name || "-"}</td>
-                      <td className="text-capitalize">{row.requirement?.buyer_name || row.requirement?.buyer_email || row.requirement?.buyer_company || "-"}</td>
+                      <td className="text-capitalize">{row.requirement?.itemSubCategory?.name || row.requirement?.itemCategory?.name || row.requirement?.subCategory?.name || row.requirement?.category?.name || "-"}</td>
+                      <td>{row.requirement?.buyer_name ? <span className="text-capitalize">{row.requirement.buyer_name}</span> : row.requirement?.buyer_email || row.requirement?.buyer_company || "-"}</td>
                       <td>{row.requirement?.buyer_city || "-"}{row.requirement?.buyer_state ? <div className="text-muted small">{row.requirement.buyer_state}</div> : null}</td>
                       <td>{row.requirement?.quantity || "-"}{row.requirement?.quantity_unit ? ` ${row.requirement.quantity_unit}` : ""}</td>
                       <td>{formatDateTime(row.assigned_at)}</td>

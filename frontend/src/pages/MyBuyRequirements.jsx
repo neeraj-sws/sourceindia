@@ -93,10 +93,17 @@ const MyBuyRequirements = () => {
     <Suspense fallback={<div>Loading...</div>}>
       <div className="page-wrapper">
         <div className="page-content">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h4 className="mb-0">Send Requirements</h4>
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <h4 className="mb-0 pbr-heading">Send Requirements</h4>
             <Link className="btn btn-primary" to="/post-buy-requirement">+ New Requirement</Link>
           </div>
+          <nav aria-label="breadcrumb" className="pbr-breadcrumb mb-3">
+            <ol className="breadcrumb mb-0 flex-wrap">
+              <li className="breadcrumb-item"><Link to="/">Home</Link></li>
+              <li className="breadcrumb-item">Post Buy Requirement</li>
+              <li className="breadcrumb-item active" aria-current="page">Send</li>
+            </ol>
+          </nav>
           <div className="card">
             <div className="card-body">
               <DataTable
@@ -129,8 +136,8 @@ const MyBuyRequirements = () => {
                   return (
                     <tr key={row.id}>
                       <td>{row.id}</td>
-                      <td>{row.product_name_snapshot}</td>
-                      <td>{row.category?.name || "-"}</td>
+                      <td className="text-capitalize">{row.product_name_snapshot}</td>
+                      <td className="text-capitalize">{row.category?.name || "-"}</td>
                       <td>{row.quantity || "-"}{row.quantity_unit ? ` ${row.quantity_unit}` : ""}</td>
                       <td>{formatDateTime(row.created_at)}</td>
                       <td><span className={`badge bg-${st.class}`}>{st.label}</span></td>

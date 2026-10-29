@@ -644,8 +644,14 @@ async function handleSellerResponse(assignmentId, sellerId, action, rejectionRea
     if (assignment.status !== 0 && assignment.status !== 1) {
       return { success: false, message: 'Assignment no longer active' };
     }
-    if (!(rejectionReason || '').trim()) {
+    const reason = typeof rejectionReason === 'string' ? rejectionReason : '';
+    const trimmedReason = reason.trim();
+    const words = trimmedReason === '' ? [] : trimmedReason.split(/\s+/);
+    if (words.length === 0) {
       return { success: false, message: 'Rejection reason is required to reject a lead' };
+    }
+    if (words.length > 500) {
+      return { success: false, message: 'Rejection reason cannot exceed 500 words' };
     }
 
     const now = new Date();
@@ -654,14 +660,14 @@ async function handleSellerResponse(assignmentId, sellerId, action, rejectionRea
     await assignment.update({
       status: REJECTED,
       rejected_at: now,
-      rejection_reason: rejectionReason,
+      rejection_reason: reason,
       response_time_seconds: responseTimeSeconds,
     });
 
     await logActivity(
       assignment.requirement_id,
       'seller_rejected',
-      `Seller rejected${rejectionReason ? ': ' + rejectionReason : ''}`,
+      `Seller rejected${reason ? ': ' + reason : ''}`,
       sellerId,
       assignment.id
     );

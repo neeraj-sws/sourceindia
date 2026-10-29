@@ -465,7 +465,13 @@ const PostBuyRequirement = () => {
       {/* ============ HERO ============ */}
       <section className="pbr-hero">
         <div className="pbr-hero-inner">
-          <h1>Let Us know What You Need</h1>
+          <h1 className="pbr-heading">Let Us know What You Need</h1>
+          <nav aria-label="breadcrumb" className="pbr-breadcrumb mb-3">
+            <ol className="breadcrumb mb-0 flex-wrap justify-content-center">
+              <li className="breadcrumb-item"><Link to="/">Home</Link></li>
+              <li className="breadcrumb-item active" aria-current="page">Post Buy Requirement</li>
+            </ol>
+          </nav>
           <p>Just complete these simple steps. Get Instant quotes from Verified Suppliers</p>
         </div>
       </section>

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_BASE_URL from "../config";
 import { useAlert } from "../context/AlertContext";
+import { formatAutoCancelledReason } from "../utils/requirementReason";
 import useAuth from "../sections/UseAuth";
 import { formatDateTime } from "../utils/formatDate";
 
@@ -87,7 +88,7 @@ const BuyerBuyRequirementDetail = () => {
           <div className="col-lg-8">
             <div className="card">
               <div className="card-header d-flex align-items-center justify-content-between">
-                <h5 className="mb-0">Buy Requirement #{req.id}</h5>
+                <h5 className="mb-0 pbr-heading">Buy Requirement #{req.id}</h5>
                 <div>
                   <span className={`badge bg-${st.class}`}>{st.label}</span>
                   {req.status === 5 ? (
@@ -96,19 +97,29 @@ const BuyerBuyRequirementDetail = () => {
                 </div>
               </div>
               <div className="card-body">
+                <nav aria-label="breadcrumb" className="pbr-breadcrumb mb-3">
+                  <ol className="breadcrumb mb-0 flex-wrap">
+                    <li className="breadcrumb-item"><Link to="/">Home</Link></li>
+                    <li className="breadcrumb-item">Post Buy Requirement</li>
+                    <li className="breadcrumb-item"><Link to="/my-buy-requirements">Send</Link></li>
+                    <li className="breadcrumb-item active" aria-current="page">
+                      {req?.id != null ? `Buy Requirement #${req.id}` : "Buy Requirement"}
+                    </li>
+                  </ol>
+                </nav>
                 <h4 className="text-capitalize">{req.product_name_snapshot}</h4>
                 <div className="row">
                   <div className="col-md-6">
-                    <strong>Category:</strong> {req.category?.name || "-"}
+                    <strong>Category:</strong> <span className="text-capitalize">{req.category?.name || "-"}</span>
                   </div>
                   <div className="col-md-6">
-                    <strong>Sub Category:</strong> {req.subCategory?.name || "-"}
+                    <strong>Sub Category:</strong> <span className="text-capitalize">{req.subCategory?.name || "-"}</span>
                   </div>
                   <div className="col-md-6">
-                    <strong>Item Category:</strong> {req.itemCategory?.name || "-"}
+                    <strong>Item Category:</strong> <span className="text-capitalize">{req.itemCategory?.name || "-"}</span>
                   </div>
                   <div className="col-md-6">
-                    <strong>Item Sub Category:</strong> {req.itemSubCategory?.name || "-"}
+                    <strong>Item Sub Category:</strong> <span className="text-capitalize">{req.itemSubCategory?.name || "-"}</span>
                   </div>
                   <div className="col-md-6">
                     <strong>Quantity:</strong> {req.quantity || "-"}
@@ -133,7 +144,7 @@ const BuyerBuyRequirementDetail = () => {
               <div className="card-body">
                 <div className="row">
                   <div className="col-md-6">
-                    <strong>Name:</strong> {req.buyer_name || "-"}
+                    <strong>Name:</strong> <span className="text-capitalize">{req.buyer_name || "-"}</span>
                   </div>
                   <div className="col-md-6">
                     <strong>Company:</strong> {req.buyer_company || "-"}
@@ -199,24 +210,41 @@ const BuyerBuyRequirementDetail = () => {
                         assignments.map((a, idx) => {
                           const ast = assignStatusMap[a.status] || { label: `Status ${a.status}`, class: "secondary" };
                           return (
-                            <tr key={a.id}>
-                              <td>{idx + 1}</td>
-                              <td>
-                                <div className="fw-semibold">
-                                  {a.seller ? `${a.seller.fname || ""} ${a.seller.lname || ""}`.trim() : "-"}
-                                </div>
-                              </td>
-                              <td>{a.seller?.company_info?.organization_name || "-"}</td>
-                              <td>
-                                <span className={`badge bg-${ast.class}`}>{ast.label}</span>
-                                {a.status === 4 && a.rejection_reason ? (
-                                  <div className="small text-muted mt-1">{a.rejection_reason}</div>
-                                ) : a.status === 5 ? (
-                                  <div className="small text-muted mt-1">Auto-cancelled — seller did not respond in time.</div>
-                                ) : null}
-                              </td>
-                              <td>{formatDateTime(a.assigned_at)}</td>
-                            </tr>
+                            <React.Fragment key={a.id}>
+                              <tr>
+                                <td>{idx + 1}</td>
+                                <td>
+                                  <div className="fw-semibold">
+                                    <span className="text-capitalize">{a.seller ? `${a.seller.fname || ""} ${a.seller.lname || ""}`.trim() : "-"}</span>
+                                  </div>
+                                </td>
+                                <td>{a.seller?.company_info?.organization_name || "-"}</td>
+                                <td><span className={`badge bg-${ast.class}`}>{ast.label}</span></td>
+                                <td>{formatDateTime(a.assigned_at)}</td>
+                              </tr>
+                              {a.status === 4 && a.rejection_reason ? (
+                                <tr>
+                                  <td colSpan="5">
+                                    <div className="alert alert-danger mb-0">
+                                      <strong>Rejection Reason</strong>
+                                      <div className="mt-1" style={{ whiteSpace: "pre-wrap" }}>{a.rejection_reason}</div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ) : null}
+                              {a.status === 5 ? (
+                                <tr>
+                                  <td colSpan="5">
+                                    <div className="alert alert-warning mb-0">
+                                      <strong>Auto Cancelled Reason</strong>
+                                      <div className="mt-1" style={{ whiteSpace: "pre-wrap" }}>
+                                        {formatAutoCancelledReason(a.reassignment_reason)}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ) : null}
+                            </React.Fragment>
                           );
                         })
                       )}
@@ -253,7 +281,7 @@ const BuyerBuyRequirementDetail = () => {
                           <div className="text-muted small">{l.details || "-"}</div>
                           <div className="text-muted small">
                             {formatDateTime(l.created_at)}
-                              {l.seller ? ` • ${l.seller.fname} ${l.seller.lname}` : ""}
+                              {l.seller ? <> • <span className="text-capitalize">{l.seller.fname} {l.seller.lname}</span></> : ""}
                           </div>
                         </div>
                       </li>

@@ -15,7 +15,7 @@ export function renderAssignedSeller(row) {
   const company = seller.company_info?.organization_name;
   return (
     <div className="small">
-      {seller.fname} {seller.lname}
+      <span className="text-capitalize">{seller.fname} {seller.lname}</span>
       {company ? <span className="text-muted"> ({company})</span> : null}
     </div>
   );

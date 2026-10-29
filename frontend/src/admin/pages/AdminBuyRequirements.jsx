@@ -5,6 +5,7 @@ import Breadcrumb from "../common/Breadcrumb";
 import DataTable from "../common/DataTable";
 import API_BASE_URL from "../../config";
 import { useAlert } from "../../context/AlertContext";
+import { formatAutoCancelledReason } from "../../utils/requirementReason";
 import { formatDateTime } from "../../utils/formatDate";
 
 const reqStatusMap = {
@@ -192,8 +193,8 @@ export function AdminBuyRequirements() {
                     <td>{row.id}</td>
                     <td className="text-capitalize">{row.product_name_snapshot}</td>
                     <td>{ty ? <span className={`badge bg-${ty.class}`}>{ty.label}</span> : "-"}</td>
-                    <td>{row.category?.name || "-"}</td>
-                    <td className="text-capitalize">{row.buyer_name || row.buyer_email || row.buyer_company || "-"}</td>
+                    <td className="text-capitalize">{row.category?.name || "-"}</td>
+                    <td>{row.buyer_name ? <span className="text-capitalize">{row.buyer_name}</span> : row.buyer_email || row.buyer_company || "-"}</td>
                     <td>{row.buyer_city || "-"}{row.buyer_state ? <div className="text-muted small">{row.buyer_state}</div> : null}</td>
                     <td>{row.quantity || "-"}{row.quantity_unit ? ` ${row.quantity_unit}` : ""}</td>
                     <td>{formatDateTime(row.created_at)}</td>
@@ -217,6 +218,7 @@ export function AdminBuyRequirementDetail() {
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAssign, setShowAssign] = useState(false);
+  const [showAssignedSellers, setShowAssignedSellers] = useState(false);
   const [sellerSearch, setSellerSearch] = useState("");
   const [sellers, setSellers] = useState([]);
   const [sellerLoading, setSellerLoading] = useState(false);
@@ -239,6 +241,15 @@ export function AdminBuyRequirementDetail() {
   };
 
   useEffect(() => { fetchDetail(); }, [id]);
+
+  useEffect(() => {
+    if (!showAssignedSellers) return;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setShowAssignedSellers(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [showAssignedSellers]);
 
   const fetchSellers = async (q = "") => {
     setSellerLoading(true);
@@ -361,6 +372,12 @@ export function AdminBuyRequirementDetail() {
     ),
   ];
   const assignedSellerName = assignedSellerNames.length ? assignedSellerNames.join(", ") : "";
+  const assignedSellerDetails = assignedSellerNames.map((name) => {
+    const assignment = (ownerAssign ? [ownerAssign] : liveAssignments).find(
+      (a) => a.seller && `${a.seller.fname || ""} ${a.seller.lname || ""}`.trim() === name
+    );
+    return { name, company: assignment?.seller?.company_info?.organization_name };
+  });
 
   const asgStatusClass = {
     0: "badge bg-secondary", 1: "badge bg-info", 2: "badge bg-primary",
@@ -415,17 +432,14 @@ export function AdminBuyRequirementDetail() {
                   <div className="card-body py-3">
                     <p className="text-muted small mb-0">{s.label}</p>
                     {s.names && s.names.length > 0 ? (
-                      <div className="d-flex flex-wrap gap-1 mt-1" title={s.value}>
-                        {s.names.map((n, ni) => (
-                          <span
-                            key={ni}
-                            className="badge bg-light border text-dark fw-semibold small text-wrap"
-                            style={{ maxWidth: "100%", overflowWrap: "anywhere" }}
-                          >
-                            {n}
-                          </span>
-                        ))}
-                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-link p-0 mt-1 fw-semibold text-primary text-decoration-none"
+                        onClick={() => setShowAssignedSellers(true)}
+                        aria-label={`View ${s.names.length} assigned sellers`}
+                      >
+                        {s.names.length}
+                      </button>
                     ) : (
                       <p className="mb-0 fw-semibold text-truncate" title={s.value}>{s.value}</p>
                     )}
@@ -435,6 +449,36 @@ export function AdminBuyRequirementDetail() {
             );
           })}
         </div>
+
+        {showAssignedSellers && (
+          <div
+            className="modal fade show d-block"
+            tabIndex="-1"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setShowAssignedSellers(false)}
+            style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered" role="document" onClick={(event) => event.stopPropagation()}>
+              <div className="modal-content">
+                <div className="modal-header border-0 pb-0">
+                  <h5 className="modal-title">Assigned Sellers</h5>
+                  <button type="button" className="btn-close" aria-label="Close" onClick={() => setShowAssignedSellers(false)}></button>
+                </div>
+                <div className="modal-body" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+                  <ul className="list-group list-group-flush">
+                    {assignedSellerDetails.map((seller, index) => (
+                      <li key={`${seller.name}-${index}`} className="list-group-item px-0">
+                        <div className="fw-semibold text-capitalize">{seller.name}</div>
+                        {seller.company ? <div className="small text-muted">{seller.company}</div> : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="row g-3 mb-3">
           <div className="col-lg-7">
@@ -452,7 +496,7 @@ export function AdminBuyRequirementDetail() {
                   <div className="d-flex flex-wrap gap-2 mb-3">
                     {categoryChain.map((c) => (
                       <span key={c.label} className="badge bg-light border text-dark px-3 py-2">
-                        {c.label}: <strong>{c.value}</strong>
+                        {c.label}: <strong className="text-capitalize">{c.value}</strong>
                       </span>
                     ))}
                   </div>
@@ -483,7 +527,7 @@ export function AdminBuyRequirementDetail() {
                 ) : (req?.buyer?.is_seller === 1) ? (
                   <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Seller Details</h6>
                 ) : (
-                  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Buyer Details</h6>
+                  <h6 className="mb-0"><i className="bx bxs-user-pin me-1"></i> Requested By</h6>
                 )}
               </div>
               <div className="card-body">
@@ -528,7 +572,7 @@ export function AdminBuyRequirementDetail() {
                         <div className="min-w-0">
                           <div><code className="text-primary">{isAlreadyPostedLog(l) ? "Already Posted" : l.action}</code></div>
                           <div className="text-muted small">{l.details || "-"}</div>
-                          <div className="text-muted small">{formatDateTime(l.created_at)}{l.seller ? ` · ${l.seller.fname} ${l.seller.lname}` : ""}</div>
+                          <div className="text-muted small">{formatDateTime(l.created_at)}{l.seller ? <> · <span className="text-capitalize">{l.seller.fname} {l.seller.lname}</span></> : ""}</div>
                         </div>
                       </li>
                     ))}
@@ -549,7 +593,7 @@ export function AdminBuyRequirementDetail() {
               <table className="table table-hover align-middle mb-0">
                 <thead className="table-light">
                   <tr>
-                    <th>S.No.</th><th>Seller</th><th>Company</th>
+                    <th>S.No.</th><th>Seller</th><th>Company</th><th style={{ width: 240 }}>Status</th>
                     {/* <th>Match</th> */}
                     {/* <th>Status</th> */}
                     {/* <th>Assigned At</th><th>Responded At</th><th>Note</th> */}
@@ -557,24 +601,42 @@ export function AdminBuyRequirementDetail() {
                 </thead>
                 <tbody>
                   {assignments.length === 0 && <tr><td colSpan="8" className="text-center py-4">No assignments yet</td></tr>}
-                  {assignments.map((a) => (
-                    <tr key={a.id}>
-                      <td>{a.assignment_number}</td>
-                      <td><div className="fw-semibold">{a.seller?.fname} {a.seller?.lname}</div>{a.seller?.email ? <div className="text-muted small">{a.seller.email}</div> : null}</td>
-                      <td>{a.seller?.company_info?.organization_name || "-"}</td>
-                      {/* <td>
-                        {a.product_match_level || "-"}
-                        {a.product_match_score ? <div className="text-muted small">score: {a.product_match_score}</div> : null}
-                      </td> */}
-                      {/* <td>
-                        <span className={asgStatusClass[a.status] || "badge bg-secondary"}>{assignStatusMap[a.status] || a.status}</span>
-                        {a.is_reassigned === 1 ? <span className="badge bg-warning text-dark ms-1">Reassigned</span> : null}
-                      </td>
-                      <td>{formatDateTime(a.assigned_at)}</td> */}
-                      {/* <td>{a.responded_at ? formatDateTime(a.responded_at) : "-"}</td> */}
-                      {/* <td>{a.assignment_note ? <span className="text-muted small">{a.assignment_note}</span> : "-"}</td> */}
-                    </tr>
-                  ))}
+                  {assignments.map((a) => {
+                    const assignmentStatus = Number(a.status);
+                    return (
+                      <tr key={a.id}>
+                        <td>{a.assignment_number}</td>
+                        <td><div className="fw-semibold text-capitalize">{a.seller?.fname} {a.seller?.lname}</div>{a.seller?.email ? <div className="text-muted small">{a.seller.email}</div> : null}</td>
+                        <td>{a.seller?.company_info?.organization_name || "-"}</td>
+                        <td style={{ width: 240, maxWidth: 240, overflowWrap: "anywhere" }}>
+                          <span className={asgStatusClass[assignmentStatus] || "badge bg-secondary"}>
+                            {assignStatusMap[assignmentStatus] || a.status}
+                          </span>
+                          {assignmentStatus === 4 && a.rejection_reason ? (
+                            <div className="alert alert-danger px-2 py-1 mt-2 mb-0 small" style={{ overflowWrap: "anywhere" }}>
+                              <strong>Rejection Reason</strong>
+                              <div className="mt-1" style={{ whiteSpace: "pre-wrap" }}>{a.rejection_reason}</div>
+                            </div>
+                          ) : null}
+                          {assignmentStatus === 5 ? (
+                            <div className="alert alert-warning px-2 py-1 mt-2 mb-0 small" style={{ overflowWrap: "anywhere" }}>
+                              <strong>Auto Cancelled Reason</strong>
+                              <div className="mt-1" style={{ whiteSpace: "pre-wrap" }}>
+                                {formatAutoCancelledReason(a.reassignment_reason)}
+                              </div>
+                            </div>
+                          ) : null}
+                        </td>
+                        {/* <td>
+                          {a.product_match_level || "-"}
+                          {a.product_match_score ? <div className="text-muted small">score: {a.product_match_score}</div> : null}
+                        </td> */}
+                        {/* <td>{formatDateTime(a.assigned_at)}</td> */}
+                        {/* <td>{a.responded_at ? formatDateTime(a.responded_at) : "-"}</td> */}
+                        {/* <td>{a.assignment_note ? <span className="text-muted small">{a.assignment_note}</span> : "-"}</td> */}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -615,7 +677,7 @@ export function AdminBuyRequirementDetail() {
                           <div className="d-flex align-items-center justify-content-between gap-2">
                             <div className="min-w-0">
                               <div className="fw-semibold">
-                                {s.fname} {s.lname}
+                                <span className="text-capitalize">{s.fname} {s.lname}</span>
                                 {s.same_city ? <span className="badge bg-success ms-2">Same City</span> : null}
                                 {selectedSeller?.id === s.id ? <i className="bx bxs-check-circle ms-1"></i> : null}
                               </div>

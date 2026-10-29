@@ -780,3 +780,50 @@ textarea.pbr-input {
     max-width: 260px;
   }
 }
+
+/* Post Buy Requirement pages: heading and breadcrumb */
+.pbr-heading {
+  font-size: 19px;
+  font-weight: 700;
+  color: #1F2020;
+}
+
+.pbr-hero .pbr-heading {
+  margin: 0 0 .25rem;
+}
+
+.pbr-breadcrumb {
+  margin-bottom: 1rem;
+}
+
+.pbr-breadcrumb .breadcrumb {
+  flex-wrap: wrap;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.pbr-breadcrumb .breadcrumb-item {
+  color: #707070;
+  font-size: 13px;
+}
+
+.pbr-breadcrumb .breadcrumb-item a {
+  color: #707070;
+  text-decoration: none;
+}
+
+.pbr-breadcrumb .breadcrumb-item.active {
+  color: #1F2020;
+  font-weight: 500;
+}
+
+.pbr-breadcrumb .breadcrumb-item + .breadcrumb-item {
+  padding-left: 4px;
+}
+
+.pbr-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+  padding-right: 4px;
+  color: #707070;
+  content: ">";
+  font-size: 13px;
+}

@@ -59,7 +59,14 @@ const BuyerRequirementHistory = () => {
     <Suspense fallback={<div>Loading...</div>}>
       <div className="page-wrapper">
         <div className="page-content">
-          <h4 className="mb-3">My Requirement History</h4>
+          <h4 className="mb-1 pbr-heading">My Requirement History</h4>
+          <nav aria-label="breadcrumb" className="pbr-breadcrumb mb-3">
+            <ol className="breadcrumb mb-0 flex-wrap">
+              <li className="breadcrumb-item"><Link to="/">Home</Link></li>
+              <li className="breadcrumb-item">Post Buy Requirement</li>
+              <li className="breadcrumb-item active" aria-current="page">My Requirement History</li>
+            </ol>
+          </nav>
 
           <div className="card">
             <div className="card-body">
@@ -100,8 +107,8 @@ const BuyerRequirementHistory = () => {
                   return (
                     <tr key={row.id}>
                       <td>{row.id}</td>
-                      <td>{row.product_name_snapshot}</td>
-                      <td>{row.itemSubCategory?.name || row.itemCategory?.name || row.subCategory?.name || row.category?.name || "-"}</td>
+                      <td className="text-capitalize">{row.product_name_snapshot}</td>
+                      <td className="text-capitalize">{row.itemSubCategory?.name || row.itemCategory?.name || row.subCategory?.name || row.category?.name || "-"}</td>
                       <td>{row.quantity || "-"}{row.quantity_unit ? ` ${row.quantity_unit}` : ""}</td>
                       <td>{formatDateTime(row.created_at)}</td>
                       <td><span className={`badge bg-${st.class}`}>{st.label}</span></td>

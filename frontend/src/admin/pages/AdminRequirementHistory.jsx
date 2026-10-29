@@ -123,7 +123,7 @@ export function AdminRequirementHistory() {
                       {row.quantity ? <div className="text-muted small">Qty: {row.quantity}{row.quantity_unit || ""}</div> : null}
                     </td>
                     <td>
-                      <span className="text-capitalize">{buyerName}</span>
+                      {row.buyer_name ? <span className="text-capitalize">{row.buyer_name}</span> : buyerName}
                       {buyerName === "-" ? <span className="badge bg-warning ms-1 text-capitalize">Guest</span> : null}
                       {row.buyer_email ? <div className="text-muted small ">{row.buyer_email}</div> : null}
                       {row.buyer_company ? <div className="text-muted small">{row.buyer_company}</div> : null}
