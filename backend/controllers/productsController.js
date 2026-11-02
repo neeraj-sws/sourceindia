@@ -1443,6 +1443,9 @@ exports.getAllProducts = async (req, res) => {
         corrected: frontSearch.prepared.corrected,
         resultCount: count,
         source: 'products_page',
+        entryUserId: req.user?.id,
+        sessionId: req.visitorId || req.sessionID,
+        ipAddress: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket?.remoteAddress,
       });
     }
 

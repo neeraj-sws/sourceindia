@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const frontMenuController = require('../controllers/frontMenuController');
+const optionalAuth = require('../middleware/optionalAuth');
 
 router.post('/', frontMenuController.createFrontMenu);
-router.post('/main-search', frontMenuController.searchMulti);
+router.post('/main-search', optionalAuth, frontMenuController.searchMulti);
 router.get('/', frontMenuController.getAllFrontMenu);
 router.get('/server-side', frontMenuController.getAllFrontMenuServerSide);
 router.get('/count', frontMenuController.getFrontMenuCount);

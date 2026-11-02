@@ -33,8 +33,15 @@ const resolveProductKeywordIds = async ({
   const usePicked = picked && picked.search === trimmedSearch;
 
   try {
+    const userToken = localStorage.getItem('user_token');
+    const visitorId = localStorage.getItem('si_vid');
     const res = await axios.post(
-      `${API_BASE_URL}/front_menu/main-search?q=${encodeURIComponent(trimmedSearch)}&type=product`
+      `${API_BASE_URL}/front_menu/main-search?q=${encodeURIComponent(trimmedSearch)}&type=product`,
+      undefined,
+      { headers: {
+        ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+        ...(visitorId ? { 'X-Visitor-Id': visitorId } : {}),
+      } }
     );
     const suggestions = Array.isArray(res.data) ? res.data : [];
 
@@ -589,7 +596,14 @@ const ProductsList = () => {
       if (shouldApplyKeywordIds && nextResolvedKeywordIds.length > 0) {
         url += `&keyword_ids=${nextResolvedKeywordIds.join(',')}`;
       }
-      const res = await axios.get(url);
+      const userToken = localStorage.getItem('user_token');
+      const visitorId = localStorage.getItem('si_vid');
+      const res = await axios.get(url, {
+        headers: {
+          ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+          ...(visitorId ? { 'X-Visitor-Id': visitorId } : {}),
+        },
+      });
       if (requestId !== productsRequestIdRef.current) return;
       const newProducts = res.data.products || [];
       setProductsTotal(res.data.total);

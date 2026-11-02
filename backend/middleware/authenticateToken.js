@@ -8,7 +8,9 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ message: 'Access token missing' });
   }
 
-  jwt.verify(token, 'your_jwt_secret', (err, user) => {
+  // Same secret as adminAuthController.login: the admin token is signed with
+  // process.env.JWT_SECRET when set, falling back to the shared literal.
+  jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret', (err, user) => {
     if (err) return res.status(403).json({ message: 'Invalid token' });
     req.user = user; // user contains id, email, role from your login token
     next();

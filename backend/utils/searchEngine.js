@@ -304,15 +304,55 @@ const wholeWordPatterns = (word) => [
 
 const isShortWord = (word) => word.length <= 3;
 
-const logSearch = ({ query, normalized, corrected, resultCount, source, userId }) => {
+// A single search can fire the same request twice (duplicate page/autocomplete calls).
+// The aggregate search_logs row is always recorded; only the detail row insert below is
+// skipped when an identical request from the same visitor already inserted one moments ago.
+const ENTRY_DEDUPE_WINDOW_MS = 5000;
+const recentEntryInserts = new Map();
+
+const isRecentDuplicateEntry = (key) => {
+  const now = Date.now();
+  for (const [seenKey, seenAt] of recentEntryInserts) {
+    if (now - seenAt > ENTRY_DEDUPE_WINDOW_MS) recentEntryInserts.delete(seenKey);
+  }
+  if (recentEntryInserts.has(key)) return true;
+  recentEntryInserts.set(key, now);
+  return false;
+};
+
+const logSearch = ({ query, normalized, corrected, resultCount, source, userId, entryUserId, sessionId, ipAddress }) => {
   if (!query) return;
+  const normalizedQuery = String(normalized || normalize(query)).slice(0, 255);
   SearchLog.create({
     query: String(query).slice(0, 255),
-    normalized_query: String(normalized || normalize(query)).slice(0, 255),
+    normalized_query: normalizedQuery,
     corrected_query: corrected ? String(corrected).slice(0, 255) : null,
     result_count: Number(resultCount) || 0,
     source: source || 'products_page',
     user_id: userId || null,
+  }).then((searchLog) => {
+    const entryKey = [
+      source || 'products_page',
+      normalizedQuery,
+      entryUserId || 'guest',
+      sessionId || '',
+      ipAddress || '',
+    ].join('|');
+    if (isRecentDuplicateEntry(entryKey)) return;
+    // Detail logging is best-effort; it must never affect the search response.
+    sequelize.query(
+      `INSERT INTO search_log_entries
+        (search_log_id, user_id, session_id, ip_address, searched_at, created_at, updated_at)
+       VALUES (:searchLogId, :userId, :sessionId, :ipAddress, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      {
+        replacements: {
+          searchLogId: searchLog.id,
+          userId: entryUserId || null,
+          sessionId: sessionId || null,
+          ipAddress: ipAddress || null,
+        },
+      }
+    ).catch((err) => console.error('Search log entry failed:', err));
   }).catch((err) => console.error('Search log failed:', err.message));
 };
 
