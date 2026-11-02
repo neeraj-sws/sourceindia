@@ -173,6 +173,14 @@ const Profile = () => {
                                 </div>
                               </div>
                             )}
+                            {user.company_info?.organization_name && (
+                              <div className="col-sm-6">
+                                <div className="pt-3 border-bottom">
+                                  <h6>Company Name:</h6>
+                                  <p>{user.company_info?.organization_name}</p>
+                                </div>
+                              </div>
+                            )}
                             {productCategories && (
                               <div className="col-sm-6">
                                 <div className="pt-3 border-bottom">

@@ -907,7 +907,7 @@ exports.updateProfile = async (req, res) => {
         products: req.body.products,
         walkin_buyer: 0
       };
-      if (user.is_seller == 0) {
+      if (user.is_seller == 0 && companyInfo) {
         await companyInfo.update({
           company_website: req.body.company_website,
           user_category: req.body.user_category,
@@ -1054,21 +1054,32 @@ exports.updateProfile = async (req, res) => {
         }
 
         // 🧾 Update company info
-        await companyInfo.update({
-          organization_name: req.body.organization_name || companyInfo.organization_name,
-          organization_slug: req.body.organization_name
-            ? await generateUniqueSlug(CompanyInfo, req.body.organization_name)
-            : companyInfo.organization_slug,
-          core_activity: req.body.core_activity,
-          activity: req.body.activity,
-          company_email: req.body.company_email,
-          company_website: req.body.company_website,
-          company_location: req.body.company_location,
-          brief_company: req.body.brief_company,
-          designation: req.body.designation,
-          company_video_second: req.body.company_video_second,
-          organizations_product_description: req.body.organizations_product_description,
-        });
+        const organizationName = req.body.organization_name?.trim() || companyInfo.organization_name;
+        const transaction = await sequelize.transaction();
+        try {
+          await companyInfo.update({
+            organization_name: organizationName,
+            organization_slug: req.body.organization_name?.trim()
+              ? await generateUniqueSlug(CompanyInfo, organizationName)
+              : companyInfo.organization_slug,
+            core_activity: req.body.core_activity,
+            activity: req.body.activity,
+            company_email: req.body.company_email,
+            company_website: req.body.company_website,
+            company_location: req.body.company_location,
+            brief_company: req.body.brief_company,
+            designation: req.body.designation,
+            company_video_second: req.body.company_video_second,
+            organizations_product_description: req.body.organizations_product_description,
+          }, { transaction });
+          if (user.is_seller == 0 && req.body.organization_name?.trim()) {
+            await user.update({ user_company: organizationName }, { transaction });
+          }
+          await transaction.commit();
+        } catch (error) {
+          await transaction.rollback();
+          throw error;
+        }
         if (user.is_company === 0) {
           await user.update({ is_company: 1 });
           redirectToMyProduct = true;

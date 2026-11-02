@@ -1,5 +1,5 @@
 // context/AuthContext.js
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import API_BASE_URL from "../config";
 
@@ -9,6 +9,19 @@ export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('user_token'));
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
+
+  const refetchUser = useCallback(async () => {
+  const token = localStorage.getItem('user_token');
+  if (!token) return;
+  try {
+    const response = await axios.get(`${API_BASE_URL}/signup/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setUser(response.data.user);
+  } catch (error) {
+    console.error('Error refetching profile:', error);
+  }
+}, []);
 
   const login = (token) => {
     localStorage.setItem('user_token', token);
@@ -73,7 +86,7 @@ export const AuthProvider = ({ children }) => {
   }, [isLoggedIn]);
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout, user, setUser, loadingUser }}>
+    <AuthContext.Provider value={{ isLoggedIn, login, logout, user, setUser, loadingUser, refetchUser }}>
       {children}
     </AuthContext.Provider>
   );

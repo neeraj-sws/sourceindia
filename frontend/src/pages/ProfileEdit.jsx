@@ -8,10 +8,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../context/AlertContext';
 import { FiCheckCircle, FiRefreshCw, FiUploadCloud, FiUser } from 'react-icons/fi';
 import './CompanyEdit.css';
+import UseAuth from '../sections/UseAuth';
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
   const { showNotification } = useAlert();
+  const { refetchUser } = UseAuth();
   const [user, setUser] = useState({
     fname: "",
     lname: "",
@@ -19,6 +21,7 @@ const ProfileEdit = () => {
     alternate_number: "",
     email: "",
     designation: "",
+    company_name: "",
     state: "",
     city: "",
     zipcode: "",
@@ -36,6 +39,7 @@ const ProfileEdit = () => {
   const [errors, setErrors] = useState({});
   const [file, setFile] = useState(null);
   const [designations, setDesignations] = useState([]);
+  const [companyNames, setCompanyNames] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -139,8 +143,20 @@ const ProfileEdit = () => {
     }));
   };
 
-  const handleChange = (e) => { const { name, value } = e.target; setUser((prev) => ({ ...prev, [name]: value, })); };
+  // const handleChange = (e) => { const { name, value } = e.target; setUser((prev) => ({ ...prev, [name]: value, })); };
+const companyFields = ["organization_name", "designation", "user_category"];
 
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  if (companyFields.includes(name)) {
+    setUser((prev) => ({
+      ...prev,
+      company_info: { ...prev.company_info, [name]: value },
+    }));
+  } else {
+    setUser((prev) => ({ ...prev, [name]: value }));
+  }
+};
 
 
   useEffect(() => {
@@ -149,10 +165,22 @@ const ProfileEdit = () => {
         const res = await axios.get(`${API_BASE_URL}/sellers/designations?status=1`);
         setDesignations(res.data);
       } catch (error) {
-        console.error("Error fetching states:", error);
+        console.error("Error fetching designations:", error);
       }
     };
     fetchDesignations();
+  }, []);
+
+  useEffect(() => {
+    const fetchCompanyNames = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/sellers/company-names`);
+        setCompanyNames(res.data);
+      } catch (error) {
+        console.error("Error fetching company names:", error);
+      }
+    };
+    fetchCompanyNames();
   }, []);
 
   const validateForm = () => {
@@ -165,6 +193,7 @@ const ProfileEdit = () => {
     if (!user.mobile?.trim()) errs.mobile = "Mobile is required";
     else if (!/^[6-9]\d{9}$/.test(user.mobile))
       errs.mobile = "Invalid mobile number";
+    if (!user.company_info?.organization_name?.trim()) errs.organization_name = "Company Name is required";
     if (!selectedState) errs.state = "State is required";
     if (!selectedCity) errs.city = "City is required";
     if (!user.zipcode?.trim()) errs.zipcode = "Pincode is required";
@@ -216,6 +245,7 @@ const ProfileEdit = () => {
 
       // designation (from company_info)
       formData.append("designation", user.company_info?.designation || "");
+      formData.append("organization_name", user.company_info?.organization_name || "");
 
       // append image file (field name must be 'file' because backend expects it)
       if (file) {
@@ -231,6 +261,8 @@ const ProfileEdit = () => {
           "Content-Type": "multipart/form-data",
         },
       });
+
+          await refetchUser();
 
       showNotification("Profile updated successfully!", "success");
       navigate("/profile");
@@ -348,6 +380,20 @@ const ProfileEdit = () => {
                             <option value={d.name} if="" key={index}></option>
                           ))}
                         </datalist>
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label">
+                          Company Name<sup className="text-danger">*</sup>
+                        </label>
+                        <input
+                          type="text"
+                          name="organization_name"
+                          value={user.company_info?.organization_name || ""}
+                          onChange={handleChange}
+                          className={`form-control ${errors.organization_name ? 'is-invalid' : ''}`}
+                          placeholder="Enter Company Name"
+                        />
+                        {errors.organization_name && <div className="invalid-feedback">{errors.organization_name}</div>}
                       </div>
                       <div className="col-md-6 mb-3">
                         <label htmlFor="state" className="form-label required">State</label>
