@@ -82,6 +82,7 @@ const menuData = [
       { key: 'item_sub_category', title: 'Item Sub Categories', link: '/admin/item_sub_category' },
       { key: 'new_items', title: 'New Items', link: '/admin/new_items' },
       { key: 'category_restructure', title: 'Move / Merge', link: '/admin/category_restructure' },
+      { key: 'bulk_import', title: 'Bulk Import', link: '/admin/bulk_import' },
     ],
   },
   {
@@ -528,6 +529,8 @@ const Sidebar = () => {
     };
 
     fetchCounts();
+    window.addEventListener('bulk-import:committed', fetchCounts);
+    return () => window.removeEventListener('bulk-import:committed', fetchCounts);
   }, []);
 
   useEffect(() => {

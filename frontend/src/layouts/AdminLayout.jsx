@@ -58,6 +58,7 @@ const UserActivities = lazy(() => import('../admin/pages/UserActivities'));
 const UserActivityDetails = lazy(() => import('../admin/pages/UserActivityDetails'));
 const CategoryConflictLogs = lazy(() => import('../admin/pages/CategoryConflictLogs'));
 const CategoryRestructure = lazy(() => import('../admin/pages/CategoryRestructure'));
+const BulkImport = lazy(() => import('../admin/pages/BulkImport'));
 const MailHistory = lazy(() => import('../admin/pages/MailHistory'));
 const MailHistoryDetails = lazy(() => import('../admin/pages/MailHistoryDetails'));
 const EmailsList = lazy(() => import('../admin/pages/EmailsList'));
@@ -194,6 +195,7 @@ function AdminLayout() {
               <Route path="/search_synonyms" element={<ProtectedRoute><SearchSynonyms /></ProtectedRoute>} />
               <Route path="/search_logs" element={<ProtectedRoute><SearchLogs /></ProtectedRoute>} />
               <Route path="/new_items" element={<ProtectedRoute><NewItems /></ProtectedRoute>} />
+              <Route path="/bulk_import" element={<ProtectedRoute><BulkImport /></ProtectedRoute>} />
               <Route path="/items-remove-list" element={<ProtectedRoute><NewItems getDeleted={true} /></ProtectedRoute>} />
               <Route path="/terms_conditions" element={<ProtectedRoute><PageEdit pageId={9} title="Terms & Conditions" /></ProtectedRoute>} />
               <Route path="/privacy_policy" element={<ProtectedRoute><PageEdit pageId={8} title="Privacy Policy" /></ProtectedRoute>} />

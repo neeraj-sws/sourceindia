@@ -3,6 +3,15 @@ const CategoryConflictLog = require('../models/CategoryConflictLog');
 const { toSlug } = require('./categorySlug');
 
 const normalizeName = (name) => (name || '').toString().trim().toLowerCase();
+const findPreloadedCategoryNameConflict = (name, entries, exclude = null) => {
+  const normalizedName = normalizeName(name);
+  if (!normalizedName) return null;
+  const nameSlug = toSlug(name);
+  return entries.find((entry) => {
+    if (exclude && entry.module === exclude.module && Number(entry.id) === Number(exclude.id)) return false;
+    return normalizeName(entry.name) === normalizedName || (nameSlug && toSlug(entry.name) === nameSlug);
+  }) || null;
+};
 
 const findCategoryNameConflict = async (name, models, excludeId = null, transaction = null) => {
   const normalizedName = normalizeName(name);
@@ -64,4 +73,4 @@ const findRestoreNameConflict = async (record, models) => {
     + 'Rename or delete that one first.';
 };
 
-module.exports = { findCategoryNameConflict, logCategoryConflict, categoryLevelModels, findRestoreNameConflict };
+module.exports = { findCategoryNameConflict, findPreloadedCategoryNameConflict, logCategoryConflict, categoryLevelModels, findRestoreNameConflict };

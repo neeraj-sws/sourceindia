@@ -31,14 +31,15 @@ const ensureKeywordItemCategoryColumn = () => {
 };
 
 // The Item Category's own name is its main keyword: created, renamed and re-statused with it.
-const syncItemCategoryMainKeyword = async (itemCategory) => {
+const syncItemCategoryMainKeyword = async (itemCategory, options = {}) => {
   const name = (itemCategory?.name || '').toString().trim();
   if (!itemCategory?.id || !name) return null;
-  await ensureKeywordItemCategoryColumn();
+  if (options.ensureSchema !== false) await ensureKeywordItemCategoryColumn();
   const status = Number(itemCategory.status) === 0 ? 0 : 1;
 
   let keyword = await ProductKeywordCategory.findOne({
     where: { ...OWN_ROWS, item_category_id: itemCategory.id, is_main: 1 },
+    transaction: options.transaction,
   });
   // Promote a matching manual keyword so the name is not duplicated.
   if (!keyword) {
@@ -48,6 +49,7 @@ const syncItemCategoryMainKeyword = async (itemCategory) => {
         item_category_id: itemCategory.id,
         [Op.and]: [sequelize.where(fn('LOWER', fn('TRIM', col('name'))), normalizeName(name))],
       },
+      transaction: options.transaction,
     });
   }
 
@@ -56,7 +58,7 @@ const syncItemCategoryMainKeyword = async (itemCategory) => {
       keyword.name = name;
       keyword.status = status;
       keyword.is_main = 1;
-      await keyword.save({ fields: ['name', 'status', 'is_main', 'updated_at'] });
+      await keyword.save({ fields: ['name', 'status', 'is_main', 'updated_at'], transaction: options.transaction });
     }
     return keyword;
   }
@@ -66,7 +68,7 @@ const syncItemCategoryMainKeyword = async (itemCategory) => {
     item_category_id: itemCategory.id,
     status,
     is_main: 1,
-  });
+  }, { transaction: options.transaction });
 };
 
 // Removes only the main keyword, like deleteMainProductKeywords does for Item Sub Categories.
