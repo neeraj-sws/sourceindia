@@ -39,6 +39,7 @@ const SearchLogs = () => {
       if (selectedUserId) params.user_id = selectedUserId;
       const res = await axios.get(`${API_BASE_URL}/search_synonyms/logs/server-side`, {
         params,
+        headers: { Authorization: `Bearer ${token}` },
       });
       setData(res.data.data || []);
       setTotalRecords(res.data.totalRecords || 0);
