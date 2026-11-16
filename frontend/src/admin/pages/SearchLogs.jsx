@@ -91,14 +91,22 @@ const getUserName = (value) => {
             {
               label: "Total unique searchers",
               value: summary?.total_people,
-              detail: `${summary?.unique_users ?? "-"} logged-in · ${summary?.unique_guests ?? "-"} guests`,
+              uniqueUsers: summary?.unique_users,
+              uniqueGuests: summary?.unique_guests,
             },
           ].map((tile) => (
             <div className="col-12 col-sm-6 col-md-3 d-flex" key={tile.label}>
-              <div className="card mb-0 h-100 w-100" title={tile.detail}>
+              <div className="card mb-0 h-100 w-100">
                 <div className="card-body py-3">
                   <div className="small text-muted">{tile.label}</div>
                   <div className={`fs-4 fw-bold ${tile.danger ? "text-danger" : ""}`}>{tile.value ?? "-"}</div>
+                  {tile.label === "Total unique searchers" && (
+                    <div className="small text-muted d-flex flex-wrap gap-2">
+                      <span>Guests: {tile.uniqueGuests ?? "-"}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>Logged-in: {tile.uniqueUsers ?? "-"}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
