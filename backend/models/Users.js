@@ -63,6 +63,7 @@ const Users = sequelize.define('Users', {
   is_admin: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
   aal_test_mail: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
   otp: { type: DataTypes.STRING, allowNull: true, },
+  token_version: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   is_trading: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
   walkin_buyer: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },
   is_walkin_new: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0, },

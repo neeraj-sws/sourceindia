@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import API_BASE_URL, { ROOT_URL } from "./../config";
@@ -9,11 +9,13 @@ import { useAlert } from '../context/AlertContext';
 import { FiCheckCircle, FiRefreshCw, FiUploadCloud, FiUser } from 'react-icons/fi';
 import './CompanyEdit.css';
 import UseAuth from '../sections/UseAuth';
+import { useAuth } from '../context/AuthContext';
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
   const { showNotification } = useAlert();
   const { refetchUser } = UseAuth();
+  const { logout } = useAuth();
   const [user, setUser] = useState({
     fname: "",
     lname: "",
@@ -41,6 +43,27 @@ const ProfileEdit = () => {
   const [designations, setDesignations] = useState([]);
   const [companyNames, setCompanyNames] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailChangeStep, setEmailChangeStep] = useState('oldEmail');
+  const [emailChangeOtp, setEmailChangeOtp] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [emailChangeBusy, setEmailChangeBusy] = useState(false);
+  const [emailChangeError, setEmailChangeError] = useState('');
+  const [emailChangeInfo, setEmailChangeInfo] = useState('');
+  const [emailChangeCooldown, setEmailChangeCooldown] = useState(0);
+  const [emailChangeNoticeType, setEmailChangeNoticeType] = useState('');
+  const [oldOtpSentThisSession, setOldOtpSentThisSession] = useState(false);
+  const [newOtpSentThisSession, setNewOtpSentThisSession] = useState(false);
+  const emailChangeInFlight = useRef(false);
+
+  useEffect(() => {
+    if (emailChangeCooldown <= 0) {
+      setEmailChangeNoticeType('');
+      return undefined;
+    }
+    const timer = setTimeout(() => setEmailChangeCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [emailChangeCooldown]);
 
   useEffect(() => {
     const fetchStates = async () => {
@@ -187,9 +210,6 @@ const handleChange = (e) => {
     const errs = {};
     if (!user.fname?.trim()) errs.fname = "First Name is required";
     if (!user.lname?.trim()) errs.lname = "Last Name is required";
-    if (!user.email?.trim()) errs.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(user.email))
-      errs.email = "Invalid email format";
     if (!user.mobile?.trim()) errs.mobile = "Mobile is required";
     else if (!/^[6-9]\d{9}$/.test(user.mobile))
       errs.mobile = "Invalid mobile number";
@@ -232,7 +252,6 @@ const handleChange = (e) => {
       // append all user fields
       formData.append("fname", user.fname || "");
       formData.append("lname", user.lname || "");
-      formData.append("email", user.email || "");
       formData.append("mobile", user.mobile || "");
       formData.append("alternate_number", user.alternate_number || "");
       formData.append("state", selectedState || "");
@@ -271,6 +290,224 @@ const handleChange = (e) => {
       showNotification("Error updating profile", "error");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openEmailChangeModal = () => {
+    setEmailModalOpen(true);
+    setEmailChangeStep('oldEmail');
+    setEmailChangeError('');
+    setEmailChangeInfo('');
+    setEmailChangeNoticeType('');
+    setEmailChangeOtp('');
+    setNewEmail('');
+    setEmailChangeCooldown(0);
+    setOldOtpSentThisSession(false);
+    setNewOtpSentThisSession(false);
+  };
+
+  const closeEmailChangeModal = () => {
+    if (emailChangeBusy) return;
+    setEmailModalOpen(false);
+    setEmailChangeStep('oldEmail');
+    setEmailChangeOtp('');
+    setNewEmail('');
+    setEmailChangeError('');
+    setEmailChangeInfo('');
+    setEmailChangeNoticeType('');
+    setEmailChangeCooldown(0);
+    setOldOtpSentThisSession(false);
+    setNewOtpSentThisSession(false);
+  };
+
+  const beginEmailChangeRequest = async () => {
+    if (emailChangeInFlight.current) return;
+    emailChangeInFlight.current = true;
+    setEmailChangeBusy(true);
+    setEmailChangeError('');
+    setEmailChangeInfo('');
+    setEmailChangeNoticeType('');
+    try {
+      const token = localStorage.getItem('user_token');
+      const response = await axios.post(`${API_BASE_URL}/users/email-change/send-old-otp`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setOldOtpSentThisSession(true);
+      setEmailChangeStep('oldOtp');
+      setEmailChangeOtp('');
+      setEmailChangeCooldown(60);
+      setEmailChangeInfo(response.data.message || 'We sent an OTP to your current email.');
+    } catch (error) {
+      const retryAfter = Number(error.response?.data?.retry_after_seconds);
+      if (error.response?.status === 429 && retryAfter > 0) {
+        setEmailChangeCooldown(retryAfter);
+        if (oldOtpSentThisSession) {
+          setEmailChangeNoticeType('already-sent');
+          setEmailChangeInfo('');
+        } else {
+          setEmailChangeNoticeType('please-wait');
+          setEmailChangeInfo('');
+        }
+      } else {
+        setEmailChangeNoticeType('');
+        setEmailChangeInfo('');
+        setEmailChangeError(error.response?.data?.message || 'Could not send an OTP to your current email.');
+      }
+    } finally {
+      emailChangeInFlight.current = false;
+      setEmailChangeBusy(false);
+    }
+  };
+
+  const verifyOldEmailOtp = async (event) => {
+    event.preventDefault();
+    if (emailChangeInFlight.current) return;
+    emailChangeInFlight.current = true;
+    setEmailChangeBusy(true);
+    setEmailChangeError('');
+    setEmailChangeInfo('');
+    setEmailChangeNoticeType('');
+    try {
+      const token = localStorage.getItem('user_token');
+      const response = await axios.post(`${API_BASE_URL}/users/email-change/verify-old-otp`, { otp: emailChangeOtp }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setEmailChangeStep('newEmail');
+      setEmailChangeOtp('');
+      setEmailChangeCooldown(0);
+      setEmailChangeInfo(response.data.message || 'Current email verified.');
+    } catch (error) {
+      const data = error.response?.data || {};
+      setEmailChangeInfo('');
+      setEmailChangeError(data.attempts_remaining != null
+        ? `Wrong OTP. ${data.attempts_remaining} attempt${data.attempts_remaining === 1 ? '' : 's'} remaining.`
+        : data.message || 'Could not verify that OTP.');
+    } finally {
+      emailChangeInFlight.current = false;
+      setEmailChangeBusy(false);
+    }
+  };
+
+  const sendNewEmailOtp = async (event) => {
+    event.preventDefault();
+    if (emailChangeInFlight.current) return;
+    emailChangeInFlight.current = true;
+    setEmailChangeBusy(true);
+    setEmailChangeError('');
+    setEmailChangeInfo('');
+    setEmailChangeNoticeType('');
+    try {
+      const token = localStorage.getItem('user_token');
+      const response = await axios.post(`${API_BASE_URL}/users/email-change/send-new-otp`, { new_email: newEmail }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNewOtpSentThisSession(true);
+      setNewEmail(newEmail.trim().toLowerCase());
+      setEmailChangeStep('newOtp');
+      setEmailChangeOtp('');
+      setEmailChangeCooldown(60);
+      setEmailChangeInfo(response.data.message || 'We sent an OTP to your new email.');
+    } catch (error) {
+      const retryAfter = Number(error.response?.data?.retry_after_seconds);
+      if (error.response?.status === 429 && retryAfter > 0) {
+        setEmailChangeCooldown(retryAfter);
+        if (newOtpSentThisSession) {
+          setEmailChangeNoticeType('already-sent');
+          setEmailChangeInfo('');
+        } else {
+          setEmailChangeNoticeType('please-wait');
+          setEmailChangeInfo('');
+        }
+      } else {
+        setEmailChangeNoticeType('');
+        setEmailChangeInfo('');
+        setEmailChangeError(error.response?.data?.message || 'Could not send an OTP to that email.');
+      }
+    } finally {
+      emailChangeInFlight.current = false;
+      setEmailChangeBusy(false);
+    }
+  };
+
+  const verifyNewEmailOtp = async (event) => {
+    event.preventDefault();
+    if (emailChangeInFlight.current) return;
+    emailChangeInFlight.current = true;
+    setEmailChangeBusy(true);
+    setEmailChangeError('');
+    setEmailChangeInfo('');
+    setEmailChangeNoticeType('');
+    try {
+      const token = localStorage.getItem('user_token');
+      const response = await axios.post(`${API_BASE_URL}/users/email-change/verify-new-otp`, { otp: emailChangeOtp }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setEmailModalOpen(false);
+      setEmailChangeStep('oldEmail');
+      setEmailChangeOtp('');
+      setNewEmail('');
+      setEmailChangeError('');
+      setEmailChangeInfo('');
+      setEmailChangeNoticeType('');
+      setEmailChangeCooldown(0);
+      setOldOtpSentThisSession(false);
+      setNewOtpSentThisSession(false);
+      showNotification(response.data.message || 'Email changed. Please log in with your new email.', 'success');
+      logout();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      const data = error.response?.data || {};
+      setEmailChangeInfo('');
+      setEmailChangeError(data.attempts_remaining != null
+        ? `Wrong OTP. ${data.attempts_remaining} attempt${data.attempts_remaining === 1 ? '' : 's'} remaining.`
+        : data.message || 'Could not verify that OTP.');
+    } finally {
+      emailChangeInFlight.current = false;
+      setEmailChangeBusy(false);
+    }
+  };
+
+  const resendEmailChangeOtp = async () => {
+    if (emailChangeInFlight.current) return;
+    const isOldEmail = emailChangeStep === 'oldOtp';
+    emailChangeInFlight.current = true;
+    setEmailChangeBusy(true);
+    setEmailChangeError('');
+    setEmailChangeInfo('');
+    setEmailChangeNoticeType('');
+    setEmailChangeOtp('');
+    try {
+      const token = localStorage.getItem('user_token');
+      const endpoint = isOldEmail ? 'send-old-otp' : 'send-new-otp';
+      const body = isOldEmail ? {} : { new_email: newEmail };
+      const response = await axios.post(`${API_BASE_URL}/users/email-change/${endpoint}`, body, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (isOldEmail) setOldOtpSentThisSession(true);
+      else setNewOtpSentThisSession(true);
+      setEmailChangeCooldown(60);
+      setEmailChangeInfo(response.data.message || 'A new OTP was sent.');
+    } catch (error) {
+      const retryAfter = Number(error.response?.data?.retry_after_seconds);
+      if (error.response?.status === 429 && retryAfter > 0) {
+        setEmailChangeCooldown(retryAfter);
+        const hasSent = isOldEmail ? oldOtpSentThisSession : newOtpSentThisSession;
+        if (hasSent) {
+          setEmailChangeNoticeType('already-sent');
+          setEmailChangeInfo('');
+        } else {
+          setEmailChangeStep(isOldEmail ? 'oldEmail' : 'newEmail');
+          setEmailChangeNoticeType('please-wait');
+          setEmailChangeInfo('');
+        }
+      } else {
+        setEmailChangeNoticeType('');
+        setEmailChangeInfo('');
+        setEmailChangeError(error.response?.data?.message || 'Could not resend the OTP.');
+      }
+    } finally {
+      emailChangeInFlight.current = false;
+      setEmailChangeBusy(false);
     }
   };
 
@@ -346,17 +583,18 @@ const handleChange = (e) => {
                       </div>
                       <div className="col-md-6">
                         <label className="form-label">
-                          Email<sup className="text-danger">*</sup>
+                          Email
                         </label>
                         <input
                           type="email"
                           name="email"
                           value={user.email || ""}
-                          onChange={handleChange}
-                          className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                          placeholder="Enter Email"
+                          readOnly
+                          className="form-control"
                         />
-                        {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                        <button type="button" className="btn btn-outline-primary btn-sm mt-2" onClick={openEmailChangeModal}>
+                          Change Email
+                        </button>
                       </div>
                       <div className="col-md-6">
                         <label className="form-label">Designation</label>
@@ -545,6 +783,71 @@ const handleChange = (e) => {
             </div>
             <div className="company-edit-footer"><button type="submit" className="company-save" disabled={submitting}><FiCheckCircle /> {submitting ? "Saving..." : "Save Profile"}</button></div>
           </form>
+          {emailModalOpen && (
+            <div className="modal d-block" role="dialog" aria-modal="true" aria-labelledby="email-change-title" style={{ background: 'rgba(0,0,0,.5)' }}>
+              <div className="modal-dialog modal-dialog-centered">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title" id="email-change-title">Change Email</h5>
+                    <button type="button" className="btn-close" aria-label="Close" onClick={closeEmailChangeModal} disabled={emailChangeBusy} />
+                  </div>
+                  <div className="modal-body">
+                    {emailChangeStep === 'oldEmail' && (
+                      <div>
+                        <p>Current email: <strong>{user.email}</strong></p>
+                        <button type="button" className="btn btn-primary" onClick={beginEmailChangeRequest} disabled={emailChangeBusy || emailChangeCooldown > 0}>
+                          {emailChangeBusy ? 'Sending OTP...' : emailChangeCooldown > 0 ? `Please wait ${emailChangeCooldown}s` : 'Send OTP'}
+                        </button>
+                      </div>
+                    )}
+                    {emailChangeStep === 'oldOtp' && (
+                      <form onSubmit={verifyOldEmailOtp}>
+                        <p>We sent an OTP to your current email: <strong>{user.email}</strong></p>
+                        <label className="form-label" htmlFor="old-email-otp">Enter the 6-digit OTP</label>
+                        <input id="old-email-otp" className="form-control" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={emailChangeOtp} onChange={(event) => setEmailChangeOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} />
+                        <button className="btn btn-primary mt-3" type="submit" disabled={emailChangeBusy || emailChangeOtp.length !== 6}>{emailChangeBusy ? 'Verifying...' : 'Verify Current Email'}</button>
+                      </form>
+                    )}
+                    {emailChangeStep === 'newEmail' && (
+                      <form onSubmit={sendNewEmailOtp}>
+                        <p>Your current email is verified. Enter the new email address.</p>
+                        <label className="form-label" htmlFor="new-email">New email</label>
+                        <input id="new-email" type="email" className="form-control" autoComplete="email" value={newEmail} onChange={(event) => setNewEmail(event.target.value)} required />
+                        <button className="btn btn-primary mt-3" type="submit" disabled={emailChangeBusy || emailChangeCooldown > 0 || !newEmail.trim()}>
+                          {emailChangeBusy ? 'Sending...' : emailChangeCooldown > 0 ? `Please wait ${emailChangeCooldown}s` : 'Send OTP'}
+                        </button>
+                      </form>
+                    )}
+                    {emailChangeStep === 'newOtp' && (
+                      <form onSubmit={verifyNewEmailOtp}>
+                        <p>We sent an OTP to your new email: <strong>{newEmail}</strong></p>
+                        <label className="form-label" htmlFor="new-email-otp">Enter the 6-digit OTP</label>
+                        <input id="new-email-otp" className="form-control" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={emailChangeOtp} onChange={(event) => setEmailChangeOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} />
+                        <button className="btn btn-primary mt-3" type="submit" disabled={emailChangeBusy || emailChangeOtp.length !== 6}>{emailChangeBusy ? 'Verifying...' : 'Verify New Email'}</button>
+                      </form>
+                    )}
+                    {(emailChangeInfo || emailChangeNoticeType) && (
+                      <div className="alert alert-info mt-3 mb-0" role="status">
+                        {emailChangeNoticeType === 'already-sent'
+                          ? `OTP already sent. You can resend in ${emailChangeCooldown}s.`
+                          : emailChangeNoticeType === 'please-wait'
+                            ? `Please wait ${emailChangeCooldown}s before trying again.`
+                            : emailChangeInfo}
+                      </div>
+                    )}
+                    {emailChangeError && <div className="alert alert-danger mt-3 mb-0" role="alert">{emailChangeError}</div>}
+                  </div>
+                  <div className="modal-footer">
+                    {(emailChangeStep === 'oldOtp' || emailChangeStep === 'newOtp') && (
+                      <button type="button" className="btn btn-link" onClick={resendEmailChangeOtp} disabled={emailChangeBusy || emailChangeCooldown > 0}>
+                        {emailChangeCooldown > 0 ? `Resend OTP in ${emailChangeCooldown}s` : 'Resend OTP'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           {/*end row*/}
         </div>
       </div>

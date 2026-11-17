@@ -14,6 +14,6 @@ router.delete('/:id', controller.deleteSynonym);
 // Search logs (Keyword Master > Search Logs)
 router.get('/logs/server-side', controller.getSearchLogsServerSide);
 router.get('/logs/users', authenticateToken, controller.getSearchLogUsers);
-router.get('/logs/:id/entries', authenticateToken, controller.getSearchLogEntries);
+router.get('/logs/:id/entries', controller.getSearchLogEntries);
 
 module.exports = router;

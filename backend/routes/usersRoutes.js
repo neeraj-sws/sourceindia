@@ -4,6 +4,16 @@ const router = express.Router();
 const Users = require('../models/Users');
 const usersController = require('../controllers/usersController');
 const authMiddleware = require('../middleware/authMiddleware');
+const emailChangeController = require('../controllers/emailChangeController');
+const { rateLimit } = require('express-rate-limit');
+
+const emailChangeLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 15,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { message: 'Too many email verification requests. Please try again later.' },
+});
 
 // Admin: Get all users (id, fname, lname)
 router.get('/all', async (req, res) => {
@@ -28,6 +38,10 @@ router.post('/change-password', authMiddleware, usersController.changePassword);
 router.post('/impersonate-login', usersController.impersonateLogin);
 router.get('/profile', authMiddleware, usersController.getProfile);
 router.post('/update-profile', authMiddleware, usersController.updateProfile);
+router.post('/email-change/send-old-otp', authMiddleware, emailChangeLimiter, emailChangeController.sendOldOtp);
+router.post('/email-change/verify-old-otp', authMiddleware, emailChangeLimiter, emailChangeController.verifyOldOtp);
+router.post('/email-change/send-new-otp', authMiddleware, emailChangeLimiter, emailChangeController.sendNewOtp);
+router.post('/email-change/verify-new-otp', authMiddleware, emailChangeLimiter, emailChangeController.verifyNewOtp);
 router.get('/countries', usersController.getCountries);
 router.get('/states', usersController.getStates);
 router.get('/cities', usersController.getCities);
