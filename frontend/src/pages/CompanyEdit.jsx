@@ -5,7 +5,7 @@ import { Suspense, lazy } from 'react';
 const ImageWithFallback = lazy(() => import('../admin/common/ImageWithFallback'));
 import { useNavigate } from 'react-router-dom';
 import { useAlert } from '../context/AlertContext';
-import { FiBriefcase, FiCheckCircle, FiClipboard, FiEdit3, FiFileText, FiGlobe, FiGrid, FiLink, FiMail, FiMapPin, FiRefreshCw, FiUploadCloud } from 'react-icons/fi';
+import { FiBriefcase, FiCheckCircle, FiClipboard, FiEdit3, FiFileText, FiGlobe, FiGrid, FiLink, FiMapPin, FiRefreshCw, FiUploadCloud } from 'react-icons/fi';
 import './CompanyEdit.css';
 
 const CompanyEdit = () => {
@@ -13,7 +13,6 @@ const CompanyEdit = () => {
   const { showNotification } = useAlert();
   const [user, setUser] = useState({
     organization_name: "",
-    company_email: "",
     company_location: "",
     company_website: "",
     core_activity: "",
@@ -197,12 +196,6 @@ const CompanyEdit = () => {
     if (!user.company_info?.organization_name?.trim())
       errs.organization_name = "Organization name is required";
 
-    // Company Email
-    if (!user.company_info?.company_email?.trim())
-      errs.company_email = "Company email is required";
-    else if (!/\S+@\S+\.\S+/.test(user.company_info.company_email))
-      errs.company_email = "Invalid email format";
-
     // Company Location
     if (!user.company_info?.company_location?.trim())
       errs.company_location = "Company location is required";
@@ -279,7 +272,6 @@ const CompanyEdit = () => {
     try {
       const formData = new FormData();
       formData.append("organization_name", user.company_info?.organization_name || "");
-      formData.append("company_email", user.company_info?.company_email || "");
       formData.append("company_location", user.company_info?.company_location || "");
       formData.append("company_website", user.company_info?.company_website || "");
       formData.append("core_activity", selectedCoreActivity || "");
@@ -353,20 +345,6 @@ const CompanyEdit = () => {
                     placeholder="Enter Organization Name"
                   /></div>
                   {errors.organization_name && <div className="invalid-feedback">{errors.organization_name}</div>}
-                </div>
-                <div className="col-md-6">
-                  <label className="form-label">
-                    Company Email<sup className="text-danger">*</sup>
-                  </label>
-                  <div className="company-input-wrap"><FiMail /><input
-                    type="email"
-                    className={`form-control ${errors.company_email ? 'is-invalid' : ''}`}
-                    name="company_email"
-                    placeholder="Enter  Comapny Email"
-                    value={user.company_info?.company_email || ""}
-                    onChange={handleChange}
-                  /></div>
-                  {errors.company_email && <div className="invalid-feedback">{errors.company_email}</div>}
                 </div>
                 <div className="col-md-6">
                   <label className="form-label">

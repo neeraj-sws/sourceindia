@@ -134,7 +134,7 @@ exports.login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, is_seller: user.is_seller },
+      { id: user.id, email: user.email, is_seller: user.is_seller, token_version: user.token_version || 0 },
       'your_jwt_secret_key',
       { expiresIn: '1h' }
     );
@@ -564,7 +564,7 @@ exports.verifyLoginotp = async (req, res) => {
     }
     await user.update({ otp: null, otp_expiry: null });
     const token = jwt.sign(
-      { id: user.id, email: user.email, is_seller: user.is_seller },
+      { id: user.id, email: user.email, is_seller: user.is_seller, token_version: user.token_version || 0 },
       process.env.JWT_SECRET || 'your_jwt_secret_key',
       { expiresIn: '1h' }
     );
@@ -598,7 +598,7 @@ exports.getProfile = async (req, res) => {
     const userId = req.user.id;
     const user = await Users.findOne({
       where: { id: userId, is_delete: 0 },
-      attributes: { exclude: ['password', 'real_password'] },
+      attributes: { exclude: ['password', 'real_password', 'token_version'] },
       include: [
         {
           model: CompanyInfo, as: 'company_info',
@@ -687,7 +687,6 @@ exports.updateProfileold = async (req, res) => {
       const updatedUserData = {
         fname: req.body.fname,
         lname: req.body.lname,
-        email: req.body.email,
         mobile: req.body.mobile,
         state: req.body.state,
         city: req.body.city,
@@ -810,7 +809,6 @@ exports.updateProfileold = async (req, res) => {
           activity: req.body.activity,
           // category_sell: req.body.category_sell,
           // sub_category: req.body.sub_category,
-          company_email: req.body.company_email,
           company_website: req.body.company_website,
           company_location: req.body.company_location,
           brief_company: req.body.brief_company,
@@ -896,7 +894,6 @@ exports.updateProfile = async (req, res) => {
       const updatedUserData = {
         fname: req.body.fname,
         lname: req.body.lname,
-        email: req.body.email,
         mobile: req.body.mobile,
         alternate_number: req.body.alternate_number,
         state: req.body.state,
@@ -1064,7 +1061,6 @@ exports.updateProfile = async (req, res) => {
               : companyInfo.organization_slug,
             core_activity: req.body.core_activity,
             activity: req.body.activity,
-            company_email: req.body.company_email,
             company_website: req.body.company_website,
             company_location: req.body.company_location,
             brief_company: req.body.brief_company,
@@ -1471,6 +1467,7 @@ exports.impersonateLogin = async (req, res) => {
         fname: user.fname,
         lname: user.lname,
         is_seller: user.is_seller,
+        token_version: user.token_version || 0,
         impersonated: true
       },
       "your_jwt_secret_key",
