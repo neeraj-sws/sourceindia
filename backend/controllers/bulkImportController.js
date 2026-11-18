@@ -12,6 +12,7 @@ const {
   comparisonKey,
   readBulkImportJobData,
   createBulkImportRow,
+  isCreatableBulkImportRow,
   classifyBulkImportError,
   getSqlCode,
   getErrorField,
@@ -142,7 +143,7 @@ const matchesRowFilter = (row, filter, isCommitted) => {
     ? String(row.commitStatus || '').startsWith('skipped_') && row.status !== 'error'
     : isSkippedRow(row);
   if (filter === 'name_conflict') return row.status === 'name_conflict';
-  if (filter === 'create') return row.status === 'create';
+  if (filter === 'create') return isCreatableBulkImportRow(row);
   if (filter === 'created') return row.commitStatus === 'created';
   if (filter === 'failed') return row.commitStatus === 'failed' || (isCommitted && row.status === 'error');
   return false;
@@ -159,7 +160,7 @@ const getRowCounts = (rows, isCommitted) => ({
   errors: rows.filter((row) => row.status === 'error').length,
   skipped: rows.filter((row) => matchesRowFilter(row, 'skipped', isCommitted)).length,
   name_conflict: rows.filter((row) => row.status === 'name_conflict').length,
-  create: rows.filter((row) => row.status === 'create').length,
+  create: rows.filter(isCreatableBulkImportRow).length,
   created: rows.filter((row) => row.commitStatus === 'created').length,
   failed: rows.filter((row) => matchesRowFilter(row, 'failed', isCommitted)).length,
 });
@@ -276,14 +277,15 @@ const commitJob = async (req, res) => {
     }
     transaction = await sequelize.transaction();
     const freshRows = await validateBulkImportRows(job.level, jobData.validatedRows, { transaction });
-    const originalCreateKeys = new Set(jobData.validatedRows.filter((row) => row.status === 'create').map((row) => `${row.sheet}::${row.rowNumber}`));
+    const originalCreateKeys = new Set(jobData.validatedRows.filter(isCreatableBulkImportRow).map((row) => `${row.sheet}::${row.rowNumber}`));
     const results = freshRows.map((row) => ({
       ...row,
-      commitStatus: row.status === 'create' ? 'pending' : `skipped_${row.status}`,
+      commitStatus: isCreatableBulkImportRow(row) ? 'pending' : `skipped_${row.status}`,
     }));
-    const createRows = results.filter((row) => row.status === 'create');
+    const createRows = results.filter(isCreatableBulkImportRow);
     let created = 0;
     const createdKeywordNames = new Set();
+    const autoCreatedItemCategories = new Map();
     let existingKeywordNames = new Set();
     if (job.level === 'item_sub_category' && createRows.length) {
       const keywords = await ProductKeyword.findAll({ attributes: ['name'], raw: true, transaction });
@@ -291,14 +293,19 @@ const commitJob = async (req, res) => {
     }
     for (const row of createRows) {
       failingRow = row;
-      const { keywordSkipped } = await createBulkImportRow(job.level, row, {
+      const { keywordSkipped, parentCreated } = await createBulkImportRow(job.level, row, {
         transaction,
         existingKeywordNames,
         createdKeywordNames,
+        autoCreatedItemCategories,
         onWrite: () => { writesStarted = true; },
       });
       row.commitStatus = 'created';
-      row.commitMessage = keywordSkipped
+      row.commitMessage = parentCreated
+        ? 'Item Category and Item Sub Category created successfully.'
+        : row.status === 'create_with_parent'
+          ? 'Item Sub Category created successfully; the Item Category was created once and reused.'
+          : keywordSkipped
         ? 'Created Item Sub Category; matching Product Keyword already exists globally and was left unchanged.'
         : 'Created successfully.';
       created += 1;
@@ -340,8 +347,8 @@ const commitJob = async (req, res) => {
         counts: { ...jobData.counts, commitResult: failedCounts },
         validatedRows: jobData.validatedRows.map((row) => ({
           ...row,
-          commitStatus: row.status === 'create' ? 'failed' : `skipped_${row.status}`,
-          commitMessage: row.status === 'create'
+          commitStatus: isCreatableBulkImportRow(row) ? 'failed' : `skipped_${row.status}`,
+          commitMessage: isCreatableBulkImportRow(row)
             ? (failingRow && row.sheet === failingRow.sheet && row.rowNumber === failingRow.rowNumber ? safeMessage : 'Not imported because another row failed.')
             : row.message,
         })),

@@ -263,10 +263,14 @@ function BulkImport() {
           column.required ? "Yes" : "No",
           column.name === "Status"
             ? "Accepts Active or Inactive. Defaults to Active when blank."
+            : selectedLevel === "item_sub_category" && column.name === "Item Category"
+              ? "Matched under the selected Sub Category; auto-created if it does not exist."
             : "Required. Match the existing parent/category name; names are matched case-insensitively and extra spaces are ignored.",
         ]),
         [],
-        ["General instructions", "", "All columns except Status are required. Parent Category, Sub Category and Item Category must already exist for the selected level."],
+        ["General instructions", "", selectedLevel === "item_sub_category"
+          ? "All columns except Status are required. Item Category will be auto-created if it does not exist; Category and Sub Category must exist."
+          : "All columns except Status are required. Parent Category and Sub Category must already exist."],
         ["", "", "Names are unique across Category Master by default. Repeated names under the same parent are skipped; a name used under a different parent or level is a conflict."],
       ];
       const instructionsSheet = utils.aoa_to_sheet(instructions);
@@ -478,6 +482,7 @@ function BulkImport() {
   };
   const statusLabel = (value) => ({
     create: "To create",
+    create_with_parent: "Will create Item Category + Item Sub Category",
     exists: "Already exists",
     exists_inactive: "Exists inactive",
     duplicate_in_file: "Duplicate in file",
@@ -486,6 +491,7 @@ function BulkImport() {
   }[value] || value);
   const statusClass = (value) => ({
     create: "success",
+    create_with_parent: "success",
     exists: "secondary",
     exists_inactive: "warning",
     duplicate_in_file: "info",
@@ -570,7 +576,7 @@ function BulkImport() {
                 )}
                 {validationResult && <div className="row g-3 mb-3">
                   {[
-                    { label: "To create", value: counts.create, color: "success" },
+                    { label: "Valid rows to create", value: counts.create, color: "success" },
                     { label: "Already exists", value: Number(counts.exists || 0) + Number(counts.existsInactive || 0), color: "secondary" },
                     { label: "Duplicates in file", value: counts.duplicateInFile, color: "info" },
                     { label: "Name conflicts", value: counts.nameConflict, color: "danger" },

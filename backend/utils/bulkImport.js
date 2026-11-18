@@ -417,8 +417,16 @@ const validateBulkImportRows = async (level, sourceRows, options = {}) => {
     ...availableItemCategories.map((row) => ({ ...row, module: 'Item Category', location: `Sub Category '${availableSubCategories.find((subCategory) => Number(subCategory.id) === Number(row.subcategory_id))?.name || row.subcategory_id}'` })),
     ...availableItemSubCategories.map((row) => ({ ...row, module: 'Item Sub Category', location: `Item Category '${availableItemCategories.find((item) => Number(item.id) === Number(row.item_category_id))?.name || row.item_category_id}'` })),
   ];
+  const fileItemSubCategoryEntries = level === 'item_sub_category'
+    ? sourceRows.map(({ rawValues }) => ({
+      name: rawValues['Item Sub Category'],
+      module: 'Item Sub Category',
+      location: `Item Category '${rawValues['Item Category'] || ''}'`,
+    }))
+    : [];
 
   const seenInFile = new Map();
+  const pendingItemCategories = new Map();
   return sourceRows.map(({ sheet, rowNumber, rawValues, controlFields = [] }) => {
     const result = {
       sheet,
@@ -465,10 +473,11 @@ const validateBulkImportRows = async (level, sourceRows, options = {}) => {
     }
 
     let itemCategory = null;
+    let createItemCategory = false;
     if (subCategory && level === 'item_sub_category') {
       const candidates = itemCategoriesByParent.get(String(subCategory.id));
       itemCategory = candidates?.get(comparisonKey(itemCategoryName));
-      if (!itemCategory) messages.push(formatNotFound('Item Category', itemCategoryName, 'Sub Category', subCategory.name, candidates ? [...candidates.values()] : []));
+      if (!itemCategory) createItemCategory = true;
       else {
         result.resolvedParentIds.itemCategoryId = itemCategory.id;
         if (Number(itemCategory.status) !== 1) messages.push(`Item Category "${itemCategory.name}" is inactive.`);
@@ -477,7 +486,36 @@ const validateBulkImportRows = async (level, sourceRows, options = {}) => {
 
     if (!messages.length) {
       const importedName = level === 'item_category' ? itemCategoryName : rawValues['Item Sub Category'];
-      const parentId = level === 'item_category' ? subCategory.id : itemCategory.id;
+      let parentId = level === 'item_category' ? subCategory.id : itemCategory?.id;
+      if (createItemCategory) {
+        const categoryKey = comparisonKey(itemCategoryName);
+        const pending = pendingItemCategories.get(categoryKey);
+        const pendingConflictEntries = [...pendingItemCategories.values()]
+          .filter((entry) => comparisonKey(entry.name) !== categoryKey)
+          .map((entry, index) => ({
+            id: `pending-${index}`,
+            name: entry.name,
+            module: 'Item Category',
+            location: `Sub Category '${availableSubCategories.find((row) => Number(row.id) === Number(entry.subCategoryId))?.name || entry.subCategoryId}'`,
+          }));
+        const conflict = findPreloadedCategoryNameConflict(itemCategoryName, [
+          ...conflictEntries,
+          ...fileItemSubCategoryEntries,
+          ...pendingConflictEntries,
+        ]);
+        if ((pending && pending.subCategoryId !== subCategory.id) || conflict) {
+          const detail = conflict
+            ? `Name already used by ${conflict.module} '${conflict.name}' under ${conflict.location}.`
+            : 'This name was already used earlier in the file under a different parent.';
+          result.status = 'name_conflict';
+          result.message = detail;
+          return result;
+        }
+        if (!pending) pendingItemCategories.set(categoryKey, { subCategoryId: subCategory.id, name: itemCategoryName });
+        parentId = `pending:${subCategory.id}:${categoryKey}`;
+        result.status = 'create_with_parent';
+        result.message = `Item Category "${itemCategoryName}" will be created automatically.`;
+      }
       const importedKey = comparisonKey(importedName);
       const previous = seenInFile.get(importedKey);
       if (previous && previous.parentId === parentId) {
@@ -488,7 +526,7 @@ const validateBulkImportRows = async (level, sourceRows, options = {}) => {
         let existing;
         if (level === 'item_category') {
           existing = itemCategoriesByParent.get(String(subCategory.id))?.get(comparisonKey(importedName));
-        } else {
+        } else if (itemCategory) {
           existing = itemSubCategoriesByParent.get(String(itemCategory.id))?.get(comparisonKey(importedName));
         }
         if (existing) {
@@ -518,9 +556,11 @@ const validateBulkImportRows = async (level, sourceRows, options = {}) => {
   });
 };
 
+const isCreatableBulkImportRow = (row) => ['create', 'create_with_parent'].includes(row?.status);
+
 const countBulkImportRows = (rows) => rows.reduce((counts, row) => {
   counts.total += 1;
-  if (row.status === 'create') counts.create += 1;
+  if (isCreatableBulkImportRow(row)) counts.create += 1;
   else if (row.status === 'exists') counts.exists += 1;
   else if (row.status === 'exists_inactive') counts.existsInactive += 1;
   else if (row.status === 'duplicate_in_file') counts.duplicateInFile += 1;
@@ -535,11 +575,13 @@ const createBulkImportRow = async (level, row, {
   transaction,
   existingKeywordNames = new Set(),
   createdKeywordNames = new Set(),
+  autoCreatedItemCategories = new Map(),
   onWrite,
 } = {}) => {
   const values = row.rawValues;
   let record;
   let keywordSkipped = false;
+  let parentCreated = false;
   if (level === 'item_category') {
     onWrite?.('item_category');
     record = await ItemCategory.create({
@@ -556,12 +598,36 @@ const createBulkImportRow = async (level, row, {
       throw error;
     }
   } else {
+    let itemCategoryId = row.resolvedParentIds.itemCategoryId;
+    if (!itemCategoryId) {
+      const itemCategoryKey = `${row.resolvedParentIds.subCategoryId}:${comparisonKey(values['Item Category'])}`;
+      let itemCategory = autoCreatedItemCategories.get(itemCategoryKey);
+      if (!itemCategory) {
+        onWrite?.('item_category');
+        itemCategory = await ItemCategory.create({
+          name: values['Item Category'],
+          category_id: row.resolvedParentIds.categoryId,
+          subcategory_id: row.resolvedParentIds.subCategoryId,
+          status: 1,
+          file_id: null,
+        }, { transaction });
+        try {
+          await syncItemCategoryMainKeyword(itemCategory, { transaction, ensureSchema: false });
+        } catch (error) {
+          error.bulkImportStage = 'keyword_sync';
+          throw error;
+        }
+        autoCreatedItemCategories.set(itemCategoryKey, itemCategory);
+        parentCreated = true;
+      }
+      itemCategoryId = itemCategory.id;
+    }
     onWrite?.('item_sub_category');
     record = await ItemSubCategory.create({
       name: values['Item Sub Category'],
       category_id: row.resolvedParentIds.categoryId,
       subcategory_id: row.resolvedParentIds.subCategoryId,
-      item_category_id: row.resolvedParentIds.itemCategoryId,
+      item_category_id: itemCategoryId,
       status: row.statusValue,
       file_id: null,
     }, { transaction });
@@ -582,7 +648,7 @@ const createBulkImportRow = async (level, row, {
       createdKeywordNames.add(keywordKey);
     } else keywordSkipped = true;
   }
-  return { record, keywordSkipped };
+  return { record, keywordSkipped, parentCreated };
 };
 
 const getSqlCode = (error) => error?.original?.code || error?.parent?.code || error?.original?.errno || error?.parent?.errno || error?.code || null;
@@ -667,7 +733,7 @@ const readBulkImportJobCounts = (value) => {
 const readBulkImportJobRows = (value) => {
   const rows = parseStoredJobValue(value, 'validatedRows');
   if (!Array.isArray(rows)) throw new BulkImportJobDataError('validatedRows', 'expected an array');
-  const allowedStatuses = new Set(['create', 'exists', 'exists_inactive', 'duplicate_in_file', 'name_conflict', 'error']);
+  const allowedStatuses = new Set(['create', 'create_with_parent', 'exists', 'exists_inactive', 'duplicate_in_file', 'name_conflict', 'error']);
   rows.forEach((row, index) => {
     if (!isRecord(row)) throw new BulkImportJobDataError('validatedRows', `row ${index + 1} must be an object`);
     if (typeof row.sheet !== 'string' || !row.sheet.trim()) throw new BulkImportJobDataError('validatedRows', `row ${index + 1} has no sheet name`);
@@ -700,7 +766,7 @@ const createBulkImportReport = (job) => {
   const hasCommitResult = ['committed', 'failed'].includes(job.status);
   const headers = ['Sheet', 'Row', ...definition.columns.map((column) => column.name), 'Status', ...(hasCommitResult ? ['Commit Outcome', 'Failure Reason'] : []), 'Message'];
   const reportRows = validatedRows
-    .filter((row) => row.status !== 'create' || (job.status === 'failed' && row.commitStatus !== 'created'))
+    .filter((row) => row.status === 'create_with_parent' || !isCreatableBulkImportRow(row) || (job.status === 'failed' && row.commitStatus !== 'created'))
     .map((row) => {
       const values = [row.sheet, row.rowNumber, ...definition.columns.map((column) => row.rawValues[column.name] ?? ''), row.status];
       if (hasCommitResult) {
@@ -741,6 +807,7 @@ module.exports = {
   validateBulkImportPayload,
   validateBulkImportRows,
   countBulkImportRows,
+  isCreatableBulkImportRow,
   comparisonKey,
   validateStatus,
   suggestName,
