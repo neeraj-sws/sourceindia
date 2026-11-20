@@ -50,6 +50,16 @@ const AddProduct = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionLoading, setSuggestionLoading] = useState(false);
   const suppressTitleAutoSelectRef = useRef(false);
+  // True while the whole Product Name is selected (Ctrl+A / triple click): typing or pasting
+  // over it is a new product name, so the old keyword and categories are released.
+  const wholeTitleSelectedRef = useRef(false);
+  // Only the newest suggestion request may update the list (an older, slower one is ignored).
+  const suggestionRequestIdRef = useRef(0);
+  // Set when the field lost focus while suggestions were still loading: the auto-select then
+  // runs as soon as they arrive.
+  const pendingTitleAutoSelectRef = useRef(false);
+  // Latest title state for the blur timer and the async suggestion request (their closures are stale).
+  const titleStateRef = useRef({});
   const [files, setFiles] = useState([]);
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
@@ -602,18 +612,56 @@ const AddProduct = () => {
     };
   }, [sellers, applications, subCategories, categories]);
 
+  titleStateRef.current = {
+    title: formData.title,
+    suggestions: productSuggestions,
+    loading: suggestionLoading,
+    selectedKeyword,
+  };
+
   const handleInputChange = (e) => {
     const { id, value } = e.target;
-    setFormData({ ...formData, [id]: value });
-    // Product name autocomplete logic
     if (id === 'title') {
+      const replacedWholeTitle = wholeTitleSelectedRef.current;
+      wholeTitleSelectedRef.current = false;
+      handleTitleValueChange(value, { replacedWholeTitle });
+      return;
+    }
+    setFormData({ ...formData, [id]: value });
+  };
+
+  const trackWholeTitleSelection = (e) => {
+    const input = e.target;
+    wholeTitleSelectedRef.current = input.value.length > 0
+      && input.selectionStart === 0
+      && input.selectionEnd === input.value.length;
+  };
+
+  // Pasting over the whole Product Name: handled here because pasting the same text again does
+  // not fire onChange, and it still has to start over (fetch suggestions, auto-select on blur).
+  const handleTitlePaste = (e) => {
+    const input = e.target;
+    const replacesWholeTitle = input.selectionStart === 0 && input.selectionEnd === input.value.length;
+    if (!replacesWholeTitle) return;
+    e.preventDefault();
+    wholeTitleSelectedRef.current = false;
+    const pasted = (e.clipboardData?.getData('text') || '').replace(/\s*[\r\n]+\s*/g, ' ');
+    handleTitleValueChange(pasted, { replacedWholeTitle: true });
+  };
+
+  const handleTitleValueChange = (value, { replacedWholeTitle = false } = {}) => {
+    setFormData(prev => ({ ...prev, title: value }));
+    // Product name autocomplete logic
+    {
       const autoKeywordName = autoSelectedTitleRef.current;
       const isNewTitle = Boolean(autoKeywordName) && Boolean(value.trim())
         && !findConfidentSuggestion(value, [{ title: autoKeywordName }]);
-      const startOver = !value.trim() || isNewTitle;
+      const startOver = !value.trim() || isNewTitle || replacedWholeTitle;
       if (startOver) {
         resetCategorySelections();
+        setAutoPickedKeywordId('');
       }
+      const requestId = ++suggestionRequestIdRef.current;
       if (value.length >= 2) {
         setSuggestionLoading(true);
         // A new product name is not tied to the categories of the old one.
@@ -646,16 +694,27 @@ const AddProduct = () => {
               });
             }
 
-            setProductSuggestions(rankSuggestionsByQuery(suggestions, value));
-            setShowSuggestions(true);
+            if (requestId !== suggestionRequestIdRef.current) return;
+            const ranked = rankSuggestionsByQuery(suggestions, value);
+            setProductSuggestions(ranked);
+            setSuggestionLoading(false);
+            if (pendingTitleAutoSelectRef.current) {
+              // The field was left while loading: pick now instead of reopening the list.
+              pendingTitleAutoSelectRef.current = false;
+              runTitleAutoSelect(value, ranked);
+            } else {
+              setShowSuggestions(true);
+            }
           } catch {
+            if (requestId !== suggestionRequestIdRef.current) return;
+            pendingTitleAutoSelectRef.current = false;
             setProductSuggestions([]);
             setShowSuggestions(false);
-          } finally {
             setSuggestionLoading(false);
           }
         })();
       } else {
+        setSuggestionLoading(false);
         setProductSuggestions([]);
         setShowSuggestions(false);
       }
@@ -724,24 +783,34 @@ const AddProduct = () => {
         return;
       }
 
-      // A suggestion named in the title wins; otherwise the top (highest ranked) suggestion is
-      // set so nobody has to click, and marked "auto-selected" for checking.
-      const confidentSuggestion = formData.title.trim().length >= 2
-        ? findConfidentSuggestion(formData.title, productSuggestions)
-        : null;
-      const autoSuggestion = confidentSuggestion
-        || (formData.title.trim().length >= 2 ? productSuggestions[0] : null);
-      if (autoSuggestion && !selectedKeyword) {
-        handleSuggestionSelect(autoSuggestion, {
-          preserveTypedTitle: true,
-          typedTitle: formData.title
-        });
-        autoSelectedTitleRef.current = String(autoSuggestion.title || '');
-        setAutoPickedKeywordId(confidentSuggestion ? '' : String(autoSuggestion.id));
+      // Read the latest state: this timer's closure is from the render the blur happened in.
+      const { title, suggestions, loading } = titleStateRef.current;
+      if (loading) {
+        // Suggestions for the new title are still on their way: auto-select when they arrive.
+        pendingTitleAutoSelectRef.current = true;
+        setShowSuggestions(false);
         return;
       }
-      setShowSuggestions(false);
+      runTitleAutoSelect(title, suggestions);
     }, 150);
+  };
+
+  const runTitleAutoSelect = (title, suggestions) => {
+    const typedTitle = String(title || '');
+    // The top (highest ranked) suggestion is set so nobody has to click: what is shown first is
+    // what gets selected. Unless its name is in the title, it is marked "auto-selected" for checking.
+    const autoSuggestion = typedTitle.trim().length >= 2 ? suggestions[0] : null;
+    if (autoSuggestion && !titleStateRef.current.selectedKeyword) {
+      const namedInTitle = Boolean(findConfidentSuggestion(typedTitle, [autoSuggestion]));
+      handleSuggestionSelect(autoSuggestion, {
+        preserveTypedTitle: true,
+        typedTitle
+      });
+      autoSelectedTitleRef.current = String(autoSuggestion.title || '');
+      setAutoPickedKeywordId(namedInTitle ? '' : String(autoSuggestion.id));
+      return;
+    }
+    setShowSuggestions(false);
   };
 
   const handleFileChange = (e) => {
@@ -1236,8 +1305,11 @@ const AddProduct = () => {
                             value={formData.title}
                             autoComplete="off"
                             onChange={handleInputChange}
+                            onSelect={trackWholeTitleSelection}
+                            onPaste={handleTitlePaste}
                             onFocus={() => {
                               suppressTitleAutoSelectRef.current = false;
+                              pendingTitleAutoSelectRef.current = false;
                               if (productSuggestions.length > 0) setShowSuggestions(true);
                             }}
                             onBlur={handleTitleBlur}
@@ -1251,6 +1323,9 @@ const AddProduct = () => {
                               style={{ position: 'absolute', right: 12, top: 28, zIndex: 11, padding: '0 8px', height: 28, lineHeight: 1 }}
                               onMouseDown={() => { suppressTitleAutoSelectRef.current = true; }}
                               onClick={() => {
+                                suggestionRequestIdRef.current++; // drop any request still loading
+                                pendingTitleAutoSelectRef.current = false;
+                                setSuggestionLoading(false);
                                 setFormData(prev => ({ ...prev, title: '' }));
                                 setProductSuggestions([]);
                                 setShowSuggestions(false);
